@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -30,6 +31,10 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTrackerImpl.State.ACTIVE;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTrackerImpl.State.DONE;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTrackerImpl.State.INIT;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTrackerImpl.State.REQUESTING;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.noCoordinatorError;
 
 /**
@@ -60,6 +65,9 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
 
     /** */
     private final boolean canRemap;
+
+    /** */
+    private AtomicReference state = new AtomicReference(INIT);
 
     /**
      * @param cctx Cache context.
@@ -102,7 +110,8 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<MvccSnapshot> requestSnapshot() {
-        MvccSnapshot snapshot; MvccSnapshotFuture fut;
+        MvccSnapshot snapshot;
+        MvccSnapshotFuture fut;
 
         if ((snapshot = snapshot()) != null)
             return new GridFinishedFuture<>(snapshot);
@@ -114,7 +123,8 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<MvccSnapshot> requestSnapshot(@NotNull AffinityTopologyVersion topVer) {
-        MvccSnapshot snapshot; MvccSnapshotFuture fut;
+        MvccSnapshot snapshot;
+        MvccSnapshotFuture fut;
 
         if ((snapshot = snapshot()) != null)
             return new GridFinishedFuture<>(snapshot);
@@ -125,7 +135,8 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public void requestSnapshot(@NotNull AffinityTopologyVersion topVer, @NotNull MvccSnapshotResponseListener lsnr) {
+    @Override public void requestSnapshot(@NotNull AffinityTopologyVersion topVer,
+        @NotNull MvccSnapshotResponseListener lsnr) {
         MvccSnapshot snapshot = snapshot();
 
         if (snapshot != null)
@@ -136,20 +147,30 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
 
     /** {@inheritDoc} */
     @Override public void onDone() {
-        MvccProcessor prc = cctx.shared().coordinators();
+        if (state.getAndSet(DONE) != ACTIVE)
+            return;
 
+        releaseResources();
+    }
+
+    /** Release resources. */
+    private void releaseResources() {
+        MvccProcessor prc = cctx.shared().coordinators();
         MvccSnapshot snapshot = snapshot();
 
-        if (snapshot != null) {
-            prc.removeQueryTracker(id);
+        prc.removeQueryTracker(id);
 
+        if (snapshot != null)
             prc.ackQueryDone(snapshot, id);
-        }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Void> onDone(@NotNull GridNearTxLocal tx, boolean commit) {
-        MvccSnapshot snapshot = snapshot(), txSnapshot = tx.mvccSnapshot();
+        if (state.getAndSet(DONE) != ACTIVE)
+            return commit ? new GridFinishedFuture<>() : null;
+
+        MvccSnapshot snapshot = snapshot();
+        MvccSnapshot txSnapshot = tx.mvccSnapshot();
 
         if (snapshot == null && txSnapshot == null)
             return commit ? new GridFinishedFuture<>() : null;
@@ -191,7 +212,20 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
     /** */
     private void requestSnapshot0(AffinityTopologyVersion topVer, MvccSnapshotResponseListener lsnr) {
         if (checkTopology(topVer, lsnr = decorate(lsnr))) {
+            if (state.compareAndSet(INIT, REQUESTING))
+                cctx.shared().coordinators().addQueryTracker(this);
+
             try {
+                Object state0 = state.get();
+
+                if (state0 == DONE) {
+                    lsnr.onError(new IgniteCheckedException("Mvcc Tracker has been concurrently closed."));
+
+                    releaseResources();
+
+                    return;
+                }
+
                 MvccSnapshot snapshot = cctx.shared().coordinators().tryRequestSnapshotLocal();
 
                 if (snapshot == null)
@@ -225,6 +259,12 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
 
         if (crd == null) {
             lsnr.onError(noCoordinatorError(topVer));
+
+            return false;
+        }
+
+        if (state.get() == DONE) {
+            lsnr.onError(new IgniteCheckedException("Mvcc Tracker has been concurrently closed."));
 
             return false;
         }
@@ -281,14 +321,15 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
      * @return {@code false} if need to remap.
      */
     private boolean onResponse0(@NotNull MvccSnapshot res, MvccSnapshotResponseListener lsnr) {
+        assert state.get() != INIT : "Got response without request.";
+
         boolean needRemap = false;
 
         synchronized (this) {
             assert snapshot() == null : "[this=" + this + ", rcvdVer=" + res + "]";
 
-            if (crdVer != 0) {
+            if (crdVer != 0)
                 this.snapshot = res;
-            }
             else
                 needRemap = true;
         }
@@ -298,8 +339,11 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
 
             return false;
         }
+        else if (!state.compareAndSet(REQUESTING, ACTIVE)) {
+            assert state.get() == DONE;
 
-        cctx.shared().coordinators().addQueryTracker(this);
+            releaseResources();
+        }
 
         return true;
     }
@@ -311,15 +355,24 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
      */
     private boolean onError0(IgniteCheckedException e, MvccSnapshotResponseListener lsnr) {
         if (e instanceof ClusterTopologyCheckedException && canRemap) {
-            if (e instanceof ClusterTopologyServerNotFoundException)
-                return true; // No Mvcc coordinator assigned
+            if (e instanceof ClusterTopologyServerNotFoundException) {
+                if (log.isDebugEnabled())
+                    log.debug("No Mvcc coordinator assigned.");
+            }
+            else {
+                if (log.isDebugEnabled())
+                    log.debug("Mvcc coordinator failed, need remap: " + e);
 
+                tryRemap(lsnr);
+
+                return false;
+            }
+        }
+        else if (state.compareAndSet(REQUESTING, DONE)) {
             if (log.isDebugEnabled())
-                log.debug("Mvcc coordinator failed, need remap: " + e);
+                log.debug("Failed to request mvcc version, tracker will be closed.");
 
-            tryRemap(lsnr);
-
-            return false;
+            releaseResources();
         }
 
         return true;
@@ -344,5 +397,17 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
             if (onError0(e, this))
                 lsnr.onError(e);
         }
+    }
+
+    /** Tracker state. */
+    enum State {
+        /** Initial state. */
+        INIT,
+        /** Snapshot request in fly. */
+        REQUESTING,
+        /** Snapshot requested. */
+        ACTIVE,
+        /** Tracker is closed. */
+        DONE
     }
 }
