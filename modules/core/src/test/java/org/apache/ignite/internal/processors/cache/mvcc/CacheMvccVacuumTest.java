@@ -19,9 +19,10 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.List;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.testframework.GridTestUtils;
 
@@ -42,6 +43,15 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
     public void testStartStopVacuumInMemory() throws Exception {
         Ignite node0 = startGrid(0);
         Ignite node1 = startGrid(1);
+
+        node1.createCache(new CacheConfiguration<>("test1")
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+        ensureNoVacuum(node0);
+        ensureNoVacuum(node1);
+
+        node1.createCache(new CacheConfiguration<>("test2")
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT));
 
         ensureVacuum(node0);
         ensureVacuum(node1);
@@ -71,6 +81,12 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
 
         node1.cluster().active(true);
 
+        ensureNoVacuum(node0);
+        ensureNoVacuum(node1);
+
+        node1.createCache(new CacheConfiguration<>("test2")
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT));
+
         ensureVacuum(node0);
         ensureVacuum(node1);
 
@@ -93,13 +109,24 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
 
         ensureNoVacuum(node0);
         ensureNoVacuum(node1);
+
+        node0 = startGrid(0);
+        node1 = startGrid(1);
+
+        ensureNoVacuum(node0);
+        ensureNoVacuum(node1);
+
+        node1.cluster().active(true);
+
+        ensureVacuum(node0);
+        ensureVacuum(node1);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testVacuumNotStartedWithoutMvcc() throws Exception {
-        IgniteConfiguration cfg = getConfiguration("grid1").setMvccEnabled(false);
+        IgniteConfiguration cfg = getConfiguration("grid1");
 
         Ignite node = startGrid(cfg);
 
@@ -112,7 +139,7 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
     public void testVacuumNotStartedWithoutMvccPersistence() throws Exception {
         persistence = true;
 
-        IgniteConfiguration cfg = getConfiguration("grid1").setMvccEnabled(false);
+        IgniteConfiguration cfg = getConfiguration("grid1");
 
         Ignite node = startGrid(cfg);
 
@@ -152,7 +179,6 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
     private void ensureNoVacuum(Ignite node) {
         MvccProcessorImpl crd = mvccProcessor(node);
 
-        if (crd != null)
-            assertNull(GridTestUtils.<List<GridWorker>>getFieldValue(crd, "vacuumWorkers"));
+        assertNull(GridTestUtils.<List<GridWorker>>getFieldValue(crd, "vacuumWorkers"));
     }
 }
