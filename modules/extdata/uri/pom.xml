@@ -171,6 +171,119 @@
                                 -->
                                 <gar destfile="${basedir}/target/resources/helloworld.gar" descrdir="${basedir}/META-INF" basedir="${basedir}/target/classes" />
                                 <gar destfile="${basedir}/target/resources/helloworld1.gar" descrdir="${basedir}/META-INF" basedir="${basedir}/target/classes" />
+
+                                <!--deploydir.gar-->
+                                <mkdir dir="${basedir}/target/file_tmp/META-INF/" />
+                                <copy file="${basedir}/META-INF/deploydir-ignite.xml" tofile="${basedir}/target/file_tmp/META-INF/ignite.xml" />
+
+                                <mkdir dir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+                                <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestTask0.class" todir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+                                <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestWithNameTask0.class" todir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+
+                                <gar destfile="${basedir}/target/file/deploydir0.gar" descrdir="${basedir}/target/file_tmp/META-INF" basedir="${basedir}/target/file_tmp/classes" />
+                                <mkdir dir="${basedir}/target/file/deploydir.gar" />
+                                <unzip src="${basedir}/target/file/deploydir0.gar" dest="${basedir}/target/file/deploydir.gar" />
+                                <delete file="${basedir}/target/file/deploydir0.gar" />
+
+                                <delete dir="${basedir}/target/file_tmp/" />
+
+                                <!--deployfile.gar-->
+                                <mkdir dir="${basedir}/target/file_tmp/META-INF/" />
+                                <copy file="${basedir}/META-INF/deployfile-ignite.xml" tofile="${basedir}/target/file_tmp/META-INF/ignite.xml" />
+
+                                <mkdir dir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+                                <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestTask3.class" todir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+                                <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestWithNameTask3.class" todir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+
+                                <gar destfile="${basedir}/target/file/deployfile.gar" descrdir="${basedir}/target/file_tmp/META-INF" basedir="${basedir}/target/file_tmp/classes" />
+
+                                <delete dir="${basedir}/target/file_tmp/" />
+
+                                <!--deployfile-nodescr.gar-->
+                                <mkdir dir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+                                <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestTask4.class" todir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+                                <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestWithNameTask4.class" todir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+
+                                <gar destfile="${basedir}/target/file/deployfile-nodescr.gar" basedir="${basedir}/target/file_tmp/classes" />
+
+                                <delete dir="${basedir}/target/file_tmp/" />
+
+                                <!--deployfile-bad.gar-->
+                                <mkdir dir="${basedir}/target/file_tmp/META-INF/" />
+                                <copy file="${basedir}/META-INF/bad-classes-ignite.xml" tofile="${basedir}/target/file_tmp/META-INF/ignite.xml" />
+
+                                <mkdir dir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+                                <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentAbstractTestTask.class" todir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+                                <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentInnerTestTask.class" todir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+                                <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentInnerTestTask$GridInnerTestTask.class" todir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+                                <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentInterfaceTestTask.class" todir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+                                <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentNonePublicTestTask.class" todir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+
+                                <gar destfile="${basedir}/target/file/deployfile-bad.gar" descrdir="${basedir}/target/file_tmp/META-INF" basedir="${basedir}/target/file_tmp/classes" />
+
+                                <delete dir="${basedir}/target/file_tmp/" />
+
+                                <!--deployfile-depend.gar-->
+                                <mkdir dir="${basedir}/target/file_tmp/META-INF/" />
+                                <copy file="${basedir}/META-INF/deploydepend-ignite.xml" tofile="${basedir}/target/file_tmp/META-INF/ignite.xml" />
+
+                                <mkdir dir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+                                <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestTask1.class" todir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+                                <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentDependency1.class" todir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+                                <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/test1.properties" todir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+
+                                <gar destfile="${basedir}/target/file/deployfile-depend.gar" descrdir="${basedir}/target/file_tmp/META-INF" basedir="${basedir}/target/file_tmp/classes" />
+                                <zip destfile="${basedir}/target/file/deployfile-depend.gar" basedir="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/" includes="spring1.xml" update="yes" />
+
+                                <delete dir="${basedir}/target/file_tmp/" />
+
+                                <!--deploydir-nodescr-depend.gar-->
+                                <mkdir dir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+                                <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestTask2.class" todir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+                                <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentDependency2.class" todir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+                                <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/test2.properties" todir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+                                <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/spring2.xml" todir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+
+                                <gar destfile="${basedir}/target/file/deploydir-nodescr-depend0.gar" basedir="${basedir}/target/file_tmp/classes" />
+                                <mkdir dir="${basedir}/target/file/deploydir-nodescr-depend.gar" />
+                                <unzip src="${basedir}/target/file/deploydir-nodescr-depend0.gar" dest="${basedir}/target/file/deploydir-nodescr-depend.gar" />
+                                <delete file="${basedir}/target/file/deploydir-nodescr-depend0.gar" />
+
+                                <delete dir="${basedir}/target/file_tmp/" />
+
+                                <!--well-signed-deployfile.gar-->
+                                <mkdir dir="${basedir}/target/file_tmp/META-INF/" />
+                                <copy file="${basedir}/META-INF/well-signed-deployfile-ignite.xml" tofile="${basedir}/target/file_tmp/META-INF/ignite.xml" />
+
+                                <mkdir dir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+                                <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestTask5.class" todir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+                                <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestWithNameTask5.class" todir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+
+                                <gar destfile="${basedir}/target/file/well-signed-deployfile.gar" descrdir="${basedir}/target/file_tmp/META-INF" basedir="${basedir}/target/file_tmp/classes" />
+
+                                <signjar jar="${basedir}/target/file/well-signed-deployfile.gar" keystore="${basedir}/config/signeddeploy/keystore" storepass="abc123" keypass="abc123" alias="business" />
+
+                                <delete dir="${basedir}/target/file_tmp/" />
+
+                                <!--bad-signed-deployfile.gar-->
+                                <mkdir dir="${basedir}/target/file_tmp/META-INF/" />
+                                <copy file="${basedir}/META-INF/bad-signed-deployfile-ignite.xml" tofile="${basedir}/target/file_tmp/META-INF/ignite.xml" />
+
+                                <mkdir dir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+                                <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestTask6.class" todir="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/" />
+                                <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestTask6.class" tofile="${basedir}/target/file_tmp/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestWithNameTask6.class" />
+
+                                <gar destfile="${basedir}/target/file/bad-signed-deployfile.gar" descrdir="${basedir}/target/file_tmp/META-INF" basedir="${basedir}/target/file_tmp/classes" />
+
+                                <signjar jar="${basedir}/target/file/bad-signed-deployfile.gar" keystore="${basedir}/config/signeddeploy/keystore" storepass="abc123" keypass="abc123" alias="business" />
+
+                                <sleep seconds="2" />
+
+                                <touch file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestWithNameTask6.class" />
+
+                                <zip destfile="${basedir}/target/file/bad-signed-deployfile.gar" basedir="${basedir}/target/classes/" includes="org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestWithNameTask6.class" update="yes" />
+
+                                <delete dir="${basedir}/target/file_tmp/" />
                             </target>
                         </configuration>
                     </execution>

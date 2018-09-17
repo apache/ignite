@@ -2195,7 +2195,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /** {@inheritDoc} */
-    public void clientReconnect() throws IgniteSpiException {
+    @Override public void clientReconnect() throws IgniteSpiException {
         impl.reconnect();
     }
 
@@ -2282,7 +2282,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * <p>
      * This method is intended for test purposes only.
      */
-    public void simulateNodeFailure() {
+    @Override public void simulateNodeFailure() {
         impl.simulateNodeFailure();
     }
 

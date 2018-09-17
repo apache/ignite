@@ -21,5 +21,12 @@ include /app/helpers/jade/mixins
 -var required = `${modelAt}.discovery.kind === "ZooKeeper" && ${modelAt}.discovery.ZooKeeper.retryPolicy.kind === "Custom"`
 
 .pc-form-grid-col-60(ng-if-start=`${modelRetryPolicyKind} === 'Custom'`)
-    +java-class('Class name:', `${retry}.className`, '"customClassName"', 'true', required, 'Custom retry policy implementation class name', required)
+    +form-field__java-class({
+        label: 'Class name:',
+        model: `${retry}.className`,
+        name: '"customClassName"',
+        required: required,
+        tip: 'Custom retry policy implementation class name',
+        validationActive: required
+    })
 .pc-form-grid__break(ng-if-end)
