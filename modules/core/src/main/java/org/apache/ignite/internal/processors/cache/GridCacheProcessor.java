@@ -1952,7 +1952,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (sharedCtx.pageStore() != null && affNode)
-            sharedCtx.pageStore().initializeForCache(desc.groupDescriptor(), desc.toStoredData());
+            initializationProtector.protect(
+                desc.groupDescriptor().groupId(),
+                ()-> sharedCtx.pageStore().initializeForCache(desc.groupDescriptor(), desc.toStoredData())
+            );
 
         String grpName = startCfg.getGroupName();
 

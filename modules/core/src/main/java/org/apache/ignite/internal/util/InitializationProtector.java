@@ -17,8 +17,7 @@
 
 package org.apache.ignite.internal.util;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.Lock;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
@@ -27,8 +26,10 @@ import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
  * Class for avoid multiple initialization of specific value from various threads.
  */
 public class InitializationProtector {
-    /** Holder of locks */
-    ConcurrentHashMap<Object, ReentrantLock> protectedObjects = new ConcurrentHashMap<>();
+    /** Default striped lock concurrency level. */
+    private static final int DEFAULT_CONCURRENCY_LEVEL = 20;
+    /** Striped lock. */
+    GridStripedLock stripedLock = new GridStripedLock(DEFAULT_CONCURRENCY_LEVEL);
 
     /**
      * @param protectedKey Unique value by which initialization code should be run only one time.
@@ -46,7 +47,7 @@ public class InitializationProtector {
         if (value != null)
             return value;
 
-        ReentrantLock lock = protectedObjects.computeIfAbsent(protectedKey, (k) -> new ReentrantLock());
+        Lock lock = stripedLock.getLock(protectedKey.hashCode() % stripedLock.concurrencyLevel());
 
         lock.lock();
         try {
@@ -61,8 +62,18 @@ public class InitializationProtector {
         }
         finally {
             lock.unlock();
-
-            protectedObjects.remove(protectedKey, lock);
         }
+    }
+
+    /**
+     * It method allows to avoid simultaneous initialization from various threads.
+     * Garantee protection only for first call.
+     *
+     * @param protectedKey Unique value by which initialization code should be run only from one thread in one time.
+     * @param initializationCode Code for initialization value corresponding protectedKey.
+     * @throws IgniteCheckedException if initialization was failed.
+     */
+    public void protect(Object protectedKey, IgniteThrowableRunner initializationCode) throws IgniteCheckedException {
+        protect(protectedKey, () -> null, initializationCode);
     }
 }
