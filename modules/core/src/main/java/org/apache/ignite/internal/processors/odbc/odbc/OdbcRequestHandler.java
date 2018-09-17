@@ -332,15 +332,27 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             Collection<OdbcColumnMeta> fieldsMeta;
 
-            OdbcResultSet set = results.currentResultSet();
-            if (set == null)
+            if (!results.hasUnfetchedRows()) {
+                results.closeAll();
+
                 fieldsMeta = new ArrayList<>();
-            else
+            } else {
+                OdbcResultSet set = results.currentResultSet();
+
+                assert set != null;
+
                 fieldsMeta = set.fieldsMeta();
 
-            qryResults.put(qryId, results);
+                qryResults.put(qryId, results);
 
-            OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, fieldsMeta, results.rowsAffected());
+                if (log.isDebugEnabled()) {
+                    for (OdbcColumnMeta meta : fieldsMeta)
+                        log.debug("Meta - " + meta.toString());
+                }
+            }
+
+            OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, fieldsMeta,
+                results.rowsAffected(), !results.hasUnfetchedRows());
 
             return new OdbcResponse(res);
         }

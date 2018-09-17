@@ -263,6 +263,9 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
                 meta.write(writer);
 
             writeAffectedRows(writer, res.affectedRows());
+
+            if (ver.compareTo(OdbcConnectionContext.VER_2_7_0) >= 0)
+                writer.writeBoolean(res.closed());
         }
         else if (res0 instanceof OdbcQueryExecuteBatchResult) {
             OdbcQueryExecuteBatchResult res = (OdbcQueryExecuteBatchResult) res0;

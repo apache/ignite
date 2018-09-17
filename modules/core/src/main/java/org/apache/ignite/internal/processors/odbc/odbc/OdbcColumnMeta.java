@@ -21,6 +21,7 @@ import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * SQL listener column metadata.
@@ -135,5 +136,10 @@ public class OdbcColumnMeta {
             writer.writeInt(precision);
             writer.writeInt(scale);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(OdbcColumnMeta.class, this);
     }
 }

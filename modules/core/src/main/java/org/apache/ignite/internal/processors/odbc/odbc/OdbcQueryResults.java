@@ -74,11 +74,20 @@ public class OdbcQueryResults {
         if (currentResultSet != null && currentResultSet.hasUnfetchedRows())
             return true;
 
-        for (int i = nextResultSetIdx; i < cursors.size(); ++i) {
-            QueryCursorImpl<List<?>> cursor = (QueryCursorImpl<List<?>>)cursors.get(i);
+        if (false) {//ver.compareTo(OdbcConnectionContext.VER_2_7_0) >= 0) {
+            for (int i = nextResultSetIdx; i < cursors.size(); ++i) {
+                QueryCursorImpl<List<?>> cursor = (QueryCursorImpl<List<?>>)cursors.get(i);
 
-            if (cursor.isQuery())
-                return true;
+                if (cursor.isQuery())
+                    return true;
+            }
+        } else {
+            for (FieldsQueryCursor<List<?>> cursor : cursors) {
+                QueryCursorImpl<List<?>> cursor0 = (QueryCursorImpl<List<?>>)cursor;
+
+                if (cursor0.isQuery())
+                    return true;
+            }
         }
         return false;
     }
@@ -104,8 +113,10 @@ public class OdbcQueryResults {
     public void nextResultSet() {
         currentResultSet = null;
 
-        while (nextResultSetIdx != cursors.size() && rowsAffected.get(nextResultSetIdx) != -1)
-            ++nextResultSetIdx;
+        if (false) {//ver.compareTo(OdbcConnectionContext.VER_2_7_0) >= 0) {
+            while (nextResultSetIdx != cursors.size() && rowsAffected.get(nextResultSetIdx) != -1)
+                ++nextResultSetIdx;
+        }
 
         if (nextResultSetIdx != cursors.size()) {
             currentResultSet = new OdbcResultSet(cursors.get(nextResultSetIdx), ver);

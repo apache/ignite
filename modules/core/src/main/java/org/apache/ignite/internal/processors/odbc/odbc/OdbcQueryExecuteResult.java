@@ -32,16 +32,21 @@ public class OdbcQueryExecuteResult {
     /** Rows affected by the statements. */
     private final Collection<Long> affectedRows;
 
+    /** Indicates whether result set was closed on server side. */
+    private final boolean closed;
+
     /**
      * @param queryId Query ID.
      * @param columnsMetadata Columns metadata.
      * @param affectedRows Affected rows.
+     * @param closed Closed result set indicator.
      */
     public OdbcQueryExecuteResult(long queryId, Collection<OdbcColumnMeta> columnsMetadata,
-        Collection<Long> affectedRows) {
+        Collection<Long> affectedRows, boolean closed) {
         this.queryId = queryId;
         this.columnsMetadata = columnsMetadata;
         this.affectedRows = affectedRows;
+        this.closed = closed;
     }
 
     /**
@@ -63,5 +68,12 @@ public class OdbcQueryExecuteResult {
      */
     public Collection<Long> affectedRows() {
         return affectedRows;
+    }
+
+    /**
+     * @return {@code true} if result set was closed on server side.
+     */
+    public boolean closed() {
+        return closed;
     }
 }
