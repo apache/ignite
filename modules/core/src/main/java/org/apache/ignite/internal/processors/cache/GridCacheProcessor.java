@@ -1188,6 +1188,45 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Unregister lazy cache if it present.
+     *
+     * @param cacheName Name of lazy cache which need to unregister.
+     */
+    public void unregisterLazyCache(String cacheName) {
+        lazyCacheMap.remove(CU.cacheId(cacheName));
+    }
+
+    /**
+     * Check given cache for lazy state.
+     *
+     * @param cacheName Name of cache which need to check on lazy state.
+     * @return {@code true} in case cache is lazy
+     */
+    public boolean isCacheLazy(String cacheName) {
+        Integer cacheId = CU.cacheId(cacheName);
+
+        return lazyCacheMap.containsKey(cacheId);
+    }
+
+    /**
+     * Start lazy cache.
+     *
+     * @param cacheName Name of lazy cache.
+     */
+    public boolean startLazyCache(String cacheName) {
+        assert isCacheLazy(cacheName) : cacheName;
+
+        try {
+            Boolean res = dynamicStartCache(null, cacheName, null, false, true, true).get();
+
+            return U.firstNotNull(res, Boolean.FALSE);
+        }
+        catch (IgniteCheckedException ex) {
+            throw U.convertException(ex);
+        }
+    }
+
+    /**
      * Create cache without full initialization and start.
      *
      * @param cacheDesc Cache descriptor for create cache.
@@ -3329,6 +3368,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cacheName Cache name.
      */
     public boolean walEnabled(String cacheName) {
+        if (isCacheLazy(cacheName))
+            startLazyCache(cacheName);
+
         DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cacheName);
 
         if (desc == null)
@@ -4573,7 +4615,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ccfg = desc.cacheConfiguration();
 
             if (ccfg == null) {
-                if (failIfNotStarted) {
+                if (failIfNotStarted && !isCacheLazy(cacheName)) {
                     throw new CacheExistsException("Failed to start client cache " +
                         "(a cache with the given name is not started): " + cacheName);
                 }

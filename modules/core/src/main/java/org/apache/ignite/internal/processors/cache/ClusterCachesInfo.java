@@ -682,6 +682,9 @@ class ClusterCachesInfo {
                         continue;
                     }
 
+                    if(ctx.cache().isCacheLazy(req.cacheName()))
+                        ctx.cache().unregisterLazyCache(req.cacheName());
+
                     DynamicCacheDescriptor old = registeredCaches.remove(req.cacheName());
 
                     if (req.restart())

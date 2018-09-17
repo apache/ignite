@@ -39,16 +39,12 @@ public class H2CacheUtils {
      * @param tbl Table to check on lazy cache
      */
     public static void checkAndInitLazyCache(GridH2Table tbl) {
-        if(tbl.isCacheLazy()){
+        if(tbl != null && tbl.isCacheLazy()){
             String cacheName = tbl.cacheInfo().config().getName();
 
             GridKernalContext ctx = tbl.cacheInfo().context();
 
-            try {
-                ctx.cache().dynamicStartCache(null, cacheName, null, false, true, true).get();
-            } catch(IgniteCheckedException ex){
-                throw U.convertException(ex);
-            }
+            ctx.cache().startLazyCache(cacheName);
         }
     }
 }

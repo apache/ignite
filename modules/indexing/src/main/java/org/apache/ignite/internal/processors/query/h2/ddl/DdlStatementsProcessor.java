@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
+import org.apache.ignite.internal.processors.cache.query.H2CacheUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -72,7 +73,6 @@ import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.AlterTableAlterColumn;
@@ -530,6 +530,8 @@ public class DdlStatementsProcessor {
             tbl = idx.dataTable(schemaName, tableName);
         }
 
+        H2CacheUtils.checkAndInitLazyCache(tbl);
+
         return tbl;
     }
 
@@ -549,6 +551,8 @@ public class DdlStatementsProcessor {
 
             tbl = idx.dataTableForIndex(schemaName, indexName);
         }
+
+        H2CacheUtils.checkAndInitLazyCache(tbl);
 
         return tbl;
     }
@@ -686,8 +690,8 @@ public class DdlStatementsProcessor {
                 scale.put(e.getKey(), col.getScale());
             }
 
-            if (col.getType() == Value.STRING || 
-                col.getType() == Value.STRING_FIXED || 
+            if (col.getType() == Value.STRING ||
+                col.getType() == Value.STRING_FIXED ||
                 col.getType() == Value.STRING_IGNORECASE) {
                 precision.put(e.getKey(), (int)col.getPrecision());
             }

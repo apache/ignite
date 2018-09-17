@@ -1420,7 +1420,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         String cacheName = op.cacheName();
 
+        if(ctx.cache().isCacheLazy(cacheName))
+            ctx.cache().startLazyCache(cacheName);
+
         GridCacheAdapter cache = ctx.cache().internalCache(cacheName);
+
 
         if (cache == null || !F.eq(depId, cache.context().dynamicDeploymentId()))
             throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, cacheName);
@@ -2525,15 +2529,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         for (QueryField col : cols) {
             try {
                 props.add(new QueryBinaryProperty(
-                    ctx, 
+                    ctx,
                     col.name(),
-                    null, 
-                    Class.forName(col.typeName()), 
-                    false, 
-                    null, 
-                    !col.isNullable(), 
-                    null, 
-                    col.precision(), 
+                    null,
+                    Class.forName(col.typeName()),
+                    false,
+                    null,
+                    !col.isNullable(),
+                    null,
+                    col.precision(),
                     col.scale()));
             }
             catch (ClassNotFoundException e) {
@@ -2648,6 +2652,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Descriptors.
      */
     public Collection<GridQueryTypeDescriptor> types(@Nullable String cacheName) {
+        if(ctx.cache().isCacheLazy(cacheName))
+            return Collections.emptyList();
+
         Collection<GridQueryTypeDescriptor> cacheTypes = new ArrayList<>();
 
         for (Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> e : types.entrySet()) {
