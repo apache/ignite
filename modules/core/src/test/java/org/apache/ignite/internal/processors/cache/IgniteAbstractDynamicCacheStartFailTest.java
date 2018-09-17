@@ -40,6 +40,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -432,6 +433,9 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
         awaitPartitionMapExchange();
 
         checkCacheOperations(cache);
+
+        // Wait till cache configurations will be saved.
+        U.sleep(3000);
 
         // Start a new server node and check cache operations.
         Ignite serverNode = startGrid(gridCount() + 1);

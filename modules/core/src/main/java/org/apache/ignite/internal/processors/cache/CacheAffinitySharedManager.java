@@ -755,7 +755,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         IgniteInternalFuture<?> res = cachesRegistry.update(exchActions);
 
-        assert res.isDone() : "There should be no cachesRegistry to start: " + exchActions;
+        assert res.isDone() : "There should be no caches to start: " + exchActions;
 
         processCacheStopRequests(fut, crd, exchActions, true);
 
