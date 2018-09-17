@@ -410,7 +410,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             archiver = new FileArchiver(tup == null ? -1 : tup.get2(), log);
 
             if (dsCfg.isWalCompactionEnabled()) {
-                compressor = new FileCompressor();
+                compressor = new FileCompressor(dsCfg.getWalCompactionLevel());
 
                 if (decompressor == null) {  // Preventing of two file-decompressor thread instantiations.
                     decompressor = new FileDecompressor(log);
@@ -1812,6 +1812,10 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      * Also responsible for deleting raw copies of already compressed WAL archive segments if they are not reserved.
      */
     private class FileCompressor extends Thread {
+
+        /** ZIP level.*/
+        private final int level;
+
         /** Current thread stopping advice. */
         private volatile boolean stopped;
 
@@ -1822,10 +1826,11 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         private volatile long minUncompressedIdxToKeep = -1L;
 
         /**
-         *
+         * @param level ZIP level.
          */
-        FileCompressor() {
+        FileCompressor(int level) {
             super("wal-file-compressor%" + cctx.igniteInstanceName());
+            this.level = level;
         }
 
         /**
@@ -2001,6 +2006,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             }
 
             try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip)))) {
+                zos.setLevel(level);
                 zos.putNextEntry(new ZipEntry(""));
 
                 zos.write(prepareSerializerVersionBuffer(nextSegment, segmentSerializerVer, true).array());
