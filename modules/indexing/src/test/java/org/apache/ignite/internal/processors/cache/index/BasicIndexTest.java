@@ -259,6 +259,8 @@ public class BasicIndexTest extends GridCommonAbstractTest {
             checkAll();
 
             stopGrid();
+
+            cleanPersistenceDir();
         }
     }
 
@@ -299,6 +301,8 @@ public class BasicIndexTest extends GridCommonAbstractTest {
             checkAll();
 
             stopGrid();
+
+            cleanPersistenceDir();
         }
     }
 
@@ -341,6 +345,8 @@ public class BasicIndexTest extends GridCommonAbstractTest {
             checkAll();
 
             stopGrid();
+
+            cleanPersistenceDir();
         }
     }
 
@@ -367,6 +373,10 @@ public class BasicIndexTest extends GridCommonAbstractTest {
 
             Path idxPath = getIndexBinPath();
 
+            // Shutdown gracefully to ensure there is a checkpoint with index.bin.
+            // Otherwise index.bin rebuilding may not work.
+            grid().cluster().active(false);
+
             stopGrid();
 
             assertTrue(U.delete(idxPath));
@@ -380,6 +390,8 @@ public class BasicIndexTest extends GridCommonAbstractTest {
             checkAll();
 
             stopGrid();
+
+            cleanPersistenceDir();
         }
     }
 
@@ -413,6 +425,10 @@ public class BasicIndexTest extends GridCommonAbstractTest {
 
             Path idxPath = getIndexBinPath();
 
+            // Shutdown gracefully to ensure there is a checkpoint with index.bin.
+            // Otherwise index.bin rebuilding may not work.
+            grid().cluster().active(false);
+
             stopGrid();
 
             assertTrue(U.delete(idxPath));
@@ -426,6 +442,8 @@ public class BasicIndexTest extends GridCommonAbstractTest {
             checkAll();
 
             stopGrid();
+
+            cleanPersistenceDir();
         }
     }
 
@@ -461,6 +479,10 @@ public class BasicIndexTest extends GridCommonAbstractTest {
 
             Path idxPath = getIndexBinPath();
 
+            // Shutdown gracefully to ensure there is a checkpoint with index.bin.
+            // Otherwise index.bin rebuilding may not work.
+            grid().cluster().active(false);
+
             stopGrid();
 
             assertTrue(U.delete(idxPath));
@@ -474,6 +496,8 @@ public class BasicIndexTest extends GridCommonAbstractTest {
             checkAll();
 
             stopGrid();
+
+            cleanPersistenceDir();
         }
     }
 
