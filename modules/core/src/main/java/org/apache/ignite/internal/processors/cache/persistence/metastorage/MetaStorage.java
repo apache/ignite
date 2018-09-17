@@ -59,6 +59,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
@@ -149,7 +150,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
      * @param db Database.
      * @param readOnlyMetaStore Read only meta store.
      */
-    public void init(IgniteCacheDatabaseSharedManager db, MetaStorage readOnlyMetaStore) throws IgniteCheckedException {
+    public void init(IgniteCacheDatabaseSharedManager db, @Nullable MetaStorage readOnlyMetaStore) throws IgniteCheckedException {
         getOrAllocateMetas();
 
         if (!empty) {
