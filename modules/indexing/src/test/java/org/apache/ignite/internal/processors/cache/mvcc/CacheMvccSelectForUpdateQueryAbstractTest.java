@@ -72,10 +72,10 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
 
         try (Connection c = connect(grid(0))) {
             execute(c, "create table person (id int primary key, firstName varchar, lastName varchar) " +
-                "with \"atomicity=transactional,cache_name=Person\"");
+                "with \"atomicity=transactional_snapshot,cache_name=Person\"");
 
             execute(c, "create table person_seg (id int primary key, firstName varchar, lastName varchar) " +
-                "with \"atomicity=transactional,cache_name=PersonSeg,template=segmented\"");
+                "with \"atomicity=transactional_snapshot,cache_name=PersonSeg,template=segmented\"");
 
             try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.PESSIMISTIC,
                 TransactionIsolation.REPEATABLE_READ)) {

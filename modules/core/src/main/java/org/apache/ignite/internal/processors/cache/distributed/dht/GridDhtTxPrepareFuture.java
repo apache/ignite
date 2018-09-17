@@ -803,13 +803,10 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             if (REPLIED_UPD.compareAndSet(this, 0, 1)) {
                 GridNearTxPrepareResponse res = createPrepareResponse(this.err);
 
-                try {
-                    sendPrepareResponse(res);
-                }
-                finally {
-                    // Will call super.onDone().
-                    onComplete(res);
-                }
+                // Will call super.onDone().
+                onComplete(res);
+
+                sendPrepareResponse(res);
 
                 return true;
             }
@@ -1004,7 +1001,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      * @return {@code True} if {@code done} flag was changed as a result of this call.
      */
     private boolean onComplete(@Nullable GridNearTxPrepareResponse res) {
-        if (last || tx.isSystemInvalidate())
+        if ((last || tx.isSystemInvalidate()) && !(tx.near() && tx.local()))
             tx.state(PREPARED);
 
         if (super.onDone(res, res == null ? err : null)) {

@@ -26,6 +26,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -58,8 +59,6 @@ public class JdbcThinTransactionsWithMvccEnabledSelfTest extends JdbcThinAbstrac
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setMvccEnabled(true);
-
         cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME));
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -84,6 +83,7 @@ public class JdbcThinTransactionsWithMvccEnabledSelfTest extends JdbcThinAbstrac
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setName(name);
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
 
         return cfg;
     }
@@ -97,7 +97,7 @@ public class JdbcThinTransactionsWithMvccEnabledSelfTest extends JdbcThinAbstrac
         try (Connection c = c(true, NestedTxMode.ERROR)) {
             try (Statement s = c.createStatement()) {
                 s.execute("CREATE TABLE INTS (k int primary key, v int) WITH \"cache_name=ints,wrap_value=false," +
-                    "atomicity=transactional\"");
+                    "atomicity=transactional_snapshot\"");
             }
         }
     }
