@@ -210,7 +210,7 @@ export default class IgniteListOfRegisteredUsersCtrl {
             const sdt = $ctrl.params.startDate;
             const edt = $ctrl.params.endDate;
 
-            $ctrl.gridOptions.exporterCsvFilename = `web_console_users_${dtFilter(sdt, 'yyyy_MM')}.csv`;
+            $ctrl.exporterCsvFilename = `web_console_users_${dtFilter(sdt, 'yyyy_MM')}.csv`;
 
             const startDate = Date.UTC(sdt.getFullYear(), sdt.getMonth(), 1);
             const endDate = Date.UTC(edt.getFullYear(), edt.getMonth() + 1, 1);
