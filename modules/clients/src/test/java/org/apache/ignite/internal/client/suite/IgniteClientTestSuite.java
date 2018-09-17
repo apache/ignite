@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.client.suite;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.TaskEventSubjectIdSelfTest;
 import org.apache.ignite.internal.client.ClientDefaultCacheSelfTest;
 import org.apache.ignite.internal.client.ClientReconnectionSelfTest;
 import org.apache.ignite.internal.client.ClientTcpMultiThreadedSelfTest;
@@ -48,6 +49,7 @@ import org.apache.ignite.internal.client.router.TcpSslRouterSelfTest;
 import org.apache.ignite.internal.client.util.ClientByteUtilsTest;
 import org.apache.ignite.internal.client.util.ClientConsistentHashSelfTest;
 import org.apache.ignite.internal.client.util.ClientJavaHasherSelfTest;
+import org.apache.ignite.internal.processors.rest.ChangeStateCommandHandlerTest;
 import org.apache.ignite.internal.processors.rest.ClientMemcachedProtocolSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticationWithCredsSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticationWithTokenSelfTest;
