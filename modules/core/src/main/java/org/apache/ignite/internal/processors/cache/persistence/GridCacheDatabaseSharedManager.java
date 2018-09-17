@@ -1470,45 +1470,53 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         long start = U.currentTimeMillis();
         long passed;
 
-        for (; ; ) {
-            if ((passed = U.currentTimeMillis() - start) >= timeout)
-                failCheckpointReadLock();
+        boolean interruped = false;
 
-            try {
-                if (!checkpointLock.readLock().tryLock(timeout - passed, TimeUnit.MILLISECONDS))
-                    failCheckpointReadLock();
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-
-                continue;
-            }
-
-            if (stopping) {
-                checkpointLock.readLock().unlock();
-
-                throw new IgniteException(new NodeStoppingException("Failed to perform cache update: node is stopping."));
-            }
-
-            if (checkpointLock.getReadHoldCount() > 1 || safeToUpdatePageMemories())
-                break;
-            else {
-                checkpointLock.readLock().unlock();
-
+        try {
+            for (; ; ) {
                 if ((passed = U.currentTimeMillis() - start) >= timeout)
                     failCheckpointReadLock();
 
                 try {
-                    checkpointer.wakeupForCheckpoint(0, "too many dirty pages").cpBeginFut
-                        .getUninterruptibly(timeout - passed);
+                    if (!checkpointLock.readLock().tryLock(timeout - passed, TimeUnit.MILLISECONDS))
+                        failCheckpointReadLock();
                 }
-                catch (IgniteFutureTimeoutCheckedException e) {
-                    failCheckpointReadLock();
+                catch (InterruptedException e) {
+                    interruped = true;
+
+                    continue;
                 }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException("Failed to wait for checkpoint begin.", e);
+
+                if (stopping) {
+                    checkpointLock.readLock().unlock();
+
+                    throw new IgniteException(new NodeStoppingException("Failed to perform cache update: node is stopping."));
+                }
+
+                if (checkpointLock.getReadHoldCount() > 1 || safeToUpdatePageMemories())
+                    break;
+                else {
+                    checkpointLock.readLock().unlock();
+
+                    if (U.currentTimeMillis() - start >= timeout)
+                        failCheckpointReadLock();
+
+                    try {
+                        checkpointer.wakeupForCheckpoint(0, "too many dirty pages").cpBeginFut
+                            .getUninterruptibly();
+                    }
+                    catch (IgniteFutureTimeoutCheckedException e) {
+                        failCheckpointReadLock();
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException("Failed to wait for checkpoint begin.", e);
+                    }
                 }
             }
+        }
+        finally {
+            if (interruped)
+                Thread.currentThread().interrupt();
         }
 
         if (ASSERTION_ENABLED)
@@ -3456,8 +3464,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             boolean cancel = false;
 
             try {
-                long waitTimeoutMs = cctx.gridConfig().getClientFailureDetectionTimeout() / 2;
-
                 synchronized (this) {
                     long remaining;
 
@@ -3470,8 +3476,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         finally {
                             blockingSectionEnd();
                         }
-
-                        attemptOnIdle(waitTimeoutMs);
                     }
                 }
             }

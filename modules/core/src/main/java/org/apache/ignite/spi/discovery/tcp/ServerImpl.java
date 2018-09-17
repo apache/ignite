@@ -2659,7 +2659,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             setBeforeEachPollAction(() -> {
                 updateHeartbeat();
 
-                attemptOnIdle(spi.ignite().configuration().getFailureDetectionTimeout() / 2);
+                onIdle();
             });
         }
 
@@ -5823,9 +5823,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             try {
                 while (!isCancelled()) {
+                    Socket sock;
+
                     blockingSectionBegin();
 
-                    Socket sock;
                     try {
                         sock = srvrSock.accept();
                     }
@@ -5853,7 +5854,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     spi.stats.onServerSocketInitialized(U.currentTimeMillis() - tstamp);
 
-                    attemptOnIdle(spi.ignite().configuration().getFailureDetectionTimeout() / 2);
+                    onIdle();
                 }
             }
             catch (IOException e) {

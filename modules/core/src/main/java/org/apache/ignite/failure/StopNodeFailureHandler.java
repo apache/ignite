@@ -41,4 +41,9 @@ public class StopNodeFailureHandler extends AbstractFailureHandler {
 
         return true;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(StopNodeFailureHandler.class, this, "super", super.toString());
+    }
 }

@@ -1650,6 +1650,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                 tryJoin();
 
                 while (true) {
+                    onIdle();
+
                     Object msg;
 
                     blockingSectionBegin();
@@ -1660,8 +1662,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                     finally {
                         blockingSectionEnd();
                     }
-
-                    attemptOnIdle(spi.ignite().configuration().getFailureDetectionTimeout() / 2);
 
                     if (msg == JOIN_TIMEOUT) {
                         if (state == STARTING) {

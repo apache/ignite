@@ -200,14 +200,17 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
          *
          */
         TimeoutWorker() {
-            super(ctx.config().getIgniteInstanceName(), "grid-timeout-worker", GridTimeoutProcessor.this.log, ctx.workersRegistry());
+            super(
+                ctx.config().getIgniteInstanceName(),
+                "grid-timeout-worker",
+                GridTimeoutProcessor.this.log,
+                ctx.workersRegistry()
+            );
         }
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
             Throwable err = null;
-
-            long waitTimeout = ctx.config().getFailureDetectionTimeout() / 2;
 
             try {
                 while (!isCancelled()) {
@@ -215,7 +218,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
                     long now = U.currentTimeMillis();
 
-                    attemptOnIdle(waitTimeout);
+                    onIdle();
 
                     for (Iterator<GridTimeoutObject> iter = timeoutObjs.iterator(); iter.hasNext(); ) {
                         GridTimeoutObject timeoutObj = iter.next();
@@ -227,11 +230,8 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                                 if (log.isDebugEnabled())
                                     log.debug("Timeout has occurred [obj=" + timeoutObj + ", process=" + rmvd + ']');
 
-                                if (rmvd) {
-                                    updateHeartbeat();
-
+                                if (rmvd)
                                     timeoutObj.onTimeout();
-                                }
                             }
                             catch (Throwable e) {
                                 if (isCancelled() && !(e instanceof Error)) {
@@ -279,7 +279,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                                 blockingSectionBegin();
 
                                 try {
-                                    mux.wait(waitTimeout);
+                                    mux.wait(5000);
                                 }
                                 finally {
                                     blockingSectionEnd();

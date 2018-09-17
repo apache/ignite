@@ -377,16 +377,6 @@ public class PlatformCompute extends PlatformAbstractTarget {
         }
 
         /** {@inheritDoc} */
-        @Override public Object getUninterruptibly(long timeout) throws IgniteCheckedException {
-            return convertResult(fut.get(timeout));
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object getUninterruptibly(long timeout, TimeUnit unit) throws IgniteCheckedException {
-            return convertResult(fut.get(timeout, unit));
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean cancel() throws IgniteCheckedException {
             return fut.cancel();
         }

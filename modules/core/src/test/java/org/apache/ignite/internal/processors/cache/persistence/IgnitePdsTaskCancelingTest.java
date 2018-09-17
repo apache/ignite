@@ -78,7 +78,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setFailureHandler(new AbstractFailureHandler() {
-            @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
+            @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
                 failure.set(true);
 
                 return true;

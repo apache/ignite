@@ -247,9 +247,6 @@ public class GridNioServer<T> {
      */
     private final boolean readWriteSelectorsAssign;
 
-    /** */
-    private final long idlenessInterval;
-
     /**
      * @param addr Address.
      * @param port Port.
@@ -275,8 +272,6 @@ public class GridNioServer<T> {
      * @param msgQueueLsnr Message queue size listener.
      * @param readWriteSelectorsAssign If {@code true} then in/out connections are assigned to even/odd workers.
      * @param workerLsnr Worker lifecycle listener.
-     * @param idlenessInterval Interval in milliseconds between consequtive {@code workerLsnr.onIdle()} calls in
-     *     server workers.
      * @param filters Filters for this server.
      * @throws IgniteCheckedException If failed.
      */
@@ -303,7 +298,6 @@ public class GridNioServer<T> {
         IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr,
         boolean readWriteSelectorsAssign,
         @Nullable GridWorkerListener workerLsnr,
-        long idlenessInterval,
         GridNioFilter... filters
     ) throws IgniteCheckedException {
         if (port != -1)
@@ -409,8 +403,6 @@ public class GridNioServer<T> {
         }
 
         this.balancer = balancer0;
-
-        this.idlenessInterval = idlenessInterval;
     }
 
     /**
@@ -1804,7 +1796,7 @@ public class GridNioServer<T> {
 
                         bodyInternal();
 
-                        attemptOnIdle(idlenessInterval);
+                        onIdle();
                     }
                     catch (IgniteCheckedException e) {
                         if (!Thread.currentThread().isInterrupted()) {
@@ -2937,7 +2929,7 @@ public class GridNioServer<T> {
                     if (balancer != null)
                         balancer.run();
 
-                    attemptOnIdle(idlenessInterval);
+                    onIdle();
                 }
             }
             // Ignore this exception as thread interruption is equal to 'close' call.
@@ -3664,14 +3656,11 @@ public class GridNioServer<T> {
         /** Worker lifecycle listener to be used by server's worker threads. */
         private GridWorkerListener workerLsnr;
 
-        /** Interval in milliseconds between consequtive {@code workerLsnr.onIdle()} calls in server workers. */
-        private long idlenessInterval = Long.MAX_VALUE;
-
         /**
          * Finishes building the instance.
          *
          * @return Final instance of {@link GridNioServer}.
-         * @throws IgniteCheckedException Iq NIO client worker creation failed or address is already in use.
+         * @throws IgniteCheckedException If NIO client worker creation failed or address is already in use.
          */
         public GridNioServer<T> build() throws IgniteCheckedException {
             GridNioServer<T> ret = new GridNioServer<>(
@@ -3697,7 +3686,6 @@ public class GridNioServer<T> {
                 msgQueueLsnr,
                 readWriteSelectorsAssign,
                 workerLsnr,
-                idlenessInterval,
                 filters != null ? Arrays.copyOf(filters, filters.length) : EMPTY_FILTERS
             );
 
@@ -3959,17 +3947,6 @@ public class GridNioServer<T> {
          */
         public Builder<T> workerListener(GridWorkerListener workerLsnr) {
             this.workerLsnr = workerLsnr;
-
-            return this;
-        }
-
-        /**
-         * @param idlenessInterval Interval in milliseconds between consequtive {@code workerLsnr.onIdle()} calls in
-         *     server workers.
-         * @return This for chaining.
-         */
-        public Builder<T> idlenessInterval(long idlenessInterval) {
-            this.idlenessInterval = idlenessInterval;
 
             return this;
         }

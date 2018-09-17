@@ -2764,6 +2764,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             while (!isCancelled()) {
                 try {
                     body0();
+
+                    onIdle();
                 }
                 catch (InterruptedException e) {
                     if (!isCancelled)
@@ -2799,8 +2801,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             finally {
                 blockingSectionEnd();
             }
-
-            attemptOnIdle(ctx.config().getFailureDetectionTimeout() / 2);
 
             int type = evt.get1();
 

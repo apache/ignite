@@ -160,16 +160,6 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
         return get0(ignoreInterrupts, unit.toNanos(timeout));
     }
 
-    /** {@inheritDoc} */
-    @Override public R getUninterruptibly(long timeout) throws IgniteCheckedException {
-        return getUninterruptibly(timeout, TimeUnit.MILLISECONDS);
-    }
-
-    /** {@inheritDoc} */
-    @Override public R getUninterruptibly(long timeout, TimeUnit unit) throws IgniteCheckedException {
-        return get0(true, unit.toNanos(timeout));
-    }
-
     /**
      * Internal get routine.
      *
