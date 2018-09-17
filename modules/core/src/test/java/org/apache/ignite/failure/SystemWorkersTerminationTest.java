@@ -119,7 +119,7 @@ public class SystemWorkersTerminationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testArtificialWorkerTermination() throws Exception {
+    public void testSyntheticWorkerTermination() throws Exception {
         hndLatch = new CountDownLatch(1);
 
         IgniteEx ignite = grid(0);
@@ -156,7 +156,7 @@ public class SystemWorkersTerminationTest extends GridCommonAbstractTest {
      */
     private class TestFailureHandler extends AbstractFailureHandler {
         /** {@inheritDoc} */
-        @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
+        @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
             hndLatch.countDown();
 
             return false;

@@ -1595,8 +1595,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                         toArchive = lastAbsArchivedIdx + 1;
                     }
 
-                    attemptOnIdle(cctx.gridConfig().getFailureDetectionTimeout() / 2);
-
                     if (stopped)
                         break;
 
@@ -1632,6 +1630,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                         evt.record(new WalSegmentArchivedEvent(cctx.discovery().localNode(),
                             res.getAbsIdx(), res.getDstArchiveFile()));
                     }
+
+                    onIdle();
                 }
             }
             catch (InterruptedException t) {

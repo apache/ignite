@@ -2483,6 +2483,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             long cnt = 0;
 
             while (!isCancelled()) {
+                onIdle();
+
                 cnt++;
 
                 CachePartitionExchangeWorkerTask task = null;
@@ -2524,15 +2526,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     task = futQ.poll(timeout, MILLISECONDS);
 
-                    if (task == null)
-                        updateHeartbeat();
-
-                    attemptOnIdle(timeout);
+                    updateHeartbeat();
 
                     if (task == null)
                         continue; // Main while loop.
-
-                    updateHeartbeat();
 
                     if (!isExchangeTask(task)) {
                         processCustomTask(task);
@@ -2603,15 +2600,19 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 long curTimeout = cfg.getTransactionConfiguration().getTxTimeoutOnPartitionMapExchange();
 
                                 try {
-                                    updateHeartbeat();
-
                                     long exchTimeout = curTimeout > 0 && !txRolledBack
                                         ? Math.min(curTimeout, dumpTimeout)
                                         : dumpTimeout;
 
-                                    resVer = exchFut.get(exchTimeout, TimeUnit.MILLISECONDS);
+                                    blockingSectionEnd();
 
-                                    attemptOnIdle(exchTimeout);
+                                    try {
+                                        resVer = exchFut.get(exchTimeout, TimeUnit.MILLISECONDS);
+                                    } finally {
+                                        blockingSectionEnd();
+                                    }
+
+                                    onIdle();
 
                                     break;
                                 }

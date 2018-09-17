@@ -2410,7 +2410,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     IgniteEx igniteEx = (IgniteEx)ignite;
 
                     builder.workerListener(igniteEx.context().workersRegistry());
-                    builder.idlenessInterval(igniteEx.context().config().getFailureDetectionTimeout() / 2);
                 }
 
                 GridNioServer<Message> srvr = builder.build();
@@ -4126,6 +4125,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         buf.put((byte)((type >> 8) & 0xFF));
     }
 
+    /**
+     * @param ignite Ignite.
+     */
     private static WorkersRegistry getWorkersRegistry(Ignite ignite) {
         return ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().workersRegistry() : null;
     }
@@ -4277,9 +4279,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             try {
                 while (!isCancelled()) {
+                    DisconnectedSessionInfo disconnectData;
+
                     blockingSectionBegin();
 
-                    DisconnectedSessionInfo disconnectData;
                     try {
                         disconnectData = q.poll(idleConnTimeout, TimeUnit.MILLISECONDS);
                     }
@@ -4287,12 +4290,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         blockingSectionEnd();
                     }
 
-                    attemptOnIdle(ignite.configuration().getFailureDetectionTimeout() / 2);
-
                     if (disconnectData != null)
                         processDisconnect(disconnectData);
                     else
                         processIdle();
+
+                    onIdle();
                 }
             }
             catch (Throwable t) {

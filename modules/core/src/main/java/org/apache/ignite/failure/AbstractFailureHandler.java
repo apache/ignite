@@ -19,8 +19,9 @@ package org.apache.ignite.failure;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Abstract superclass for {@link FailureHandler} implementations.
@@ -28,7 +29,8 @@ import org.apache.ignite.Ignite;
  */
 public abstract class AbstractFailureHandler implements FailureHandler {
     /** */
-    private volatile Set<FailureType> ignoredFailureTypes = Collections.emptySet();
+    @GridToStringInclude
+    private Set<FailureType> ignoredFailureTypes = Collections.emptySet();
 
     /** {@inheritDoc} */
     @Override public void setIgnoredFailureTypes(Set<FailureType> failureTypes) {
@@ -38,7 +40,7 @@ public abstract class AbstractFailureHandler implements FailureHandler {
     /**
      * Returns unmodifiable set of ignored failure types.
      */
-    protected Set<FailureType> getIgnoredFailureTypes() {
+    public Set<FailureType> getIgnoredFailureTypes() {
         return ignoredFailureTypes;
     }
 
@@ -53,11 +55,10 @@ public abstract class AbstractFailureHandler implements FailureHandler {
      * @see #setIgnoredFailureTypes(Set).
      * @see FailureHandler#onFailure(Ignite, FailureContext).
      */
-    public abstract boolean handle(Ignite ignite, FailureContext failureCtx);
+    protected abstract boolean handle(Ignite ignite, FailureContext failureCtx);
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return getClass().getName() + " [ignoredFailureTypes=(" +
-            ignoredFailureTypes.stream().map(Enum::toString).collect(Collectors.joining(",")) + ")]";
+        return S.toString(AbstractFailureHandler.class, this);
     }
 }

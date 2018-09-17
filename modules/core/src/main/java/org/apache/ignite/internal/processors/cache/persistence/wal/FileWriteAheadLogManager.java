@@ -1759,8 +1759,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         toArchive = lastAbsArchivedIdx + 1;
                     }
 
-                    attemptOnIdle(cctx.gridConfig().getFailureDetectionTimeout() / 2);
-
                     if (stopped)
                         break;
 
@@ -1800,6 +1798,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                                 res.getDstArchiveFile())
                         );
                     }
+
+                    onIdle();
                 }
             }
             catch (InterruptedException t) {
@@ -3318,6 +3318,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             try {
                 while (!isCancelled()) {
+                    onIdle();
+
                     while (waiters.isEmpty()) {
                         if (!isCancelled()) {
                             blockingSectionBegin();
@@ -3335,8 +3337,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             return;
                         }
                     }
-
-                    attemptOnIdle(cctx.gridConfig().getFailureDetectionTimeout() / 2);
 
                     Long pos = null;
 

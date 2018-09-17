@@ -215,7 +215,9 @@ public class WorkersRegistry implements GridWorkerListener {
             }
         }
         finally {
-            lastChecker.set(Thread.currentThread());
+            boolean set = lastChecker.compareAndSet(null, Thread.currentThread());
+
+            assert set;
         }
     }
 }

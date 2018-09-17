@@ -148,7 +148,7 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
                     if (!expiredRemains)
                         U.sleep(CLEANUP_WORKER_SLEEP_INTERVAL);
 
-                    attemptOnIdle(cctx.gridConfig().getFailureDetectionTimeout() / 2);
+                    onIdle();
                 }
             }
             catch (Throwable t) {
