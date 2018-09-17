@@ -71,7 +71,6 @@ import igniteUiAceDocker from './directives/ui-ace-docker/ui-ace-docker.directiv
 import igniteUiAceTabs from './directives/ui-ace-tabs.directive';
 import igniteRetainSelection from './directives/retain-selection.directive';
 import btnIgniteLink from './directives/btn-ignite-link';
-import exposeInput from './components/expose-ignite-form-field-control';
 
 // Services.
 import ChartColors from './services/ChartColors.service';
@@ -148,6 +147,7 @@ import progressLine from './components/progress-line';
 import formField from './components/form-field';
 import igniteChart from './components/ignite-chart';
 import igniteChartSelector from './components/ignite-chart-series-selector';
+import igniteStatus from './components/ignite-status';
 
 import pageProfile from './components/page-profile';
 import pagePasswordChanged from './components/page-password-changed';
@@ -245,7 +245,6 @@ export default angular.module('ignite-console', [
     connectedClustersDialog.name,
     igniteListOfRegisteredUsers.name,
     pageProfile.name,
-    exposeInput.name,
     pageLanding.name,
     pagePasswordChanged.name,
     pagePasswordReset.name,
@@ -258,10 +257,11 @@ export default angular.module('ignite-console', [
     passwordVisibility.name,
     igniteChart.name,
     igniteChartSelector.name,
+    igniteStatus.name,
     progressLine.name,
     formField.name
 ])
-.service($exceptionHandler.name, $exceptionHandler)
+.service('$exceptionHandler', $exceptionHandler)
 // Directives.
 .directive(...igniteAutoFocus)
 .directive(...igniteBsAffixUpdate)
@@ -290,7 +290,7 @@ export default angular.module('ignite-console', [
 .service('SqlTypes', SqlTypes)
 .service(...ChartColors)
 .service(...IgniteConfirm)
-.service(Confirm.name, Confirm)
+.service('Confirm', Confirm)
 .service('IgniteConfirmBatch', ConfirmBatch)
 .service(...CopyToClipboard)
 .service(...Countries)
@@ -305,7 +305,7 @@ export default angular.module('ignite-console', [
 .service(...UnsavedChangesGuard)
 .service('IgniteActivitiesUserDialog', IgniteActivitiesUserDialog)
 .service('Caches', Caches)
-.service(CSV.name, CSV)
+.service('CSV', CSV)
 .service('IGFSs', IGFSs)
 .service('Models', Models)
 // Filters.

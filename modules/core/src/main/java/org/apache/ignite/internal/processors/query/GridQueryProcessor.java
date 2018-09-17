@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
@@ -1752,15 +1753,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cacheIds Cache IDs.
      * @return Future that will be completed when rebuilding is finished.
      */
-    public IgniteInternalFuture<?> rebuildIndexesFromHash(Collection<Integer> cacheIds) {
+    public IgniteInternalFuture<?> rebuildIndexesFromHash(Set<Integer> cacheIds) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to rebuild indexes from hash (grid is stopping).");
+
+        // Because of alt type ids, there can be few entries in 'types' for a single cache.
+        // In order to avoid processing a cache more than once, let's track processed names.
+        Set<String> processedCacheNames = new HashSet<>();
 
         try {
             GridCompoundFuture<Object, ?> fut = new GridCompoundFuture<Object, Object>();
 
             for (Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> e : types.entrySet()) {
-                if (cacheIds.contains(CU.cacheId(e.getKey().cacheName())))
+                if (cacheIds.contains(CU.cacheId(e.getKey().cacheName())) &&
+                    processedCacheNames.add(e.getKey().cacheName()))
                     fut.add(rebuildIndexesFromHash(e.getKey().cacheName(), e.getValue()));
             }
 
@@ -2040,6 +2046,32 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     *
+     * @param cctx Cache context.
+     * @param cacheIds Involved cache ids.
+     * @param parts Partitions.
+     * @param schema Schema name.
+     * @param qry Query string.
+     * @param params Query parameters.
+     * @param flags Flags.
+     * @param pageSize Fetch page size.
+     * @param timeout Timeout.
+     * @param topVer Topology version.
+     * @param mvccSnapshot MVCC snapshot.
+     * @param cancel Query cancel object.
+     * @return Cursor over entries which are going to be changed.
+     * @throws IgniteCheckedException If failed.
+     */
+    public UpdateSourceIterator<?> prepareDistributedUpdate(GridCacheContext<?, ?> cctx, int[] cacheIds,
+        int[] parts, String schema, String qry, Object[] params, int flags, int pageSize, int timeout,
+        AffinityTopologyVersion topVer, MvccSnapshot mvccSnapshot,
+        GridQueryCancel cancel) throws IgniteCheckedException {
+        checkxEnabled();
+
+        return idx.prepareDistributedUpdate(cctx, cacheIds, parts, schema, qry, params, flags, pageSize, timeout, topVer, mvccSnapshot, cancel);
+    }
+
+    /**
      * Query SQL fields.
      *
      * @param qry Query.
@@ -2079,7 +2111,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         final boolean failOnMultipleStmts) {
         checkxEnabled();
 
-        validateSqlFieldsQuery(qry);
+        validateSqlFieldsQuery(qry, ctx, cctx);
 
         if (!ctx.state().publicApiActiveState(true)) {
             throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
@@ -2104,7 +2136,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     GridQueryCancel cancel = new GridQueryCancel();
 
                     List<FieldsQueryCursor<List<?>>> res =
-                        idx.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, cancel);
+                        idx.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, null, cancel);
 
                     if (cctx != null)
                         sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx);
@@ -2129,13 +2161,31 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * Validate SQL fields query.
      *
      * @param qry Query.
+     * @param ctx Kernal context.
+     * @param cctx Cache context.
      */
-    private static void validateSqlFieldsQuery(SqlFieldsQuery qry) {
+    private static void validateSqlFieldsQuery(SqlFieldsQuery qry, GridKernalContext ctx,
+        @Nullable GridCacheContext<?, ?> cctx) {
         if (qry.isReplicatedOnly() && qry.getPartitions() != null)
             throw new CacheException("Partitions are not supported in replicated only mode.");
 
         if (qry.isDistributedJoins() && qry.getPartitions() != null)
             throw new CacheException("Using both partitions and distributed JOINs is not supported for the same query");
+
+        if (qry.isLocal() && ctx.clientNode() && (cctx == null || cctx.config().getCacheMode() != CacheMode.LOCAL))
+            throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
+    }
+
+    /**
+     * Validate SQL query.
+     *
+     * @param qry Query.
+     * @param ctx Kernal context.
+     * @param cctx Cache context.
+     */
+    private static void validateSqlQuery(SqlQuery qry, GridKernalContext ctx, GridCacheContext<?, ?> cctx) {
+        if (qry.isLocal() && ctx.clientNode() && cctx.config().getCacheMode() != CacheMode.LOCAL)
+            throw new CacheException("Execution of local SqlQuery on client node disallowed.");
     }
 
     /**
@@ -2206,6 +2256,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public <K, V> QueryCursor<Cache.Entry<K,V>> querySql(final GridCacheContext<?,?> cctx, final SqlQuery qry,
         boolean keepBinary) {
+        validateSqlQuery(qry, ctx, cctx);
+
         if (qry.isReplicatedOnly() && qry.getPartitions() != null)
             throw new CacheException("Partitions are not supported in replicated only mode.");
 
@@ -2519,15 +2571,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * @param cctx Cache context.
-     * @param val Row.
+     * @param row Row removed from cache.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void remove(GridCacheContext cctx, CacheDataRow val)
+    public void remove(GridCacheContext cctx, CacheDataRow row)
         throws IgniteCheckedException {
-        assert val != null;
+        assert row != null;
 
         if (log.isDebugEnabled())
-            log.debug("Remove [cacheName=" + cctx.name() + ", key=" + val.key()+ ", val=" + val.value() + "]");
+            log.debug("Remove [cacheName=" + cctx.name() + ", key=" + row.key()+ ", val=" + row.value() + "]");
 
         if (idx == null)
             return;
@@ -2538,14 +2590,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         try {
             QueryTypeDescriptorImpl desc = typeByValue(cctx.name(),
                 cctx.cacheObjectContext(),
-                val.key(),
-                val.value(),
+                row.key(),
+                row.value(),
                 false);
 
             if (desc == null)
                 return;
 
-            idx.remove(cctx, desc, val);
+                idx.remove(cctx, desc, row);
         }
         finally {
             busyLock.leaveBusy();
