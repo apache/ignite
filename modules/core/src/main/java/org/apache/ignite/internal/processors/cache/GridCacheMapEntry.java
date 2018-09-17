@@ -1229,7 +1229,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 IgniteInternalFuture<?> lockFut = cctx.kernalContext().coordinators().waitFor(cctx, lockVer);
 
                 lockFut.listen(new MvccRemoveLockListener(tx, this, affNodeId, topVer, updateCntr, mvccVer, needHistory,
-                    resFut));
+                    resFut, retVal, filter));
 
                 return new GridCacheUpdateTxResult(false, resFut);
             }
@@ -4972,6 +4972,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private final GridFutureAdapter<GridCacheUpdateTxResult> resFut;
 
         /** */
+        private final boolean needVal;
+
+        /** */
+        private final CacheEntryPredicate filter;
+
+        /** */
         private GridCacheMapEntry entry;
 
         /** */
@@ -4982,7 +4988,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             Long updateCntr,
             MvccSnapshot mvccVer,
             boolean needHistory,
-            GridFutureAdapter<GridCacheUpdateTxResult> resFut) {
+            GridFutureAdapter<GridCacheUpdateTxResult> resFut,
+            boolean retVal,
+            CacheEntryPredicate filter) {
             this.tx = tx;
             this.entry = entry;
             this.topVer = topVer;
@@ -4991,6 +4999,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             this.updateCntr = updateCntr;
             this.needHistory = needHistory;
             this.resFut = resFut;
+            this.needVal = retVal;
+            this.filter = filter;
         }
 
         /** {@inheritDoc} */
@@ -5023,7 +5033,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 cctx.shared().database().checkpointReadLock();
 
                 try {
-                    res = cctx.offheap().mvccRemove(entry, mvccVer, tx.local(), needHistory, null, false);
+                    res = cctx.offheap().mvccRemove(entry, mvccVer, tx.local(), needHistory, filter, needVal);
                 }
                 finally {
                     cctx.shared().database().checkpointReadUnlock();
