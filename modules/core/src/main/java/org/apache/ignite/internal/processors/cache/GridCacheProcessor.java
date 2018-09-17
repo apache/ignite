@@ -1500,7 +1500,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridCacheDrManager drMgr = pluginMgr.createComponent(GridCacheDrManager.class);
         CacheStoreManager storeMgr = pluginMgr.createComponent(CacheStoreManager.class);
 
-        storeMgr.initialize(cfgStore, sesHolders);
+        if (cfgStore == null)
+            storeMgr.initialize(cfgStore, sesHolders);
+        else
+            initializationProtector.protect(
+                cfgStore,
+                () -> storeMgr.initialize(cfgStore, sesHolders)
+            );
 
         GridCacheContext<?, ?> cacheCtx = new GridCacheContext(
             ctx,
