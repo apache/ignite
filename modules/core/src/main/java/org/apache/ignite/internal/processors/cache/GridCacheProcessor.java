@@ -35,7 +35,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
-import javax.cache.expiry.EternalExpiryPolicy;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -166,7 +165,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTR
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -279,6 +278,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         throws IgniteCheckedException {
         CU.initializeConfigDefaults(log, cfg, cacheObjCtx);
 
+        ctx.coordinators().preProcessCacheConfiguration(cfg);
         ctx.igfsHelper().preProcessCacheConfiguration(cfg);
     }
 
@@ -526,6 +526,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         ctx.igfsHelper().validateCacheConfiguration(cc);
+        ctx.coordinators().validateCacheConfiguration(cc);
 
         if (cc.getAtomicityMode() == ATOMIC)
             assertParameter(cc.getTransactionManagerLookupClassName() == null,
@@ -543,24 +544,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             throw new IgniteCheckedException("Using cache group names reserved for datastructures is not allowed for " +
                 "other cache types [cacheName=" + cc.getName() + ", groupName=" + cc.getGroupName() +
                 ", cacheType=" + cacheType + "]");
-
-        if (cc.getAtomicityMode() == TRANSACTIONAL && c.isMvccEnabled()) {
-            if (cc.getCacheStoreFactory() != null) {
-                throw new IgniteCheckedException("Transactional cache may not have a third party cache store when " +
-                    "MVCC is enabled.");
-            }
-
-            if (cc.getExpiryPolicyFactory() != null && !(cc.getExpiryPolicyFactory().create() instanceof
-                EternalExpiryPolicy)) {
-                throw new IgniteCheckedException("Transactional cache may not have expiry policy when " +
-                    "MVCC is enabled.");
-            }
-
-            if (cc.getInterceptor() != null) {
-                throw new IgniteCheckedException("Transactional cache may not have an interceptor when " +
-                    "MVCC is enabled.");
-            }
-        }
 
         // Make sure we do not use sql schema for system views.
         if (ctx.query().moduleEnabled()) {
@@ -828,14 +811,42 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (CU.isPersistenceEnabled(ctx.config()) && ctx.cache().context().pageStore() != null) {
             Map<String, StoredCacheData> storedCaches = ctx.cache().context().pageStore().readCacheConfigurations();
 
-            if (!F.isEmpty(storedCaches))
+            if (!F.isEmpty(storedCaches)) {
                 for (StoredCacheData storedCacheData : storedCaches.values()) {
                     String cacheName = storedCacheData.config().getName();
 
                     //Ignore stored caches if it already added by static config(static config has higher priority).
                     if (!caches.containsKey(cacheName))
                         addStoredCache(caches, storedCacheData, cacheName, cacheType(cacheName), false);
+                    else {
+                        CacheConfiguration cfg = caches.get(cacheName).cacheData().config();
+                        CacheConfiguration cfgFromStore = storedCacheData.config();
+
+                        validateCacheConfigurationOnRestore(cfg, cfgFromStore);
+                    }
                 }
+            }
+        }
+    }
+
+    /**
+     * Validates cache configuration against stored cache configuration when persistence is enabled.
+     *
+     * @param cfg Configured cache configuration.
+     * @param cfgFromStore Stored cache configuration
+     * @throws IgniteCheckedException If validation failed.
+     */
+    private void validateCacheConfigurationOnRestore(CacheConfiguration cfg, CacheConfiguration cfgFromStore)
+        throws IgniteCheckedException {
+        assert cfg != null && cfgFromStore != null;
+
+        if ((cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT ||
+            cfgFromStore.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+            && cfg.getAtomicityMode() != cfgFromStore.getAtomicityMode()) {
+            throw new IgniteCheckedException("Cannot start cache. Statically configured atomicity mode differs from " +
+                "previously stored configuration. Please check your configuration: [cacheName=" + cfg.getName() +
+                ", configuredAtomicityMode=" + cfg.getAtomicityMode() +
+                ", storedAtomicityMode=" + cfgFromStore.getAtomicityMode() + "]");
         }
     }
 
@@ -1463,6 +1474,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         pluginMgr.validate();
 
+        if (cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+            sharedCtx.coordinators().ensureStarted();
+
         sharedCtx.jta().registerCache(cfg);
 
         // Skip suggestions for internal caches.
@@ -1533,7 +1547,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         switch (cfg.getCacheMode()) {
             case LOCAL: {
                 switch (cfg.getAtomicityMode()) {
-                    case TRANSACTIONAL: {
+                    case TRANSACTIONAL:
+                    case TRANSACTIONAL_SNAPSHOT: {
                         cache = new GridLocalCache(cacheCtx);
 
                         break;
@@ -1555,7 +1570,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             case REPLICATED: {
                 if (nearEnabled) {
                     switch (cfg.getAtomicityMode()) {
-                        case TRANSACTIONAL: {
+                        case TRANSACTIONAL:
+                        case TRANSACTIONAL_SNAPSHOT: {
                             cache = new GridNearTransactionalCache(cacheCtx);
 
                             break;
@@ -1573,7 +1589,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
                 else {
                     switch (cfg.getAtomicityMode()) {
-                        case TRANSACTIONAL: {
+                        case TRANSACTIONAL:
+                        case TRANSACTIONAL_SNAPSHOT: {
                             cache = cacheCtx.affinityNode() ?
                                 new GridDhtColocatedCache(cacheCtx) :
                                 new GridDhtColocatedCache(cacheCtx, new GridNoStorageCacheMap());
@@ -1663,7 +1680,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridDhtCacheAdapter dht = null;
 
             switch (cfg.getAtomicityMode()) {
-                case TRANSACTIONAL: {
+                case TRANSACTIONAL:
+                case TRANSACTIONAL_SNAPSHOT: {
                     assert cache instanceof GridNearTransactionalCache;
 
                     GridNearTransactionalCache near = (GridNearTransactionalCache)cache;
@@ -3432,7 +3450,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     CacheConfiguration ccfg = req.startCacheConfiguration();
 
                     try {
-                        cachesInfo.validateStartCacheConfiguration(ccfg, req.cacheType());
+                        cachesInfo.validateStartCacheConfiguration(ccfg);
                     }
                     catch (IgniteCheckedException e) {
                         fut.onDone(e);
