@@ -617,7 +617,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     break;
 
                 case SET:
-                    iter = setIterator(qry);
+                    iter = sharedCacheSetIterator(qry);
 
                     break;
 
@@ -749,7 +749,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param qry Query.
      * @return Cache set items iterator.
      */
-    private GridCloseableIterator<IgniteBiTuple<K, V>> setIterator(
+    private GridCloseableIterator<IgniteBiTuple<K, V>> sharedCacheSetIterator(
         GridCacheQueryAdapter<?> qry) throws IgniteCheckedException {
         final GridSetQueryPredicate filter = (GridSetQueryPredicate)qry.scanFilter();
 
