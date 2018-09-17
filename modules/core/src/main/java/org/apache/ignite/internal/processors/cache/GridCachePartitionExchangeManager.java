@@ -322,6 +322,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.io().addCacheHandler(0, GridDhtPartitionsSingleMessage.class,
             new MessageHandler<GridDhtPartitionsSingleMessage>() {
                 @Override public void onMessage(final ClusterNode node, final GridDhtPartitionsSingleMessage msg) {
+                    GridDhtPartitionExchangeId exchangeId = msg.exchangeId();
+
+                    if (exchangeId == null && exchangeInProgress()) {
+                        if (log.isDebugEnabled())
+                            log.debug("Ignore single message without exchange id (there is exchange in progress) [nodeId=" + node.id() + "]");
+
+                        return;
+                    }
+
                     if (!crdInitFut.isDone() && !msg.restoreState()) {
                         GridDhtPartitionExchangeId exchId = msg.exchangeId();
 
@@ -2132,6 +2141,23 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         this.exchMergeTestWaitVer = null;
+    }
+
+    /**
+     * @return {@code True} If there is any exchange future in progress.
+     */
+    private boolean exchangeInProgress() {
+        GridDhtPartitionsExchangeFuture current = lastTopologyFuture();
+
+        if (current == null)
+            return false;
+
+        GridDhtTopologyFuture finished = lastFinishedFut.get();
+
+        if (finished == null || finished.initialVersion().compareTo(current.result()) > 0)
+            return true;
+
+        return false;
     }
 
     /**
