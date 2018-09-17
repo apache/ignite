@@ -444,7 +444,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
 
     /** */
     private static IgniteCache<?, ?> table(IgniteEx ignite) {
-        assert ignite.cachex("person").configuration().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL;
+        assert ignite.cachex("person").configuration().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
         assert ignite.cachex("person").configuration().getCacheMode() == CacheMode.REPLICATED;
 
         return ignite.cache("person");
@@ -458,7 +458,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
             "create table person(" +
             "  id int primary key," +
             "  name varchar" +
-            ") with \"atomicity=transactional,template=replicated,cache_name=person\""));
+            ") with \"atomicity=transactional_snapshot,template=replicated,cache_name=person\""));
 
         return table(ignite);
     }

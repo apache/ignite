@@ -23,10 +23,12 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.ExchangeContext;
@@ -43,8 +45,10 @@ public interface MvccProcessor extends GridProcessor {
      * @param evtType Event type.
      * @param nodes Current nodes.
      * @param topVer Topology version.
+     * @param customMsg Message
      */
-    void onDiscoveryEvent(int evtType, Collection<ClusterNode> nodes, long topVer);
+    void onDiscoveryEvent(int evtType, Collection<ClusterNode> nodes, long topVer,
+        @Nullable DiscoveryCustomMessage customMsg);
 
     /**
      * Exchange start callback.
@@ -71,6 +75,11 @@ public interface MvccProcessor extends GridProcessor {
     void processClientActiveQueries(UUID nodeId, @Nullable GridLongList activeQueries);
 
     /**
+     * @return Mvcc coordinator received from discovery event.
+     */
+    @Nullable MvccCoordinator assignedCoordinator();
+
+    /**
      * @return Coordinator.
      */
     @Nullable MvccCoordinator currentCoordinator();
@@ -81,11 +90,6 @@ public interface MvccProcessor extends GridProcessor {
      * @return Mvcc coordinator.
      */
     @Nullable MvccCoordinator currentCoordinator(AffinityTopologyVersion topVer);
-
-    /**
-     * @return Mvcc coordinator received from discovery event.
-     */
-    @Nullable MvccCoordinator coordinatorFromDiscoveryEvent();
 
     /**
      * @return Current coordinator node ID.
@@ -247,4 +251,32 @@ public interface MvccProcessor extends GridProcessor {
      * @param diagCtx Diagnostic request.
      */
     void dumpDebugInfo(IgniteLogger log, @Nullable IgniteDiagnosticPrepareContext diagCtx);
+
+    /**
+     * @return {@code True} if at least one cache with
+     * {@code CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT} mode is registered.
+     */
+    boolean mvccEnabled();
+
+    /**
+     * Pre-processes cache configuration before start.
+     *
+     * @param ccfg Cache configuration to pre-process.
+     */
+    void preProcessCacheConfiguration(CacheConfiguration ccfg);
+
+    /**
+     * Validates cache configuration before start.
+     *
+     * @param ccfg Cache configuration to validate.
+     * @throws IgniteCheckedException If validation failed.
+     */
+    void validateCacheConfiguration(CacheConfiguration ccfg) throws IgniteCheckedException;
+
+    /**
+     * Starts MVCC processor (i.e. initialises data structures and vacuum) if it has not been started yet.
+     *
+     * @throws IgniteCheckedException If failed to initialize.
+     */
+    void ensureStarted() throws IgniteCheckedException;
 }

@@ -23,6 +23,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Savepoint;
 import java.util.concurrent.Callable;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -67,8 +68,6 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
 
         cfg.setGridLogger(new GridStringLogger());
 
-        cfg.setMvccEnabled(true);
-
         return cfg;
     }
 
@@ -81,6 +80,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setName(name);
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
 
         return cfg;
     }

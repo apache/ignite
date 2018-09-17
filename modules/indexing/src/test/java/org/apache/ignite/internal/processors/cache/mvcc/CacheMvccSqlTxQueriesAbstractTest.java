@@ -1624,7 +1624,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
-        startGrid(getConfiguration("grid").setMvccVacuumTimeInterval(Integer.MAX_VALUE));
+        startGrid(getConfiguration("grid").setMvccVacuumFrequency(Integer.MAX_VALUE));
 
         Ignite client = startGrid(getConfiguration("client").setClientMode(true));
 
@@ -1696,7 +1696,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
-        Ignite node = startGrid(getConfiguration("grid").setMvccVacuumTimeInterval(100));
+        Ignite node = startGrid(getConfiguration("grid").setMvccVacuumFrequency(100));
 
         node.cluster().active(true);
 

@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 
@@ -57,6 +59,8 @@ public class CacheMvccProcessorTest extends CacheMvccAbstractTest {
         IgniteEx grid = startGrid(0);
 
         grid.cluster().active(true);
+
+        grid.createCache(new CacheConfiguration<>("test").setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT));
 
         MvccProcessorImpl mvccProcessor = mvccProcessor(grid);
 

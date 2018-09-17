@@ -87,7 +87,7 @@ public abstract class CacheMvccAbstractFeatureTest extends CacheMvccAbstractTest
     @Override protected void beforeTest() throws Exception {
         CacheConfiguration<Integer, Person> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
-        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
 
         ccfg.setIndexedTypes(Integer.class, Person.class);
 

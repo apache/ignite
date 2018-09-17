@@ -1492,6 +1492,8 @@ public class GridSqlQueryParser {
                     atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
                 else if (CacheAtomicityMode.ATOMIC.name().equalsIgnoreCase(val))
                     atomicityMode = CacheAtomicityMode.ATOMIC;
+                else if (CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT.name().equalsIgnoreCase(val))
+                    atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
                 else
                     throw new IgniteSQLException("Invalid value of \"" + PARAM_ATOMICITY + "\" parameter " +
                         "(should be either TRANSACTIONAL or ATOMIC): " + val, IgniteQueryErrorCode.PARSING);

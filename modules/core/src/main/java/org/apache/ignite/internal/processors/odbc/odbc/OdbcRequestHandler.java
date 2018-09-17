@@ -37,8 +37,9 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
-import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
@@ -148,10 +149,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
         log = ctx.log(getClass());
 
-        if (ctx.grid().configuration().isMvccEnabled())
-            worker = new OdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this, ctx);
-        else
-            worker = null;
+        // TODO IGNITE-9484 Do not create worker if there is a possibility to unbind TX from threads.
+        worker = new OdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this, ctx);
     }
 
     /** {@inheritDoc} */
@@ -162,7 +161,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
         OdbcRequest req = (OdbcRequest)req0;
 
-        if (worker == null)
+        if (!MvccUtils.mvccEnabled(ctx))
             return doHandle(req);
         else {
             GridFutureAdapter<ClientListenerResponse> fut = worker.process(req);

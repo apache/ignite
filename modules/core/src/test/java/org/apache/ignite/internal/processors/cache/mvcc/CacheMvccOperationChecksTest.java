@@ -34,7 +34,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
@@ -158,7 +158,7 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
             final CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>("cache");
 
             cfg.setCacheMode(cacheMode());
-            cfg.setAtomicityMode(TRANSACTIONAL);
+            cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
             try (IgniteCache<Integer, String> cache = node.createCache(cfg)) {
                 GridTestUtils.assertThrows(log, new Callable<Void>() {
