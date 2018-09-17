@@ -306,7 +306,7 @@ class BinaryUtils {
         const BinaryObject = require('../BinaryObject');
         const objectType = typeof object;
         if (object === null) {
-            return BinaryUtils.TYPE_CODE.NULL;
+            throw Errors.IgniteClientError.unsupportedTypeError(BinaryUtils.TYPE_CODE.NULL);
         }
         else if (objectType === 'number') {
             return BinaryUtils.TYPE_CODE.DOUBLE;
