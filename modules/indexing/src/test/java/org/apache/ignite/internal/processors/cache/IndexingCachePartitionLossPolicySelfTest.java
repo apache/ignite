@@ -71,14 +71,12 @@ public class IndexingCachePartitionLossPolicySelfTest extends IgniteCachePartiti
         // 1. Check query against all partitions.
         validateQuery0(safe, node, false);
 
-        // TODO: https://issues.apache.org/jira/browse/IGNITE-7039
         if (execLocQry)
             validateQuery0(safe, node, true);
 
         // 2. Check query against LOST partition.
         validateQuery0(safe, node, false, part);
 
-        // TODO: https://issues.apache.org/jira/browse/IGNITE-7039
         if (execLocQry)
             validateQuery0(safe, node, true, part);
 

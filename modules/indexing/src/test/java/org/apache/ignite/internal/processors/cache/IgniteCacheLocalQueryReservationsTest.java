@@ -55,8 +55,8 @@ public class IgniteCacheLocalQueryReservationsTest extends GridCommonAbstractTes
     /** Timeout */
     private static final long TIMEOUT_MS = 30_000L;
 
-    /** Cache size. Should be quite enough for a long time of query execution (hundreds of milliseconds).*/
-    private static final int CACHE_SIZE = 2_000_000;
+    /** Cache size. Should be quite enough for a long time of query execution (hundreds of milliseconds). */
+    private static final int CACHE_SIZE = 1_000_000;
 
     /**
      * Test for the local {@link SqlFieldsQuery} reservations.
@@ -106,8 +106,6 @@ public class IgniteCacheLocalQueryReservationsTest extends GridCommonAbstractTes
         checkEagerCursorClosingReservations(qry);
     }
 
-
-
     /**
      * Checks if a query partitions reservations occurs.
      *
@@ -150,7 +148,7 @@ public class IgniteCacheLocalQueryReservationsTest extends GridCommonAbstractTes
         boolean shouldBeReserved = qry instanceof SqlFieldsQuery;
 
         final Iterator<List<?>> it = checkReservationsAfterClosure(shouldBeReserved, parts,
-            "Partitions should be " + (shouldBeReserved ? "reserved" : "released" ) + " when obtaining iterator.",
+            "Partitions should be " + (shouldBeReserved ? "reserved" : "released") + " when obtaining iterator.",
             new IgniteClosure<Object, Iterator<List<?>>>() {
                 @Override public Iterator<List<?>> apply(Object o) {
                     return cursor.iterator();
@@ -187,8 +185,8 @@ public class IgniteCacheLocalQueryReservationsTest extends GridCommonAbstractTes
     }
 
     /**
-     * Checks if reservations have been released after the cursor
-     * has been closed eagerly (before the iterator obtaining)
+     * Checks if reservations have been released after the cursor has been closed eagerly (before the iterator
+     * obtaining)
      *
      * @param qry Query.
      * @throws Exception If failed.
@@ -249,7 +247,7 @@ public class IgniteCacheLocalQueryReservationsTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     private <E, R> R checkReservationsAfterClosure(final boolean shouldBeReserved,
-        final List<GridDhtLocalPartition> parts, final String msg, final IgniteClosure<E, R> clo)  throws Exception {
+        final List<GridDhtLocalPartition> parts, final String msg, final IgniteClosure<E, R> clo) throws Exception {
         final CyclicBarrier crd = new CyclicBarrier(2);
 
         Callable<Boolean> reservationsChecker = new Callable<Boolean>() {
@@ -261,7 +259,8 @@ public class IgniteCacheLocalQueryReservationsTest extends GridCommonAbstractTes
                 if (shouldBeReserved) {
                     if (!isReserved(parts, msg))
                         return false;
-                } else {
+                }
+                else {
                     if (!isReleased(parts, msg))
                         return false;
                 }
@@ -305,7 +304,7 @@ public class IgniteCacheLocalQueryReservationsTest extends GridCommonAbstractTes
 
         return GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                for (Iterator<GridDhtLocalPartition> partsIt = partsSet.iterator(); partsIt.hasNext();) {
+                for (Iterator<GridDhtLocalPartition> partsIt = partsSet.iterator(); partsIt.hasNext(); ) {
                     GridDhtLocalPartition part = partsIt.next();
 
                     if (part.reservations() == 1)
@@ -351,6 +350,12 @@ public class IgniteCacheLocalQueryReservationsTest extends GridCommonAbstractTes
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+        try {
+            Thread.sleep(3000);
+        }
+        catch (InterruptedException e){
+            // no op
+        }
     }
 
     /**
@@ -360,9 +365,9 @@ public class IgniteCacheLocalQueryReservationsTest extends GridCommonAbstractTes
         CacheConfiguration<Integer, Person> cacheConf = new CacheConfiguration<>(PERSON_CACHE);
 
         cacheConf.setCacheMode(CacheMode.PARTITIONED)
-        .setBackups(0)
-        .setIndexedTypes(Integer.class, Person.class)
-        .setName(PERSON_CACHE);
+            .setBackups(0)
+            .setIndexedTypes(Integer.class, Person.class)
+            .setName(PERSON_CACHE);
 
         grid(0).createCache(cacheConf);
     }
@@ -376,7 +381,7 @@ public class IgniteCacheLocalQueryReservationsTest extends GridCommonAbstractTes
         IgniteDataStreamer streamer = grid(0).dataStreamer(PERSON_CACHE);
 
         for (int i = 0; i < CACHE_SIZE; i++)
-            streamer.addData(i, new Person("p_"+ i, i));
+            streamer.addData(i, new Person("p_" + i, i));
 
         streamer.flush();
 

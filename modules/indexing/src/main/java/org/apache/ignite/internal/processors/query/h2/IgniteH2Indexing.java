@@ -2400,7 +2400,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSQLException("Failed to execute local statement [stmt=" + sqlQry +
-                ", params=" + Arrays.deepToString(qry.getArgs()) + "]", e);
+                ", params=" + Arrays.deepToString(qry.getArgs()) + ", reason="+e.getMessage()+"]", e);
         }
     }
 
