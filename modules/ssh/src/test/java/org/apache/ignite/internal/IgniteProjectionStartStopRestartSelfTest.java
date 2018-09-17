@@ -176,6 +176,8 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         }, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         startedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
+
+        log.info("Ignition has started.");
     }
 
     /** {@inheritDoc} */
@@ -217,6 +219,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testStartOneNode() throws Exception {
+        log.info("Test case started.");
         joinedLatch = new CountDownLatch(1);
 
         Collection<ClusterStartNodeResult> res =
@@ -245,6 +248,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testStartThreeNodes() throws Exception {
+        log.info("Test case started.");
         joinedLatch = new CountDownLatch(3);
 
         Collection<ClusterStartNodeResult> res =
@@ -273,6 +277,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testStartThreeNodesAndDoEmptyCall() throws Exception {
+        log.info("Test case started.");
         joinedLatch = new CountDownLatch(3);
 
         Collection<ClusterStartNodeResult> res =
@@ -312,6 +317,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testStartThreeNodesAndTryToStartOneNode() throws Exception {
+        log.info("Test case started.");
         joinedLatch = new CountDownLatch(3);
 
         Collection<ClusterStartNodeResult> res =
@@ -351,6 +357,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testStartFiveNodesInTwoCalls() throws Exception {
+        log.info("Test case started.");
         joinedLatch = new CountDownLatch(3);
 
         Collection<ClusterStartNodeResult> res =
@@ -401,6 +408,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testStartFiveWithTwoSpecs() throws Exception {
+        log.info("Test case started.");
         joinedLatch = new CountDownLatch(5);
 
         Collection<ClusterStartNodeResult> res =
@@ -430,6 +438,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testStartThreeNodesAndRestart() throws Exception {
+        log.info("Test case started.");
         joinedLatch = new CountDownLatch(3);
 
         Collection<ClusterStartNodeResult> res =
@@ -482,6 +491,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testCustomScript() throws Exception {
+        log.info("Test case started.");
         joinedLatch = new CountDownLatch(1);
 
         String script = U.isWindows() ? CUSTOM_SCRIPT_WIN : CUSTOM_SCRIPT_LINUX;
@@ -516,6 +526,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testStopNodes() throws Exception {
+        log.info("Test case started.");
         joinedLatch = new CountDownLatch(3);
 
         Collection<ClusterStartNodeResult> res =
@@ -549,6 +560,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testStopNodesFiltered() throws Exception {
+        log.info("Test case started.");
         joinedLatch = new CountDownLatch(2);
 
         Collection<ClusterStartNodeResult> res =
@@ -604,6 +616,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testStopNodeById() throws Exception {
+        log.info("Test case started.");
         joinedLatch = new CountDownLatch(3);
 
         Collection<ClusterStartNodeResult> res =
@@ -637,6 +650,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testStopNodesByIds() throws Exception {
+        log.info("Test case started.");
         joinedLatch = new CountDownLatch(3);
 
         Collection<ClusterStartNodeResult> res =
@@ -677,6 +691,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testRestartNodes() throws Exception {
+        log.info("Test case started.");
         joinedLatch = new CountDownLatch(3);
 
         Collection<ClusterStartNodeResult> res =
@@ -712,6 +727,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testRestartNodesFiltered() throws Exception {
+        log.info("Test case started.");
         joinedLatch = new CountDownLatch(2);
 
         Collection<ClusterStartNodeResult> res =
@@ -770,6 +786,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testRestartNodeById() throws Exception {
+        log.info("Test case started.");
         joinedLatch = new CountDownLatch(3);
 
         Collection<ClusterStartNodeResult> res =
@@ -805,6 +822,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testRestartNodesByIds() throws Exception {
+        log.info("Test case started.");
         joinedLatch = new CountDownLatch(3);
 
         Collection<ClusterStartNodeResult> res =
