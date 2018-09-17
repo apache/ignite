@@ -293,7 +293,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 cacheId,
                 partitions,
                 tracker,
-                cctx.cacheContext(cacheId).config().isEncryptionEnabled()
+                cctx.cacheContext(cacheId) != null && cctx.cacheContext(cacheId).config().isEncryptionEnabled()
             );
 
             CacheStoreHolder old = idxCacheStores.put(cacheId, holder);

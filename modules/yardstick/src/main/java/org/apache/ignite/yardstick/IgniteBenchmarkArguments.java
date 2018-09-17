@@ -19,19 +19,16 @@ package org.apache.ignite.yardstick;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParametersDelegate;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.ignite.yardstick.cache.IgniteStreamerBenchmark;
 import org.apache.ignite.yardstick.upload.UploadBenchmarkArguments;
 import org.jetbrains.annotations.Nullable;
@@ -267,17 +264,6 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-stbs", "--streamerBufSize"}, description = "Data streamer buffer size")
     private int streamerBufSize = IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE;
-
-    /** */
-    @Parameter(names = {"-mvcc", "--mvcc"}, description = "Enable MVCC for cache")
-    private boolean mvcc;
-
-    /**
-     * @return {@code True} if need enable cache mvcc (see {@link CacheConfiguration#isMvccEnabled()}).
-     */
-    public boolean mvccEnabled() {
-        return mvcc;
-    }
 
     /** */
     @Parameter(names = {"-sqlr", "--sqlRange"}, description = "Result set size")

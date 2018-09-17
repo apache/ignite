@@ -66,13 +66,35 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
     private long physicalMemSz;
 
     /** */
+    private int pageSize;
+
+    /** */
     private long cpBufPages;
 
     /** */
     private long cpBufSz;
 
     /** */
-    private int pageSize;
+    private long cpUsedBufPages;
+
+    /** */
+    private long cpUsedBufSz;
+
+
+    /** */
+    private long pagesRead;
+
+    /** */
+    private long pagesWritten;
+
+    /** */
+    private long pagesReplaced;
+
+    /** */
+    private long offHeapSz;
+
+    /** */
+    private long offHeapUsedSz;
 
     /**
      * Default constructor.
@@ -96,9 +118,20 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
         physicalMemoryPages = m.getPhysicalMemoryPages();
         totalAllocatedSz = m.getTotalAllocatedSize();
         physicalMemSz = m.getPhysicalMemorySize();
+
+        pageSize = m.getPageSize();
+
         cpBufPages = m.getUsedCheckpointBufferPages();
         cpBufSz = m.getUsedCheckpointBufferSize();
-        pageSize = m.getPageSize();
+        cpUsedBufPages = m.getUsedCheckpointBufferPages();
+        cpUsedBufSz = m.getUsedCheckpointBufferSize();
+
+        pagesRead = m.getPagesRead();
+        pagesWritten = m.getPagesWritten();
+        pagesReplaced = m.getPagesReplaced();
+
+        offHeapSz = m.getOffHeapSize();
+        offHeapUsedSz = m.getOffheapUsedSize();
     }
 
     /**
@@ -202,7 +235,7 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return V2;
+        return V3;
     }
 
     /** {@inheritDoc} */
@@ -216,11 +249,24 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
         out.writeLong(dirtyPages);
         out.writeFloat(pagesReplaceRate);
         out.writeLong(physicalMemoryPages);
+
+        // V2
         out.writeLong(totalAllocatedSz);
         out.writeLong(physicalMemSz);
         out.writeLong(cpBufPages);
         out.writeLong(cpBufSz);
         out.writeInt(pageSize);
+
+        // V3
+        out.writeLong(cpUsedBufPages);
+        out.writeLong(cpUsedBufSz);
+
+        out.writeLong(pagesRead);
+        out.writeLong(pagesWritten);
+        out.writeLong(pagesReplaced);
+
+        out.writeLong(offHeapSz);
+        out.writeLong(offHeapUsedSz);
     }
 
     /** {@inheritDoc} */
@@ -241,6 +287,18 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
             cpBufPages = in.readLong();
             cpBufSz = in.readLong();
             pageSize = in.readInt();
+        }
+
+        if (protoVer > V2) {
+            cpUsedBufPages = in.readLong();
+            cpUsedBufSz = in.readLong();
+
+            pagesRead = in.readLong();
+            pagesWritten = in.readLong();
+            pagesReplaced = in.readLong();
+
+            offHeapSz = in.readLong();
+            offHeapUsedSz = in.readLong();
         }
     }
 
