@@ -496,8 +496,11 @@ public class QueryUtils {
 
                     BinaryField field = mapper.affinityKeyField(keyType);
 
-                    if (field != null)
-                        affField = field.name();
+                    if (field != null) {
+                        // Affinity key have to be marked as an SQL field to be used in a query
+                        if (qryEntity.getKeyFields().contains(field.name()))
+                            affField = field.name();
+                    }
                 }
             }
 
