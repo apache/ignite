@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.rest.ChangeStateCommandHandlerTest;
 import org.apache.ignite.internal.processors.rest.ClientMemcachedProtocolSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticationWithCredsSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticationWithTokenSelfTest;
+import org.apache.ignite.internal.processors.rest.JettyRestProcessorGetAllAsArrayTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorSignedSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorUnsignedSelfTest;
 import org.apache.ignite.internal.processors.rest.RestBinaryProtocolSelfTest;
@@ -63,6 +64,7 @@ import org.apache.ignite.internal.processors.rest.TaskCommandHandlerSelfTest;
 import org.apache.ignite.internal.processors.rest.TcpRestUnmarshalVulnerabilityTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.TcpRestParserSelfTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolConnectSelfTest;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolGetAllAsArrayTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolServerSelfTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolStringSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
@@ -94,12 +96,14 @@ public class IgniteClientTestSuite extends TestSuite {
         suite.addTestSuite(JettyRestProcessorUnsignedSelfTest.class);
         suite.addTestSuite(JettyRestProcessorAuthenticationWithCredsSelfTest.class);
         suite.addTestSuite(JettyRestProcessorAuthenticationWithTokenSelfTest.class);
+        suite.addTestSuite(JettyRestProcessorGetAllAsArrayTest.class);
 
         // Test TCP rest processor with original memcache client.
         suite.addTestSuite(ClientMemcachedProtocolSelfTest.class);
 
         // Test TCP rest processor with original REDIS client.
         suite.addTestSuite(RedisProtocolStringSelfTest.class);
+        suite.addTestSuite(RedisProtocolGetAllAsArrayTest.class);
         suite.addTestSuite(RedisProtocolConnectSelfTest.class);
         suite.addTestSuite(RedisProtocolServerSelfTest.class);
 
