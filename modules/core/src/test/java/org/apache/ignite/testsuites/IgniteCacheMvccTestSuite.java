@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccIteratorWithCon
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccLocalEntriesWithConcurrentTransactionTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccOperationChecksTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccPartitionedCoordinatorFailoverTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccProcessorLazyStartTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccProcessorTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccReplicatedCoordinatorFailoverTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccScanQueryWithConcurrentTransactionTest;
@@ -61,6 +62,7 @@ public class IgniteCacheMvccTestSuite extends TestSuite {
         suite.addTestSuite(CacheMvccClusterRestartTest.class);
         suite.addTestSuite(CacheMvccPartitionedCoordinatorFailoverTest.class);
         suite.addTestSuite(CacheMvccReplicatedCoordinatorFailoverTest.class);
+        suite.addTestSuite(CacheMvccProcessorLazyStartTest.class);
 
         return suite;
     }
