@@ -1856,9 +1856,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (exchActions != null && err == null)
             exchActions.completeRequestFutures(cctx, null);
 
-        if (stateChangeExchange() && err == null)
-            cctx.kernalContext().state().onStateChangeExchangeDone(exchActions.stateChangeRequest());
-
         Map<T2<Integer, Integer>, Long> localReserved = partHistSuppliers.getReservations(cctx.localNodeId());
 
         if (localReserved != null) {
@@ -1907,6 +1904,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
 
+            boolean stateChangeExchange = stateChangeExchange();
+            StateChangeRequest stateChangeReq = exchActions.stateChangeRequest();
+
             exchActions = null;
 
             if (firstDiscoEvt instanceof DiscoveryCustomEvent)
@@ -1914,6 +1914,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (err == null) {
                 cctx.exchange().lastFinishedFuture(this);
+
+                if (stateChangeExchange)
+                    cctx.kernalContext().state().onStateChangeExchangeDone(stateChangeReq);
 
                 if (exchCtx != null && (exchCtx.events().hasServerLeft() || exchCtx.events().hasServerJoin())) {
                     ExchangeDiscoveryEvents evts = exchCtx.events();
