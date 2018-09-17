@@ -61,17 +61,19 @@ def scan(
      * `more`: bool, True if more data is available for subsequent
        ‘scan_cursor_get_page’ calls.
     """
-    class ScanQuery(Query):
-        op_code = OP_QUERY_SCAN
 
-    query_struct = ScanQuery([
-        ('hash_code', Int),
-        ('flag', Byte),
-        ('filter', Null),
-        ('page_size', Int),
-        ('partitions', Int),
-        ('local', Bool),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_QUERY_SCAN,
+        [
+            ('hash_code', Int),
+            ('flag', Byte),
+            ('filter', Null),
+            ('page_size', Int),
+            ('partitions', Int),
+            ('local', Bool),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -122,12 +124,13 @@ def scan_cursor_get_page(
        ‘scan_cursor_get_page’ calls.
     """
 
-    class ScanCursorGetPageQuery(Query):
-        op_code = OP_QUERY_SCAN_CURSOR_GET_PAGE
-
-    query_struct = ScanCursorGetPageQuery([
-        ('cursor', Long),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_QUERY_SCAN_CURSOR_GET_PAGE,
+        [
+            ('cursor', Long),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'cursor': cursor,
@@ -192,21 +195,22 @@ def sql(
     if query_args is None:
         query_args = []
 
-    class SQLQuery(Query):
-        op_code = OP_QUERY_SQL
-
-    query_struct = SQLQuery([
-        ('hash_code', Int),
-        ('flag', Byte),
-        ('table_name', String),
-        ('query_str', String),
-        ('query_args', AnyDataArray()),
-        ('distributed_joins', Bool),
-        ('local', Bool),
-        ('replicated_only', Bool),
-        ('page_size', Int),
-        ('timeout', Long),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_QUERY_SQL,
+        [
+            ('hash_code', Int),
+            ('flag', Byte),
+            ('table_name', String),
+            ('query_str', String),
+            ('query_args', AnyDataArray()),
+            ('distributed_joins', Bool),
+            ('local', Bool),
+            ('replicated_only', Bool),
+            ('page_size', Int),
+            ('timeout', Long),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -260,12 +264,13 @@ def sql_cursor_get_page(
        ‘sql_cursor_get_page’ calls.
     """
 
-    class SQLCursorGetPageQuery(Query):
-        op_code = OP_QUERY_SQL_CURSOR_GET_PAGE
-
-    query_struct = SQLCursorGetPageQuery([
-        ('cursor', Long),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_QUERY_SQL_CURSOR_GET_PAGE,
+        [
+            ('cursor', Long),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'cursor': cursor,
@@ -347,27 +352,28 @@ def sql_fields(
     if query_args is None:
         query_args = []
 
-    class SQLFieldsQuery(Query):
-        op_code = OP_QUERY_SQL_FIELDS
-
-    query_struct = SQLFieldsQuery([
-        ('hash_code', Int),
-        ('flag', Byte),
-        ('schema', String),
-        ('page_size', Int),
-        ('max_rows', Int),
-        ('query_str', String),
-        ('query_args', AnyDataArray()),
-        ('statement_type', StatementType),
-        ('distributed_joins', Bool),
-        ('local', Bool),
-        ('replicated_only', Bool),
-        ('enforce_join_order', Bool),
-        ('collocated', Bool),
-        ('lazy', Bool),
-        ('timeout', Long),
-        ('include_field_names', Bool),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_QUERY_SQL_FIELDS,
+        [
+            ('hash_code', Int),
+            ('flag', Byte),
+            ('schema', String),
+            ('page_size', Int),
+            ('max_rows', Int),
+            ('query_str', String),
+            ('query_args', AnyDataArray()),
+            ('statement_type', StatementType),
+            ('distributed_joins', Bool),
+            ('local', Bool),
+            ('replicated_only', Bool),
+            ('enforce_join_order', Bool),
+            ('collocated', Bool),
+            ('lazy', Bool),
+            ('timeout', Long),
+            ('include_field_names', Bool),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -427,12 +433,13 @@ def sql_fields_cursor_get_page(
        ‘sql_fields_cursor_get_page’ calls.
     """
 
-    class SQLFieldsCursorGetPageQuery(Query):
-        op_code = OP_QUERY_SQL_FIELDS_CURSOR_GET_PAGE
-
-    query_struct = SQLFieldsCursorGetPageQuery([
-        ('cursor', Long),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_QUERY_SQL_FIELDS_CURSOR_GET_PAGE,
+        [
+            ('cursor', Long),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'cursor': cursor,
@@ -480,12 +487,13 @@ def resource_close(
      non-zero status and an error description otherwise.
     """
 
-    class ResourceCloseQuery(Query):
-        op_code = OP_RESOURCE_CLOSE
-
-    query_struct = ResourceCloseQuery([
-        ('cursor', Long),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_RESOURCE_CLOSE,
+        [
+            ('cursor', Long),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'cursor': cursor,

@@ -70,13 +70,14 @@ def cache_get_configuration(
      the cache configuration parameters.
     """
 
-    class CacheGetConfigurationQuery(Query):
-        op_code = OP_CACHE_GET_CONFIGURATION
-
-    query_struct = CacheGetConfigurationQuery([
-        ('hash_code', Int),
-        ('flags', Byte),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_GET_CONFIGURATION,
+        [
+            ('hash_code', Int),
+            ('flags', Byte),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -112,12 +113,13 @@ def cache_create(connection: 'Connection', name: str, query_id=None, ) -> APIRes
      created successfully, non-zero status and an error description otherwise.
     """
 
-    class CacheCreateQuery(Query):
-        op_code = OP_CACHE_CREATE_WITH_NAME
-
-    query_struct = CacheCreateQuery([
-        ('cache_name', String),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_CREATE_WITH_NAME,
+        [
+            ('cache_name', String),
+        ],
+        query_id=query_id,
+    )
     _, send_buffer = query_struct.from_python({'cache_name': name})
     connection.send(send_buffer)
 
@@ -141,12 +143,13 @@ def cache_get_or_create(connection: 'Connection', name: str, query_id=None, ) ->
      created successfully, non-zero status and an error description otherwise.
     """
 
-    class CacheGetOrCreateQuery(Query):
-        op_code = OP_CACHE_GET_OR_CREATE_WITH_NAME
-
-    query_struct = CacheGetOrCreateQuery([
-        ('cache_name', String),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_GET_OR_CREATE_WITH_NAME,
+        [
+            ('cache_name', String),
+        ],
+        query_id=query_id,
+    )
     _, send_buffer = query_struct.from_python({'cache_name': name})
     connection.send(send_buffer)
 
@@ -171,12 +174,12 @@ def cache_destroy(
     :return: API result data object.
     """
 
-    class CacheDestroyQuery(Query):
-        op_code = OP_CACHE_DESTROY
-
-    query_struct = CacheDestroyQuery([
-        ('hash_code', Int),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_DESTROY,[
+            ('hash_code', Int),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -202,10 +205,7 @@ def cache_get_names(connection: 'Connection', query_id=None) -> APIResult:
      names, non-zero status and an error description otherwise.
     """
 
-    class CacheGetNamesQuery(Query):
-        op_code = OP_CACHE_GET_NAMES
-
-    query_struct = CacheGetNamesQuery(query_id=query_id)
+    query_struct = Query(OP_CACHE_GET_NAMES, query_id=query_id)
 
     _, send_buffer = query_struct.from_python()
     connection.send(send_buffer)
@@ -240,9 +240,6 @@ def cache_create_with_config(
      non-zero status and an error description otherwise.
     """
 
-    class CacheCreateWithConfigQuery(ConfigQuery):
-        op_code = OP_CACHE_CREATE_WITH_CONFIGURATION
-
     prop_types = {}
     prop_values = {}
     for i, prop_item in enumerate(cache_props.items()):
@@ -252,9 +249,13 @@ def cache_create_with_config(
         prop_values[prop_name] = prop_value
     prop_values['param_count'] = len(cache_props)
 
-    query_struct = CacheCreateWithConfigQuery([
-        ('param_count', Short),
-    ] + list(prop_types.items()), query_id=query_id)
+    query_struct = ConfigQuery(
+        OP_CACHE_CREATE_WITH_CONFIGURATION,
+        [
+            ('param_count', Short),
+        ] + list(prop_types.items()),
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python(prop_values)
     connection.send(send_buffer)
@@ -284,9 +285,6 @@ def cache_get_or_create_with_config(
      non-zero status and an error description otherwise.
     """
 
-    class CacheGetOrCreateWithConfigQuery(ConfigQuery):
-        op_code = OP_CACHE_GET_OR_CREATE_WITH_CONFIGURATION
-
     prop_types = {}
     prop_values = {}
     for i, prop_item in enumerate(cache_props.items()):
@@ -296,9 +294,13 @@ def cache_get_or_create_with_config(
         prop_values[prop_name] = prop_value
     prop_values['param_count'] = len(cache_props)
 
-    query_struct = CacheGetOrCreateWithConfigQuery([
-        ('param_count', Short),
-    ] + list(prop_types.items()), query_id=query_id)
+    query_struct = ConfigQuery(
+        OP_CACHE_GET_OR_CREATE_WITH_CONFIGURATION,
+        [
+            ('param_count', Short),
+        ] + list(prop_types.items()),
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python(prop_values)
     connection.send(send_buffer)

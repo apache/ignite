@@ -36,7 +36,7 @@ from .op_codes import *
 
 @attr.s
 class Query:
-    op_code = None
+    op_code = attr.ib(type=int)
     following = attr.ib(type=list, factory=list)
     query_id = attr.ib(type=int, default=None)
 

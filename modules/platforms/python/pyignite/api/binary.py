@@ -40,12 +40,13 @@ def get_binary_type(
     :return: API result data object.
     """
 
-    class GetBinaryTypeQuery(Query):
-        op_code = OP_GET_BINARY_TYPE
-
-    query_struct = GetBinaryTypeQuery([
-        ('type_id', Int),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_GET_BINARY_TYPE,
+        [
+            ('type_id', Int),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'type_id': entity_id(binary_type),
@@ -121,10 +122,6 @@ def put_binary_type(
      is generated,
     :return: API result data object.
     """
-
-    class PutBinaryTypeQuery(Query):
-        op_code = OP_PUT_BINARY_TYPE
-
     # prepare data
     if schema is None:
         schema = {}
@@ -177,24 +174,32 @@ def put_binary_type(
 
     # do query
     if is_enum:
-        query_struct = PutBinaryTypeQuery([
-            ('type_id', Int),
-            ('type_name', String),
-            ('affinity_key_field', String),
-            ('binary_fields', binary_fields_struct),
-            ('is_enum', Bool),
-            ('enums', enum_struct),
-            ('schema', schema_struct),
-        ], query_id=query_id)
+        query_struct = Query(
+            OP_PUT_BINARY_TYPE,
+            [
+                ('type_id', Int),
+                ('type_name', String),
+                ('affinity_key_field', String),
+                ('binary_fields', binary_fields_struct),
+                ('is_enum', Bool),
+                ('enums', enum_struct),
+                ('schema', schema_struct),
+            ],
+            query_id=query_id,
+        )
     else:
-        query_struct = PutBinaryTypeQuery([
-            ('type_id', Int),
-            ('type_name', String),
-            ('affinity_key_field', String),
-            ('binary_fields', binary_fields_struct),
-            ('is_enum', Bool),
-            ('schema', schema_struct),
-        ], query_id=query_id)
+        query_struct = Query(
+            OP_PUT_BINARY_TYPE,
+            [
+                ('type_id', Int),
+                ('type_name', String),
+                ('affinity_key_field', String),
+                ('binary_fields', binary_fields_struct),
+                ('is_enum', Bool),
+                ('schema', schema_struct),
+            ],
+            query_id=query_id,
+        )
 
     _, send_buffer = query_struct.from_python(data)
 

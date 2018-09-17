@@ -49,15 +49,16 @@ def cache_put(
      is written, non-zero status and an error description otherwise.
     """
 
-    class CachePutQuery(Query):
-        op_code = OP_CACHE_PUT
-
-    query_struct = CachePutQuery([
-        ('hash_code', Int),
-        ('flag', Byte),
-        ('key', key_hint or AnyDataObject),
-        ('value', value_hint or AnyDataObject),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_PUT,
+        [
+            ('hash_code', Int),
+            ('flag', Byte),
+            ('key', key_hint or AnyDataObject),
+            ('value', value_hint or AnyDataObject),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -100,14 +101,15 @@ def cache_get(
      retrieved on success, non-zero status and an error description on failure.
     """
 
-    class CacheGetQuery(Query):
-        op_code = OP_CACHE_GET
-
-    query_struct = CacheGetQuery([
-        ('hash_code', Int),
-        ('flag', Byte),
-        ('key', key_hint or AnyDataObject),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_GET,
+        [
+            ('hash_code', Int),
+            ('flag', Byte),
+            ('key', key_hint or AnyDataObject),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -150,14 +152,15 @@ def cache_get_all(
      on failure.
     """
 
-    class CacheGetAllQuery(Query):
-        op_code = OP_CACHE_GET_ALL
-
-    query_struct = CacheGetAllQuery([
-        ('hash_code', Int),
-        ('flag', Byte),
-        ('keys', AnyDataArray()),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_GET_ALL,
+        [
+            ('hash_code', Int),
+            ('flag', Byte),
+            ('keys', AnyDataArray()),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -201,14 +204,15 @@ def cache_put_all(
      are written, non-zero status and an error description otherwise.
     """
 
-    class CachePutAllQuery(Query):
-        op_code = OP_CACHE_PUT_ALL
-
-    query_struct = CachePutAllQuery([
-        ('hash_code', Int),
-        ('flag', Byte),
-        ('data', Map),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_PUT_ALL,
+        [
+            ('hash_code', Int),
+            ('flag', Byte),
+            ('data', Map),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -247,14 +251,15 @@ def cache_contains_key(
      non-zero status and an error description on failure.
     """
 
-    class CacheContainsKeyQuery(Query):
-        op_code = OP_CACHE_CONTAINS_KEY
-
-    query_struct = CacheContainsKeyQuery([
-        ('hash_code', Int),
-        ('flag', Byte),
-        ('key', key_hint or AnyDataObject),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_CONTAINS_KEY,
+        [
+            ('hash_code', Int),
+            ('flag', Byte),
+            ('key', key_hint or AnyDataObject),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -297,14 +302,15 @@ def cache_contains_keys(
      non-zero status and an error description on failure.
     """
 
-    class CacheContainsKeysQuery(Query):
-        op_code = OP_CACHE_CONTAINS_KEYS
-
-    query_struct = CacheContainsKeysQuery([
-        ('hash_code', Int),
-        ('flag', Byte),
-        ('keys', AnyDataArray()),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_CONTAINS_KEYS,
+        [
+            ('hash_code', Int),
+            ('flag', Byte),
+            ('keys', AnyDataArray()),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -352,15 +358,16 @@ def cache_get_and_put(
      in case of error.
     """
 
-    class CacheGetAndPutQuery(Query):
-        op_code = OP_CACHE_GET_AND_PUT
-
-    query_struct = CacheGetAndPutQuery([
-        ('hash_code', Int),
-        ('flag', Byte),
-        ('key', key_hint or AnyDataObject),
-        ('value', value_hint or AnyDataObject),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_GET_AND_PUT,
+        [
+            ('hash_code', Int),
+            ('flag', Byte),
+            ('key', key_hint or AnyDataObject),
+            ('value', value_hint or AnyDataObject),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -410,15 +417,15 @@ def cache_get_and_replace(
      or None on success, non-zero status and an error description otherwise.
     """
 
-    class CacheGetAndReplaceQuery(Query):
-        op_code = OP_CACHE_GET_AND_REPLACE
-
-    query_struct = CacheGetAndReplaceQuery([
-        ('hash_code', Int),
-        ('flag', Byte),
-        ('key', key_hint or AnyDataObject),
-        ('value', value_hint or AnyDataObject),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_GET_AND_REPLACE, [
+            ('hash_code', Int),
+            ('flag', Byte),
+            ('key', key_hint or AnyDataObject),
+            ('value', value_hint or AnyDataObject),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -463,14 +470,14 @@ def cache_get_and_remove(
      or None, non-zero status and an error description otherwise.
     """
 
-    class CacheGetAndRemoveQuery(Query):
-        op_code = OP_CACHE_GET_AND_REMOVE
-
-    query_struct = CacheGetAndRemoveQuery([
-        ('hash_code', Int),
-        ('flag', Byte),
-        ('key', key_hint or AnyDataObject),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_GET_AND_REMOVE, [
+            ('hash_code', Int),
+            ('flag', Byte),
+            ('key', key_hint or AnyDataObject),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -518,15 +525,16 @@ def cache_put_if_absent(
      non-zero status and an error description otherwise.
     """
 
-    class CachePutIfAbsentQuery(Query):
-        op_code = OP_CACHE_PUT_IF_ABSENT
-
-    query_struct = CachePutIfAbsentQuery([
-        ('hash_code', Int),
-        ('flag', Byte),
-        ('key', key_hint or AnyDataObject),
-        ('value', value_hint or AnyDataObject),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_PUT_IF_ABSENT,
+        [
+            ('hash_code', Int),
+            ('flag', Byte),
+            ('key', key_hint or AnyDataObject),
+            ('value', value_hint or AnyDataObject),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -575,15 +583,15 @@ def cache_get_and_put_if_absent(
      or None on success, non-zero status and an error description otherwise.
     """
 
-    class CacheGetAndPutIfAbsentQuery(Query):
-        op_code = OP_CACHE_GET_AND_PUT_IF_ABSENT
-
-    query_struct = CacheGetAndPutIfAbsentQuery([
-        ('hash_code', Int),
-        ('flag', Byte),
-        ('key', key_hint or AnyDataObject),
-        ('value', value_hint or AnyDataObject),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_GET_AND_PUT_IF_ABSENT,[
+            ('hash_code', Int),
+            ('flag', Byte),
+            ('key', key_hint or AnyDataObject),
+            ('value', value_hint or AnyDataObject),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -632,15 +640,16 @@ def cache_replace(
      has gone wrong.
     """
 
-    class CacheReplaceQuery(Query):
-        op_code = OP_CACHE_REPLACE
-
-    query_struct = CacheReplaceQuery([
-        ('hash_code', Int),
-        ('flag', Byte),
-        ('key', key_hint or AnyDataObject),
-        ('value', value_hint or AnyDataObject),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_REPLACE,
+        [
+            ('hash_code', Int),
+            ('flag', Byte),
+            ('key', key_hint or AnyDataObject),
+            ('value', value_hint or AnyDataObject),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -694,16 +703,17 @@ def cache_replace_if_equals(
      has gone wrong.
     """
 
-    class CacheReplaceIfEqualsQuery(Query):
-        op_code = OP_CACHE_REPLACE_IF_EQUALS
-
-    query_struct = CacheReplaceIfEqualsQuery([
-        ('hash_code', Int),
-        ('flag', Byte),
-        ('key', key_hint or AnyDataObject),
-        ('sample', sample_hint or AnyDataObject),
-        ('value', value_hint or AnyDataObject),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_REPLACE_IF_EQUALS,
+        [
+            ('hash_code', Int),
+            ('flag', Byte),
+            ('key', key_hint or AnyDataObject),
+            ('sample', sample_hint or AnyDataObject),
+            ('value', value_hint or AnyDataObject),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -746,13 +756,14 @@ def cache_clear(
      non-zero status and an error description otherwise.
     """
 
-    class CacheClearQuery(Query):
-        op_code = OP_CACHE_CLEAR
-
-    query_struct = CacheClearQuery([
-        ('hash_code', Int),
-        ('flag', Byte),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_CLEAR,
+        [
+            ('hash_code', Int),
+            ('flag', Byte),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -789,14 +800,15 @@ def cache_clear_key(
      non-zero status and an error description otherwise.
     """
 
-    class CacheClearKeyQuery(Query):
-        op_code = OP_CACHE_CLEAR_KEY
-
-    query_struct = CacheClearKeyQuery([
-        ('hash_code', Int),
-        ('flag', Byte),
-        ('key', key_hint or AnyDataObject),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_CLEAR_KEY,
+        [
+            ('hash_code', Int),
+            ('flag', Byte),
+            ('key', key_hint or AnyDataObject),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -832,14 +844,15 @@ def cache_clear_keys(
      non-zero status and an error description otherwise.
     """
 
-    class CacheClearKeysQuery(Query):
-        op_code = OP_CACHE_CLEAR_KEYS
-
-    query_struct = CacheClearKeysQuery([
-        ('hash_code', Int),
-        ('flag', Byte),
-        ('keys', AnyDataArray()),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_CLEAR_KEYS,
+        [
+            ('hash_code', Int),
+            ('flag', Byte),
+            ('keys', AnyDataArray()),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -878,14 +891,15 @@ def cache_remove_key(
      has gone wrong.
     """
 
-    class CacheRemoveKeyQuery(Query):
-        op_code = OP_CACHE_REMOVE_KEY
-
-    query_struct = CacheRemoveKeyQuery([
-        ('hash_code', Int),
-        ('flag', Byte),
-        ('key', key_hint or AnyDataObject),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_REMOVE_KEY,
+        [
+            ('hash_code', Int),
+            ('flag', Byte),
+            ('key', key_hint or AnyDataObject),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -934,15 +948,16 @@ def cache_remove_if_equals(
      has gone wrong.
     """
 
-    class CacheRemoveIfEqualsQuery(Query):
-        op_code = OP_CACHE_REMOVE_IF_EQUALS
-
-    query_struct = CacheRemoveIfEqualsQuery([
-        ('hash_code', Int),
-        ('flag', Byte),
-        ('key', key_hint or AnyDataObject),
-        ('sample', sample_hint or AnyDataObject),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_REMOVE_IF_EQUALS,
+        [
+            ('hash_code', Int),
+            ('flag', Byte),
+            ('key', key_hint or AnyDataObject),
+            ('sample', sample_hint or AnyDataObject),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -985,14 +1000,15 @@ def cache_remove_keys(
      non-zero status and an error description otherwise.
     """
 
-    class CacheRemoveKeysQuery(Query):
-        op_code = OP_CACHE_REMOVE_KEYS
-
-    query_struct = CacheRemoveKeysQuery([
-        ('hash_code', Int),
-        ('flag', Byte),
-        ('keys', AnyDataArray()),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_REMOVE_KEYS,
+        [
+            ('hash_code', Int),
+            ('flag', Byte),
+            ('keys', AnyDataArray()),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -1027,13 +1043,14 @@ def cache_remove_all(
      non-zero status and an error description otherwise.
     """
 
-    class CacheRemoveAllQuery(Query):
-        op_code = OP_CACHE_REMOVE_ALL
-
-    query_struct = CacheRemoveAllQuery([
-        ('hash_code', Int),
-        ('flag', Byte),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_REMOVE_ALL,
+        [
+            ('hash_code', Int),
+            ('flag', Byte),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
@@ -1076,14 +1093,15 @@ def cache_get_size(
         else:
             peek_modes = [peek_modes]
 
-    class CacheGetSizeQuery(Query):
-        op_code = OP_CACHE_GET_SIZE
-
-    query_struct = CacheGetSizeQuery([
-        ('hash_code', Int),
-        ('flag', Byte),
-        ('peek_modes', PeekModes),
-    ], query_id=query_id)
+    query_struct = Query(
+        OP_CACHE_GET_SIZE,
+        [
+            ('hash_code', Int),
+            ('flag', Byte),
+            ('peek_modes', PeekModes),
+        ],
+        query_id=query_id,
+    )
 
     _, send_buffer = query_struct.from_python({
         'hash_code': cache_id(cache),
