@@ -576,7 +576,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     ) {
         assert key != null;
 
-        if (cacheCtx.mvccEnabled() && !implicit)
+        if (cacheCtx.mvccEnabled() && pessimistic() && repeatableRead())
             return mvccPutAllAsync0(cacheCtx, Collections.singletonMap(key, val),
                 entryProcessor == null ? null : Collections.singletonMap(key, entryProcessor), invokeArgs, retval, filter);
 
@@ -834,8 +834,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     ) {
         //TODO: IGNITE-7764: Review if putAllAsync0 body can be reused (may be partly).
         // TODO: IGNITE-9540: Fix invoke/invokeAll.
-        if (cacheCtx.mvccEnabled() && !implicit && invokeMap == null )
+        if (cacheCtx.mvccEnabled() && pessimistic() && repeatableRead()) {
+            if(invokeMap != null)
+                MvccUtils.verifyMvccOperationSupport(cacheCtx, "invoke/invokeAll");
+
             return mvccPutAllAsync0(cacheCtx, map, invokeMap, invokeArgs, retval, null);
+        }
 
         try {
             beforePut(cacheCtx, retval, false);
@@ -1669,7 +1673,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean retval,
         @Nullable final CacheEntryPredicate filter,
         boolean singleRmv) {
-        if(cacheCtx.mvccEnabled() && !implicit)
+        if(cacheCtx.mvccEnabled() && pessimistic() && repeatableRead())
             return mvccRemoveAllAsync0(cacheCtx, keys, retval, filter);
 
         try {
