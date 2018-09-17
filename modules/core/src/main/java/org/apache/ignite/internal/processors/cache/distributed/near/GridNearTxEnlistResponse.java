@@ -155,7 +155,6 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
 
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
-        //TODO: IGNITE-7764: recheck this.
         return false;
     }
 

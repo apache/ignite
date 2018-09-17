@@ -3411,7 +3411,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(keys);
 
-        //TODO IGNITE-7764
+        //TODO: IGNITE-9324: add explicit locks support.
         MvccUtils.verifyMvccOperationSupport(ctx, "Lock");
 
         IgniteInternalFuture<Boolean> fut = lockAllAsync(keys, timeout);
@@ -3442,7 +3442,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKey(key);
 
-        //TODO IGNITE-7764
+        //TODO: IGNITE-9324: add explicit locks support.
         MvccUtils.verifyMvccOperationSupport(ctx, "Lock");
 
         return lockAllAsync(Collections.singletonList(key), timeout);

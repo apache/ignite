@@ -417,7 +417,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testTxReadIsolationSimple() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7764");
+        fail("https://issues.apache.org/jira/browse/IGNITE-6938");
 
         Ignite srv0 = startGrids(4);
 
@@ -3535,7 +3535,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * And returns value in case of it's equality for all read modes.
      * Do not use in tests with writers contention.
      *
-     * // TODO remove inTx flag in IGNITE-7764
+     * // TODO remove inTx flag in IGNITE-6938
      * @param inTx Flag whether current read is inside transaction.
      * This is because reads can't see writes made in current transaction.
      * @param cache Cache.
@@ -3573,7 +3573,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * Reads value from cache for the given key using given read mode.
      *
-     * // TODO IGNITE-7764 remove inTx flag
+     * // TODO IGNITE-6938 remove inTx flag
      * // TODO IGNITE-6739 add SQL-get support "select _key, _val from cache where _key in ... keySet"
      * @param inTx Flag whether current read is inside transaction.
      * This is because reads can't see writes made in current transaction.

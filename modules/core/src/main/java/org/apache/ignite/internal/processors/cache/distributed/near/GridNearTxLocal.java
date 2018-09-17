@@ -832,7 +832,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable Map<KeyCacheObject, GridCacheDrInfo> drMap,
         final boolean retval
     ) {
-        //TODO: IGNITE-7764: Review if putAllAsync0 body can be reused (may be partly).
         // TODO: IGNITE-9540: Fix invoke/invokeAll.
         if (cacheCtx.mvccEnabled() && pessimistic() && repeatableRead()) {
             if(invokeMap != null)
@@ -1685,7 +1684,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         cacheCtx.checkSecurity(SecurityPermission.CACHE_REMOVE);
 
-        if (cacheCtx.mvccEnabled() && !isOperationAllowed(true))
+        if (cacheCtx.mvccEnabled() && !isOperationAllowed(false))
             return txTypeMismatchFinishFuture();
 
         if (retval)
