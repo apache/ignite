@@ -26,7 +26,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
@@ -94,9 +93,6 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
         this.topVer = topVer;
         this.grpId = grpId;
         this.ctx = ctx;
-
-        if (1 == 1)
-            throw new IgniteException("Muzafarov");
 
         id = idGen.getAndIncrement();
 
