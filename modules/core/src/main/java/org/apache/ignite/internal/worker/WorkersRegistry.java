@@ -40,8 +40,8 @@ import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
  * Can perform periodic liveness checks for these workers on behalf of any of them.
  */
 public class WorkersRegistry implements GridWorkerListener {
-    /** Time in milliseconds between successive workers checks. */
-    private static final long CHECK_INTERVAL = 3_000;
+    /** */
+    private static final long DFLT_CHECK_INTERVAL = 3_000;
 
     /** Registered workers. */
     private final ConcurrentMap<String, GridWorker> registeredWorkers = new ConcurrentHashMap<>();
@@ -64,6 +64,9 @@ public class WorkersRegistry implements GridWorkerListener {
     /** Worker heartbeat timeout in milliseconds, when exceeded, worker is considered as blocked. */
     private final long heartbeatTimeout;
 
+    /** Time in milliseconds between successive workers checks. */
+    private final long checkInterval;
+
     /** Logger. */
     private final IgniteLogger log;
 
@@ -77,6 +80,7 @@ public class WorkersRegistry implements GridWorkerListener {
         IgniteLogger log) {
         this.workerFailedHnd = workerFailedHnd;
         this.heartbeatTimeout = heartbeatTimeout;
+        this.checkInterval = Math.min(DFLT_CHECK_INTERVAL, heartbeatTimeout);
         this.log = log;
     }
 
@@ -150,14 +154,14 @@ public class WorkersRegistry implements GridWorkerListener {
         Thread prevCheckerThread = lastChecker.get();
 
         if (prevCheckerThread == null ||
-            U.currentTimeMillis() - lastCheckTs <= CHECK_INTERVAL ||
+            U.currentTimeMillis() - lastCheckTs <= checkInterval ||
             !lastChecker.compareAndSet(prevCheckerThread, null))
             return;
 
         try {
             lastCheckTs = U.currentTimeMillis();
 
-            long workersToCheck = registeredWorkers.size() * CHECK_INTERVAL / heartbeatTimeout;
+            long workersToCheck = Math.max(registeredWorkers.size() * checkInterval / heartbeatTimeout, 1);
 
             int workersChecked = 0;
 
