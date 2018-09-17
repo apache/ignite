@@ -42,8 +42,8 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
     /** 5 nodes. */
     private final AffinityTopologyVersion latchTopVer = new AffinityTopologyVersion(5, 1);
 
-    /** New protocol {@link ExchangeLatchManager#PROTOCOL_V2_VERSION_SINCE} changes coordinator to second oldest-node. */
-    private static final int LATCH_CRD_INDEX = 1;
+    /** Latch coordinator index. */
+    private static final int LATCH_CRD_INDEX = 0;
 
     /** Wait before latch creation. */
     private final IgniteBiClosure<ExchangeLatchManager, CountDownLatch, Boolean> beforeCreate = (mgr, syncLatch) -> {
