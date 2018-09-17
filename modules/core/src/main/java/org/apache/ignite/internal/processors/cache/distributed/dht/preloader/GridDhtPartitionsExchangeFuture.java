@@ -1905,7 +1905,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
 
             boolean stateChangeExchange = stateChangeExchange();
-            StateChangeRequest stateChangeReq = exchActions.stateChangeRequest();
+            StateChangeRequest stateChangeReq = exchActions == null ? null : exchActions.stateChangeRequest();
 
             exchActions = null;
 
