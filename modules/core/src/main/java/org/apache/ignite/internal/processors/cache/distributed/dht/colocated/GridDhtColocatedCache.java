@@ -476,7 +476,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                 for (KeyCacheObject key : keys) {
                     if (readNoEntry) {
-                        CacheDataRow row = ctx.offheap().read(ctx, key);
+                        CacheDataRow row = mvccSnapshot != null ?
+                            ctx.offheap().mvccRead(ctx, key, mvccSnapshot) :
+                            ctx.offheap().read(ctx, key);
 
                         if (row != null) {
                             long expireTime = row.expireTime();

@@ -1978,7 +1978,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                             boolean skipEntry = readNoEntry;
 
                             if (readNoEntry) {
-                                CacheDataRow row = mvccSnapshot != null ? ctx.offheap().mvccRead(ctx, key, mvccSnapshot) :
+                                CacheDataRow row = mvccSnapshot != null ?
+                                    ctx.offheap().mvccRead(ctx, key, mvccSnapshot) :
                                     ctx.offheap().read(ctx, key);
 
                                 if (row != null) {
