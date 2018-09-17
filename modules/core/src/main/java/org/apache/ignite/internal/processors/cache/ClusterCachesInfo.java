@@ -69,6 +69,7 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -147,7 +148,7 @@ class ClusterCachesInfo {
             if (ccfg == null)
                 grpCfgs.put(info.cacheData().config().getGroupName(), info.cacheData().config());
             else
-                validateCacheGroupConfiguration(ccfg, info.cacheData().config(), info.cacheType());
+                validateCacheGroupConfiguration(ccfg, info.cacheData().config());
         }
 
         String conflictErr = processJoiningNode(joinDiscoData, ctx.localNodeId(), true);
@@ -220,7 +221,7 @@ class ClusterCachesInfo {
                 }
 
                 if (checkConsistency)
-                    validateStartCacheConfiguration(locCfg, cacheData.cacheType());
+                    validateStartCacheConfiguration(locCfg);
             }
         }
 
@@ -1864,17 +1865,16 @@ class ClusterCachesInfo {
 
     /**
      * @param ccfg Cache configuration to start.
-     * @param cacheType Cache type.
      * @throws IgniteCheckedException If failed.
      */
-    void validateStartCacheConfiguration(CacheConfiguration ccfg, CacheType cacheType) throws IgniteCheckedException {
+    void validateStartCacheConfiguration(CacheConfiguration ccfg) throws IgniteCheckedException {
         if (ccfg.getGroupName() != null) {
             CacheGroupDescriptor grpDesc = cacheGroupByName(ccfg.getGroupName());
 
             if (grpDesc != null) {
                 assert ccfg.getGroupName().equals(grpDesc.groupName());
 
-                validateCacheGroupConfiguration(grpDesc.config(), ccfg, cacheType);
+                validateCacheGroupConfiguration(grpDesc.config(), ccfg);
             }
         }
     }
@@ -1882,10 +1882,9 @@ class ClusterCachesInfo {
     /**
      * @param cfg Existing configuration.
      * @param startCfg Cache configuration to start.
-     * @param cacheType Cache type.
      * @throws IgniteCheckedException If validation failed.
      */
-    private void validateCacheGroupConfiguration(CacheConfiguration cfg, CacheConfiguration startCfg, CacheType cacheType)
+    private void validateCacheGroupConfiguration(CacheConfiguration cfg, CacheConfiguration startCfg)
         throws IgniteCheckedException {
         GridCacheAttributes attr1 = new GridCacheAttributes(cfg);
         GridCacheAttributes attr2 = new GridCacheAttributes(startCfg);
@@ -1893,10 +1892,9 @@ class ClusterCachesInfo {
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "cacheMode", "Cache mode",
             cfg.getCacheMode(), startCfg.getCacheMode(), true);
 
-        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "mvccEnabled", "MVCC mode",
-            CacheGroupContext.mvccEnabled(ctx.config(), cfg, cacheType),
-            CacheGroupContext.mvccEnabled(ctx.config(), startCfg, cacheType),
-            true);
+        if (cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT || startCfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+            CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "atomicityMode", "Atomicity mode",
+                attr1.atomicityMode(), attr2.atomicityMode(), true);
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "affinity", "Affinity function",
             attr1.cacheAffinityClassName(), attr2.cacheAffinityClassName(), true);
