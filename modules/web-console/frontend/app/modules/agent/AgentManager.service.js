@@ -42,7 +42,7 @@ const State = {
 
 const IGNITE_2_0 = '2.0.0';
 const LAZY_QUERY_SINCE = [['2.1.4-p1', '2.2.0'], '2.2.1'];
-const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], '2.5.2'];
+const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], ['2.5.1-p13', '2.6.0'], '2.7.0'];
 
 // Error codes from o.a.i.internal.processors.restGridRestResponse.java
 
