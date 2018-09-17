@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.nio.ByteBuffer;
+import java.util.Set;
+import java.util.UUID;
+
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -59,8 +62,9 @@ public class GridNearTxQueryResultsEnlistResponse extends GridNearTxQueryEnlistR
         GridCacheVersion lockVer,
         long res,
         GridCacheVersion dhtVer,
-        IgniteUuid dhtFutId) {
-        super(cacheId, futId, miniId, lockVer, res, false);
+        IgniteUuid dhtFutId,
+        Set<UUID> newDhtNodes) {
+        super(cacheId, futId, miniId, lockVer, res, false, newDhtNodes);
 
         this.dhtVer = dhtVer;
         this.dhtFutId = dhtFutId;
@@ -98,7 +102,7 @@ public class GridNearTxQueryResultsEnlistResponse extends GridNearTxQueryEnlistR
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 12;
     }
 
     /** {@inheritDoc} */
@@ -116,13 +120,13 @@ public class GridNearTxQueryResultsEnlistResponse extends GridNearTxQueryEnlistR
         }
 
         switch (writer.state()) {
-            case 9:
+            case 10:
                 if (!writer.writeIgniteUuid("dhtFutId", dhtFutId))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 11:
                 if (!writer.writeMessage("dhtVer", dhtVer))
                     return false;
 
@@ -143,7 +147,7 @@ public class GridNearTxQueryResultsEnlistResponse extends GridNearTxQueryEnlistR
             return false;
 
         switch (reader.state()) {
-            case 9:
+            case 10:
                 dhtFutId = reader.readIgniteUuid("dhtFutId");
 
                 if (!reader.isLastRead())
@@ -151,7 +155,7 @@ public class GridNearTxQueryResultsEnlistResponse extends GridNearTxQueryEnlistR
 
                 reader.incrementState();
 
-            case 10:
+            case 11:
                 dhtVer = reader.readMessage("dhtVer");
 
                 if (!reader.isLastRead())

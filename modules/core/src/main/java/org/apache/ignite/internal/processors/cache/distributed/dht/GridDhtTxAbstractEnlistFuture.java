@@ -134,6 +134,9 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
     /** Processed entries count. */
     protected long cnt;
 
+    /** New DHT nodes. */
+    protected Set<UUID> newDhtNodes = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
     /** Near node ID. */
     protected final UUID nearNodeId;
 
@@ -602,7 +605,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                 updateMappings(node);
 
                 if (newRemoteTx(node))
-                    tx.addLockTransactionNode(node);
+                    addNewRemoteTxNode(node);
 
                 hasNearNodeUpdates = true;
 
@@ -693,6 +696,17 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
     }
 
     /**
+     * Add new involved DHT node.
+     *
+     * @param node Node.
+     */
+    private void addNewRemoteTxNode(ClusterNode node) {
+        tx.addLockTransactionNode(node);
+
+        newDhtNodes.add(node.id());
+    }
+
+    /**
      * Checks if there free space in batches or free slot in in-flight batches is available for the given key.
      *
      * @param key Key.
@@ -740,7 +754,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
         GridDhtTxQueryEnlistRequest req;
 
         if (newRemoteTx(node)) {
-            tx.addLockTransactionNode(node);
+            addNewRemoteTxNode(node);
 
             // If this is a first request to this node, send full info.
             req = new GridDhtTxQueryFirstEnlistRequest(cctx.cacheId(),
