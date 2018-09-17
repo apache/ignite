@@ -795,8 +795,6 @@ public class CacheGroupContext {
                 cctx.dr().partitionEvicted(part);
 
             cctx.continuousQueries().onPartitionEvicted(part);
-
-            cctx.dataStructures().onPartitionEvicted(part);
         }
     }
 

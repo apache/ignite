@@ -206,8 +206,6 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testSet() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5553");
-
         Ignite ignite = startGrids(4);
 
         ignite.active(true);
