@@ -16,9 +16,9 @@ npm install -g apache-ignite-client
 
 ### Installation from Sources ###
 
-If you want to install the Thin Client library from Ignite Source Release, please follow the steps:
+If you want to install the Thin Client library from Ignite sources, please follow the steps:
 
-1. Download Ignite Source Release to `local_ignite_path`
+1. Download Ignite sources to `local_ignite_path`
 2. Go to `local_ignite_path/modules/platforms/nodejs` folder
 3. Execute `npm link` command
 4. Execute `npm link apache-ignite-client` command (needed only for examples)
