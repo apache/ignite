@@ -1133,7 +1133,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (tx.local())
                 updateCntr = nextMvccPartitionCounter();
 
-            if (res.resultType() == ResultType.PREV_NULL || res.resultType() == FILTERED)
+            if (res.resultType() == ResultType.PREV_NULL)
                 tx.txCounters(true).accumulateSizeDelta(cctx.cacheId(), partition(), 1);
 
             if (cctx.group().persistenceEnabled() && cctx.group().walEnabled()) {
