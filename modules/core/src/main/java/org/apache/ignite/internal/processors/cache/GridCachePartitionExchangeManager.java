@@ -2154,7 +2154,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         GridDhtTopologyFuture finished = lastFinishedFut.get();
 
-        if (finished == null || finished.initialVersion().compareTo(current.result()) > 0)
+        if (finished == null || finished.result().compareTo(current.initialVersion()) < 0)
             return true;
 
         return false;
