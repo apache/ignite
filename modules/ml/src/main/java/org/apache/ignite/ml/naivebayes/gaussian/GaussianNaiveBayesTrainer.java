@@ -29,7 +29,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
 
     @Override public <K, V> GaussianNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-        return null;
+        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
     }
 
     @Override protected boolean checkState(GaussianNaiveBayesModel mdl) {

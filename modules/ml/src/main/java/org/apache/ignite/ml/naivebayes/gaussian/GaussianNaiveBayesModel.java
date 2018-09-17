@@ -33,6 +33,11 @@ public class GaussianNaiveBayesModel implements Model<Vector, Integer>, Exportab
     private final double[][] variances;
     private final Vector classProbabilities;
 
+    /**
+     * @param means means of features for all classes
+     * @param variances variances of features for all classes
+     * @param classProbabilities probabilities for all classes
+     */
     public GaussianNaiveBayesModel(double[][] means, double[][] variances,
         Vector classProbabilities) {
         this.means = means;
