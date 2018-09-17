@@ -95,7 +95,7 @@ public enum CacheAtomicityMode {
     ATOMIC,
 
     /**
-     * Specified fully {@code ACID}-compliant transactional cache behavior not only for key-value API,
+     * Specifies fully {@code ACID}-compliant transactional cache behavior not only for key-value API,
      * but also for SQL transactions.
      * <p>
      * This cache atomicity mode is implemented within multiversion concurrency control (MVCC) where database can
@@ -104,7 +104,7 @@ public enum CacheAtomicityMode {
      * Old versions are cleaned only when they are not visible to anyone.
      * </p>
      * <p>
-     * There is one node in cluster is elected as MVCC coordinator. This node tracks all in-flight transactions and
+     * One node in a cluster is elected as MVCC coordinator. This node tracks all in-flight transactions and
      * queries in the cluster.
      * Each transaction or query over the cache with {@code TRANSACTIONAL_SNAPSHOT} mode obtains current
      * database snapshot from the coordinator. This snapshot allows transactions and queries to skip invisible
