@@ -115,7 +115,7 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
     /** */
     private CacheConfiguration<?, ?> baseCacheConfig() {
         return new CacheConfiguration<>("test")
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
             .setSqlSchema("PUBLIC")
             .setIndexedTypes(Integer.class, Integer.class);
     }
