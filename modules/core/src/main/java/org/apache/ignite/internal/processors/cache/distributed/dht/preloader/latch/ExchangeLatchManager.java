@@ -132,7 +132,7 @@ public class ExchangeLatchManager {
 
                 // Do not process from discovery thread.
                 // TODO: Should use queue to guarantee the order of processing left nodes.
-                ctx.closure().runLocalSafe(() -> processNodeLeft(e.eventNode()));
+                ctx.closure().runLocalSafe(() -> processNodeLeft(cache.version(), e.eventNode()));
             }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
             ctx.event().addDiscoveryEventListener((e, cache) -> {
@@ -315,12 +315,8 @@ public class ExchangeLatchManager {
         boolean protoV2applicable = applicableNodes.stream()
             .allMatch(node -> node.version().compareTo(PROTOCOL_V2_VERSION_SINCE) >= 0);
 
-        // Return second oldest node if possible.
-        if (protoV2applicable) {
+        if (protoV2applicable)
             applicableNodes = excludeJoinedNodes(applicableNodes, topVer);
-
-            return applicableNodes.size() > 1 ? applicableNodes.get(1) : applicableNodes.get(0);
-        }
 
         return applicableNodes.get(0);
     }
@@ -339,7 +335,7 @@ public class ExchangeLatchManager {
         lock.lock();
 
         try {
-            ClusterNode coordinator = getLatchCoordinator(AffinityTopologyVersion.NONE);
+            ClusterNode coordinator = getLatchCoordinator(message.topVer());
 
             if (coordinator == null)
                 return;
@@ -412,7 +408,7 @@ public class ExchangeLatchManager {
      *
      * @param left Left node.
      */
-    private void processNodeLeft(ClusterNode left) {
+    private void processNodeLeft(AffinityTopologyVersion topVer, ClusterNode left) {
         assert this.crd != null : "Coordinator is not initialized";
 
         lock.lock();
@@ -421,7 +417,7 @@ public class ExchangeLatchManager {
             if (log.isDebugEnabled())
                 log.debug("Process node left " + left.id());
 
-            ClusterNode coordinator = getLatchCoordinator(AffinityTopologyVersion.NONE);
+            ClusterNode coordinator = getLatchCoordinator(topVer);
 
             if (coordinator == null)
                 return;
@@ -448,9 +444,9 @@ public class ExchangeLatchManager {
                         /* If new coordinator is not able to take control on the latch,
                            it means that all other latch participants are left from topology
                            and there is no reason to track such latch. */
-                        AffinityTopologyVersion topVer = latchEntry.getKey().topVer;
+                        AffinityTopologyVersion latchTopVer = latchEntry.getKey().topVer;
 
-                        assert getLatchParticipants(topVer).isEmpty();
+                        assert getLatchParticipants(latchTopVer).isEmpty();
 
                         latch.complete(new IgniteCheckedException("All latch participants are left from topology."));
                         clientLatches.remove(latchEntry.getKey());
