@@ -956,7 +956,7 @@ public class GridReduceQueryExecutor {
 
                     if (QueryCancelledException.class.isAssignableFrom(e.getClass()))
                         cause = new QueryCancelledException(String.format(
-                            "The query was cancelled while executing. [query=%s, localNodeId=%s, reason=%s]",
+                            "The query was cancelled while executing [query=%s, localNodeId=%s, reason=%s]",
                             qry.originalSql(),
                             ctx.localNodeId(),
                             "Cancelled by client"
@@ -1003,11 +1003,10 @@ public class GridReduceQueryExecutor {
                 if (err.getCause() instanceof IgniteClientDisconnectedException)
                     throw err;
 
-                Exception cause = wasCancelled(err) || X.hasCause(err, QueryCancelledException.class)
-                    ? new QueryCancelledException(r.retryCause())
-                    : err;
+                if( wasCancelled(err) || X.hasCause(err, QueryCancelledException.class))
+                    throw new QueryCancelledException(r.retryCause());
 
-                throw new CacheException("Failed to run map query remotely." + cause.getMessage(), cause);
+                throw err;
             }
             else {
                 // On-the-fly topology change must not be possible in FOR UPDATE case.
@@ -1105,7 +1104,7 @@ public class GridReduceQueryExecutor {
         for (ClusterNode n : nodes) {
             if (!n.version().greaterThanEqual(2, 3, 0)) {
                 log.warning("Server-side DML optimization is skipped because map node does not support it. " +
-                    "Falling back to normal DML. [node=" + n.id() + ", v=" + n.version() + "].");
+                    "Falling back to normal DML [node=" + n.id() + ", v=" + n.version() + "].");
 
                 return null;
             }
@@ -1185,7 +1184,7 @@ public class GridReduceQueryExecutor {
             DistributedUpdateRun r = updRuns.get(reqId);
 
             if (r == null) {
-                U.warn(log, "Unexpected dml response (will ignore). [localNodeId=" + ctx.localNodeId() + ", nodeId=" +
+                U.warn(log, "Unexpected dml response (will ignore) [localNodeId=" + ctx.localNodeId() + ", nodeId=" +
                     node.id() + ", msg=" + msg.toString() + ']');
 
                 return;
@@ -1194,7 +1193,7 @@ public class GridReduceQueryExecutor {
             r.handleResponse(node.id(), msg);
         }
         catch (Exception e) {
-            U.error(log, "Error in dml response processing. [localNodeId=" + ctx.localNodeId() + ", nodeId=" +
+            U.error(log, "Error in dml response processing [localNodeId=" + ctx.localNodeId() + ", nodeId=" +
                 node.id() + ", msg=" + msg.toString() + ']', e);
         }
     }

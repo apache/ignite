@@ -1371,19 +1371,29 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final MapQueryLazyWorker lazyWorker = MapQueryLazyWorker.currentWorker();
 
         if (cancel != null) {
-            cancel.set(new Runnable() {
-                @Override public void run() {
-                    if (lazyWorker != null) {
-                        lazyWorker.submit(new Runnable() {
-                            @Override public void run() {
-                                cancelStatement(stmt);
-                            }
-                        });
+            try {
+                cancel.set(new Runnable() {
+                    @Override public void run() {
+                        if (lazyWorker != null) {
+                            lazyWorker.submit(new Runnable() {
+                                @Override public void run() {
+                                    cancelStatement(stmt);
+                                }
+                            });
+                        }
+                        else
+                            cancelStatement(stmt);
                     }
-                    else
-                        cancelStatement(stmt);
-                }
-            });
+                });
+            }catch(QueryCancelledException e){
+                throw new CacheException(new QueryCancelledException(String.format(
+                    "The query was cancelled before executing [query=%s, localNodeId=%s, reason=%s, timeout=%s ms]",
+                    stmt,
+                    ctx.localNodeId(),
+                    timeoutMillis > 0 ? "Statement with timeout was cancelled" : "Cancelled by client",
+                    timeoutMillis
+                )));
+            }
         }
 
         Session ses = H2Utils.session(conn);
@@ -1401,7 +1411,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             // Throw special exception.
             if (e.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
                 throw new CacheException(new QueryCancelledException(String.format(
-                    "The query was cancelled while executing. [query=%s, localNodeId=%s, reason=%s, timeout=%s ms]",
+                    "The query was cancelled while executing [query=%s, localNodeId=%s, reason=%s, timeout=%s ms]",
                     stmt,
                     ctx.localNodeId(),
                     timeoutMillis > 0 ? "Statement with timeout was cancelled" : "Cancelled by client",

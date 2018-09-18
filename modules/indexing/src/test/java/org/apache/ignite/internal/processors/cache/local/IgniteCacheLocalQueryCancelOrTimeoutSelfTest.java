@@ -106,7 +106,7 @@ public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbst
      * Tests cancellation with zero timeout.
      */
     public void testQueryCancelZeroTimeout() {
-        testQuery(false, 1, TimeUnit.MILLISECONDS, CANCELLED_BY_CLIENT);
+        testQuery(false, 10, TimeUnit.NANOSECONDS, CANCELLED_BY_CLIENT);
     }
 
     /**

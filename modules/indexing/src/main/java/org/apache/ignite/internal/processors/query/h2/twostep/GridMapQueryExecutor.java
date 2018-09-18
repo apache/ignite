@@ -891,7 +891,7 @@ public class GridMapQueryExecutor {
                     nodeRess.cancelRequest(reqId);
 
                     throw new QueryCancelledException(String.format(
-                        "The query request (could be more than 1 query) was cancelled while executing. " +
+                        "The query request was cancelled while executing " +
                             "[reqId=%s, firstQuery=%s, localNodeId=%s, reason=%s]",
                         reqId,
                         qrys.isEmpty() ? "no queries" : qrys.iterator().next().query(),
@@ -1113,7 +1113,7 @@ public class GridMapQueryExecutor {
             String err = reservePartitions(cacheIds, topVer, parts, reserved, node.id(), reqId);
 
             if (!F.isEmpty(err)) {
-                U.error(log, "Failed to reserve partitions for DML request. [localNodeId=" + ctx.localNodeId() +
+                U.error(log, "Failed to reserve partitions for DML request [localNodeId=" + ctx.localNodeId() +
                     ", nodeId=" + node.id() + ", reqId=" + req.requestId() + ", cacheIds=" + cacheIds +
                     ", topVer=" + topVer + ", parts=" + Arrays.toString(parts) + ']');
 
@@ -1174,7 +1174,7 @@ public class GridMapQueryExecutor {
             sendUpdateResponse(node, reqId, updRes, null);
         }
         catch (Exception e) {
-            U.error(log, "Error processing dml request. [localNodeId=" + ctx.localNodeId() +
+            U.error(log, "Error processing dml request [localNodeId=" + ctx.localNodeId() +
                 ", nodeId=" + node.id() + ", req=" + req + ']', e);
 
             sendUpdateResponse(node, reqId, null, e.getMessage());
