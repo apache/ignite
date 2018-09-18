@@ -32,6 +32,35 @@ def test_cache_create(client):
     cache.destroy()
 
 
+def test_cache_remove(client):
+    cache = client.get_or_create_cache('my_cache')
+    cache.clear()
+    assert cache.get_size() == 0
+
+    cache.put_all({
+        'key_1': 1,
+        'key_2': 2,
+        'key_3': 3,
+        'key_4': 4,
+        'key_5': 5,
+    })
+    assert cache.get_size() == 5
+
+    result = cache.remove_if_equals('key_1', 42)
+    assert result is False
+    assert cache.get_size() == 5
+
+    result = cache.remove_if_equals('key_1', 1)
+    assert result is True
+    assert cache.get_size() == 4
+
+    cache.remove_keys(['key_1', 'key_3', 'key_5', 'key_7'])
+    assert cache.get_size() == 2
+
+    cache.remove_all()
+    assert cache.get_size() == 0
+
+
 def test_cache_get(client):
     client.get_or_create_cache('my_cache')
 

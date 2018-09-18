@@ -419,25 +419,28 @@ class Cache:
         """
         Clears the cache key without notifying listeners or cache writers.
 
-        :param key:  key for the cache entry,
+        :param key: key for the cache entry,
         :param key_hint: (optional) Ignite data type, for which the given key
          should be converted,
         """
         return cache_remove_key(self._client, self._cache_id, key, key_hint)
 
     @status_to_exception(CacheError)
-    def remove(self, keys: Optional[list]=None):
+    def remove_keys(self, keys: list):
         """
-        Removes some or all cache entries, notifying listeners and cache
-        writers.
+        Removes cache entries by given list of keys, notifying listeners
+        and cache writers.
 
-        :param keys: (optional) list of keys or tuples of (key, key_hint) to
-         remove. Defaults to all.
+        :param keys: list of keys or tuples of (key, key_hint) to remove.
         """
-        if keys:
-            return cache_remove_keys(self._client, self._cache_id, keys)
-        else:
-            return cache_remove_all(self._client, self._cache_id)
+        return cache_remove_keys(self._client, self._cache_id, keys)
+
+    @status_to_exception(CacheError)
+    def remove_all(self):
+        """
+        Removes all cache entries, notifying listeners and cache writers.
+        """
+        return cache_remove_all(self._client, self._cache_id)
 
     @status_to_exception(CacheError)
     def remove_if_equals(self, key, sample, key_hint=None, sample_hint=None):

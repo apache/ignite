@@ -42,7 +42,7 @@ print(value)
 # 2
 
 # now let us delete both keys at once
-my_cache.remove([
+my_cache.remove_keys([
     'a',                # a default type key
     ('a', CharObject),  # a key of type CharObject
 ])
