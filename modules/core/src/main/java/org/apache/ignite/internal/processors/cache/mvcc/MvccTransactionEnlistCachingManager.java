@@ -48,10 +48,10 @@ public class MvccTransactionEnlistCachingManager extends GridCacheSharedManagerA
     private static final int TX_SIZE_THRESHOLD = 20_000;
 
     /** Cached enlist values*/
-    private Map<GridCacheVersion, Map<KeyCacheObject, MvccTxEnlistEntry>> enlistCache = new ConcurrentHashMap<>();
+    private final Map<GridCacheVersion, Map<KeyCacheObject, MvccTxEnlistEntry>> enlistCache = new ConcurrentHashMap<>();
 
     /** Counters map. Used for OOM prevention caused by the big transactions. */
-    private Map<TxKey, AtomicInteger> cntrs = new ConcurrentHashMap<>();
+    private final Map<TxKey, AtomicInteger> cntrs = new ConcurrentHashMap<>();
 
     // TODO Remove.
     private AtomicLong fakeUpdCntr = new AtomicLong();
@@ -87,11 +87,9 @@ public class MvccTransactionEnlistCachingManager extends GridCacheSharedManagerA
         assert tx != null;
 
         GridCacheContext ctx0 = cctx.cacheContext(cacheId);
-        CacheContinuousQueryManager contQryMgr = ctx0.continuousQueries();
 
         // Do not cache updates if no DR or CQ enabled.
-        if ((!ctx0.isDrEnabled() || key.internal()) &&
-            (!contQryMgr.notifyContinuousQueries(tx) || F.isEmpty(contQryMgr.updateListeners(false, false))))
+        if (!needDrReplicate(ctx0, key) && F.isEmpty(continuousQueryListeners(ctx0, tx, key)))
             return;
 
         AtomicInteger cntr = cntrs.computeIfAbsent(new TxKey(mvccVer.coordinatorVersion(), mvccVer.counter()),
@@ -150,11 +148,11 @@ public class MvccTransactionEnlistCachingManager extends GridCacheSharedManagerA
             // CQ
             CacheContinuousQueryManager contQryMgr = ctx0.continuousQueries();
 
-            if (contQryMgr.notifyContinuousQueries(tx)) {
+            if (ctx0.continuousQueries().notifyContinuousQueries(tx)) {
                 contQryMgr.getListenerReadLock().lock();
 
                 try {
-                    Map<UUID, CacheContinuousQueryListener> lsnrCol = contQryMgr.updateListeners(false, false);
+                    Map<UUID, CacheContinuousQueryListener> lsnrCol = continuousQueryListeners(ctx0, tx, e.key());
 
                     if (!F.isEmpty(lsnrCol)) {
                         try {
@@ -181,5 +179,27 @@ public class MvccTransactionEnlistCachingManager extends GridCacheSharedManagerA
                 }
             }
         }
+    }
+
+    /**
+     * @param ctx0 Cache context.
+     * @param key Key.
+     * @return {@code True} if need to replicate this value.
+     */
+    public boolean needDrReplicate(GridCacheContext ctx0, KeyCacheObject key) {
+        return ctx0.isDrEnabled() && !key.internal();
+    }
+
+    /**
+     * @param ctx0 Cache context.
+     * @param tx Transaction.
+     * @param key Key.
+     * @return Map of listeners to be notified by this update.
+     */
+    public Map<UUID, CacheContinuousQueryListener> continuousQueryListeners(GridCacheContext ctx0, @Nullable IgniteInternalTx tx, KeyCacheObject key) {
+        boolean internal = key.internal() || !ctx0.userCache();
+
+        return ctx0.continuousQueries().notifyContinuousQueries(tx) ?
+            ctx0.continuousQueries().updateListeners(internal, false) : null;
     }
 }

@@ -58,8 +58,6 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
         // Wait for all routines are unregistered
         GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
@@ -92,6 +90,8 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
             assertEquals(0, ((Map)U.field(cachingMgr, "enlistCache")).size());
             assertEquals(0, ((Map)U.field(cachingMgr, "cntrs")).size());
         }
+
+        super.afterTest();
     }
 
     /**
@@ -107,12 +107,10 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
         ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
         final Map<Integer, List<Integer>> map = new HashMap<>();
-        final CountDownLatch latch = new CountDownLatch(5);
+        final CountDownLatch latch = new CountDownLatch(6);
 
         qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
             @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
-
-                System.out.println("==================onUpdated evts=" + evts);
                 for (CacheEntryEvent<? extends Integer, ? extends Integer> e : evts) {
                     synchronized (map) {
                         List<Integer> vals = map.get(e.getKey());
@@ -159,6 +157,16 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
                 cache.query(new SqlFieldsQuery(dml3)).getAll();
 
                 tx.commit();
+            }
+
+            try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                tx.timeout(TX_TIMEOUT);
+
+                String dml = "INSERT INTO Integer (_key, _val) values (4,4),(5,5)";
+
+                cache.query(new SqlFieldsQuery(dml)).getAll();
+
+                tx.rollback();
             }
 
             assert latch.await(LATCH_TIMEOUT, MILLISECONDS);

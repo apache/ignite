@@ -199,6 +199,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
             }
         }
 
+        // TODO Don ot read old value when no DR or CQ enabled.
         MvccDataRow row = (MvccDataRow)tree.getRow(io, pageAddr, idx, RowData.NO_KEY);
 
         // Check whether the row was updated by current transaction.
