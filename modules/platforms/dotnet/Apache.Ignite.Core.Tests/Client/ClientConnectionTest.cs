@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -29,7 +28,6 @@ namespace Apache.Ignite.Core.Tests.Client
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl.Client;
@@ -296,7 +294,12 @@ namespace Apache.Ignite.Core.Tests.Client
                 // ReSharper disable once ObjectCreationAsStatement
                 var ex = Assert.Throws<IgniteClientException>(() =>
                     new ClientSocket(GetClientConfiguration(),
-                    new ClientProtocolVersion(-1, -1, -1)));
+                        new DnsEndPoint(
+                            "localhost",
+                            ClientConnectorConfiguration.DefaultPort,
+                            AddressFamily.InterNetwork),
+                        null,
+                        new ClientProtocolVersion(-1, -1, -1)));
 
                 Assert.AreEqual(ClientStatusCode.Fail, ex.StatusCode);
 
