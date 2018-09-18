@@ -497,7 +497,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         final boolean includeExpired) throws IgniteCheckedException
     {
         //TODO IGNITE-7953
-        if (!cctx.atomic() && cctx.kernalContext().config().isMvccEnabled())
+        if (cctx.transactionalSnapshot())
             throw new UnsupportedOperationException("Continuous queries are not supported for transactional caches " +
                 "when MVCC is enabled.");
 

@@ -265,7 +265,7 @@ export default angular.module('ignite-console', [
     progressLine.name,
     formField.name
 ])
-.service($exceptionHandler.name, $exceptionHandler)
+.service('$exceptionHandler', $exceptionHandler)
 // Directives.
 .directive(...igniteAutoFocus)
 .directive(...igniteBsAffixUpdate)
@@ -294,7 +294,7 @@ export default angular.module('ignite-console', [
 .service('SqlTypes', SqlTypes)
 .service(...ChartColors)
 .service(...IgniteConfirm)
-.service(Confirm.name, Confirm)
+.service('Confirm', Confirm)
 .service('IgniteConfirmBatch', ConfirmBatch)
 .service(...CopyToClipboard)
 .service(...Countries)
@@ -309,7 +309,7 @@ export default angular.module('ignite-console', [
 .service(...UnsavedChangesGuard)
 .service('IgniteActivitiesUserDialog', IgniteActivitiesUserDialog)
 .service('Caches', Caches)
-.service(CSV.name, CSV)
+.service('CSV', CSV)
 .service('IGFSs', IGFSs)
 .service('Models', Models)
 // Filters.
