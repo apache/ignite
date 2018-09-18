@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import AuthService from 'app/modules/user/Auth.service'
+import AuthService from 'app/modules/user/Auth.service';
 
 interface ISiginData {
     email: string,
