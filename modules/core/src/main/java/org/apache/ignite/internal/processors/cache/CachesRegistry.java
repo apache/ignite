@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.failure.FailureContext;
@@ -49,6 +50,9 @@ public class CachesRegistry {
 
     /** Registered caches (updated from exchange thread). */
     private final ConcurrentHashMap<Integer, DynamicCacheDescriptor> registeredCaches = new ConcurrentHashMap<>();
+
+    /** Last registered caches configuration persist future. */
+    private volatile IgniteInternalFuture<?> cachesConfPersistFuture;
 
     /**
      * @param cctx Cache shared context.
@@ -208,6 +212,25 @@ public class CachesRegistry {
     }
 
     /**
+     * Awaits last registered caches configurations persist future.
+     */
+    private void waitLastRegistration() {
+        IgniteInternalFuture<?> currentFut = cachesConfPersistFuture;
+
+        if (currentFut != null && !currentFut.isDone()) {
+            try {
+                currentFut.get();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to wait for last registered caches registration future", e);
+            }
+
+            if (log.isInfoEnabled())
+                log.info("Successfully awaited for last registered caches registration future");
+        }
+    }
+
+    /**
      * Registers caches and groups.
      * Persists caches configurations on disk if needed.
      *
@@ -219,6 +242,8 @@ public class CachesRegistry {
         Collection<CacheGroupDescriptor> groupDescriptors,
         Collection<DynamicCacheDescriptor> cacheDescriptors
     ) {
+        waitLastRegistration();
+
         for (CacheGroupDescriptor grpDesc : groupDescriptors)
             registerGroup(grpDesc);
 
@@ -230,9 +255,9 @@ public class CachesRegistry {
             .collect(Collectors.toList());
 
         if (cachesToPersist.isEmpty())
-            return new GridFinishedFuture<>();
+            return cachesConfPersistFuture = new GridFinishedFuture<>();
 
-        return persistCacheConfigurations(cachesToPersist);
+        return cachesConfPersistFuture = persistCacheConfigurations(cachesToPersist);
     }
 
     /**

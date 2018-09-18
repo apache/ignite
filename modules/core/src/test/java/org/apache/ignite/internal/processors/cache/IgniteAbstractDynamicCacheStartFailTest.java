@@ -40,7 +40,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -434,18 +433,26 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
 
         checkCacheOperations(cache);
 
-        // Wait till cache configurations will be saved.
-        U.sleep(3000);
-
         // Start a new server node and check cache operations.
         Ignite serverNode = startGrid(gridCount() + 1);
 
         if (persistenceEnabled()) {
+            // Start a new client node to perform baseline change.
+            // TODO: This change is workaround:
+            // Sometimes problem with caches configuration deserialization from test thread arises.
+            final String clientName1 = "baseline-changer";
+
+            IgniteConfiguration clientCfg = getConfiguration(clientName1);
+
+            clientCfg.setClientMode(true);
+
+            Ignite clientNode = startGrid(clientName1, clientCfg);
+
             List<BaselineNode> baseline = new ArrayList<>(grid(0).cluster().currentBaselineTopology());
 
             baseline.add(serverNode.cluster().localNode());
 
-            grid(0).cluster().setBaselineTopology(baseline);
+            clientNode.cluster().setBaselineTopology(baseline);
         }
 
         awaitPartitionMapExchange();
