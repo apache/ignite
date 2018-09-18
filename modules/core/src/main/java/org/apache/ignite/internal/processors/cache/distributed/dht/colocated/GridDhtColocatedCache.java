@@ -304,7 +304,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         if (keyCheck)
             validateCacheKeys(keys);
 
-        GridNearTxLocal tx = ctx.tm().threadLocalTx(ctx);
+        GridNearTxLocal tx = (ctx.mvccEnabled()) ? MvccUtils.tx(ctx.kernalContext()) : ctx.tm().threadLocalTx(ctx);
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -332,7 +332,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         MvccSnapshot mvccSnapshot = null;
         MvccQueryTracker mvccTracker = null;
 
-        if (ctx.mvccEnabled() && tx != null) {
+        if (ctx.mvccEnabled()) {
             try {
                 if (tx != null)
                     mvccSnapshot = MvccUtils.requestSnapshot(ctx, tx);

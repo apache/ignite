@@ -589,8 +589,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
      * @param largeKeys {@code True} to use large keys (not fitting in single page).
+     * @throws Exception If failed.
      */
     private void putRemoveSimple(boolean largeKeys) throws Exception {
         Ignite node = startGrid(0);
@@ -771,6 +771,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testWaitPreviousTxAck() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
+
         testSpi = true;
 
         startGrid(0);
@@ -822,11 +824,11 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         IgniteInternalFuture<?> txFut2 = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    cache.put(1, 3);
-                    cache.put(2, 3);
+                    try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        cache.put(1, 3);
+                        cache.put(2, 3);
 
-                    tx.commit();
+                        tx.commit();
                 }
 
                 // Should see changes mady by both tx1 and tx2.
@@ -1032,7 +1034,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             @Override public Void call() throws Exception {
                 IgniteCache<Integer, Integer> cache = client.cache(srvCache.getName());
 
-
                 Map<Integer, Integer> vals;
 
                 if (inTx) {
@@ -1085,6 +1086,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testCleanupWaitsForGet2() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
         /*
         Simulate case when there are two active transactions modifying the same key
         (it is possible if key lock is released but ack message is delayed), and at this moment
@@ -1157,10 +1159,10 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         final IgniteInternalFuture<?> putFut2 = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    cache.put(key1, 2);
+                    try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        cache.put(key1, 2);
 
-                    tx.commit();
+                        tx.commit();
                 }
 
                 return null;
@@ -1429,8 +1431,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     public void testPutAllGetAll_ClientServer_Backups1_Restart_Scan() throws Exception {
         putAllGetAll(RestartMode.RESTART_RND_SRV, 4, 2, 1, 64, null, SCAN, PUT);
     }
-
-
 
     /**
      * @throws Exception If failed.
@@ -1954,9 +1954,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         int cacheBackups,
         int cacheParts,
         ReadMode readMode
-    )
-        throws Exception
-    {
+    ) throws Exception {
         final int writers = 4;
 
         final int readers = 4;
@@ -2282,7 +2280,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         Ignite srv0 = startGrid(0);
 
-        IgniteCache<Integer, Integer> cache =  (IgniteCache)srv0.createCache(
+        IgniteCache<Integer, Integer> cache = (IgniteCache)srv0.createCache(
             cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT));
 
         Map<Integer, Integer> map;
@@ -2477,7 +2475,16 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             }
         }, "tx-thread");
 
-        srv1Spi.waitForBlocked();
+        GridTestUtils.waitForCondition(
+            new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return srv1Spi.hasBlockedMessages() || fut.isDone() && fut.error() != null;
+                }
+            }, 10_000
+        );
+
+        if (fut.isDone())
+            fut.get(); // Fail fast.
 
         assertFalse(fut.isDone());
 
@@ -2554,7 +2561,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         for (Ignite node : G.allGrids())
             checkValues(vals, node.cache(cache.getName()));
     }
-
 
     /**
      * @throws Exception If failed.
@@ -2922,7 +2928,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         doImplicitPartsScanTest(1, 0, 0, 1, 10_000);
     }
 
-
     /**
      * @throws Exception If failed.
      */
@@ -2965,6 +2970,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         int cacheBackups,
         int cacheParts,
         long time) throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
+
         final int KEYS_PER_PART = 20;
 
         final int writers = 4;
@@ -3072,7 +3079,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
                             ScanQuery<Integer, MvccTestAccount> qry = new ScanQuery<>(part);
 
-                            List<Cache.Entry<Integer, MvccTestAccount>> res =  cache.cache.query(qry).getAll();
+                            List<Cache.Entry<Integer, MvccTestAccount>> res = cache.cache.query(qry).getAll();
 
                             int sum = 0;
 
@@ -3098,7 +3105,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                             try {
                                 ScanQuery<Integer, MvccTestAccount> qry = new ScanQuery<>();
 
-                                List<Cache.Entry<Integer, MvccTestAccount>> res =  cache.cache.query(qry).getAll();
+                                List<Cache.Entry<Integer, MvccTestAccount>> res = cache.cache.query(qry).getAll();
 
                                 int sum = 0;
 
@@ -3465,7 +3472,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @param readModes Read modes to check.
      * @return Value.
      */
-    private Object checkAndGet(boolean inTx, IgniteCache cache, Object key, ReadMode ... readModes) {
+    private Object checkAndGet(boolean inTx, IgniteCache cache, Object key, ReadMode... readModes) {
         assert readModes != null && readModes.length > 0;
 
         if (inTx)
@@ -3529,7 +3536,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         }
     }
 
-
     /**
      * Checks values obtained with different read modes.
      * And returns value in case of it's equality for all read modes.
@@ -3543,7 +3549,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @param readModes Read modes to check.
      * @return Value.
      */
-    private Map checkAndGetAll(boolean inTx, IgniteCache cache, Set keys, ReadMode ... readModes) {
+    private Map checkAndGetAll(boolean inTx, IgniteCache cache, Set keys, ReadMode... readModes) {
         assert readModes != null && readModes.length > 0;
 
         if (inTx)
@@ -3568,7 +3574,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         return prevVal;
     }
-
 
     /**
      * Reads value from cache for the given key using given read mode.

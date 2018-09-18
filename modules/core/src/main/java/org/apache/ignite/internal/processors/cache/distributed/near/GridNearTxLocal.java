@@ -62,7 +62,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrep
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTrackerImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -576,7 +575,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     ) {
         assert key != null;
 
-        if (cacheCtx.mvccEnabled() && pessimistic() && repeatableRead())
+        if (cacheCtx.mvccEnabled())
             return mvccPutAllAsync0(cacheCtx, Collections.singletonMap(key, val),
                 entryProcessor == null ? null : Collections.singletonMap(key, entryProcessor), invokeArgs, retval, filter);
 
@@ -702,6 +701,18 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
+     *
+     * @param ctx Cache context.
+     * @throws IgniteCheckedException If tx mode is not supported.
+     */
+    protected void validateTxMode(GridCacheContext ctx) throws IgniteCheckedException {
+        if(!ctx.mvccEnabled() || pessimistic() && repeatableRead())
+            return;
+
+        throw new IgniteCheckedException("Only pessimistic repeatable read transactions are supported at the moment.");
+    }
+
+    /**
      * Internal method for MVCC put and transform operations. Only one of {@code map}, {@code transformMap}
      * maps must be non-null.
      *
@@ -722,6 +733,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable final CacheEntryPredicate filter
     ) {
         try {
+            validateTxMode(cacheCtx);
+
             if (mvccSnapshot == null) {
                 MvccUtils.mvccTracker(cacheCtx, this);
 
@@ -833,7 +846,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean retval
     ) {
         // TODO: IGNITE-9540: Fix invoke/invokeAll.
-        if (cacheCtx.mvccEnabled() && pessimistic() && repeatableRead()) {
+        if (cacheCtx.mvccEnabled()) {
             if(invokeMap != null)
                 MvccUtils.verifyMvccOperationSupport(cacheCtx, "invoke/invokeAll");
 
@@ -1672,7 +1685,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean retval,
         @Nullable final CacheEntryPredicate filter,
         boolean singleRmv) {
-        if(cacheCtx.mvccEnabled() && pessimistic() && repeatableRead())
+        if(cacheCtx.mvccEnabled())
             return mvccRemoveAllAsync0(cacheCtx, keys, retval, filter);
 
         try {
@@ -1683,9 +1696,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         }
 
         cacheCtx.checkSecurity(SecurityPermission.CACHE_REMOVE);
-
-        if (cacheCtx.mvccEnabled() && !isOperationAllowed(false))
-            return txTypeMismatchFinishFuture();
 
         if (retval)
             needReturnValue(true);
@@ -1908,6 +1918,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable final CacheEntryPredicate filter
     ) {
         try {
+            validateTxMode(cacheCtx);
+
             if (mvccSnapshot == null) {
                 MvccUtils.mvccTracker(cacheCtx, this);
 
@@ -2159,35 +2171,17 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
 
-        if (cacheCtx.mvccEnabled() && !isOperationAllowed(false))
+        try {
+            validateTxMode(cacheCtx);
+        }
+        catch (IgniteCheckedException e) {
+            return new GridFinishedFuture(e);
+        }
+
+        if (cacheCtx.mvccEnabled() && !isOperationAllowed(true))
             return txTypeMismatchFinishFuture();
 
         init();
-
-        if (cacheCtx.mvccEnabled() && (optimistic() && !readCommitted()) && mvccTracker == null) {
-            // TODO IGNITE-7388: support async tx rollback (e.g. on timeout).
-            boolean canRemap = cctx.lockedTopologyVersion(null) == null;
-
-            mvccTracker = new MvccQueryTrackerImpl(cacheCtx, canRemap);
-
-            return new GridEmbeddedFuture<>(mvccTracker.requestSnapshot(topologyVersion()),
-                new IgniteBiClosure<MvccSnapshot, Exception, IgniteInternalFuture<Map<K, V>>>() {
-                    @Override public IgniteInternalFuture<Map<K, V>> apply(MvccSnapshot snapshot, Exception e) {
-                        if (e != null)
-                            return new GridFinishedFuture<>(e);
-
-                        return getAllAsync(cacheCtx,
-                            entryTopVer,
-                            keys,
-                            deserializeBinary,
-                            skipVals,
-                            keepCacheObjects,
-                            skipStore,
-                            recovery,
-                            needVer);
-                    }
-                });
-        }
 
         int keysCnt = keys.size();
 
