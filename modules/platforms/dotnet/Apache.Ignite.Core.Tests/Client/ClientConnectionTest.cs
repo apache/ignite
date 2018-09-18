@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             using (Ignition.Start(SecureServerConfig()))
             {
-                var cliCfg = SecureClientConfig();
+                var cliCfg = GetSecureClientConfig();
 
                 cliCfg.Password = null;
                 var ex = Assert.Throws<IgniteClientException>(() => { Ignition.StartClient(cliCfg); });
@@ -116,7 +116,7 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             using (Ignition.Start(SecureServerConfig()))
             {
-                var cliCfg = SecureClientConfig();
+                var cliCfg = GetSecureClientConfig();
 
                 cliCfg.UserName = "invalid";
 
@@ -141,7 +141,7 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 srv.GetCluster().SetActive(true);
 
-                using (var cli = Ignition.StartClient(SecureClientConfig()))
+                using (var cli = Ignition.StartClient(GetSecureClientConfig()))
                 {
                     CacheClientConfiguration ccfg = new CacheClientConfiguration()
                     {
@@ -163,7 +163,7 @@ namespace Apache.Ignite.Core.Tests.Client
                     cache.Query(new SqlFieldsQuery("CREATE USER \"my_User\" WITH PASSWORD 'my_Password'")).GetAll();
                 }
 
-                var cliCfg = SecureClientConfig();
+                var cliCfg = GetSecureClientConfig();
 
                 cliCfg.UserName = "my_User";
                 cliCfg.Password = "my_Password";
@@ -696,9 +696,9 @@ namespace Apache.Ignite.Core.Tests.Client
         /// Create client configuration with enabled authentication.
         /// </summary>
         /// <returns>Client configuration.</returns>
-        private static IgniteClientConfiguration SecureClientConfig()
+        private static IgniteClientConfiguration GetSecureClientConfig()
         {
-            return new IgniteClientConfiguration()
+            return new IgniteClientConfiguration
             {
                 Host = "localhost",
                 UserName = "ignite",
