@@ -105,7 +105,7 @@ namespace ignite
         typedef common::Unexpected<OdbcError> OdbcUnexpected;
 
         /**
-         * Expected specialization for OdbcError
+         * Expected specialization for OdbcError.
          */
         template<typename R>
         struct OdbcExpected : common::Expected<R, OdbcError>

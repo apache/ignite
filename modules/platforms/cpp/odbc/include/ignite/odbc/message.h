@@ -163,7 +163,7 @@ namespace ignite
              * @param schema Schema.
              * @param sql SQL query.
              * @param params Query arguments.
-             * @param begin Beginng of the interval.
+             * @param begin Beginning of the interval.
              * @param end End of the interval.
              * @param timeout Timeout.
              * @param autoCommit Auto commit flag.
@@ -194,7 +194,7 @@ namespace ignite
             /** Parameters bindings. */
             const app::ParameterSet& params;
 
-            /** Beginng of the interval. */
+            /** Beginning of the interval. */
             SqlUlen begin;
 
             /** End of the interval. */

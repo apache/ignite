@@ -25,7 +25,7 @@ namespace ignite
         class SqlLexer;
 
         /**
-         * SQL command type
+         * SQL command type.
          */
         struct SqlCommandType
         {

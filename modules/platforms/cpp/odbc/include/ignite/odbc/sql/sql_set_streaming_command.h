@@ -147,7 +147,7 @@ namespace ignite
             static void ThrowUnexpectedEndOfStatement(const std::string& expected);
 
             /**
-             * Get int or throw parsring exception.
+             * Get int or throw parsing exception.
              *
              * @param lexer Lexer to use.
              * @return Integer number.
@@ -155,7 +155,7 @@ namespace ignite
             static int32_t ExpectInt(SqlLexer& lexer);
 
             /**
-             * Get positive int or throw parsring exception.
+             * Get positive int or throw parsing exception.
              *
              * @param lexer Lexer to use.
              * @param description Param description to use in exception on error.
@@ -164,7 +164,7 @@ namespace ignite
             static int32_t ExpectPositiveInteger(SqlLexer& lexer, const std::string& description);
 
             /**
-             * Get bool or throw parsring exception.
+             * Get bool or throw parsing exception.
              *
              * @param lexer Lexer to use.
              * @return Boolean value.

@@ -276,8 +276,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * or due to {@code IOException} during network operations.
      */
     public void onDisconnect() {
-        if (busyLock.enterBusy())
-        {
+        if (busyLock.enterBusy()) {
             if (worker != null) {
                 worker.cancel();
 
@@ -289,8 +288,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                 }
             }
 
-            try
-            {
+            try {
                 for (OdbcQueryResults res : qryResults.values())
                     res.closeAll();
 
@@ -385,9 +383,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
                 fieldsMeta = results.currentResultSet().fieldsMeta();
 
-                for (OdbcColumnMeta meta : fieldsMeta) {
+                for (OdbcColumnMeta meta : fieldsMeta)
                     log.warning("Meta - " + meta.columnName + ", " + meta.precision + ", " + meta.scale);
-                }
             }
 
             OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, fieldsMeta, results.rowsAffected());

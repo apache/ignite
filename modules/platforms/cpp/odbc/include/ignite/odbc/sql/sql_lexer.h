@@ -95,10 +95,10 @@ namespace ignite
             bool HaveData(int32_t num) const;
 
             /**
-             * Check if the char is delimeter.
+             * Check if the char is delimiter.
              *
              * @param c Character
-             * @return True if the character is delimeter.
+             * @return True if the character is delimiter.
              */
             static bool IsDelimeter(int c);
 
