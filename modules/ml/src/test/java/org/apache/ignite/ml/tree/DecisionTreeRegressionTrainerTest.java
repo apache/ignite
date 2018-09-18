@@ -17,13 +17,15 @@
 
 package org.apache.ignite.ml.tree;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static junit.framework.TestCase.assertEquals;
@@ -32,10 +34,30 @@ import static junit.framework.TestCase.assertTrue;
 /**
  * Tests for {@link DecisionTreeRegressionTrainer}.
  */
-public class DecisionTreeRegressionTrainerTest extends TrainerTest {
+@RunWith(Parameterized.class)
+public class DecisionTreeRegressionTrainerTest {
+    /** Number of parts to be tested. */
+    private static final int[] partsToBeTested = new int[] {1, 2, 3, 4, 5, 7};
+
+    /** Number of partitions. */
+    @Parameterized.Parameter(0)
+    public int parts;
+
     /** Use index [= 1 if true]. */
     @Parameterized.Parameter(1)
     public int useIdx;
+
+    /** Test parameters. */
+    @Parameterized.Parameters(name = "Data divided on {0} partitions. Use index = {1}.")
+    public static Iterable<Integer[]> data() {
+        List<Integer[]> res = new ArrayList<>();
+        for (int i = 0; i < 2; i++) {
+            for (int part : partsToBeTested)
+                res.add(new Integer[] {part, i});
+        }
+
+        return res;
+    }
 
     /** */
     @Test
