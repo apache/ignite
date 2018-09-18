@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Impl.Client
             _timeout = clientConfiguration.SocketTimeout;
 
             _socket = Connect(clientConfiguration, endPoint);
-            _stream = GetSocketStream(_socket, clientConfiguration);
+            _stream = GetSocketStream(_socket, clientConfiguration, endPoint);
 
             ServerVersion = version ?? CurrentProtocolVersion;
 
@@ -579,7 +579,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Gets the socket stream.
         /// </summary>
-        private static Stream GetSocketStream(Socket socket, IgniteClientConfiguration cfg)
+        private static Stream GetSocketStream(Socket socket, IgniteClientConfiguration cfg, EndPoint endPoint)
         {
             var stream = new NetworkStream(socket)
             {
@@ -592,7 +592,11 @@ namespace Apache.Ignite.Core.Impl.Client
                 return stream;
             }
 
-            return cfg.SslStreamFactory.Create(stream, cfg.Host);
+            // TODO: Get host from other types of endPoints.
+            var dnsEndPoint = endPoint as DnsEndPoint;
+            var host = dnsEndPoint != null ? dnsEndPoint.Host : null;
+
+            return cfg.SslStreamFactory.Create(stream, host);
         }
 
         /// <summary>

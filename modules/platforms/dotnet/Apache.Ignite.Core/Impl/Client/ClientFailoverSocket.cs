@@ -61,11 +61,13 @@ namespace Apache.Ignite.Core.Impl.Client
 
             _config = config;
 
+#pragma warning disable 618 // Type or member is obsolete
             if (config.Host == null && (config.Endpoints == null || config.Endpoints.Count == 0))
             {
                 throw new IgniteClientException("Invalid IgniteClientConfiguration: Host is null, " +
                                                 "Endpoints is null or empty. Nowhere to connect.");
             }
+#pragma warning restore 618
 
             _endPoints = GetIpEndPoints(config).ToList();
 
@@ -244,10 +246,12 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private static IEnumerable<Endpoint> GetEndpoints(IgniteClientConfiguration cfg)
         {
+#pragma warning disable 618 // Type or member is obsolete
             if (cfg.Host != null)
             {
                 yield return new Endpoint {Host = cfg.Host, Port = cfg.Port};
             }
+#pragma warning restore 618
 
             if (cfg.Endpoints != null)
             {

@@ -114,12 +114,14 @@ namespace Apache.Ignite.Core.Client
         /// <summary>
         /// Gets or sets the host. Should not be null.
         /// </summary>
+        [Obsolete("Use Endpoints instead")]
         public string Host { get; set; }
 
         /// <summary>
         /// Gets or sets the port.
         /// </summary>
         [DefaultValue(DefaultPort)]
+        [Obsolete("Use Endpoints instead")]
         public int Port { get; set; }
 
         /// <summary>
@@ -132,7 +134,7 @@ namespace Apache.Ignite.Core.Client
         /// * On disconnect, next endpoint is picked from the list.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public ICollection<Endpoint> Endpoints { get; set; }
+        public ICollection<string> Endpoints { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether automatic reconnect is disabled.
