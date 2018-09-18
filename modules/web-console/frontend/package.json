@@ -105,7 +105,7 @@
     "copy-webpack-plugin": "4.5.2",
     "css-loader": "0.28.7",
     "eslint": "4.19.1",
-    "eslint-friendly-formatter": "3.0.0",
+    "eslint-formatter-friendly": "^6.0.0",
     "eslint-loader": "2.1.0",
     "eslint-plugin-babel": "5.1.0",
     "eslint-plugin-typescript": "^0.12.0",

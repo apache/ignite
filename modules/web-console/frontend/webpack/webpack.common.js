@@ -22,7 +22,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ProgressBarPlugin = require('progress-bar-webpack-plugin');
 
-const eslintFormatter = require('eslint-friendly-formatter');
+const eslintFormatter = require('eslint-formatter-friendly');
 
 const basedir = path.join(__dirname, '../');
 const contentBase = path.join(basedir, 'public');
