@@ -915,17 +915,19 @@ public class InlineIndexHelper {
 
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
 
-                if (val.getBytes().length + 3 <= maxSize) {
-                    size = (short)val.getBytes().length;
+                 byte[] bytes = val.getBytes();
+
+                 if (bytes.length + 3 <= maxSize) {
+                    size = (short)bytes.length;
                     PageUtils.putShort(pageAddr, off + 1, size);
-                    PageUtils.putBytes(pageAddr, off + 3, val.getBytes());
+                    PageUtils.putBytes(pageAddr, off + 3, bytes);
 
                     return size + 3;
                 }
                 else {
                     size = (short)((maxSize - 3) | 0x8000);
                     PageUtils.putShort(pageAddr, off + 1, size);
-                    PageUtils.putBytes(pageAddr, off + 3, Arrays.copyOfRange(val.getBytes(), 0, maxSize - 3));
+                    PageUtils.putBytes(pageAddr, off + 3, Arrays.copyOfRange(bytes, 0, maxSize - 3));
 
                     return maxSize;
                 }
