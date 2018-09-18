@@ -82,9 +82,9 @@ public class SVMLinearMultiClassClassificationTrainer
 
         classes.forEach(clsLb -> {
             SVMLinearBinaryClassificationTrainer trainer = new SVMLinearBinaryClassificationTrainer()
-                .withAmountOfIterations(this.amountOfIterations())
-                .withAmountOfLocIterations(this.amountOfLocIterations())
-                .withLambda(this.lambda())
+                .withAmountOfIterations(this.getAmountOfIterations())
+                .withAmountOfLocIterations(this.getAmountOfLocIterations())
+                .withLambda(this.getLambda())
                 .withSeed(this.seed);
 
             IgniteBiFunction<K, V, Double> lbTransformer = (k, v) -> {
@@ -197,20 +197,20 @@ public class SVMLinearMultiClassClassificationTrainer
     }
 
     /**
-     * Gets the regularization lambda.
+     * Get the regularization lambda.
      *
-     * @return The parameter value.
+     * @return The property value.
      */
-    public double lambda() {
+    public double getLambda() {
         return lambda;
     }
 
     /**
      * Gets the amount of outer iterations of SCDA algorithm.
      *
-     * @return The parameter value.
+     * @return The property value.
      */
-    public int amountOfIterations() {
+    public int getAmountOfIterations() {
         return amountOfIterations;
     }
 
@@ -228,9 +228,9 @@ public class SVMLinearMultiClassClassificationTrainer
     /**
      * Gets the amount of local iterations of SCDA algorithm.
      *
-     * @return The parameter value.
+     * @return The property value.
      */
-    public int amountOfLocIterations() {
+    public int getAmountOfLocIterations() {
         return amountOfLocIterations;
     }
 
@@ -248,7 +248,7 @@ public class SVMLinearMultiClassClassificationTrainer
     /**
      * Gets the seed number.
      *
-     * @return The parameter value.
+     * @return The property value.
      */
     public long getSeed() {
         return seed;

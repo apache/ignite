@@ -74,7 +74,7 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    @SuppressWarnings("unchecked")
+    @Override @SuppressWarnings("unchecked")
     protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration ccfg0 = super.cacheConfiguration(igniteInstanceName);
 

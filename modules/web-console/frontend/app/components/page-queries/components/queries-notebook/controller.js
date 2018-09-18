@@ -41,7 +41,7 @@ const ROW_IDX = {value: -2, type: 'java.lang.Integer', label: 'ROW_IDX'};
 
 const NON_COLLOCATED_JOINS_SINCE = '1.7.0';
 
-const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], '2.5.1-p13'];
+const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], ['2.5.1-p13', '2.6.0'], '2.7.0'];
 
 const ENFORCE_JOIN_SINCE = [['1.7.9', '1.8.0'], ['1.8.4', '1.9.0'], '1.9.1'];
 
@@ -251,7 +251,7 @@ class Paragraph {
 
 // Controller for SQL notebook screen.
 export class NotebookCtrl {
-    static $inject = ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', CSV.name, 'IgniteErrorParser'];
+    static $inject = ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', 'CSV', 'IgniteErrorParser'];
 
     /**
      * @param {CSV} CSV
@@ -1564,8 +1564,8 @@ export class NotebookCtrl {
             if (!$scope.queryAvailable(paragraph))
                 return;
 
-            Notebook.save($scope.notebook)
-                .catch(Messages.showError);
+            if (!paragraph.partialQuery)
+                Notebook.save($scope.notebook).catch(Messages.showError);
 
             _cancelRefresh(paragraph);
 
@@ -1577,7 +1577,7 @@ export class NotebookCtrl {
                     const args = paragraph.queryArgs = {
                         type: 'EXPLAIN',
                         cacheName: $scope.cacheNameForSql(paragraph),
-                        query: 'EXPLAIN ' + paragraph.query,
+                        query: 'EXPLAIN ' + (paragraph.partialQuery || paragraph.query),
                         pageSize: paragraph.pageSize
                     };
 
@@ -1964,11 +1964,8 @@ export class NotebookCtrl {
         };
     }
 
-    $onInit() {
-
-    }
-
     $onDestroy() {
-        this.refresh$.unsubscribe();
+        if (this.refresh$)
+            this.refresh$.unsubscribe();
     }
 }

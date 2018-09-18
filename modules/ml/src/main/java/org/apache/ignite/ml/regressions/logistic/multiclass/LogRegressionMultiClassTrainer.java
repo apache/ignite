@@ -77,14 +77,14 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> LogRegressionMultiClassModel updateModel(LogRegressionMultiClassModel mdl,
+    @Override public <K, V> LogRegressionMultiClassModel updateModel(LogRegressionMultiClassModel newMdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
         List<Double> classes = extractClassLabels(datasetBuilder, lbExtractor);
 
         if(classes.isEmpty())
-            return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
+            return getLastTrainedModelOrThrowEmptyDatasetException(newMdl);
 
         LogRegressionMultiClassModel multiClsMdl = new LogRegressionMultiClassModel();
 
@@ -101,12 +101,12 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
                     return 0.0;
             };
 
-            LogisticRegressionModel model = Optional.ofNullable(mdl)
+            LogisticRegressionModel mdl = Optional.ofNullable(newMdl)
                 .flatMap(multiClassModel -> multiClassModel.getModel(clsLb))
                 .map(learnedModel -> trainer.update(learnedModel, datasetBuilder, featureExtractor, lbTransformer))
                 .orElseGet(() -> trainer.fit(datasetBuilder, featureExtractor, lbTransformer));
 
-            multiClsMdl.add(clsLb, model);
+            multiClsMdl.add(clsLb, mdl);
         });
 
         return multiClsMdl;
@@ -169,20 +169,20 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
     }
 
     /**
-     * Gets the batch size.
+     * Get the batch size.
      *
      * @return The parameter value.
      */
-    public double batchSize() {
+    public double getBatchSize() {
         return batchSize;
     }
 
     /**
-     * Gets the amount of outer iterations of SGD algorithm.
+     * Get the amount of outer iterations of SGD algorithm.
      *
      * @return The parameter value.
      */
-    public int amountOfIterations() {
+    public int getAmountOfIterations() {
         return amountOfIterations;
     }
 
@@ -198,11 +198,11 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
     }
 
     /**
-     * Gets the amount of local iterations.
+     * Get the amount of local iterations.
      *
      * @return The parameter value.
      */
-    public int amountOfLocIterations() {
+    public int getAmountOfLocIterations() {
         return amountOfLocIterations;
     }
 
@@ -229,7 +229,7 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
     }
 
     /**
-     * Gets the seed for random generator.
+     * Get the seed for random generator.
      *
      * @return The parameter value.
      */
@@ -249,11 +249,11 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
     }
 
     /**
-     * Gets the update strategy..
+     * Get the update strategy..
      *
      * @return The parameter value.
      */
-    public UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy() {
+    public UpdatesStrategy<? super MultilayerPerceptron, P> getUpdatesStgy() {
         return updatesStgy;
     }
 }
