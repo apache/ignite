@@ -70,10 +70,16 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     private static final String OBJ_CACHE_NAME_FOR_SCALE = "ORG_EMPLOYEE_FOR_SCALE";
 
     /** */
+    private static final String DEC_EMPL_CACHE_NAME_FOR_SCALE = "DEC_EMPLOYEE_FOR_SCALE";
+
+    /** */
     private static final String DEC_CACHE_NAME_FOR_PREC = "DEC_DEC_FOR_PREC";
 
     /** */
     private static final String OBJ_CACHE_NAME_FOR_PREC = "ORG_EMPLOYEE_FOR_PREC";
+
+    /** */
+    private static final String DEC_EMPL_CACHE_NAME_FOR_PREC = "DEC_EMPLOYEE_FOR_PREC";
 
     /** */
     private Consumer<Runnable> shouldFail = (op) -> assertThrowsWithCause(op, IgniteException.class);
@@ -137,6 +143,16 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
             .addQueryField("id", "java.math.BigDecimal", "id")
             .addQueryField("salary", "java.math.BigDecimal", "salary")
             .setFieldsPrecision(orgEmployeePrecision)), OBJ_CACHE_NAME_FOR_PREC);
+
+        Map<String, Integer> decEmployeePrecision = new HashMap<>();
+
+        decEmployeePrecision.put(KEY_FIELD_NAME, 4);
+
+        decEmployeePrecision.put("salary", 4);
+
+        jcache(grid(0), cacheConfiguration(new QueryEntity(BigDecimal.class.getName(), Employee.class.getName())
+            .addQueryField("salary", "java.math.BigDecimal", "salary")
+            .setFieldsPrecision(decEmployeePrecision)), DEC_EMPL_CACHE_NAME_FOR_PREC);
     }
 
     /** @throws Exception If failed.*/
@@ -174,6 +190,23 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
             .addQueryField("salary", "java.math.BigDecimal", "salary")
             .setFieldsScale(orgEmployeeScale)
             .setFieldsPrecision(orgEmployeePrecision)), OBJ_CACHE_NAME_FOR_SCALE);
+
+        Map<String, Integer> decEmployeePrecision = new HashMap<>();
+
+        Map<String, Integer> decEmployeeScale = new HashMap<>();
+
+        decEmployeePrecision.put(KEY_FIELD_NAME, 4);
+
+        decEmployeeScale.put(KEY_FIELD_NAME, 2);
+
+        decEmployeePrecision.put("salary", 4);
+
+        decEmployeeScale.put("salary", 2);
+
+        jcache(grid(0), cacheConfiguration(new QueryEntity(BigDecimal.class.getName(), Employee.class.getName())
+            .addQueryField("salary", "java.math.BigDecimal", "salary")
+            .setFieldsPrecision(decEmployeePrecision)
+            .setFieldsScale(decEmployeeScale)), DEC_EMPL_CACHE_NAME_FOR_SCALE);
     }
 
     /** {@inheritDoc} */
@@ -359,13 +392,13 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     public void testPutTooLongDecimalValueFail() throws Exception {
         IgniteCache<BigDecimal, BigDecimal> cache = jcache(0, DEC_CACHE_NAME_FOR_PREC);
 
-        T2<BigDecimal, BigDecimal> val = new T2<>(BigDecimal.valueOf(12.36), BigDecimal.valueOf(123.45));
+        T2<BigDecimal, BigDecimal> val = new T2<>(d(12.36), d(123.45));
 
-        checkPutAll(shouldFail, cache, new T2<>(BigDecimal.valueOf(12.34), BigDecimal.valueOf(12.34)), val);
+        checkPutAll(shouldFail, cache, new T2<>(d(12.34), d(12.34)), val);
 
         checkPutOps(shouldFail, cache, val);
 
-        checkReplaceOps(shouldFail, cache, val, BigDecimal.valueOf(12.34));
+        checkReplaceOps(shouldFail, cache, val, d(12.34));
     }
 
     /**
@@ -374,9 +407,22 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     public void testPutTooLongDecimalKeyFail() throws Exception {
         IgniteCache<BigDecimal, BigDecimal> cache = jcache(0, DEC_CACHE_NAME_FOR_PREC);
 
-        T2<BigDecimal, BigDecimal> val =  new T2<>(BigDecimal.valueOf(123.45), BigDecimal.valueOf(12.34));
+        T2<BigDecimal, BigDecimal> val =  new T2<>(d(123.45), d(12.34));
 
-        checkPutAll(shouldFail, cache, new T2<>(BigDecimal.valueOf(12.35), BigDecimal.valueOf(12.34)), val);
+        checkPutAll(shouldFail, cache, new T2<>(d(12.35), d(12.34)), val);
+
+        checkPutOps(shouldFail, cache, val);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutTooLongDecimalKeyFail2() throws Exception {
+        IgniteCache<BigDecimal, Employee> cache = jcache(0, DEC_EMPL_CACHE_NAME_FOR_PREC);
+
+        T2<BigDecimal, Employee> val =  new T2<>(d(123.45), new Employee(d(12.34)));
+
+        checkPutAll(shouldFail, cache, new T2<>(d(12.35), new Employee(d(12.34))), val);
 
         checkPutOps(shouldFail, cache, val);
     }
@@ -387,15 +433,28 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     public void testPutTooLongDecimalValueFieldFail() throws Exception {
         IgniteCache<DecOrganization, Employee> cache = jcache(0, OBJ_CACHE_NAME_FOR_PREC);
 
-        T2<DecOrganization, Employee> val =
-            new T2<>(new DecOrganization(BigDecimal.valueOf(12.36)), new Employee(BigDecimal.valueOf(123.45)));
+        T2<DecOrganization, Employee> val = new T2<>(new DecOrganization(d(12.36)), new Employee(d(123.45)));
 
-        checkPutAll(shouldFail, cache,
-            new T2<>(new DecOrganization(BigDecimal.valueOf(12.34)), new Employee(BigDecimal.valueOf(12.34))), val);
+        checkPutAll(shouldFail, cache, new T2<>(new DecOrganization(d(12.34)), new Employee(d(12.34))), val);
 
         checkPutOps(shouldFail, cache, val);
 
-        checkReplaceOps(shouldFail, cache, val, new Employee(BigDecimal.valueOf(12.34)));
+        checkReplaceOps(shouldFail, cache, val, new Employee(d(12.34)));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutTooLongDecimalValueFieldFail2() throws Exception {
+        IgniteCache<BigDecimal, Employee> cache = jcache(0, DEC_EMPL_CACHE_NAME_FOR_PREC);
+
+        T2<BigDecimal, Employee> val = new T2<>(d(12.36), new Employee(d(123.45)));
+
+        checkPutAll(shouldFail, cache, new T2<>(d(12.34), new Employee(d(12.34))), val);
+
+        checkPutOps(shouldFail, cache, val);
+
+        checkReplaceOps(shouldFail, cache, val, new Employee(d(12.34)));
     }
 
     /**
@@ -404,11 +463,9 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     public void testPutTooLongDecimalKeyFieldFail() throws Exception {
         IgniteCache<DecOrganization, Employee> cache = jcache(0, OBJ_CACHE_NAME_FOR_PREC);
 
-        T2<DecOrganization, Employee> val =
-            new T2<>(new DecOrganization(BigDecimal.valueOf(123.45)), new Employee(BigDecimal.valueOf(12.34)));
+        T2<DecOrganization, Employee> val = new T2<>(new DecOrganization(d(123.45)), new Employee(d(12.34)));
 
-        checkPutAll(shouldFail, cache,
-            new T2<>(new DecOrganization(BigDecimal.valueOf(12.35)), new Employee(BigDecimal.valueOf(12.34))), val);
+        checkPutAll(shouldFail, cache, new T2<>(new DecOrganization(d(12.35)), new Employee(d(12.34))), val);
 
         checkPutOps(shouldFail, cache, val);
     }
@@ -419,13 +476,13 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     public void testPutTooLongDecimalValueScaleFail() throws Exception {
         IgniteCache<BigDecimal, BigDecimal> cache = jcache(0, DEC_CACHE_NAME_FOR_SCALE);
 
-        T2<BigDecimal, BigDecimal> val = new T2<>(BigDecimal.valueOf(12.36), BigDecimal.valueOf(3.456));
+        T2<BigDecimal, BigDecimal> val = new T2<>(d(12.36), d(3.456));
 
-        checkPutAll(shouldFail, cache, new T2<>(BigDecimal.valueOf(12.34), BigDecimal.valueOf(12.34)), val);
+        checkPutAll(shouldFail, cache, new T2<>(d(12.34), d(12.34)), val);
 
         checkPutOps(shouldFail, cache, val);
 
-        checkReplaceOps(shouldFail, cache, val, BigDecimal.valueOf(12.34));
+        checkReplaceOps(shouldFail, cache, val, d(12.34));
     }
 
     /**
@@ -434,9 +491,22 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     public void testPutTooLongDecimalKeyScaleFail() throws Exception {
         IgniteCache<BigDecimal, BigDecimal> cache = jcache(0, DEC_CACHE_NAME_FOR_SCALE);
 
-        T2<BigDecimal, BigDecimal> val = new T2<>(BigDecimal.valueOf(3.456), BigDecimal.valueOf(12.34));
+        T2<BigDecimal, BigDecimal> val = new T2<>(d(3.456), d(12.34));
 
-        checkPutAll(shouldFail, cache, new T2<>(BigDecimal.valueOf(12.35), BigDecimal.valueOf(12.34)), val);
+        checkPutAll(shouldFail, cache, new T2<>(d(12.35), d(12.34)), val);
+
+        checkPutOps(shouldFail, cache, val);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutTooLongDecimalKeyScaleFail2() throws Exception {
+        IgniteCache<BigDecimal, Employee> cache = jcache(0, DEC_EMPL_CACHE_NAME_FOR_SCALE);
+
+        T2<BigDecimal, Employee> val = new T2<>(d(3.456), new Employee(d(12.34)));
+
+        checkPutAll(shouldFail, cache, new T2<>(d(12.35), new Employee(d(12.34))), val);
 
         checkPutOps(shouldFail, cache, val);
     }
@@ -447,15 +517,28 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     public void testPutTooLongDecimalValueFieldScaleFail() throws Exception {
         IgniteCache<DecOrganization, Employee> cache = jcache(0, OBJ_CACHE_NAME_FOR_SCALE);
 
-        T2<DecOrganization, Employee> val =
-            new T2<>(new DecOrganization(BigDecimal.valueOf(12.36)), new Employee(BigDecimal.valueOf(3.456)));
+        T2<DecOrganization, Employee> val = new T2<>(new DecOrganization(d(12.36)), new Employee(d(3.456)));
 
-        checkPutAll(shouldFail, cache,
-            new T2<>(new DecOrganization(BigDecimal.valueOf(12.34)), new Employee(BigDecimal.valueOf(12.34))), val);
+        checkPutAll(shouldFail, cache, new T2<>(new DecOrganization(d(12.34)), new Employee(d(12.34))), val);
 
         checkPutOps(shouldFail, cache, val);
 
-        checkReplaceOps(shouldFail, cache, val, new Employee(BigDecimal.valueOf(12.34)));
+        checkReplaceOps(shouldFail, cache, val, new Employee(d(12.34)));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutTooLongDecimalValueFieldScaleFail2() throws Exception {
+        IgniteCache<BigDecimal, Employee> cache = jcache(0, DEC_EMPL_CACHE_NAME_FOR_SCALE);
+
+        T2<BigDecimal, Employee> val = new T2<>(d(12.36), new Employee(d(3.456)));
+
+        checkPutAll(shouldFail, cache, new T2<>(d(12.34), new Employee(d(12.34))), val);
+
+        checkPutOps(shouldFail, cache, val);
+
+        checkReplaceOps(shouldFail, cache, val, new Employee(d(12.34)));
     }
 
     /**
@@ -464,11 +547,9 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     public void testPutTooLongDecimalKeyFieldScaleFail() throws Exception {
         IgniteCache<DecOrganization, Employee> cache = jcache(0, OBJ_CACHE_NAME_FOR_SCALE);
 
-        T2<DecOrganization, Employee> val =
-            new T2<>(new DecOrganization(BigDecimal.valueOf(3.456)), new Employee(BigDecimal.valueOf(12.34)));
+        T2<DecOrganization, Employee> val = new T2<>(new DecOrganization(d(3.456)), new Employee(d(12.34)));
 
-        checkPutAll(shouldFail, cache,
-            new T2<>(new DecOrganization(BigDecimal.valueOf(12.35)), new Employee(BigDecimal.valueOf(12.34))), val);
+        checkPutAll(shouldFail, cache, new T2<>(new DecOrganization(d(12.35)), new Employee(d(12.34))), val);
 
         checkPutOps(shouldFail, cache, val);
     }
@@ -479,13 +560,13 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     public void testPutValidDecimalKeyAndValue() throws Exception {
         IgniteCache<BigDecimal, BigDecimal> cache = jcache(0, DEC_CACHE_NAME_FOR_SCALE);
 
-        T2<BigDecimal, BigDecimal> val = new T2<>(BigDecimal.valueOf(12.37), BigDecimal.valueOf(12.34));
+        T2<BigDecimal, BigDecimal> val = new T2<>(d(12.37), d(12.34));
 
-        checkPutAll(shouldSucceed, cache, new T2<>(BigDecimal.valueOf(12.36), BigDecimal.valueOf(12.34)), val);
+        checkPutAll(shouldSucceed, cache, new T2<>(d(12.36), d(12.34)), val);
 
         checkPutOps(shouldSucceed, cache, val);
 
-        checkReplaceOps(shouldSucceed, cache, val, BigDecimal.valueOf(12.34));
+        checkReplaceOps(shouldSucceed, cache, val, d(12.34));
     }
 
     /**
@@ -494,15 +575,33 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     public void testPutValidDecimalKeyAndValueField() throws Exception {
         IgniteCache<DecOrganization, Employee> cache = jcache(0, OBJ_CACHE_NAME_FOR_SCALE);
 
-        T2<DecOrganization, Employee> val =
-            new T2<>(new DecOrganization(BigDecimal.valueOf(12.37)), new Employee(BigDecimal.valueOf(12.34)));
+        T2<DecOrganization, Employee> val = new T2<>(new DecOrganization(d(12.37)), new Employee(d(12.34)));
 
-        checkPutAll(shouldSucceed, cache,
-            new T2<>(new DecOrganization(BigDecimal.valueOf(12.36)), new Employee(BigDecimal.valueOf(12.34))), val);
+        checkPutAll(shouldSucceed, cache, new T2<>(new DecOrganization(d(12.36)), new Employee(d(12.34))), val);
 
         checkPutOps(shouldSucceed, cache, val);
 
-        checkReplaceOps(shouldSucceed, cache, val, new Employee(BigDecimal.valueOf(12.34)));
+        checkReplaceOps(shouldSucceed, cache, val, new Employee(d(12.34)));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutValidDecimalKeyAndValueField2() throws Exception {
+        IgniteCache<BigDecimal, Employee> cache = jcache(0, DEC_EMPL_CACHE_NAME_FOR_SCALE);
+
+        T2<BigDecimal, Employee> val = new T2<>(d(12.37), new Employee(d(12.34)));
+
+        checkPutAll(shouldSucceed, cache, new T2<>(d(12.36), new Employee(d(12.34))), val);
+
+        checkPutOps(shouldSucceed, cache, val);
+
+        checkReplaceOps(shouldSucceed, cache, val, new Employee(d(12.34)));
+    }
+
+    /** */
+    private BigDecimal d(double val) {
+        return BigDecimal.valueOf(val);
     }
 
     /** */
