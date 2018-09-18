@@ -505,7 +505,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             persStoreMetrics.wal(cctx.wal());
 
-            // Read data from MetaStorage for early #onReadyForRead notification.
+            // Here we can get data from metastorage
             readMetastore();
         }
     }
@@ -750,8 +750,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (fileLockHolder != null)
                 fileLockHolder = new FileLockHolder(storeMgr.workDir().getPath(), cctx.kernalContext(), log);
         }
-
-        lastRestored = CheckpointStatus.NULL_PTR;
     }
 
     /**
@@ -859,41 +857,47 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override public void onDoneRestoreBinaryMemory() throws IgniteCheckedException {
         assert !cctx.kernalContext().clientNode();
 
-        long time;
+        long time = System.currentTimeMillis();
 
         checkpointReadLock();
 
         try {
-            time = System.currentTimeMillis();
-
             cctx.pageStore().initializeForMetastorage();
 
             if (log.isInfoEnabled())
-                log.info("[TIME] Page store init for metastorage finished in " + (System.currentTimeMillis() - time) + " ms.");
+                log.info("Initialize page store for metastorage took " + (System.currentTimeMillis() - time) + " ms.");
+
+            CheckpointStatus status = readCheckpointStatus();
+
+            // Memory should be recovered at startup.
+            assert !status.needRestoreMemory() : status;
+
+            // Memory restored at startup, just resume logging from last seen WAL pointer.
+            cctx.wal().resumeLogging();
+
+            final MetaStorage storage = new MetaStorage(
+                cctx,
+                dataRegionMap.get(METASTORE_DATA_REGION_NAME),
+                (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME)
+            );
 
             time = System.currentTimeMillis();
 
-            WALPointer lastPtr = restoreLastWalPointer();
+            // Init metastore only after WAL logging resumed. Can't do it earlier because
+            // MetaStorage first initialization also touches WAL, look at #isWalDeltaRecordNeeded.
+            storage.init(this);
+
+            metaStorage = storage;
 
             if (log.isInfoEnabled())
-                log.info("[TIME] Restore WAL pointer finished in " + (System.currentTimeMillis() - time) + " ms.");
+                log.info("Initialize metastorage on binary restore done took " + (System.currentTimeMillis() - time) + " ms.");
 
             time = System.currentTimeMillis();
-
-            // Memory restored at startup, just resume logging.
-            cctx.wal().resumeLogging(CheckpointStatus.NULL_PTR.equals(lastRestored) ? lastPtr : lastRestored);
-
-            if (log.isInfoEnabled())
-                log.info("[TIME] Resume logging finished in " + (System.currentTimeMillis() - time) + " ms.");
-
-            time = System.currentTimeMillis();
-
-            createMetaStorage();
-
-            if (log.isInfoEnabled())
-                log.info("[TIME] Creating metastorage finished in " + (System.currentTimeMillis() - time) + " ms.");
 
             notifyMetastorageReadyForReadWrite();
+
+            if (log.isInfoEnabled())
+                log.info("Notify metastorage on binary restore done took " + (System.currentTimeMillis() - time) + " ms.");
         }
         catch (IgniteCheckedException e) {
             if (X.hasCause(e, StorageException.class, IOException.class))
@@ -907,24 +911,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public void readCheckpointAndRestoreMemory(
-        List<DynamicCacheDescriptor> cachesToStart
-    ) throws IgniteCheckedException {
+    @Override public WALPointer readCheckpointAndRestoreMemory() throws IgniteCheckedException {
         assert !cctx.kernalContext().clientNode();
 
         checkpointReadLock();
 
         try {
-            long time = System.currentTimeMillis();
-
-            // Only presistence caches to start.
-            for (DynamicCacheDescriptor desc : cachesToStart)
-                storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
-
             cctx.pageStore().initializeForMetastorage();
-
-            if (log.isInfoEnabled())
-                log.info("[TIME] Create partition files took " + (System.currentTimeMillis() - time) + " ms.");
 
             CheckpointStatus status = readCheckpointStatus();
 
@@ -934,13 +927,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 false,
                 (PageMemoryEx)dataRegionMap.get(METASTORE_DATA_REGION_NAME).pageMemory());
 
-            if (log.isInfoEnabled())
-                log.info("[TIME] Restore memory finished in " + (System.currentTimeMillis() - time) + " ms.");
-
             if (restore == null && !status.endPtr.equals(CheckpointStatus.NULL_PTR)) {
                 throw new StorageException("Restore wal pointer = " + restore + ", while status.endPtr = " +
                     status.endPtr + ". Can't restore memory - critical part of WAL archive is missing.");
             }
+
+            // Temporary activate manager to be used for writing memory restore record.
+            cctx.wal().onActivate(cctx.kernalContext());
 
             cctx.wal().resumeLogging(restore);
 
@@ -952,12 +945,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 nodeStart(ptr);
             }
 
-            createMetaStorage();
+            cctx.wal().onDeActivate(cctx.kernalContext());
 
-            cctx.wal().suspendLogging();
+            return restore;
         }
         catch (IgniteCheckedException e) {
-            if (X.hasCause(e, StorageException.class, PersistentStorageIOException.class, IOException.class))
+            if (X.hasCause(e, StorageException.class, IOException.class))
                 cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             throw e;
@@ -1003,7 +996,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             Files.move(Paths.get(cpDir.getAbsolutePath(), tmpFileName), Paths.get(cpDir.getAbsolutePath(), fileName));
         }
         catch (IOException e) {
-            throw new PersistentStorageIOException("Failed to write node start marker: " + ptr, e);
+            throw new StorageException("Failed to write node start marker: " + ptr, e);
         }
     }
 
@@ -1107,8 +1100,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         unRegistrateMetricsMBean();
-
-        lastRestored = CheckpointStatus.NULL_PTR;
     }
 
     /** */
@@ -1999,35 +1990,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public void cacheProcessorStarted(List<DynamicCacheDescriptor> caches) throws IgniteCheckedException {
+    @Override public void cacheProcessorStarted(Collection<DynamicCacheDescriptor> caches) throws IgniteCheckedException {
         if (cctx.kernalContext().clientNode())
             return;
 
         // Preform early regions startup before restoring state.
         initAndStartRegions(cctx.kernalContext().config().getDataStorageConfiguration());
 
-        readCheckpointAndRestoreMemory(caches);
+        // Only presistence caches to start.
+        for (DynamicCacheDescriptor desc : caches)
+            storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
 
-        U.log(log, "Binary memory state restored at node startup [lastRestored=" + lastRestored + ']');
-    }
+        WALPointer restoredPtr = readCheckpointAndRestoreMemory();
 
-    /**
-     * @return {@link RestoreStateContext#lastReadRecordPointer()} from WAL.
-     * @throws IgniteCheckedException If fails.
-     */
-    private WALPointer restoreLastWalPointer() throws IgniteCheckedException {
-        RestoreWALState state = new RestoreWALState(cctx.wal().lastArchivedSegment(), log);
-
-        CheckpointStatus status = readCheckpointStatus();
-
-        assert !status.needRestoreMemory() : status;
-
-        try (WALIterator it = cctx.wal().replay(status.endPtr)) {
-            while (it.hasNextX())
-                it.nextX(); // Can ignore return value.
-        }
-
-        return state.lastReadRecordPointer();
+        if (restoredPtr != null)
+            U.log(log, "Binary memory state restored at node startup [restoredPtr=" + restoredPtr + ']');
     }
 
     /**
@@ -2433,8 +2410,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
             }
 
-            if (!metastoreOnly)
-                restorePartitionStates(partStates, null);
+            if (!metastoreOnly) {
+                long startRestorePart = U.currentTimeMillis();
+
+                if (log.isInfoEnabled())
+                    log.info("Restoring partition state for local groups [cntPartStateWal="
+                        + partStates.size() + ", lastCheckpointId=" + status.cpStartId + ']');
+
+                long proc = restorePartitionStates(partStates, null);
+
+                if (log.isInfoEnabled())
+                    log.info("Finished restoring partition state for local groups [cntProcessed=" + proc +
+                        ", cntPartStateWal=" + partStates.size() +
+                        ", time=" + (U.currentTimeMillis() - startRestorePart) + "ms]");
+            }
         }
         finally {
             if (!metastoreOnly)
@@ -2452,12 +2441,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      *
      * @param partStates Partition states restored from WAL.
      * @param onlyForGroups If not {@code null} restore states only for specified cache groups.
+     * @return cntParts Count of partitions processed.
      * @throws IgniteCheckedException If failed to restore partition states.
      */
-    private void restorePartitionStates(
+    private long restorePartitionStates(
         Map<T2<Integer, Integer>, T2<Integer, Long>> partStates,
         @Nullable Set<Integer> onlyForGroups
     ) throws IgniteCheckedException {
+        long cntParts = 0;
+
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
             if (grp.isLocal() || !grp.affinityNode()) {
                 // Local cache has no partitions and its states.
@@ -2520,7 +2512,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     }
                                 }
                                 else
-                                    updateState(part, (int)io.getPartitionState(pageAddr));
+                                    changed = updateState(part, (int)io.getPartitionState(pageAddr));
                             }
                             finally {
                                 pageMem.writeUnlock(grpId, partMetaId, partMetaPage, null, changed);
@@ -2544,11 +2536,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     updateState(part, restore.get1());
                 }
+
+                cntParts++;
             }
 
             // After partition states are restored, it is necessary to update internal data structures in topology.
             grp.topology().afterStateRestored(grp.topology().lastTopologyChangeVersion());
         }
+
+        return cntParts;
     }
 
     /**
@@ -2593,7 +2589,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (partId == -1)
             partId = cacheCtx.affinity().partition(dataEntry.key());
 
-        GridDhtLocalPartition locPart = cacheCtx.topology().forceCreatePartition(partId);
+        GridDhtLocalPartition locPart = cacheCtx.isLocal() ? null : cacheCtx.topology().forceCreatePartition(partId);
 
         switch (dataEntry.op()) {
             case CREATE:
@@ -2762,9 +2758,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param entryBuf Checkpoint entry buffer to write.
      * @param cp Checkpoint entry.
      * @param type Checkpoint entry type.
-     * @throws PersistentStorageIOException If failed to write checkpoint entry.
+     * @throws StorageException If failed to write checkpoint entry.
      */
-    public void writeCheckpointEntry(ByteBuffer entryBuf, CheckpointEntry cp, CheckpointEntryType type) throws PersistentStorageIOException {
+    public void writeCheckpointEntry(ByteBuffer entryBuf, CheckpointEntry cp, CheckpointEntryType type) throws StorageException {
         String fileName = checkpointFileName(cp, type);
         String tmpFileName = fileName + FILE_TMP_SUFFIX;
 
@@ -2784,7 +2780,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 Files.move(Paths.get(cpDir.getAbsolutePath(), tmpFileName), Paths.get(cpDir.getAbsolutePath(), fileName));
         }
         catch (IOException e) {
-            throw new PersistentStorageIOException("Failed to write checkpoint entry [ptr=" + cp.checkpointMark()
+            throw new StorageException("Failed to write checkpoint entry [ptr=" + cp.checkpointMark()
                 + ", cpTs=" + cp.timestamp()
                 + ", cpId=" + cp.checkpointId()
                 + ", type=" + type + "]", e);
@@ -3189,10 +3185,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          *
          */
         private void doCheckpoint() {
+            Checkpoint chp = null;
+
             try {
                 CheckpointMetricsTracker tracker = new CheckpointMetricsTracker();
-
-                Checkpoint chp;
 
                 try {
                     chp = markCheckpointBegin(tracker);

@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.management.InstanceNotFoundException;
@@ -42,6 +41,7 @@ import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
@@ -601,11 +601,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param cachesToStart Started caches.
+     * @return Last seen WAL pointer during binary memory recovery.
      * @throws IgniteCheckedException If failed.
      */
-    public void readCheckpointAndRestoreMemory(List<DynamicCacheDescriptor> cachesToStart) throws IgniteCheckedException {
-        // No-op.
+    public WALPointer readCheckpointAndRestoreMemory() throws IgniteCheckedException {
+        return null;
     }
 
     /**
@@ -682,6 +682,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             dataRegionsInitialized = false;
         }
+        
+        dataRegionsStarted = false;
     }
 
     /**
@@ -744,7 +746,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * No-op for non-persistent storage.
+     * Clean checkpoint directory {@link GridCacheDatabaseSharedManager#cpDir}. The operation
+     * is necessary when local node joined to baseline topology with different consistentId.
      */
     public void cleanupCheckpointState() throws IgniteCheckedException {
         // No-op.
@@ -796,7 +799,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @param caches Cache descriptons on started cache processor.
      */
-    public void cacheProcessorStarted(List<DynamicCacheDescriptor> caches) throws IgniteCheckedException {
+    public void cacheProcessorStarted(Collection<DynamicCacheDescriptor> caches) throws IgniteCheckedException {
         // No-op.
     }
 

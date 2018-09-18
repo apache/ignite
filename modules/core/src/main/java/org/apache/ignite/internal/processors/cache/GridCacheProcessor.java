@@ -724,7 +724,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.state().cacheProcessorStarted();
         ctx.authentication().cacheProcessorStarted();
-        sharedCtx.database().cacheProcessorStarted(new ArrayList<>(cacheDescriptors().values()));
+        sharedCtx.database().cacheProcessorStarted(cacheDescriptors().values());
     }
 
     /**
