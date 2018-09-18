@@ -314,8 +314,6 @@ namespace Apache.Ignite.Core.Impl.Client
                 }
             }, 12, out messageLen);
 
-            Debug.Assert(messageLen == 12);
-
             SocketWrite(buf, messageLen);
 
             // Decode response.
