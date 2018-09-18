@@ -41,6 +41,9 @@ public class AgentUtils {
     /** JSON object mapper. */
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
+    /** */
+    public static final String EXPIRED_SES_ERROR_MSG = "Failed to handle request - unknown session token (maybe expired session)";
+
     static {
         // Register special module with basic serializers.
         MAPPER.registerModule(new JsonOrgModule());

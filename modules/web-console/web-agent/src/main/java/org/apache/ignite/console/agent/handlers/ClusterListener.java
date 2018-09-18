@@ -49,6 +49,7 @@ import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLUSTER_NAME;
+import static org.apache.ignite.console.agent.AgentUtils.EXPIRED_SES_ERROR_MSG;
 import static org.apache.ignite.console.agent.AgentUtils.toJSON;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
@@ -369,9 +370,6 @@ public class ClusterListener implements AutoCloseable {
 
     /** */
     private class WatchTask implements Runnable {
-        /** */
-        private static final String EXPIRED_SES_ERROR_MSG = "Failed to handle request - unknown session token (maybe expired session)";
-
         /** */
         private String sesTok;
 
