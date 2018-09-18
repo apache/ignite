@@ -30,6 +30,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
@@ -126,7 +127,7 @@ public final class UpdatePlanBuilder {
                 if (cctx == null)
                     mvccEnabled = (cctx = (((GridSqlTable)o).dataTable()).cache()).mvccEnabled();
                 else if (((GridSqlTable)o).dataTable().cache().mvccEnabled() != mvccEnabled)
-                    throw new IllegalStateException("Using caches with different mvcc settings in same query is forbidden.");
+                    MvccUtils.throwAtomicityModesMismatchException(cctx, ((GridSqlTable)o).dataTable().cache());
             }
         }
 

@@ -15,9 +15,17 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-import {igniteFormField, exposeIgniteFormFieldControl} from './directives';
+package org.apache.ignite.internal.processors.cache.persistence.db.wal.crc;
 
-export default angular
-.module('expose-ignite-form-field-control', [])
-.directive('exposeIgniteFormFieldControl', exposeIgniteFormFieldControl);
+import org.apache.ignite.configuration.WALMode;
+import org.jetbrains.annotations.NotNull;
+
+/**
+ *
+ */
+public class IgniteFsyncReplayWalIteratorInvalidCrcTest extends IgniteReplayWalIteratorInvalidCrcTest {
+    /** {@inheritDoc} */
+    @NotNull @Override protected WALMode getWalMode() {
+        return WALMode.FSYNC;
+    }
+}
