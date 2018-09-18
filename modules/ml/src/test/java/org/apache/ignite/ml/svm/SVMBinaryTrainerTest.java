@@ -50,7 +50,7 @@ public class SVMBinaryTrainerTest extends TrainerTest {
             (k, v) -> v[0]
         );
 
-        TestUtils.assertEquals(-1, mdl.apply(VectorUtils.of(100, 10)), PRECISION);
+        TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(100, 10)), PRECISION);
         TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(10, 100)), PRECISION);
     }
 
@@ -66,7 +66,7 @@ public class SVMBinaryTrainerTest extends TrainerTest {
             .withAmountOfIterations(1000)
             .withSeed(1234L);
 
-        SVMLinearBinaryClassificationModel originalModel = trainer.fit(
+        SVMLinearBinaryClassificationModel originalMdl = trainer.fit(
             cacheMock,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
@@ -74,7 +74,7 @@ public class SVMBinaryTrainerTest extends TrainerTest {
         );
 
         SVMLinearBinaryClassificationModel updatedOnSameDS = trainer.update(
-            originalModel,
+            originalMdl,
             cacheMock,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
@@ -82,7 +82,7 @@ public class SVMBinaryTrainerTest extends TrainerTest {
         );
 
         SVMLinearBinaryClassificationModel updatedOnEmptyDS = trainer.update(
-            originalModel,
+            originalMdl,
             new HashMap<Integer, double[]>(),
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
@@ -90,7 +90,7 @@ public class SVMBinaryTrainerTest extends TrainerTest {
         );
 
         Vector v = VectorUtils.of(100, 10);
-        TestUtils.assertEquals(originalModel.apply(v), updatedOnSameDS.apply(v), PRECISION);
-        TestUtils.assertEquals(originalModel.apply(v), updatedOnEmptyDS.apply(v), PRECISION);
+        TestUtils.assertEquals(originalMdl.apply(v), updatedOnSameDS.apply(v), PRECISION);
+        TestUtils.assertEquals(originalMdl.apply(v), updatedOnEmptyDS.apply(v), PRECISION);
     }
 }

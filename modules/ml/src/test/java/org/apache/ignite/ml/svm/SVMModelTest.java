@@ -93,13 +93,13 @@ public class SVMModelTest {
         TestUtils.assertEquals(1.0, mdl.apply(observation), PRECISION);
 
         observation = new DenseVector(new double[]{-1.0, -1.0});
-        TestUtils.assertEquals(-1.0, mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(0.0, mdl.apply(observation), PRECISION);
 
         observation = new DenseVector(new double[]{-2.0, 1.0});
-        TestUtils.assertEquals(-1.0, mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(0.0, mdl.apply(observation), PRECISION);
 
         observation = new DenseVector(new double[]{-1.0, -2.0});
-        TestUtils.assertEquals(-1.0, mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(0.0, mdl.apply(observation), PRECISION);
 
         final SVMLinearBinaryClassificationModel mdlWithNewData = mdl.withIntercept(-2.0).withWeights(new DenseVector(new double[] {-2.0, -2.0}));
         System.out.println("The SVM model is " + mdlWithNewData);
@@ -116,7 +116,7 @@ public class SVMModelTest {
         SVMLinearBinaryClassificationModel mdl = new SVMLinearBinaryClassificationModel(weights, 1.0).withThreshold(5);
 
         Vector observation = new DenseVector(new double[]{1.0, 1.0});
-        TestUtils.assertEquals(-1.0, mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(0.0, mdl.apply(observation), PRECISION);
 
         observation = new DenseVector(new double[]{3.0, 4.0});
         TestUtils.assertEquals(1.0, mdl.apply(observation), PRECISION);
