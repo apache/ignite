@@ -332,7 +332,8 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
                 assert rs.getObject(3, Float.class) == 1.f;
                 assert rs.getObject(3, Double.class) == 1;
                 assert rs.getObject(3, BigDecimal.class).equals(new BigDecimal(1));
-                assert rs.getObject(3, String.class).equals("1");            }
+                assert rs.getObject(3, String.class).equals("1");
+            }
 
             cnt++;
         }
