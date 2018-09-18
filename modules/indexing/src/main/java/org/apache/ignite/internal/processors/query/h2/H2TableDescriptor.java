@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
@@ -288,14 +289,10 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         if (isSql) {
             keyCols = new ArrayList<>(type.fields().size() + 1);
 
-            String keyFieldName = type.keyFieldName();
-
             //Check if key is simple type
-            if(keyFieldName != null){
-                int keyColId = tbl.getColumn(keyFieldName).getColumnId();
-
-                keyCols.add(tbl.indexColumn(keyColId, SortOrder.ASCENDING));
-            } else {
+            if(QueryUtils.isSqlType(type.keyClass()))
+                keyCols.add(keyCol);
+            else {
                 for (String propName : type.fields().keySet()) {
                     GridQueryProperty prop = type.property(propName);
 

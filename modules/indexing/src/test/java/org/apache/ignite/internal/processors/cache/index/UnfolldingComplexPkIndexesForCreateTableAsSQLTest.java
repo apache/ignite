@@ -138,7 +138,7 @@ public class UnfolldingComplexPkIndexesForCreateTableAsSQLTest extends GridCommo
 
         String explainPlan = (String)results.get(0).get(0);
 
-        assertTrue(explainPlan.contains("\"_key_PK\""));
+        assertTrue(explainPlan.contains("\"_key_PK"));
 
         assertFalse(explainPlan.contains("_SCAN_"));
     }
