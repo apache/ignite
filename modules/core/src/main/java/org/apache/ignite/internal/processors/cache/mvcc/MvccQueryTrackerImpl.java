@@ -368,12 +368,20 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
                 return false;
             }
         }
-        else if (state.compareAndSet(REQUESTING, DONE)) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to request mvcc version, tracker will be closed.");
 
-            releaseResources();
+        Object state = this.state.getAndSet(DONE);
+
+        if (log.isDebugEnabled()) {
+            if (state == REQUESTING)
+                log.debug("Failed to request mvcc version, tracker will be closed.");
+            else {
+                assert this.state.get() == DONE;
+
+                log.debug("Tracker has been concurrently closed.");
+            }
         }
+
+        releaseResources();
 
         return true;
     }
