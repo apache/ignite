@@ -24,7 +24,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -56,17 +55,17 @@ class MvccPreviousCoordinatorQueries {
 
     /**
      * @param nodeQueries Active queries map.
-     * @param discoCache Discovery data.
+     * @param nodes Cluster nodes.
      * @param mgr Discovery manager.
      */
-    void init(Map<UUID, GridLongList> nodeQueries, DiscoCache discoCache, GridDiscoveryManager mgr) {
+    void init(Map<UUID, GridLongList> nodeQueries, Collection<ClusterNode> nodes, GridDiscoveryManager mgr) {
         synchronized (this) {
             assert !initDone;
             assert waitNodes == null;
 
             waitNodes = new HashSet<>();
 
-            for (ClusterNode node : discoCache.allNodes()) {
+            for (ClusterNode node : nodes) {
                 if ((nodeQueries == null || !nodeQueries.containsKey(node.id())) &&
                     mgr.alive(node) &&
                     !F.contains(rcvd, node.id()))
