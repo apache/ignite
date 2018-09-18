@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Client
         public ClientFailoverSocket(IgniteClientConfiguration config)
         {
             Debug.Assert(config != null);
-            
+
             _config = config;
 
             if (config.Host == null && (config.Endpoints == null || config.Endpoints.Count == 0))
@@ -91,6 +91,12 @@ namespace Apache.Ignite.Core.Impl.Client
         public Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<IBinaryStream> writeAction, Func<IBinaryStream, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
         {
             return GetSocket().DoOutInOpAsync(opId, writeAction, readFunc, errorFunc);
+        }
+
+        /** <inheritdoc /> */
+        public ClientProtocolVersion ServerVersion
+        {
+            get { return GetSocket().ServerVersion; }
         }
 
         /** <inheritdoc /> */
@@ -146,7 +152,7 @@ namespace Apache.Ignite.Core.Impl.Client
             lock (_syncRoot)
             {
                 _disposed = true;
-                
+
                 if (_socket != null)
                 {
                     _socket.Dispose();

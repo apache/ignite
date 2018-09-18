@@ -41,6 +41,11 @@ namespace Apache.Ignite.Core.Impl.Client
             Func<IBinaryStream, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null);
 
         /// <summary>
+        /// Gets the server version.
+        /// </summary>
+        ClientProtocolVersion ServerVersion { get; }
+
+        /// <summary>
         /// Gets the current remote EndPoint.
         /// </summary>
         EndPoint RemoteEndPoint { get; }
