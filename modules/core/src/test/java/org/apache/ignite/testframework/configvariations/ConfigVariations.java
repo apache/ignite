@@ -42,7 +42,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 
 import static org.apache.ignite.internal.util.lang.GridFunc.asArray;
 
@@ -86,7 +85,6 @@ public class ConfigVariations {
     private static final ConfigParameter<IgniteConfiguration>[][] BASIC_IGNITE_SET = new ConfigParameter[][] {
         Parameters.objectParameters("setMarshaller", Parameters.factory(BinaryMarshaller.class), binaryMarshallerFactory()),
         Parameters.booleanParameters("setPeerClassLoadingEnabled"),
-        Parameters.booleanParameters("setMvccEnabled"),
     };
 
     /** */

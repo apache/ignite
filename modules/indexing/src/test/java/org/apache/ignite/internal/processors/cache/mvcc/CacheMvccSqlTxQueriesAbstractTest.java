@@ -1165,19 +1165,19 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
                 }
                 catch (Exception e) {
                     onException(ex, e);
-
-                    phaser.arriveAndDeregister();
                 }
             }
         }, 1));
 
-        fut.markInitialized();
-
         try {
+            fut.markInitialized();
+
             fut.get(TX_TIMEOUT);
         }
         catch (IgniteCheckedException e) {
             onException(ex, e);
+        } finally {
+            phaser.forceTermination();
         }
 
         Exception ex0 = ex.get();
