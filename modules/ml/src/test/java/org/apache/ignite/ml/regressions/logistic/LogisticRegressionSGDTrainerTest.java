@@ -76,7 +76,7 @@ public class LogisticRegressionSGDTrainerTest extends TrainerTest {
             SimpleGDParameterUpdate::avg
         ), 100000, 10, 100, 123L);
 
-        LogisticRegressionModel originalModel = trainer.fit(
+        LogisticRegressionModel originalMdl = trainer.fit(
             cacheMock,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
@@ -84,7 +84,7 @@ public class LogisticRegressionSGDTrainerTest extends TrainerTest {
         );
 
         LogisticRegressionModel updatedOnSameDS = trainer.update(
-            originalModel,
+            originalMdl,
             cacheMock,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
@@ -92,7 +92,7 @@ public class LogisticRegressionSGDTrainerTest extends TrainerTest {
         );
 
         LogisticRegressionModel updatedOnEmptyDS = trainer.update(
-            originalModel,
+            originalMdl,
             new HashMap<Integer, double[]>(),
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
@@ -101,9 +101,9 @@ public class LogisticRegressionSGDTrainerTest extends TrainerTest {
 
         Vector v1 = VectorUtils.of(100, 10);
         Vector v2 = VectorUtils.of(10, 100);
-        TestUtils.assertEquals(originalModel.apply(v1), updatedOnSameDS.apply(v1), PRECISION);
-        TestUtils.assertEquals(originalModel.apply(v2), updatedOnSameDS.apply(v2), PRECISION);
-        TestUtils.assertEquals(originalModel.apply(v2), updatedOnEmptyDS.apply(v2), PRECISION);
-        TestUtils.assertEquals(originalModel.apply(v1), updatedOnEmptyDS.apply(v1), PRECISION);
+        TestUtils.assertEquals(originalMdl.apply(v1), updatedOnSameDS.apply(v1), PRECISION);
+        TestUtils.assertEquals(originalMdl.apply(v2), updatedOnSameDS.apply(v2), PRECISION);
+        TestUtils.assertEquals(originalMdl.apply(v2), updatedOnEmptyDS.apply(v2), PRECISION);
+        TestUtils.assertEquals(originalMdl.apply(v1), updatedOnEmptyDS.apply(v1), PRECISION);
     }
 }

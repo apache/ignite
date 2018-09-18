@@ -79,7 +79,7 @@ public class RandomForestClassifierTrainerTest {
         for (int i = 0; i < 4; i++)
             meta.add(new FeatureMeta("", i, false));
         RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(meta)
-            .withCountOfTrees(5)
+            .withAmountOfTrees(5)
             .withFeaturesCountSelectionStrgy(x -> 2);
 
         ModelsComposition mdl = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
@@ -106,15 +106,15 @@ public class RandomForestClassifierTrainerTest {
         for (int i = 0; i < 4; i++)
             meta.add(new FeatureMeta("", i, false));
         RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(meta)
-            .withCountOfTrees(100)
+            .withAmountOfTrees(100)
             .withFeaturesCountSelectionStrgy(x -> 2);
 
-        ModelsComposition originalModel = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
-        ModelsComposition updatedOnSameDS = trainer.update(originalModel, sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
-        ModelsComposition updatedOnEmptyDS = trainer.update(originalModel, new HashMap<double[], Double>(), parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
+        ModelsComposition originalMdl = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
+        ModelsComposition updatedOnSameDS = trainer.update(originalMdl, sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
+        ModelsComposition updatedOnEmptyDS = trainer.update(originalMdl, new HashMap<double[], Double>(), parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
 
         Vector v = VectorUtils.of(5, 0.5, 0.05, 0.005);
-        assertEquals(originalModel.apply(v), updatedOnSameDS.apply(v), 0.01);
-        assertEquals(originalModel.apply(v), updatedOnEmptyDS.apply(v), 0.01);
+        assertEquals(originalMdl.apply(v), updatedOnSameDS.apply(v), 0.01);
+        assertEquals(originalMdl.apply(v), updatedOnEmptyDS.apply(v), 0.01);
     }
 }
