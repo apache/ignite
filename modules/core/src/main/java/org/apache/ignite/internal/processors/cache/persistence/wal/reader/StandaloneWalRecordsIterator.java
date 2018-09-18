@@ -46,15 +46,18 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointe
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.ReadFileHandle;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder.DFLT_HIGH_BOUND;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readSegmentHeader;
 
 /**
@@ -297,6 +300,23 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         }
 
         return super.postProcessRecord(rec);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteCheckedException handleRecordException(
+        @NotNull Exception e,
+        @Nullable FileWALPointer ptr
+    ) {
+        if (e instanceof IgniteCheckedException)
+            if (X.hasCause(e, IgniteDataIntegrityViolationException.class))
+                // "curIdx" is an index in walFileDescriptors list.
+                if (curIdx == walFileDescriptors.size() - 1)
+                    // This means that there is no explicit last sengment, so we stop as if we reached the end
+                    // of the WAL.
+                    if (highBound.equals(DFLT_HIGH_BOUND))
+                        return null;
+
+        return super.handleRecordException(e, ptr);
     }
 
     /**
