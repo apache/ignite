@@ -1,7 +1,8 @@
-parser: "babel-eslint"
+parser: "typescript-eslint-parser"
 
 plugins:
-    - babel
+    // - babel
+    - typescript
 
 env:
     es6: true
@@ -160,7 +161,8 @@ rules:
     no-unneeded-ternary: 2
     no-unreachable: 2
     no-unused-expressions: [2, { allowShortCircuit: true }]
-    no-unused-vars: [0, {"vars": "all", "args": "after-used"}]
+    // no-unused-vars: [0, {"vars": "all", "args": "after-used"}]
+    typescript/no-unused-vars: [0]
     no-use-before-define: 2
     no-useless-call: 2
     no-void: 0
@@ -195,4 +197,4 @@ rules:
     wrap-iife: 0
     wrap-regex: 0
     yoda: [2, "never"]
-    babel/semi: 2
+    // babel/semi: 2
