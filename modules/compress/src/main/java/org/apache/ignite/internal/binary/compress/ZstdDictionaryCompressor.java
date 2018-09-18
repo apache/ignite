@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CompressionConfiguration;
 
 /** */
@@ -63,9 +64,9 @@ public class ZstdDictionaryCompressor extends CompressorAdapter {
         ZstdDictCompress compressor0 = this.compressor;
 
         if (compressor0 != null) {
-            byte[] compressed = Zstd.compress(input, compressor0);
+            byte[] compressed = compress(input, compressor0);
 
-            return appraise(input, compressed);
+            return appraiseAndAddHeader(input, compressed, 1);
         }
 
         int iv = samplesCollected.decrementAndGet();
@@ -94,11 +95,22 @@ public class ZstdDictionaryCompressor extends CompressorAdapter {
         return null;
     }
 
-    public byte[] decompress(byte[] bytes) {
-        return Zstd.decompress(bytes, decompressor, /* XXX */bytes.length * 128);
+    public static byte[] compress(byte[] src, ZstdDictCompress dict) {
+        long maxDstSize = Zstd.compressBound(src.length);
+
+        if (maxDstSize > Integer.MAX_VALUE)
+            throw new IgniteException("Max output size is greater than MAX_INT");
+
+        byte[] dst = new byte[(int) maxDstSize + 1];
+
+        long size = Zstd.compressFastDict(dst,1, src,0,src.length, dict);
+
+        if (Zstd.isError(size))
+            throw new IgniteException(Zstd.getErrorName(size));
+
+        return Arrays.copyOfRange(dst, 0, (int) size + 1);
     }
 
-    /** Compress a string to a list of output symbols. */
     private void dictionarize(byte[] uncompressed) {
         if (uncompressed.length == 0 || !dictLock.tryLock()
             || bufferCollected.addAndGet(-uncompressed.length) <= 0 )
@@ -107,5 +119,11 @@ public class ZstdDictionaryCompressor extends CompressorAdapter {
         samples.add(Arrays.copyOf(uncompressed, uncompressed.length));
 
         dictLock.unlock();
+    }
+
+    @Override protected ZstdDictDecompress dictionary(byte dict) {
+        assert decompressor != null : "Decompressor is not ready";
+
+        return decompressor;
     }
 }

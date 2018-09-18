@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.binary.compress;
 
 import com.github.luben.zstd.Zstd;
+import com.github.luben.zstd.ZstdDictDecompress;
+import java.util.Arrays;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CompressionConfiguration;
 
 /** */
@@ -30,12 +33,29 @@ public class ZstdStatelessCompressor extends CompressorAdapter {
     }
 
     public byte[] tryCompress(byte[] input) {
-        byte[] compressed = Zstd.compress(input, level);
+        byte[] compressed = compress(input, level);
 
-        return appraise(input, compressed);
+        return appraiseAndAddHeader(input, compressed, 1);
     }
 
-    public byte[] decompress(byte[] bytes) {
-        return Zstd.decompress(bytes, /* XXX */bytes.length * 128);
+    public static byte[] compress(byte[] src, int level) {
+        long maxDstSize = Zstd.compressBound(src.length);
+
+        if (maxDstSize > Integer.MAX_VALUE) {
+            throw new RuntimeException("Max output size is greater than MAX_INT");
+        }
+
+        byte[] dst = new byte[(int) maxDstSize + 1];
+        long size = Zstd.compressByteArray(dst, 1, dst.length - 1, src, 0, src.length, level);
+
+        if (Zstd.isError(size)) {
+            throw new RuntimeException(Zstd.getErrorName(size));
+        }
+
+        return Arrays.copyOfRange(dst, 0, (int) size + 1);
+    }
+
+    @Override protected ZstdDictDecompress dictionary(byte dict) {
+        throw new IgniteException("Header indicates dictionary use but compressor is stateless: " + dict);
     }
 }
