@@ -236,7 +236,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         MvccSnapshot mvccSnapshot = null;
         MvccQueryTracker mvccTracker = null;
 
-        if (ctx.mvccEnabled() && tx != null) {
+        if (ctx.mvccEnabled()) {
             try {
                 if (tx != null)
                     mvccSnapshot = MvccUtils.requestSnapshot(ctx, tx);
@@ -249,7 +249,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 assert mvccSnapshot != null;
             }
             catch (IgniteCheckedException ex) {
-                return new GridFinishedFuture(ex);
+                return new GridFinishedFuture<>(ex);
             }
         }
 

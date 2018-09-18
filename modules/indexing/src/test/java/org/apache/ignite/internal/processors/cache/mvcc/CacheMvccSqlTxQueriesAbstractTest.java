@@ -1165,6 +1165,8 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
                 }
                 catch (Exception e) {
                     onException(ex, e);
+
+                    phaser.forceTermination();
                 }
             }
         }, 1));
