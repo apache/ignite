@@ -263,11 +263,8 @@ public class StartNodeCallableImpl implements StartNodeCallable {
                 shell(ses, prepareStartCmd);
 
                 String startNodeLs = new SB()
-                    .a("nohup ls ")
+                    .a("nohup ls -l ")
                     .a("\"").a(igniteHome).a('/').a(scriptPath).a("\"")
-                    .a(" ").a(scriptArgs)
-                    .a(!cfg.isEmpty() ? " \"" : "").a(cfg).a(!cfg.isEmpty() ? "\"" : "")
-                    .a(rmtLogArgs)
                     .a(" > ").a(scriptOutputDir).a('/').a(scriptOutputFileName).a(" 2>& 1 &")
                     .toString();
 
