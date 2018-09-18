@@ -124,3 +124,11 @@
         }
     }
 }
+
+// Adding top border for panels in modals
+.modal-body {
+    .panel--ignite:not(.panel--ignite__without-border) {
+        border-top: 1px solid #d4d4d4;
+        border-radius: 4px 4px 0 0 ;
+    }
+}
