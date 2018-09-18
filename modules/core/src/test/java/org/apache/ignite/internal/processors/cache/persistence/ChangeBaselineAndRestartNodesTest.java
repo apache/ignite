@@ -56,28 +56,15 @@ public class ChangeBaselineAndRestartNodesTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(name)
+        return super.getConfiguration(name)
             .setConsistentId(name)
             .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
-            .setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME)
-                .setCacheMode(CacheMode.PARTITIONED)
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                .setBackups(2))
             .setDataStorageConfiguration(
                 new DataStorageConfiguration()
                     .setCheckpointFrequency(2L * 60 * 1000)
-                    .setWalMode(WALMode.LOG_ONLY)
                     .setDefaultDataRegionConfiguration(
                         new DataRegionConfiguration()
-                            .setPersistenceEnabled(true)
-                            .setMaxSize(200L * 1024 * 1024)));
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean isMultiJvm() {
-        return true;
+                            .setPersistenceEnabled(true)));
     }
 
     /**
@@ -89,23 +76,18 @@ public class ChangeBaselineAndRestartNodesTest extends GridCommonAbstractTest {
 
             ignite0.cluster().active(true);
 
-            IgniteProcessProxy ignite2 = (IgniteProcessProxy)grid(2);
-
-            IgniteCache cache = ignite0.cache(DEFAULT_CACHE_NAME);
+            IgniteEx ignite2 = grid(2);
 
             for (int i = 0; i < 3; i++) {
-                for (int j = 0; j < 1000; j++)
-                    cache.put(i + j, "val");
-
-                ignite2.kill();
+                ignite2.close();
 
                 checkTopology(2);
 
                 ignite0.cluster().setBaselineTopology(ignite0.cluster().topologyVersion());
 
-                ignite2 = (IgniteProcessProxy)startGrid(2);
+                ignite2 = startGrid(2);
 
-                ignite0.compute(ignite0.cluster().forNodeId(ignite2.getId())).run(new IgniteRunnable() {
+                ignite0.compute(ignite0.cluster().forNode(ignite2.localNode())).run(new IgniteRunnable() {
                     @IgniteInstanceResource
                     Ignite ignite;
 
@@ -113,17 +95,7 @@ public class ChangeBaselineAndRestartNodesTest extends GridCommonAbstractTest {
                     IgniteLogger log;
 
                     @Override public void run() {
-
-                        try {
-                            assertTrue(GridTestUtils.waitForCondition(() -> {
-                                return ignite.cluster().currentBaselineTopology().size() == 2;
-
-                            }, 10_000));
-                        }
-                        catch (IgniteInterruptedCheckedException e) {
-                            log.error("Interrupt waiting baseline.", e);
-                            fail("Interrupt waiting baseline.");
-                        }
+                        assertTrue(ignite.cluster().currentBaselineTopology().size() == 2);
                     }
                 });
 
