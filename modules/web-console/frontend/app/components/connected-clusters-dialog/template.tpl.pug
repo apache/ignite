@@ -16,7 +16,7 @@
 
 include /app/helpers/jade/mixins
 
-.modal.modal--ignite.connected-clusters-dialog(tabindex='-1' role='dialog')
+.modal.modal--ignite.theme-ignite.connected-clusters-dialog(tabindex='-1' role='dialog')
     .modal-dialog.modal-dialog--adjust-height
         form.modal-content(name='$ctrl.form' novalidate)
             .modal-header
@@ -26,7 +26,6 @@ include /app/helpers/jade/mixins
                      svg(ignite-icon="cross")
             .modal-body.modal-body-with-scroll
                 .panel--ignite
-                    ul.tabs.tabs--blue
                     connected-clusters-list(data-options='$ctrl.clusters')
 
             .modal-footer

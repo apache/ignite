@@ -174,11 +174,21 @@
         }
 
         .modal-body {
-            margin: 5px 20px;
-            padding: 0;
+            padding: 5px 20px;
+            margin: 0;
 
             .input-tip {
                 padding-top: 0;
+            }
+
+            .modal-body--inner-content {
+                max-height: 300px;
+                overflow-x: auto;
+
+                p {
+                    text-align: left;
+                    white-space: nowrap;
+                }
             }
         }
 
