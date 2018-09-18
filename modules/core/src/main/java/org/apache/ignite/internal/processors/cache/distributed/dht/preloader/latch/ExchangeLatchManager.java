@@ -61,10 +61,8 @@ public class ExchangeLatchManager {
     private static final IgniteProductVersion VERSION_SINCE = IgniteProductVersion.fromString("2.5.0");
 
     /**
-     * Exchange latch V2 protocol introduces following optimizations:
-     * 1) Joining nodes are explicitly excluded from possible latch participants.
-     * 2) Exchange latch coordinator now is second oldest node in a cluster.
-     * TODO: Optimization 2) can be removed after resolving IGNITE-9492
+     * Exchange latch V2 protocol introduces following optimization:
+     * Joining nodes are explicitly excluded from possible latch participants.
      */
     public static final IgniteProductVersion PROTOCOL_V2_VERSION_SINCE = IgniteProductVersion.fromString("2.7.0");
 
@@ -98,6 +96,7 @@ public class ExchangeLatchManager {
     private final ConcurrentMap<CompletableLatchUid, ClientLatch> clientLatches = new ConcurrentHashMap<>();
 
     /** Map (topology version -> joined node on this version). This map is needed to exclude joined nodes from latch participants. */
+    @GridToStringExclude
     private final ConcurrentMap<AffinityTopologyVersion, ClusterNode> joinedNodes = new ConcurrentHashMap<>();
 
     /** Lock. */
