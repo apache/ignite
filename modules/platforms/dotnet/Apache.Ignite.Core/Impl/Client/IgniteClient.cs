@@ -116,7 +116,7 @@ namespace Apache.Ignite.Core.Impl.Client
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
             DoOutOp(ClientOp.CacheGetOrCreateWithConfiguration,
-                w => ClientCacheConfigurationSerializer.Write(w.Stream, configuration, ServerVersion()));
+                w => ClientCacheConfigurationSerializer.Write(w.Stream, configuration, ServerVersion));
 
             return GetCache<TK, TV>(configuration.Name);
         }
@@ -137,7 +137,7 @@ namespace Apache.Ignite.Core.Impl.Client
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
             DoOutOp(ClientOp.CacheCreateWithConfiguration,
-                w => ClientCacheConfigurationSerializer.Write(w.Stream, configuration, ServerVersion()));
+                w => ClientCacheConfigurationSerializer.Write(w.Stream, configuration, ServerVersion));
 
             return GetCache<TK, TV>(configuration.Name);
         }
@@ -232,8 +232,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Gets the protocol version supported by server.
         /// </summary>
-        public ClientProtocolVersion ServerVersion() {
-            return _socket.ServerVersion;
+        public ClientProtocolVersion ServerVersion
+        {
+            get { return _socket.ServerVersion; }
         }
 
         /// <summary>
