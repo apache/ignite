@@ -1964,11 +1964,8 @@ export class NotebookCtrl {
         };
     }
 
-    $onInit() {
-
-    }
-
     $onDestroy() {
-        this.refresh$.unsubscribe();
+        if (this.refresh$)
+            this.refresh$.unsubscribe();
     }
 }

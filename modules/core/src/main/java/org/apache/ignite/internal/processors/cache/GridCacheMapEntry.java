@@ -1525,8 +1525,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     null,
                     topVer);
             }
-
-            cctx.dataStructures().onEntryUpdated(key, false, keepBinary);
         }
         finally {
             unlockEntry();
@@ -1738,8 +1736,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     null,
                     topVer);
             }
-
-            cctx.dataStructures().onEntryUpdated(key, true, keepBinary);
 
             deferred = cctx.deferredDelete() && !detached() && !isInternal();
 
@@ -2132,8 +2128,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 onUpdateFinished(updateCntr);
             }
 
-            cctx.dataStructures().onEntryUpdated(key, op == GridCacheOperation.DELETE, keepBinary);
-
             if (intercept) {
                 if (op == GridCacheOperation.UPDATE)
                     cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(cctx, key, key0, updated, updated0, keepBinary, 0L));
@@ -2425,8 +2419,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     fut,
                     topVer);
             }
-
-            cctx.dataStructures().onEntryUpdated(key, c.op == GridCacheOperation.DELETE, keepBinary);
 
             if (intercept) {
                 if (c.op == GridCacheOperation.UPDATE) {
@@ -3376,8 +3368,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         updateCntr,
                         null,
                         topVer);
-
-                    cctx.dataStructures().onEntryUpdated(key, false, false);
                 }
 
                 onUpdateFinished(updateCntr);
