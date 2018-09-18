@@ -345,8 +345,8 @@ class GridDeploymentCommunication {
      * {@linkplain GridDeploymentRequest request} (which is not an
      * {@linkplain GridDeploymentRequest#isUndeploy undeploy}) being processed by this thread.
      * 
-     * @param node The node to query about
-     * @return true if the node is excluded
+     * @param node The node to query about.
+     * @return true if the node is excluded.
      * 
      * @pre node != null
      */
@@ -356,8 +356,7 @@ class GridDeploymentCommunication {
        // activeReqNodeIds is thread local.
        Collection<UUID> nodeIds = activeReqNodeIds.get();
        
-       
-       return (nodeIds != null && nodeIds.contains(node.id()));
+       return nodeIds != null && nodeIds.contains(node.id());
     }
     
     /**
@@ -404,9 +403,10 @@ class GridDeploymentCommunication {
         // Receiver should not forward to nodes that originated request nor
         // nodes this node intends to send to.
         Set<UUID> nodeIds = new HashSet<UUID>();
-        if (activeReqNodeIds.get() != null) {
+
+        if (activeReqNodeIds.get() != null)
            nodeIds.addAll(activeReqNodeIds.get());
-        }
+
         nodeIds.addAll(nodesToSkip);
 
         req.nodeIds(nodeIds);

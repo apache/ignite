@@ -598,9 +598,8 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
             }
             
             // Must not send to the participants excluded from recursion, if any.
-            if (this.comm.nodeOnRecursionExclusionList(node)) {
+            if (this.comm.nodeOnRecursionExclusionList(node))
                continue;
-            }
 
             try {
                 // Tell the destination not to recurse to any of the nodes we are about to directly search.
@@ -622,13 +621,11 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                 }
 
                 if (res.success()) {
-                   
                     // For the next time, start with the node that just succeeded.
                     if (nodeList.peekFirst() != nodeId) {
                         synchronized (mux) {
-                            if (nodeList.remove(nodeId)) {
+                            if (nodeList.remove(nodeId))
                                 nodeList.addFirst(nodeId);
-                            }
                         }
                     }
                 
@@ -756,9 +753,8 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
             }
             
             // Must not send to the participants excluded from recursion
-            if (this.comm.nodeOnRecursionExclusionList(node)) {
+            if (this.comm.nodeOnRecursionExclusionList(node))
                continue;
-            }
             
             try {
                 // Request is sent with timeout that is why we can use synchronization here.
@@ -796,13 +792,11 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                     // a node failure.
                 }
                 else {
-                   
                     // For the next time, start with the node that just succeeded.
                     if (nodeList.peekFirst() != nodeId) {
                         synchronized (mux) {
-                            if (nodeList.remove(nodeId)) {
+                            if (nodeList.remove(nodeId))
                                 nodeList.addFirst(nodeId);
-                            }
                         }
                     }
                  
