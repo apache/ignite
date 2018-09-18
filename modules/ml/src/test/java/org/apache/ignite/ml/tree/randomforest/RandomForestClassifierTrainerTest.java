@@ -19,16 +19,14 @@ package org.apache.ignite.ml.tree.randomforest;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -36,31 +34,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Tests for {@link RandomForestClassifierTrainer}.
  */
-@RunWith(Parameterized.class)
-public class RandomForestClassifierTrainerTest {
-    /**
-     * Number of parts to be tested.
-     */
-    private static final int[] partsToBeTested = new int[] {1, 2, 3, 4, 5, 7};
-
-    /**
-     * Number of partitions.
-     */
-    @Parameterized.Parameter
-    public int parts;
-
-    /**
-     * Data iterator.
-     */
-    @Parameterized.Parameters(name = "Data divided on {0} partitions")
-    public static Iterable<Integer[]> data() {
-        List<Integer[]> res = new ArrayList<>();
-        for (int part : partsToBeTested)
-            res.add(new Integer[] {part});
-
-        return res;
-    }
-
+public class RandomForestClassifierTrainerTest extends TrainerTest {
     /** */
     @Test
     public void testFit() {
