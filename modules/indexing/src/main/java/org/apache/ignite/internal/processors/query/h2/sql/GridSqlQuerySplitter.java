@@ -2261,8 +2261,10 @@ public class GridSqlQuerySplitter {
 
         GridSqlSelect select = (GridSqlSelect)qry;
 
-        // no joins support yet
-        if (select.from() == null || select.from().size() != 1)
+        // no joins and sub-queries support yet
+        if (select.from() == null
+            || select.from().size() != 1
+            || GridSqlSubquery.class.isAssignableFrom(select.from().child().getClass()))
             return null;
 
         return extractPartition(select.where(), ctx);
