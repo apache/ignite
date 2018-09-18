@@ -1193,7 +1193,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cacheName Name of lazy cache which need to unregister.
      */
     public void unregisterLazyCache(String cacheName) {
-        lazyCacheMap.remove(CU.cacheId(cacheName));
+        GridCacheContextInfo lazyCacheContext = lazyCacheMap.remove(CU.cacheId(cacheName));
+
+        if(lazyCacheContext != null)
+            ctx.query().onCacheStop0(lazyCacheContext, true);
+
     }
 
     /**
@@ -2243,6 +2247,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             return ctx;
         }
+        else
+            unregisterLazyCache(cacheName);
+
 
         return null;
     }
