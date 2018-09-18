@@ -61,6 +61,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
@@ -80,6 +81,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
@@ -117,7 +119,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_FORCE_CLIENT_RECONNECT_DELAY;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -1621,7 +1622,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         private long lastReconnectTimestamp = -1;
 
         /** */
-        private int currentReconnectDelay = -1;
+        private long currentReconnectDelay = -1;
 
         /**
          * @param log Logger.
@@ -1898,8 +1899,8 @@ class ClientImpl extends TcpDiscoveryImpl {
         /**
          * Wait random delay before trying to reconnect. Delay will grow exponentially every time client is forced to
          * reconnect, but only if all these reconnections happened in small period of time (2 minutes). Maximum delay
-         * could be configured with {@link IgniteSystemProperties#IGNITE_FORCE_CLIENT_RECONNECT_DELAY} property,
-         * default value is 5 seconds.
+         * could be configured with {@link IgniteSpiAdapter#clientFailureDetectionTimeout()}, default value is
+         * {@link IgniteConfiguration#DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT}.
          *
          * @throws InterruptedException If thread is interrupted.
          */
@@ -1907,13 +1908,15 @@ class ClientImpl extends TcpDiscoveryImpl {
             if (System.currentTimeMillis() - lastReconnectTimestamp > 2 * 60_000)
                 currentReconnectDelay = 200;
             else {
-                int maxDelay = IgniteSystemProperties.getInteger(IGNITE_FORCE_CLIENT_RECONNECT_DELAY, 5_000);
+                long maxDelay = spi.failureDetectionTimeoutEnabled()
+                    ? spi.clientFailureDetectionTimeout()
+                    : IgniteConfiguration.DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT;
 
                 currentReconnectDelay = Math.min(maxDelay, (int)(currentReconnectDelay * 1.5));
             }
 
             ThreadLocalRandom random = ThreadLocalRandom.current();
-            Thread.sleep(random.nextInt(currentReconnectDelay / 2, currentReconnectDelay));
+            Thread.sleep(random.nextLong(currentReconnectDelay / 2, currentReconnectDelay));
 
             lastReconnectTimestamp = System.currentTimeMillis();
         }
