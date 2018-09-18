@@ -806,7 +806,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.wal().cleanupWalDirectories();
 
             // Empty list is enough to pass into method because it will skip checkpoint anyway.
-            cctx.database().readCheckpointAndRestoreMemory(Collections.emptyList());
+            cctx.database().readCheckpointAndRestoreMemory();
         }
 
         cctx.activate();
@@ -915,20 +915,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 try {
                     cctx.activate();
 
-                    if (!cctx.kernalContext().clientNode()) {
-                        List<DynamicCacheDescriptor> startDescs = new ArrayList<>();
-
-                        for (ExchangeActions.CacheActionData startReq : exchActions.cacheStartRequests()) {
-                            DynamicCacheDescriptor desc = startReq.descriptor();
-
-                            if (CU.isPersistentCache(desc.cacheConfiguration(),
-                                cctx.gridConfig().getDataStorageConfiguration()) &&
-                                CU.affinityNode(cctx.localNode(), desc.cacheConfiguration().getNodeFilter()))
-                                startDescs.add(desc);
-                        }
-
+                    if (!cctx.kernalContext().clientNode())
                         cctx.database().onDoneRestoreBinaryMemory();
-                    }
 
                     cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
 
