@@ -26,6 +26,7 @@ import org.apache.ignite.ml.genetic.GAGridTestSuite;
 import org.apache.ignite.ml.knn.KNNTestSuite;
 import org.apache.ignite.ml.math.MathImplMainTestSuite;
 import org.apache.ignite.ml.nn.MLPTestSuite;
+import org.apache.ignite.ml.pipeline.PipelineTestSuite;
 import org.apache.ignite.ml.preprocessing.PreprocessingTestSuite;
 import org.apache.ignite.ml.regressions.RegressionsTestSuite;
 import org.apache.ignite.ml.selection.SelectionTestSuite;
@@ -49,6 +50,7 @@ import org.junit.runners.Suite;
     KNNTestSuite.class,
     MLPTestSuite.class,
     DatasetTestSuite.class,
+    PipelineTestSuite.class,
     PreprocessingTestSuite.class,
     GAGridTestSuite.class,
     SelectionTestSuite.class,
