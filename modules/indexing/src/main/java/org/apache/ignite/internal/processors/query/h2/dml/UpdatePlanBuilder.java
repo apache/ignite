@@ -31,6 +31,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.H2CacheUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -114,7 +115,7 @@ public final class UpdatePlanBuilder {
             if (cctx == null)
                 mvccEnabled = (cctx = h2tbl.cache()).mvccEnabled();
             else if (h2tbl.cache().mvccEnabled() != mvccEnabled)
-                throw new IllegalStateException("Using caches with different mvcc settings in same query is forbidden.");
+                MvccUtils.throwAtomicityModesMismatchException(cctx, h2tbl.cache());
         }
 
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
