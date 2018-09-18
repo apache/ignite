@@ -74,7 +74,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
@@ -85,10 +84,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
@@ -104,6 +105,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -3285,6 +3287,50 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             curRec = null;
 
             return nextHandle;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected IgniteCheckedException handleRecordException(
+            @NotNull Exception e,
+            @Nullable FileWALPointer ptr) {
+
+            if (e instanceof IgniteCheckedException)
+                if (X.hasCause(e, IgniteDataIntegrityViolationException.class))
+                    // This means that there is no explicit last sengment, so we iterate unil the very end.
+                    if (end == null) {
+                        long nextWalSegmentIdx = curWalSegmIdx + 1;
+
+                        // Check that we should not look this segment up in archive directory.
+                        // Basically the same check as in "advanceSegment" method.
+                        if (archiver != null)
+                            if (!canReadArchiveOrReserveWork(nextWalSegmentIdx))
+                                try {
+                                    long workIdx = nextWalSegmentIdx % dsCfg.getWalSegments();
+
+                                    FileDescriptor fd = new FileDescriptor(
+                                        new File(walWorkDir, FileDescriptor.fileName(workIdx)),
+                                        nextWalSegmentIdx
+                                    );
+
+                                    try {
+                                        ReadFileHandle nextHandle = initReadHandle(fd, null);
+
+                                        // "nextHandle == null" is true only if current segment is the last one in the
+                                        // whole history. Only in such case we ignore crc validation error and just stop
+                                        // as if we reached the end of the WAL.
+                                        if (nextHandle == null)
+                                            return null;
+                                    }
+                                    catch (IgniteCheckedException | FileNotFoundException initReadHandleException) {
+                                        e.addSuppressed(initReadHandleException);
+                                    }
+                                }
+                                finally {
+                                    releaseWorkSegment(nextWalSegmentIdx);
+                                }
+                    }
+
+            return super.handleRecordException(e, ptr);
         }
 
         /**
