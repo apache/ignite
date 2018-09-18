@@ -1403,8 +1403,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     return false;
                 }
 
-                if(exchangeVer != null)
-                    node2part = null;
+//                if(exchangeVer != null)
+//                    node2part = null;
 
                 boolean fullMapUpdated = (node2part == null);
 
