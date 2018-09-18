@@ -153,4 +153,13 @@ object IgniteDataFrameSettings {
       * @see [[org.apache.ignite.IgniteDataStreamer#perNodeParallelOperations(int)]]
       */
     val OPTION_STREAMER_PER_NODE_PARALLEL_OPERATIONS = "streamerPerNodeParallelOperations"
+
+    /**
+      * Option for a [[org.apache.spark.sql.SparkSession]] configuration.
+      * If `true` then all Ignite optimization of Spark SQL statements will be disabled.
+      * Default value is `false`.
+      *
+      * @see [[org.apache.spark.sql.ignite.IgniteOptimization]]
+      */
+    val OPTION_DISABLE_SPARK_SQL_OPTIMIZATION = "ignite.disableSparkSQLOptimization"
 }

@@ -25,9 +25,10 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    ANNClassificationTest.class,
     KNNClassificationTest.class,
-    KNNMultipleLinearRegressionTest.class,
-    LabeledDatasetTest.class
+    KNNRegressionTest.class,
+    LabeledVectorSetTest.class
 })
 public class KNNTestSuite {
 }

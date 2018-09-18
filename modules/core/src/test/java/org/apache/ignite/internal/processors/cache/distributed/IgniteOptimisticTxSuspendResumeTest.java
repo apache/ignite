@@ -56,7 +56,7 @@ import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
  */
 public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest {
     /** Transaction timeout. */
-    private static final long TX_TIMEOUT = 100;
+    private static final long TX_TIMEOUT = 200;
 
     /** Future timeout */
     private static final int FUT_TIMEOUT = 5000;
@@ -135,8 +135,6 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         stopAllGrids(true);
     }
 
@@ -340,7 +338,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
                     }
 
                     GridTestUtils.runMultiThreaded(new CI1Exc<Integer>() {
-                        public void applyx(Integer idx) throws Exception {
+                        @Override public void applyx(Integer idx) throws Exception {
                             Transaction tx = clientTxs.get(idx);
 
                             assertEquals(SUSPENDED, tx.state());
@@ -712,6 +710,8 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
             log.info("Run test for cache [cache=" + ccfg.getCacheMode() +
                 ", backups=" + ccfg.getBackups() +
                 ", near=" + (ccfg.getNearConfiguration() != null) + "]");
+
+            awaitPartitionMapExchange();
 
             int srvNum = serversNumber();
             if (serversNumber() > 1) {

@@ -115,11 +115,6 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
         startGrids(2);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @param nearEnabled {@code True} if near cache should be enabled.
      * @param mode Cache mode.

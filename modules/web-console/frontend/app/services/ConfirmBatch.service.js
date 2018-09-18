@@ -19,65 +19,72 @@ import templateUrl from 'views/templates/batch-confirm.tpl.pug';
 import {CancellationError} from 'app/errors/CancellationError';
 
 // Service for confirm or skip several steps.
-export default ['IgniteConfirmBatch', ['$rootScope', '$q', '$modal', ($root, $q, $modal) => {
-    const scope = $root.$new();
+export default class IgniteConfirmBatch {
+    static $inject = ['$rootScope', '$q', '$modal'];
 
-    scope.confirmModal = $modal({
-        templateUrl,
-        scope,
-        show: false,
-        backdrop: 'static',
-        keyboard: false
-    });
+    /**
+     * @param {ng.IRootScopeService} $root 
+     * @param {ng.IQService} $q
+     * @param {mgcrea.ngStrap.modal.IModalService} $modal
+     */
+    constructor($root, $q, $modal) {
+        const scope = $root.$new();
 
-    const _done = (cancel) => {
-        scope.confirmModal.hide();
+        scope.confirmModal = $modal({
+            templateUrl,
+            scope,
+            show: false,
+            backdrop: 'static',
+            keyboard: false
+        });
 
-        if (cancel)
-            scope.deferred.reject(new CancellationError());
-        else
-            scope.deferred.resolve();
-    };
+        const _done = (cancel) => {
+            scope.confirmModal.hide();
 
-    const _nextElement = (skip) => {
-        scope.items[scope.curIx++].skip = skip;
+            if (cancel)
+                scope.deferred.reject(new CancellationError());
+            else
+                scope.deferred.resolve();
+        };
 
-        if (scope.curIx < scope.items.length)
-            scope.content = scope.contentGenerator(scope.items[scope.curIx]);
-        else
-            _done();
-    };
+        const _nextElement = (skip) => {
+            scope.items[scope.curIx++].skip = skip;
 
-    scope.cancel = () => {
-        _done(true);
-    };
+            if (scope.curIx < scope.items.length)
+                scope.content = scope.contentGenerator(scope.items[scope.curIx]);
+            else
+                _done();
+        };
 
-    scope.skip = (applyToAll) => {
-        if (applyToAll) {
-            for (let i = scope.curIx; i < scope.items.length; i++)
-                scope.items[i].skip = true;
+        scope.cancel = () => {
+            _done(true);
+        };
 
-            _done();
-        }
-        else
-            _nextElement(true);
-    };
+        scope.skip = (applyToAll) => {
+            if (applyToAll) {
+                for (let i = scope.curIx; i < scope.items.length; i++)
+                    scope.items[i].skip = true;
 
-    scope.overwrite = (applyToAll) => {
-        if (applyToAll)
-            _done();
-        else
-            _nextElement(false);
-    };
+                _done();
+            }
+            else
+                _nextElement(true);
+        };
 
-    return {
+        scope.overwrite = (applyToAll) => {
+            if (applyToAll)
+                _done();
+            else
+                _nextElement(false);
+        };
+
         /**
          * Show confirm all dialog.
-         *
-         * @param confirmMessageFn Function to generate a confirm message.
-         * @param itemsToConfirm Array of element to process by confirm.
+         * @template T
+         * @param {(T) => string} confirmMessageFn Function to generate a confirm message.
+         * @param {Array<T>} [itemsToConfirm] Array of element to process by confirm.
          */
-        confirm(confirmMessageFn, itemsToConfirm) {
+        this.confirm = function confirm(confirmMessageFn, itemsToConfirm) {
             scope.deferred = $q.defer();
 
             scope.contentGenerator = confirmMessageFn;
@@ -89,6 +96,6 @@ export default ['IgniteConfirmBatch', ['$rootScope', '$q', '$modal', ($root, $q,
             scope.confirmModal.$promise.then(scope.confirmModal.show);
 
             return scope.deferred.promise;
-        }
-    };
-}]];
+        };
+    }
+}

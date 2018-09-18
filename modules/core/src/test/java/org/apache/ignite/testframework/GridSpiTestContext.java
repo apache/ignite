@@ -613,6 +613,16 @@ public class GridSpiTestContext implements IgniteSpiContext {
         return Collections.emptyMap();
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean communicationFailureResolveSupported() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resolveCommunicationFailure(ClusterNode node, Exception err) {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * @param cacheName Cache name.
      * @return Map representing cache.

@@ -18,7 +18,6 @@
 package org.apache.ignite.transactions.spring;
 
 import org.apache.ignite.IgniteCache;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Service.
  */
-@Service
 public class GridSpringTransactionService {
     /**
      * @param cache Cache.

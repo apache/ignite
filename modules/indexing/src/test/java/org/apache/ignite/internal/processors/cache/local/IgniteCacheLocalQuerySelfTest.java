@@ -19,9 +19,12 @@ package org.apache.ignite.internal.processors.cache.local;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 import javax.cache.Cache;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -91,6 +94,65 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
             assertTrue("__ explain: \n" + res, ((String) res.get(0).get(0)).toLowerCase().contains("_val_idx"));
 
             cache.destroy();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testLocalSqlQueryFromClient() throws Exception {
+        try {
+            Ignite g = startGrid("client");
+
+            IgniteCache<Integer, Integer> c = jcache(g, Integer.class, Integer.class);
+
+            for (int i = 0; i < 10; i++)
+                c.put(i, i);
+
+            SqlQuery<Integer, Integer> qry = new SqlQuery<>(Integer.class, "_key >= 5 order by _key");
+
+            qry.setLocal(true);
+
+            try(QueryCursor<Cache.Entry<Integer, Integer>> qryCursor = c.query(qry)) {
+                assertNotNull(qryCursor);
+
+                List<Cache.Entry<Integer, Integer>> res = qryCursor.getAll();
+
+                assertNotNull(res);
+
+                assertEquals(5, res.size());
+            }
+        }
+        finally {
+            stopGrid("client");
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testLocalSqlFieldsQueryFromClient() throws Exception {
+        try {
+            Ignite g = startGrid("client");
+
+            IgniteCache<UUID, Person> c = jcache(g, UUID.class, Person.class);
+
+            Person p = new Person("Jon", 1500);
+
+            c.put(p.id(), p);
+
+            SqlFieldsQuery qry = new SqlFieldsQuery("select * from Person");
+
+            qry.setLocal(true);
+
+            try(FieldsQueryCursor<List<?>> qryCursor = c.query(qry)) {
+                assertNotNull(qryCursor);
+
+                List<List<?>> res = qryCursor.getAll();
+
+                assertNotNull(res);
+
+                assertEquals(1, res.size());
+            }
+        }
+        finally {
+            stopGrid("client");
         }
     }
 }

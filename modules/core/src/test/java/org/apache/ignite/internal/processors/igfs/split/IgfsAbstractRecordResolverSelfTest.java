@@ -97,11 +97,6 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids(false);
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         igfs.clear();
     }

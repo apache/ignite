@@ -301,8 +301,12 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
         return super.getConfiguration(name)
             .setDiscoverySpi(
                 new TcpDiscoverySpi()
-                    .setIpFinder(ipFinder)
-            );
+                    .setIpFinder(ipFinder))
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration()
+                    .setDefaultDataRegionConfiguration(
+                        new DataRegionConfiguration()
+                            .setMaxSize(100 * 1024 * 1024)));
     }
 
     /** {@inheritDoc} */
@@ -605,6 +609,9 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
                 startGrid(nodeCfg);
 
                 nodes.add(nodeCfg.getIgniteInstanceName());
+
+                if (state)
+                    awaitPartitionMapExchange();
 
                 System.out.println(">>> Check after new node join in cluster");
 

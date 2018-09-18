@@ -895,7 +895,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         protected Thread thread;
 
         /** Cache flushing frequence in nanos. */
-        protected long cacheFlushFreqNanos = cacheFlushFreq * 1000;
+        protected long cacheFlushFreqNanos = cacheFlushFreq * 1000 * 1000;
 
         /** Writer lock. */
         private final Lock flusherWriterLock = new ReentrantLock();

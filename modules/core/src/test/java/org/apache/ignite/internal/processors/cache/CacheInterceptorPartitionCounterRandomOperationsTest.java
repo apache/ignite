@@ -122,13 +122,6 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         afterPutEvts.clear();
         afterRmvEvts.clear();

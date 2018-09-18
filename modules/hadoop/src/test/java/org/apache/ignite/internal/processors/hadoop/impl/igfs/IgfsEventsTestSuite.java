@@ -165,8 +165,6 @@ public class IgfsEventsTestSuite extends TestSuite {
 
         /** {@inheritDoc} */
         @Override protected void afterTestsStopped() throws Exception {
-            super.afterTestsStopped();
-
             G.stopAll(true);
         }
 

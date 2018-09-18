@@ -32,6 +32,8 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -423,6 +425,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridIndexingManager indexing();
 
     /**
+     * Gets workers registry.
+     *
+     * @return Workers registry.
+     */
+    public WorkersRegistry workersRegistry();
+
+    /**
      * Gets data structures processor.
      *
      * @return Data structures processor.
@@ -435,6 +444,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return {@code True} if this node is invalid, {@code false} otherwise.
      */
     public boolean invalid();
+
+    /**
+     * Checks whether this node detected its segmentation from the rest of the grid.
+     *
+     * @return {@code True} if this node has segmented, {@code false} otherwise.
+     */
+    public boolean segmented();
 
     /**
      * Gets failure processor.
@@ -654,6 +670,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Platform processor.
      */
     public PlatformProcessor platform();
+
+    /**
+     * @return Cache mvcc coordinator processor.
+     */
+    public MvccProcessor coordinators();
 
     /**
      * @return PDS mode folder name resolver, also generates consistent ID in case new folder naming is used

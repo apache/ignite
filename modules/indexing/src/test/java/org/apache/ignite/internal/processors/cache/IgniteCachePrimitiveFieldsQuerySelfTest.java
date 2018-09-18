@@ -90,11 +90,6 @@ public class IgniteCachePrimitiveFieldsQuerySelfTest extends GridCommonAbstractT
         startGrids(3);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception if failed.
      */

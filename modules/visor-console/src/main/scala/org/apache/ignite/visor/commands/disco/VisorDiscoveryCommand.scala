@@ -122,7 +122,14 @@ class VisorDiscoveryCommand extends VisorConsoleCommand {
 
             val fs = argValue("t", argLst)
 
-            val tm = if (fs.isDefined) timeFilter(fs) else Long.MaxValue
+            val tm = try
+                timeFilter(fs)
+            catch {
+                case e: IllegalArgumentException =>
+                    scold(e.getMessage)
+
+                    return;
+            }
 
             if (tm > 0) {
                 val nodes = ignite.cluster.nodes()

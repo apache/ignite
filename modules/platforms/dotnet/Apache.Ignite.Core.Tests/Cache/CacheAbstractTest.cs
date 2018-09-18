@@ -144,7 +144,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             return GetIgnite(0).GetAffinity(CacheName());
         }
 
-        protected ITransactions Transactions
+        protected virtual ITransactions Transactions
         {
             get { return GetIgnite(0).GetTransactions(); }
         }
@@ -655,6 +655,8 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestWithExpiryPolicy()
         {
+            Assert.Fail("https://issues.apache.org/jira/browse/IGNITE-8983");
+
             TestWithExpiryPolicy((cache, policy) => cache.WithExpiryPolicy(policy), true);
         }
 

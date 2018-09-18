@@ -38,9 +38,11 @@ import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -52,6 +54,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -117,11 +120,11 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
         memCfg.setPageSize(4 * 1024);
         memCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-            .setMaxSize(300 * 1024 * 1024)
+            .setMaxSize(300L * 1024 * 1024)
             .setPersistenceEnabled(persistenceEnabled()));
 
         memCfg.setDataRegionConfigurations(new DataRegionConfiguration()
-            .setMaxSize(300 * 1024 * 1024)
+            .setMaxSize(300L * 1024 * 1024)
             .setName(NO_PERSISTENCE_REGION)
             .setPersistenceEnabled(false));
 
@@ -354,11 +357,13 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @return State change future.
      * @throws Exception If failed.
      */
-    private IgniteInternalFuture<?> startNodesAndBlockStatusChange(int srvs,
+    private IgniteInternalFuture<?> startNodesAndBlockStatusChange(
+        int srvs,
         int clients,
         final int stateChangeFrom,
         final boolean initiallyActive,
-        int... blockMsgNodes) throws Exception {
+        int... blockMsgNodes
+    ) throws Exception {
         active = initiallyActive;
         testSpi = true;
 
@@ -1106,6 +1111,114 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         }
 
         checkCaches1(10);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testActivateFailover3() throws Exception {
+        stateChangeFailover3(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeactivateFailover3() throws Exception {
+        stateChangeFailover3(false);
+    }
+
+    /**
+     * @param activate If {@code true} tests activation, otherwise deactivation.
+     * @throws Exception If failed.
+     */
+    private void stateChangeFailover3(boolean activate) throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8220");
+
+        testReconnectSpi = true;
+
+        startNodesAndBlockStatusChange(4, 0, 0, !activate);
+
+        client = false;
+
+        IgniteInternalFuture startFut1 = GridTestUtils.runAsync((Callable) () -> {
+            startGrid(4);
+
+            return null;
+        }, "start-node1");
+
+        IgniteInternalFuture startFut2 = GridTestUtils.runAsync((Callable) () -> {
+            startGrid(5);
+
+            return null;
+        }, "start-node2");
+
+        U.sleep(1000);
+
+        // Stop all nodes participating in state change and not allow last node to finish exchange.
+        for (int i = 0; i < 4; i++)
+            ((IgniteDiscoverySpi)ignite(i).configuration().getDiscoverySpi()).simulateNodeFailure();
+
+        for (int i = 0; i < 4; i++)
+            stopGrid(getTestIgniteInstanceName(i), true, false);
+
+        startFut1.get();
+        startFut2.get();
+
+        assertFalse(ignite(4).active());
+        assertFalse(ignite(5).active());
+
+        ignite(4).active(true);
+
+        for (int i = 0; i < 4; i++)
+            startGrid(i);
+
+        checkCaches1(6);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClusterStateNotWaitForDeactivation() throws Exception {
+        testSpi = true;
+
+        final int nodes = 2;
+
+        IgniteEx crd = (IgniteEx) startGrids(nodes);
+
+        crd.cluster().active(true);
+
+        AffinityTopologyVersion curTopVer = crd.context().discovery().topologyVersionEx();
+
+        AffinityTopologyVersion deactivationTopVer = new AffinityTopologyVersion(
+            curTopVer.topologyVersion(),
+            curTopVer.minorTopologyVersion() + 1
+        );
+
+        for (int gridIdx = 0; gridIdx < nodes; gridIdx++) {
+            TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(gridIdx));
+
+            blockExchangeSingleMessage(spi, deactivationTopVer);
+        }
+
+        IgniteInternalFuture deactivationFut = GridTestUtils.runAsync(() -> crd.cluster().active(false));
+
+        // Wait for deactivation start.
+        GridTestUtils.waitForCondition(() -> {
+            DiscoveryDataClusterState clusterState = crd.context().state().clusterState();
+
+            return clusterState.transition() && !clusterState.active();
+        }, getTestTimeout());
+
+        // Check that deactivation transition wait is not happened.
+        Assert.assertFalse(crd.context().state().publicApiActiveState(true));
+
+        for (int gridIdx = 0; gridIdx < nodes; gridIdx++) {
+            TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(gridIdx));
+
+            spi.stopBlock();
+        }
+
+        deactivationFut.get();
     }
 
     /**

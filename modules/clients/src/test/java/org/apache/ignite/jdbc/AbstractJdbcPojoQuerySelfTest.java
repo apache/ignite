@@ -115,8 +115,6 @@ public abstract class AbstractJdbcPojoQuerySelfTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, marshallerBackup);
     }
 

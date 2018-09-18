@@ -62,6 +62,10 @@ import scala.language.{implicitConversions, reflectiveCalls}
  * +-------------------------------------------------------------------------------------------+
  * | cache -rebalance | Re-balance partitions for cache with specified name.                   |
  * +-------------------------------------------------------------------------------------------+
+ * | cache -slp       | Show list of lost partitions for specified cache.                      |
+ * +-------------------------------------------------------------------------------------------+
+ * | cache -rlp       | Reset lost partitions for specified cache.                             |
+ * +-------------------------------------------------------------------------------------------+
  *
  * }}}
  *
@@ -75,6 +79,8 @@ import scala.language.{implicitConversions, reflectiveCalls}
  *     cache -stop -c=<cache-name>
  *     cache -reset -c=<cache-name>
  *     cache -rebalance -c=<cache-name>
+ *     cache -slp -c=<cache-name>
+ *     cache -rlp -c=<cache-name>
  * }}}
  *
  * ====Arguments====
@@ -123,6 +129,10 @@ import scala.language.{implicitConversions, reflectiveCalls}
  *          Reset metrics for cache with specified name.
  *     -rebalance
  *          Re-balance partitions for cache with specified name.
+ *     -slp
+ *          Show list of lost partitions for specified cache.
+ *     -rlp
+ *          Reset lost partitions for specified cache.
  *     -p=<page size>
  *         Number of object to fetch from cache at once.
  *         Valid range from 1 to 100.
@@ -163,6 +173,10 @@ import scala.language.{implicitConversions, reflectiveCalls}
  *         Reset metrics for cache with name 'cache'.
  *     cache -rebalance -c=cache
  *         Re-balance partitions for cache with name 'cache'.
+ *     cache -slp -c=cache
+ *         Show list of lost partitions for cache with name 'cache'.
+ *     cache -rlp -c=cache
+ *         Reset lost partitions for cache with name 'cache'.
  *
  * }}}
  */
@@ -265,7 +279,7 @@ class VisorCacheCommand extends VisorConsoleCommand {
             // Get cache stats data from all nodes.
             val aggrData = cacheData(node, cacheName, showSystem)
 
-            if (hasArgFlagIn("clear", "scan", "stop", "reset", "rebalance")) {
+            if (hasArgFlagIn("clear", "scan", "stop", "reset", "rebalance", "slp", "rlp")) {
                 if (cacheName.isEmpty)
                     askForCache("Select cache from:", node, showSystem
                         && !hasArgFlagIn("clear", "stop", "reset", "rebalance"), aggrData) match {
@@ -291,6 +305,10 @@ class VisorCacheCommand extends VisorConsoleCommand {
                                     VisorCacheResetCommand().reset(argLst, node)
                                 else if (hasArgFlag("rebalance", argLst))
                                     VisorCacheRebalanceCommand().rebalance(argLst, node)
+                                else if (hasArgFlag("slp", argLst))
+                                    VisorCacheLostPartitionsCommand().showLostPartitions(argLst, node)
+                                else if (hasArgFlag("rlp", argLst))
+                                    VisorCacheResetLostPartitionsCommand().resetLostPartitions(argLst, node)
                             }
                             else {
                                 if (hasArgFlag("scan", argLst))
@@ -338,7 +356,7 @@ class VisorCacheCommand extends VisorConsoleCommand {
 
             val sumT = VisorTextTable()
 
-            sumT #= ("Name(@)", "Mode", "Nodes", "Entries (Heap / Off-heap)", "Hits", "Misses", "Reads", "Writes")
+            sumT #= ("Name(@)", "Mode", "Nodes", "Total entries (Heap / Off-heap)", "Primary entries (Heap / Off-heap)", "Hits", "Misses", "Reads", "Writes")
 
             sortAggregatedData(aggrData, sortType.getOrElse("cn"), reversed).foreach(
                 ad => {
@@ -349,6 +367,7 @@ class VisorCacheCommand extends VisorConsoleCommand {
                         mkCacheName(ad.getName),
                         ad.getMode,
                         ad.getNodes.size(),
+                        (ad.getTotalHeapSize + ad.getTotalOffHeapSize) + " (" + ad.getTotalHeapSize + " / " + ad.getTotalOffHeapSize + ")",
                         (
                             "min: " + (ad.getMinimumHeapSize + ad.getMinimumOffHeapPrimarySize) +
                                 " (" + ad.getMinimumHeapSize + " / " + ad.getMinimumOffHeapPrimarySize + ")",
@@ -406,6 +425,8 @@ class VisorCacheCommand extends VisorConsoleCommand {
                     val csT = VisorTextTable()
 
                     csT += ("Name(@)", cacheNameVar)
+                    csT += ("Total entries (Heap / Off-heap)", (ad.getTotalHeapSize + ad.getTotalOffHeapSize) +
+                        " (" + ad.getTotalHeapSize + " / " + ad.getTotalOffHeapSize + ")")
                     csT += ("Nodes", m.size())
                     csT += ("Total size Min/Avg/Max", (ad.getMinimumHeapSize + ad.getMinimumOffHeapPrimarySize) + " / " +
                         formatDouble(ad.getAverageHeapSize + ad.getAverageOffHeapPrimarySize) + " / " +
@@ -417,7 +438,7 @@ class VisorCacheCommand extends VisorConsoleCommand {
 
                     val ciT = VisorTextTable()
 
-                    ciT #= ("Node ID8(@), IP", "CPUs", "Heap Used", "CPU Load", "Up Time", "Size", "Hi/Mi/Rd/Wr")
+                    ciT #= ("Node ID8(@), IP", "CPUs", "Heap Used", "CPU Load", "Up Time", "Size (Primary / Backup)", "Hi/Mi/Rd/Wr")
 
                     sortData(m.toMap, sortType.getOrElse("hi"), reversed).foreach { case (nid, cm) =>
                         val nm = ignite.cluster.node(nid).metrics()
@@ -430,10 +451,14 @@ class VisorCacheCommand extends VisorConsoleCommand {
                             formatDouble(nm.getCurrentCpuLoad * 100d) + " %",
                             X.timeSpan2HMSM(nm.getUpTime),
                             (
-                                "Total: " + (cm.getHeapEntriesCount + cm.getOffHeapPrimaryEntriesCount),
-                                "  Heap: " + cm.getHeapEntriesCount,
-                                "  Off-Heap: " + cm.getOffHeapPrimaryEntriesCount,
-                                "  Off-Heap Memory: " + formatMemory(cm.getOffHeapAllocatedSize)
+                                "Total: " + (cm.getHeapEntriesCount + cm.getOffHeapEntriesCount) +
+                                    " (" + (cm.getHeapEntriesCount + cm.getOffHeapPrimaryEntriesCount) + " / " + cm.getOffHeapBackupEntriesCount + ")",
+                                "  Heap: " + cm.getHeapEntriesCount + " (" + cm.getHeapEntriesCount + " / " + NA + ")",
+                                "  Off-Heap: " + cm.getOffHeapEntriesCount +
+                                    " (" + cm.getOffHeapPrimaryEntriesCount + " / " + cm.getOffHeapBackupEntriesCount + ")",
+                                "  Off-Heap Memory: " + (if (cm.getOffHeapPrimaryEntriesCount == 0) "0"
+                                    else if (cm.getOffHeapAllocatedSize > 0) formatMemory(cm.getOffHeapAllocatedSize)
+                                    else NA)
                             ),
                             (
                                 "Hi: " + cm.getHits,
@@ -716,7 +741,9 @@ object VisorCacheCommand {
             " ",
             "Clears cache.",
             " ",
-            "Prints list of all entries from cache."
+            "Prints list of all entries from cache.",
+            " ",
+            "Prints or clear list lost partitions from cache."
         ),
         spec = Seq(
             "cache",
@@ -726,7 +753,9 @@ object VisorCacheCommand {
             "cache -scan -c=<cache-name> {-near} {-id=<node-id>|id8=<node-id8>} {-p=<page size>}",
             "cache -stop -c=<cache-name>",
             "cache -reset -c=<cache-name>",
-            "cache -rebalance -c=<cache-name>"
+            "cache -rebalance -c=<cache-name>",
+            "cache -slp -c=<cache-name>",
+            "cache -rlp -c=<cache-name>"
   ),
         args = Seq(
             "-id8=<node-id>" -> Seq(
@@ -752,6 +781,8 @@ object VisorCacheCommand {
             "-near" -> "Prints list of all entries from near cache of cache.",
             "-stop" -> "Stop cache with specified name.",
             "-reset" -> "Reset metrics of cache with specified name.",
+            "-slp" -> "Show list of lost partitions for specified cache.",
+            "-rlp" -> "Reset lost partitions for specified cache.",
             "-rebalance" -> "Re-balance partitions for cache with specified name.",
             "-s=hi|mi|rd|wr|cn" -> Seq(
                 "Defines sorting type. Sorted by:",
@@ -812,7 +843,9 @@ object VisorCacheCommand {
                 "Prints list entries from near cache of cache with name 'cache' and node '12345678' ID8.",
             "cache -stop -c=@c0" -> "Stop cache with name taken from 'c0' memory variable.",
             "cache -reset -c=@c0" -> "Reset metrics for cache with name taken from 'c0' memory variable.",
-            "cache -rebalance -c=cache" -> "Re-balance partitions for cache with name 'cache'."
+            "cache -rebalance -c=cache" -> "Re-balance partitions for cache with name 'cache'.",
+            "cache -slp -c=@c0" -> "Show list of lost partitions for cache with name taken from 'c0' memory variable.",
+            "cache -rlp -c=@c0" -> "Reset lost partitions for cache with name taken from 'c0' memory variable."
         ),
         emptyArgs = cmd.cache,
         withArgs = cmd.cache

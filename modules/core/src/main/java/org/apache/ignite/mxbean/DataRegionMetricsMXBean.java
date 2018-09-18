@@ -89,6 +89,26 @@ public interface DataRegionMetricsMXBean extends DataRegionMetrics {
     @MXBeanDescription("Number of pages residing in physical RAM.")
     @Override public long getPhysicalMemoryPages();
 
+    /** {@inheritDoc} */
+    @MXBeanDescription("Number of pages read from last restart.")
+    @Override public long getPagesRead();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Number of pages written from last restart.")
+    @Override public long getPagesWritten();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Number of pages replaced from last restart.")
+    @Override public long getPagesReplaced();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Offheap size in bytes.")
+    @Override public long getOffHeapSize();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Offheap used size in bytes.")
+    @Override public long getOffheapUsedSize();
+
     /**
      * Enables memory metrics collection on an Apache Ignite node.
      */

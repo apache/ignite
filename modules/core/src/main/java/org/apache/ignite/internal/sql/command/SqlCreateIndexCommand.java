@@ -21,7 +21,6 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
 import org.apache.ignite.internal.sql.SqlLexerToken;
-import org.apache.ignite.internal.sql.SqlParserUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -175,7 +174,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
     }
 
     /**
-     * Pasrse index name.
+     * Parse index name.
      *
      * @param lex Lexer.
      * @return Index name.
@@ -249,34 +248,31 @@ public class SqlCreateIndexCommand implements SqlCommand {
         while (true) {
             SqlLexerToken token = lex.lookAhead();
 
-            if (token.tokenType() == SqlLexerTokenType.EOF)
-                return;
+            if (token.tokenType() != SqlLexerTokenType.DEFAULT)
+                break;
 
-            if (token.tokenType() == SqlLexerTokenType.DEFAULT) {
-                switch (token.token()) {
-                    case PARALLEL:
-                        parallel = getIntProperty(lex, PARALLEL, foundProps);
+            switch (token.token()) {
+                case PARALLEL:
+                    parallel = getIntProperty(lex, PARALLEL, foundProps);
 
-                        if (parallel < 0)
-                            throw error(lex, "Illegal " + PARALLEL + " value. Should be positive: " + parallel);
+                    if (parallel < 0)
+                        throw error(lex, "Illegal " + PARALLEL + " value. Should be positive: " + parallel);
 
-                        break;
+                    break;
 
-                    case INLINE_SIZE:
-                        inlineSize = getIntProperty(lex, INLINE_SIZE, foundProps);
+                case INLINE_SIZE:
+                    inlineSize = getIntProperty(lex, INLINE_SIZE, foundProps);
 
-                        if (inlineSize < 0)
-                            throw error(lex, "Illegal " + INLINE_SIZE +
-                                " value. Should be positive: " + inlineSize);
+                    if (inlineSize < 0)
+                        throw error(lex, "Illegal " + INLINE_SIZE +
+                            " value. Should be positive: " + inlineSize);
 
-                        break;
+                    break;
 
-                    default:
-                        return;
-                }
+                default:
+                    return;
             }
         }
-
     }
 
     /**

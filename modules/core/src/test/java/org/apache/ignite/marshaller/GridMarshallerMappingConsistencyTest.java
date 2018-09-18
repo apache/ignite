@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -54,7 +55,7 @@ public class GridMarshallerMappingConsistencyTest extends GridCommonAbstractTest
         igniteCfg.setConsistentId(igniteInstanceName);
 
         DataRegionConfiguration drCfg = new DataRegionConfiguration();
-        drCfg.setPersistenceEnabled(true);
+        drCfg.setPersistenceEnabled(true).setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
         dsCfg.setDefaultDataRegionConfiguration(drCfg);
@@ -119,7 +120,8 @@ public class GridMarshallerMappingConsistencyTest extends GridCommonAbstractTest
         c1.put(k, new DummyObject(k));
 
         startGrid(2);
-        waitForRebalancing();
+
+        awaitPartitionMapExchange();
 
         stopAllGrids();
 
@@ -156,6 +158,9 @@ public class GridMarshallerMappingConsistencyTest extends GridCommonAbstractTest
 
         Ignite g2 = startGrid(2);
         startGrid(1);
+
+        assertTrue("Failed to wait for automatic grid activation",
+            GridTestUtils.waitForCondition(() -> g2.cluster().active(), getTestTimeout()));
 
         IgniteCache<Integer, DummyObject> c2 = g2.cache(CACHE_NAME);
 

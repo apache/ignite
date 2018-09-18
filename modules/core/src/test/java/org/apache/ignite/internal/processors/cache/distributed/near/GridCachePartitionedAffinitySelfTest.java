@@ -94,11 +94,6 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         startGrids(GRIDS);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @param ignite Grid.
      * @return Affinity.

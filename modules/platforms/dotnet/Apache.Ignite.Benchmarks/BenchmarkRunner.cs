@@ -22,7 +22,6 @@ namespace Apache.Ignite.Benchmarks
     using System.IO;
     using System.Text;
     using Apache.Ignite.Benchmarks.Interop;
-    using Apache.Ignite.Benchmarks.ThinClient;
 
     /// <summary>
     /// Benchmark runner.

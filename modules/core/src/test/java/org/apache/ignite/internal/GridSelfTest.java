@@ -45,11 +45,8 @@ public class GridSelfTest extends ClusterGroupAbstractTest {
 
         for (int i = 0; i < NODES_CNT; i++)
             startGrid(i);
-    }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
+        waitForTopology(NODES_CNT);
     }
 
     /** {@inheritDoc} */

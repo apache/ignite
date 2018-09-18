@@ -43,4 +43,9 @@ public interface StreamerParams {
      * @return Allow overwrite flag.
      */
     @Nullable public Boolean streamerAllowOverwrite();
+
+    /**
+     * @return Ordered flag.
+     */
+    public boolean streamerOrdered();
 }

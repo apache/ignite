@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
@@ -86,6 +87,7 @@ import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
@@ -127,9 +129,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
      * {@code null} means no specific folder is configured.
      * Providing {@code null} will disable unmarshall for non primitive objects, BinaryObjects will be provided <br>
      */
-    StandaloneGridKernalContext(IgniteLogger log,
+    public StandaloneGridKernalContext(
+        IgniteLogger log,
         @Nullable File binaryMetadataFileStoreDir,
-        @Nullable File marshallerMappingFileStoreDir) throws IgniteCheckedException {
+        @Nullable File marshallerMappingFileStoreDir
+    ) throws IgniteCheckedException {
         this.log = log;
 
         try {
@@ -178,7 +182,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /**
      * @return Ignite configuration which allows to start requied processors for WAL reader
      */
-    private IgniteConfiguration prepareIgniteConfiguration() {
+    protected IgniteConfiguration prepareIgniteConfiguration() {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setDiscoverySpi(new StandaloneNoopDiscoverySpi());
@@ -454,12 +458,27 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
+    @Override public WorkersRegistry workersRegistry() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public DataStructuresProcessor dataStructures() {
         return null;
     }
 
     /** {@inheritDoc} */
+    @Override public MvccProcessor coordinators() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean invalid() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean segmented() {
         return false;
     }
 

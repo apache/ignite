@@ -97,7 +97,7 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setMaxSize(50 * 1024 * 1024));
+            new DataRegionConfiguration().setMaxSize(50L * 1024 * 1024));
 
         c.setDataStorageConfiguration(memCfg);
 
@@ -399,11 +399,6 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
         }
 
         info("Queries stopped.");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /**

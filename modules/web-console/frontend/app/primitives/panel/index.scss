@@ -33,10 +33,16 @@
 
             background-color: initial;
             font-size: 16px;
-            line-height: 36px;
 
             &:hover {
                 text-decoration: none;
+            }
+
+            h5 {
+                margin: 0;
+                font-size: 16px;
+                font-weight: normal;
+                line-height: 36px;
             }
         }
 
@@ -54,7 +60,7 @@
             padding: 22px 20px;
 
             background-color: initial;
-            border-bottom: 1px solid $ignite-brand-primary;
+            border-bottom: 1px solid $table-border-color;
 
             &:hover {
                 text-decoration: none;
@@ -70,6 +76,18 @@
                     line-height: 36px;
                     cursor: default;
                 }
+            }
+        }
+
+        & > header.header-with-selector {
+            margin: 0;
+            padding: 14px 20px;
+            min-height: 65px;
+
+            border-bottom: 1px solid #ddd;
+
+            sub {
+                bottom: 0;
             }
         }
     }
@@ -104,5 +122,13 @@
                 display: none;
             }
         }
+    }
+}
+
+// Adding top border for panels in modals
+.modal-body {
+    .panel--ignite:not(.panel--ignite__without-border) {
+        border-top: 1px solid #d4d4d4;
+        border-radius: 4px 4px 0 0 ;
     }
 }

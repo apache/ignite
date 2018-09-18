@@ -34,11 +34,6 @@ public class GridCacheAffinityMapperSelfTest extends GridCommonAbstractTest {
         startGrid();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      *
      */

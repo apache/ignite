@@ -17,41 +17,72 @@
 
 import _ from 'lodash';
 
-export default class {
-    static $inject = ['$scope', 'AgentManager', 'IgniteConfirm'];
+import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import 'rxjs/add/operator/combineLatest';
 
-    constructor($scope, agentMgr, Confirm) {
-        Object.assign(this, { $scope, agentMgr, Confirm });
+export default class {
+    static $inject = ['AgentManager', 'IgniteConfirm', 'IgniteVersion', 'IgniteMessages'];
+
+    /**
+     * @param agentMgr Agent manager.
+     * @param Confirm Confirmation service.
+     * @param Version Version check service.
+     * @param Messages Messages service.
+     */
+    constructor(agentMgr, Confirm, Version, Messages) {
+        this.agentMgr = agentMgr;
+        this.Confirm = Confirm;
+        this.Version = Version;
+        this.Messages = Messages;
 
         this.clusters = [];
         this.isDemo = agentMgr.isDemoMode();
+        this._inProgressSubject = new BehaviorSubject(false);
     }
 
     $onInit() {
+        if (this.isDemo)
+            return;
+
+        this.inProgress$ = this._inProgressSubject.asObservable();
+
         this.clusters$ = this.agentMgr.connectionSbj
-            .do(({ cluster, clusters }) => {
-                this.cluster = cluster;
+            .combineLatest(this.inProgress$)
+            .do(([sbj, inProgress]) => this.inProgress = inProgress)
+            .filter(([sbj, inProgress]) => !inProgress)
+            .do(([{cluster, clusters}]) => {
+                this.cluster = cluster ? {...cluster} : null;
                 this.clusters = _.orderBy(clusters, ['name'], ['asc']);
             })
             .subscribe(() => {});
     }
 
     $onDestroy() {
-        this.clusters$.unsubscribe();
+        if (!this.isDemo)
+            this.clusters$.unsubscribe();
     }
 
     change() {
         this.agentMgr.switchCluster(this.cluster);
     }
 
+    isChangeStateAvailable() {
+        return !this.isDemo && this.cluster && this.Version.since(this.cluster.clusterVersion, '2.0.0');
+    }
+
     toggle($event) {
         $event.preventDefault();
 
         const toggleClusterState = () => {
-            this.inProgress = true;
+            this._inProgressSubject.next(true);
 
             return this.agentMgr.toggleClusterState()
-                .finally(() => this.inProgress = false);
+                .then(() => this._inProgressSubject.next(false))
+                .catch((err) => {
+                    this._inProgressSubject.next(false);
+
+                    this.Messages.showError('Failed to toggle cluster state: ', err);
+                });
         };
 
         if (this.cluster.active) {

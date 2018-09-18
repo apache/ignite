@@ -31,7 +31,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.client.ClientConfigurationException;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -68,7 +67,7 @@ final class ReliableChannel implements AutoCloseable {
     ReliableChannel(
         Function<ClientChannelConfiguration, Result<ClientChannel>> chFactory,
         ClientConfiguration clientCfg
-    ) throws ClientConfigurationException {
+    ) throws ClientException {
         if (chFactory == null)
             throw new NullPointerException("chFactory");
 
@@ -81,6 +80,8 @@ final class ReliableChannel implements AutoCloseable {
         List<InetSocketAddress> addrs = parseAddresses(clientCfg.getAddresses());
 
         primary = addrs.get(new Random().nextInt(addrs.size())); // we already verified there is at least one address
+
+        ch = chFactory.apply(new ClientChannelConfiguration(clientCfg).setAddress(primary)).get();
 
         for (InetSocketAddress a : addrs)
             if (a != primary)
@@ -162,9 +163,16 @@ final class ReliableChannel implements AutoCloseable {
     }
 
     /**
+     * @return Server version.
+     */
+    public ProtocolVersion serverVersion() {
+        return ch.serverVersion();
+    }
+
+    /**
      * @return host:port_range address lines parsed as {@link InetSocketAddress}.
      */
-    private static List<InetSocketAddress> parseAddresses(String[] addrs) throws ClientConfigurationException {
+    private static List<InetSocketAddress> parseAddresses(String[] addrs) throws ClientException {
         Collection<HostAndPortRange> ranges = new ArrayList<>(addrs.length);
 
         for (String a : addrs) {
@@ -177,7 +185,7 @@ final class ReliableChannel implements AutoCloseable {
                 ));
             }
             catch (IgniteCheckedException e) {
-                throw new ClientConfigurationException(e);
+                throw new ClientException(e);
             }
         }
 

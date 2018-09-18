@@ -53,6 +53,19 @@ public class SqlParseException extends IgniteException {
     }
 
     /**
+     * Copy constructor.
+     *
+     * @param e Copied exception.
+     */
+    protected SqlParseException(SqlParseException e) {
+        super(e.getMessage());
+
+        sql = e.sql;
+        pos = e.pos;
+        code = e. code;
+    }
+
+    /**
      * Prepare message.
      *
      * @param sql Original SQL.

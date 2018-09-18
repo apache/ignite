@@ -16,7 +16,10 @@
  */
 
 page-profile {
-    .panel--ignite {
+    max-width: 800px;
+    display: block;
+
+    panel-collapsible {
         width: 100%;
     }
 

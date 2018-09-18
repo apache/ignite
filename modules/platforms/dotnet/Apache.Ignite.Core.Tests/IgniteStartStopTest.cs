@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests 
+namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.IO;
     using System.Linq;
     using System.Threading;
-    using System.Threading.Tasks;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Messaging;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         [Test]
         public void TestStartDefault()
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         [Test]
         public void TestStartWithConfigPath()
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         [Test]
         public void TestStartGetStop()
@@ -139,7 +139,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         [Test]
         public void TestStartTheSameName()
@@ -147,7 +147,7 @@ namespace Apache.Ignite.Core.Tests
             var cfg = TestUtils.GetTestConfiguration(name: "grid1");
             var grid1 = Ignition.Start(cfg);
             Assert.AreEqual("grid1", grid1.Name);
-            
+
             var ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
             Assert.AreEqual("Ignite instance with this name has already been started: grid1", ex.Message);
         }
@@ -172,7 +172,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         [Test]
         public void TestUsageAfterStop()
@@ -190,7 +190,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         [Test]
         public void TestStartStopLeak()
@@ -207,7 +207,7 @@ namespace Apache.Ignite.Core.Tests
 
                 if (i % 2 == 0) // Try to stop ignite from another thread.
                 {
-                    Task.Factory.StartNew(() => grid.Dispose()).Wait();
+                    TaskRunner.Run(() => grid.Dispose()).Wait();
                 }
                 else
                 {
@@ -243,7 +243,7 @@ namespace Apache.Ignite.Core.Tests
                     }
                 }
             }
-            finally 
+            finally
             {
                 Ignition.ClientMode = false;
             }
@@ -298,15 +298,15 @@ namespace Apache.Ignite.Core.Tests
                 "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + Path.GetFullPath(cfg.SpringConfigUrl),
                 "-J-Xms512m", "-J-Xmx512m");
-            
+
             Assert.IsTrue(proc.Alive);
 
             var cts = new CancellationTokenSource();
             var token = cts.Token;
 
-            // Spam message subscriptions on a separate thread 
+            // Spam message subscriptions on a separate thread
             // to test race conditions during processor init on remote node
-            var listenTask = Task.Factory.StartNew(() =>
+            var listenTask = TaskRunner.Run(() =>
             {
                 var filter = new MessageListener();
 

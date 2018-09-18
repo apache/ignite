@@ -103,11 +103,6 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 

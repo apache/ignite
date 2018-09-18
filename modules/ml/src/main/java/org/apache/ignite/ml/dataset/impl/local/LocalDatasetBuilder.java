@@ -19,9 +19,11 @@ package org.apache.ignite.ml.dataset.impl.local;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
@@ -42,14 +44,30 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     /** Number of partitions. */
     private final int partitions;
 
+    /** Filter for {@code upstream} data. */
+    private final IgniteBiPredicate<K, V> filter;
+
     /**
-     * Constructs a new instance of local dataset builder that makes {@link LocalDataset}.
+     * Constructs a new instance of local dataset builder that makes {@link LocalDataset} with default predicate that
+     * passes all upstream entries to dataset.
      *
      * @param upstreamMap {@code Map} with upstream data.
      * @param partitions Number of partitions.
      */
     public LocalDatasetBuilder(Map<K, V> upstreamMap, int partitions) {
+        this(upstreamMap, (a, b) -> true, partitions);
+    }
+
+    /**
+     * Constructs a new instance of local dataset builder that makes {@link LocalDataset}.
+     *
+     * @param upstreamMap {@code Map} with upstream data.
+     * @param filter Filter for {@code upstream} data.
+     * @param partitions Number of partitions.
+     */
+    public LocalDatasetBuilder(Map<K, V> upstreamMap, IgniteBiPredicate<K, V> filter, int partitions) {
         this.upstreamMap = upstreamMap;
+        this.filter = filter;
         this.partitions = partitions;
     }
 
@@ -60,25 +78,31 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         List<C> ctxList = new ArrayList<>();
         List<D> dataList = new ArrayList<>();
 
-        int partSize = Math.max(1, upstreamMap.size() / partitions);
+        Map<K, V> filteredMap = new HashMap<>();
+        upstreamMap.forEach((key, val) -> {
+            if (filter.apply(key, val))
+                filteredMap.put(key, val);
+        });
 
-        Iterator<K> firstKeysIter = upstreamMap.keySet().iterator();
-        Iterator<K> secondKeysIter = upstreamMap.keySet().iterator();
+        int partSize = Math.max(1, filteredMap.size() / partitions);
+
+        Iterator<K> firstKeysIter = filteredMap.keySet().iterator();
+        Iterator<K> secondKeysIter = filteredMap.keySet().iterator();
 
         int ptr = 0;
         for (int part = 0; part < partitions; part++) {
-            int cnt = part == partitions - 1 ? upstreamMap.size() - ptr : Math.min(partSize, upstreamMap.size() - ptr);
+            int cnt = part == partitions - 1 ? filteredMap.size() - ptr : Math.min(partSize, filteredMap.size() - ptr);
 
-            C ctx = partCtxBuilder.build(
-                new IteratorWindow<>(firstKeysIter, k -> new UpstreamEntry<>(k, upstreamMap.get(k)), cnt),
+            C ctx = cnt > 0 ? partCtxBuilder.build(
+                new IteratorWindow<>(firstKeysIter, k -> new UpstreamEntry<>(k, filteredMap.get(k)), cnt),
                 cnt
-            );
+            ) : null;
 
-            D data = partDataBuilder.build(
-                new IteratorWindow<>(secondKeysIter, k -> new UpstreamEntry<>(k, upstreamMap.get(k)), cnt),
+            D data = cnt > 0 ? partDataBuilder.build(
+                new IteratorWindow<>(secondKeysIter, k -> new UpstreamEntry<>(k, filteredMap.get(k)), cnt),
                 cnt,
                 ctx
-            );
+            ) : null;
 
             ctxList.add(ctx);
             dataList.add(data);
@@ -87,6 +111,12 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         }
 
         return new LocalDataset<>(ctxList, dataList);
+    }
+
+    /** {@inheritDoc} */
+    @Override public DatasetBuilder<K, V> withFilter(IgniteBiPredicate<K, V> filterToAdd) {
+        return new LocalDatasetBuilder<>(upstreamMap,
+            (e1, e2) -> filter.apply(e1, e2) && filterToAdd.apply(e1, e2), partitions);
     }
 
     /**

@@ -33,7 +33,6 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
-import org.apache.ignite.client.ClientConfigurationException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -48,6 +47,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerContext;
@@ -73,7 +73,7 @@ public class TcpIgniteClient implements IgniteClient {
      * Private constructor. Use {@link TcpIgniteClient#start(ClientConfiguration)} to create an instance of
      * {@link TcpClientChannel}.
      */
-    private TcpIgniteClient(ClientConfiguration cfg) throws ClientConfigurationException {
+    private TcpIgniteClient(ClientConfiguration cfg) throws ClientException {
         Function<ClientChannelConfiguration, Result<ClientChannel>> chFactory = chCfg -> {
             try {
                 return new Result<>(new TcpClientChannel(chCfg));
@@ -113,7 +113,8 @@ public class TcpIgniteClient implements IgniteClient {
         ClientCacheConfiguration cfg) throws ClientException {
         ensureCacheConfiguration(cfg);
 
-        ch.request(ClientOperation.CACHE_GET_OR_CREATE_WITH_CONFIGURATION, req -> serDes.cacheConfiguration(cfg, req));
+        ch.request(ClientOperation.CACHE_GET_OR_CREATE_WITH_CONFIGURATION, 
+            req -> serDes.cacheConfiguration(cfg, req, toClientVersion(ch.serverVersion())));
 
         return new TcpClientCache<>(cfg.getName(), ch, marsh);
     }
@@ -150,9 +151,20 @@ public class TcpIgniteClient implements IgniteClient {
     @Override public <K, V> ClientCache<K, V> createCache(ClientCacheConfiguration cfg) throws ClientException {
         ensureCacheConfiguration(cfg);
 
-        ch.request(ClientOperation.CACHE_CREATE_WITH_CONFIGURATION, req -> serDes.cacheConfiguration(cfg, req));
+        ch.request(ClientOperation.CACHE_CREATE_WITH_CONFIGURATION, 
+            req -> serDes.cacheConfiguration(cfg, req, toClientVersion(ch.serverVersion())));
 
         return new TcpClientCache<>(cfg.getName(), ch, marsh);
+    }
+
+    /**
+     * Converts {@link ProtocolVersion} to {@link ClientListenerProtocolVersion}.
+     *
+     * @param srvVer Server protocol version.
+     * @return Client protocol version.
+     */
+    private ClientListenerProtocolVersion toClientVersion(ProtocolVersion srvVer) {
+        return ClientListenerProtocolVersion.create(srvVer.major(), srvVer.minor(), srvVer.patch());
     }
 
     /** {@inheritDoc} */
@@ -189,7 +201,7 @@ public class TcpIgniteClient implements IgniteClient {
      * @param cfg Thin client configuration.
      * @return Successfully opened thin client connection.
      */
-    public static IgniteClient start(ClientConfiguration cfg) throws ClientConfigurationException {
+    public static IgniteClient start(ClientConfiguration cfg) throws ClientException {
         return new TcpIgniteClient(cfg);
     }
 
@@ -234,7 +246,7 @@ public class TcpIgniteClient implements IgniteClient {
         private final BinaryMetadataHandler cache = BinaryCachingMetadataHandler.create();
 
         /** {@inheritDoc} */
-        @Override public void addMeta(int typeId, BinaryType meta) throws BinaryObjectException {
+        @Override public void addMeta(int typeId, BinaryType meta, boolean failIfUnregistered) throws BinaryObjectException {
             if (cache.metadata(typeId) == null) {
                 try {
                     ch.request(
@@ -247,7 +259,7 @@ public class TcpIgniteClient implements IgniteClient {
                 }
             }
 
-            cache.addMeta(typeId, meta); // merge
+            cache.addMeta(typeId, meta, failIfUnregistered); // merge
         }
 
         /** {@inheritDoc} */
@@ -260,7 +272,7 @@ public class TcpIgniteClient implements IgniteClient {
                 if (meta0 != null) {
                     meta = new BinaryTypeImpl(marsh.context(), meta0);
 
-                    cache.addMeta(typeId, meta);
+                    cache.addMeta(typeId, meta, false);
                 }
             }
 

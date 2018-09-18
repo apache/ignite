@@ -1,0 +1,50 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+
+-var form = 'logger'
+-var model = '$ctrl.clonedCluster.logger.Log4j2'
+-var log4j2Required = '$ctrl.clonedCluster.logger.kind === "Log4j2"'
+
+.pc-form-grid-col-60
+    +form-field__dropdown({
+        label: 'Level:',
+        model: `${model}.level`,
+        name: '"log4j2Level"',
+        placeholder: 'Default',
+        options: '[\
+                    {value: "OFF", label: "OFF"},\
+                    {value: "FATAL", label: "FATAL"},\
+                    {value: "ERROR", label: "ERROR"},\
+                    {value: "WARN", label: "WARN"},\
+                    {value: "INFO", label: "INFO"},\
+                    {value: "DEBUG", label: "DEBUG"},\
+                    {value: "TRACE", label: "TRACE"},\
+                    {value: "ALL", label: "ALL"},\
+                    {value: null, label: "Default"}\
+                ]',
+        tip: 'Level for internal log4j2 implementation'
+    })
+.pc-form-grid-col-60
+    +form-field__text({
+        label: 'Path:',
+        model: `${model}.path`,
+        name: '"log4j2Path"',
+        required: log4j2Required,
+        placeholder: 'Input path',
+        tip: 'Path or URI to XML configuration'
+    })

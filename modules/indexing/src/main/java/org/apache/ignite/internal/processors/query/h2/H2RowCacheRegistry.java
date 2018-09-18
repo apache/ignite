@@ -68,7 +68,7 @@ public class H2RowCacheRegistry {
 
             HashMap<Integer, H2RowCache> caches0 = copy();
 
-            H2RowCache rowCache = new H2RowCache(cctx.group());
+            H2RowCache rowCache = new H2RowCache(cctx.group(), cctx.config().getSqlOnheapCacheMaxSize());
 
             caches0.put(grpId, rowCache);
 

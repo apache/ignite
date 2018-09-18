@@ -67,13 +67,6 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
         cli.cluster().active(true);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        cleanReferences();
-    }
-
     /**
      * Negative case: cache name is null.
      *

@@ -1,2 +1,3 @@
 org.apache.ignite.spi.discovery.tcp.TestReconnectPluginProvider
 org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteStandByClusterTest$StanByClusterTestProvider
+org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerPluginProvider

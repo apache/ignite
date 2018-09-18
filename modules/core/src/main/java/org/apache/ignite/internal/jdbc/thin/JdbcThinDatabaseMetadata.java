@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTableMeta;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static java.sql.Connection.TRANSACTION_NONE;
+import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
@@ -630,17 +631,19 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public int getDefaultTransactionIsolation() throws SQLException {
-        return TRANSACTION_NONE;
+        return conn.igniteVersion().greaterThanEqual(2, 5, 0) ? TRANSACTION_REPEATABLE_READ :
+            TRANSACTION_NONE;
     }
 
     /** {@inheritDoc} */
     @Override public boolean supportsTransactions() throws SQLException {
-        return false;
+        return conn.igniteVersion().greaterThanEqual(2, 5, 0);
     }
 
     /** {@inheritDoc} */
     @Override public boolean supportsTransactionIsolationLevel(int level) throws SQLException {
-        return false;
+        return conn.igniteVersion().greaterThanEqual(2, 5, 0) &&
+            TRANSACTION_REPEATABLE_READ == level;
     }
 
     /** {@inheritDoc} */
@@ -846,9 +849,9 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         row.add(colMeta.columnName());          // 4. COLUMN_NAME
         row.add(colMeta.dataType());            // 5. DATA_TYPE
         row.add(colMeta.dataTypeName());        // 6. TYPE_NAME
-        row.add((Integer)null);                 // 7. COLUMN_SIZE
+        row.add(colMeta.precision() == -1 ? null : colMeta.precision()); // 7. COLUMN_SIZE
         row.add((Integer)null);                 // 8. BUFFER_LENGTH
-        row.add((Integer)null);                 // 9. DECIMAL_DIGITS
+        row.add(colMeta.scale() == -1 ? null : colMeta.scale());           // 9. DECIMAL_DIGITS
         row.add(10);                            // 10. NUM_PREC_RADIX
         row.add(colMeta.isNullable() ? columnNullable : columnNoNulls);  // 11. NULLABLE
         row.add((String)null);                  // 12. REMARKS

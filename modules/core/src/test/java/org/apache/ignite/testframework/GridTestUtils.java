@@ -115,6 +115,9 @@ public final class GridTestUtils {
     public static final long DFLT_BUSYWAIT_SLEEP_INTERVAL = 200;
 
     /** */
+    public static final long DFLT_TEST_TIMEOUT = 5 * 60 * 1000;
+
+    /** */
     static final String ALPHABETH = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890_";
 
     /**
@@ -156,9 +159,10 @@ public final class GridTestUtils {
         }
 
         /** {@inheritDoc} */
-        @Override public void onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot, @Nullable Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage spiCustomMsg) {
+        @Override public IgniteInternalFuture onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot, @Nullable Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage spiCustomMsg) {
             hook.handleDiscoveryMessage(spiCustomMsg);
-            delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+
+            return delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
         }
 
         /** {@inheritDoc} */
@@ -401,6 +405,24 @@ public final class GridTestUtils {
         }
 
         throw new AssertionError("Exception has not been thrown.");
+    }
+
+    /**
+     * Checks whether callable throws exception, which is itself of a specified
+     * class, or has a cause of the specified class.
+     *
+     * @param runnable Runnable.
+     * @param cls Expected class.
+     * @return Thrown throwable.
+     */
+    @Nullable public static Throwable assertThrowsWithCause(Runnable runnable, Class<? extends Throwable> cls) {
+        return assertThrowsWithCause(new Callable<Integer>() {
+            @Override public Integer call() throws Exception {
+                runnable.run();
+
+                return 0;
+            }
+        }, cls);
     }
 
     /**
@@ -814,7 +836,7 @@ public final class GridTestUtils {
             catch (IgniteFutureCancelledCheckedException e) {
                 resFut.onCancelled();
             }
-            catch (IgniteCheckedException e) {
+            catch (Throwable e) {
                 resFut.onDone(e);
             }
         });
@@ -1665,7 +1687,7 @@ public final class GridTestUtils {
     public static SSLContext sslContext() throws GeneralSecurityException, IOException {
         SSLContext ctx = SSLContext.getInstance("TLS");
 
-        char[] storePass = GridTestProperties.getProperty("ssl.keystore.password").toCharArray();
+        char[] storePass = keyStorePassword().toCharArray();
 
         KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance("SunX509");
 
@@ -1692,7 +1714,7 @@ public final class GridTestUtils {
 
         factory.setKeyStoreFilePath(
             U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path")).getAbsolutePath());
-        factory.setKeyStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
+        factory.setKeyStorePassword(keyStorePassword().toCharArray());
 
         factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
 
@@ -1710,7 +1732,7 @@ public final class GridTestUtils {
 
         factory.setKeyStoreFilePath(
             U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path")).getAbsolutePath());
-        factory.setKeyStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
+        factory.setKeyStorePassword(keyStorePassword().toCharArray());
 
         factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
 
@@ -1727,14 +1749,21 @@ public final class GridTestUtils {
     public static Factory<SSLContext> sslTrustedFactory(String keyStore, String trustStore) {
         SslContextFactory factory = new SslContextFactory();
 
-        factory.setKeyStoreFilePath(U.resolveIgnitePath(GridTestProperties.getProperty(
-            "ssl.keystore." + keyStore + ".path")).getAbsolutePath());
-        factory.setKeyStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
-        factory.setTrustStoreFilePath(U.resolveIgnitePath(GridTestProperties.getProperty(
-            "ssl.keystore." + trustStore + ".path")).getAbsolutePath());
-        factory.setTrustStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
+        factory.setKeyStoreFilePath(keyStorePath(keyStore));
+        factory.setKeyStorePassword(keyStorePassword().toCharArray());
+        factory.setTrustStoreFilePath(keyStorePath(trustStore));
+        factory.setTrustStorePassword(keyStorePassword().toCharArray());
 
         return factory;
+    }
+
+    public static String keyStorePassword() {
+        return GridTestProperties.getProperty("ssl.keystore.password");
+    }
+
+    @NotNull public static String keyStorePath(String keyStore) {
+        return U.resolveIgnitePath(GridTestProperties.getProperty(
+            "ssl.keystore." + keyStore + ".path")).getAbsolutePath();
     }
 
     /**
@@ -1949,6 +1978,15 @@ public final class GridTestUtils {
      */
     public static void mergeExchangeWaitVersion(Ignite node, long topVer) {
         ((IgniteEx)node).context().cache().context().exchange().mergeExchangesTestWaitVersion(
-            new AffinityTopologyVersion(topVer, 0));
+            new AffinityTopologyVersion(topVer, 0), null);
+    }
+
+    /**
+     * @param node Node.
+     * @param topVer Ready exchange version to wait for before trying to merge exchanges.
+     */
+    public static void mergeExchangeWaitVersion(Ignite node, long topVer, List mergedEvts) {
+        ((IgniteEx)node).context().cache().context().exchange().mergeExchangesTestWaitVersion(
+            new AffinityTopologyVersion(topVer, 0), mergedEvts);
     }
 }

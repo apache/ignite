@@ -20,6 +20,8 @@ import angular from 'angular';
 import DEMO_INFO from 'app/data/demo-info.json';
 import templateUrl from 'views/templates/demo-info.tpl.pug';
 
+const DEMO_QUERY_STATE = {state: 'base.sql.notebook', params: {noteId: 'demo'}};
+
 angular
 .module('ignite-console.demo', [
     'ignite-console.socket'
@@ -34,7 +36,7 @@ angular
         .state('demo.resume', {
             url: '/resume',
             permission: 'demo',
-            redirectTo: 'base.configuration.tabs',
+            redirectTo: DEMO_QUERY_STATE,
             unsaved: true,
             tfMetaTags: {
                 title: 'Demo resume'
@@ -47,11 +49,11 @@ angular
                 const $http = trans.injector().get('$http');
 
                 return $http.post('/api/v1/demo/reset')
-                    .then(() => 'base.configuration.tabs')
+                    .then(() => DEMO_QUERY_STATE)
                     .catch((err) => {
                         trans.injector().get('IgniteMessages').showError(err);
 
-                        return 'base.configuration.tabs';
+                        return DEMO_QUERY_STATE;
                     });
             },
             unsaved: true,
@@ -78,7 +80,7 @@ angular
         return {enabled};
     }];
 }])
-.factory('demoInterceptor', ['Demo', (Demo) => {
+.factory('demoInterceptor', ['Demo', function(Demo) {
     const isApiRequest = (url) => /\/api\/v1/ig.test(url);
 
     return {
@@ -90,7 +92,7 @@ angular
         }
     };
 }])
-.controller('demoController', ['$scope', '$state', '$window', 'IgniteConfirm', ($scope, $state, $window, Confirm) => {
+.controller('demoController', ['$scope', '$state', '$window', 'IgniteConfirm', function($scope, $state, $window, Confirm) {
     const _openTab = (stateName) => $window.open($state.href(stateName), '_blank');
 
     $scope.startDemo = () => {
@@ -119,7 +121,7 @@ angular
         return items;
     }];
 }])
-.service('DemoInfo', ['$rootScope', '$modal', '$state', '$q', 'igniteDemoInfo', 'AgentManager', ($rootScope, $modal, $state, $q, igniteDemoInfo, agentMgr) => {
+.service('DemoInfo', ['$rootScope', '$modal', '$state', '$q', 'igniteDemoInfo', 'AgentManager', function($rootScope, $modal, $state, $q, igniteDemoInfo, agentMgr) {
     const scope = $rootScope.$new();
 
     let closePromise = null;
@@ -138,25 +140,12 @@ angular
         backdrop: 'static'
     });
 
+    scope.downloadAgentHref = '/api/v1/downloads/agent';
+
     scope.close = () => {
         dialog.hide();
 
         closePromise && closePromise.resolve();
-    };
-
-    scope.downloadAgent = () => {
-        const lnk = document.createElement('a');
-
-        lnk.setAttribute('href', '/api/v1/agent/downloads/agent');
-        lnk.setAttribute('target', '_self');
-        lnk.setAttribute('download', null);
-        lnk.style.display = 'none';
-
-        document.body.appendChild(lnk);
-
-        lnk.click();
-
-        document.body.removeChild(lnk);
     };
 
     return {

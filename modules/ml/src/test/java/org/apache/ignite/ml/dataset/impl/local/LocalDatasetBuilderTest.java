@@ -21,6 +21,8 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.ml.dataset.PartitionContextBuilder;
+import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -38,18 +40,10 @@ public class LocalDatasetBuilderTest {
 
         LocalDatasetBuilder<Integer, Integer> builder = new LocalDatasetBuilder<>(data, 10);
 
-        LocalDataset<Serializable, TestPartitionData> dataset = builder.build(
-            (upstream, upstreamSize) -> null,
-            (upstream, upstreamSize, ctx) -> {
-                int[] arr = new int[Math.toIntExact(upstreamSize)];
+        LocalDataset<Serializable, TestPartitionData> dataset = buildDataset(builder);
 
-                int ptr = 0;
-                while (upstream.hasNext())
-                    arr[ptr++] = upstream.next().getValue();
-
-                return new TestPartitionData(arr);
-            }
-        );
+        assertEquals(10, dataset.getCtx().size());
+        assertEquals(10, dataset.getData().size());
 
         AtomicLong cnt = new AtomicLong();
 
@@ -65,6 +59,55 @@ public class LocalDatasetBuilderTest {
         });
 
         assertEquals(10, cnt.intValue());
+    }
+
+    /** Tests {@code build()} method with predicate. */
+    @Test
+    public void testBuildWithPredicate() {
+        Map<Integer, Integer> data = new HashMap<>();
+        for (int i = 0; i < 100; i++)
+            data.put(i, i);
+
+        LocalDatasetBuilder<Integer, Integer> builder = new LocalDatasetBuilder<>(data, (k, v) -> k % 2 == 0,10);
+
+        LocalDataset<Serializable, TestPartitionData> dataset = buildDataset(builder);
+
+        AtomicLong cnt = new AtomicLong();
+
+        dataset.compute((partData, partIdx) -> {
+            cnt.incrementAndGet();
+
+            int[] arr = partData.data;
+
+            assertEquals(5, arr.length);
+
+            for (int i = 0; i < 5; i++)
+                assertEquals((partIdx * 5 + i) * 2, arr[i]);
+        });
+
+        assertEquals(10, cnt.intValue());
+    }
+
+    /** */
+    private LocalDataset<Serializable, TestPartitionData> buildDataset(
+        LocalDatasetBuilder<Integer, Integer> builder) {
+        PartitionContextBuilder<Integer, Integer, Serializable> partCtxBuilder = (upstream, upstreamSize) -> null;
+
+        PartitionDataBuilder<Integer, Integer, Serializable, TestPartitionData> partDataBuilder
+            = (upstream, upstreamSize, ctx) -> {
+            int[] arr = new int[Math.toIntExact(upstreamSize)];
+
+            int ptr = 0;
+            while (upstream.hasNext())
+                arr[ptr++] = upstream.next().getValue();
+
+            return new TestPartitionData(arr);
+        };
+
+        return builder.build(
+            partCtxBuilder.andThen(x -> null),
+            partDataBuilder.andThen((x, y) -> x)
+        );
     }
 
     /**
@@ -84,7 +127,7 @@ public class LocalDatasetBuilderTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws Exception {
+        @Override public void close() {
             // Do nothing, GC will clean up.
         }
     }

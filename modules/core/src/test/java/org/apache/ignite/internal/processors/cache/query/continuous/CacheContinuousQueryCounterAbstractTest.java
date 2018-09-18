@@ -138,11 +138,6 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {

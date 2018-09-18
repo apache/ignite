@@ -49,7 +49,7 @@ public class IgniteCheckClusterStateBeforeExecuteQueryTest extends GridCommonAbs
 
         pCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
             .setPersistenceEnabled(true)
-            .setMaxSize(100 * 1024 * 1024));
+            .setMaxSize(100L * 1024 * 1024));
 
         cfg.setDataStorageConfiguration(pCfg);
 

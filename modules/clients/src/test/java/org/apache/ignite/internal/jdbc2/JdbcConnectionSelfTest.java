@@ -97,11 +97,6 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(GRID_CNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */

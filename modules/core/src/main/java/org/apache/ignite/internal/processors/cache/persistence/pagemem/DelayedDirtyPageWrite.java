@@ -24,9 +24,9 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Not thread safe and stateful class for replacement of one page with write() delay. This allows to write page content
- * without holding segment lock. Page data is copied into temp buffer during {@link #writePage(FullPageId, ByteBuffer,
- * int)} and then sent to real implementation by {@link #finishReplacement()}.
+ * Not thread safe and stateful class for page replacement of one page with write() delay. This allows to write page
+ * content without holding segment lock. Page data is copied into temp buffer during {@link #writePage(FullPageId,
+ * ByteBuffer, int)} and then sent to real implementation by {@link #finishReplacement()}.
  */
 public class DelayedDirtyPageWrite implements ReplacedPageWriter {
     /** Real flush dirty page implementation. */

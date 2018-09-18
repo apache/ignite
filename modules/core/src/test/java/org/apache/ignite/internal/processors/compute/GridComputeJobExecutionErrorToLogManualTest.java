@@ -55,11 +55,6 @@ public class GridComputeJobExecutionErrorToLogManualTest extends GridCommonAbstr
         startGridsMultiThreaded(GRID_CNT, true);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If fails.
      */

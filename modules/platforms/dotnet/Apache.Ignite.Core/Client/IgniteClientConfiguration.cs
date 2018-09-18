@@ -104,6 +104,9 @@ namespace Apache.Ignite.Core.Client
 
             BinaryProcessor = cfg.BinaryProcessor;
             SslStreamFactory = cfg.SslStreamFactory;
+
+            UserName = cfg.UserName;
+            Password = cfg.Password;
             Endpoints = cfg.Endpoints == null ? null : cfg.Endpoints.ToList();
             ReconnectDisabled = cfg.ReconnectDisabled;
         }
@@ -177,6 +180,16 @@ namespace Apache.Ignite.Core.Client
         /// When not null, secure socket connection will be established.
         /// </summary>
         public ISslStreamFactory SslStreamFactory { get; set; }
+
+        /// <summary>
+        /// Username to be used to connect to secured cluster.
+        /// </summary>
+        public string UserName { get; set; }
+
+        /// <summary>
+        /// Password to be used to connect to secured cluster.
+        /// </summary>
+        public string Password { get; set; }
 
         /// <summary>
         /// Gets or sets custom binary processor. Internal property for tests.

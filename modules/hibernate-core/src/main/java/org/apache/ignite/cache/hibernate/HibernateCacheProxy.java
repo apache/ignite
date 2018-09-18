@@ -602,16 +602,6 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isMongoDataCache() {
-        return delegate.isMongoDataCache();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMongoMetaCache() {
-        return delegate.isMongoMetaCache();
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public ExpiryPolicy expiry() {
         return delegate.expiry();
     }
@@ -624,6 +614,11 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     /** {@inheritDoc} */
     @Override public IgniteInternalCache withNoRetries() {
         return delegate.withNoRetries();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K1, V1> IgniteInternalCache<K1, V1> withAllowAtomicOpsInTx() {
+        return delegate.withAllowAtomicOpsInTx();
     }
 
     /** {@inheritDoc} */

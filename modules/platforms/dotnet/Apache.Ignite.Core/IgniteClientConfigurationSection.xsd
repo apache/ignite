@@ -268,6 +268,16 @@
                     <xs:documentation>Disables automatic reconnect on network or server failure.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="userName" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Username to be used to connect to secured cluster.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="password" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Password to be used to connect to secured cluster.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
         </xs:complexType>
     </xs:element>
 </xs:schema>

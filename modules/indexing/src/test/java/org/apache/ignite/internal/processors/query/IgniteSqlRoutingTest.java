@@ -120,13 +120,6 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
         fillCaches();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /** */
     private CacheConfiguration buildCacheConfiguration(String name) {
         if (name.equals(CACHE_PERSON)) {

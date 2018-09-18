@@ -147,6 +147,11 @@ public class TestTransaction implements Transaction {
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public String label() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public void resume() throws IgniteException {
         // No-op.
     }

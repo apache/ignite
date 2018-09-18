@@ -92,8 +92,8 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
                 .setDefaultDataRegionConfiguration(
                  new DataRegionConfiguration().setMaxSize(2048L * 1024 * 1024).setPersistenceEnabled(true))
                 .setWalMode(WALMode.BACKGROUND)
-                .setWalBufferSize(128 * 1024)// Setting WAL Segment size to high values forces flushing by timeout.
-                .setWalSegmentSize(flushByTimeout ? 500_000 : 50_000);
+                .setWalBufferSize(1024 * 1024)// Setting WAL Segment size to high values forces flushing by timeout.
+                .setWalSegmentSize(flushByTimeout ? 2 * 1024 * 1024 : 512 * 1024);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -206,8 +206,8 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
                 }
 
                 /** {@inheritDoc} */
-                @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
-                    return delegate.map(maxWalSegmentSize);
+                @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
+                    return delegate.map(sizeBytes);
                 }
             };
         }

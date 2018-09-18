@@ -71,13 +71,6 @@ public class ScanQueryOffheapExpiryPolicySelfTest extends GridCommonAbstractTest
         startGridsMultiThreaded(NODES_CNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */

@@ -35,6 +35,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListInitNewPageR
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListRemovePageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListSetNextRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListSetPreviousRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.RotatedIdPartRecord;
 import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
@@ -55,6 +56,7 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.MAX_ITEMID_NUM;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageId;
 
 /**
@@ -469,8 +471,12 @@ public abstract class PagesList extends DataStructure {
                 else
                     newTails = null; // Drop the bucket completely.
 
-                if (casBucket(bucket, tails, newTails))
+                if (casBucket(bucket, tails, newTails)) {
+                    // Reset tailId for invalidation of locking when stripe was taken concurrently.
+                    tails[idx].tailId = 0L;
+
                     return true;
+                }
             }
             else {
                 // It is safe to assign new tail since we do it only when write lock on tail is held.
@@ -622,6 +628,11 @@ public abstract class PagesList extends DataStructure {
                 return;
 
             final long tailId = stripe.tailId;
+
+            // Stripe was removed from bucket concurrently.
+            if (tailId == 0L)
+                continue;
+
             final long tailPage = acquirePage(tailId);
 
             try {
@@ -635,8 +646,19 @@ public abstract class PagesList extends DataStructure {
                         continue;
                 }
 
-                assert PageIO.getPageId(tailAddr) == tailId : "pageId = " + PageIO.getPageId(tailAddr) + ", tailId = " + tailId;
-                assert PageIO.getType(tailAddr) == PageIO.T_PAGE_LIST_NODE;
+                if (stripe.tailId != tailId) {
+                    // Another thread took the last page.
+                    writeUnlock(tailId, tailPage, tailAddr, false);
+
+                    lockAttempt--; // Ignore current attempt.
+
+                    continue;
+                }
+
+                assert PageIO.getPageId(tailAddr) == tailId
+                    : "tailId = " + U.hexLong(tailId) + ", pageId = " + U.hexLong(PageIO.getPageId(tailAddr));
+                assert PageIO.getType(tailAddr) == PageIO.T_PAGE_LIST_NODE
+                    : "tailId = " + U.hexLong(tailId) + ", type = " + PageIO.getType(tailAddr);
 
                 boolean ok = false;
 
@@ -855,6 +877,8 @@ public abstract class PagesList extends DataStructure {
 
         try {
             while ((nextId = bag.pollFreePage()) != 0L) {
+                assert PageIdUtils.itemId(nextId) > 0 && PageIdUtils.itemId(nextId) <= MAX_ITEMID_NUM : U.hexLong(nextId);
+
                 int idx = io.addPage(prevAddr, nextId, pageSize());
 
                 if (idx == -1) { // Attempt to add page failed: the node page is full.
@@ -1024,6 +1048,11 @@ public abstract class PagesList extends DataStructure {
                 return 0L;
 
             final long tailId = stripe.tailId;
+
+            // Stripe was removed from bucket concurrently.
+            if (tailId == 0L)
+                continue;
+
             final long tailPage = acquirePage(tailId);
 
             try {
@@ -1032,7 +1061,7 @@ public abstract class PagesList extends DataStructure {
                 if (tailAddr == 0L)
                     continue;
 
-                if (stripe.empty) {
+                if (stripe.empty || stripe.tailId != tailId) {
                     // Another thread took the last page.
                     writeUnlock(tailId, tailPage, tailAddr, false);
 
@@ -1045,8 +1074,10 @@ public abstract class PagesList extends DataStructure {
                         return 0L;
                 }
 
-                assert PageIO.getPageId(tailAddr) == tailId : "tailId = " + tailId + ", tailPageId = " + PageIO.getPageId(tailAddr);
-                assert PageIO.getType(tailAddr) == PageIO.T_PAGE_LIST_NODE;
+                assert PageIO.getPageId(tailAddr) == tailId
+                    : "tailId = " + U.hexLong(tailId) + ", pageId = " + U.hexLong(PageIO.getPageId(tailAddr));
+                assert PageIO.getType(tailAddr) == PageIO.T_PAGE_LIST_NODE
+                    : "tailId = " + U.hexLong(tailId) + ", type = " + PageIO.getType(tailAddr);
 
                 boolean dirty = false;
                 long dataPageId;
@@ -1069,6 +1100,10 @@ public abstract class PagesList extends DataStructure {
                             wal.log(new PagesListRemovePageRecord(grpId, tailId, pageId));
 
                         dirty = true;
+
+                        assert !isReuseBucket(bucket) ||
+                            PageIdUtils.itemId(pageId) > 0 && PageIdUtils.itemId(pageId) <= MAX_ITEMID_NUM
+                            : "Incorrectly recycled pageId in reuse bucket: " + U.hexLong(pageId);
 
                         dataPageId = pageId;
 
@@ -1108,18 +1143,8 @@ public abstract class PagesList extends DataStructure {
 
                         decrementBucketSize(bucket);
 
-                        if (initIoVers != null) {
-                            dataPageId = PageIdUtils.changeType(tailId, FLAG_DATA);
-
-                            PageIO initIo = initIoVers.latest();
-
-                            initIo.initNewPage(tailAddr, dataPageId, pageSize());
-
-                            if (needWalDeltaRecord(tailId, tailPage, null)) {
-                                wal.log(new InitNewPageRecord(grpId, tailId, initIo.getType(),
-                                    initIo.getVersion(), dataPageId));
-                            }
-                        }
+                        if (initIoVers != null)
+                            dataPageId = initReusedPage(tailId, tailPage, tailAddr, 0, FLAG_DATA, initIoVers.latest());
                         else
                             dataPageId = recyclePage(tailId, tailPage, tailAddr, null);
 
@@ -1148,6 +1173,44 @@ public abstract class PagesList extends DataStructure {
                 releasePage(tailId, tailPage);
             }
         }
+    }
+
+    /**
+     * Reused page must obtain correctly assembled page id, then initialized by proper {@link PageIO} instance
+     * and non-zero {@code itemId} of reused page id must be saved into special place.
+     *
+     * @param reusedPageId Reused page id.
+     * @param reusedPage Reused page.
+     * @param reusedPageAddr Reused page address.
+     * @param partId Partition id.
+     * @param flag Flag.
+     * @param initIo Initial io.
+     * @return Prepared page id.
+     */
+    protected final long initReusedPage(long reusedPageId, long reusedPage, long reusedPageAddr,
+        int partId, byte flag, PageIO initIo) throws IgniteCheckedException {
+
+        long newPageId = PageIdUtils.pageId(partId, flag, PageIdUtils.pageIndex(reusedPageId));
+
+        initIo.initNewPage(reusedPageAddr, newPageId, pageSize());
+
+        boolean needWalDeltaRecord = needWalDeltaRecord(reusedPageId, reusedPage, null);
+
+        if (needWalDeltaRecord) {
+            wal.log(new InitNewPageRecord(grpId, reusedPageId, initIo.getType(),
+                initIo.getVersion(), newPageId));
+        }
+
+        int itemId = PageIdUtils.itemId(reusedPageId);
+
+        if (itemId != 0) {
+            PageIO.setRotatedIdPart(reusedPageAddr, itemId);
+
+            if (needWalDeltaRecord)
+                wal.log(new RotatedIdPartRecord(grpId, newPageId, itemId));
+        }
+
+        return newPageId;
     }
 
     /**

@@ -27,8 +27,6 @@
     <import resource="ignite-base-config.xml"/>
 
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" parent="base-ignite.cfg">
-        <property name="localHost" value="127.0.0.1"/>
-
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">

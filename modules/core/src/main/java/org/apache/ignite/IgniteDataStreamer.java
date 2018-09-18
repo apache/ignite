@@ -119,6 +119,9 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     /** Default operations batch size to sent to remote node for loading. */
     public static final int DFLT_PER_NODE_BUFFER_SIZE = 512;
 
+    /** Default batch size per thread to send to buffer on node. */
+    public static final int DFLT_PER_THREAD_BUFFER_SIZE = 4096;
+
     /** Default timeout for streamer's operations. */
     public static final long DFLT_UNLIMIT_TIMEOUT = -1;
 
@@ -225,6 +228,20 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     public void perNodeParallelOperations(int parallelOps);
 
     /**
+     * Allows to set buffer size for thread in case of stream by {@link #addData(Object, Object)} call.
+     *
+     * @param size Size of buffer.
+     */
+    public void perThreadBufferSize(int size);
+
+    /**
+     * Gets buffer size set by {@link #perThreadBufferSize(int)}.
+     *
+     * @return Buffer size.
+     */
+    public int perThreadBufferSize();
+
+    /**
      * Sets the timeout that is used in the following cases:
      * <ul>
      * <li>any data addition method can be blocked when all per node parallel operations are exhausted.
@@ -310,7 +327,8 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * Adds key for removal on remote node. Equivalent to {@link #addData(Object, Object) addData(key, null)}.
      *
      * @param key Key.
-     * @return Future fo this operation.
+     * @return Future for this operation.
+     *      Note: It may never complete unless {@link #flush()} or {@link #close()} are explicitly called.
      * @throws CacheException If failed to map key to node.
      * @throws IgniteInterruptedException If thread has been interrupted.
      * @throws IllegalStateException If grid has been concurrently stopped or
@@ -324,7 +342,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * <p>
      * Note that streamer will stream data concurrently by multiple internal threads, so the
      * data may get to remote nodes in different order from which it was added to
-     * the streamer.
+     * the streamer. The data may not be sent until {@link #flush()} or {@link #close()} are called.
      * <p>
      * Note: if {@link IgniteDataStreamer#allowOverwrite()} set to {@code false} (by default)
      * then data streamer will not overwrite existing cache entries for better performance
@@ -332,7 +350,8 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      *
      * @param key Key.
      * @param val Value or {@code null} if respective entry must be removed from cache.
-     * @return Future fo this operation.
+     * @return Future for this operation.
+     *      Note: It may never complete unless {@link #flush()} or {@link #close()} are explicitly called.
      * @throws CacheException If failed to map key to node.
      * @throws IgniteInterruptedException If thread has been interrupted.
      * @throws IllegalStateException If grid has been concurrently stopped or
@@ -349,14 +368,15 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * <p>
      * Note that streamer will stream data concurrently by multiple internal threads, so the
      * data may get to remote nodes in different order from which it was added to
-     * the streamer.
+     * the streamer. The data may not be sent until {@link #flush()} or {@link #close()} are called.
      * <p>
      * Note: if {@link IgniteDataStreamer#allowOverwrite()} set to {@code false} (by default)
      * then data streamer will not overwrite existing cache entries for better performance
      * (to change, set {@link IgniteDataStreamer#allowOverwrite(boolean)} to {@code true})
      *
      * @param entry Entry.
-     * @return Future fo this operation.
+     * @return Future for this operation.
+     *      Note: It may never complete unless {@link #flush()} or {@link #close()} are explicitly called.
      * @throws CacheException If failed to map key to node.
      * @throws IgniteInterruptedException If thread has been interrupted.
      * @throws IllegalStateException If grid has been concurrently stopped or
@@ -373,17 +393,18 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * <p>
      * Note that streamer will stream data concurrently by multiple internal threads, so the
      * data may get to remote nodes in different order from which it was added to
-     * the streamer.
+     * the streamer. The data may not be sent until {@link #flush()} or {@link #close()} are called.
      * <p>
      * Note: if {@link IgniteDataStreamer#allowOverwrite()} set to {@code false} (by default)
      * then data streamer will not overwrite existing cache entries for better performance
      * (to change, set {@link IgniteDataStreamer#allowOverwrite(boolean)} to {@code true})
      *
      * @param entries Collection of entries to be streamed.
+     * @return Future for this stream operation.
+     *      Note: It may never complete unless {@link #flush()} or {@link #close()} are explicitly called.
      * @throws IllegalStateException If grid has been concurrently stopped or
      *      {@link #close(boolean)} has already been called on streamer.
      * @throws IgniteDataStreamerTimeoutException If {@code timeout} is exceeded.
-     * @return Future for this stream operation.
      * @see #allowOverwrite()
      */
     public IgniteFuture<?> addData(Collection<? extends Map.Entry<K, V>> entries) throws IllegalStateException,
@@ -395,17 +416,18 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * <p>
      * Note that streamer will stream data concurrently by multiple internal threads, so the
      * data may get to remote nodes in different order from which it was added to
-     * the streamer.
+     * the streamer. The data may not be sent until {@link #flush()} or {@link #close()} are called.
      * <p>
      * Note: if {@link IgniteDataStreamer#allowOverwrite()} set to {@code false} (by default)
      * then data streamer will not overwrite existing cache entries for better performance
      * (to change, set {@link IgniteDataStreamer#allowOverwrite(boolean)} to {@code true})
      *
      * @param entries Map to be streamed.
+     * @return Future for this stream operation.
+     *      Note: It may never complete unless {@link #flush()} or {@link #close()} are explicitly called.
      * @throws IllegalStateException If grid has been concurrently stopped or
      *      {@link #close(boolean)} has already been called on streamer.
      * @throws IgniteDataStreamerTimeoutException If {@code timeout} is exceeded.
-     * @return Future for this stream operation.
      * @see #allowOverwrite()
      */
     public IgniteFuture<?> addData(Map<K, V> entries) throws IllegalStateException,
@@ -419,8 +441,11 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * If another thread is already performing flush, this method will block, wait for
      * another thread to complete flush and exit. If you don't want to wait in this case,
      * use {@link #tryFlush()} method.
+     * <p>
+     * Note that #flush() guarantees completion of all futures returned by {@link #addData(Object, Object)}, listeners
+     * should be tracked separately.
      *
-     * @throws CacheException If failed to map key to node.
+     * @throws CacheException If failed to load data from buffer.
      * @throws IgniteInterruptedException If thread has been interrupted.
      * @throws IllegalStateException If grid has been concurrently stopped or
      *      {@link #close(boolean)} has already been called on streamer.
@@ -434,7 +459,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * Makes an attempt to stream remaining data. This method is mostly similar to {@link #flush},
      * with the difference that it won't wait and will exit immediately.
      *
-     * @throws CacheException If failed to map key to node.
+     * @throws CacheException If failed to load data from buffer.
      * @throws IgniteInterruptedException If thread has been interrupted.
      * @throws IllegalStateException If grid has been concurrently stopped or
      *      {@link #close(boolean)} has already been called on streamer.
@@ -446,7 +471,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * Streams any remaining data and closes this streamer.
      *
      * @param cancel {@code True} to cancel ongoing streaming operations.
-     * @throws CacheException If failed to map key to node.
+     * @throws CacheException If failed to close data streamer.
      * @throws IgniteInterruptedException If thread has been interrupted.
      * @throws IgniteDataStreamerTimeoutException If {@code timeout} is exceeded, only if cancel is {@code false}.
      */

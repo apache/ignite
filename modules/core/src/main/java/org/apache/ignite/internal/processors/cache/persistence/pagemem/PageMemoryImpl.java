@@ -40,6 +40,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
@@ -50,6 +52,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
@@ -173,6 +176,9 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** Number of random pages that will be picked for eviction. */
     public static final int RANDOM_PAGES_EVICT_NUM = 5;
+
+    /** Try again tag. */
+    public static final int TRY_AGAIN_TAG = -1;
 
     /** Tracking io. */
     private static final TrackingPageIO trackingIO = TrackingPageIO.VERSIONS.latest();
@@ -374,9 +380,9 @@ public class PageMemoryImpl implements PageMemoryEx {
         if (throttlingPlc == ThrottlingPolicy.SPEED_BASED)
             writeThrottle = new PagesWriteSpeedBasedThrottle(this, cpProgressProvider, stateChecker, log);
         else if (throttlingPlc == ThrottlingPolicy.TARGET_RATIO_BASED)
-            writeThrottle = new PagesWriteThrottle(this, cpProgressProvider, stateChecker, false);
+            writeThrottle = new PagesWriteThrottle(this, cpProgressProvider, stateChecker, false, log);
         else if (throttlingPlc == ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY)
-            writeThrottle = new PagesWriteThrottle(this, null, stateChecker, true);
+            writeThrottle = new PagesWriteThrottle(this, null, stateChecker, true, log);
     }
 
     /** {@inheritDoc} */
@@ -542,7 +548,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         catch (IgniteOutOfMemoryException oom) {
             DataRegionConfiguration dataRegionCfg = getDataRegionConfiguration();
 
-            throw (IgniteOutOfMemoryException) new IgniteOutOfMemoryException("Out of memory in data region [" +
+            IgniteOutOfMemoryException e = new IgniteOutOfMemoryException("Out of memory in data region [" +
                 "name=" + dataRegionCfg.getName() +
                 ", initSize=" + U.readableSize(dataRegionCfg.getInitialSize(), false) +
                 ", maxSize=" + U.readableSize(dataRegionCfg.getMaxSize(), false) +
@@ -550,7 +556,13 @@ public class PageMemoryImpl implements PageMemoryEx {
                 "  ^-- Increase maximum off-heap memory size (DataRegionConfiguration.maxSize)" + U.nl() +
                 "  ^-- Enable Ignite persistence (DataRegionConfiguration.persistenceEnabled)" + U.nl() +
                 "  ^-- Enable eviction or expiration policies"
-            ).initCause(oom);
+            );
+
+            e.initCause(oom);
+
+            ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+            throw e;
         }
         finally {
             seg.writeLock().unlock();
@@ -745,6 +757,11 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             return absPtr;
         }
+        catch (IgniteOutOfMemoryException oom) {
+            ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, oom));
+
+            throw oom;
+        }
         finally {
             seg.writeLock().unlock();
 
@@ -761,8 +778,14 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 ByteBuffer buf = wrapPointer(pageAddr, pageSize());
 
+                long actualPageId = 0;
+
                 try {
                     storeMgr.read(grpId, pageId, buf);
+
+                    actualPageId = PageIO.getPageId(buf);
+
+                    memMetrics.onPageRead();
                 }
                 catch (IgniteDataIntegrityViolationException ignore) {
                     U.warn(log, "Failed to read page (data integrity violation encountered, will try to " +
@@ -771,9 +794,12 @@ public class PageMemoryImpl implements PageMemoryEx {
                     buf.rewind();
 
                     tryToRestorePage(fullId, buf);
+
+                    memMetrics.onPageRead();
                 }
                 finally {
-                    rwLock.writeUnlock(lockedPageAbsPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
+                    rwLock.writeUnlock(lockedPageAbsPtr + PAGE_LOCK_OFFSET,
+                        actualPageId == 0 ? OffheapReadWriteLock.TAG_LOCK_ALWAYS : PageIdUtils.tag(actualPageId));
                 }
             }
         }
@@ -832,7 +858,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      * this method.
      *
      * @throws IgniteCheckedException If failed to start WAL iteration, if incorrect page type observed in data, etc.
-     * @throws AssertionError if it was not possible to restore page, page not found in WAL.
+     * @throws StorageException If it was not possible to restore page, page not found in WAL.
      */
     private void tryToRestorePage(FullPageId fullId, ByteBuffer buf) throws IgniteCheckedException {
         Long tmpAddr = null;
@@ -897,7 +923,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             ByteBuffer restored = curPage == null ? lastValidPage : curPage;
 
             if (restored == null)
-                throw new IllegalStateException(String.format(
+                throw new StorageException(String.format(
                     "Page is broken. Can't restore it from WAL. (grpId = %d, pageId = %X).",
                     fullId.groupId(), fullId.pageId()
                 ));
@@ -1100,7 +1126,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             }
         }
         else
-            return copyPageForCheckpoint(absPtr, fullId, outBuf, pageSingleAcquire, tracker) ? tag : null;
+            return copyPageForCheckpoint(absPtr, fullId, outBuf, pageSingleAcquire, tracker) ? tag : TRY_AGAIN_TAG;
     }
 
     /**
@@ -1110,6 +1136,8 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @param pageSingleAcquire Page is acquired only once. We don't pin the page second time (until page will not be
      * copied) in case checkpoint temporary buffer is used.
      * @param tracker Checkpoint statistics tracker.
+     *
+     * @return False if someone else holds lock on page.
      */
     private boolean copyPageForCheckpoint(
         long absPtr,
@@ -1121,7 +1149,16 @@ public class PageMemoryImpl implements PageMemoryEx {
         assert absPtr != 0;
         assert PageHeader.isAcquired(absPtr);
 
-        rwLock.writeLock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
+        boolean locked = rwLock.tryWriteLock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
+
+        if (!locked) {
+            // We release the page only once here because this page will be copied sometime later and
+            // will be released properly then.
+            if (!pageSingleAcquire)
+                PageHeader.releasePage(absPtr);
+
+            return false;
+        }
 
         try {
             long tmpRelPtr = PageHeader.tempBufferPointer(absPtr);
@@ -1130,7 +1167,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             assert success : "Page was pin when we resolve abs pointer, it can not be evicted";
 
-            if (tmpRelPtr != INVALID_REL_PTR){
+            if (tmpRelPtr != INVALID_REL_PTR) {
                 PageHeader.tempBufferPointer(absPtr, INVALID_REL_PTR);
 
                 long tmpAbsPtr = checkpointPool.absolute(tmpRelPtr);
@@ -1144,9 +1181,6 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 checkpointPool.releaseFreePage(tmpRelPtr);
 
-                // We pinned the page when allocated the temp buffer, release it now.
-                PageHeader.releasePage(absPtr);
-
                 // Need release again because we pin page when resolve abs pointer,
                 // and page did not have tmp buffer page.
                 if (!pageSingleAcquire)
@@ -1157,18 +1191,21 @@ public class PageMemoryImpl implements PageMemoryEx {
                 copyInBuffer(absPtr, outBuf);
 
                 PageHeader.dirty(absPtr, false);
-
-                // We pinned the page when resolve abs pointer.
-                PageHeader.releasePage(absPtr);
             }
 
             assert PageIO.getType(outBuf) != 0 : "Invalid state. Type is 0! pageId = " + U.hexLong(fullId.pageId());
             assert PageIO.getVersion(outBuf) != 0 : "Invalid state. Version is 0! pageId = " + U.hexLong(fullId.pageId());
 
+            memMetrics.onPageWritten();
+
             return true;
         }
         finally {
             rwLock.writeUnlock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
+
+            // We pinned the page either when allocated the temp buffer, or when resolved abs pointer.
+            // Must release the page only after write unlock.
+            PageHeader.releasePage(absPtr);
         }
     }
 
@@ -2181,7 +2218,8 @@ public class PageMemoryImpl implements PageMemoryEx {
                         relRmvAddr = metaAddr;
                 }
 
-                assert relRmvAddr != INVALID_REL_PTR;
+                if (relRmvAddr == INVALID_REL_PTR)
+                    return tryToFindSequentially(cap, saveDirtyPage);
 
                 final long absRmvAddr = absolute(relRmvAddr);
 
@@ -2326,6 +2364,8 @@ public class PageMemoryImpl implements PageMemoryEx {
             assert getReadHoldCount() > 0 || getWriteHoldCount() > 0;
 
             Integer tag = partGenerationMap.get(new GroupPartitionId(grpId, partId));
+
+            assert tag == null || tag >= 0 : "Negative tag=" + tag;
 
             return tag == null ? INIT_PART_GENERATION : tag;
         }

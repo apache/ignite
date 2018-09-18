@@ -28,6 +28,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
@@ -158,6 +160,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /** */
     private final boolean trackAcquiredPages;
 
+    /** Shared context. */
+    private final GridCacheSharedContext<?, ?> ctx;
+
     /**
      * @param log Logger.
      * @param directMemoryProvider Memory allocator to use.
@@ -184,6 +189,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         this.trackAcquiredPages = trackAcquiredPages;
         this.memMetrics = memMetrics;
         this.dataRegionCfg = dataRegionCfg;
+        this.ctx = sharedCtx;
 
         sysPageSize = pageSize + PAGE_OVERHEAD;
 
@@ -205,7 +211,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         long total = startSize;
 
-        long allocChunkSize = Math.max((maxSize - startSize) / (SEG_CNT - 1), 256 * 1024 * 1024);
+        long allocChunkSize = Math.max((maxSize - startSize) / (SEG_CNT - 1), 256L * 1024 * 1024);
 
         int lastIdx = 0;
 
@@ -225,7 +231,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         if (lastIdx != SEG_CNT - 1)
             chunks = Arrays.copyOf(chunks, lastIdx + 1);
 
-        directMemoryProvider.initialize(chunks);
+        if (segments == null)
+            directMemoryProvider.initialize(chunks);
 
         addSegment(null);
     }
@@ -255,8 +262,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public long allocatePage(int grpId, int partId, byte flags) {
-        memMetrics.incrementTotalAllocatedPages();
-
         long relPtr = borrowFreePage();
         long absPtr = 0;
 
@@ -288,8 +293,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             }
         }
 
-        if (relPtr == INVALID_REL_PTR)
-            throw new IgniteOutOfMemoryException("Out of memory in data region [" +
+        if (relPtr == INVALID_REL_PTR) {
+            IgniteOutOfMemoryException oom = new IgniteOutOfMemoryException("Out of memory in data region [" +
                 "name=" + dataRegionCfg.getName() +
                 ", initSize=" + U.readableSize(dataRegionCfg.getInitialSize(), false) +
                 ", maxSize=" + U.readableSize(dataRegionCfg.getMaxSize(), false) +
@@ -298,6 +303,13 @@ public class PageMemoryNoStoreImpl implements PageMemory {
                 "  ^-- Enable Ignite persistence (DataRegionConfiguration.persistenceEnabled)" + U.nl() +
                 "  ^-- Enable eviction or expiration policies"
             );
+
+            if (ctx != null)
+                ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, oom));
+
+            throw oom;
+        }
+
 
         assert (relPtr & ~PageIdUtils.PAGE_IDX_MASK) == 0 : U.hexLong(relPtr & ~PageIdUtils.PAGE_IDX_MASK);
 
@@ -565,6 +577,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             if (freePageListHead.compareAndSet(freePageRelPtrMasked, relPtr)) {
                 allocatedPages.decrementAndGet();
 
+                memMetrics.updateTotalAllocatedPages(-1L);
+
                 return;
             }
         }
@@ -592,6 +606,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
                     GridUnsafe.putLong(freePageAbsPtr, PAGE_MARKER);
 
                     allocatedPages.incrementAndGet();
+
+                    memMetrics.updateTotalAllocatedPages(1L);
 
                     return freePageRelPtr;
                 }
@@ -793,6 +809,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
                     allocatedPages.incrementAndGet();
 
+                    memMetrics.updateTotalAllocatedPages(1L);
+
                     return pageIdx;
                 }
             }
@@ -823,7 +841,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
-    public int checkpointBufferPagesCount() {
+    @Override public int checkpointBufferPagesCount() {
         return 0;
     }
 }

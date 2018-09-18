@@ -60,13 +60,31 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     private long physicalMemorySize;
 
     /** */
-    private long checkpointBufferPages;
+    private long usedCheckpointBufferPages;
+
+    /** */
+    private long usedCheckpointBufferSize;
 
     /** */
     private long checkpointBufferSize;
 
     /** */
     private int pageSize;
+
+    /** */
+    private long readPages;
+
+    /** */
+    private long writtenPages;
+
+    /** */
+    private long replacedPage;
+
+    /** */
+    private long offHeapSize;
+
+    /** */
+    private long offHeapUsedSize;
 
     /**
      * @param metrics Metrics instance to take a copy.
@@ -84,9 +102,15 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
         pageReplaceAge = metrics.getPagesReplaceAge();
         physicalMemoryPages = metrics.getPhysicalMemoryPages();
         physicalMemorySize = metrics.getPhysicalMemorySize();
-        checkpointBufferPages = metrics.getCheckpointBufferPages();
+        usedCheckpointBufferPages = metrics.getUsedCheckpointBufferPages();
+        usedCheckpointBufferSize = metrics.getUsedCheckpointBufferSize();
         checkpointBufferSize = metrics.getCheckpointBufferSize();
         pageSize = metrics.getPageSize();
+        readPages = metrics.getPagesRead();
+        writtenPages = metrics.getPagesWritten();
+        replacedPage = metrics.getPagesReplaced();
+        offHeapSize = metrics.getOffHeapSize();
+        offHeapUsedSize = metrics.getOffheapUsedSize();
     }
 
     /** {@inheritDoc} */
@@ -150,8 +174,13 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public long getCheckpointBufferPages() {
-        return checkpointBufferPages;
+    @Override public long getUsedCheckpointBufferPages() {
+        return usedCheckpointBufferPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getUsedCheckpointBufferSize() {
+        return usedCheckpointBufferSize;
     }
 
     /** {@inheritDoc} */
@@ -162,5 +191,30 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     /** {@inheritDoc} */
     @Override public int getPageSize() {
         return pageSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesRead() {
+        return readPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesWritten() {
+        return writtenPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesReplaced() {
+        return replacedPage;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapSize() {
+        return offHeapSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffheapUsedSize() {
+        return offHeapUsedSize;
     }
 }

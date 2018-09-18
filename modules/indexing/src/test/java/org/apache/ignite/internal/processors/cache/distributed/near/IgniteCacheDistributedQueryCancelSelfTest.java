@@ -117,7 +117,7 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
                     }
 
                     for (Ignite g : G.allGrids())
-                        if (!g.configuration().getDiscoverySpi().isClientMode())
+                        if (!g.configuration().isClientMode())
                             stopGrid(g.name(), true);
                 }
             }, 1);
@@ -158,7 +158,7 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
                 fail();
             }
             catch (Exception e) {
-                assertTrue(e.getCause() instanceof CacheException);
+                assertTrue(e instanceof CacheException);
             }
         }
     }

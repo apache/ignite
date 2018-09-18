@@ -171,7 +171,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         IgniteClientDisconnectedCheckedException err = disconnectedError(reconnectFut);
 
         for (GridTaskWorker<?, ?> worker : tasks.values())
-            worker.finishTask(null, err);
+            worker.finishTask(null, err, false);
     }
 
     /**
@@ -537,8 +537,12 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         String taskClsName;
 
-        if (task != null)
-            taskClsName = task.getClass().getName();
+        if (task != null) {
+            if (task instanceof GridPeerDeployAware)
+                taskClsName = ((GridPeerDeployAware)task).deployClass().getName();
+            else
+                taskClsName = task.getClass().getName();
+        }
         else
             taskClsName = taskCls != null ? taskCls.getName() : taskName;
 

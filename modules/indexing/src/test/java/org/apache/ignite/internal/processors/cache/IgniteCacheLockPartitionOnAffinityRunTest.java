@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
@@ -404,39 +405,20 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
     public void testCheckReservePartitionException() throws Exception {
         int orgId = primaryKey(grid(1).cache(Organization.class.getSimpleName()));
 
-        try {
-            grid(0).compute().affinityRun(
-                Arrays.asList(Organization.class.getSimpleName(), OTHER_CACHE_NAME),
-                new Integer(orgId),
-                new IgniteRunnable() {
-                    @Override public void run() {
-                        // No-op.
-                    }
-                });
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                grid(0).compute().affinityRun(
+                    Arrays.asList(Organization.class.getSimpleName(), OTHER_CACHE_NAME),
+                    new Integer(orgId),
+                    new IgniteRunnable() {
+                        @Override public void run() {
+                            // No-op.
+                        }
+                    });
 
-            fail("Exception is expected");
-        }
-        catch (Exception e) {
-            assertTrue(e.getMessage()
-                .startsWith("Failed partition reservation. Partition is not primary on the node."));
-        }
-
-        try {
-            grid(0).compute().affinityCall(
-                Arrays.asList(Organization.class.getSimpleName(), OTHER_CACHE_NAME),
-                new Integer(orgId),
-                new IgniteCallable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return null;
-                    }
-                });
-
-            fail("Exception is expected");
-        }
-        catch (Exception e) {
-            assertTrue(e.getMessage()
-                .startsWith("Failed partition reservation. Partition is not primary on the node."));
-        }
+                return null;
+            }
+        }, IgniteException.class, "Failed partition reservation. Partition is not primary on the node.");
     }
 
     /**

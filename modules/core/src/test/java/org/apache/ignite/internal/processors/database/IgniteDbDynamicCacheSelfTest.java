@@ -40,7 +40,7 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024).setPersistenceEnabled(true));
+            new DataRegionConfiguration().setMaxSize(200L * 1024 * 1024).setPersistenceEnabled(true));
 
         cfg.setDataStorageConfiguration(memCfg);
 

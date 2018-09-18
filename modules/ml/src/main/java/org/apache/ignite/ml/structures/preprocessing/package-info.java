@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains main APIs for dataset pre-processing.
+ * Contains internal APIs for dataset pre-processing.
  */
 package org.apache.ignite.ml.structures.preprocessing;

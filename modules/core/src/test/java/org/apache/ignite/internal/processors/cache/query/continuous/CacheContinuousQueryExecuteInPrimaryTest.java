@@ -294,9 +294,4 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
         }
 
     }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
 }

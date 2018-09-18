@@ -20,12 +20,14 @@ package org.apache.ignite.internal.processors.query;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryEntityPatch;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
@@ -85,14 +87,90 @@ public class QuerySchema implements Serializable {
     }
 
     /**
+     * Make query schema patch.
+     *
+     * @param target Query entity list to which current schema should be expanded.
+     * @return Patch to achieve entity which is a result of merging current one and target.
+     * @see QuerySchemaPatch
+     */
+    public QuerySchemaPatch makePatch(Collection<QueryEntity> target) {
+        synchronized (mux) {
+            Map<String, QueryEntity> localEntities = new HashMap<>();
+
+            for (QueryEntity entity : entities) {
+                if (localEntities.put(entity.getTableName(), entity) != null)
+                    throw new IllegalStateException("Duplicate key");
+            }
+
+            Collection<SchemaAbstractOperation> patchOperations = new ArrayList<>();
+            Collection<QueryEntity> entityToAdd = new ArrayList<>();
+
+            StringBuilder conflicts = new StringBuilder();
+
+            for (QueryEntity queryEntity : target) {
+                if (localEntities.containsKey(queryEntity.getTableName())) {
+                    QueryEntity localEntity = localEntities.get(queryEntity.getTableName());
+
+                    QueryEntityPatch entityPatch = localEntity.makePatch(queryEntity);
+
+                    if (entityPatch.hasConflict()) {
+                        if (conflicts.length() > 0)
+                            conflicts.append("\n");
+
+                        conflicts.append(entityPatch.getConflictsMessage());
+                    }
+
+                    if (!entityPatch.isEmpty())
+                        patchOperations.addAll(entityPatch.getPatchOperations());
+                }
+                else
+                    entityToAdd.add(QueryUtils.copy(queryEntity));
+            }
+
+            return new QuerySchemaPatch(patchOperations, entityToAdd, conflicts.toString());
+        }
+    }
+
+    /**
+     * Apply query schema patch for changing this schema.
+     *
+     * @param patch Patch to apply.
+     * @return {@code true} if applying was success and {@code false} otherwise.
+     */
+    public boolean applyPatch(QuerySchemaPatch patch) {
+        synchronized (mux) {
+            if (patch.hasConflicts())
+                return false;
+
+            if (patch.isEmpty())
+                return true;
+
+            for (SchemaAbstractOperation operation : patch.getPatchOperations()) {
+                finish(operation);
+            }
+
+            entities.addAll(patch.getEntityToAdd());
+
+            return true;
+        }
+    }
+
+    /**
      * Process finish message.
      *
      * @param msg Message.
      */
     public void finish(SchemaFinishDiscoveryMessage msg) {
-        synchronized (mux) {
-            SchemaAbstractOperation op = msg.operation();
+        finish(msg.operation());
+    }
 
+    /**
+     * Process operation.
+     *
+     * @param op Operation for handle.
+     */
+    public void finish(SchemaAbstractOperation op) {
+        synchronized (mux) {
             if (op instanceof SchemaIndexCreateOperation) {
                 SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation)op;
 

@@ -28,7 +28,11 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.plugin.security.SecurityException;
 
 /**
  * Sql query request.
@@ -94,7 +98,7 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
 
                 if (qry.getSchema() == null) {
                     String schema = QueryUtils.normalizeSchemaName(desc.cacheName(),
-                            desc.cacheConfiguration().getSqlSchema());
+                        desc.cacheConfiguration().getSqlSchema());
 
                     qry.setSchema(schema);
                 }
@@ -107,7 +111,7 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
             FieldsQueryCursor cur = curs.get(0);
 
             ClientCacheFieldsQueryCursor cliCur = new ClientCacheFieldsQueryCursor(
-                    cur, qry.getPageSize(), ctx);
+                cur, qry.getPageSize(), ctx);
 
             long cursorId = ctx.resources().put(cliCur);
 
@@ -117,6 +121,16 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
         }
         catch (Exception e) {
             ctx.decrementCursors();
+
+            SecurityException securityEx = X.cause(e, SecurityException.class);
+
+            if (securityEx != null) {
+                throw new IgniteClientException(
+                    ClientStatus.SECURITY_VIOLATION,
+                    "Client is not authorized to perform this operation",
+                    securityEx
+                );
+            }
 
             throw e;
         }

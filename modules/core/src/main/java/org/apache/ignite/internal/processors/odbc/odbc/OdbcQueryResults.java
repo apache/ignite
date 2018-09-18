@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 
 /**
  * ODBC result set
@@ -38,12 +39,17 @@ public class OdbcQueryResults {
     /** Current result set index. */
     private int currentResultSetIdx;
 
+    /** Client version. */
+    private ClientListenerProtocolVersion ver;
+
     /**
      * @param cursors Result set cursors.
+     * @param ver Client version.
      */
-    OdbcQueryResults(List<FieldsQueryCursor<List<?>>> cursors) {
+    OdbcQueryResults(List<FieldsQueryCursor<List<?>>> cursors, ClientListenerProtocolVersion ver) {
         this.cursors = cursors;
         this.currentResultSetIdx = 0;
+        this.ver = ver;
 
         rowsAffected = new ArrayList<>(cursors.size());
 
@@ -99,7 +105,7 @@ public class OdbcQueryResults {
         currentResultSet = null;
 
         if (currentResultSetIdx != cursors.size()) {
-            currentResultSet = new OdbcResultSet(cursors.get(currentResultSetIdx));
+            currentResultSet = new OdbcResultSet(cursors.get(currentResultSetIdx), ver);
             ++currentResultSetIdx;
         }
     }

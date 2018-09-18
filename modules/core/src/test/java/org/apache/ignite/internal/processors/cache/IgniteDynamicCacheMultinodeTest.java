@@ -70,13 +70,6 @@ public class IgniteDynamicCacheMultinodeTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(NODES - 2, 2);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */

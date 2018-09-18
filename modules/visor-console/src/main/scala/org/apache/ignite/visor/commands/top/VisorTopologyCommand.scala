@@ -149,9 +149,9 @@ class VisorTopologyCommand extends VisorConsoleCommand {
             val argLst = parseArgs(args)
 
             if (hasArgFlag("activate", argLst))
-                ignite.active(true)
+                ignite.cluster().active(true)
             else if (hasArgFlag("deactivate", argLst))
-                ignite.active(false)
+                ignite.cluster().active(false)
             else {
                 val hosts = argLst.filter(_._1 == "h").map((a: Arg) =>
                     try
@@ -242,7 +242,7 @@ class VisorTopologyCommand extends VisorConsoleCommand {
         if (all) {
             val nodesT = VisorTextTable()
 
-            nodesT #= ("Node ID8(@), IP", "Start Time", "Up Time",
+            nodesT #= ("Node ID8(@), IP", "Consistent ID", "Start Time", "Up Time",
                 //"Idle Time",
                 "CPUs", "CPU Load", "Free Heap")
 
@@ -258,6 +258,7 @@ class VisorTopologyCommand extends VisorConsoleCommand {
                 // Add row.
                 nodesT += (
                     nodeId8Addr(n.id),
+                    n.consistentId(),
                     formatDateTime(m.getStartTime),
                     X.timeSpan2HMS(m.getUpTime),
                     m.getTotalCpus,
@@ -277,12 +278,13 @@ class VisorTopologyCommand extends VisorConsoleCommand {
 
         val hostsT = VisorTextTable()
 
-        hostsT #= ("Int./Ext. IPs", "Node ID8(@)","Node Type", "OS", "CPUs", "MACs", "CPU Load")
+        hostsT #= ("Int./Ext. IPs", "Node ID8(@)", "Node consistent ID", "Node Type", "OS", "CPUs", "MACs", "CPU Load")
 
         neighborhood.foreach {
             case (_, neighbors) =>
                 var ips = Set.empty[String]
                 var id8s = List.empty[String]
+                var consistentIds = List.empty[String]
                 var nodeTypes = List.empty[String]
                 var macs = Set.empty[String]
                 var cpuLoadSum = 0.0
@@ -301,6 +303,7 @@ class VisorTopologyCommand extends VisorConsoleCommand {
 
                 neighbors.foreach(n => {
                     id8s = id8s :+ (i.toString + ": " + nodeId8(n.id))
+                    consistentIds = consistentIds :+ n.consistentId().toString
 
                     nodeTypes = nodeTypes :+ (if (n.isClient) "Client" else "Server")
                     i += 1
@@ -316,6 +319,7 @@ class VisorTopologyCommand extends VisorConsoleCommand {
                 hostsT += (
                     ips.toSeq,
                     id8s,
+                    consistentIds,
                     nodeTypes,
                     os,
                     cpus,
@@ -336,7 +340,7 @@ class VisorTopologyCommand extends VisorConsoleCommand {
 
         val sumT = VisorTextTable()
 
-        sumT += ("Active", ignite.active)
+        sumT += ("Active", ignite.cluster().active())
         sumT += ("Total hosts", U.neighborhood(nodes).size)
         sumT += ("Total nodes", m.getTotalNodes)
         sumT += ("Total CPUs", m.getTotalCpus)

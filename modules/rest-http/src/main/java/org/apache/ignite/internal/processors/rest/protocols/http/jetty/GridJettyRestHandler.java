@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -42,6 +43,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationOverride;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
@@ -58,6 +60,7 @@ import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.apache.ignite.internal.processors.rest.request.RestUserActionRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityCredentials;
@@ -68,6 +71,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_GETALL_AS_ARRAY;
 import static org.apache.ignite.internal.client.GridClientCacheFlag.KEEP_BINARIES_MASK;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CONTAINS_KEYS;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL;
@@ -86,7 +90,13 @@ public class GridJettyRestHandler extends AbstractHandler {
     private static final String CHARSET = StandardCharsets.UTF_8.name();
 
     /** */
-    private static final String  CACHE_NAME_PARAM = "cacheName";
+    private static final String USER_PARAM = "user";
+
+    /** */
+    private static final String PWD_PARAM = "password";
+
+    /** */
+    private static final String CACHE_NAME_PARAM = "cacheName";
 
     /** */
     private static final String BACKUPS_PARAM = "backups";
@@ -100,14 +110,14 @@ public class GridJettyRestHandler extends AbstractHandler {
     /** */
     private static final String WRITE_SYNCHRONIZATION_MODE_PARAM = "writeSynchronizationMode";
 
-    /** */
+    /**@deprecated Should be replaced with AUTHENTICATION + token in IGNITE 3.0 */
     private static final String IGNITE_LOGIN = "ignite.login";
 
-    /** */
+    /**@deprecated Should be replaced with AUTHENTICATION + token in IGNITE 3.0 */
     private static final String IGNITE_PASSWORD = "ignite.password";
 
     /** */
-    private static final String  TEMPLATE_NAME_PARAM = "templateName";
+    private static final String TEMPLATE_NAME_PARAM = "templateName";
 
     /** */
     private static final NullOutputStream NULL_OUTPUT_STREAM = new NullOutputStream();
@@ -129,6 +139,9 @@ public class GridJettyRestHandler extends AbstractHandler {
 
     /** Mapper from Java object to JSON. */
     private final ObjectMapper jsonMapper;
+
+    /** */
+    private final boolean getAllAsArray = IgniteSystemProperties.getBoolean(IGNITE_REST_GETALL_AS_ARRAY);
 
     /**
      * Creates new HTTP requests handler.
@@ -384,6 +397,15 @@ public class GridJettyRestHandler extends AbstractHandler {
 
             if (cmdRes == null)
                 throw new IllegalStateException("Received null result from handler: " + hnd);
+
+            if (getAllAsArray && cmd == GridRestCommand.CACHE_GET_ALL) {
+                List<Object> resKeyValue = new ArrayList<>();
+
+                for (Map.Entry<Object, Object> me : ((Map<Object, Object>)cmdRes.getResponse()).entrySet())
+                    resKeyValue.add(new IgniteBiTuple<>(me.getKey(), me.getValue()));
+
+                cmdRes.setResponse(resKeyValue);
+            }
 
             byte[] sesTok = cmdRes.sessionTokenBytes();
 
@@ -731,6 +753,12 @@ public class GridJettyRestHandler extends AbstractHandler {
                 break;
             }
 
+            case AUTHENTICATE: {
+                restReq = new GridRestRequest();
+
+                break;
+            }
+
             case ADD_USER:
             case REMOVE_USER:
             case UPDATE_USER: {
@@ -840,12 +868,9 @@ public class GridJettyRestHandler extends AbstractHandler {
 
         restReq.command(cmd);
 
-        if (params.containsKey(IGNITE_LOGIN) || params.containsKey(IGNITE_PASSWORD)) {
-            SecurityCredentials cred = new SecurityCredentials(
-                (String)params.get(IGNITE_LOGIN), (String)params.get(IGNITE_PASSWORD));
-
-            restReq.credentials(cred);
-        }
+        // TODO: In IGNITE 3.0 we should check credentials only for AUTHENTICATE command.
+        if (!credentials(params, IGNITE_LOGIN, IGNITE_PASSWORD, restReq))
+            credentials(params, USER_PARAM, PWD_PARAM, restReq);
 
         String clientId = (String)params.get("clientId");
 
@@ -870,14 +895,40 @@ public class GridJettyRestHandler extends AbstractHandler {
         String sesTokStr = (String)params.get("sessionToken");
 
         try {
-            if (sesTokStr != null)
-                restReq.sessionToken(U.hexString2ByteArray(sesTokStr));
+            if (sesTokStr != null) {
+                // Token is a UUID encoded as 16 bytes as HEX.
+                byte[] bytes = U.hexString2ByteArray(sesTokStr);
+
+                if (bytes.length == 16)
+                    restReq.sessionToken(bytes);
+            }
         }
         catch (IllegalArgumentException ignored) {
             // Ignore invalid session token.
         }
 
         return restReq;
+    }
+
+    /**
+     *
+     * @param params Parameters.
+     * @param userParam Parameter name to take user name.
+     * @param pwdParam Parameter name to take password.
+     * @param restReq Request to add credentials if any.
+     * @return {@code true} If params contains credentials.
+     */
+    private boolean credentials(Map<String, Object> params, String userParam, String pwdParam, GridRestRequest restReq) {
+        boolean hasCreds = params.containsKey(userParam) || params.containsKey(pwdParam);
+
+        if (hasCreds) {
+            SecurityCredentials cred = new SecurityCredentials((String)params.get(userParam),
+                (String)params.get(pwdParam));
+
+            restReq.credentials(cred);
+        }
+
+        return hasCreds;
     }
 
     /**

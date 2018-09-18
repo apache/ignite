@@ -66,7 +66,7 @@ public class IgniteBinaryImpl implements IgniteBinary {
         guard();
 
         try {
-            return (T)proc.marshalToBinary(obj);
+            return (T)proc.marshalToBinary(obj, false);
         }
         finally {
             unguard();
@@ -170,7 +170,7 @@ public class IgniteBinaryImpl implements IgniteBinary {
     }
 
     /** {@inheritDoc} */
-    public BinaryType registerEnum(String typeName, Map<String, Integer> vals) {
+    @Override public BinaryType registerEnum(String typeName, Map<String, Integer> vals) {
         guard();
 
         try {

@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -164,11 +165,12 @@ public class GridFunc {
     private static final IgniteClosure<ClusterNode, UUID> NODE2ID = new ClusterNodeGetIdClosure();
 
     /** */
-    private static final IgniteClosure<ClusterNode, Object> NODE2CONSISTENTID = new IgniteClosure<ClusterNode, Object>() {
-        @Override public Object apply(ClusterNode node) {
-            return node.consistentId();
-        }
-    };
+    private static final IgniteClosure<BaselineNode, Object> NODE2CONSISTENTID =
+        new IgniteClosure<BaselineNode, Object>() {
+            @Override public Object apply(BaselineNode node) {
+                return node.consistentId();
+            }
+        };
 
     /**
      * Gets predicate that evaluates to {@code true} only for given local node ID.
@@ -335,7 +337,7 @@ public class GridFunc {
      * @param nodes Collection of grid nodes.
      * @return Collection of node consistent IDs for given collection of grid nodes.
      */
-    public static Collection<Object> nodeConsistentIds(@Nullable Collection<? extends ClusterNode> nodes) {
+    public static Collection<Object> nodeConsistentIds(@Nullable Collection<? extends BaselineNode> nodes) {
         if (nodes == null || nodes.isEmpty())
             return Collections.emptyList();
 

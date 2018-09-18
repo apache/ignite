@@ -18,13 +18,10 @@
 package org.apache.ignite.ml.genetic;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.cache.Cache.Entry;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -36,45 +33,37 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
-import org.apache.ignite.resources.IgniteInstanceResource;
-
-import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
+import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
  * Responsible for performing truncate selection.
  */
-
 public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolean> {
-
+    /** Ignite resource. */
     @IgniteInstanceResource
     private Ignite ignite = null;
 
-    /** GAConfiguraiton */
-    private GAConfiguration config = null;
+    /** Fittest keys. */
+    private List<Long> fittestKeys;
 
-    /** fittest keys */
-    private List<Long> fittestKeys = null;
-
-    /** number of Copies */
-    private int numberOfCopies = 0;
+    /** Number of Copies. */
+    private int numOfCopies;
 
     /**
-     * @param config GAConfiguration
-     * @param fittestKeys List of long
-     * @param numberOfCopies Number of Copies
+     * @param fittestKeys List of long.
+     * @param numOfCopies Number of Copies.
      */
-    public TruncateSelectionTask(GAConfiguration config, List<Long> fittestKeys, int numberOfCopies) {
-        this.config = config;
+    public TruncateSelectionTask(List<Long> fittestKeys, int numOfCopies) {
         this.fittestKeys = fittestKeys;
-        this.numberOfCopies = numberOfCopies;
+        this.numOfCopies = numOfCopies;
     }
 
     /**
-     * Retrieve a chromosome
+     * Retrieve a chromosome.
      *
-     * @param key Primary key of chromosome
-     * @return Chromosome
+     * @param key Primary key of chromosome.
+     * @return Chromosome.
      */
     private Chromosome getChromosome(Long key) {
         IgniteCache<Long, Chromosome> cache = ignite.cache(GAGridConstants.POPULATION_CACHE);
@@ -89,30 +78,28 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
 
         try (QueryCursor<Entry<Long, Chromosome>> cursor = cache.query(sql)) {
             for (Entry<Long, Chromosome> e : cursor)
-                chromosome = (e.getValue())
-
-                    ;
+                chromosome = (e.getValue());
         }
 
         return chromosome;
     }
 
     /**
-     * Return a List of lists containing keys
+     * Return a List of lists containing keys.
      *
-     * @return List of lists containing keys
+     * @return List of lists containing keys.
      */
     private List<List<Long>> getEnhancedPopulation() {
-        List<List<Long>> list = new ArrayList();
+        List<List<Long>> list = new ArrayList<List<Long>>();
 
         for (Long key : fittestKeys) {
-            Chromosome copy = getChromosome(key);
-            for (int i = 0; i < numberOfCopies; i++) {
-                long[] thegenes = copy.getGenes();
-                List<Long> geneList = new ArrayList();
-                for (int k = 0; k < copy.getGenes().length; k++) {
+            Chromosome cp = getChromosome(key);
+            for (int i = 0; i < numOfCopies; i++) {
+                long[] thegenes = cp.getGenes();
+                List<Long> geneList = new ArrayList<Long>();
+                for (int k = 0; k < cp.getGenes().length; k++)
                     geneList.add(thegenes[k]);
-                }
+
                 list.add(geneList);
             }
         }
@@ -121,9 +108,9 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
     }
 
     /**
-     * @param nodes List of ClusterNode
-     * @param chromosomeKeys Primary keys for respective chromosomes
-     * @return Map of nodes to jobs
+     * @param nodes List of ClusterNode.
+     * @param chromosomeKeys Primary keys for respective chromosomes.
+     * @return Map of nodes to jobs.
      */
     public Map map(List<ClusterNode> nodes, List<Long> chromosomeKeys) throws IgniteException {
         Map<ComputeJob, ClusterNode> map = new HashMap<>();
@@ -140,24 +127,22 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
             k = k + 1;
         }
         return map;
-
     }
 
     /**
      * We return TRUE if success, else Exception is thrown.
      *
-     * @param list List of ComputeJobResult
-     * @return Boolean value
+     * @param list List of ComputeJobResult.
+     * @return Boolean value.
      */
     public Boolean reduce(List<ComputeJobResult> list) throws IgniteException {
-        // TODO Auto-generated method stub
         return Boolean.TRUE;
     }
 
     /**
-     * @param res ComputeJobResult
-     * @param rcvd List of ComputeJobResult
-     * @return ComputeJobResultPolicy
+     * @param res ComputeJobResult.
+     * @param rcvd List of ComputeJobResult.
+     * @return ComputeJobResultPolicy.
      */
     public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         IgniteException err = res.getException();
@@ -167,7 +152,6 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
 
         // If there is no exception, wait for all job results.
         return ComputeJobResultPolicy.WAIT;
-
     }
 
 }

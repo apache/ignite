@@ -47,6 +47,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Failure;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.PersistentStore;
@@ -98,6 +99,12 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(new TimeSpan(1, 2, 3), cfg.LongQueryWarningTimeout);
             Assert.IsFalse(cfg.IsActiveOnStart);
             Assert.IsTrue(cfg.AuthenticationEnabled);
+
+            Assert.IsNotNull(cfg.SqlSchemas);
+            Assert.AreEqual(2, cfg.SqlSchemas.Count);
+            Assert.IsTrue(cfg.SqlSchemas.Contains("SCHEMA_1"));
+            Assert.IsTrue(cfg.SqlSchemas.Contains("schema_2"));
+
             Assert.AreEqual("someId012", cfg.ConsistentId);
             Assert.IsFalse(cfg.RedirectJavaConsoleOutput);
 
@@ -340,6 +347,13 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsFalse(dr.MetricsEnabled);
 
             Assert.IsInstanceOf<SslContextFactory>(cfg.SslContextFactory);
+            
+            Assert.IsInstanceOf<StopNodeOrHaltFailureHandler>(cfg.FailureHandler);
+
+            var failureHandler = (StopNodeOrHaltFailureHandler)cfg.FailureHandler;
+            
+            Assert.IsTrue(failureHandler.TryStop);  
+            Assert.AreEqual(TimeSpan.Parse("0:1:0"), failureHandler.Timeout);
         }
 
         /// <summary>
@@ -1002,7 +1016,12 @@ namespace Apache.Ignite.Core.Tests
                         }
                     }
                 },
-                SslContextFactory = new SslContextFactory()
+                SslContextFactory = new SslContextFactory(),
+                FailureHandler = new StopNodeOrHaltFailureHandler()
+                {
+                    TryStop = false,
+                    Timeout = TimeSpan.FromSeconds(10)
+                }
             };
         }
 

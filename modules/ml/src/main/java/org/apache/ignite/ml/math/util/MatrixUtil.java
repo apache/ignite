@@ -19,20 +19,15 @@ package org.apache.ignite.ml.math.util;
 
 import java.util.List;
 import org.apache.ignite.internal.util.GridArgumentCheck;
-import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
-import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
-import org.apache.ignite.ml.math.impls.matrix.CacheMatrix;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.matrix.MatrixView;
-import org.apache.ignite.ml.math.impls.matrix.PivotedMatrixView;
-import org.apache.ignite.ml.math.impls.matrix.RandomMatrix;
-import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
-import org.apache.ignite.ml.math.impls.matrix.SparseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
+import org.apache.ignite.ml.math.primitives.matrix.impl.SparseMatrix;
+import org.apache.ignite.ml.math.primitives.matrix.impl.ViewMatrix;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 
 /**
  * Utility class for various matrix operations.
@@ -46,7 +41,7 @@ public class MatrixUtil {
      */
     public static Matrix like(Matrix matrix) {
         if (isCopyLikeSupport(matrix))
-            return new DenseLocalOnHeapMatrix(matrix.rowSize(), matrix.columnSize());
+            return new DenseMatrix(matrix.rowSize(), matrix.columnSize());
         else
             return matrix.like(matrix.rowSize(), matrix.columnSize());
     }
@@ -74,7 +69,7 @@ public class MatrixUtil {
      */
     public static Matrix like(Matrix matrix, int rows, int cols) {
         if (isCopyLikeSupport(matrix))
-            return new DenseLocalOnHeapMatrix(rows, cols);
+            return new DenseMatrix(rows, cols);
         else
             return matrix.like(rows, cols);
     }
@@ -88,18 +83,9 @@ public class MatrixUtil {
      */
     public static Vector likeVector(Matrix matrix, int crd) {
         if (isCopyLikeSupport(matrix))
-            return new DenseLocalOnHeapVector(crd);
+            return new DenseVector(crd);
         else
             return matrix.likeVector(crd);
-    }
-
-    /**
-     * Check if a given matrix is distributed.
-     *
-     * @param matrix Matrix for like.
-     */
-    private static boolean isDistributed(Matrix matrix) {
-        return matrix instanceof SparseDistributedMatrix || matrix instanceof SparseBlockDistributedMatrix;
     }
 
     /**
@@ -120,7 +106,7 @@ public class MatrixUtil {
      */
     public static Matrix copy(Matrix matrix) {
         if (isCopyLikeSupport(matrix)) {
-            DenseLocalOnHeapMatrix cp = new DenseLocalOnHeapMatrix(matrix.rowSize(), matrix.columnSize());
+            DenseMatrix cp = new DenseMatrix(matrix.rowSize(), matrix.columnSize());
 
             cp.assign(matrix);
 
@@ -131,8 +117,8 @@ public class MatrixUtil {
     }
 
     /** */
-    public static DenseLocalOnHeapMatrix asDense(SparseLocalOnHeapMatrix m, int acsMode) {
-        DenseLocalOnHeapMatrix res = new DenseLocalOnHeapMatrix(m.rowSize(), m.columnSize(), acsMode);
+    public static DenseMatrix asDense(SparseMatrix m, int acsMode) {
+        DenseMatrix res = new DenseMatrix(m.rowSize(), m.columnSize(), acsMode);
 
         for (int row : m.indexesMap().keySet())
             for (int col : m.indexesMap().get(row))
@@ -143,18 +129,17 @@ public class MatrixUtil {
 
     /** */
     private static boolean isCopyLikeSupport(Matrix matrix) {
-        return matrix instanceof RandomMatrix || matrix instanceof MatrixView || matrix instanceof CacheMatrix ||
-            matrix instanceof PivotedMatrixView;
+        return matrix instanceof ViewMatrix;
     }
 
     /** */
-    public static DenseLocalOnHeapMatrix fromList(List<Vector> vecs, boolean entriesAreRows) {
+    public static DenseMatrix fromList(List<Vector> vecs, boolean entriesAreRows) {
         GridArgumentCheck.notEmpty(vecs, "vecs");
 
         int dim = vecs.get(0).size();
         int vecsSize = vecs.size();
 
-        DenseLocalOnHeapMatrix res = new DenseLocalOnHeapMatrix(entriesAreRows ? vecsSize : dim,
+        DenseMatrix res = new DenseMatrix(entriesAreRows ? vecsSize : dim,
             entriesAreRows ? dim : vecsSize);
 
         for (int i = 0; i < vecsSize; i++) {
@@ -170,8 +155,8 @@ public class MatrixUtil {
     }
 
     /** TODO: IGNITE-5723, rewrite in a more optimal way. */
-    public static DenseLocalOnHeapVector localCopyOf(Vector vec) {
-        DenseLocalOnHeapVector res = new DenseLocalOnHeapVector(vec.size());
+    public static DenseVector localCopyOf(Vector vec) {
+        DenseVector res = new DenseVector(vec.size());
 
         for (int i = 0; i < vec.size(); i++)
             res.setX(i, vec.getX(i));

@@ -180,7 +180,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
     private void serverNodeReconnect(CollectionConfiguration colCfg) throws Exception {
         final Ignite client = grid(serverCount());
 
-        final Ignite srv = clientRouter(client);
+        final Ignite srv = ignite(0);
 
         assertNotNull(srv.queue("q", 0, colCfg));
         assertNotNull(srv.set("s", colCfg));
@@ -201,7 +201,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
 
         assertTrue(client.cluster().localNode().isClient());
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
         final String setName = "set-" + colCfg.getAtomicityMode();
 
@@ -235,7 +235,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
 
         assertTrue(client.cluster().localNode().isClient());
 
-        final Ignite srv = clientRouter(client);
+        final Ignite srv = ignite(0);
 
         final String setName = "set-rm-" + colCfg.getAtomicityMode();
 
@@ -281,7 +281,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
 
         assertTrue(client.cluster().localNode().isClient());
 
-        final Ignite srv = clientRouter(client);
+        final Ignite srv = ignite(0);
 
         final String setName = "set-in-progress-" + colCfg.getAtomicityMode();
 
@@ -347,7 +347,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
 
         assertTrue(client.cluster().localNode().isClient());
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
         final String setName = "queue-" + colCfg.getAtomicityMode();
 
@@ -379,7 +379,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
 
         assertTrue(client.cluster().localNode().isClient());
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
         final String setName = "queue-rmv" + colCfg.getAtomicityMode();
 
@@ -423,7 +423,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
 
         assertTrue(client.cluster().localNode().isClient());
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
         final String setName = "queue-rmv" + colCfg.getAtomicityMode();
 

@@ -70,8 +70,13 @@ import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
+import org.apache.ignite.failure.StopNodeFailureHandler;
+import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
 import org.apache.ignite.internal.processors.platform.events.PlatformLocalEventListener;
@@ -100,6 +105,8 @@ import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+
+import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_2_0;
 
 /**
  * Configuration utils.
@@ -151,9 +158,10 @@ public class PlatformConfigurationUtils {
      * Reads cache configuration from a stream.
      *
      * @param in Stream.
+     * @param ver Client version.
      * @return Cache configuration.
      */
-    public static CacheConfiguration readCacheConfiguration(BinaryRawReaderEx in) {
+    public static CacheConfiguration readCacheConfiguration(BinaryRawReaderEx in, ClientListenerProtocolVersion ver) {
         assert in != null;
 
         CacheConfiguration ccfg = new CacheConfiguration();
@@ -219,7 +227,7 @@ public class PlatformConfigurationUtils {
             Collection<QueryEntity> entities = new ArrayList<>(qryEntCnt);
 
             for (int i = 0; i < qryEntCnt; i++)
-                entities.add(readQueryEntity(in));
+                entities.add(readQueryEntity(in, ver));
 
             ccfg.setQueryEntities(entities);
         }
@@ -476,9 +484,10 @@ public class PlatformConfigurationUtils {
      * Reads the query entity.
      *
      * @param in Stream.
+     * @param ver Client version.
      * @return QueryEntity.
      */
-    public static QueryEntity readQueryEntity(BinaryRawReader in) {
+    public static QueryEntity readQueryEntity(BinaryRawReader in, ClientListenerProtocolVersion ver) {
         QueryEntity res = new QueryEntity();
 
         res.setKeyType(in.readString());
@@ -492,6 +501,8 @@ public class PlatformConfigurationUtils {
         Set<String> keyFields = new HashSet<>(cnt);
         Set<String> notNullFields = new HashSet<>(cnt);
         Map<String, Object> defVals = new HashMap<>(cnt);
+        Map<String, Integer> fieldsPrecision = new HashMap<>(cnt);
+        Map<String, Integer> fieldsScale = new HashMap<>(cnt);
 
         if (cnt > 0) {
             LinkedHashMap<String, String> fields = new LinkedHashMap<>(cnt);
@@ -511,6 +522,18 @@ public class PlatformConfigurationUtils {
                 Object defVal = in.readObject();
                 if (defVal != null)
                     defVals.put(fieldName, defVal);
+                
+                if (ver.compareTo(VER_1_2_0) >= 0) {
+                    int precision = in.readInt();
+
+                    if (precision != -1)
+                        fieldsPrecision.put(fieldName, precision);
+
+                    int scale = in.readInt();
+
+                    if (scale != -1)
+                        fieldsScale.put(fieldName, scale);
+                }
             }
 
             res.setFields(fields);
@@ -523,6 +546,12 @@ public class PlatformConfigurationUtils {
 
             if (!defVals.isEmpty())
                 res.setDefaultFieldValues(defVals);
+
+            if (!fieldsPrecision.isEmpty())
+                res.setFieldsPrecision(fieldsPrecision);
+
+            if (!fieldsScale.isEmpty())
+                res.setFieldsScale(fieldsScale);
         }
 
         // Aliases
@@ -583,9 +612,11 @@ public class PlatformConfigurationUtils {
      * Reads Ignite configuration.
      * @param in Reader.
      * @param cfg Configuration.
+     * @param ver Client version.
      */
     @SuppressWarnings("deprecation")
-    public static void readIgniteConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg) {
+    public static void readIgniteConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg, 
+        ClientListenerProtocolVersion ver) {
         if (in.readBoolean())
             cfg.setClientMode(in.readBoolean());
         int[] evtTypes = in.readIntArray();
@@ -624,6 +655,19 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             cfg.setAuthenticationEnabled(in.readBoolean());
 
+        int sqlSchemasCnt = in.readInt();
+
+        if (sqlSchemasCnt == -1)
+            cfg.setSqlSchemas((String[])null);
+        else {
+            String[] sqlSchemas = new String[sqlSchemasCnt];
+
+            for (int i = 0; i < sqlSchemasCnt; i++)
+                sqlSchemas[i] = in.readString();
+
+            cfg.setSqlSchemas(sqlSchemas);
+        }
+
         Object consId = in.readObjectDetached();
 
         if (consId instanceof Serializable) {
@@ -652,7 +696,7 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             cfg.setQueryThreadPoolSize(in.readInt());
 
-        readCacheConfigurations(in, cfg);
+        readCacheConfigurations(in, cfg, ver);
         readDiscoveryConfiguration(in, cfg);
 
         if (in.readBoolean()) {
@@ -721,6 +765,7 @@ public class PlatformConfigurationUtils {
             tx.setDefaultTxIsolation(TransactionIsolation.fromOrdinal(in.readInt()));
             tx.setDefaultTxTimeout(in.readLong());
             tx.setPessimisticTxLogLinger(in.readInt());
+            tx.setTxTimeoutOnPartitionMapExchange(in.readLong());
 
             cfg.setTransactionConfiguration(tx);
         }
@@ -758,6 +803,25 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             cfg.setSslContextFactory(readSslContextFactory(in));
 
+        if (in.readBoolean()) {
+            switch (in.readByte()) {
+                case 0:
+                    cfg.setFailureHandler(new NoOpFailureHandler());
+
+                    break;
+
+                case 1:
+                    cfg.setFailureHandler(new StopNodeFailureHandler());
+
+                    break;
+
+                case 2:
+                    cfg.setFailureHandler(new StopNodeOrHaltFailureHandler(in.readBoolean(), in.readLong()));
+
+                    break;
+            }
+        }
+
         readPluginConfiguration(cfg, in);
 
         readLocalEventListeners(cfg, in);
@@ -768,8 +832,10 @@ public class PlatformConfigurationUtils {
      *
      * @param cfg IgniteConfiguration to update.
      * @param in Reader.
+     * @param ver Client version.
      */
-    private static void readCacheConfigurations(BinaryRawReaderEx in, IgniteConfiguration cfg) {
+    private static void readCacheConfigurations(BinaryRawReaderEx in, IgniteConfiguration cfg, 
+        ClientListenerProtocolVersion ver) {
         int len = in.readInt();
 
         if (len == 0)
@@ -778,7 +844,7 @@ public class PlatformConfigurationUtils {
         List<CacheConfiguration> caches = new ArrayList<>();
 
         for (int i = 0; i < len; i++)
-            caches.add(readCacheConfiguration(in));
+            caches.add(readCacheConfiguration(in, ver));
 
         CacheConfiguration[] oldCaches = cfg.getCacheConfiguration();
         CacheConfiguration[] caches0 = caches.toArray(new CacheConfiguration[caches.size()]);
@@ -877,8 +943,10 @@ public class PlatformConfigurationUtils {
      *
      * @param writer Writer.
      * @param ccfg Configuration.
+     * @param ver Client version.
      */
-    public static void writeCacheConfiguration(BinaryRawWriter writer, CacheConfiguration ccfg) {
+    public static void writeCacheConfiguration(BinaryRawWriter writer, CacheConfiguration ccfg, 
+        ClientListenerProtocolVersion ver) {
         assert writer != null;
         assert ccfg != null;
 
@@ -938,7 +1006,7 @@ public class PlatformConfigurationUtils {
             writer.writeInt(qryEntities.size());
 
             for (QueryEntity e : qryEntities)
-                writeQueryEntity(writer, e);
+                writeQueryEntity(writer, e, ver);
         }
         else
             writer.writeInt(0);
@@ -995,8 +1063,10 @@ public class PlatformConfigurationUtils {
      *
      * @param writer Writer.
      * @param qryEntity Query entity.
+     * @param ver Client version.
      */
-    public static void writeQueryEntity(BinaryRawWriter writer, QueryEntity qryEntity) {
+    public static void writeQueryEntity(BinaryRawWriter writer, QueryEntity qryEntity, 
+        ClientListenerProtocolVersion ver) {
         assert qryEntity != null;
 
         writer.writeString(qryEntity.getKeyType());
@@ -1012,6 +1082,8 @@ public class PlatformConfigurationUtils {
             Set<String> keyFields = qryEntity.getKeyFields();
             Set<String> notNullFields = qryEntity.getNotNullFields();
             Map<String, Object> defVals = qryEntity.getDefaultFieldValues();
+            Map<String, Integer> fieldsPrecision = qryEntity.getFieldsPrecision();
+            Map<String, Integer> fieldsScale = qryEntity.getFieldsScale();
 
             writer.writeInt(fields.size());
 
@@ -1021,6 +1093,11 @@ public class PlatformConfigurationUtils {
                 writer.writeBoolean(keyFields != null && keyFields.contains(field.getKey()));
                 writer.writeBoolean(notNullFields != null && notNullFields.contains(field.getKey()));
                 writer.writeObject(defVals != null ? defVals.get(field.getKey()) : null);
+
+                if (ver.compareTo(VER_1_2_0) >= 0) {
+                    writer.writeInt(fieldsPrecision == null ? -1 : fieldsPrecision.getOrDefault(field.getKey(), -1));
+                    writer.writeInt(fieldsScale == null ? -1 : fieldsScale.getOrDefault(field.getKey(), -1));
+                }
             }
         }
         else
@@ -1085,9 +1162,11 @@ public class PlatformConfigurationUtils {
      *
      * @param w Writer.
      * @param cfg Configuration.
+     * @param ver Client version.
      */
     @SuppressWarnings("deprecation")
-    public static void writeIgniteConfiguration(BinaryRawWriter w, IgniteConfiguration cfg) {
+    public static void writeIgniteConfiguration(BinaryRawWriter w, IgniteConfiguration cfg, 
+        ClientListenerProtocolVersion ver) {
         assert w != null;
         assert cfg != null;
 
@@ -1122,6 +1201,16 @@ public class PlatformConfigurationUtils {
         w.writeBoolean(cfg.isActiveOnStart());
         w.writeBoolean(true);
         w.writeBoolean(cfg.isAuthenticationEnabled());
+
+        if (cfg.getSqlSchemas() == null)
+            w.writeInt(-1);
+        else {
+            w.writeInt(cfg.getSqlSchemas().length);
+
+            for (String schema : cfg.getSqlSchemas())
+                w.writeString(schema);
+        }
+
         w.writeObject(cfg.getConsistentId());
 
         // Thread pools.
@@ -1150,7 +1239,7 @@ public class PlatformConfigurationUtils {
             w.writeInt(cacheCfg.length);
 
             for (CacheConfiguration ccfg : cacheCfg)
-                writeCacheConfiguration(w, ccfg);
+                writeCacheConfiguration(w, ccfg, ver);
         }
         else
             w.writeInt(0);
@@ -1231,6 +1320,7 @@ public class PlatformConfigurationUtils {
             writeEnumInt(w, tx.getDefaultTxIsolation(), TransactionConfiguration.DFLT_TX_ISOLATION);
             w.writeLong(tx.getDefaultTxTimeout());
             w.writeInt(tx.getPessimisticTxLogLinger());
+            w.writeLong(tx.getTxTimeoutOnPartitionMapExchange());
         }
         else
             w.writeBoolean(false);
@@ -1261,6 +1351,29 @@ public class PlatformConfigurationUtils {
         writeDataStorageConfiguration(w, cfg.getDataStorageConfiguration());
 
         writeSslContextFactory(w, cfg.getSslContextFactory());
+
+        FailureHandler failureHnd = cfg.getFailureHandler();
+
+        if (failureHnd instanceof NoOpFailureHandler) {
+            w.writeBoolean(true);
+
+            w.writeByte((byte) 0);
+        }
+        else if (failureHnd instanceof StopNodeFailureHandler) {
+            w.writeBoolean(true);
+
+            w.writeByte((byte) 1);
+        }
+        else if (failureHnd instanceof StopNodeOrHaltFailureHandler) {
+            w.writeBoolean(true);
+
+            w.writeByte((byte) 2);
+
+            w.writeBoolean(((StopNodeOrHaltFailureHandler)failureHnd).tryStop());
+
+            w.writeLong(((StopNodeOrHaltFailureHandler)failureHnd).timeout());
+        } else
+            w.writeBoolean(false);
 
         w.writeString(cfg.getIgniteHome());
 
@@ -1707,6 +1820,7 @@ public class PlatformConfigurationUtils {
                 .setCheckpointWriteOrder(CheckpointWriteOrder.fromOrdinal(in.readInt()))
                 .setWriteThrottlingEnabled(in.readBoolean())
                 .setWalCompactionEnabled(in.readBoolean())
+                .setMaxWalArchiveSize(in.readLong())
                 .setSystemRegionInitialSize(in.readLong())
                 .setSystemRegionMaxSize(in.readLong())
                 .setPageSize(in.readInt())
@@ -1834,6 +1948,7 @@ public class PlatformConfigurationUtils {
             w.writeInt(cfg.getCheckpointWriteOrder().ordinal());
             w.writeBoolean(cfg.isWriteThrottlingEnabled());
             w.writeBoolean(cfg.isWalCompactionEnabled());
+            w.writeLong(cfg.getMaxWalArchiveSize());
             w.writeLong(cfg.getSystemRegionInitialSize());
             w.writeLong(cfg.getSystemRegionMaxSize());
             w.writeInt(cfg.getPageSize());

@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.util.nio;
 
+import java.util.EventListener;
+import org.apache.ignite.failure.FailureType;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Listener passed in to the {@link GridNioServer} that will be notified on client events.
  */
-public interface GridNioServerListener<T> {
+public interface GridNioServerListener<T> extends EventListener {
     /**
      * This method is called whenever a new client is connected and session is created.
      *
@@ -69,4 +71,9 @@ public interface GridNioServerListener<T> {
      * @param ses Session that is idle.
      */
     public void onSessionIdleTimeout(GridNioSession ses);
+
+    /**
+     * Called when critical failure occurs in server implementation.
+     */
+    public void onFailure(FailureType failureType, Throwable failure);
 }

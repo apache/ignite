@@ -18,6 +18,7 @@
 package org.apache.ignite.transactions;
 
 import java.io.Serializable;
+import java.util.Map;
 
 /**
  * Transaction metrics, shared across all caches.
@@ -50,4 +51,55 @@ public interface TransactionMetrics extends Serializable {
      * @return Number of transaction rollbacks.
      */
     public int txRollbacks();
+
+    /**
+     * Gets a map of all transactions for which the local node is the originating node.
+     *
+     * @return Map of local node owning transactions.
+     */
+    public Map<String, String> getAllOwnerTransactions();
+
+    /**
+     * Gets a map of all transactions for which the local node is the originating node and which duration
+     * exceeds the given duration.
+     *
+     * @return Map of local node owning transactions which duration is longer than {@code duration}.
+     */
+    public Map<String, String> getLongRunningOwnerTransactions(int duration);
+
+    /**
+     * The number of transactions which were committed on the local node.
+     *
+     * @return The number of transactions which were committed on the local node.
+     */
+    public long getTransactionsCommittedNumber();
+
+    /**
+     * The number of transactions which were rolled back on the local node.
+     *
+     * @return The number of transactions which were rolled back on the local node.
+     */
+    public long getTransactionsRolledBackNumber();
+
+    /**
+     * The number of active transactions on the local node holding at least one key lock.
+     *
+     * @return The number of active transactions holding at least one key lock.
+     */
+    public long getTransactionsHoldingLockNumber();
+
+    /**
+     * The number of keys locked on the node.
+     *
+     * @return The number of keys locked on the node.
+     */
+    public long getLockedKeysNumber();
+
+    /**
+     * The number of active transactions for which this node is the initiator. Effectively, this method is
+     * semantically equivalent to {@code getAllOwnerTransactions.size()}.
+     *
+     * @return The number of active transactions for which this node is the initiator.
+     */
+    public long getOwnerTransactionsNumber();
 }

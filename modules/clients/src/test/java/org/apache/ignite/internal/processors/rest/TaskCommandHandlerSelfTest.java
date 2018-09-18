@@ -86,8 +86,6 @@ public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         System.clearProperty(IgniteSystemProperties.IGNITE_REST_MAX_TASK_RESULTS);
     }
 

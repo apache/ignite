@@ -122,8 +122,6 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids(true);
-
-        super.afterTestsStopped();
     }
 
     /**
@@ -321,7 +319,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
         qry.setRemoteTransformerFactory(FactoryBuilder.factoryOf(
             new IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Employee>, Integer>() {
                 @Override public Integer apply(CacheEntryEvent<? extends Integer, ? extends Employee> evt) {
-                    assertNull(evt.getValue());
+                    assertNotNull(evt.getValue());
 
                     assertNotNull(evt.getOldValue());
 

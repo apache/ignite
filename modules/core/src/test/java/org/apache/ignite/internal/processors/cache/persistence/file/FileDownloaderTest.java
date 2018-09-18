@@ -18,27 +18,31 @@
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
+import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import org.apache.ignite.IgniteCheckedException;
+import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.junit.Assert.*;
 
 /**
  * FileDownloader test
  */
 public class FileDownloaderTest extends GridCommonAbstractTest {
-
+    /** */
     private static final Path DOWNLOADER_PATH = new File("download").toPath();
+
+    /** */
     private static final Path UPLOADER_PATH = new File("upload").toPath();
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -49,6 +53,7 @@ public class FileDownloaderTest extends GridCommonAbstractTest {
             UPLOADER_PATH.toFile().delete();
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
@@ -59,9 +64,12 @@ public class FileDownloaderTest extends GridCommonAbstractTest {
             UPLOADER_PATH.toFile().delete();
     }
 
+    /***
+     *
+     * @throws Exception If failed.
+     */
     public void test() throws Exception {
-        //todo uncomment and fix
-       /* assertTrue(UPLOADER_PATH.toFile().createNewFile());
+        assertTrue(UPLOADER_PATH.toFile().createNewFile());
         assertTrue(!DOWNLOADER_PATH.toFile().exists());
 
         PrintWriter writer = new PrintWriter(UPLOADER_PATH.toFile());
@@ -71,20 +79,45 @@ public class FileDownloaderTest extends GridCommonAbstractTest {
 
         writer.close();
 
-        FileDownloader downloader = new FileDownloader(DOWNLOADER_PATH, Executors.newSingleThreadExecutor());
+        FileDownloader downloader = new FileDownloader(log, DOWNLOADER_PATH);
 
         InetSocketAddress address = downloader.start();
 
-        FileUploader uploader = new FileUploader(UPLOADER_PATH, address, Executors.newSingleThreadExecutor());
+        GridFutureAdapter<Long> finishFut = new GridFutureAdapter<>();
 
-        long size = uploader.upload().get();
+        FileUploader uploader = new FileUploader(UPLOADER_PATH);
 
-        downloader.download(size).get();
+        SocketChannel sc = null;
+
+        try {
+            sc = SocketChannel.open(address);
+        }
+        catch (IOException e) {
+            U.warn(log, "Fail connect to " + address, e);
+        }
+
+        CountDownLatch downLatch = new CountDownLatch(1);
+
+        runAsync(() -> {
+            downloader.download(finishFut);
+
+            downLatch.countDown();
+        });
+
+        SocketChannel finalSc = sc;
+
+        runAsync(() -> uploader.upload(finalSc, finishFut));
+
+        finishFut.get();
+
+        downloader.download(finishFut.get(), null);
+
+        downLatch.await();
 
         assertTrue(DOWNLOADER_PATH.toFile().exists());
 
         assertEquals(UPLOADER_PATH.toFile().length(), DOWNLOADER_PATH.toFile().length());
 
-        assertArrayEquals(Files.readAllBytes(UPLOADER_PATH), Files.readAllBytes(DOWNLOADER_PATH));*/
+        assertArrayEquals(Files.readAllBytes(UPLOADER_PATH), Files.readAllBytes(DOWNLOADER_PATH));
     }
 }

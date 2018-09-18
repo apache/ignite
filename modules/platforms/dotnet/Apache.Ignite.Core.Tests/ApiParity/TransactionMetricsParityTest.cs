@@ -25,6 +25,18 @@ namespace Apache.Ignite.Core.Tests.ApiParity
     /// </summary>
     public class TransactionMetricsParityTest
     {
+            /** Properties that are missing on .NET side. */
+            private static readonly string[] MissingProperties =
+            {
+                "AllOwnerTransactions",
+                "LongRunningOwnerTransactions",
+                "TransactionsCommittedNumber",
+                "TransactionsRolledBackNumber",
+                "TransactionsHoldingLockNumber",
+                "LockedKeysNumber",
+                "OwnerTransactionsNumber",
+            };
+
         /// <summary>
         /// Tests the API parity.
         /// </summary>
@@ -33,7 +45,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         {
             ParityTest.CheckInterfaceParity(
                 @"modules\core\src\main\java\org\apache\ignite\transactions\TransactionMetrics.java",
-                typeof(ITransactionMetrics));
+                typeof(ITransactionMetrics),knownMissingMembers: MissingProperties);
         }
     }
 }

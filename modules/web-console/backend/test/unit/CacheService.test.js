@@ -21,7 +21,7 @@ const testCaches = require('../data/caches.json');
 const testAccounts = require('../data/accounts.json');
 const testSpaces = require('../data/spaces.json');
 
-let cacheService;
+let cachesService;
 let mongo;
 let errors;
 let db;
@@ -34,7 +34,7 @@ suite('CacheServiceTestsSuite', () => {
             injector('dbHelper')])
             .then(([_cacheService, _mongo, _errors, _db]) => {
                 mongo = _mongo;
-                cacheService = _cacheService;
+                cachesService = _cacheService;
                 errors = _errors;
                 db = _db;
             });
@@ -42,12 +42,24 @@ suite('CacheServiceTestsSuite', () => {
 
     setup(() => db.init());
 
+    test('Get cache', (done) => {
+        const _id = testCaches[0]._id;
+
+        cachesService.get(testCaches[0].space, false, _id)
+            .then((cache) => {
+                assert.isNotNull(cache);
+                assert.equal(cache._id, _id);
+            })
+            .then(done)
+            .catch(done);
+    });
+
     test('Create new cache', (done) => {
         const dupleCache = Object.assign({}, testCaches[0], {name: 'Other name'});
 
         delete dupleCache._id;
 
-        cacheService.merge(dupleCache)
+        cachesService.merge(dupleCache)
             .then((cache) => mongo.Cache.findById(cache._id))
             .then((cache) => assert.isNotNull(cache))
             .then(done)
@@ -59,7 +71,7 @@ suite('CacheServiceTestsSuite', () => {
 
         const cacheBeforeMerge = Object.assign({}, testCaches[0], {name: newName});
 
-        cacheService.merge(cacheBeforeMerge)
+        cachesService.merge(cacheBeforeMerge)
             .then((cache) => mongo.Cache.findById(cache._id))
             .then((cacheAfterMerge) => assert.equal(cacheAfterMerge.name, newName))
             .then(done)
@@ -71,7 +83,7 @@ suite('CacheServiceTestsSuite', () => {
 
         delete dupleCache._id;
 
-        cacheService.merge(dupleCache)
+        cachesService.merge(dupleCache)
             .catch((err) => {
                 assert.instanceOf(err, errors.DuplicateKeyException);
 
@@ -80,7 +92,7 @@ suite('CacheServiceTestsSuite', () => {
     });
 
     test('Remove existed cache', (done) => {
-        cacheService.remove(testCaches[0]._id)
+        cachesService.remove(testCaches[0]._id)
             .then(({rowsAffected}) =>
                 assert.equal(rowsAffected, 1)
             )
@@ -93,7 +105,7 @@ suite('CacheServiceTestsSuite', () => {
     });
 
     test('Remove cache without identifier', (done) => {
-        cacheService.remove()
+        cachesService.remove()
             .catch((err) => {
                 assert.instanceOf(err, errors.IllegalArgumentException);
 
@@ -104,7 +116,7 @@ suite('CacheServiceTestsSuite', () => {
     test('Remove missed cache', (done) => {
         const validNoExistingId = 'FFFFFFFFFFFFFFFFFFFFFFFF';
 
-        cacheService.remove(validNoExistingId)
+        cachesService.remove(validNoExistingId)
             .then(({rowsAffected}) =>
                 assert.equal(rowsAffected, 0)
             )
@@ -113,19 +125,32 @@ suite('CacheServiceTestsSuite', () => {
     });
 
     test('Get all caches by space', (done) => {
-        cacheService.listBySpaces(testSpaces[0]._id)
+        cachesService.listBySpaces(testSpaces[0]._id)
             .then((caches) =>
-                assert.equal(caches.length, 5)
+                assert.equal(caches.length, 7)
             )
             .then(done)
             .catch(done);
     });
 
     test('Remove all caches in space', (done) => {
-        cacheService.removeAll(testAccounts[0]._id, false)
+        cachesService.removeAll(testAccounts[0]._id, false)
             .then(({rowsAffected}) =>
-                assert.equal(rowsAffected, 5)
+                assert.equal(rowsAffected, 7)
             )
+            .then(done)
+            .catch(done);
+    });
+
+    test('List of all caches in cluster', (done) => {
+        cachesService.shortList(testAccounts[0]._id, false, testCaches[0].clusters[0])
+            .then((caches) => {
+                assert.equal(caches.length, 2);
+                assert.isNotNull(caches[0]._id);
+                assert.isNotNull(caches[0].name);
+                assert.isNotNull(caches[0].cacheMode);
+                assert.isNotNull(caches[0].atomicityMode);
+            })
             .then(done)
             .catch(done);
     });

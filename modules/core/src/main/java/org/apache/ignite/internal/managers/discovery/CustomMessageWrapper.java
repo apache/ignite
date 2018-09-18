@@ -33,7 +33,7 @@ public class CustomMessageWrapper implements DiscoverySpiCustomMessage {
     /**
      * @param delegate Delegate.
      */
-    CustomMessageWrapper(DiscoveryCustomMessage delegate) {
+    public CustomMessageWrapper(DiscoveryCustomMessage delegate) {
         this.delegate = delegate;
     }
 
@@ -47,6 +47,11 @@ public class CustomMessageWrapper implements DiscoverySpiCustomMessage {
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return delegate.isMutable();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean stopProcess() {
+        return delegate.stopProcess();
     }
 
     /**

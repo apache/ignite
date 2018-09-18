@@ -38,7 +38,6 @@ web-console-header {
         height: 20px;
         position: absolute;
         overflow: hidden;
-        box-shadow: 0 4px 4px -2px rgba(0, 0, 0, 0.3);
         bottom: -4px;
     }
 
@@ -65,8 +64,9 @@ web-console-header {
         flex-direction: row;
         flex-wrap: wrap;
         align-items: center;
-        padding: 18.5px 0;
+        padding: 18px 30px;
         position: relative;
+        height: 81px;
     }
 
     .wch-logo {
@@ -102,7 +102,7 @@ web-console-header {
         &:hover {
             color: $color-hover;
         }
-        
+
         &:focus, :focus,
         &.active, .active {
             color: $color-active;
@@ -119,6 +119,28 @@ web-console-header {
 
         &:not(:last-child) {
             margin-right: $nav-item-margin;
+        }
+
+        .dropdown-menu {
+            a {
+                &:hover, &:focus {
+                    color: inherit;
+                }
+            }
+            li.active a {
+                color: inherit;
+            }
+        }
+
+        .user-name-wrapper {
+            display: flex;
+            align-items: center;
+
+           & > span {
+               max-width: 180px;
+               overflow: hidden;
+               text-overflow: ellipsis;
+           }
         }
     }
 
@@ -169,6 +191,10 @@ web-console-header {
                 text-decoration: none;
             }
         }
+    }
+
+    .wch-additional-nav-items {
+        display: flex;
     }
 }
 

@@ -55,9 +55,7 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setFailureDetectionTimeout(3_000L);
-
-        cfg.setDiscoverySpi(new SplitTcpDiscoverySpi());
+        cfg.setDiscoverySpi(new SplitTcpDiscoverySpi().setReconnectCount(2));
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
@@ -205,18 +203,8 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
          * @throws SocketTimeoutException If segmented.
          */
         protected void checkSegmented(InetSocketAddress sockAddr, long timeout) throws SocketTimeoutException {
-            if (segmented(sockAddr)) {
-                if (timeout > 0) {
-                    try {
-                        Thread.sleep(timeout);
-                    }
-                    catch (InterruptedException e) {
-                        // No-op.
-                    }
-                }
-
+            if (segmented(sockAddr))
                 throw new SocketTimeoutException("Fake socket timeout.");
-            }
         }
 
         /** {@inheritDoc} */

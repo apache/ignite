@@ -64,7 +64,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
     private static final long MB = 1024;
 
     /** */
-    private static final int CPUS = Runtime.getRuntime().availableProcessors();
+    private static final Comparator ALWAYS_FAILS_COMPARATOR = new AlwaysFailsComparator();
 
     /** Test utf-8 string cutting. */
     public void testConvert() {
@@ -209,13 +209,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
 
             ih.put(pageAddr, off, v1 == null ? ValueNull.INSTANCE : ValueString.get(v1), maxSize);
 
-            Comparator<Value> comp = new Comparator<Value>() {
-                @Override public int compare(Value o1, Value o2) {
-                    throw new AssertionError("Optimized algorithm should be used.");
-                }
-            };
-
-            return ih.compare(pageAddr, off, maxSize,  v2 == null ? ValueNull.INSTANCE : ValueString.get(v2), comp);
+            return ih.compare(pageAddr, off, maxSize,  v2 == null ? ValueNull.INSTANCE : ValueString.get(v2), ALWAYS_FAILS_COMPARATOR);
         }
         finally {
             if (page != 0L)
@@ -485,6 +479,8 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
 
             assertEquals(v1.getObject(), v11.getObject());
             assertEquals(v2.getObject(), v22.getObject());
+
+            assertEquals(0, ih.compare(pageAddr, 0, max, v1, ALWAYS_FAILS_COMPARATOR));
         }
         finally {
             if (page != 0L)
@@ -559,5 +555,15 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
         }
 
         return new String(buffer);
+    }
+
+    /**
+     *
+     */
+    private static class AlwaysFailsComparator implements Comparator<Value> {
+        /** {@inheritDoc} */
+        @Override public int compare(Value o1, Value o2) {
+            throw new AssertionError("Optimized algorithm should be used.");
+        }
     }
 }

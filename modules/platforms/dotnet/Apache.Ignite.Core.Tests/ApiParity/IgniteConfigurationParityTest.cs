@@ -63,7 +63,8 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "ClassLoader",
             "CacheStoreSessionListenerFactories",
             "PlatformConfiguration",
-            "ExecutorConfiguration"
+            "ExecutorConfiguration",
+            "CommunicationFailureResolver"
         };
 
         /** Properties that are missing on .NET side. */
@@ -80,7 +81,9 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "TimeServerPortRange",
             "IncludeProperties",
             "isAutoActivationEnabled",  // IGNITE-7301
-            "failureHandler"            // IGNITE-8070
+            "isMvccEnabled", //TODO: IGNITE-9390: Remove when Mvcc support will be added.
+            "MvccVacuumTimeInterval", //TODO: IGNITE-9390: Remove when Mvcc support will be added.
+            "MvccVacuumThreadCnt" //TODO: IGNITE-9390: Remove when Mvcc support will be added.
         };
 
         /// <summary>

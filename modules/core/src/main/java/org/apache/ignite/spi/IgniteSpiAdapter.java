@@ -519,7 +519,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         if (!enabled)
             return;
 
-        if (!checkClient && (CU.clientNode(getLocalNode()) || CU.clientNode(node)))
+        if (!checkClient && (getLocalNode().isClient() || node.isClient()))
             return;
 
         String clsAttr = createSpiAttributeName(IgniteNodeAttributes.ATTR_SPI_CLASS);
@@ -547,7 +547,8 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         if (rmtCls == null) {
             if (!optional && starting)
                 throw new IgniteSpiException("Remote SPI with the same name is not configured" + tipStr +
-                    " [name=" + name + ", loc=" + locCls + ']');
+                    " [name=" + name + ", loc=" + locCls + ", locNode=" + spiCtx.localNode() + ", rmt=" + rmtCls +
+                    ", rmtNode=" + node + ']');
 
             sb.a(format(">>> Remote SPI with the same name is not configured: " + name, locCls));
         }
@@ -962,6 +963,16 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         /** {@inheritDoc} */
         @Override public Map<String, Object> nodeAttributes() {
             return Collections.emptyMap();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean communicationFailureResolveSupported() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void resolveCommunicationFailure(ClusterNode node, Exception err) {
+            throw new UnsupportedOperationException();
         }
     }
 }

@@ -32,6 +32,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -47,6 +49,12 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
+import org.apache.ignite.client.ClientAuthenticationException;
+import org.apache.ignite.client.ClientAuthorizationException;
+import org.apache.ignite.client.ClientConnectionException;
+import org.apache.ignite.client.SslMode;
+import org.apache.ignite.client.SslProtocol;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -55,16 +63,31 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.client.ClientAuthenticationException;
-import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.client.ClientConnectionException;
-import org.apache.ignite.client.SslMode;
-import org.apache.ignite.client.SslProtocol;
+import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 
 /**
  * Implements {@link ClientChannel} over TCP.
  */
 class TcpClientChannel implements ClientChannel {
+    /** Protocol version: 1.2.0. */
+    private static final ProtocolVersion V1_2_0 = new ProtocolVersion((short)1, (short)2, (short)0);
+    
+    /** Protocol version: 1.1.0. */
+    private static final ProtocolVersion V1_1_0 = new ProtocolVersion((short)1, (short)1, (short)0);
+
+    /** Protocol version 1 0 0. */
+    private static final ProtocolVersion V1_0_0 = new ProtocolVersion((short)1, (short)0, (short)0);
+
+    /** Supported protocol versions. */
+    private static final Collection<ProtocolVersion> supportedVers = Arrays.asList(
+        V1_2_0, 
+        V1_1_0, 
+        V1_0_0
+    );
+
+    /** Protocol version agreed with the server. */
+    private ProtocolVersion ver = V1_2_0;
+
     /** Channel. */
     private final Socket sock;
 
@@ -73,9 +96,6 @@ class TcpClientChannel implements ClientChannel {
 
     /** Input stream. */
     private final InputStream in;
-
-    /** Version. */
-    private final ProtocolVersion ver = new ProtocolVersion((short)1, (short)0, (short)0);
 
     /** Request id. */
     private final AtomicLong reqId = new AtomicLong(1);
@@ -126,8 +146,9 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /** {@inheritDoc} */
-    public <T> T receive(ClientOperation op, long reqId, Function<BinaryInputStream, T> payloadReader)
-        throws ClientConnectionException {
+    @Override public <T> T receive(ClientOperation op, long reqId, Function<BinaryInputStream, T> payloadReader)
+        throws ClientConnectionException, ClientAuthorizationException {
+
         final int MIN_RES_SIZE = 8 + 4; // minimal response size: long (8 bytes) ID + int (4 bytes) status
 
         int resSize = new BinaryHeapInputStream(read(4)).readInt();
@@ -152,7 +173,12 @@ class TcpClientChannel implements ClientChannel {
 
             String err = new BinaryReaderExImpl(null, resIn, null, true).readString();
 
-            throw new ClientServerError(err, status, reqId);
+            switch (status) {
+                case ClientStatus.SECURITY_VIOLATION:
+                    throw new ClientAuthorizationException();
+                default:
+                    throw new ClientServerError(err, status, reqId);
+            }
         }
 
         if (resSize <= MIN_RES_SIZE || payloadReader == null)
@@ -161,6 +187,11 @@ class TcpClientChannel implements ClientChannel {
         BinaryInputStream payload = new BinaryHeapInputStream(read(resSize - MIN_RES_SIZE));
 
         return payloadReader.apply(payload);
+    }
+
+    /** {@inheritDoc} */
+    @Override public ProtocolVersion serverVersion() {
+        return ver;
     }
 
     /** Validate {@link ClientConfiguration}. */
@@ -213,7 +244,7 @@ class TcpClientChannel implements ClientChannel {
     private void handshake(String user, String pwd)
         throws ClientConnectionException, ClientAuthenticationException {
         handshakeReq(user, pwd);
-        handshakeRes();
+        handshakeRes(user, pwd);
     }
 
     /** Send handshake request. */
@@ -226,7 +257,7 @@ class TcpClientChannel implements ClientChannel {
             req.writeShort(ver.patch());
             req.writeByte((byte)2); // client code, always 2
 
-            if (user != null && user.length() > 0) {
+            if (ver.compareTo(V1_1_0) >= 0 && user != null && user.length() > 0) {
                 req.writeByteArray(marshalString(user));
                 req.writeByteArray(marshalString(pwd));
             }
@@ -238,7 +269,8 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /** Receive and handle handshake response. */
-    private void handshakeRes() throws ClientConnectionException, ClientAuthenticationException {
+    private void handshakeRes(String user, String pwd)
+        throws ClientConnectionException, ClientAuthenticationException {
         int resSize = new BinaryHeapInputStream(read(4)).readInt();
 
         if (resSize <= 0)
@@ -249,17 +281,37 @@ class TcpClientChannel implements ClientChannel {
         if (!res.readBoolean()) { // success flag
             ProtocolVersion srvVer = new ProtocolVersion(res.readShort(), res.readShort(), res.readShort());
 
-            String err = new BinaryReaderExImpl(null, res, null, true).readString();
+            try (BinaryReaderExImpl r = new BinaryReaderExImpl(null, res, null, true)) {
+                String err = r.readString();
 
-            if (err != null && err.toUpperCase().matches(".*USER.*INCORRECT.*"))
-                throw new ClientAuthenticationException();
-            else
-                throw new ClientProtocolError(String.format(
-                    "Protocol version mismatch: client %s / server %s. Server details: %s",
-                    ver,
-                    srvVer,
-                    err
-                ));
+                int errCode = ClientStatus.FAILED;
+
+                if (res.remaining() > 0)
+                    errCode = r.readInt();
+
+                if (errCode == ClientStatus.AUTH_FAILED)
+                    throw new ClientAuthenticationException(err);
+                else if (ver.equals(srvVer))
+                    throw new ClientProtocolError(err);
+                else if (!supportedVers.contains(srvVer) ||
+                    (srvVer.compareTo(V1_1_0) < 0 && user != null && user.length() > 0))
+                    // Server version is not supported by this client OR server version is less than 1.1.0 supporting
+                    // authentication and authentication is required.
+                    throw new ClientProtocolError(String.format(
+                        "Protocol version mismatch: client %s / server %s. Server details: %s",
+                        ver,
+                        srvVer,
+                        err
+                    ));
+                else { // retry with server version
+                    ver = srvVer;
+
+                    handshake(user, pwd);
+                }
+            }
+            catch (IOException e) {
+                throw new ClientConnectionException(e);
+            }
         }
     }
 
@@ -512,22 +564,23 @@ class TcpClientChannel implements ClientChannel {
 
         /** */
         private static KeyStore loadKeyStore(String lb, String path, String type, char[] pwd) {
-            InputStream in = null;
+            KeyStore store;
 
             try {
-                KeyStore store = KeyStore.getInstance(type);
-
-                in = new FileInputStream(new File(path));
-
-                store.load(in, pwd);
-
-                return store;
+                store = KeyStore.getInstance(type);
             }
             catch (KeyStoreException e) {
                 throw new ClientError(
                     String.format("%s key store provider of type [%s] is not available", lb, type),
                     e
                 );
+            }
+
+            try (InputStream in = new FileInputStream(new File(path))) {
+
+                store.load(in, pwd);
+
+                return store;
             }
             catch (FileNotFoundException e) {
                 throw new ClientError(String.format("%s key store file [%s] does not exist", lb, path), e);
@@ -543,16 +596,6 @@ class TcpClientChannel implements ClientChannel {
             }
             catch (IOException e) {
                 throw new ClientError(String.format("Could not read %s key store", lb), e);
-            }
-            finally {
-                if (in != null) {
-                    try {
-                        in.close();
-                    }
-                    catch (IOException ignored) {
-                        // Fail silently
-                    }
-                }
             }
         }
     }

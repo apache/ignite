@@ -26,6 +26,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -83,6 +84,44 @@ public class CacheBasedDatasetBuilderTest extends GridCommonAbstractTest {
 
             assertEqualsCollections(upstreamPartNodes, datasetPartNodes);
         }
+    }
+
+    /**
+     * Tests that predicate works correctly.
+     */
+    public void testBuildWithPredicate() {
+        CacheConfiguration<Integer, Integer> upstreamCacheConfiguration = new CacheConfiguration<>();
+        upstreamCacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 1));
+        upstreamCacheConfiguration.setName(UUID.randomUUID().toString());
+
+        IgniteCache<Integer, Integer> upstreamCache = ignite.createCache(upstreamCacheConfiguration);
+        upstreamCache.put(1, 1);
+        upstreamCache.put(2, 2);
+
+        CacheBasedDatasetBuilder<Integer, Integer> builder = new CacheBasedDatasetBuilder<>(
+            ignite,
+            upstreamCache,
+            (k, v) -> k % 2 == 0
+        );
+
+        CacheBasedDataset<Integer, Integer, Long, AutoCloseable> dataset = builder.build(
+            (upstream, upstreamSize) -> {
+                UpstreamEntry<Integer, Integer> entry = upstream.next();
+                assertEquals(Integer.valueOf(2), entry.getKey());
+                assertEquals(Integer.valueOf(2), entry.getValue());
+                assertFalse(upstream.hasNext());
+                return 0L;
+            },
+            (upstream, upstreamSize, ctx) -> {
+                UpstreamEntry<Integer, Integer> entry = upstream.next();
+                assertEquals(Integer.valueOf(2), entry.getKey());
+                assertEquals(Integer.valueOf(2), entry.getValue());
+                assertFalse(upstream.hasNext());
+                return null;
+            }
+        );
+
+        dataset.compute(data -> {});
     }
 
     /**

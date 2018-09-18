@@ -56,19 +56,6 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
     private static final String KEY_OBJ = "ObjectFromPrevVersion";
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        // No-op. super.afterTest();
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -129,7 +116,7 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
 
         assertEquals(VAL, ignite.cache(CACHE_NAME).get(KEY));
 
-        final DummyPersistenceCompatibilityTest.TestStringContainerToBePrinted actual = (DummyPersistenceCompatibilityTest.TestStringContainerToBePrinted)ignite.cache(CACHE_NAME).get(KEY_OBJ);
+        final PersistenceBasicCompatibilityTest.TestStringContainerToBePrinted actual = (PersistenceBasicCompatibilityTest.TestStringContainerToBePrinted)ignite.cache(CACHE_NAME).get(KEY_OBJ);
         assertEquals(VAL, actual.data);
 
         assertNodeIndexesInFolder();// should not create any new style directories
@@ -148,15 +135,15 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
             cache.put("1", "2");
             cache.put(1, 2);
             cache.put(1L, 2L);
-            cache.put(DummyPersistenceCompatibilityTest.TestEnum.A, "Enum_As_Key");
-            cache.put("Enum_As_Value", DummyPersistenceCompatibilityTest.TestEnum.B);
-            cache.put(DummyPersistenceCompatibilityTest.TestEnum.C, DummyPersistenceCompatibilityTest.TestEnum.C);
+            cache.put(PersistenceBasicCompatibilityTest.TestEnum.A, "Enum_As_Key");
+            cache.put("Enum_As_Value", PersistenceBasicCompatibilityTest.TestEnum.B);
+            cache.put(PersistenceBasicCompatibilityTest.TestEnum.C, PersistenceBasicCompatibilityTest.TestEnum.C);
 
-            cache.put("Serializable", new DummyPersistenceCompatibilityTest.TestSerializable(42));
-            cache.put(new DummyPersistenceCompatibilityTest.TestSerializable(42), "Serializable_As_Key");
-            cache.put("Externalizable", new DummyPersistenceCompatibilityTest.TestExternalizable(42));
-            cache.put(new DummyPersistenceCompatibilityTest.TestExternalizable(42), "Externalizable_As_Key");
-            cache.put(KEY_OBJ, new DummyPersistenceCompatibilityTest.TestStringContainerToBePrinted(VAL));
+            cache.put("Serializable", new PersistenceBasicCompatibilityTest.TestSerializable(42));
+            cache.put(new PersistenceBasicCompatibilityTest.TestSerializable(42), "Serializable_As_Key");
+            cache.put("Externalizable", new PersistenceBasicCompatibilityTest.TestExternalizable(42));
+            cache.put(new PersistenceBasicCompatibilityTest.TestExternalizable(42), "Externalizable_As_Key");
+            cache.put(KEY_OBJ, new PersistenceBasicCompatibilityTest.TestStringContainerToBePrinted(VAL));
 
         }
     }
@@ -188,7 +175,7 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
         final MemoryConfiguration memCfg = new MemoryConfiguration();
         final MemoryPolicyConfiguration memPolCfg = new MemoryPolicyConfiguration();
 
-        memPolCfg.setMaxSize(32 * 1024 * 1024); // we don't need much memory for this test
+        memPolCfg.setMaxSize(32L * 1024 * 1024); // we don't need much memory for this test
         memCfg.setMemoryPolicies(memPolCfg);
         cfg.setMemoryConfiguration(memCfg);
     }

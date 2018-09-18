@@ -83,7 +83,6 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
 
         spi.setIpFinder(ipFinder);
 
-        c.setFailureDetectionTimeout(Integer.MAX_VALUE);
         c.setDiscoverySpi(spi);
 
         c.setCacheConfiguration(cc);
@@ -98,11 +97,6 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         for (int i = 0; i < GRID_CNT; i++)
             startGrid(i);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */

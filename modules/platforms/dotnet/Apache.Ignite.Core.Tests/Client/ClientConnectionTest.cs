@@ -18,14 +18,22 @@
 namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
+    using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Sockets;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Configuration;
+    using Apache.Ignite.Core.Impl.Client;
+    using Apache.Ignite.Core.Impl.Common;
     using NUnit.Framework;
 
     /// <summary>
@@ -33,6 +41,18 @@ namespace Apache.Ignite.Core.Tests.Client
     /// </summary>
     public class ClientConnectionTest
     {
+        /** Temp dir for WAL. */
+        private readonly string _tempDir = TestUtils.GetTempDirectoryName();
+
+        /// <summary>
+        /// Sets up the test.
+        /// </summary>
+        [SetUp]
+        public void SetUp()
+        {
+            TestUtils.ClearWorkDir();
+        }
+
         /// <summary>
         /// Test tear down.
         /// </summary>
@@ -40,6 +60,13 @@ namespace Apache.Ignite.Core.Tests.Client
         public void TearDown()
         {
             Ignition.StopAll(true);
+
+            if (Directory.Exists(_tempDir))
+            {
+                Directory.Delete(_tempDir, true);
+            }
+
+            TestUtils.ClearWorkDir();
         }
 
         /// <summary>
@@ -51,6 +78,107 @@ namespace Apache.Ignite.Core.Tests.Client
             var ex = Assert.Throws<AggregateException>(() => StartClient());
             var socketEx = ex.InnerExceptions.OfType<SocketException>().First();
             Assert.AreEqual(SocketError.ConnectionRefused, socketEx.SocketErrorCode);
+        }
+
+        /// <summary>
+        /// Tests that empty username or password are not allowed.
+        /// </summary>
+        [Test]
+        public void TestAuthenticationEmptyCredentials()
+        {
+            using (Ignition.Start(SecureServerConfig()))
+            {
+                var cliCfg = SecureClientConfig();
+
+                cliCfg.Password = null;
+                var ex = Assert.Throws<IgniteClientException>(() => { Ignition.StartClient(cliCfg); });
+                Assert.IsTrue(ex.Message.StartsWith("IgniteClientConfiguration.Password cannot be null"));
+
+                cliCfg.Password = "";
+                ex = Assert.Throws<IgniteClientException>(() => { Ignition.StartClient(cliCfg); });
+                Assert.IsTrue(ex.Message.StartsWith("IgniteClientConfiguration.Password cannot be empty"));
+
+                cliCfg.Password = "ignite";
+
+                cliCfg.UserName = null;
+                ex = Assert.Throws<IgniteClientException>(() => { Ignition.StartClient(cliCfg); });
+                Assert.IsTrue(ex.Message.StartsWith("IgniteClientConfiguration.UserName cannot be null"));
+
+                cliCfg.UserName = "";
+                ex = Assert.Throws<IgniteClientException>(() => { Ignition.StartClient(cliCfg); });
+                Assert.IsTrue(ex.Message.StartsWith("IgniteClientConfiguration.Username cannot be empty"));
+            }
+        }
+
+        /// <summary>
+        /// Test invalid username or password.
+        /// </summary>
+        [Test]
+        public void TestAuthenticationInvalidCredentials()
+        {
+            using (Ignition.Start(SecureServerConfig()))
+            {
+                var cliCfg = SecureClientConfig();
+
+                cliCfg.UserName = "invalid";
+
+                var ex = Assert.Throws<IgniteClientException>(() => { Ignition.StartClient(cliCfg); });
+                Assert.True(ex.StatusCode == ClientStatusCode.AuthenticationFailed);
+
+                cliCfg.UserName = "ignite";
+                cliCfg.Password = "invalid";
+
+                ex = Assert.Throws<IgniteClientException>(() => { Ignition.StartClient(cliCfg); });
+                Assert.True(ex.StatusCode == ClientStatusCode.AuthenticationFailed);
+            }
+        }
+
+        /// <summary>
+        /// Test authentication.
+        /// </summary>
+        [Test]
+        public void TestAuthentication()
+        {
+            using (var srv = Ignition.Start(SecureServerConfig()))
+            {
+                srv.GetCluster().SetActive(true);
+
+                using (var cli = Ignition.StartClient(SecureClientConfig()))
+                {
+                    CacheClientConfiguration ccfg = new CacheClientConfiguration()
+                    {
+                        Name = "TestCache",
+                        QueryEntities = new[]
+                        {
+                            new QueryEntity
+                            {
+                                KeyType = typeof(string),
+                                ValueType = typeof(string),
+                            },
+                        },
+                    };
+
+                    ICacheClient<string, string> cache = cli.GetOrCreateCache<string, string>(ccfg);
+
+                    cache.Put("key1", "val1");
+
+                    cache.Query(new SqlFieldsQuery("CREATE USER \"my_User\" WITH PASSWORD 'my_Password'")).GetAll();
+                }
+
+                var cliCfg = SecureClientConfig();
+
+                cliCfg.UserName = "my_User";
+                cliCfg.Password = "my_Password";
+
+                using (var cli = Ignition.StartClient(cliCfg))
+                {
+                    ICacheClient<string, string> cache = cli.GetCache<string, string>("TestCache");
+
+                    string val = cache.Get("key1");
+
+                    Assert.True(val == "val1");
+                }
+            }
         }
 
         /// <summary>
@@ -167,15 +295,13 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 // ReSharper disable once ObjectCreationAsStatement
                 var ex = Assert.Throws<IgniteClientException>(() =>
-                    new Impl.Client.ClientSocket(GetClientConfiguration(),
-                    new DnsEndPoint("localhost", ClientConnectorConfiguration.DefaultPort, AddressFamily.InterNetwork),
-                    null,
-                    new Impl.Client.ClientProtocolVersion(-1, -1, -1)));
+                    new ClientSocket(GetClientConfiguration(),
+                    new ClientProtocolVersion(-1, -1, -1)));
 
                 Assert.AreEqual(ClientStatusCode.Fail, ex.StatusCode);
 
-                Assert.AreEqual("Client handshake failed: 'Unsupported version.'. " +
-                                "Client version: -1.-1.-1. Server version: 1.0.0", ex.Message);
+                Assert.IsTrue(Regex.IsMatch(ex.Message, "Client handshake failed: 'Unsupported version.'. " +
+                                "Client version: -1.-1.-1. Server version: [0-9]+.[0-9]+.[0-9]+"));
             }
         }
 
@@ -215,7 +341,7 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 var ex = Assert.Throws<IgniteClientException>(() => Ignition.StartClient(clientCfg));
                 Assert.AreEqual("Client handshake failed: 'Thin client connection is not allowed, " +
-                                "see ClientConnectorConfiguration.thinClientEnabled.'.", 
+                                "see ClientConnectorConfiguration.thinClientEnabled.'.",
                                 ex.Message.Substring(0, 118));
             }
         }
@@ -229,7 +355,7 @@ namespace Apache.Ignite.Core.Tests.Client
             var evt = new ManualResetEventSlim();
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
 
-            var putGetTask = Task.Factory.StartNew(() =>
+            var putGetTask = TaskRunner.Run(() =>
             {
                 using (var client = StartClient())
                 {
@@ -354,10 +480,10 @@ namespace Apache.Ignite.Core.Tests.Client
                 var cache = client.GetOrCreateCache<int, int>("foo");
                 cache[1] = 1;
                 Assert.AreEqual(1, cache[1]);
-                
+
                 Thread.Sleep(90);
                 Assert.AreEqual(1, cache[1]);
-                
+
                 // Idle check frequency is 2 seconds.
                 Thread.Sleep(4000);
                 var ex = Assert.Catch(() => cache.Get(1));
@@ -536,8 +662,45 @@ namespace Apache.Ignite.Core.Tests.Client
 
                 ex = ex.InnerException;
             }
-            
+
             throw new Exception("SocketException not found.", origEx);
+        }
+
+        /// <summary>
+        /// Create server configuration with enabled authentication.
+        /// </summary>
+        /// <returns>Server configuration.</returns>
+        private IgniteConfiguration SecureServerConfig()
+        {
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                AuthenticationEnabled = true,
+                DataStorageConfiguration = new DataStorageConfiguration()
+                {
+                    StoragePath = Path.Combine(_tempDir, "Store"),
+                    WalPath = Path.Combine(_tempDir, "WalStore"),
+                    WalArchivePath = Path.Combine(_tempDir, "WalArchive"),
+                    DefaultDataRegionConfiguration = new DataRegionConfiguration()
+                    {
+                        Name = "default",
+                        PersistenceEnabled = true
+                    }
+                }
+            };
+        }
+
+        /// <summary>
+        /// Create client configuration with enabled authentication.
+        /// </summary>
+        /// <returns>Client configuration.</returns>
+        private static IgniteClientConfiguration SecureClientConfig()
+        {
+            return new IgniteClientConfiguration()
+            {
+                Host = "localhost",
+                UserName = "ignite",
+                Password = "ignite"
+            };
         }
     }
 }

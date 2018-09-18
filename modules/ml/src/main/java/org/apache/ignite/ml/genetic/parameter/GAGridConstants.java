@@ -21,7 +21,6 @@ package org.apache.ignite.ml.genetic.parameter;
  * GAGridConstants
  */
 public interface GAGridConstants {
-
     /** populationCache constant */
     public static final String POPULATION_CACHE = "populationCache";
 
@@ -29,9 +28,7 @@ public interface GAGridConstants {
     public static final String GENE_CACHE = "geneCache";
 
     /** Selection Method type **/
-    public static enum SELECTION_METHOD {
+    public enum SELECTION_METHOD {
         SELECTON_METHOD_ELETISM, SELECTION_METHOD_TRUNCATION
     }
-
-    ;
 }

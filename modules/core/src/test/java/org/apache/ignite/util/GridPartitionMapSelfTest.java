@@ -19,8 +19,11 @@ package org.apache.ignite.util;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -142,6 +145,96 @@ public class GridPartitionMapSelfTest extends GridCommonAbstractTest {
         GridPartitionStateMap cp2 = new GridPartitionStateMap(map2, true);
 
         assertEquals(1, cp2.size());
+    }
+
+    /**
+     * Tests that entries from {@link Iterator#next()} remain unaltered.
+     */
+    public void testIteratorNext() {
+        GridPartitionStateMap map = new GridPartitionStateMap();
+
+        initMap(map);
+
+        Iterator<Map.Entry<Integer, GridDhtPartitionState>> iter = map.entrySet().iterator();
+
+        for (int i = 0; i < map.size() + 1; i++)
+            assertTrue(iter.hasNext());
+
+        Map.Entry<Integer, GridDhtPartitionState> entry1 = iter.next();
+
+        for (int i = 0; i < map.size() + 1; i++)
+            assertTrue(iter.hasNext());
+
+        Map.Entry<Integer, GridDhtPartitionState> entry2 = iter.next();
+
+        iter.remove();
+
+        assertNotNull(entry1.getValue());
+        assertNotNull(entry2.getValue());
+
+        assertEquals(Integer.valueOf(0), entry1.getKey());
+        assertEquals(Integer.valueOf(1), entry2.getKey());
+
+        assertEquals(GridDhtPartitionState.MOVING, entry1.getValue());
+        assertEquals(GridDhtPartitionState.RENTING, entry2.getValue());
+    }
+
+    /**
+     * Tests {@link GridDhtPartitionState} compatibility with {@link TreeMap} on random operations.
+     */
+    public void testOnRandomOperations() {
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        Map<Integer, GridDhtPartitionState> treeMap = new TreeMap<>();
+        Map<Integer, GridDhtPartitionState> gridMap = new GridPartitionStateMap();
+
+        int statesNum = GridDhtPartitionState.values().length;
+
+        for (int i = 0; i < 10000; i++) {
+            Integer part = rnd.nextInt(65536);
+
+            GridDhtPartitionState state = GridDhtPartitionState.fromOrdinal(rnd.nextInt(statesNum));
+
+            int rndOperation = rnd.nextInt(9);
+
+            if (rndOperation <= 5) {
+                treeMap.put(part, state);
+                gridMap.put(part, state);
+            }
+            else if (rndOperation == 6) {
+                treeMap.remove(part);
+                gridMap.remove(part);
+            }
+            else if (!treeMap.isEmpty()) {
+                int n = rnd.nextInt(0, treeMap.size());
+
+                Iterator<Map.Entry<Integer, GridDhtPartitionState>> iter1 = treeMap.entrySet().iterator();
+                Iterator<Map.Entry<Integer, GridDhtPartitionState>> iter2 = gridMap.entrySet().iterator();
+
+                Map.Entry<Integer, GridDhtPartitionState> entry1 = iter1.next();
+                Map.Entry<Integer, GridDhtPartitionState> entry2 = iter2.next();
+
+                for (int j = 1; j <= n; j++) {
+                    entry1 = iter1.next();
+                    entry2 = iter2.next();
+
+                    assertEquals(entry1.getValue(), entry2.getValue());
+                }
+
+                if (rndOperation == 7) {
+                    entry1.setValue(state);
+                    entry2.setValue(state);
+                }
+                else {
+                    iter1.remove();
+                    iter2.remove();
+                }
+            }
+
+            assertEquals(treeMap.size(), gridMap.size());
+        }
+
+        assertEquals(treeMap, gridMap);
     }
 
     /** */

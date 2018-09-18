@@ -26,6 +26,7 @@ import org.apache.ignite.spark.IgniteDataFrameSettings._
 import org.apache.ignite.spark.impl.QueryHelper.{createTable, dropTable, ensureCreateTableOptions, saveTable}
 import org.apache.spark.sql.SaveMode.{Append, Overwrite}
 import org.apache.spark.sql.ignite.IgniteExternalCatalog.{IGNITE_PROTOCOL, OPTION_GRID}
+import org.apache.spark.sql.ignite.IgniteOptimization
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode}
 
@@ -176,11 +177,28 @@ class IgniteRelationProvider extends RelationProvider
       * @param sqlCtx SQL context.
       * @return Ignite SQL relation.
       */
-    private def createRelation(igniteCtx: IgniteContext, tblName: String, sqlCtx: SQLContext): BaseRelation =
+    private def createRelation(igniteCtx: IgniteContext, tblName: String, sqlCtx: SQLContext): BaseRelation = {
+        val optimizationDisabled =
+            sqlCtx.sparkSession.conf.get(OPTION_DISABLE_SPARK_SQL_OPTIMIZATION, "false").toBoolean
+
+        val experimentalMethods = sqlCtx.sparkSession.sessionState.experimentalMethods
+
+        if (optimizationDisabled) {
+            experimentalMethods.extraOptimizations = 
+                experimentalMethods.extraOptimizations.filter(_ != IgniteOptimization)
+        } 
+        else {
+            val optimizationExists = experimentalMethods.extraOptimizations.contains(IgniteOptimization)
+
+            if (!optimizationExists)
+                experimentalMethods.extraOptimizations = experimentalMethods.extraOptimizations :+ IgniteOptimization
+        }
+
         IgniteSQLRelation(
             igniteCtx,
             tblName,
             sqlCtx)
+    }
 
     /**
       * @param params Params.

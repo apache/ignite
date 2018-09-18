@@ -16,7 +16,7 @@
  */
 
 import { Selector } from 'testcafe';
-import { dropTestDB, insertTestUser, resolveUrl } from '../envtools';
+import { dropTestDB, insertTestUser, resolveUrl } from '../environment/envtools';
 import { createRegularUser } from '../roles';
 import { queriesNavButton, configureNavButton } from '../components/topNavigation';
 
@@ -35,11 +35,11 @@ fixture('Checking Ingite main menu')
         await dropTestDB();
     });
 
-test('Ingite main menu smoke test', async(t) => {
+test('Ignite main menu smoke test', async(t) => {
     await t
         .click(configureNavButton)
         .expect(Selector('title').innerText)
-        .eql('Basic Configuration – Apache Ignite Web Console');
+        .eql('Configuration – Apache Ignite Web Console');
 
     await t
         .click(queriesNavButton)

@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+
 export default class PageProfileController {
     static $inject = [
         '$rootScope', '$scope', '$http', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteFocus', 'IgniteConfirm', 'IgniteCountries', 'User'
@@ -28,43 +30,30 @@ export default class PageProfileController {
         this.ui = {};
 
         this.User.read()
-            .then((user) => this.ui.user = angular.copy(user));
+            .then((user) => this.ui.user = _.cloneDeep(user));
 
         this.ui.countries = this.Countries.getAll();
     }
 
-    toggleToken() {
-        this.ui.expandedToken = !this.ui.expandedToken;
-
-        if (!this.ui.expandedToken)
-            this.ui.user.token = this.$root.user.token;
+    onSecurityTokenPanelClose() {
+        this.ui.user.token = this.$root.user.token;
     }
 
     generateToken() {
-        this.Confirm.confirm('Are you sure you want to change security token?')
+        this.Confirm.confirm('Are you sure you want to change security token?<br>If you change the token you will need to restart the agent.')
             .then(() => this.ui.user.token = this.LegacyUtils.randomString(20));
     }
 
-    togglePassword() {
-        this.ui.expandedPassword = !this.ui.expandedPassword;
-
-        if (this.ui.expandedPassword)
-            this.Focus.move('profile_password');
-        else {
-            delete this.ui.user.password;
-            delete this.ui.user.confirm;
-        }
+    onPasswordPanelClose() {
+        delete this.ui.user.password;
+        delete this.ui.user.confirm;
     }
 
     saveUser() {
         return this.$http.post('/api/v1/profile/save', this.ui.user)
             .then(this.User.load)
             .then(() => {
-                if (this.ui.expandedPassword)
-                    this.togglePassword();
-
-                if (this.ui.expandedToken)
-                    this.toggleToken();
+                this.ui.expandedPassword = this.ui.expandedToken = false;
 
                 this.Messages.showInfo('Profile saved.');
 

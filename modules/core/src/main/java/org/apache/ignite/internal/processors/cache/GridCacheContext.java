@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Closeable;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
@@ -111,6 +112,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_READ_LOAD_BALANCING;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
@@ -816,7 +818,14 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if transactional.
      */
     public boolean transactional() {
-        return cacheCfg.getAtomicityMode() == TRANSACTIONAL;
+        return cacheCfg.getAtomicityMode() == TRANSACTIONAL || cacheCfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
+    }
+
+    /**
+     * @return {@code True} if transactional snapshot.
+     */
+    public boolean transactionalSnapshot() {
+        return cacheCfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
     }
 
     /**
@@ -1799,7 +1808,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     @Nullable public CacheObject toCacheObject(@Nullable Object obj) {
         assert validObjectForCache(obj) : obj;
 
-        return cacheObjects().toCacheObject(cacheObjCtx, obj, true);
+        return cacheObjects().toCacheObject(cacheObjCtx, obj, true, grp.isTopologyLocked());
     }
 
     /**
@@ -1841,6 +1850,10 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @throws IgniteCheckedException, If validation fails.
      */
     public void validateKeyAndValue(KeyCacheObject key, CacheObject val) throws IgniteCheckedException {
+        // No validation for removal.
+        if (val == null)
+            return;
+
         if (!isQueryEnabled())
             return;
 
@@ -2007,6 +2020,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         dataStructuresMgr = null;
         cacheObjCtx = null;
 
+        if (expiryPlc instanceof Closeable)
+            U.closeQuiet((Closeable)expiryPlc);
+
         mgrs.clear();
     }
 
@@ -2068,7 +2084,7 @@ public class GridCacheContext<K, V> implements Externalizable {
             topology().partitionState(localNodeId(), part) == OWNING :
             "result=" + result + ", persistenceEnabled=" + group().persistenceEnabled() +
                 ", partitionState=" + topology().partitionState(localNodeId(), part) +
-                ", replicated=" + isReplicated();
+                ", replicated=" + isReplicated() + ", part=" + part;
 
         return result;
     }
@@ -2103,6 +2119,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean readNoEntry(@Nullable IgniteCacheExpiryPolicy expiryPlc, boolean readers) {
         return !config().isOnheapCacheEnabled() && !readers && expiryPlc == null;
+    }
+
+    /**
+     * @return {@code True} if mvcc is enabled for cache.
+     */
+    public boolean mvccEnabled() {
+        return grp.mvccEnabled();
     }
 
     /**

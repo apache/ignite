@@ -502,6 +502,36 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
+    @Override public void clearStatistics(Collection<String> caches) {
+        guard();
+
+        try {
+            ctx.cache().clearStatistics(caches);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setTxTimeoutOnPartitionMapExchange(long timeout) {
+        guard();
+
+        try {
+            ctx.cache().setTxTimeoutOnPartitionMapExchange(timeout);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteCluster withAsync() {
         return new IgniteClusterAsyncImpl(this);
     }
@@ -795,7 +825,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return "IgniteCluster [igniteInstanceName=" + ctx.igniteInstanceName() + ']';
     }
 }

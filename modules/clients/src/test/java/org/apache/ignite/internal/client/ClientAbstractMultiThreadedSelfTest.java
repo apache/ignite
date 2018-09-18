@@ -232,11 +232,6 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         client = GridClientFactory.start(clientConfiguration());
     }

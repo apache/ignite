@@ -107,7 +107,6 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         spi.setIpFinder(ipFinder);
 
-        cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
         cfg.setDiscoverySpi(spi);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
@@ -149,13 +148,6 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         startGrids(GRID_CNT);
 
         awaitPartitionMapExchange();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        assert G.allGrids().isEmpty();
     }
 
     /** {@inheritDoc} */

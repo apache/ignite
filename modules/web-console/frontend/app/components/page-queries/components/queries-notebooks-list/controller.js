@@ -27,20 +27,20 @@ export class NotebooksListCtrl {
 
         this.rowsToShow = 8;
 
-        const notebookNameTemplate = `<div class="ui-grid-cell-contents notebook-name"><a ui-sref="base.sql.tabs.notebook({ noteId: row.entity._id })">{{ row.entity.name }}</a></div>`;
+        const notebookNameTemplate = `<div class="ui-grid-cell-contents notebook-name"><a ui-sref="base.sql.notebook({ noteId: row.entity._id })">{{ row.entity.name }}</a></div>`;
         const sqlQueryTemplate = `<div class="ui-grid-cell-contents">{{row.entity.sqlQueriesParagraphsLength}}</div>`;
         const scanQueryTemplate = `<div class="ui-grid-cell-contents">{{row.entity.scanQueriesPsaragraphsLength}}</div>`;
 
         const categories = [
             { name: 'Name', visible: true, enableHiding: false },
-            { name: 'SQL Query', visible: true, enableHiding: false },
-            { name: 'Scan Query', visible: true, enableHiding: false }
+            { name: 'SQL Queries', visible: true, enableHiding: false },
+            { name: 'Scan Queries', visible: true, enableHiding: false }
         ];
 
         const columnDefs = [
             { name: 'name', displayName: 'Notebook name', categoryDisplayName: 'Name', field: 'name', cellTemplate: notebookNameTemplate, pinnedLeft: true, filter: { placeholder: 'Filter by Name...' } },
-            { name: 'sqlQueryNum', displayName: 'SQL Query', categoryDisplayName: 'SQL Query', field: 'sqlQueriesParagraphsLength', cellTemplate: sqlQueryTemplate, enableSorting: true, type: 'number', minWidth: 150, width: 150, enableFiltering: false },
-            { name: 'scanQueryNum', displayName: 'Scan Query', categoryDisplayName: 'Scan Query', field: 'scanQueriesParagraphsLength', cellTemplate: scanQueryTemplate, enableSorting: true, type: 'number', minWidth: 150, width: 150, enableFiltering: false }
+            { name: 'sqlQueryNum', displayName: 'SQL Queries', categoryDisplayName: 'SQL Queries', field: 'sqlQueriesParagraphsLength', cellTemplate: sqlQueryTemplate, enableSorting: true, type: 'number', minWidth: 150, width: '10%', enableFiltering: false },
+            { name: 'scanQueryNum', displayName: 'Scan Queries', categoryDisplayName: 'Scan Queries', field: 'scanQueriesParagraphsLength', cellTemplate: scanQueryTemplate, enableSorting: true, type: 'number', minWidth: 150, width: '10%', enableFiltering: false }
         ];
 
         this.gridOptions = {
@@ -103,6 +103,8 @@ export class NotebooksListCtrl {
             this.IgniteMessages.showError(err);
 
         } finally {
+            this.$scope.$applyAsync();
+
             await this.IgniteLoading.finish('notebooksLoading');
         }
     }
@@ -126,7 +128,7 @@ export class NotebooksListCtrl {
 
     _checkActionsAllow() {
         // Dissallow clone and rename if more then one item is selectted.
-        const oneItemIsSelected  = this.gridApi.selection.getSelectedRows().length === 1;
+        const oneItemIsSelected  = this.gridApi.selection.legacyGetSelectedRows().length === 1;
         this.actionOptions[0].available = oneItemIsSelected;
         this.actionOptions[1].available = oneItemIsSelected;
     }
@@ -154,7 +156,7 @@ export class NotebooksListCtrl {
 
     async renameNotebok() {
         try {
-            const currentNotebook =  this.gridApi.selection.getSelectedRows()[0];
+            const currentNotebook =  this.gridApi.selection.legacyGetSelectedRows()[0];
             const newNotebookName =  await this.IgniteInput.input('Rename notebook', 'Notebook name', currentNotebook.name);
 
             if (this.getNotebooksNames().find((name) => newNotebookName === name))
@@ -174,7 +176,7 @@ export class NotebooksListCtrl {
 
     async cloneNotebook() {
         try {
-            const clonedNotebook = Object.assign({}, this.gridApi.selection.getSelectedRows()[0]);
+            const clonedNotebook = Object.assign({}, this.gridApi.selection.legacyGetSelectedRows()[0]);
             const newNotebookName = await this.IgniteInput.clone(clonedNotebook.name, this.getNotebooksNames());
 
             this.IgniteLoading.start('notebooksLoading');
@@ -201,7 +203,7 @@ export class NotebooksListCtrl {
     async deleteNotebooks() {
         try {
             this.IgniteLoading.start('notebooksLoading');
-            await this.IgniteNotebook.removeBatch(this.gridApi.selection.getSelectedRows());
+            await this.IgniteNotebook.removeBatch(this.gridApi.selection.legacyGetSelectedRows());
             await this.IgniteLoading.finish('notebooksLoading');
 
             this._loadAllNotebooks();

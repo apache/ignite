@@ -22,15 +22,11 @@ RUN apk --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/
 
 ENV CHROME_BIN /usr/bin/chromium-browser
 
-# Install frontend & backend apps.
-RUN mkdir -p /opt/web-console
-
-# Copy source.
-WORKDIR /opt/web-console
-COPY . ./frontend
-
-# Install node modules.
 WORKDIR /opt/web-console/frontend
-RUN npm install
+
+COPY ./package*.json ./
+RUN npm install --no-optional
+
+COPY . .
 
 ENTRYPOINT ["npm", "test"]

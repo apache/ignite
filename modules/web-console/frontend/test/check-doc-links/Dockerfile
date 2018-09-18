@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-FROM node:8.10-alpine
+FROM node:8-alpine
 
 # Install frontend & backend apps.
 RUN mkdir -p /opt/web-console
@@ -28,6 +28,4 @@ COPY . ./frontend
 WORKDIR /opt/web-console/frontend
 RUN npm install
 
-WORKDIR /opt/web-console/frontend/test/check-doc-links
-
-ENTRYPOINT ["node", "check-doc-links.js"]
+ENTRYPOINT ["node", "test/check-doc-links/check-doc-links.js"]

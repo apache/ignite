@@ -149,10 +149,6 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-
         System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
     }
 
@@ -321,9 +317,9 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     private void getInsideTxStopPrimary(Ignite ignite, String cacheName) throws Exception {
-        IgniteCache<Integer, Integer> txCache = ignite.cache(TX_CACHE1);
+        IgniteCache<Integer, Integer> txCache = ignite.cache(TX_CACHE1).withAllowAtomicOpsInTx();
 
-        IgniteCache<Integer, Integer> getCache = ignite.cache(cacheName);
+        IgniteCache<Integer, Integer> getCache = ignite.cache(cacheName).withAllowAtomicOpsInTx();
 
         final int NEW_NODE = SRVS + CLIENTS;
 
@@ -411,9 +407,9 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
 
                     Ignite ignite = ignite(node);
 
-                    IgniteCache<Integer, Integer> txCache1 = ignite.cache(TX_CACHE1);
-                    IgniteCache<Integer, Integer> txCache2 = ignite.cache(TX_CACHE2);
-                    IgniteCache<Integer, Integer> atomicCache = ignite.cache(ATOMIC_CACHE);
+                    IgniteCache<Integer, Integer> txCache1 = ignite.cache(TX_CACHE1).withAllowAtomicOpsInTx();
+                    IgniteCache<Integer, Integer> txCache2 = ignite.cache(TX_CACHE2).withAllowAtomicOpsInTx();
+                    IgniteCache<Integer, Integer> atomicCache = ignite.cache(ATOMIC_CACHE).withAllowAtomicOpsInTx();
 
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 

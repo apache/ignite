@@ -58,7 +58,7 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
         it("Should provide ability to query SQL table without explicit registration") {
             val res = igniteSession.sql("SELECT id, name FROM city").rdd
 
-            res.count should equal(3)
+            res.count should equal(4)
 
             val cities = res.collect.sortBy(_.getAs[JLong]("id"))
 
@@ -66,7 +66,8 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
                 Array(
                     (1, "Forest Hill"),
                     (2, "Denver"),
-                    (3, "St. Petersburg")
+                    (3, "St. Petersburg"),
+                    (4, "St. Petersburg")
                 )
             )
         }
@@ -136,7 +137,7 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
 
         createEmployeeCache(client, EMPLOYEE_CACHE_NAME)
 
-        val configProvider = enclose(null) (x ⇒ () ⇒ {
+        val configProvider = enclose(null) (_ ⇒ () ⇒ {
             val cfg = IgnitionEx.loadConfiguration(TEST_CONFIG_FILE).get1()
 
             cfg.setClientMode(true)

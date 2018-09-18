@@ -44,6 +44,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.thread.IgniteThread;
+import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
@@ -124,6 +125,8 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                 }
             }
         });
+
+        flusher.setUncaughtExceptionHandler(new OomExceptionHandler(ctx));
 
         flusher.start();
 

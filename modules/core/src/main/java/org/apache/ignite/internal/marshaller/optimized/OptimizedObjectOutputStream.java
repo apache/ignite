@@ -42,6 +42,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.GridHandleTable;
 import org.apache.ignite.internal.util.io.GridDataOutput;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerContext;
 
@@ -180,7 +181,8 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
         if (obj == null)
             writeByte(NULL);
         else {
-            if (obj instanceof Throwable && !(obj instanceof Externalizable)) {
+            if (obj instanceof Throwable && !(obj instanceof Externalizable) || U.isEnum(obj.getClass())) {
+                // Avoid problems with differing Enum objects or Enum implementation class deadlocks.
                 writeByte(JDK);
 
                 try {

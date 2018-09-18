@@ -206,15 +206,6 @@ public interface CacheQuery<T> {
     public CacheQuery<T> timeout(long timeout);
 
     /**
-     * Sets whether or not to keep all query results local. If not - only the current page
-     * is kept locally. Default value is {@code true}.
-     *
-     * @param keepAll Keep results or not.
-     * @return {@code this} query instance for chaining.
-     */
-    public CacheQuery<T> keepAll(boolean keepAll);
-
-    /**
      * Sets whether or not to include backup entries into query result. This flag
      * is {@code false} by default.
      *
@@ -245,10 +236,7 @@ public interface CacheQuery<T> {
      * Executes the query and returns the query future. Caller may decide to iterate
      * over the returned future directly in which case the iterator may block until
      * the next value will become available, or wait for the whole query to finish
-     * by calling any of the {@code 'get(..)'} methods on the returned future. If
-     * {@link #keepAll(boolean)} flag is set to {@code false}, then {@code 'get(..)'}
-     * methods will only return the last page received, otherwise all pages will be
-     * accumulated and returned to user as a collection.
+     * by calling any of the {@code 'get(..)'} methods on the returned future.
      * <p>
      * Note that if the passed in grid projection is a local node, then query
      * will be executed locally without distribution to other nodes.

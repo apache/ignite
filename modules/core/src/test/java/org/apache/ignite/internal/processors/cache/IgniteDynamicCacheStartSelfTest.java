@@ -138,13 +138,6 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * {@inheritDoc}
-     */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /**
      * @throws Exception If failed.
      */
     public void testStartStopCacheMultithreadedSameNode() throws Exception {

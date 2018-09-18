@@ -27,7 +27,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 /**
  *
  */
-public class PageEvictionDataStreamerTest extends PageEvictionMultinodeTest {
+public class PageEvictionDataStreamerTest extends PageEvictionMultinodeAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         return setEvictionMode(DataPageEvictionMode.RANDOM_LRU, super.getConfiguration(gridName));

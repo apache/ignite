@@ -31,13 +31,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.AffinityKey;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
@@ -98,10 +101,15 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
         startGridsMultiThreaded(3);
 
+        Map<String, Integer> orgPrecision = new HashMap<>();
+        
+        orgPrecision.put("name", 42);
+
         IgniteCache<String, Organization> orgCache = jcache(grid(0),
             cacheConfiguration(new QueryEntity(String.class.getName(), Organization.class.getName())
                 .addQueryField("id", Integer.class.getName(), null)
                 .addQueryField("name", String.class.getName(), null)
+                .setFieldsPrecision(orgPrecision)
                 .setIndexes(Arrays.asList(
                     new QueryIndex("id"),
                     new QueryIndex("name", false, "org_name_index")
@@ -135,6 +143,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         personCache.put(new AffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
         personCache.put(new AffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
 
+        IgniteCache<Integer, Department> departmentCache = jcache(grid(0), 
+            defaultCacheConfiguration().setIndexedTypes(Integer.class, Department.class), "dep");
+
         try (Connection conn = DriverManager.getConnection(URL)) {
             Statement stmt = conn.createStatement();
 
@@ -143,12 +154,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             stmt.execute("CREATE TABLE \"Quoted\" (\"Id\" INT primary key, \"Name\" VARCHAR(50)) WITH WRAP_KEY");
             stmt.execute("CREATE INDEX \"MyTestIndex quoted\" on \"Quoted\" (\"Id\" DESC)");
             stmt.execute("CREATE INDEX IDX ON TEST (ID ASC)");
+            stmt.execute("CREATE TABLE TEST_DECIMAL_COLUMN (ID INT primary key, DEC_COL DECIMAL(8, 3))");
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /**
@@ -243,8 +250,10 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             Set<String> expectedTbls = new HashSet<>(Arrays.asList(
                 "org.ORGANIZATION",
                 "pers.PERSON",
+                "dep.DEPARTMENT",
                 "PUBLIC.TEST",
-                "PUBLIC.Quoted"));
+                "PUBLIC.Quoted",
+                "PUBLIC.TEST_DECIMAL_COLUMN"));
 
             Set<String> actualTbls = new HashSet<>(expectedTbls.size());
 
@@ -381,24 +390,36 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             Set<String> expectedCols = new HashSet<>(Arrays.asList(
                 "org.ORGANIZATION.ID.null",
-                "org.ORGANIZATION.NAME.null",
+                "org.ORGANIZATION.NAME.null.42",
                 "pers.PERSON.ORGID.null",
                 "pers.PERSON.AGE.null",
                 "pers.PERSON.NAME.null",
+                "dep.DEPARTMENT.ID.null",
+                "dep.DEPARTMENT.NAME.null.43",
                 "PUBLIC.TEST.ID.null",
-                "PUBLIC.TEST.NAME.'default name'",
-                "PUBLIC.TEST.VAL.null",
+                "PUBLIC.TEST.NAME.'default name'.50",
+                "PUBLIC.TEST.VAL.null.50",
                 "PUBLIC.TEST.AGE.21",
                 "PUBLIC.Quoted.Id.null",
-                "PUBLIC.Quoted.Name.null"));
+                "PUBLIC.Quoted.Name.null.50",
+                "PUBLIC.TEST_DECIMAL_COLUMN.ID.null",
+                "PUBLIC.TEST_DECIMAL_COLUMN.DEC_COL.null.8.3"
+            ));
 
             Set<String> actualCols = new HashSet<>(expectedCols.size());
 
             while(rs.next()) {
+                int precision = rs.getInt("COLUMN_SIZE");
+
+                int scale = rs.getInt("DECIMAL_DIGITS");
+
                 actualCols.add(rs.getString("TABLE_SCHEM") + '.'
                     + rs.getString("TABLE_NAME") + "."
                     + rs.getString("COLUMN_NAME") + "."
-                    + rs.getString("COLUMN_DEF"));
+                    + rs.getString("COLUMN_DEF")
+                    + (precision == 0 ? "" : ("." + precision))
+                    + (scale == 0 ? "" : ("." + scale))
+                );
             }
 
             assert expectedCols.equals(actualCols) : "expectedCols=" + expectedCols +
@@ -530,9 +551,11 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             Set<String> expectedPks = new HashSet<>(Arrays.asList(
                 "org.ORGANIZATION.PK_org_ORGANIZATION._KEY",
                 "pers.PERSON.PK_pers_PERSON._KEY",
+                "dep.DEPARTMENT.PK_dep_DEPARTMENT._KEY",
                 "PUBLIC.TEST.PK_PUBLIC_TEST.ID",
                 "PUBLIC.TEST.PK_PUBLIC_TEST.NAME",
-                "PUBLIC.Quoted.PK_PUBLIC_Quoted.Id"));
+                "PUBLIC.Quoted.PK_PUBLIC_Quoted.Id",
+                "PUBLIC.TEST_DECIMAL_COLUMN.ID._KEY"));
 
             Set<String> actualPks = new HashSet<>(expectedPks.size());
 
@@ -579,7 +602,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(URL)) {
             ResultSet rs = conn.getMetaData().getSchemas();
 
-            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("PUBLIC", "pers", "org"));
+            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("PUBLIC", "pers", "org", "dep"));
 
             Set<String> schemas = new HashSet<>();
 
@@ -661,6 +684,29 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
          * @param name Name.
          */
         private Organization(int id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+    }
+
+    /**
+     * Organization.
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    private static class Department implements Serializable {
+        /** ID. */
+        @QuerySqlField
+        private final int id;
+
+        /** Name. */
+        @QuerySqlField(precision = 43)
+        private final String name;
+
+        /**
+         * @param id ID.
+         * @param name Name.
+         */
+        private Department(int id, String name) {
             this.id = id;
             this.name = name;
         }

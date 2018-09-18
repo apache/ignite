@@ -79,7 +79,7 @@ public class IgniteDaemonNodeMarshallerCacheTest extends GridCommonAbstractTest 
      * @param startFirst If {@code true} daemon node is started first.
      * @throws Exception If failed.
      */
-    public void marshalOnDaemonNode(boolean startFirst) throws Exception {
+    private void marshalOnDaemonNode(boolean startFirst) throws Exception {
         int nodeIdx = 0;
 
         if (!startFirst) {
@@ -92,6 +92,7 @@ public class IgniteDaemonNodeMarshallerCacheTest extends GridCommonAbstractTest 
 
         Ignite daemonNode = startGrid(nodeIdx++);
 
+        assertTrue(daemonNode.cluster().localNode().isDaemon());
         assertEquals("true", daemonNode.cluster().localNode().attribute(ATTR_DAEMON));
 
         daemon = false;

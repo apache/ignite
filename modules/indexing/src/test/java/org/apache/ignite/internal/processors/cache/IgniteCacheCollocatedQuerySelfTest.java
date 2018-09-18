@@ -97,11 +97,6 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         ignite(0).cache(DEFAULT_CACHE_NAME).removeAll();
     }

@@ -52,8 +52,11 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
      * @param fileIOFactoryStoreV1 File IO factory for V1 page store and for version checking.
      * @param memCfg Memory configuration.
      */
-    public FileVersionCheckingFactory(FileIOFactory fileIOFactory, FileIOFactory fileIOFactoryStoreV1,
-        DataStorageConfiguration memCfg) {
+    public FileVersionCheckingFactory(
+        FileIOFactory fileIOFactory,
+        FileIOFactory fileIOFactoryStoreV1,
+        DataStorageConfiguration memCfg
+    ) {
         this.fileIOFactory = fileIOFactory;
         this.fileIOFactoryStoreV1 = fileIOFactoryStoreV1;
         this.memCfg = memCfg;
@@ -83,8 +86,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
 
             ByteBuffer hdr = ByteBuffer.allocate(minHdr).order(ByteOrder.LITTLE_ENDIAN);
 
-            while (hdr.remaining() > 0)
-                fileIO.read(hdr);
+            fileIO.readFully(hdr);
 
             hdr.rewind();
 

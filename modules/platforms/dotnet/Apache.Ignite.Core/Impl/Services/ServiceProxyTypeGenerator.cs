@@ -19,8 +19,11 @@ namespace Apache.Ignite.Core.Impl.Services
 {
     using System;
     using System.Diagnostics;
+    using System.Linq;
+    using System.Linq.Expressions;
     using System.Reflection;
     using System.Reflection.Emit;
+    using Apache.Ignite.Core.Impl.Binary;
     using ProxyAction = System.Func<System.Reflection.MethodBase, object[], object>;
 
     /// <summary>
@@ -33,6 +36,26 @@ namespace Apache.Ignite.Core.Impl.Services
 
         /** */
         private static readonly MethodInfo InvokeMethod = ActionType.GetMethod("Invoke");
+
+        /** */
+        private static readonly MethodInfo Finalizer = typeof(object)
+            .GetMethod("Finalize", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        /** Classic .NET Method. */
+        private static readonly MethodInfo AppDomainDefineAssembly = typeof(AppDomain).GetMethod(
+            "DefineDynamicAssembly",
+            BindingFlags.Public | BindingFlags.Instance,
+            null,
+            new[] {typeof(AssemblyName), typeof(AssemblyBuilderAccess)},
+            null);
+
+        /** .NET Core Method. */
+        private static readonly MethodInfo AssemblyBuilderDefineAssembly = typeof(AssemblyBuilder).GetMethod(
+            "DefineDynamicAssembly",
+            BindingFlags.Public | BindingFlags.Static,
+            null,
+            new[] {typeof(AssemblyName), typeof(AssemblyBuilderAccess)},
+            null);
 
         /** */
         private static readonly ModuleBuilder ModuleBuilder = CreateModuleBuilder();
@@ -59,7 +82,12 @@ namespace Apache.Ignite.Core.Impl.Services
             GenerateStaticConstructor(buildContext);
             GenerateConstructor(buildContext);
 
-            buildContext.Methods = ServiceMethodHelper.GetVirtualMethods(buildContext.ServiceType);
+            Debug.Assert(Finalizer != null);
+
+            buildContext.Methods = ReflectionUtils.GetMethods(buildContext.ServiceType)
+                .Where(m => m.IsVirtual && m != Finalizer)
+                .ToArray();
+
             for (var i = 0; i < buildContext.Methods.Length; i++)
             {
                 GenerateMethod(buildContext, i);
@@ -76,15 +104,21 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             var name = Guid.NewGuid().ToString("N");
 
-#if !NETCOREAPP2_0
-            var assemblyBuilder =
-                AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(name),
-                    AssemblyBuilderAccess.RunAndCollect);
-#else
-            var assemblyBuilder =
-                AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(name),
-                    AssemblyBuilderAccess.RunAndCollect);
-#endif
+            var asmName = Expression.Constant(new AssemblyName(name));
+            var access = Expression.Constant(AssemblyBuilderAccess.RunAndCollect);
+            var domain = Expression.Constant(AppDomain.CurrentDomain);
+
+            // AppDomain.DefineDynamicAssembly is not available on .NET Core;
+            // AssemblyBuilder.DefineDynamicAssembly is not available on .NET 4.
+            // Both of them can not be called with Reflection.
+            // So we have to be creative and use expression trees.
+            var callExpr = AppDomainDefineAssembly != null
+                ? Expression.Call(domain, AppDomainDefineAssembly, asmName, access)
+                : Expression.Call(AssemblyBuilderDefineAssembly, asmName, access);
+
+            var callExprLambda = Expression.Lambda<Func<AssemblyBuilder>>(callExpr);
+
+            var assemblyBuilder = callExprLambda.Compile()();
 
             return assemblyBuilder.DefineDynamicModule(name);
         }
@@ -97,7 +131,7 @@ namespace Apache.Ignite.Core.Impl.Services
             // Static field - empty object array to optimize calls without parameters.
             buildContext.EmptyParametersField = buildContext.ProxyType.DefineField("_emptyParameters",
                 typeof(object[]), FieldAttributes.Static | FieldAttributes.Private | FieldAttributes.InitOnly);
-            
+
             // Instance field for function to invoke.
             buildContext.ActionField = buildContext.ProxyType.DefineField("_action", ActionType,
                 FieldAttributes.Private | FieldAttributes.InitOnly);
@@ -197,10 +231,10 @@ namespace Apache.Ignite.Core.Impl.Services
             // Load methods array field.
             gen.Emit(OpCodes.Ldarg_0);
             gen.Emit(OpCodes.Ldfld, buildContext.MethodsField);
-            
+
             // Load index of method.
             gen.Emit(OpCodes.Ldc_I4, methodIndex);
-            
+
             // Load array element.
             gen.Emit(OpCodes.Ldelem_Ref);
 
@@ -215,10 +249,10 @@ namespace Apache.Ignite.Core.Impl.Services
                 for (var i = 0; i < parameters.Length; i++)
                 {
                     gen.Emit(OpCodes.Dup);
-                    
+
                     // Parameter's index in array.
                     gen.Emit(OpCodes.Ldc_I4, i);
-                    
+
                     // Parameter's value.
                     gen.Emit(OpCodes.Ldarg, i + 1);
                     if (parameterTypes[i].IsValueType)

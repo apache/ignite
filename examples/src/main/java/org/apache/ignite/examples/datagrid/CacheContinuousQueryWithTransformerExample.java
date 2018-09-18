@@ -21,19 +21,16 @@ import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
 import javax.cache.Cache;
-import javax.cache.configuration.Factory;
-import javax.cache.configuration.FactoryBuilder;
-import javax.cache.event.CacheEntryEvent;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.examples.model.Address;
 import org.apache.ignite.examples.model.Organization;
 import org.apache.ignite.examples.model.OrganizationType;
-import org.apache.ignite.lang.IgniteClosure;
 
 /**
  * This example demonstrates how to use continuous queries together with the transformer APIs.
@@ -71,20 +68,17 @@ public class CacheContinuousQueryWithTransformerExample {
             System.out.println(">>> Cache continuous query with transformer example started.");
 
             // Auto-close cache at the end of the example.
-            try (IgniteCache<Integer, Organization> cache = ignite.getOrCreateCache(CACHE_NAME)) {
+            try (IgniteCache<Integer, Organization> cache = ignite.getOrCreateCache(CACHE_NAME).withKeepBinary()) {
                 // Create new continuous query with transformer.
                 ContinuousQueryWithTransformer<Integer, Organization, String> qry =
                     new ContinuousQueryWithTransformer<>();
 
                 // Factory to create transformers.
-                Factory<IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Organization>, String>> factory =
-                    FactoryBuilder.factoryOf(
-                        // Return one field of complex object.
-                        // Only this field will be sent over to a local node over the network.
-                        (IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Organization>, String>)
-                            event -> event.getValue().name());
-
-                qry.setRemoteTransformerFactory(factory);
+                qry.setRemoteTransformerFactory(() -> {
+                    // Return one field of complex object.
+                    // Only this field will be sent over to a local node over the network.
+                    return event -> ((BinaryObject)event.getValue()).field("name");
+                });
 
                 // Listener that will receive transformed data.
                 qry.setLocalListener(names -> {

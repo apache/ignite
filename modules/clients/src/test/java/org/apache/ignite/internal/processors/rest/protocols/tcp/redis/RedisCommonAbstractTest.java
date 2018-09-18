@@ -70,8 +70,6 @@ public class RedisCommonAbstractTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         pool.destroy();
     }
 

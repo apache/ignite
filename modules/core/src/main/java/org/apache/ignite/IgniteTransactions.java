@@ -17,6 +17,7 @@
 
 package org.apache.ignite;
 
+import java.util.Collection;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.transactions.Transaction;
@@ -103,4 +104,24 @@ public interface IgniteTransactions {
      * Resets transaction metrics.
      */
     public void resetMetrics();
+
+    /**
+     * Returns a list of active transactions initiated by this node.
+     * <p>
+     * Note: returned transaction handle will only support getters, {@link Transaction#close()},
+     * {@link Transaction#rollback()}, {@link Transaction#rollbackAsync()} methods.
+     * Trying to invoke other methods will lead to UnsupportedOperationException.
+     *
+     * @return Transactions started on local node.
+     */
+    public Collection<Transaction> localActiveTransactions();
+
+    /**
+     * Returns instance of Ignite Transactions to mark a transaction with a special label.
+     *
+     * @param lb label.
+     * @return {@code This} for chaining.
+     * @throws NullPointerException if label is null.
+     */
+    public IgniteTransactions withLabel(String lb);
 }

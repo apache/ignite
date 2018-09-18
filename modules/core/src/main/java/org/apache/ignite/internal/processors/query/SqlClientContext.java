@@ -20,10 +20,14 @@ package org.apache.ignite.internal.processors.query;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Container for connection properties passed by various drivers (JDBC drivers, possibly ODBC) having notion of an
@@ -53,6 +57,9 @@ public class SqlClientContext implements AutoCloseable {
     /** Skip reducer on update flag. */
     private final boolean skipReducerOnUpdate;
 
+    /** Monitor. */
+    private final Object mux = new Object();
+
     /** Allow overwrites for duplicate keys on streamed {@code INSERT}s. */
     private boolean streamAllowOverwrite;
 
@@ -65,14 +72,28 @@ public class SqlClientContext implements AutoCloseable {
     /** Auto flush frequency for streaming. */
     private long streamFlushTimeout;
 
+    /** Stream ordered. */
+    private boolean streamOrdered;
+
     /** Streamers for various caches. */
-    private Map<String, IgniteDataStreamer<?, ?>> streamers;
+    private volatile Map<String, IgniteDataStreamer<?, ?>> streamers;
+
+    /** Ordered batch thread. */
+    private IgniteThread orderedBatchThread;
+
+    /** Ordered batch worker factory. */
+    private Factory<GridWorker> orderedBatchWorkerFactory;
+
+    /** Count of the processed ordered batch requests. Used to wait end of processing all request before starts
+     * the processing the last request. */
+    private long totalProcessedOrderedReqs;
 
     /** Logger. */
     private final IgniteLogger log;
 
     /**
      * @param ctx Kernal context.
+     * @param orderedBatchWorkerFactory Ordered batch worker factory.
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce join order flag.
      * @param collocated Collocated flag.
@@ -80,9 +101,11 @@ public class SqlClientContext implements AutoCloseable {
      * @param lazy Lazy query execution flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
      */
-    public SqlClientContext(GridKernalContext ctx, boolean distributedJoins, boolean enforceJoinOrder,
+    public SqlClientContext(GridKernalContext ctx, Factory<GridWorker> orderedBatchWorkerFactory,
+        boolean distributedJoins, boolean enforceJoinOrder,
         boolean collocated, boolean replicatedOnly, boolean lazy, boolean skipReducerOnUpdate) {
         this.ctx = ctx;
+        this.orderedBatchWorkerFactory = orderedBatchWorkerFactory;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder = enforceJoinOrder;
         this.collocated = collocated;
@@ -100,37 +123,52 @@ public class SqlClientContext implements AutoCloseable {
      * @param flushFreq Flush frequency for streamers.
      * @param perNodeBufSize Per node streaming buffer size.
      * @param perNodeParOps Per node streaming parallel operations number.
+     * @param ordered Ordered stream flag.
      */
-    public void enableStreaming(boolean allowOverwrite, long flushFreq, int perNodeBufSize, int perNodeParOps) {
-        if (isStream())
-            return;
+    public void enableStreaming(boolean allowOverwrite, long flushFreq, int perNodeBufSize,
+        int perNodeParOps, boolean ordered) {
+        synchronized (mux) {
+            if (isStream())
+                return;
 
-        streamers = new HashMap<>();
+            streamers = new HashMap<>();
 
-        this.streamAllowOverwrite = allowOverwrite;
-        this.streamFlushTimeout = flushFreq;
-        this.streamNodeBufSize = perNodeBufSize;
-        this.streamNodeParOps = perNodeParOps;
+            this.streamAllowOverwrite = allowOverwrite;
+            this.streamFlushTimeout = flushFreq;
+            this.streamNodeBufSize = perNodeBufSize;
+            this.streamNodeParOps = perNodeParOps;
+            this.streamOrdered = ordered;
+
+            if (ordered) {
+                orderedBatchThread = new IgniteThread(orderedBatchWorkerFactory.create());
+
+                orderedBatchThread.start();
+            }
+        }
     }
 
     /**
      * Turn off streaming on this client context - with closing all open streamers, if any.
      */
     public void disableStreaming() {
-        if (!isStream())
-            return;
+        synchronized (mux) {
+            if (!isStream())
+                return;
 
-        Iterator<IgniteDataStreamer<?, ?>> it = streamers.values().iterator();
+            Iterator<IgniteDataStreamer<?, ?>> it = streamers.values().iterator();
 
-        while (it.hasNext()) {
-            IgniteDataStreamer<?, ?> streamer = it.next();
+            while (it.hasNext()) {
+                IgniteDataStreamer<?, ?> streamer = it.next();
 
-            U.close(streamer, log);
+                U.close(streamer, log);
 
-            it.remove();
+                it.remove();
+            }
+
+            streamers = null;
+
+            orderedBatchThread = null;
         }
-
-        streamers = null;
     }
 
     /**
@@ -179,7 +217,18 @@ public class SqlClientContext implements AutoCloseable {
      * @return Streaming state flag (on or off).
      */
     public boolean isStream() {
-        return streamers != null;
+        synchronized (mux) {
+            return streamers != null;
+        }
+    }
+
+    /**
+     * @return Stream ordered flag.
+     */
+    public boolean isStreamOrdered() {
+        synchronized (mux) {
+            return streamOrdered;
+        }
     }
 
     /**
@@ -187,29 +236,59 @@ public class SqlClientContext implements AutoCloseable {
      * @return Streamer for given cache.
      */
     public IgniteDataStreamer<?, ?> streamerForCache(String cacheName) {
-        if (streamers == null)
-            return null;
+        synchronized (mux) {
+            if (streamers == null)
+                return null;
 
-        IgniteDataStreamer<?, ?> res = streamers.get(cacheName);
+            IgniteDataStreamer<?, ?> res = streamers.get(cacheName);
 
-        if (res != null)
+            if (res != null)
+                return res;
+
+            res = ctx.grid().dataStreamer(cacheName);
+
+            res.autoFlushFrequency(streamFlushTimeout);
+
+            res.allowOverwrite(streamAllowOverwrite);
+
+            if (streamNodeBufSize > 0)
+                res.perNodeBufferSize(streamNodeBufSize);
+
+            if (streamNodeParOps > 0)
+                res.perNodeParallelOperations(streamNodeParOps);
+
+            streamers.put(cacheName, res);
+
             return res;
+        }
+    }
 
-        res = ctx.grid().dataStreamer(cacheName);
+    /**
+     * Waits when total processed ordered requests count  to be equal to specified value.
+     * @param total Expected total processed request.
+     */
+    public void waitTotalProcessedOrderedRequests(long total) {
+        synchronized (mux) {
+            while (totalProcessedOrderedReqs < total) {
+                try {
+                    mux.wait();
+                }
+                catch (InterruptedException e) {
+                    throw new IgniteException("Waiting for end of processing the last batch is interrupted", e);
+                }
+            }
+        }
+    }
 
-        res.autoFlushFrequency(streamFlushTimeout);
+    /**
+     *
+     */
+    public void orderedRequestProcessed() {
+        synchronized (mux) {
+            totalProcessedOrderedReqs++;
 
-        res.allowOverwrite(streamAllowOverwrite);
-
-        if (streamNodeBufSize > 0)
-            res.perNodeBufferSize(streamNodeBufSize);
-
-        if (streamNodeParOps > 0)
-            res.perNodeParallelOperations(streamNodeParOps);
-
-        streamers.put(cacheName, res);
-
-        return res;
+            mux.notify();
+        }
     }
 
     /** {@inheritDoc} */

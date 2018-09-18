@@ -29,6 +29,7 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.SimpleDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -114,13 +116,21 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     private final Marshaller marshaller = new JdkMarshaller();
 
     /** */
-    public MetaStorage(GridCacheSharedContext cctx, DataRegion dataRegion, DataRegionMetricsImpl regionMetrics,
-        boolean readOnly) {
+    private final FailureProcessor failureProcessor;
+
+    /** */
+    public MetaStorage(
+        GridCacheSharedContext cctx,
+        DataRegion dataRegion,
+        DataRegionMetricsImpl regionMetrics,
+        boolean readOnly
+    ) {
         wal = cctx.wal();
         this.dataRegion = dataRegion;
         this.regionMetrics = regionMetrics;
         this.readOnly = readOnly;
         log = cctx.logger(getClass());
+        this.failureProcessor = cctx.kernalContext().failure();
     }
 
     /** */
@@ -140,7 +150,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
             MetastorageRowStore rowStore = new MetastorageRowStore(freeList, db);
 
             tree = new MetastorageTree(METASTORAGE_CACHE_ID, dataRegion.pageMemory(), wal, rmvId,
-                freeList, rowStore, treeRoot.pageId().pageId(), treeRoot.isAllocated());
+                freeList, rowStore, treeRoot.pageId().pageId(), treeRoot.isAllocated(), failureProcessor);
 
             if (!readOnly)
                 ((GridCacheDatabaseSharedManager)db).addCheckpointListener(this);
@@ -293,6 +303,17 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     }
 
     /** */
+    private void checkRootsPageIdFlag(long treeRoot, long reuseListRoot) throws StorageException {
+        if (PageIdUtils.flag(treeRoot) != PageMemory.FLAG_DATA)
+            throw new StorageException("Wrong tree root page id flag: treeRoot="
+                + U.hexLong(treeRoot) + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID);
+
+        if (PageIdUtils.flag(reuseListRoot) != PageMemory.FLAG_DATA)
+            throw new StorageException("Wrong reuse list root page id flag: reuseListRoot="
+                + U.hexLong(reuseListRoot) + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID);
+    }
+
+    /** */
     private void getOrAllocateMetas() throws IgniteCheckedException {
         PageMemoryEx pageMem = (PageMemoryEx)dataRegion.pageMemory();
 
@@ -313,8 +334,13 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
                     PagePartitionMetaIO io = PageIO.getPageIO(pageAddr);
 
-                    treeRoot = new RootPage(new FullPageId(io.getTreeRoot(pageAddr), METASTORAGE_CACHE_ID), false);
-                    reuseListRoot = new RootPage(new FullPageId(io.getReuseListRoot(pageAddr), METASTORAGE_CACHE_ID), false);
+                    long treeRoot = io.getTreeRoot(pageAddr);
+                    long reuseListRoot = io.getReuseListRoot(pageAddr);
+
+                    checkRootsPageIdFlag(treeRoot, reuseListRoot);
+
+                    this.treeRoot = new RootPage(new FullPageId(treeRoot, METASTORAGE_CACHE_ID), false);
+                    this.reuseListRoot = new RootPage(new FullPageId(reuseListRoot, METASTORAGE_CACHE_ID), false);
 
                     rmvId.set(io.getGlobalRemoveId(pageAddr));
                 }
@@ -364,10 +390,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
                         rmvId.set(io.getGlobalRemoveId(pageAddr));
 
-                        assert PageIdUtils.flag(treeRoot) == PageMemory.FLAG_DATA :
-                            U.hexLong(treeRoot) + ", part=" + partId + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID;
-                        assert PageIdUtils.flag(reuseListRoot) == PageMemory.FLAG_DATA :
-                            U.hexLong(reuseListRoot) + ", part=" + partId + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID;
+                        checkRootsPageIdFlag(treeRoot, reuseListRoot);
                     }
 
                     this.treeRoot = new RootPage(new FullPageId(treeRoot, METASTORAGE_CACHE_ID), allocated);

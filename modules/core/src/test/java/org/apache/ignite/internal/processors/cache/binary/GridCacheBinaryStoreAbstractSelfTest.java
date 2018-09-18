@@ -99,11 +99,6 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         STORE.map().clear();
 
