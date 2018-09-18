@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteOf
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteOnlineNodeOutOfBaselineFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsRebalancingOnNotStableTopologyTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsReserveWalSegmentsTest;
-import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsTransactionsHangTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWholeClusterRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.SlowHistoricalRebalanceSmallHistoryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.IgniteCheckpointDirtyPagesForLowLoadTest;
@@ -53,13 +52,16 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalF
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalHistoryReservationsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalIteratorExceptionDuringReadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalIteratorSwitchSegmentTest;
-import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRecoverySeveralRestartsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalSerializerVersionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalCompactionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalDeletionArchiveFsyncTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalDeletionArchiveLogOnlyTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteDataIntegrityTests;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteFsyncReplayWalIteratorInvalidCrcTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteReplayWalIteratorInvalidCrcTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteStandaloneWalIteratorInvalidCrcTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.reader.IgniteWalReaderTest;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneWalRecordsIteratorTest;
 
 /**
  *
@@ -73,6 +75,9 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         // Integrity test.
         suite.addTestSuite(IgniteDataIntegrityTests.class);
+        suite.addTestSuite(IgniteStandaloneWalIteratorInvalidCrcTest.class);
+        suite.addTestSuite(IgniteReplayWalIteratorInvalidCrcTest.class);
+        suite.addTestSuite(IgniteFsyncReplayWalIteratorInvalidCrcTest.class);
 
         addRealPageStoreTests(suite);
 
@@ -89,7 +94,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
     }
 
     /**
-     * Fills {@code suite} with PDS test subset, which operates with real page store, but requires long time to execute.
+     * Fills {@code suite} with PDS test subset, which operates with real page store, but requires long time to
+     * execute.
      *
      * @param suite suite to add tests into.
      */
@@ -170,6 +176,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteWalIteratorExceptionDuringReadTest.class);
 
         suite.addTestSuite(IgniteNodeStoppedDuringDisableWALTest.class);
+
+        suite.addTestSuite(StandaloneWalRecordsIteratorTest.class);
 
         //suite.addTestSuite(IgniteWalRecoverySeveralRestartsTest.class);
 

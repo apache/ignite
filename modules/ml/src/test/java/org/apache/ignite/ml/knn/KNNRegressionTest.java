@@ -35,6 +35,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static junit.framework.TestCase.assertEquals;
+
 /**
  * Tests for {@link KNNRegressionTrainer}.
  */
@@ -134,5 +136,43 @@ public class KNNRegressionTest {
         Assert.assertTrue(knnMdl.toString().contains(stgy.name()));
         Assert.assertTrue(knnMdl.toString(true).contains(stgy.name()));
         Assert.assertTrue(knnMdl.toString(false).contains(stgy.name()));
+    }
+
+    /** */
+    @Test
+    public void testUpdate() {
+        Map<Integer, double[]> data = new HashMap<>();
+        data.put(0, new double[] {11.0, 0, 0, 0, 0, 0});
+        data.put(1, new double[] {12.0, 2.0, 0, 0, 0, 0});
+        data.put(2, new double[] {13.0, 0, 3.0, 0, 0, 0});
+        data.put(3, new double[] {14.0, 0, 0, 4.0, 0, 0});
+        data.put(4, new double[] {15.0, 0, 0, 0, 5.0, 0});
+        data.put(5, new double[] {16.0, 0, 0, 0, 0, 6.0});
+
+        KNNRegressionTrainer trainer = new KNNRegressionTrainer();
+
+        KNNRegressionModel originalMdl = (KNNRegressionModel) trainer.fit(
+            new LocalDatasetBuilder<>(data, parts),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+            (k, v) -> v[0]
+        ).withK(1)
+            .withDistanceMeasure(new EuclideanDistance())
+            .withStrategy(NNStrategy.SIMPLE);
+
+        KNNRegressionModel updatedOnSameDataset = trainer.update(originalMdl,
+            data, parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
+            (k, v) -> v[2]
+        );
+
+        KNNRegressionModel updatedOnEmptyDataset = trainer.update(originalMdl,
+            new HashMap<Integer, double[]>(), parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
+            (k, v) -> v[2]
+        );
+
+        Vector vector = new DenseVector(new double[] {0, 0, 0, 5.0, 0.0});
+        assertEquals(originalMdl.apply(vector), updatedOnSameDataset.apply(vector));
+        assertEquals(originalMdl.apply(vector), updatedOnEmptyDataset.apply(vector));
     }
 }

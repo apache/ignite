@@ -22,7 +22,7 @@ include /app/helpers/jade/mixins
 panel-collapsible(opened=`::true` ng-form=form)
     panel-title General
     panel-description
-        | Common cache configuration. 
+        | Common cache configuration.
         a.link-success(href="https://apacheignite.readme.io/docs/data-grid" target="_blank") More info
     panel-content.pca-form-row
         .pca-form-column-6.pc-form-grid-row
@@ -38,7 +38,7 @@ panel-collapsible(opened=`::true` ng-form=form)
                     ignite-unique-property='name'
                     ignite-unique-skip=`["_id", ${model}]`
                 )
-                    +unique-feedback(`${model}.name`, 'Cache name should be unique')
+                    +form-field__error({ error: 'igniteUnique', message: 'Cache name should be unique' })
             .pc-form-grid-col-60
                 +form-field__dropdown({
                     label: 'Domain models:',
@@ -51,63 +51,102 @@ panel-collapsible(opened=`::true` ng-form=form)
                     tip: 'Select domain models to describe types in cache'
                 })
             .pc-form-grid-col-60(ng-if='$ctrl.available("2.1.0")')
-                +text('Group:', `${model}.groupName`, '"groupName"', 'false', 'Input group name',
-                    'Cache group name.<br/>\
-                    Caches with the same group name share single underlying "physical" cache (partition set), but are logically isolated.')
+                +form-field__text({
+                    label: 'Group:',
+                    model: `${model}.groupName`,
+                    name: '"groupName"',
+                    placeholder: 'Input group name',
+                    tip: 'Cache group name.<br/>\
+                          Caches with the same group name share single underlying "physical" cache (partition set), but are logically isolated.'
+                })
             .pc-form-grid-col-30
-                +cacheMode('Mode:', `${model}.cacheMode`, '"cacheMode"', 'PARTITIONED')
+                +form-field__cache-modes({
+                    label: 'Mode:',
+                    model: `${model}.cacheMode`,
+                    name: '"cacheMode"',
+                    placeholder: 'PARTITIONED'
+                })
 
             .pc-form-grid-col-30
-                +dropdown('Atomicity:', `${model}.atomicityMode`, '"atomicityMode"', 'true', 'ATOMIC',
-                    '[\
-                        {value: "ATOMIC", label: "ATOMIC"},\
-                        {value: "TRANSACTIONAL", label: "TRANSACTIONAL"}\
-                    ]',
-                    'Atomicity:\
-                    <ul>\
-                        <li>ATOMIC - in this mode distributed transactions and distributed locking are not supported</li>\
-                        <li>TRANSACTIONAL - in this mode specified fully ACID-compliant transactional cache behavior</li>\
-                    </ul>')
+                +form-field__dropdown({
+                    label: 'Atomicity:',
+                    model: `${model}.atomicityMode`,
+                    name: '"atomicityMode"',
+                    placeholder: 'ATOMIC',
+                    options: '[\
+                                            {value: "ATOMIC", label: "ATOMIC"},\
+                                            {value: "TRANSACTIONAL", label: "TRANSACTIONAL"}\
+                                        ]',
+                    tip: 'Atomicity:\
+                                        <ul>\
+                                            <li>ATOMIC - in this mode distributed transactions and distributed locking are not supported</li>\
+                                            <li>TRANSACTIONAL - in this mode specified fully ACID-compliant transactional cache behavior</li>\
+                                        </ul>'
+                })
             .pc-form-grid-col-30(ng-is=`${model}.cacheMode === 'PARTITIONED'`)
-                +number('Backups:', `${model}.backups`, '"backups"', 'true', '0', '0', 'Number of nodes used to back up single partition for partitioned cache')
+                +form-field__number({
+                    label: 'Backups:',
+                    model: `${model}.backups`,
+                    name: '"checkpointS3ClientExecutionTimeout"',
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Number of nodes used to back up single partition for partitioned cache'
+                })
             //- Since ignite 2.0
             .pc-form-grid-col-30(ng-if='$ctrl.available("2.0.0")')
-                +dropdown('Partition loss policy:', `${model}.partitionLossPolicy`, '"partitionLossPolicy"', 'true', 'IGNORE',
-                '[\
-                    {value: "READ_ONLY_SAFE", label: "READ_ONLY_SAFE"},\
-                    {value: "READ_ONLY_ALL", label: "READ_ONLY_ALL"},\
-                    {value: "READ_WRITE_SAFE", label: "READ_WRITE_SAFE"},\
-                    {value: "READ_WRITE_ALL", label: "READ_WRITE_ALL"},\
-                    {value: "IGNORE", label: "IGNORE"}\
-                ]',
-                'Partition loss policies:\
-                <ul>\
-                    <li>READ_ONLY_SAFE - in this mode all writes to the cache will be failed with an exception,\
-                        reads will only be allowed for keys in  non-lost partitions.\
-                        Reads from lost partitions will be failed with an exception.</li>\
-                    <li>READ_ONLY_ALL - in this mode all writes to the cache will be failed with an exception.\
-                        All reads will proceed as if all partitions were in a consistent state.\
-                        The result of reading from a lost partition is undefined and may be different on different nodes in the cluster.</li>\
-                    <li>READ_WRITE_SAFE - in this mode all reads and writes will be allowed for keys in valid partitions.\
-                        All reads and writes for keys in lost partitions will be failed with an exception.</li>\
-                    <li>READ_WRITE_ALL - in this mode all reads and writes will proceed as if all partitions were in a consistent state.\
-                        The result of reading from a lost partition is undefined and may be different on different nodes in the cluster.</li>\
-                    <li>IGNORE - in this mode if partition is lost, reset it state and do not clear intermediate data.\
-                        The result of reading from a previously lost and not cleared partition is undefined and may be different\
-                        on different nodes in the cluster.</li>\
-                </ul>')
+                +form-field__dropdown({
+                    label:'Partition loss policy:',
+                    model: `${model}.partitionLossPolicy`,
+                    name: '"partitionLossPolicy"',
+                    placeholder: 'IGNORE',
+                    options: '[\
+                                        {value: "READ_ONLY_SAFE", label: "READ_ONLY_SAFE"},\
+                                        {value: "READ_ONLY_ALL", label: "READ_ONLY_ALL"},\
+                                        {value: "READ_WRITE_SAFE", label: "READ_WRITE_SAFE"},\
+                                        {value: "READ_WRITE_ALL", label: "READ_WRITE_ALL"},\
+                                        {value: "IGNORE", label: "IGNORE"}\
+                                    ]',
+                    tip: 'Partition loss policies:\
+                                    <ul>\
+                                        <li>READ_ONLY_SAFE - in this mode all writes to the cache will be failed with an exception,\
+                                            reads will only be allowed for keys in  non-lost partitions.\
+                                            Reads from lost partitions will be failed with an exception.</li>\
+                                        <li>READ_ONLY_ALL - in this mode all writes to the cache will be failed with an exception.\
+                                            All reads will proceed as if all partitions were in a consistent state.\
+                                            The result of reading from a lost partition is undefined and may be different on different nodes in the cluster.</li>\
+                                        <li>READ_WRITE_SAFE - in this mode all reads and writes will be allowed for keys in valid partitions.\
+                                            All reads and writes for keys in lost partitions will be failed with an exception.</li>\
+                                        <li>READ_WRITE_ALL - in this mode all reads and writes will proceed as if all partitions were in a consistent state.\
+                                            The result of reading from a lost partition is undefined and may be different on different nodes in the cluster.</li>\
+                                        <li>IGNORE - in this mode if partition is lost, reset it state and do not clear intermediate data.\
+                                            The result of reading from a previously lost and not cleared partition is undefined and may be different\
+                                            on different nodes in the cluster.</li>\
+                                    </ul>'
+                })
             .pc-form-grid-col-60(ng-show=`${model}.cacheMode === 'PARTITIONED' && ${model}.backups`)
-                +checkbox('Read from backup', `${model}.readFromBackup`, '"readFromBackup"',
-                    'Flag indicating whether data can be read from backup<br/>\
-                    If not set then always get data from primary node (never from backup)')
+                +form-field__checkbox({
+                    label: 'Read from backup',
+                    model: `${model}.readFromBackup`,
+                    name: '"readFromBackup"',
+                    tip: 'Flag indicating whether data can be read from backup<br/>\
+                          If not set then always get data from primary node (never from backup)'
+                })
             .pc-form-grid-col-60
-                +checkbox('Copy on read', `${model}.copyOnRead`, '"copyOnRead"',
-                    'Flag indicating whether copy of the value stored in cache should be created for cache operation implying return value<br/>\
-                    Also if this flag is set copies are created for values passed to CacheInterceptor and to CacheEntryProcessor')
+                +form-field__checkbox({
+                    label: 'Copy on read',
+                    model: `${model}.copyOnRead`,
+                    name: '"copyOnRead"',
+                    tip: 'Flag indicating whether copy of the value stored in cache should be created for cache operation implying return value<br/>\
+                          Also if this flag is set copies are created for values passed to CacheInterceptor and to CacheEntryProcessor'
+                })
             .pc-form-grid-col-60(ng-show=`${model}.cacheMode === 'PARTITIONED' && ${model}.atomicityMode === 'TRANSACTIONAL'`)
-                +checkbox('Invalidate near cache', `${model}.isInvalidate`, '"isInvalidate"',
-                    'Invalidation flag for near cache entries in transaction<br/>\
-                    If set then values will be invalidated (nullified) upon commit in near cache')
+                +form-field__checkbox({
+                    label: 'Invalidate near cache',
+                    model: `${model}.isInvalidate`,
+                    name: '"isInvalidate"',
+                    tip: 'Invalidation flag for near cache entries in transaction<br/>\
+                          If set then values will be invalidated (nullified) upon commit in near cache'
+                })
 
         .pca-form-column-6
             +preview-xml-java(model, 'cacheGeneral')

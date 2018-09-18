@@ -20,6 +20,8 @@ import angular from 'angular';
 import DEMO_INFO from 'app/data/demo-info.json';
 import templateUrl from 'views/templates/demo-info.tpl.pug';
 
+const DEMO_QUERY_STATE = {state: 'base.sql.notebook', params: {noteId: 'demo'}};
+
 angular
 .module('ignite-console.demo', [
     'ignite-console.socket'
@@ -34,7 +36,7 @@ angular
         .state('demo.resume', {
             url: '/resume',
             permission: 'demo',
-            redirectTo: 'default-state',
+            redirectTo: DEMO_QUERY_STATE,
             unsaved: true,
             tfMetaTags: {
                 title: 'Demo resume'
@@ -47,11 +49,11 @@ angular
                 const $http = trans.injector().get('$http');
 
                 return $http.post('/api/v1/demo/reset')
-                    .then(() => 'default-state')
+                    .then(() => DEMO_QUERY_STATE)
                     .catch((err) => {
                         trans.injector().get('IgniteMessages').showError(err);
 
-                        return 'default-state';
+                        return DEMO_QUERY_STATE;
                     });
             },
             unsaved: true,
@@ -138,25 +140,12 @@ angular
         backdrop: 'static'
     });
 
+    scope.downloadAgentHref = '/api/v1/downloads/agent';
+
     scope.close = () => {
         dialog.hide();
 
         closePromise && closePromise.resolve();
-    };
-
-    scope.downloadAgent = () => {
-        const lnk = document.createElement('a');
-
-        lnk.setAttribute('href', '/api/v1/agent/downloads/agent');
-        lnk.setAttribute('target', '_self');
-        lnk.setAttribute('download', null);
-        lnk.style.display = 'none';
-
-        document.body.appendChild(lnk);
-
-        lnk.click();
-
-        document.body.removeChild(lnk);
     };
 
     return {

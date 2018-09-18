@@ -69,8 +69,8 @@ public class Step_6_KNN {
 
                     IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
                         .withEncoderType(EncoderType.STRING_ENCODER)
-                        .encodeFeature(1)
-                        .encodeFeature(6) // <--- Changed index here.
+                        .withEncodedFeature(1)
+                        .withEncodedFeature(6) // <--- Changed index here.
                         .fit(ignite,
                             dataCache,
                             featureExtractor

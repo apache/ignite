@@ -104,7 +104,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
 
                 boolean autoCommit = true;
 
-                if (ver.compareTo(OdbcConnectionContext.VER_2_5_0) >= 0)
+                if (ver.compareTo(OdbcConnectionContext.VER_2_7_0) >= 0)
                     autoCommit = reader.readBoolean();
 
                 res = new OdbcQueryExecuteRequest(schema, sql, params, timeout, autoCommit);
@@ -131,7 +131,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
 
                 boolean autoCommit = true;
 
-                if (ver.compareTo(OdbcConnectionContext.VER_2_5_0) >= 0)
+                if (ver.compareTo(OdbcConnectionContext.VER_2_7_0) >= 0)
                     autoCommit = reader.readBoolean();
 
                 res = new OdbcQueryExecuteBatchRequest(schema, sql, last, params, timeout, autoCommit);

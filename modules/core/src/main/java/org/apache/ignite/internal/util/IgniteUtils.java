@@ -4020,6 +4020,22 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Closes given resource suppressing possible checked exception.
+     *
+     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
+     * @param e Suppressor exception
+     */
+    public static void closeWithSuppressingException(@Nullable AutoCloseable rsrc, @NotNull Exception e) {
+        if (rsrc != null)
+            try {
+                rsrc.close();
+            }
+            catch (Exception suppressed) {
+               e.addSuppressed(suppressed);
+            }
+    }
+
+    /**
      * Quietly closes given resource ignoring possible checked exception.
      *
      * @param rsrc Resource to close. If it's {@code null} - it's no-op.

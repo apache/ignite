@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TreeMap;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
@@ -101,5 +102,13 @@ public class SVMLinearMultiClassClassificationModel implements Model<Vector, Dou
      */
     public void add(double clsLb, SVMLinearBinaryClassificationModel mdl) {
         models.put(clsLb, mdl);
+    }
+
+    /**
+     * @param clsLb Class label.
+     * @return model trained for target class if it exists.
+     */
+    public Optional<SVMLinearBinaryClassificationModel> getModelForClass(double clsLb) {
+        return Optional.of(models.get(clsLb));
     }
 }
