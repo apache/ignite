@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Tests.Client
 
                 using (var cli = Ignition.StartClient(GetSecureClientConfig()))
                 {
-                    CacheClientConfiguration ccfg = new CacheClientConfiguration()
+                    CacheClientConfiguration ccfg = new CacheClientConfiguration
                     {
                         Name = "TestCache",
                         QueryEntities = new[]
@@ -678,12 +678,12 @@ namespace Apache.Ignite.Core.Tests.Client
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 AuthenticationEnabled = true,
-                DataStorageConfiguration = new DataStorageConfiguration()
+                DataStorageConfiguration = new DataStorageConfiguration
                 {
                     StoragePath = Path.Combine(_tempDir, "Store"),
                     WalPath = Path.Combine(_tempDir, "WalStore"),
                     WalArchivePath = Path.Combine(_tempDir, "WalArchive"),
-                    DefaultDataRegionConfiguration = new DataRegionConfiguration()
+                    DefaultDataRegionConfiguration = new DataRegionConfiguration
                     {
                         Name = "default",
                         PersistenceEnabled = true
