@@ -18,7 +18,7 @@ To use the client in your application, include `vendor/autoload.php` file, gener
 require_once __DIR__ . '/vendor/autoload.php';
 ```
 
-#### Installation from Sources ####
+### Installation from Sources ###
 
 1. Download Ignite sources to `local_ignite_path`
 2. Go to `local_ignite_path/modules/platforms/php` folder
