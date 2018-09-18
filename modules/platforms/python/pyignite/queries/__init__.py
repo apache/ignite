@@ -24,9 +24,11 @@ used internally by :mod:`pyignite.api` module. They, in turn, based on
 from collections import OrderedDict
 import ctypes
 from random import randint
+from typing import Type
 
 import attr
 
+from pyignite.api.result import APIResult
 from pyignite.constants import *
 from pyignite.datatypes import (
     AnyDataObject, Bool, Int, Long, String, StringArray, Struct,
@@ -35,95 +37,12 @@ from .op_codes import *
 
 
 @attr.s
-class Query:
-    op_code = attr.ib(type=int)
-    following = attr.ib(type=list, factory=list)
-    query_id = attr.ib(type=int, default=None)
-
-    @classmethod
-    def build_c_type(cls):
-        return type(
-            cls.__name__,
-            (ctypes.LittleEndianStructure,),
-            {
-                '_pack_': 1,
-                '_fields_': [
-                    ('length', ctypes.c_int),
-                    ('op_code', ctypes.c_short),
-                    ('query_id', ctypes.c_long),
-                ],
-            },
-        )
-
-    def from_python(self, values: dict=None):
-        if values is None:
-            values = {}
-        buffer = b''
-
-        header_class = self.build_c_type()
-        header = header_class()
-        header.op_code = self.op_code
-        if self.query_id is None:
-            header.query_id = randint(MIN_LONG, MAX_LONG)
-
-        for name, c_type in self.following:
-            buffer += c_type.from_python(values[name])
-
-        header.length = (
-            len(buffer)
-            + ctypes.sizeof(header_class)
-            - ctypes.sizeof(ctypes.c_int)
-        )
-        return header.query_id, bytes(header) + buffer
-
-
-class ConfigQuery(Query):
-    """
-    This is a special query, used for creating caches with configuration.
-    """
-
-    @classmethod
-    def build_c_type(cls):
-        return type(
-            cls.__name__,
-            (ctypes.LittleEndianStructure,),
-            {
-                '_pack_': 1,
-                '_fields_': [
-                    ('length', ctypes.c_int),
-                    ('op_code', ctypes.c_short),
-                    ('query_id', ctypes.c_long),
-                    ('config_length', ctypes.c_int),
-                ],
-            },
-        )
-
-    def from_python(self, values: dict = None):
-        if values is None:
-            values = {}
-        buffer = b''
-
-        header_class = self.build_c_type()
-        header = header_class()
-        header.op_code = self.op_code
-        if self.query_id is None:
-            header.query_id = randint(MIN_LONG, MAX_LONG)
-
-        for name, c_type in self.following:
-            buffer += c_type.from_python(values[name])
-
-        header.length = (
-            len(buffer)
-            + ctypes.sizeof(header_class)
-            - ctypes.sizeof(ctypes.c_int)
-        )
-        header.config_length = header.length - ctypes.sizeof(header_class)
-        return header.query_id, bytes(header) + buffer
-
-
-@attr.s
 class Response:
     following = attr.ib(type=list, factory=list)
+
+    def __attrs_post_init__(self):
+        # replace None with empty list
+        self.following = self.following or []
 
     @staticmethod
     def build_header():
@@ -313,3 +232,115 @@ class SQLResponse:
                     )
                 result['data'].append(row)
             return result
+
+
+@attr.s
+class Query:
+    op_code = attr.ib(type=int)
+    following = attr.ib(type=list, factory=list)
+    query_id = attr.ib(type=int, default=None)
+
+    @classmethod
+    def build_c_type(cls):
+        return type(
+            cls.__name__,
+            (ctypes.LittleEndianStructure,),
+            {
+                '_pack_': 1,
+                '_fields_': [
+                    ('length', ctypes.c_int),
+                    ('op_code', ctypes.c_short),
+                    ('query_id', ctypes.c_long),
+                ],
+            },
+        )
+
+    def from_python(self, values: dict=None):
+        if values is None:
+            values = {}
+        buffer = b''
+
+        header_class = self.build_c_type()
+        header = header_class()
+        header.op_code = self.op_code
+        if self.query_id is None:
+            header.query_id = randint(MIN_LONG, MAX_LONG)
+
+        for name, c_type in self.following:
+            buffer += c_type.from_python(values[name])
+
+        header.length = (
+            len(buffer)
+            + ctypes.sizeof(header_class)
+            - ctypes.sizeof(ctypes.c_int)
+        )
+        return header.query_id, bytes(header) + buffer
+
+    def perform(
+        self, conn: 'Connection', query_params: dict=None,
+        response_config: list=None,
+    ) -> APIResult:
+        """
+        Perform query and process result.
+
+        :param conn: connection to Ignite server,
+        :param query_params: (optional) dict of named query parameters.
+         Defaults to no parameters,
+        :param response_config: (optional) response configuration − list of
+         (name, type_hint) tuples. Defaults to empty return value,
+        :return: instance of :class:`~pyignite.api.result.APIResult` with raw
+         value (may undergo further processing in API functions).
+        """
+        _, send_buffer = self.from_python(query_params)
+        conn.send(send_buffer)
+        response_struct = Response(response_config)
+        response_ctype, recv_buffer = response_struct.parse(conn)
+        response = response_ctype.from_buffer_copy(recv_buffer)
+        result = APIResult(response)
+        if result.status == 0:
+            result.value = response_struct.to_python(response)
+        return result
+
+
+class ConfigQuery(Query):
+    """
+    This is a special query, used for creating caches with configuration.
+    """
+
+    @classmethod
+    def build_c_type(cls):
+        return type(
+            cls.__name__,
+            (ctypes.LittleEndianStructure,),
+            {
+                '_pack_': 1,
+                '_fields_': [
+                    ('length', ctypes.c_int),
+                    ('op_code', ctypes.c_short),
+                    ('query_id', ctypes.c_long),
+                    ('config_length', ctypes.c_int),
+                ],
+            },
+        )
+
+    def from_python(self, values: dict = None):
+        if values is None:
+            values = {}
+        buffer = b''
+
+        header_class = self.build_c_type()
+        header = header_class()
+        header.op_code = self.op_code
+        if self.query_id is None:
+            header.query_id = randint(MIN_LONG, MAX_LONG)
+
+        for name, c_type in self.following:
+            buffer += c_type.from_python(values[name])
+
+        header.length = (
+            len(buffer)
+            + ctypes.sizeof(header_class)
+            - ctypes.sizeof(ctypes.c_int)
+        )
+        header.config_length = header.length - ctypes.sizeof(header_class)
+        return header.query_id, bytes(header) + buffer

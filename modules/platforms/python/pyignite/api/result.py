@@ -14,7 +14,6 @@
 # limitations under the License.
 
 from pyignite.datatypes import String
-from pyignite.queries import Response
 
 
 class APIResult:
@@ -32,7 +31,7 @@ class APIResult:
     message = 'Success'
     value = None
 
-    def __init__(self, response: Response):
+    def __init__(self, response: 'Response'):
         self.status = response.status_code
         self.query_id = response.query_id
         if hasattr(response, 'error_message'):

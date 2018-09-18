@@ -74,30 +74,24 @@ def scan(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'hash_code': cache_id(cache),
-        'flag': 1 if binary else 0,
-        'filter': None,
-        'page_size': page_size,
-        'partitions': partitions,
-        'local': 1 if local else 0,
-    })
-
-    connection.send(send_buffer)
-
-    response_struct = Response([
-        ('cursor', Long),
-        ('data', Map),
-        ('more', Bool),
-    ])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    if result.status != 0:
-        return result
-    result.value = dict(response_struct.to_python(response))
+    result = query_struct.perform(
+        connection,
+        query_params={
+            'hash_code': cache_id(cache),
+            'flag': 1 if binary else 0,
+            'filter': None,
+            'page_size': page_size,
+            'partitions': partitions,
+            'local': 1 if local else 0,
+        },
+        response_config=[
+            ('cursor', Long),
+            ('data', Map),
+            ('more', Bool),
+        ],
+    )
+    if result.status == 0:
+        result.value = dict(result.value)
     return result
 
 
@@ -131,24 +125,18 @@ def scan_cursor_get_page(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'cursor': cursor,
-    })
-
-    connection.send(send_buffer)
-
-    response_struct = Response([
-        ('data', Map),
-        ('more', Bool),
-    ])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    if result.status != 0:
-        return result
-    result.value = dict(response_struct.to_python(response))
+    result = query_struct.perform(
+        connection,
+        query_params={
+            'cursor': cursor,
+        },
+        response_config=[
+            ('data', Map),
+            ('more', Bool),
+        ],
+    )
+    if result.status == 0:
+        result.value = dict(result.value)
     return result
 
 
@@ -211,34 +199,28 @@ def sql(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'hash_code': cache_id(cache),
-        'flag': 1 if binary else 0,
-        'table_name': table_name,
-        'query_str': query_str,
-        'query_args': query_args,
-        'distributed_joins': 1 if distributed_joins else 0,
-        'local': 1 if local else 0,
-        'replicated_only': 1 if replicated_only else 0,
-        'page_size': page_size,
-        'timeout': timeout,
-    })
-
-    connection.send(send_buffer)
-
-    response_struct = Response([
-        ('cursor', Long),
-        ('data', Map),
-        ('more', Bool),
-    ])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    if result.status != 0:
-        return result
-    result.value = dict(response_struct.to_python(response))
+    result = query_struct.perform(
+        connection,
+        query_params={
+            'hash_code': cache_id(cache),
+            'flag': 1 if binary else 0,
+            'table_name': table_name,
+            'query_str': query_str,
+            'query_args': query_args,
+            'distributed_joins': 1 if distributed_joins else 0,
+            'local': 1 if local else 0,
+            'replicated_only': 1 if replicated_only else 0,
+            'page_size': page_size,
+            'timeout': timeout,
+        },
+        response_config=[
+            ('cursor', Long),
+            ('data', Map),
+            ('more', Bool),
+        ],
+    )
+    if result.status == 0:
+        result.value = dict(result.value)
     return result
 
 
@@ -271,24 +253,18 @@ def sql_cursor_get_page(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'cursor': cursor,
-    })
-
-    connection.send(send_buffer)
-
-    response_struct = Response([
-        ('data', Map),
-        ('more', Bool),
-    ])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    if result.status != 0:
-        return result
-    result.value = dict(response_struct.to_python(response))
+    result = query_struct.perform(
+        connection,
+        query_params={
+            'cursor': cursor,
+        },
+        response_config=[
+            ('data', Map),
+            ('more', Bool),
+        ],
+    )
+    if result.status == 0:
+        result.value = dict(result.value)
     return result
 
 
@@ -494,16 +470,9 @@ def resource_close(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'cursor': cursor,
-    })
-
-    connection.send(send_buffer)
-
-    response_struct = Response()
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    return result
+    return query_struct.perform(
+        connection,
+        query_params={
+            'cursor': cursor,
+        },
+    )

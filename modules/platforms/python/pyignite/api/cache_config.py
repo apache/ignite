@@ -28,10 +28,9 @@ from typing import Union
 from pyignite.datatypes.cache_config import cache_config_struct
 from pyignite.datatypes.cache_properties import prop_map
 from pyignite.datatypes import Int, Byte, Short, String, StringArray
-from pyignite.queries import Query, ConfigQuery, Response
+from pyignite.queries import Query, ConfigQuery
 from pyignite.queries.op_codes import *
 from pyignite.utils import cache_id
-from .result import APIResult
 
 
 def compact_cache_config(cache_config: dict) -> dict:
@@ -56,7 +55,7 @@ def compact_cache_config(cache_config: dict) -> dict:
 
 def cache_get_configuration(
     connection: 'Connection', cache: Union[str, int], flags: int=0, query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Gets configuration for the given cache.
 
@@ -78,28 +77,24 @@ def cache_get_configuration(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'hash_code': cache_id(cache),
-        'flags': flags,
-    })
-    connection.send(send_buffer)
-
-    response_struct = Response([
-        ('cache_config', cache_config_struct),
-    ])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-    result = APIResult(response)
-    if result.status != 0:
-        return result
-    result.value = compact_cache_config(
-        response_struct.to_python(response)['cache_config']
+    result = query_struct.perform(
+        connection,
+        query_params={
+            'hash_code': cache_id(cache),
+            'flags': flags,
+        },
+        response_config=[
+            ('cache_config', cache_config_struct),
+        ],
     )
+    if result.status == 0:
+        result.value = compact_cache_config(result.value['cache_config'])
     return result
 
 
-def cache_create(connection: 'Connection', name: str, query_id=None, ) -> APIResult:
+def cache_create(
+    connection: 'Connection', name: str, query_id=None,
+) -> 'APIResult':
     """
     Creates a cache with a given name. Returns error if a cache with specified
     name already exists.
@@ -120,17 +115,17 @@ def cache_create(connection: 'Connection', name: str, query_id=None, ) -> APIRes
         ],
         query_id=query_id,
     )
-    _, send_buffer = query_struct.from_python({'cache_name': name})
-    connection.send(send_buffer)
-
-    response_struct = Response([])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-    result = APIResult(response)
-    return result
+    return query_struct.perform(
+        connection,
+        query_params={
+            'cache_name': name,
+        },
+    )
 
 
-def cache_get_or_create(connection: 'Connection', name: str, query_id=None, ) -> APIResult:
+def cache_get_or_create(
+    connection: 'Connection', name: str, query_id=None,
+) -> 'APIResult':
     """
     Creates a cache with a given name. Does nothing if the cache exists.
 
@@ -150,19 +145,17 @@ def cache_get_or_create(connection: 'Connection', name: str, query_id=None, ) ->
         ],
         query_id=query_id,
     )
-    _, send_buffer = query_struct.from_python({'cache_name': name})
-    connection.send(send_buffer)
-
-    response_struct = Response([])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-    result = APIResult(response)
-    return result
+    return query_struct.perform(
+        connection,
+        query_params={
+            'cache_name': name,
+        },
+    )
 
 
 def cache_destroy(
     connection: 'Connection', cache: Union[str, int], query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Destroys cache with a given name.
 
@@ -180,20 +173,15 @@ def cache_destroy(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'hash_code': cache_id(cache),
-    })
-    connection.send(send_buffer)
-
-    response_struct = Response([])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-    result = APIResult(response)
-    return result
+    return query_struct.perform(
+        connection,
+        query_params={
+            'hash_code': cache_id(cache),
+        },
+    )
 
 
-def cache_get_names(connection: 'Connection', query_id=None) -> APIResult:
+def cache_get_names(connection: 'Connection', query_id=None) -> 'APIResult':
     """
     Gets existing cache names.
 
@@ -206,25 +194,20 @@ def cache_get_names(connection: 'Connection', query_id=None) -> APIResult:
     """
 
     query_struct = Query(OP_CACHE_GET_NAMES, query_id=query_id)
-
-    _, send_buffer = query_struct.from_python()
-    connection.send(send_buffer)
-
-    response_struct = Response([
-        ('cache_names', StringArray),
-    ])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-    result = APIResult(response)
-    if result.status != 0:
-        return result
-    result.value = response_struct.to_python(response)['cache_names']
+    result = query_struct.perform(
+        connection,
+        response_config=[
+            ('cache_names', StringArray),
+        ],
+    )
+    if result.status == 0:
+        result.value = result.value['cache_names']
     return result
 
 
 def cache_create_with_config(
     connection: 'Connection', cache_props: dict, query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Creates cache with provided configuration. An error is returned
     if the name is already in use.
@@ -256,20 +239,12 @@ def cache_create_with_config(
         ] + list(prop_types.items()),
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python(prop_values)
-    connection.send(send_buffer)
-
-    response_struct = Response([])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-    result = APIResult(response)
-    return result
+    return query_struct.perform(connection, query_params=prop_values)
 
 
 def cache_get_or_create_with_config(
     connection: 'Connection', cache_props: dict, query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Creates cache with provided configuration. Does nothing if the name
     is already in use.
@@ -301,12 +276,4 @@ def cache_get_or_create_with_config(
         ] + list(prop_types.items()),
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python(prop_values)
-    connection.send(send_buffer)
-
-    response_struct = Response([])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-    result = APIResult(response)
-    return result
+    return query_struct.perform(connection, query_params=prop_values)

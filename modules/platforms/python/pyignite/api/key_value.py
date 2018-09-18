@@ -21,14 +21,13 @@ from pyignite.datatypes import (
 )
 from pyignite.datatypes.key_value import PeekModes
 from pyignite.queries import Query, Response
-from .result import APIResult
 from pyignite.utils import cache_id
 
 
 def cache_put(
     connection: 'Connection', cache: Union[str, int], key, value,
     key_hint=None, value_hint=None, binary=False, query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Puts a value with a given key to cache (overwriting existing value if any).
 
@@ -59,31 +58,18 @@ def cache_put(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
+    return query_struct.perform(connection, {
         'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
         'key': key,
         'value': value,
     })
 
-    connection.send(send_buffer)
-
-    response_struct = Response([])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    if result.status != 0:
-        return result
-    result.value = response_struct.to_python(response)
-    return result
-
 
 def cache_get(
     connection: 'Connection', cache: Union[str, int], key,
     key_hint=None, binary=False, query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Retrieves a value from cache by key.
 
@@ -110,32 +96,27 @@ def cache_get(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'hash_code': cache_id(cache),
-        'flag': 1 if binary else 0,
-        'key': key,
-    })
-
-    connection.send(send_buffer)
-
-    response_struct = Response([
-        ('value', AnyDataObject),
-    ])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
+    result = query_struct.perform(
+        connection,
+        query_params={
+            'hash_code': cache_id(cache),
+            'flag': 1 if binary else 0,
+            'key': key,
+        },
+        response_config=[
+           ('value', AnyDataObject),
+        ],
+    )
     if result.status != 0:
         return result
-    result.value = response_struct.to_python(response)['value']
+    result.value = result.value['value']
     return result
 
 
 def cache_get_all(
     connection: 'Connection', cache: Union[str, int], keys: Iterable,
     binary=False, query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Retrieves multiple key-value pairs from cache.
 
@@ -161,31 +142,26 @@ def cache_get_all(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'hash_code': cache_id(cache),
-        'flag': 1 if binary else 0,
-        'keys': keys,
-    })
-    connection.send(send_buffer)
-
-    response_struct = Response([
-        ('data', Map),
-    ])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    if result.status != 0:
-        return result
-    result.value = dict(response_struct.to_python(response))['data']
+    result = query_struct.perform(
+        connection,
+        query_params={
+            'hash_code': cache_id(cache),
+            'flag': 1 if binary else 0,
+            'keys': keys,
+        },
+        response_config=[
+            ('data', Map),
+        ],
+    )
+    if result.status == 0:
+        result.value = dict(result.value)['data']
     return result
 
 
 def cache_put_all(
     connection: 'Connection', cache: Union[str, int], pairs: dict,
     binary=False, query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Puts multiple key-value pairs to cache (overwriting existing associations
     if any).
@@ -213,26 +189,20 @@ def cache_put_all(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'hash_code': cache_id(cache),
-        'flag': 1 if binary else 0,
-        'data': pairs,
-    })
-    connection.send(send_buffer)
-
-    response_struct = Response([])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    return result
+    return query_struct.perform(
+        connection,
+        query_params={
+            'hash_code': cache_id(cache),
+            'flag': 1 if binary else 0,
+            'data': pairs,
+        },
+    )
 
 
 def cache_contains_key(
     connection: 'Connection', cache: Union[str, int], key,
     key_hint=None, binary=False, query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Returns a value indicating whether given key is present in cache.
 
@@ -260,32 +230,26 @@ def cache_contains_key(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'hash_code': cache_id(cache),
-        'flag': 1 if binary else 0,
-        'key': key,
-    })
-
-    connection.send(send_buffer)
-
-    response_struct = Response([
-        ('value', Bool),
-    ])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    if result.status != 0:
-        return result
-    result.value = response_struct.to_python(response)['value']
+    result = query_struct.perform(
+        connection,
+            query_params={
+            'hash_code': cache_id(cache),
+            'flag': 1 if binary else 0,
+            'key': key,
+        },
+        response_config=[
+            ('value', Bool),
+        ],
+    )
+    if result.status == 0:
+        result.value = result.value['value']
     return result
 
 
 def cache_contains_keys(
     connection: 'Connection', cache: Union[str, int], keys: Iterable,
     binary=False, query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Returns a value indicating whether all given keys are present in cache.
 
@@ -311,31 +275,26 @@ def cache_contains_keys(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'hash_code': cache_id(cache),
-        'flag': 1 if binary else 0,
-        'keys': keys,
-    })
-    connection.send(send_buffer)
-
-    response_struct = Response([
-        ('value', Bool),
-    ])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    if result.status != 0:
-        return result
-    result.value = response_struct.to_python(response)['value']
+    result = query_struct.perform(
+        connection,
+        query_params={
+            'hash_code': cache_id(cache),
+            'flag': 1 if binary else 0,
+            'keys': keys,
+        },
+        response_config=[
+            ('value', Bool),
+        ],
+    )
+    if result.status == 0:
+        result.value = result.value['value']
     return result
 
 
 def cache_get_and_put(
     connection: 'Connection', cache: Union[str, int], key, value,
     key_hint=None, value_hint=None, binary=False, query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Puts a value with a given key to cache, and returns the previous value
     for that key, or null value if there was not such key.
@@ -368,33 +327,27 @@ def cache_get_and_put(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'hash_code': cache_id(cache),
-        'flag': 1 if binary else 0,
-        'key': key,
-        'value': value,
-    })
-
-    connection.send(send_buffer)
-
-    response_struct = Response([
-        ('value', AnyDataObject),
-    ])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    if result.status != 0:
-        return result
-    result.value = response_struct.to_python(response)['value']
+    result = query_struct.perform(
+        connection,
+        query_params={
+            'hash_code': cache_id(cache),
+            'flag': 1 if binary else 0,
+            'key': key,
+            'value': value,
+        },
+        response_config=[
+            ('value', AnyDataObject),
+        ],
+    )
+    if result.status == 0:
+        result.value = result.value['value']
     return result
 
 
 def cache_get_and_replace(
     connection: 'Connection', cache: Union[str, int], key, value,
     key_hint=None, value_hint=None, binary=False, query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Puts a value with a given key to cache, returning previous value
     for that key, if and only if there is a value currently mapped
@@ -426,33 +379,27 @@ def cache_get_and_replace(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'hash_code': cache_id(cache),
-        'flag': 1 if binary else 0,
-        'key': key,
-        'value': value,
-    })
-
-    connection.send(send_buffer)
-
-    response_struct = Response([
-        ('value', AnyDataObject),
-    ])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    if result.status != 0:
-        return result
-    result.value = response_struct.to_python(response)['value']
+    result = query_struct.perform(
+        connection,
+        query_params={
+            'hash_code': cache_id(cache),
+            'flag': 1 if binary else 0,
+            'key': key,
+            'value': value,
+        },
+        response_config=[
+            ('value', AnyDataObject),
+        ],
+    )
+    if result.status == 0:
+        result.value = result.value['value']
     return result
 
 
 def cache_get_and_remove(
     connection: 'Connection', cache: Union[str, int], key,
     key_hint=None, binary=False, query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Removes the cache entry with specified key, returning the value.
 
@@ -478,32 +425,26 @@ def cache_get_and_remove(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'hash_code': cache_id(cache),
-        'flag': 1 if binary else 0,
-        'key': key,
-    })
-
-    connection.send(send_buffer)
-
-    response_struct = Response([
-        ('value', AnyDataObject),
-    ])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    if result.status != 0:
-        return result
-    result.value = response_struct.to_python(response)['value']
+    result = query_struct.perform(
+        connection,
+        query_params={
+            'hash_code': cache_id(cache),
+            'flag': 1 if binary else 0,
+            'key': key,
+        },
+        response_config=[
+            ('value', AnyDataObject),
+        ],
+    )
+    if result.status == 0:
+        result.value = result.value['value']
     return result
 
 
 def cache_put_if_absent(
     connection: 'Connection', cache: Union[str, int], key, value,
     key_hint=None, value_hint=None, binary=False, query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Puts a value with a given key to cache only if the key
     does not already exist.
@@ -535,33 +476,27 @@ def cache_put_if_absent(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'hash_code': cache_id(cache),
-        'flag': 1 if binary else 0,
-        'key': key,
-        'value': value,
-    })
-
-    connection.send(send_buffer)
-
-    response_struct = Response([
-        ('success', Bool),
-    ])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    if result.status != 0:
-        return result
-    result.value = response_struct.to_python(response)['success']
+    result = query_struct.perform(
+        connection,
+        query_params={
+            'hash_code': cache_id(cache),
+            'flag': 1 if binary else 0,
+            'key': key,
+            'value': value,
+        },
+        response_config=[
+            ('success', Bool),
+        ],
+    )
+    if result.status == 0:
+        result.value = result.value['success']
     return result
 
 
 def cache_get_and_put_if_absent(
     connection: 'Connection', cache: Union[str, int], key, value,
     key_hint=None, value_hint=None, binary=False, query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Puts a value with a given key to cache only if the key does not
     already exist.
@@ -584,7 +519,8 @@ def cache_get_and_put_if_absent(
     """
 
     query_struct = Query(
-        OP_CACHE_GET_AND_PUT_IF_ABSENT,[
+        OP_CACHE_GET_AND_PUT_IF_ABSENT,
+        [
             ('hash_code', Int),
             ('flag', Byte),
             ('key', key_hint or AnyDataObject),
@@ -592,33 +528,27 @@ def cache_get_and_put_if_absent(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'hash_code': cache_id(cache),
-        'flag': 1 if binary else 0,
-        'key': key,
-        'value': value,
-    })
-
-    connection.send(send_buffer)
-
-    response_struct = Response([
-        ('value', AnyDataObject),
-    ])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    if result.status != 0:
-        return result
-    result.value = response_struct.to_python(response)['value']
+    result = query_struct.perform(
+        connection,
+        query_params={
+            'hash_code': cache_id(cache),
+            'flag': 1 if binary else 0,
+            'key': key,
+            'value': value,
+        },
+        response_config=[
+            ('value', AnyDataObject),
+        ],
+    )
+    if result.status == 0:
+        result.value = result.value['value']
     return result
 
 
 def cache_replace(
     connection: 'Connection', cache: Union[str, int], key, value,
     key_hint=None, value_hint=None, binary=False, query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Puts a value with a given key to cache only if the key already exist.
 
@@ -650,26 +580,20 @@ def cache_replace(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'hash_code': cache_id(cache),
-        'flag': 1 if binary else 0,
-        'key': key,
-        'value': value,
-    })
-
-    connection.send(send_buffer)
-
-    response_struct = Response([
-        ('success', Bool),
-    ])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    if result.status != 0:
-        return result
-    result.value = response_struct.to_python(response)['success']
+    result = query_struct.perform(
+        connection,
+        query_params={
+            'hash_code': cache_id(cache),
+            'flag': 1 if binary else 0,
+            'key': key,
+            'value': value,
+        },
+        response_config=[
+            ('success', Bool),
+        ],
+    )
+    if result.status == 0:
+        result.value = result.value['success']
     return result
 
 
@@ -677,7 +601,7 @@ def cache_replace_if_equals(
     connection: 'Connection', cache: Union[str, int], key, sample, value,
     key_hint=None, sample_hint=None, value_hint=None,
     binary=False, query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Puts a value with a given key to cache only if the key already exists
     and value equals provided sample.
@@ -714,34 +638,28 @@ def cache_replace_if_equals(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'hash_code': cache_id(cache),
-        'flag': 1 if binary else 0,
-        'key': key,
-        'sample': sample,
-        'value': value,
-    })
-
-    connection.send(send_buffer)
-
-    response_struct = Response([
-        ('success', Bool),
-    ])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    if result.status != 0:
-        return result
-    result.value = response_struct.to_python(response)['success']
+    result = query_struct.perform(
+        connection,
+        query_params={
+            'hash_code': cache_id(cache),
+            'flag': 1 if binary else 0,
+            'key': key,
+            'sample': sample,
+            'value': value,
+        },
+        response_config=[
+            ('success', Bool),
+        ],
+    )
+    if result.status == 0:
+        result.value = result.value['success']
     return result
 
 
 def cache_clear(
     connection: 'Connection', cache: Union[str, int], binary=False,
     query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Clears the cache without notifying listeners or cache writers.
 
@@ -764,25 +682,19 @@ def cache_clear(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'hash_code': cache_id(cache),
-        'flag': 1 if binary else 0,
-    })
-    connection.send(send_buffer)
-
-    response_struct = Response([])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    return result
+    return query_struct.perform(
+        connection,
+        query_params={
+            'hash_code': cache_id(cache),
+            'flag': 1 if binary else 0,
+        },
+    )
 
 
 def cache_clear_key(
     connection: 'Connection', cache: Union[str, int], key,
     key_hint: object=None, binary=False, query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Clears the cache key without notifying listeners or cache writers.
 
@@ -809,26 +721,20 @@ def cache_clear_key(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'hash_code': cache_id(cache),
-        'flag': 1 if binary else 0,
-        'key': key,
-    })
-    connection.send(send_buffer)
-
-    response_struct = Response([])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    return result
+    return query_struct.perform(
+        connection,
+        query_params={
+            'hash_code': cache_id(cache),
+            'flag': 1 if binary else 0,
+            'key': key,
+        },
+    )
 
 
 def cache_clear_keys(
     connection: 'Connection', cache: Union[str, int], keys: list,
     binary=False, query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Clears the cache keys without notifying listeners or cache writers.
 
@@ -853,26 +759,20 @@ def cache_clear_keys(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'hash_code': cache_id(cache),
-        'flag': 1 if binary else 0,
-        'keys': keys,
-    })
-    connection.send(send_buffer)
-
-    response_struct = Response([])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    return result
+    return query_struct.perform(
+        connection,
+        query_params={
+            'hash_code': cache_id(cache),
+            'flag': 1 if binary else 0,
+            'keys': keys,
+        },
+    )
 
 
 def cache_remove_key(
     connection: 'Connection', cache: Union[str, int], key,
     key_hint: object=None, binary=False, query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Clears the cache key without notifying listeners or cache writers.
 
@@ -900,24 +800,19 @@ def cache_remove_key(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'hash_code': cache_id(cache),
-        'flag': 1 if binary else 0,
-        'key': key,
-    })
-    connection.send(send_buffer)
-
-    response_struct = Response([
-        ('success', Bool),
-    ])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    if result.status != 0:
-        return result
-    result.value = response_struct.to_python(response)['success']
+    result = query_struct.perform(
+        connection,
+        query_params={
+            'hash_code': cache_id(cache),
+            'flag': 1 if binary else 0,
+            'key': key,
+        },
+        response_config=[
+            ('success', Bool),
+        ],
+    )
+    if result.status == 0:
+        result.value = result.value['success']
     return result
 
 
@@ -925,7 +820,7 @@ def cache_remove_if_equals(
     connection: 'Connection', cache: Union[str, int], key, sample,
     key_hint=None, sample_hint=None,
     binary=False, query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Removes an entry with a given key if provided value is equal to
     actual value, notifying listeners and cache writers.
@@ -958,33 +853,27 @@ def cache_remove_if_equals(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'hash_code': cache_id(cache),
-        'flag': 1 if binary else 0,
-        'key': key,
-        'sample': sample,
-    })
-
-    connection.send(send_buffer)
-
-    response_struct = Response([
-        ('success', Bool),
-    ])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    if result.status != 0:
-        return result
-    result.value = response_struct.to_python(response)['success']
+    result = query_struct.perform(
+        connection,
+        query_params={
+            'hash_code': cache_id(cache),
+            'flag': 1 if binary else 0,
+            'key': key,
+            'sample': sample,
+        },
+        response_config=[
+            ('success', Bool),
+        ],
+    )
+    if result.status == 0:
+        result.value = result.value['success']
     return result
 
 
 def cache_remove_keys(
     connection: 'Connection', cache: Union[str, int], keys: Iterable,
     binary=False, query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Removes entries with given keys, notifying listeners and cache writers.
 
@@ -1009,26 +898,20 @@ def cache_remove_keys(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'hash_code': cache_id(cache),
-        'flag': 1 if binary else 0,
-        'keys': keys,
-    })
-    connection.send(send_buffer)
-
-    response_struct = Response([])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    return result
+    return query_struct.perform(
+        connection,
+        query_params={
+            'hash_code': cache_id(cache),
+            'flag': 1 if binary else 0,
+            'keys': keys,
+        },
+    )
 
 
 def cache_remove_all(
     connection: 'Connection', cache: Union[str, int], binary=False,
     query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Removes all entries from cache, notifying listeners and cache writers.
 
@@ -1051,25 +934,19 @@ def cache_remove_all(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'hash_code': cache_id(cache),
-        'flag': 1 if binary else 0,
-    })
-    connection.send(send_buffer)
-
-    response_struct = Response([])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    return result
+    return query_struct.perform(
+        connection,
+        query_params={
+            'hash_code': cache_id(cache),
+            'flag': 1 if binary else 0,
+        },
+    )
 
 
 def cache_get_size(
     connection: 'Connection', cache: Union[str, int], peek_modes=0,
     binary=False, query_id=None,
-) -> APIResult:
+) -> 'APIResult':
     """
     Gets the number of entries in cache.
 
@@ -1102,22 +979,17 @@ def cache_get_size(
         ],
         query_id=query_id,
     )
-
-    _, send_buffer = query_struct.from_python({
-        'hash_code': cache_id(cache),
-        'flag': 1 if binary else 0,
-        'peek_modes': peek_modes,
-    })
-    connection.send(send_buffer)
-
-    response_struct = Response([
-        ('count', Long),
-    ])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
-    if result.status != 0:
-        return result
-    result.value = response_struct.to_python(response)['count']
+    result = query_struct.perform(
+        connection,
+        query_params={
+            'hash_code': cache_id(cache),
+            'flag': 1 if binary else 0,
+            'peek_modes': peek_modes,
+        },
+        response_config=[
+            ('count', Long),
+        ],
+    )
+    if result.status == 0:
+        result.value = result.value['count']
     return result

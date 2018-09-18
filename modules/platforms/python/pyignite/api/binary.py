@@ -200,16 +200,7 @@ def put_binary_type(
             ],
             query_id=query_id,
         )
-
-    _, send_buffer = query_struct.from_python(data)
-
-    connection.send(send_buffer)
-
-    response_struct = Response([])
-    response_class, recv_buffer = response_struct.parse(connection)
-    response = response_class.from_buffer_copy(recv_buffer)
-
-    result = APIResult(response)
+    result = query_struct.perform(connection, query_params=data)
     if result.status == 0:
         result.value = {
             'type_id': type_id,
