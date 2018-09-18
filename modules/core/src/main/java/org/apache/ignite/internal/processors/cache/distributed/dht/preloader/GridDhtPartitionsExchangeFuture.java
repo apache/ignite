@@ -1226,7 +1226,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         // To correctly rebalance when persistence is enabled, it is necessary to reserve history within exchange.
         partHistReserved = cctx.database().reserveHistoryForExchange();
 
-        // Skipping wait on local join is available when all cluster nodes have the same protocol available.
+        // Skipping wait on local join is available when all cluster nodes have the same protocol.
         boolean skipWaitOnLocalJoin = cctx.discovery().aliveServerNodes().stream()
             .allMatch(node -> node.version().compareTo(ExchangeLatchManager.PROTOCOL_V2_VERSION_SINCE) >= 0)
                 &&
