@@ -68,8 +68,8 @@ public class EncoderTrainerTest {
 
         EncoderTrainer<Integer, String[]> strEncoderTrainer = new EncoderTrainer<Integer, String[]>()
             .withEncoderType(EncoderType.STRING_ENCODER)
-            .encodeFeature(0)
-            .encodeFeature(1);
+            .withEncodedFeature(0)
+            .withEncodedFeature(1);
 
         EncoderPreprocessor<Integer, String[]> preprocessor = strEncoderTrainer.fit(
             datasetBuilder,
@@ -94,8 +94,8 @@ public class EncoderTrainerTest {
 
         EncoderTrainer<Integer, Object[]> strEncoderTrainer = new EncoderTrainer<Integer, Object[]>()
             .withEncoderType(EncoderType.ONE_HOT_ENCODER)
-            .encodeFeature(0)
-            .encodeFeature(1);
+            .withEncodedFeature(0)
+            .withEncodedFeature(1);
 
         EncoderPreprocessor<Integer, Object[]> preprocessor = strEncoderTrainer.fit(
             datasetBuilder,
@@ -120,8 +120,8 @@ public class EncoderTrainerTest {
 
         EncoderTrainer<Integer, Object[]> strEncoderTrainer = new EncoderTrainer<Integer, Object[]>()
             .withEncoderType(EncoderType.STRING_ENCODER)
-            .encodeFeature(0)
-            .encodeFeature(1);
+            .withEncodedFeature(0)
+            .withEncodedFeature(1);
 
         EncoderPreprocessor<Integer, Object[]> preprocessor = strEncoderTrainer.fit(
             datasetBuilder,
