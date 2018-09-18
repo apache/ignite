@@ -684,12 +684,16 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
             }
 
             for (Thread t : threads)
-                t.join();
+                t.join(2 * duration);
+
+            for (Thread t : threads) {
+                if (t.isAlive())
+                    t.interrupt();
+            }
 
             if (err.get() != null)
                 throw err.get();
-        }
-        finally {
+        } finally {
             stopAllGrids();
         }
     }
