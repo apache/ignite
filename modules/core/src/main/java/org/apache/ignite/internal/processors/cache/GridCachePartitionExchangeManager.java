@@ -2239,6 +2239,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return {@code True} If there is any exchange future in progress.
      */
     private boolean exchangeInProgress() {
+        if (exchWorker.hasPendingServerExchange())
+            return true;
+
         GridDhtPartitionsExchangeFuture current = lastTopologyFuture();
 
         if (current == null)
@@ -2246,8 +2249,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         GridDhtTopologyFuture finished = lastFinishedFut.get();
 
-        if (finished == null || finished.result().compareTo(current.initialVersion()) < 0)
-            return true;
+        if (finished == null || finished.result().compareTo(current.initialVersion()) < 0) {
+            ClusterNode triggeredBy = current.firstEvent().eventNode();
+
+            if (!triggeredBy.isClient())
+                return true;
+       }
 
         return false;
     }
