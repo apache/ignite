@@ -448,7 +448,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         try {
             cctx.cache().prepareCachesStartInParallel(startCacheInfos);
         }
-        catch (ParallelExecutionException e) {
+        catch (IgniteCheckedException e) {
             cctx.cache().closeCaches(startedCaches, false);
 
             cctx.cache().completeClientCacheChangeFuture(msg.requestId(), e);
@@ -928,6 +928,18 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 cctx.cache().completeCacheStartFuture(startCacheInfos.get(startCacheInfo), false, e);
             }
+        }
+        catch (IgniteCheckedException e) {
+            Set<String> failedCaches = startCacheInfos.keySet().stream()
+                .map(c -> c.getStartedConfiguration().getName())
+                .collect(Collectors.toSet());
+
+            U.error(log, "Failed to initialize all caches. Will try to rollback cache start routine. " +
+                    "[cacheNames=" + failedCaches + ']', e);
+
+            cctx.cache().closeCaches(failedCaches, false);
+
+            startCacheInfos.values().forEach(changeRequest -> cctx.cache().completeCacheStartFuture(changeRequest, false, e));
         }
 
         Set<Integer> gprs = new HashSet<>();

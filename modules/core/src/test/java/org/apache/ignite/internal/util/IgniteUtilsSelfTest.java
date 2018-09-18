@@ -53,6 +53,7 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.typedef.F;
@@ -902,7 +903,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testDoInParallelException() {
+    public void testDoInParallelException() throws IgniteInterruptedCheckedException {
         try {
             IgniteUtils.doInParallel(
                 Executors.newFixedThreadPool(1),

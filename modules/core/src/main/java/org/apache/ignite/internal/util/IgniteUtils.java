@@ -10515,7 +10515,7 @@ public abstract class IgniteUtils {
      * @throws ParallelExecutionException if parallel execution was failed. It contains actual exception in suppressed section.
      */
     public static <T> void doInParallel(ExecutorService executorSvc, Collection<T> srcDatas,
-        IgniteThrowableConsumer<T> consumer) throws ParallelExecutionException {
+        IgniteThrowableConsumer<T> consumer) throws ParallelExecutionException, IgniteInterruptedCheckedException {
 
         List<T2<T, Future<Object>>> consumerFutures = srcDatas.stream()
             .map(item -> new T2<>(
@@ -10532,6 +10532,11 @@ public abstract class IgniteUtils {
         for (T2<T, Future<Object>> future : consumerFutures) {
             try {
                 future.get2().get();
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+
+                throw new IgniteInterruptedCheckedException(e);
             }
             catch (Exception e) {
                 if (executionE == null)

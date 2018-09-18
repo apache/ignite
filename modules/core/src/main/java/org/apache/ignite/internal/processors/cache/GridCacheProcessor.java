@@ -1925,7 +1925,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param startCacheInfos All caches information for start.
      * @throws ParallelExecutionException if execution was failed.
      */
-    void prepareCachesStartInParallel(Collection<StartCacheInfo> startCacheInfos) throws ParallelExecutionException {
+    void prepareCachesStartInParallel(Collection<StartCacheInfo> startCacheInfos) throws IgniteCheckedException {
         doInParallel(
             sharedCtx.kernalContext().getSystemExecutorService(),
             startCacheInfos,
