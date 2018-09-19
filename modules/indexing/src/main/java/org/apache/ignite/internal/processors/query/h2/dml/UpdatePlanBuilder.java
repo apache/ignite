@@ -94,7 +94,8 @@ public final class UpdatePlanBuilder {
      * @return Update plan.
      */
     public static UpdatePlan planForStatement(Prepared prepared, boolean loc, IgniteH2Indexing idx,
-        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQry, @Nullable Integer errKeysPos)
+        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQry, @Nullable Integer errKeysPos,
+        boolean dmlAllowedForNonMVCC)
         throws IgniteCheckedException {
         assert !prepared.isQuery();
 
@@ -112,6 +113,8 @@ public final class UpdatePlanBuilder {
                 o = ((GridSqlInsert)o).into();
             else if (o instanceof GridSqlMerge)
                 o = ((GridSqlMerge)o).into();
+            else if (o instanceof GridSqlUpdate)
+                o = ((GridSqlUpdate)o).target();
             else if (o instanceof GridSqlDelete)
                 o = ((GridSqlDelete)o).from();
 
@@ -131,6 +134,8 @@ public final class UpdatePlanBuilder {
             }
         }
 
+        checkDmlOperationIsAllowed(mvccEnabled, dmlAllowedForNonMVCC, cctx);
+
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
             return planForInsert(stmt, loc, idx, mvccEnabled, conn, fieldsQry);
         else if (stmt instanceof GridSqlUpdate || stmt instanceof GridSqlDelete)
@@ -138,6 +143,23 @@ public final class UpdatePlanBuilder {
         else
             throw new IgniteSQLException("Unsupported operation: " + prepared.getSQL(),
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+    }
+
+    /**
+     * Check that DML operation allowed.
+     *
+     * @param mvccEnabled {@code true} in case mvccEnabled.
+     * @param dmlAllowedForNonMVCC {@code true} in case DML allowed for non MVCC mode.
+     * @param ctx Context.
+     * @throws IgniteSQLException In case DML not allowed.
+     */
+    private static void checkDmlOperationIsAllowed(boolean mvccEnabled, boolean dmlAllowedForNonMVCC, GridCacheContext ctx) throws IgniteSQLException {
+        //For MVCC DML operation is always allowed.
+        if (mvccEnabled)
+            return;
+
+        if (ctx != null && ctx.cache().context().tm().inUserTx() && !dmlAllowedForNonMVCC)
+            throw new IgniteSQLException("DML statement doesn't allowed within a transaction");
     }
 
     /**

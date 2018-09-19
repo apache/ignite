@@ -395,16 +395,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** H2 JDBC connection for INFORMATION_SCHEMA. Holds H2 open until node is stopped. */
     private Connection sysConn;
 
-    /** Cached value of {@code IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION}. */
-    private final boolean isDmlAllowedOverride;
-
-    /**
-     * Default constructor.
-     */
-    public IgniteH2Indexing() {
-        isDmlAllowedOverride = Boolean.getBoolean(IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION);
-    }
-
     /**
      * @return Kernal context.
      */
@@ -2217,8 +2207,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (!prepared.isQuery()) {
             if (DmlStatementsProcessor.isDmlStatement(prepared)) {
-                checkDmlOperationIsAllowed();
-
                 try {
                     Connection conn = connectionForSchema(schemaName);
 
@@ -2287,20 +2275,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteSQLException("Failed to execute local statement [stmt=" + sqlQry +
                 ", params=" + Arrays.deepToString(qry.getArgs()) + "]", e);
         }
-    }
-
-    /**
-     * Check that DML operation allowed.
-     *
-     * @throws IgniteSQLException In case DML not allowed.
-     */
-    private void checkDmlOperationIsAllowed() throws IgniteSQLException {
-        //For MVCC DML operation is always allowed.
-        if (mvccEnabled(ctx))
-            return;
-
-        if (ctx.cache().context().tm().inUserTx() && !isDmlAllowedOverride)
-            throw new IgniteSQLException("DML statement doesn't allowed within a transaction");
     }
 
     /**
