@@ -150,6 +150,9 @@ class ClientImpl extends TcpDiscoveryImpl {
     /** */
     private static final Object SPI_RECONNECT = "SPI_RECONNECT";
 
+    /** */
+    private static final long CLIENT_THROTTLE_RECONNECT_RESET_TIMEOUT_INTERVAL = 2 * 60_000;
+
     /** Remote nodes. */
     private final ConcurrentMap<UUID, TcpDiscoveryNode> rmtNodes = new ConcurrentHashMap<>();
 
@@ -1706,7 +1709,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                             locNode.onClientDisconnected(newId);
 
-                            waitBeforeForceReconnect();
+                            throttleClientReconnect();
 
                             tryJoin();
                         }
@@ -1904,8 +1907,8 @@ class ClientImpl extends TcpDiscoveryImpl {
          *
          * @throws InterruptedException If thread is interrupted.
          */
-        private void waitBeforeForceReconnect() throws InterruptedException {
-            if (U.currentTimeMillis() - lastReconnectTimestamp > 2 * 60_000)
+        private void throttleClientReconnect() throws InterruptedException {
+            if (U.currentTimeMillis() - lastReconnectTimestamp > CLIENT_THROTTLE_RECONNECT_RESET_TIMEOUT_INTERVAL)
                 currentReconnectDelay = 0; // Skip pause on first reconnect.
             else if (currentReconnectDelay == 0)
                 currentReconnectDelay = 200;
