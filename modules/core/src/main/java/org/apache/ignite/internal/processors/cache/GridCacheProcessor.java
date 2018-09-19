@@ -1897,7 +1897,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws ParallelExecutionException if execution was failed.
      */
     void prepareCachesStartInParallel(Collection<StartCacheInfo> startCacheInfos) throws ParallelExecutionException {
+        int parallelismLvl = sharedCtx.kernalContext().config().getSystemThreadPoolSize();
+
+        // Reserve at least 2 threads for system operations.
+        parallelismLvl = Math.max(1, parallelismLvl - 2);
+
         doInParallel(
+            parallelismLvl,
             sharedCtx.kernalContext().getSystemExecutorService(),
             startCacheInfos,
             startCacheInfo -> prepareCacheStart(

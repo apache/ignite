@@ -10469,14 +10469,33 @@ public abstract class IgniteUtils {
      * @param <T> Type of data.
      * @throws ParallelExecutionException if parallel execution was failed. It contains actual exception in suppressed section.
      */
-    public static <T> void doInParallel(ExecutorService executorSvc, Collection<T> srcDatas,
+    public static <T> void doInParallel(int parallelismLvl, ExecutorService executorSvc, Collection<T> srcDatas,
         IgniteThrowableConsumer<T> consumer) throws ParallelExecutionException {
 
-        List<T2<T, Future<Object>>> consumerFutures = srcDatas.stream()
-            .map(item -> new T2<>(
-                item,
+        List<List<T>> batches = new ArrayList<>(parallelismLvl);
+
+        for (int i = 0; i < parallelismLvl; i++)
+            batches.add(new ArrayList<>());
+
+        int i = 0;
+
+        for (T src : srcDatas) {
+            int idx = i % parallelismLvl;
+
+            List<T> batch = batches.get(idx);
+
+            batch.add(src);
+
+            i++;
+        }
+
+        List<T2<List<T>, Future<Object>>> consumerFutures = batches.stream()
+            .filter(batch -> !batch.isEmpty())
+            .map(batch -> new T2<>(
+                batch,
                 executorSvc.submit(() -> {
-                    consumer.accept(item);
+                    for (T item : batch)
+                        consumer.accept(item);
 
                     return null;
                 })))
@@ -10484,7 +10503,7 @@ public abstract class IgniteUtils {
 
         ParallelExecutionException executionE = null;
 
-        for (T2<T, Future<Object>> future : consumerFutures) {
+        for (T2<List<T>, Future<Object>> future : consumerFutures) {
             try {
                 future.get2().get();
             }
@@ -10494,7 +10513,8 @@ public abstract class IgniteUtils {
 
                 executionE.addSuppressed(e);
 
-                executionE.addFailedData(future.get1());
+                for (T failedData : future.get1())
+                    executionE.addFailedData(failedData);
             }
         }
 
