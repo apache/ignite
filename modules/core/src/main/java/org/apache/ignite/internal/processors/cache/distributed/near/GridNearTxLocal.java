@@ -2104,12 +2104,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 @Override protected GridCacheReturn postLock(GridCacheReturn ret) throws IgniteCheckedException {
                     GridCacheReturn futRes = fut.get();
 
-                    assert mvccSnapshot != null;
+                    assert futRes != null;
 
                     ret.set(cacheCtx, futRes.value(), futRes.success(), keepBinary);
 
-                    if(futRes.success())
-                        mvccSnapshot.incrementOperationCounter();
+                    mvccSnapshot.incrementOperationCounter();
 
                     return ret;
                 }

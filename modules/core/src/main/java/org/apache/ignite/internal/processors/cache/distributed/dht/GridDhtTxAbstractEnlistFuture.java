@@ -318,13 +318,13 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
         boolean added = cctx.mvcc().addFuture(this, futId);
 
-        assert added;
-
         if (isDone()) {
             cctx.mvcc().removeFuture(futId);
 
             return;
         }
+
+        assert added;
 
         if (timeoutObj != null)
             cctx.time().addTimeoutObject(timeoutObj);
