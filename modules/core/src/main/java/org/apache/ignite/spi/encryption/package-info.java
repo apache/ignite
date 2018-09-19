@@ -15,20 +15,8 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Encryption
-{
-    using System.Diagnostics.CodeAnalysis;
-    using Apache.Ignite.Core.Encryption.Keystore;
-
-    /// <summary>
-    /// Encryption SPI.
-    /// <para />
-    /// Only predefined implementations are supported: 
-    /// <see cref="KeystoreEncryptionSpi"/>
-    /// </summary>
-    [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
-    public interface IEncryptionSpi
-    {
-        // No-op.
-    }
-}
+/**
+ * <!-- Package description. -->
+ * Contains APIs for encryption SPI.
+ */
+package org.apache.ignite.spi.encryption;

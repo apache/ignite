@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.encryption.jks;
+package org.apache.ignite.spi.encryption.keystore;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -44,7 +44,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.encryption.EncryptionSpi;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -60,7 +60,7 @@ import static javax.crypto.Cipher.ENCRYPT_MODE;
  * EncryptionSPI implementation base on JDK provided cipher algorithm implementations.
  *
  * @see EncryptionSpi
- * @see EncryptionKey
+ * @see KeystoreEncryptionKey
  */
 public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi {
     /**
@@ -121,7 +121,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
     /**
      * Master key.
      */
-    private EncryptionKey masterKey;
+    private KeystoreEncryptionKey masterKey;
 
     /** Logger. */
     @LoggerResource
@@ -147,7 +147,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
             if (log != null)
                 log.info("Successfully load keyStore [path=" + keyStorePath + "]");
 
-            masterKey = new EncryptionKey(ks.getKey(masterKeyName, keyStorePwd), null);
+            masterKey = new KeystoreEncryptionKey(ks.getKey(masterKeyName, keyStorePwd), null);
         }
         catch (GeneralSecurityException | IOException e) {
             throw new IgniteSpiException(e);
@@ -169,7 +169,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
     }
 
     /** {@inheritDoc} */
-    @Override public EncryptionKey create() throws IgniteException {
+    @Override public KeystoreEncryptionKey create() throws IgniteException {
         ensureStarted();
 
         try {
@@ -179,7 +179,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
 
             SecretKey key = gen.generateKey();
 
-            return new EncryptionKey(key, makeDigest(key.getEncoded()));
+            return new KeystoreEncryptionKey(key, makeDigest(key.getEncoded()));
         }
         catch (NoSuchAlgorithmException e) {
             throw new IgniteException(e);
@@ -198,12 +198,12 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
 
     /** {@inheritDoc} */
     @Override public byte[] decrypt(byte[] data, Serializable key) {
-        assert key instanceof EncryptionKey;
+        assert key instanceof KeystoreEncryptionKey;
 
         ensureStarted();
 
         try {
-            SecretKeySpec keySpec = new SecretKeySpec(((EncryptionKey)key).key().getEncoded(), CIPHER_ALGO);
+            SecretKeySpec keySpec = new SecretKeySpec(((KeystoreEncryptionKey)key).key().getEncoded(), CIPHER_ALGO);
 
             Cipher cipher = Cipher.getInstance(AES_WITH_PADDING);
 
@@ -219,12 +219,12 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
 
     /** {@inheritDoc} */
     @Override public void decryptNoPadding(ByteBuffer data, Serializable key, ByteBuffer res) {
-        assert key instanceof EncryptionKey;
+        assert key instanceof KeystoreEncryptionKey;
 
         ensureStarted();
 
         try {
-            SecretKeySpec keySpec = new SecretKeySpec(((EncryptionKey)key).key().getEncoded(), CIPHER_ALGO);
+            SecretKeySpec keySpec = new SecretKeySpec(((KeystoreEncryptionKey)key).key().getEncoded(), CIPHER_ALGO);
 
             Cipher cipher = Cipher.getInstance(AES_WITHOUT_PADDING);
 
@@ -249,13 +249,13 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
      * @return Encrypted data.
      */
     private void doEncryption(ByteBuffer data, String algo, Serializable key, ByteBuffer res) {
-        assert key instanceof EncryptionKey;
+        assert key instanceof KeystoreEncryptionKey;
         //assert start >= 0 && length + start <= data.length;
 
         ensureStarted();
 
         try {
-            SecretKeySpec keySpec = new SecretKeySpec(((EncryptionKey)key).key().getEncoded(), CIPHER_ALGO);
+            SecretKeySpec keySpec = new SecretKeySpec(((KeystoreEncryptionKey)key).key().getEncoded(), CIPHER_ALGO);
 
             Cipher cipher = Cipher.getInstance(algo);
 
@@ -275,7 +275,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
 
     /** {@inheritDoc} */
     @Override public byte[] encryptKey(Serializable key) {
-        assert key instanceof EncryptionKey;
+        assert key instanceof KeystoreEncryptionKey;
 
         byte[] serKey = U.toBytes(key);
 
@@ -287,10 +287,10 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
     }
 
     /** {@inheritDoc} */
-    @Override public EncryptionKey decryptKey(byte[] data) {
+    @Override public KeystoreEncryptionKey decryptKey(byte[] data) {
         byte[] serKey = decrypt(data, masterKey);
 
-        EncryptionKey key = U.fromBytes(serKey);
+        KeystoreEncryptionKey key = U.fromBytes(serKey);
 
         byte[] digest = makeDigest(key.key().getEncoded());
 

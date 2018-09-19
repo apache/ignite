@@ -23,7 +23,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.spi.encryption.jks.EncryptionKey;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -54,7 +54,7 @@ public class EncryptedCacheGroupCreateTest extends AbstractEncryptionTest {
 
     /** @throws Exception If failed. */
     public void testCreateEncryptedCacheGroup() throws Exception {
-        EncryptionKey key = createEncryptedCache(ENCRYPTED_CACHE, ENCRYPTED_GROUP);
+        KeystoreEncryptionKey key = createEncryptedCache(ENCRYPTED_CACHE, ENCRYPTED_GROUP);
 
         CacheConfiguration<Long, String> ccfg = new CacheConfiguration<>(ENCRYPTED_CACHE + "2");
 
@@ -69,7 +69,7 @@ public class EncryptedCacheGroupCreateTest extends AbstractEncryptionTest {
 
         GridEncryptionManager encMgr = encrypted2.context().kernalContext().encryption();
 
-        EncryptionKey key2 = (EncryptionKey)encMgr.groupKey(CU.cacheGroupId(ENCRYPTED_CACHE, ENCRYPTED_GROUP));
+        KeystoreEncryptionKey key2 = (KeystoreEncryptionKey)encMgr.groupKey(CU.cacheGroupId(ENCRYPTED_CACHE, ENCRYPTED_GROUP));
 
         assertNotNull(key2);
         assertNotNull(key2.key());
@@ -91,7 +91,7 @@ public class EncryptedCacheGroupCreateTest extends AbstractEncryptionTest {
     }
 
     /** */
-    private EncryptionKey createEncryptedCache(String cacheName, String grpName) {
+    private KeystoreEncryptionKey createEncryptedCache(String cacheName, String grpName) {
         CacheConfiguration<Long, String> ccfg = new CacheConfiguration<>(cacheName);
 
         ccfg.setEncryptionEnabled(true);
@@ -105,8 +105,8 @@ public class EncryptedCacheGroupCreateTest extends AbstractEncryptionTest {
 
         assertNotNull(enc);
 
-        EncryptionKey key =
-            (EncryptionKey)grid.context().encryption().groupKey(CU.cacheGroupId(cacheName, grpName));
+        KeystoreEncryptionKey key =
+            (KeystoreEncryptionKey)grid.context().encryption().groupKey(CU.cacheGroupId(cacheName, grpName));
 
         assertNotNull(key);
         assertNotNull(key.key());

@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.encryption.EncryptionSpi;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
@@ -163,39 +163,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         ctx.addNodeAttribute(ATTR_ENCRYPTION_MASTER_KEY_DIGEST, getSpi().masterKeyDigest());
 
-        if (log.isDebugEnabled())
-            log.debug(startInfo());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        stopSpi();
-
-        if (log.isDebugEnabled())
-            log.debug(stopInfo());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void onKernalStart0() {
-        ctx.discovery().localJoinFuture().listen(f -> {
-            if (notCoordinator())
-                return;
-
-            HashMap<Integer, byte[]> knownEncKeys = knownEncryptionKeys();
-
-            HashMap<Integer, byte[]> newEncKeys =
-                newEncryptionKeys(knownEncKeys == null ? Collections.EMPTY_SET : knownEncKeys.keySet());
-
-            if (newEncKeys == null)
-                return;
-
-            for (Map.Entry<Integer, byte[]> entry : newEncKeys.entrySet()) {
-                groupKey(entry.getKey(), entry.getValue());
-
-                U.quietAndInfo(log, "Added encryption key on local join [grpId=" + entry.getKey() + "]");
-            }
-        });
-
         ctx.event().addDiscoveryEventListener(discoLsnr = (evt, discoCache) -> {
             UUID leftNodeId = evt.eventNode().id();
 
@@ -256,6 +223,45 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             }
         });
     }
+
+    /** {@inheritDoc} */
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
+        stopSpi();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onKernalStart0() throws IgniteCheckedException {
+        ctx.discovery().localJoinFuture().listen(f -> {
+            if (notCoordinator())
+                return;
+
+            //We can't store keys before node join to cluster(on statically configured cache registration).
+            //Because, keys should be received from cluster.
+            //Otherwise, we would generate different keys on each started node.
+            //So, after starting, coordinator saves locally newly generated encryption keys.
+            //And sends that keys to every joining node.
+            synchronized (metaStorageMux) {
+                //Keys read from meta storage.
+                HashMap<Integer, byte[]> knownEncKeys = knownEncryptionKeys();
+
+                //Generated(not saved!) keys for a new caches.
+                //Configured statically in config, but doesn't stored on the disk.
+                HashMap<Integer, byte[]> newEncKeys =
+                    newEncryptionKeys(knownEncKeys == null ? Collections.EMPTY_SET : knownEncKeys.keySet());
+
+                if (newEncKeys == null)
+                    return;
+
+                //We can store keys to the disk, because we are on a coordinator.
+                for (Map.Entry<Integer, byte[]> entry : newEncKeys.entrySet()) {
+                    groupKey(entry.getKey(), entry.getValue());
+
+                    U.quietAndInfo(log, "Added encryption key on local join [grpId=" + entry.getKey() + "]");
+                }
+            }
+        });
+    }
+
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
@@ -413,10 +419,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        if (notCoordinator() || dataBag.isJoiningNodeClient())
-            return;
-
-        if (dataBag.commonDataCollectedFor(ENCRYPTION_MGR.ordinal()))
+        if (dataBag.isJoiningNodeClient() || dataBag.commonDataCollectedFor(ENCRYPTION_MGR.ordinal()))
             return;
 
         HashMap<Integer, byte[]> knownEncKeys = knownEncryptionKeys();
@@ -426,7 +429,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         if (knownEncKeys == null)
             knownEncKeys = newKeys;
-        else if (newKeys != null){
+        else if (newKeys != null) {
             for (Map.Entry<Integer, byte[]> entry : newKeys.entrySet()) {
                 byte[] old = knownEncKeys.putIfAbsent(entry.getKey(), entry.getValue());
 

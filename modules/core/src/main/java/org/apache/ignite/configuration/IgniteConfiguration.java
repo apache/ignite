@@ -40,7 +40,7 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeTask;
-import org.apache.ignite.encryption.EncryptionSpi;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureHandler;

@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.encryption;
+package org.apache.ignite.spi.encryption.noop;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiNoop;
-import org.apache.ignite.spi.encryption.jks.KeystoreEncryptionSpi;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
 /**

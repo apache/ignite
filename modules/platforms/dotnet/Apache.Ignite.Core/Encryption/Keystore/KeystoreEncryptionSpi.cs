@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Encryption.Aes
+namespace Apache.Ignite.Core.Encryption.Keystore
 {
     using System.ComponentModel;
     using Apache.Ignite.Core.Binary;

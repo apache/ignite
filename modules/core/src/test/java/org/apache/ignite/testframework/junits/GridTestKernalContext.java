@@ -35,7 +35,7 @@ import org.apache.ignite.internal.processors.subscription.GridInternalSubscripti
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.spi.encryption.NoopEncryptionSpi;
+import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**

@@ -1791,7 +1791,8 @@ class ClusterCachesInfo {
             persistent,
             null);
 
-        ctx.encryption().beforeCacheGroupStart(grpId, encKey);
+        if (startedCacheCfg.isEncryptionEnabled())
+            ctx.encryption().beforeCacheGroupStart(grpId, encKey);
 
         if (ctx.cache().context().pageStore() != null)
             ctx.cache().context().pageStore().beforeCacheGroupStart(grpDesc);

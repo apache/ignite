@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.encryption;
+package org.apache.ignite.spi.encryption;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;

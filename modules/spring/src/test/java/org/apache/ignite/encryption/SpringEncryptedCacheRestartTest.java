@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.spi.encryption.jks.EncryptionKey;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -79,9 +79,9 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
 
             int grpId = CU.cacheGroupId(enc.name(), enc.configuration().getGroupName());
 
-            EncryptionKey key0 = (EncryptionKey)g.get1().context().encryption().groupKey(grpId);
-            EncryptionKey key1 = (EncryptionKey)g.get2().context().encryption().groupKey(grpId);
-            EncryptionKey key2 = (EncryptionKey)g2.context().encryption().groupKey(grpId);
+            KeystoreEncryptionKey key0 = (KeystoreEncryptionKey)g.get1().context().encryption().groupKey(grpId);
+            KeystoreEncryptionKey key1 = (KeystoreEncryptionKey)g.get2().context().encryption().groupKey(grpId);
+            KeystoreEncryptionKey key2 = (KeystoreEncryptionKey)g2.context().encryption().groupKey(grpId);
 
             assertNotNull(cacheName, key0);
             assertNotNull(cacheName, key1);
@@ -118,13 +118,13 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
 
         assertNotNull(encrypted2);
 
-        EncryptionKey key = (EncryptionKey)g0.context().encryption().groupKey(
+        KeystoreEncryptionKey key = (KeystoreEncryptionKey)g0.context().encryption().groupKey(
             CU.cacheGroupId(encrypted.name(), encrypted.configuration().getGroupName()));
 
         assertNotNull(key);
         assertNotNull(key.key());
 
-        EncryptionKey key2 = (EncryptionKey)g0.context().encryption().groupKey(
+        KeystoreEncryptionKey key2 = (KeystoreEncryptionKey)g0.context().encryption().groupKey(
             CU.cacheGroupId(encrypted2.name(), encrypted2.configuration().getGroupName()));
 
         assertNotNull(key2);

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.encryption.jks;
+package org.apache.ignite.spi.encryption.keystore;
 
 import java.io.Serializable;
 import java.security.Key;
@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
  * @see Key
  * @see KeystoreEncryptionSpi
  */
-public final class EncryptionKey implements Serializable {
+public final class KeystoreEncryptionKey implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -47,7 +47,7 @@ public final class EncryptionKey implements Serializable {
      * @param k Encryption key.
      * @param digest Message digest.
      */
-    EncryptionKey(Key k, @Nullable byte[] digest) {
+    KeystoreEncryptionKey(Key k, @Nullable byte[] digest) {
         this.k = k;
         this.digest = digest;
     }
@@ -67,7 +67,7 @@ public final class EncryptionKey implements Serializable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        EncryptionKey key = (EncryptionKey)o;
+        KeystoreEncryptionKey key = (KeystoreEncryptionKey)o;
 
         return Objects.equals(k, key.k) &&
             Arrays.equals(digest, key.digest);

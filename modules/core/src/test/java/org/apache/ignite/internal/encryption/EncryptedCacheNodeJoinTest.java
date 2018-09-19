@@ -22,7 +22,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.spi.encryption.jks.KeystoreEncryptionSpi;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 

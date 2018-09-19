@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Encryption;
-    using Apache.Ignite.Core.Encryption.Aes;
+    using Apache.Ignite.Core.Encryption.Keystore;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Failure;
     using Apache.Ignite.Core.Impl;

@@ -20,9 +20,8 @@ package org.apache.ignite.spi.encryption;
 import java.nio.ByteBuffer;
 import junit.framework.TestCase;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.encryption.EncryptionSpi;
-import org.apache.ignite.spi.encryption.jks.EncryptionKey;
-import org.apache.ignite.spi.encryption.jks.KeystoreEncryptionSpi;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -68,7 +67,7 @@ public class KeystoreEncryptionSpiSelfTest extends TestCase {
     public void testEncryptDecrypt() throws Exception {
         EncryptionSpi encSpi = spi();
 
-        EncryptionKey k = GridTestUtils.getFieldValue(encSpi, "masterKey");
+        KeystoreEncryptionKey k = GridTestUtils.getFieldValue(encSpi, "masterKey");
         
         assertNotNull(k);
         assertNotNull(k.key());
@@ -93,7 +92,7 @@ public class KeystoreEncryptionSpiSelfTest extends TestCase {
     public void testKeyEncryptDecrypt() throws Exception {
         EncryptionSpi encSpi = spi();
         
-        EncryptionKey k = (EncryptionKey)encSpi.create();
+        KeystoreEncryptionKey k = (KeystoreEncryptionKey)encSpi.create();
 
         assertNotNull(k);
         assertNotNull(k.key());
@@ -103,7 +102,7 @@ public class KeystoreEncryptionSpiSelfTest extends TestCase {
         assertNotNull(encGrpKey);
         assertTrue(encGrpKey.length > 0);
 
-        EncryptionKey k2 = (EncryptionKey)encSpi.decryptKey(encGrpKey);
+        KeystoreEncryptionKey k2 = (KeystoreEncryptionKey)encSpi.decryptKey(encGrpKey);
 
         assertEquals(k.key(), k2.key());
     }

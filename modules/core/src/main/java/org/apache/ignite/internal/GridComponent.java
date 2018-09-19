@@ -66,11 +66,11 @@ public interface GridComponent {
         /** Authentication processor. */
         AUTH_PROC,
 
-        /** Encryption manager. */
-        ENCRYPTION_MGR,
-
         /** */
-        CACHE_CRD_PROC
+        CACHE_CRD_PROC,
+
+        /** Encryption manager. */
+        ENCRYPTION_MGR
     }
 
     /**

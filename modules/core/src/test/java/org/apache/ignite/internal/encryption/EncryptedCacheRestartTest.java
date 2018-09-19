@@ -20,7 +20,7 @@ package org.apache.ignite.internal.encryption;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.spi.encryption.jks.EncryptionKey;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
 
 /** */
 public class EncryptedCacheRestartTest extends AbstractEncryptionTest {
@@ -46,7 +46,7 @@ public class EncryptedCacheRestartTest extends AbstractEncryptionTest {
 
         int grpId = CU.cacheGroupId(cacheName(), null);
 
-        EncryptionKey keyBeforeRestart = (EncryptionKey)grids.get1().context().encryption().groupKey(grpId);
+        KeystoreEncryptionKey keyBeforeRestart = (KeystoreEncryptionKey)grids.get1().context().encryption().groupKey(grpId);
 
         stopAllGrids();
 
@@ -54,7 +54,7 @@ public class EncryptedCacheRestartTest extends AbstractEncryptionTest {
 
         checkEncryptedCaches(grids.get1(), grids.get2());
 
-        EncryptionKey keyAfterRestart = (EncryptionKey)grids.get1().context().encryption().groupKey(grpId);
+        KeystoreEncryptionKey keyAfterRestart = (KeystoreEncryptionKey)grids.get1().context().encryption().groupKey(grpId);
 
         assertNotNull(keyAfterRestart);
         assertNotNull(keyAfterRestart.key());
