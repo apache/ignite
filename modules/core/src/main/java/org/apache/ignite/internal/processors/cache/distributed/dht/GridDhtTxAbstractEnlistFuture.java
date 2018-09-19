@@ -342,7 +342,10 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                 return;
             }
 
-            tx.addActiveCache(cctx, false);
+            if(!tx.implicitSingle())
+                tx.addActiveCache(cctx, false);
+            else // Nothing to do for single update.
+                assert tx.txState().cacheIds().contains(cctx.cacheId()) && tx.txState().cacheIds().size() == 1;
 
             this.it = it;
         }

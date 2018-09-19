@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 
@@ -259,6 +260,9 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
         IgniteInternalFuture<AffinityTopologyVersion> waitFut =
             cctx.shared().exchange().affinityReadyFuture(topVer.nextMinorVersion());
 
+        if(log.isTraceEnabled())
+            log.trace("Remap on new topology: " + waitFut);
+
         if (waitFut == null)
             requestSnapshot(cctx.shared().exchange().readyAffinityVersion(), lsnr);
         else {
@@ -323,6 +327,11 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MvccQueryTrackerImpl.class, this);
     }
 
     /** */
