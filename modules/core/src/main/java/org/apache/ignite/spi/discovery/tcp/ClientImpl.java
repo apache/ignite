@@ -151,7 +151,10 @@ class ClientImpl extends TcpDiscoveryImpl {
     private static final Object SPI_RECONNECT = "SPI_RECONNECT";
 
     /** */
-    private static final long CLIENT_THROTTLE_RECONNECT_RESET_TIMEOUT_INTERVAL = 2 * 60_000;
+    private static final long CLIENT_THROTTLE_RECONNECT_RESET_TIMEOUT = IgniteSystemProperties.getLong(
+        IgniteSystemProperties.CLIENT_THROTTLE_RECONNECT_RESET_TIMEOUT_INTERVAL,
+        2 * 60_000
+    );
 
     /** Remote nodes. */
     private final ConcurrentMap<UUID, TcpDiscoveryNode> rmtNodes = new ConcurrentHashMap<>();
@@ -1908,7 +1911,7 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @throws InterruptedException If thread is interrupted.
          */
         private void throttleClientReconnect() throws InterruptedException {
-            if (U.currentTimeMillis() - lastReconnectTimestamp > CLIENT_THROTTLE_RECONNECT_RESET_TIMEOUT_INTERVAL)
+            if (U.currentTimeMillis() - lastReconnectTimestamp > CLIENT_THROTTLE_RECONNECT_RESET_TIMEOUT)
                 currentReconnectDelay = 0; // Skip pause on first reconnect.
             else if (currentReconnectDelay == 0)
                 currentReconnectDelay = 200;
