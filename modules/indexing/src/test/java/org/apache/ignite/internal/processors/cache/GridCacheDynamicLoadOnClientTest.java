@@ -40,7 +40,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
 /**
- * Test lazy cache start on client nodes.
+ * Test lazy cache start on client nodes with inmemory cache.
  */
 public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
     /** Cache name. */
@@ -59,7 +59,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
     private static final int NODES = 2;
 
     /** Client or server mode for configuration. */
-    private boolean client;
+    protected boolean client;
 
     /** Instance of client node. */
     private static IgniteEx clientNode;
