@@ -829,7 +829,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             // Rare case when localNode joined to baseline topology with different consistentId.
             // Need to call binary restore for writing `node-started.bin` file.
-            cctx.database().readCheckpointAndRestoreMemory();
+            cctx.database().restoreBinaryMemory();
         }
 
         cctx.activate();

@@ -653,7 +653,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @return Last seen WAL pointer during binary memory recovery.
      * @throws IgniteCheckedException If failed.
      */
-    public WALPointer readCheckpointAndRestoreMemory() throws IgniteCheckedException {
+    public WALPointer restoreBinaryMemory() throws IgniteCheckedException {
         return null;
     }
 

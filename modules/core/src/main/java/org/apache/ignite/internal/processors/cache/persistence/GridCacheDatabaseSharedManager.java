@@ -811,9 +811,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointReadLock();
 
         try {
-            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
-                lsnr.beforeMemoryRestore(this);
-
             cctx.pageStore().initializeForMetastorage();
 
             CheckpointStatus status = readCheckpointStatus();
@@ -853,7 +850,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public WALPointer readCheckpointAndRestoreMemory() throws IgniteCheckedException {
+    @Override public WALPointer restoreBinaryMemory() throws IgniteCheckedException {
         assert !cctx.kernalContext().clientNode();
 
         checkpointReadLock();
@@ -1940,7 +1937,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         for (DynamicCacheDescriptor desc : caches)
             storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
 
-        WALPointer restoredPtr = readCheckpointAndRestoreMemory();
+        WALPointer restoredPtr = restoreBinaryMemory();
 
         if (restoredPtr != null)
             U.log(log, "Binary memory state restored at node startup [restoredPtr=" + restoredPtr + ']');
