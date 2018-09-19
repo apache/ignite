@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalPart
 import org.apache.ignite.internal.processors.client.IgniteDataStreamerTest;
 import org.apache.ignite.internal.processors.query.h2.database.InlineIndexHelperTest;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
-import org.apache.ignite.util.GridCommandHandlerIndexingTest;
 
 /**
  * Cache tests using indexing.
@@ -87,8 +86,6 @@ public class IgniteCacheWithIndexingTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheGroupsSqlTest.class);
 
         suite.addTestSuite(IgniteDataStreamerTest.class);
-
-        suite.addTestSuite(GridCommandHandlerIndexingTest.class);
 
         return suite;
     }
