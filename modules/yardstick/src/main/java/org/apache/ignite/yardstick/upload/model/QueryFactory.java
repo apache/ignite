@@ -210,7 +210,8 @@ public class QueryFactory {
         if (p.streamerPerNodeBufferSize() != null)
             cmd.append(" PER_NODE_BUFFER_SIZE ").append(p.streamerPerNodeBufferSize());
 
-        cmd.append(" ORDERED ").append(p.streamerOrdered() ? "ON" : "OFF");
+        if (p.streamerOrdered())
+            cmd.append(" ORDERED");
 
         return cmd.append(';').toString();
     }
