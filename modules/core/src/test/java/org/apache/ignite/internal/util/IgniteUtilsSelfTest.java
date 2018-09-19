@@ -857,6 +857,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         CyclicBarrier barrier = new CyclicBarrier(3);
 
         IgniteUtils.doInParallel(
+            3,
             Executors.newFixedThreadPool(3),
             Arrays.asList(1, 2, 3),
             (i) -> {
@@ -876,6 +877,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     public void testDoInParallelException() {
         try {
             IgniteUtils.doInParallel(
+                3,
                 Executors.newFixedThreadPool(1),
                 Arrays.asList(1, 2, 3),
                 (i) -> {
