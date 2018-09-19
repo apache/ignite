@@ -506,6 +506,10 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE =
         "IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE";
 
+    /** Time interval that indicates that client reconnect throttle must be reset to zero. 2 minutes by default. */
+    public static final String CLIENT_THROTTLE_RECONNECT_RESET_TIMEOUT_INTERVAL =
+        "CLIENT_THROTTLE_RECONNECT_RESET_TIMEOUT_INTERVAL";
+
     /** Number of cache operation retries in case of topology exceptions. */
     public static final String IGNITE_CACHE_RETRIES_COUNT = "IGNITE_CACHE_RETRIES_COUNT";
 
