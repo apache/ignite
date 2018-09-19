@@ -198,12 +198,7 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
      */
     class CustomCommunicationSpi extends TcpCommunicationSpi {
         /** Network is disabled. */
-        private volatile boolean netDisabled = false;
-
-        /** */
-        CustomCommunicationSpi() {
-            setName("CustomCommunicationSpi");
-        }
+        private volatile boolean netDisabled;
 
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg,
@@ -279,15 +274,10 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
      */
     class CustomDiscoverySpi extends TcpDiscoverySpi {
         /** Network is disabled. */
-        private volatile boolean netDisabled = false;
+        private volatile boolean netDisabled;
 
         /** */
         private final CountDownLatch netDisabledLatch = new CountDownLatch(1);
-
-        /** */
-        CustomDiscoverySpi() {
-            setName("CustomDiscoverySpi");
-        }
 
         /** {@inheritDoc} */
         @Override protected <T> T readMessage(Socket sock, @Nullable InputStream in,
@@ -329,7 +319,7 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTestsStopped() {
         stopAllGrids();
     }
 }
