@@ -126,12 +126,10 @@ namespace Apache.Ignite.Core.Client
 
         /// <summary>
         /// Gets or sets endpoints to connect to.
-        /// This property can be set in combination with <see cref="Host"/> and <see cref="Port"/> properties,
-        /// or separately. <see cref="Host"/> and <see cref="Port"/> just define one of the endpoints.
         /// <para />
         /// When multiple endpoints are specified, failover and load-balancing mechanism is enabled:
         /// * Ignite picks random endpoint and connects to it.
-        /// * On disconnect, next endpoint is picked from the list.
+        /// * On disconnect, next endpoint is picked from the list (.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<string> Endpoints { get; set; }

@@ -37,6 +37,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private ClientSocket _socket;
 
         /** Current endpoint index. */
+        // TODO: Have a global static starting index (take mod of it) so we have global round-robin
         private int _endPointIndex;
 
         /** Config. */
@@ -77,6 +78,7 @@ namespace Apache.Ignite.Core.Impl.Client
             }
 
             // Choose random endpoint for load balancing.
+            // TODO: use global static counter
             _endPointIndex = new Random().Next(_endPoints.Count - 1);
 
             Connect();
