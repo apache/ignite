@@ -363,6 +363,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testTxReadIsolationSimple() throws Exception {
+        disableScheduledVacuum = true;
+
         Ignite srv0 = startGrids(4);
 
         client = true;
