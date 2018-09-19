@@ -50,7 +50,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Version 2.5.0: added authentication. */
     public static final ClientListenerProtocolVersion VER_2_5_0 = ClientListenerProtocolVersion.create(2, 5, 0);
 
-    /** Version 2.7.0: added precision and scale, fixed result set closing issue. */
+    /** Version 2.7.0: added precision and scale. */
     public static final ClientListenerProtocolVersion VER_2_7_0 = ClientListenerProtocolVersion.create(2, 7, 0);
 
     /** Current version. */

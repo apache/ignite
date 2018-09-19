@@ -25,17 +25,7 @@ namespace ignite
     namespace odbc
     {
         ResultPage::ResultPage() :
-            last(false),
-            size(0),
-            data(DEFAULT_ALLOCATED_MEMORY)
-        {
-            //No-op.
-        }
-
-        ResultPage::ResultPage(bool last) :
-            last(last),
-            size(0),
-            data(DEFAULT_ALLOCATED_MEMORY)
+            last(false), size(0), data(DEFAULT_ALLOCATED_MEMORY)
         {
             //No-op.
         }

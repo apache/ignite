@@ -337,22 +337,16 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
                 fieldsMeta = new ArrayList<>();
             } else {
-                OdbcResultSet set = results.currentResultSet();
-
-                assert set != null;
-
-                fieldsMeta = set.fieldsMeta();
-
                 qryResults.put(qryId, results);
 
-                if (log.isDebugEnabled()) {
-                    for (OdbcColumnMeta meta : fieldsMeta)
-                        log.debug("Meta - " + meta.toString());
+                fieldsMeta = results.currentResultSet().fieldsMeta();
+
+                for (OdbcColumnMeta meta : fieldsMeta) {
+                    log.warning("Meta - " + meta.columnName + ", " + meta.precision + ", " + meta.scale);
                 }
             }
 
-            OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, fieldsMeta,
-                results.rowsAffected(), !results.hasUnfetchedRows());
+            OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, fieldsMeta, results.rowsAffected());
 
             return new OdbcResponse(res);
         }

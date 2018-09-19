@@ -157,7 +157,7 @@ namespace ignite
 
                 SqlResult::Type result = SqlResult::AI_SUCCESS;
 
-                if (!IsClosedRemotely())
+                if (!cursor->IsClosedRemotely())
                     result = MakeRequestClose();
 
                 if (result == SqlResult::AI_SUCCESS)
@@ -194,37 +194,12 @@ namespace ignite
                     return SqlResult::AI_NO_DATA;
                 }
 
-                SqlResult::Type res = SqlResult::AI_SUCCESS;
-
-                if (rowsAffected[rowsAffectedIdx + 1] == -1)
-                    res = MakeRequestMoreResults();
-                else
-                {
-                    cachedNextPage.reset(new ResultPage(true));
-
-                    int64_t qryId = cursor->GetQueryId();
-
-                    cursor.reset(new Cursor(qryId));
-                }
+                SqlResult::Type res = MakeRequestMoreResults();
 
                 if (res == SqlResult::AI_SUCCESS)
                     ++rowsAffectedIdx;
 
                 return res;
-            }
-
-            bool DataQuery::IsClosedRemotely() const
-            {
-                for (size_t i = rowsAffectedIdx + 1; i < rowsAffected.size(); ++i)
-                {
-                    if (rowsAffected[i] < 0)
-                        return false;
-                }
-
-                if (cachedNextPage.get())
-                    return cachedNextPage->IsLast();
-
-                return cursor->IsClosedRemotely();
             }
 
             SqlResult::Type DataQuery::MakeRequestExecute()

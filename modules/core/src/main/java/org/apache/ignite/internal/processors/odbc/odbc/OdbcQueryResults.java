@@ -36,8 +36,8 @@ public class OdbcQueryResults {
     /** Current result set. */
     private OdbcResultSet currentResultSet;
 
-    /** Next result set index. */
-    private int nextResultSetIdx;
+    /** Current result set index. */
+    private int currentResultSetIdx;
 
     /** Client version. */
     private ClientListenerProtocolVersion ver;
@@ -48,7 +48,7 @@ public class OdbcQueryResults {
      */
     OdbcQueryResults(List<FieldsQueryCursor<List<?>>> cursors, ClientListenerProtocolVersion ver) {
         this.cursors = cursors;
-        this.nextResultSetIdx = 0;
+        this.currentResultSetIdx = 0;
         this.ver = ver;
 
         rowsAffected = new ArrayList<>(cursors.size());
@@ -74,20 +74,11 @@ public class OdbcQueryResults {
         if (currentResultSet != null && currentResultSet.hasUnfetchedRows())
             return true;
 
-        if (false) {//ver.compareTo(OdbcConnectionContext.VER_2_7_0) >= 0) {
-            for (int i = nextResultSetIdx; i < cursors.size(); ++i) {
-                QueryCursorImpl<List<?>> cursor = (QueryCursorImpl<List<?>>)cursors.get(i);
+        for (FieldsQueryCursor<List<?>> cursor : cursors) {
+            QueryCursorImpl<List<?>> cursor0 = (QueryCursorImpl<List<?>>)cursor;
 
-                if (cursor.isQuery())
-                    return true;
-            }
-        } else {
-            for (FieldsQueryCursor<List<?>> cursor : cursors) {
-                QueryCursorImpl<List<?>> cursor0 = (QueryCursorImpl<List<?>>)cursor;
-
-                if (cursor0.isQuery())
-                    return true;
-            }
+            if (cursor0.isQuery())
+                return true;
         }
         return false;
     }
@@ -113,14 +104,9 @@ public class OdbcQueryResults {
     public void nextResultSet() {
         currentResultSet = null;
 
-        if (false) {//ver.compareTo(OdbcConnectionContext.VER_2_7_0) >= 0) {
-            while (nextResultSetIdx != cursors.size() && rowsAffected.get(nextResultSetIdx) != -1)
-                ++nextResultSetIdx;
-        }
-
-        if (nextResultSetIdx != cursors.size()) {
-            currentResultSet = new OdbcResultSet(cursors.get(nextResultSetIdx), ver);
-            ++nextResultSetIdx;
+        if (currentResultSetIdx != cursors.size()) {
+            currentResultSet = new OdbcResultSet(cursors.get(currentResultSetIdx), ver);
+            ++currentResultSetIdx;
         }
     }
 }

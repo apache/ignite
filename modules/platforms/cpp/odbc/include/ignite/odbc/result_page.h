@@ -38,16 +38,9 @@ namespace ignite
 
         public:
             /**
-             * Default constructor.
+             * Constructor.
              */
             ResultPage();
-
-            /**
-             * Constructor.
-             *
-             * @param last Last flag.
-             */
-            ResultPage(bool last);
 
             /**
              * Destructor.
