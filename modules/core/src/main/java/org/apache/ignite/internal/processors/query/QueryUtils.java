@@ -496,11 +496,8 @@ public class QueryUtils {
 
                     BinaryField field = mapper.affinityKeyField(keyType);
 
-                    if (field != null) {
-                        // Affinity key can't have the same name as one of value fields has
-                        if (!qryEntity.getFields().containsKey(field.name()))
-                            affField = field.name();
-                    }
+                    if (field != null)
+                        affField = field.name();
                 }
             }
 

@@ -18,7 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.AffinityKeyAndSqlFieldNameConflictTest;
+import org.apache.ignite.internal.processors.cache.AffinityKeyNameAndValueFieldNameConflictTest;
 import org.apache.ignite.internal.processors.cache.CacheIteratorScanQueryTest;
 import org.apache.ignite.internal.processors.cache.CacheLocalQueryDetailMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheLocalQueryMetricsSelfTest;
@@ -316,7 +316,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteCacheMultipleIndexedTypesTest.class);
 
-        suite.addTestSuite(AffinityKeyAndSqlFieldNameConflictTest.class);
+        suite.addTestSuite(AffinityKeyNameAndValueFieldNameConflictTest.class);
 
         // DML.
         suite.addTestSuite(IgniteCacheMergeSqlQuerySelfTest.class);

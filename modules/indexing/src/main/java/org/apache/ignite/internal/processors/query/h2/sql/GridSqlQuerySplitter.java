@@ -56,6 +56,7 @@ import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2CollocationModel.isCollocated;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst.TRUE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.AVG;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.CAST;
@@ -2359,7 +2360,7 @@ public class GridSqlQuerySplitter {
 
         int colId = column.column().getColumnId();
 
-        if ((affKeyCol == null || colId != affKeyCol.column.getColumnId()) && !desc.isKeyColumn(colId))
+        if ((affKeyCol == null || !desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT) || colId != affKeyCol.column.getColumnId()) && !desc.isKeyColumn(colId))
             return null;
 
         if (right instanceof GridSqlConst) {
