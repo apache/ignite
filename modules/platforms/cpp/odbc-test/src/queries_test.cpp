@@ -2065,7 +2065,7 @@ BOOST_AUTO_TEST_CASE(TestManyCursors)
 {
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
-    for (int32_t i = 0; i < 100; ++i)
+    for (int32_t i = 0; i < 1000; ++i)
     {
         SQLCHAR req[] = "SELECT 1";
 
@@ -2085,7 +2085,7 @@ BOOST_AUTO_TEST_CASE(TestManyCursorsTwoSelects1)
 {
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
-    for (int32_t i = 0; i < 100; ++i)
+    for (int32_t i = 0; i < 1000; ++i)
     {
         SQLCHAR req[] = "SELECT 1; SELECT 2";
 
@@ -2105,7 +2105,7 @@ BOOST_AUTO_TEST_CASE(TestManyCursorsTwoSelects2)
 {
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
-    for (int32_t i = 0; i < 100; ++i)
+    for (int32_t i = 0; i < 1000; ++i)
     {
         SQLCHAR req[] = "SELECT 1; SELECT 2;";
 
@@ -2130,7 +2130,7 @@ BOOST_AUTO_TEST_CASE(TestManyCursorsSelectMerge1)
 {
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
-    for (int32_t i = 0; i < 100; ++i)
+    for (int32_t i = 0; i < 1000; ++i)
     {
         SQLCHAR req[] = "SELECT 1; MERGE into TestType(_key) values(2)";
 
@@ -2150,7 +2150,7 @@ BOOST_AUTO_TEST_CASE(TestManyCursorsSelectMerge2)
 {
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
-    for (int32_t i = 0; i < 100; ++i)
+    for (int32_t i = 0; i < 1000; ++i)
     {
         SQLCHAR req[] = "SELECT 1; MERGE into TestType(_key) values(2)";
 
