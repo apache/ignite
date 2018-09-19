@@ -766,7 +766,10 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             "[timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
     }
 
-    public final IgniteCheckedException heuristicException(Throwable ex) {
+    /**
+     * @param ex Root cause.
+     */
+    public final Error heuristicException(Throwable ex) {
         return new IgniteTxHeuristicCheckedException("Commit produced a runtime exception " +
             "(this is a critical situation and will be handled according to configured " +
             "failure handling policy): " + CU.txString(this), ex);

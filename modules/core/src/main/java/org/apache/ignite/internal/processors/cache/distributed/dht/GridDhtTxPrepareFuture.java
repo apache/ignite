@@ -39,6 +39,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
@@ -741,8 +742,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             if (tx.commitOnPrepare()) {
                 if (tx.markFinalizing(IgniteInternalTx.FinalizationStatus.USER_FINISH)) {
-                    IgniteInternalFuture<IgniteInternalTx> fut = null;
-
                     CIX1<IgniteInternalFuture<IgniteInternalTx>> resClo =
                         new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
                             @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> fut) {
@@ -754,42 +753,16 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             }
                         };
 
-                    if (prepErr == null) {
-                        try {
-                            fut = tx.commitAsync();
-                        }
-                        catch (RuntimeException | Error e) {
-                            Exception hEx = new IgniteTxHeuristicCheckedException("Commit produced a runtime " +
-                                "exception: " + CU.txString(tx), e);
-
-                            res.error(hEx);
-
-                            tx.systemInvalidate(true);
-
-                            try {
-                                fut = tx.rollbackAsync();
-
-                                fut.listen(resClo);
-                            }
-                            catch (Throwable e1) {
-                                e.addSuppressed(e1);
-                            }
-
-                            throw e;
-                        }
-
+                    try {
+                        if (prepErr == null)
+                            tx.commitAsync().listen(resClo);
+                        else if (!cctx.kernalContext().isStopping())
+                            tx.rollbackAsync().listen(resClo);
                     }
-                    else if (!cctx.kernalContext().isStopping())
-                        try {
-                            fut = tx.rollbackAsync();
-                        }
-                        catch (Throwable e) {
-                            err.addSuppressed(e);
-                            fut = null;
-                        }
-
-                    if (fut != null)
-                        fut.listen(resClo);
+                    catch (Throwable t) {
+                        // Failure to commit or rollback tx at this point means possibility of stale tx.
+                        throw tx.heuristicException(t);
+                    }
                 }
             }
             else {
