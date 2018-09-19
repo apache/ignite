@@ -735,6 +735,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         try {
             validateTxMode(cacheCtx);
 
+            // TODO: IGNITE-9540: Fix invoke/invokeAll.
+            if(invokeMap != null)
+                MvccUtils.verifyMvccOperationSupport(cacheCtx, "invoke/invokeAll");
+
             if (mvccSnapshot == null) {
                 MvccUtils.mvccTracker(cacheCtx, this);
 
@@ -845,13 +849,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable Map<KeyCacheObject, GridCacheDrInfo> drMap,
         final boolean retval
     ) {
-        // TODO: IGNITE-9540: Fix invoke/invokeAll.
-        if (cacheCtx.mvccEnabled()) {
-            if(invokeMap != null)
-                MvccUtils.verifyMvccOperationSupport(cacheCtx, "invoke/invokeAll");
-
+        if (cacheCtx.mvccEnabled())
             return mvccPutAllAsync0(cacheCtx, map, invokeMap, invokeArgs, retval, null);
-        }
 
         try {
             beforePut(cacheCtx, retval, false);
@@ -2176,6 +2175,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture(e);
         }
+
+        // TODO: IGNITE-7955: Fix non-transactional operations.
+        if (skipVals)
+            MvccUtils.verifyMvccOperationSupport(cacheCtx, "containsKey/containsKeys");
 
         if (cacheCtx.mvccEnabled() && !isOperationAllowed(true))
             return txTypeMismatchFinishFuture();
