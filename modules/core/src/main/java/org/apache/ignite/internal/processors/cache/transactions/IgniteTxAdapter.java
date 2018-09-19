@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridIntIterator;
@@ -763,6 +764,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     public final IgniteCheckedException rollbackException() {
         return new IgniteTxRollbackCheckedException("Failed to finish transaction because it has been rolled back " +
             "[timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
+    }
+
+    public final IgniteCheckedException heuristicException(Throwable ex) {
+        return new IgniteTxHeuristicCheckedException("Commit produced a runtime exception " +
+            "(this is a critical situation and will be handled according to configured " +
+            "failure handling policy): " + CU.txString(this), ex);
     }
 
     /** {@inheritDoc} */

@@ -1015,46 +1015,10 @@ public class IgniteTxHandler {
             }
         }
         catch (Throwable e) {
-            try {
-                U.error(log, "Failed completing transaction [commit=" + req.commit() + ", tx=" + tx + ']', e);
-            }
-            catch (Throwable e0) {
-                ClusterNode node0 = ctx.discovery().node(nodeId);
+            logTxFinishError(tx, req.commit(), e);
 
-                U.error(log, "Failed completing transaction [commit=" + req.commit() + ", tx=" +
-                        CU.txString(tx) + ']', e);
-
-                U.error(log, "Failed to log message due to an error: ", e0);
-
-                if (node0 != null && (!node0.isClient() || node0.isLocal())) {
-                    ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-
-                    throw e;
-                }
-            }
-
-            if (tx != null) {
-                tx.commitError(e);
-
-                tx.systemInvalidate(true);
-
-                try {
-                    IgniteInternalFuture<IgniteInternalTx> res = tx.rollbackDhtLocalAsync();
-
-                    // Only for error logging.
-                    res.listen(CU.errorLogger(log));
-
-                    return res;
-                }
-                catch (Throwable e1) {
-                    e.addSuppressed(e1);
-                }
-            }
-
-            if (e instanceof Error)
-                throw (Error)e;
-
-            return new GridFinishedFuture<>(e);
+            // Trigger failure handler.
+            throw e;
         }
     }
 
@@ -1079,20 +1043,10 @@ public class IgniteTxHandler {
                 return tx.rollbackAsyncLocal();
         }
         catch (Throwable e) {
-            U.error(log, "Failed completing transaction [commit=" + commit + ", tx=" + tx + ']', e);
+            logTxFinishError(tx, commit, e);
 
-            if (e instanceof Error)
-                throw e;
-
-            if (tx != null)
-                try {
-                    return tx.rollbackNearTxLocalAsync();
-                }
-                catch (Throwable e1) {
-                    e.addSuppressed(e1);
-                }
-
-            return new GridFinishedFuture<>(e);
+            // Trigger failure handler.
+            throw e;
         }
     }
 
@@ -1426,7 +1380,7 @@ public class IgniteTxHandler {
      */
     protected void finish(
         GridDistributedTxRemoteAdapter tx,
-        GridDhtTxPrepareRequest req) throws IgniteTxHeuristicCheckedException {
+        GridDhtTxPrepareRequest req) throws IgniteCheckedException{
         assert tx != null : "No transaction for one-phase commit prepare request: " + req;
 
         try {
@@ -1439,27 +1393,11 @@ public class IgniteTxHandler {
 
             tx.commitRemoteTx();
         }
-        catch (IgniteTxHeuristicCheckedException e) {
-            // Just rethrow this exception. Transaction was already uncommitted.
-            throw e;
-        }
         catch (Throwable e) {
-            U.error(log, "Failed committing transaction [tx=" + tx + ']', e);
+            logTxFinishError(tx, true, e);
 
-            // Mark transaction for invalidate.
-            tx.invalidate(true);
-            tx.systemInvalidate(true);
-
-            try {
-                tx.rollbackRemoteTx();
-            }
-            catch (Throwable e1) {
-                e.addSuppressed(e1);
-                U.error(log, "Failed to automatically rollback transaction: " + tx, e1);
-            }
-
-            if (e instanceof Error)
-                throw (Error)e;
+            // Trigger failure handler.
+            throw e;
         }
     }
 
@@ -1981,5 +1919,27 @@ public class IgniteTxHandler {
             res.txState(fut.tx().txState());
 
         fut.onResult(nodeId, res);
+    }
+
+    /**
+     * @param tx Tx.
+     * @param commit Commit.
+     * @param e Exception.
+     */
+    private void logTxFinishError(@Nullable IgniteTxAdapter tx, boolean commit, Throwable e) {
+//        U.warn(log, "Failed to commit the transaction, node is stopping [tx=" +
+//            CU.txString(this) + ']');
+
+        try {
+            // First try printing a full transaction. This is error prone.
+            U.error(log, "Failed committing the transaction (this is a critical situation and will be handled according " +
+                "to configured policy): [commit=" + commit + ", tx=" + tx + ']', e);
+        }
+        catch (Throwable e0) {
+            e.addSuppressed(e0);
+
+            U.error(log, "Failed committing the transaction (this is a critical situation and will be handled according " +
+                "to configured policy): [commit=" + commit + ", tx=" + CU.txString(tx) + ']', e);
+        }
     }
 }

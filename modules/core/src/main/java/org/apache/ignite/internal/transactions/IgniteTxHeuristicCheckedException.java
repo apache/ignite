@@ -48,4 +48,13 @@ public class IgniteTxHeuristicCheckedException extends IgniteCheckedException {
     public IgniteTxHeuristicCheckedException(String msg, Throwable cause) {
         super(msg, cause);
     }
+
+    /**
+     * Creates new heuristic exception with root cause.
+     *
+     * @param cause Root cause.
+     */
+    public IgniteTxHeuristicCheckedException(Throwable cause) {
+        super(cause);
+    }
 }
