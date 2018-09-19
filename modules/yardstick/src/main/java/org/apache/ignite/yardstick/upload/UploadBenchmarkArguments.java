@@ -44,8 +44,8 @@ public class UploadBenchmarkArguments implements StreamerParams {
     /**
      * Parameters for JDBC connection, that only uploads data.
      *
-     * We can't just pass entire params string, due to yardstick, which relies on bash,
-     * has some troubles with escaping ampersand character.
+     * We can't just pass entire params string, due to yardstick, which relies on bash, has some troubles with escaping
+     * ampersand character.
      */
     @Parameter(names = {"--sql-jdbc-params"},
         variableArity = true,
@@ -91,9 +91,12 @@ public class UploadBenchmarkArguments implements StreamerParams {
     private long jdbcBatchSize = -1;
 
     /** Turn on streaming during upload */
-    @Parameter(names={"--use-streaming"}, arity = 1,
+    @Parameter(names = {"--use-streaming"}, arity = 1,
         description = "Upload data in insert benchmarks in streaming mode")
     private boolean useStreaming = false;
+
+    @Parameter(names = {"--idx-count"})
+    private int idxCnt = 0;
 
     /**
      * @return Switch wal.
@@ -127,10 +130,9 @@ public class UploadBenchmarkArguments implements StreamerParams {
     }
 
     /**
-     * How many entries to collect before sending to java streamer api in either way:
-     * passing map to {@link IgniteDataStreamer#addData(Map)},
-     * or set STREAMING sql command parameter. <br/>
-     * If set to 1, {@link IgniteDataStreamer#addData(Object, Object)} method will be used.
+     * How many entries to collect before sending to java streamer api in either way: passing map to {@link
+     * IgniteDataStreamer#addData(Map)}, or set STREAMING sql command parameter. <br/> If set to 1, {@link
+     * IgniteDataStreamer#addData(Object, Object)} method will be used.
      */
     @Override @Nullable public Integer streamerLocalBatchSize() {
         return streamerLocBatchSize;
@@ -182,6 +184,13 @@ public class UploadBenchmarkArguments implements StreamerParams {
      */
     public boolean useStreaming() {
         return useStreaming;
+    }
+
+    /**
+     * See {@link #idxCnt}.
+     */
+    public int indexesCount() {
+        return idxCnt;
     }
 
     /** {@inheritDoc} */

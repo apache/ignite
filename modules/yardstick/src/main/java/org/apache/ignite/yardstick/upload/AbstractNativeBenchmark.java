@@ -17,9 +17,13 @@
 
 package org.apache.ignite.yardstick.upload;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.apache.ignite.yardstick.upload.model.Values10;
@@ -72,11 +76,37 @@ public abstract class AbstractNativeBenchmark extends IgniteAbstractBenchmark {
         cache = createCache(cacheName);
     }
 
+    /**
+     * Sets up cache configuration (atomicity mode, indexes) and starts cache for data upload.
+     *
+     * @param name name of the created cache.
+     * @return instance of started cache.
+     */
     private IgniteCache<Long, Values10> createCache(String name) {
         CacheConfiguration<Long, Values10> cfg = new CacheConfiguration<>(name);
 
         if (args.atomicMode() != null)
             cfg.setAtomicityMode(args.atomicMode());
+
+        // Add indexes to cache cfg:
+        ArrayList<QueryEntity> entities = new ArrayList<>(cfg.getQueryEntities());
+
+        QueryEntity ent = new QueryEntity(Long.class, Values10.class);
+
+        List<QueryIndex> idxs = new ArrayList<>(ent.getIndexes());
+
+        for (int i = 1; i <= args.upload.indexesCount(); i++) {
+            String field = Values10.fieldName(i);
+            String idxName = field + "_idx";
+
+            idxs.add(new QueryIndex(field, true, idxName));
+        }
+
+        ent.setIndexes(idxs);
+
+        entities.add(ent);
+
+        cfg.setQueryEntities(entities);
 
         return ignite().createCache(cfg);
     }
@@ -90,7 +120,7 @@ public abstract class AbstractNativeBenchmark extends IgniteAbstractBenchmark {
             long size = cache.sizeLong();
 
             if (size != insertRowsCnt) {
-                String msg = "Incorrect cache size: [actual=" + size + ", expected=" + insertRowsCnt +"].";
+                String msg = "Incorrect cache size: [actual=" + size + ", expected=" + insertRowsCnt + "].";
 
                 BenchmarkUtils.println(cfg, "TearDown: " + msg);
 

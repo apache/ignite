@@ -18,44 +18,44 @@
 package org.apache.ignite.yardstick.upload.model;
 
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
 /**
- * Describes data model.
- * Matches data model, defined in {@link QueryFactory#createTable()}
+ * Describes data model. Matches data model, defined in {@link QueryFactory#createTable()}
  */
 public class Values10 {
     /** */
-    final String val1;
+    @QuerySqlField final String val1;
 
     /** */
-    final long val2;
+    @QuerySqlField final long val2;
 
     /** */
-    final String val3;
+    @QuerySqlField final String val3;
 
     /** */
-    final long val4;
+    @QuerySqlField final long val4;
 
     /** */
-    final String val5;
+    @QuerySqlField final String val5;
 
     /** */
-    final long val6;
+    @QuerySqlField final long val6;
 
     /** */
-    final String val7;
+    @QuerySqlField final String val7;
 
     /** */
-    final long val8;
+    @QuerySqlField final long val8;
 
     /** */
-    final String val9;
+    @QuerySqlField final String val9;
 
     /** */
-    final long val10;
+    @QuerySqlField final long val10;
 
     /** Creates new object with randomly initialized fields */
-    public Values10(){
+    public Values10() {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         val1 = String.valueOf(rnd.nextLong());
@@ -72,5 +72,17 @@ public class Values10 {
 
         val9 = String.valueOf(rnd.nextLong());
         val10 = rnd.nextLong();
+    }
+
+    /**
+     * @param valIdx index of field (value).
+     * @return name of the field.
+     */
+    public static String fieldName(int valIdx) {
+        if (valIdx > 10 || valIdx < 1)
+            throw new IllegalArgumentException("Incorrect value index [" + valIdx + "]." +
+                " Value index should be in range [1..10].");
+
+        return "val" + valIdx;
     }
 }

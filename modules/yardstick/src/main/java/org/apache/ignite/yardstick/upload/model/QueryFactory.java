@@ -25,9 +25,8 @@ import org.apache.ignite.yardstick.upload.StreamerParams;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Factory that hides all test data details:
- * what query to use to create table
- * or what random arguments to set in prepared statement.
+ * Factory that hides all test data details: what query to use to create table or what random arguments to set in
+ * prepared statement.
  */
 public class QueryFactory {
     /** Query to drop table if it exists. */
@@ -121,8 +120,8 @@ public class QueryFactory {
     }
 
     /**
-     * Creates string - comma-separated attributes of test table, surrounded with braces
-     * Is used as a part of sql statement.
+     * Creates string - comma-separated attributes of test table, surrounded with braces Is used as a part of sql
+     * statement.
      *
      * @return attributes list of test table as part of sql statement.
      */
@@ -163,8 +162,7 @@ public class QueryFactory {
     }
 
     /**
-     * Generates CSV line containing specified id and random values.
-     * This line corresponds 1 row of the test table,
+     * Generates CSV line containing specified id and random values. This line corresponds 1 row of the test table,
      * which will be inserted in the end.
      *
      * @param id key in the test table.
@@ -215,5 +213,20 @@ public class QueryFactory {
         cmd.append(" ORDERED ").append(p.streamerOrdered() ? "ON" : "OFF");
 
         return cmd.append(';').toString();
+    }
+
+    /**
+     * @param valIdx index of value to create index on. Should in range [1..10].
+     * @return query that creates index on n-th value field.
+     */
+    public String createIndex(int valIdx) {
+        if (valIdx > 10 || valIdx < 1)
+            throw new IllegalArgumentException("Incorrect value index [" + valIdx + "]." +
+                " Value index should be in range [1..10].");
+
+        String colName = "val_" + valIdx;
+        String idxName = colName + "_idx";
+
+        return "CREATE INDEX " + idxName + " ON test_upload (" + colName + ");";
     }
 }
