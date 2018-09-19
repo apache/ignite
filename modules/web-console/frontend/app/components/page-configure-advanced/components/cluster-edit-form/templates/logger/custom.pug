@@ -21,4 +21,11 @@ include /app/helpers/jade/mixins
 -var required = '$ctrl.clonedCluster.logger.kind === "Custom"'
 
 .pc-form-grid-col-60
-    +java-class('Class:', `${model}.class`, '"customLogger"', 'true', required, 'Logger implementation class name', required)
+    +form-field__java-class({
+        label: 'Class:',
+        model: `${model}.class`,
+        name: '"customLogger"',
+        required: required,
+        tip: 'Logger implementation class name',
+        validationActive: required
+    })
