@@ -34,7 +34,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
@@ -64,7 +63,7 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
     private static final long JOIN_TIMEOUT = 5_000;
 
     /** */
-    private static final long START_JOB_TIMEOUT = 5_000;
+    private static final long START_JOB_TIMEOUT = 10_000;
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
@@ -75,9 +74,8 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (igniteInstanceName.contains("client")) {
+        if (igniteInstanceName.contains("client"))
             cfg.setClientMode(true);
-        }
         else {
             FifoQueueCollisionSpi collisionSpi = new FifoQueueCollisionSpi();
 
@@ -116,13 +114,13 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
         CountDownLatch clientSegmented = new CountDownLatch(1);
 
         IgnitePredicate<Event> locLsnr = new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event event) {
-                log.info("Client node received event: " + event.name());
+            @Override public boolean apply(Event evt) {
+                log.info("Client node received event: " + evt.name());
 
-                if (event.type() == EventType.EVT_CLIENT_NODE_DISCONNECTED)
+                if (evt.type() == EventType.EVT_CLIENT_NODE_DISCONNECTED)
                     clientDisconnected.countDown();
 
-                if (event.type() == EventType.EVT_NODE_SEGMENTED)
+                if (evt.type() == EventType.EVT_NODE_SEGMENTED)
                     clientSegmented.countDown();
 
                 return true;
@@ -155,14 +153,14 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
      * @param ignite Ignite instance.
      * @throws InterruptedException If waiting for network disabled failed (interrupted).
      */
-    private void disableNetwork(Ignite ignite) throws InterruptedException, IgniteInterruptedCheckedException {
-        CustomCommunicationSpi communicationSpi = (CustomCommunicationSpi)ignite.configuration().getCommunicationSpi();
+    private void disableNetwork(Ignite ignite) throws InterruptedException {
+        CustomCommunicationSpi commSpi = (CustomCommunicationSpi)ignite.configuration().getCommunicationSpi();
 
         CustomDiscoverySpi discoverySpi = (CustomDiscoverySpi)ignite.configuration().getDiscoverySpi();
 
         discoverySpi.disableNetwork();
 
-        communicationSpi.disableNetwork();
+        commSpi.disableNetwork();
 
         if (!discoverySpi.awaitNetworkDisabled())
             fail("Network wasn't disabled.");
@@ -200,7 +198,7 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
      */
     class CustomCommunicationSpi extends TcpCommunicationSpi {
         /** Network is disabled. */
-        private volatile boolean networkDisabled = false;
+        private volatile boolean netDisabled = false;
 
         /** */
         CustomCommunicationSpi() {
@@ -210,11 +208,11 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg,
             IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
-            String message = msg.toString();
+            String msgStr = msg.toString();
 
-            log.info("CustomCommunicationSpi.sendMessage: " + message);
+            log.info("CustomCommunicationSpi.sendMessage: " + msgStr);
 
-            if (message.contains("TOPIC_JOB_CANCEL"))
+            if (msgStr.contains("TOPIC_JOB_CANCEL"))
                 closeTcpConnections();
 
             super.sendMessage(node, msg, ackC);
@@ -224,9 +222,9 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
         @Override protected GridCommunicationClient createTcpClient(ClusterNode node,
             int connIdx) throws IgniteCheckedException {
             log.info(String.format("CustomCommunicationSpi.createTcpClient [networkDisabled=%s, node=%s]",
-                networkDisabled, node));
+                netDisabled, node));
 
-            if (networkDisabled) {
+            if (netDisabled) {
                 IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this,
                     !node.isClient());
 
@@ -246,7 +244,7 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
          * Simulate network disabling.
          */
         void disableNetwork() {
-            networkDisabled = true;
+            netDisabled = true;
         }
 
         /**
@@ -257,7 +255,7 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
 
             Set<UUID> ids = clients.keySet();
 
-            if (ids.size() > 0) {
+            if (!ids.isEmpty()) {
                 log.info("Close TCP clients: " + ids);
 
                 for (UUID nodeId : ids) {
@@ -281,10 +279,10 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
      */
     class CustomDiscoverySpi extends TcpDiscoverySpi {
         /** Network is disabled. */
-        private volatile boolean networkDisabled = false;
+        private volatile boolean netDisabled = false;
 
         /** */
-        private final CountDownLatch networkDisabledLatch = new CountDownLatch(1);
+        private final CountDownLatch netDisabledLatch = new CountDownLatch(1);
 
         /** */
         CustomDiscoverySpi() {
@@ -294,7 +292,7 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
         /** {@inheritDoc} */
         @Override protected <T> T readMessage(Socket sock, @Nullable InputStream in,
             long timeout) throws IOException, IgniteCheckedException {
-            if (networkDisabled) {
+            if (netDisabled) {
                 U.sleep(timeout);
 
                 throw new SocketTimeoutException("CustomDiscoverySpi: network is disabled.");
@@ -306,8 +304,8 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
         /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
-            if (networkDisabled) {
-                networkDisabledLatch.countDown();
+            if (netDisabled) {
+                netDisabledLatch.countDown();
 
                 throw new SocketTimeoutException("CustomDiscoverySpi: network is disabled.");
             }
@@ -319,14 +317,14 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
          * Simulate network disabling.
          */
         void disableNetwork() {
-            networkDisabled = true;
+            netDisabled = true;
         }
 
         /**
          * Wait until the network is disabled.
          */
         boolean awaitNetworkDisabled() throws InterruptedException {
-            return networkDisabledLatch.await(FAILURE_DETECTION_TIMEOUT * 2, TimeUnit.MILLISECONDS);
+            return netDisabledLatch.await(FAILURE_DETECTION_TIMEOUT * 2, TimeUnit.MILLISECONDS);
         }
     }
 
