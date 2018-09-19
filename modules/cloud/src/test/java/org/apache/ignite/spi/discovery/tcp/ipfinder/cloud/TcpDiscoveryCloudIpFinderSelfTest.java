@@ -60,7 +60,6 @@ public class TcpDiscoveryCloudIpFinderSelfTest extends
      *
      * @throws Exception If any error occurs.
      */
-    @IgniteIgnore("https://issues.apache.org/jira/browse/IGNITE-845")
     public void testAmazonWebServices() throws Exception {
         testCloudProvider("aws-ec2");
     }
@@ -70,7 +69,6 @@ public class TcpDiscoveryCloudIpFinderSelfTest extends
      *
      * @throws Exception If any error occurs.
      */
-    @IgniteIgnore("https://issues.apache.org/jira/browse/IGNITE-1585")
     public void testGoogleComputeEngine() throws Exception {
         testCloudProvider("google-compute-engine");
     }
@@ -94,6 +92,8 @@ public class TcpDiscoveryCloudIpFinderSelfTest extends
      */
     private void testCloudProvider(String provider) throws Exception {
         info("Testing provider: " + provider);
+        info(IgniteCloudTestSuite.getAccessKey(provider));
+        info(IgniteCloudTestSuite.getSecretKey(provider));
 
         TcpDiscoveryCloudIpFinder ipFinder = new TcpDiscoveryCloudIpFinder();
 
