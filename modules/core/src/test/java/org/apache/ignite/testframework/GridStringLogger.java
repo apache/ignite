@@ -26,6 +26,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Logger which logs to string buffer.
+ *
+ * @deprecated Use {@link ListeningTestLogger} instead.
  */
 public class GridStringLogger implements IgniteLogger {
     /** Initial string builder capacity in bytes */

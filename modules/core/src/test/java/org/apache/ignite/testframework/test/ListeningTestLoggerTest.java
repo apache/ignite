@@ -23,16 +23,16 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.logger.NullLogger;
-import org.apache.ignite.testframework.GridEventLogger;
+import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Test.
  */
-public class GridEventLoggerTest extends GridCommonAbstractTest {
+public class ListeningTestLoggerTest extends GridCommonAbstractTest {
     /** */
-    private GridEventLogger log = new GridEventLogger(super.log);
+    private ListeningTestLogger log = new ListeningTestLogger(false, super.log);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -56,7 +56,7 @@ public class GridEventLoggerTest extends GridCommonAbstractTest {
         try {
             startGridsMultiThreaded(gridCnt);
 
-            assertTrue(verMatchCntr.get() + " occurrences", verMatchCntr.get() >= gridCnt);
+            assertTrue(verMatchCntr.get() + " < " + gridCnt, verMatchCntr.get() >= gridCnt);
 
             assertEquals(0, verMatchCntr.get() % gridCnt);
         } finally {
@@ -69,7 +69,7 @@ public class GridEventLoggerTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("ThrowableNotThrown")
     public void testBasicApi() {
-        GridEventLogger log = new GridEventLogger();
+        ListeningTestLogger log = new ListeningTestLogger();
 
         AtomicBoolean basicMatch = new AtomicBoolean();
         AtomicBoolean errMatch = new AtomicBoolean();
@@ -115,7 +115,8 @@ public class GridEventLoggerTest extends GridCommonAbstractTest {
         int iterCnt = 50_000;
         int threadCnt = 6;
 
-        GridEventLogger log = new GridEventLogger();
+        ListeningTestLogger log = new ListeningTestLogger();
+
         AtomicInteger cntr = new AtomicInteger();
 
         log.listen("abba", msg -> cntr.incrementAndGet());
@@ -158,7 +159,7 @@ public class GridEventLoggerTest extends GridCommonAbstractTest {
             }
         };
 
-        GridEventLogger log = new GridEventLogger(true, echo);
+        ListeningTestLogger log = new ListeningTestLogger(true, echo);
 
         log.error("1");
         log.warning("2");

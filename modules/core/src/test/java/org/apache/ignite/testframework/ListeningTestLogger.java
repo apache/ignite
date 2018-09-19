@@ -17,70 +17,63 @@
 
 package org.apache.ignite.testframework;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Implementation of {@link org.apache.ignite.IgniteLogger} that perform any actions when certain message is logged.
+ * Implementation of {@link org.apache.ignite.IgniteLogger} that performs any actions when certain message is logged.
+ * It can be useful in tests to ensure that a specific message was (or was not) printed to the log.
  */
-public class GridEventLogger implements IgniteLogger {
+public class ListeningTestLogger implements IgniteLogger {
     /** */
-    private IgniteLogger echo;
-
-    /** */
-    private ConcurrentMap<Pattern, CI1<String>> lsnrs = new ConcurrentHashMap<>();
+    private final IgniteLogger echo;
 
     /** */
     private final boolean dbg;
 
+    /** */
+    private final List<T2<Pattern, CI1<String>>> lsnrs = new CopyOnWriteArrayList<>();
+
     /**
      * Default constructor.
      */
-    public GridEventLogger() {
+    public ListeningTestLogger() {
         this(false);
     }
 
     /**
-     * @param dbg Debug flag.
+     * @param dbg If set to {@code true}, enables debug and trace log messages processing.
      */
-    public GridEventLogger(boolean dbg) {
+    public ListeningTestLogger(boolean dbg) {
         this(dbg, null);
     }
 
     /**
-     * @param echo Logger to echo all messages.
+     * @param dbg If set to {@code true}, enables debug and trace log messages processing.
+     * @param echo Logger to echo all messages, limited by {@code dbg} flag.
      */
-    public GridEventLogger(IgniteLogger echo) {
-        this(false, echo);
-    }
-
-    /**
-     * @param dbg Debug flag.
-     * @param echo Logger to echo all messages.
-     */
-    public GridEventLogger(boolean dbg, @Nullable IgniteLogger echo) {
+    public ListeningTestLogger(boolean dbg, @Nullable IgniteLogger echo) {
         this.dbg = dbg;
         this.echo = echo;
     }
 
     /**
-     * Register log message listener.
+     * Register log message listener, that will be executed when certain pattern appears in a log message.
      *
-     * @param regex Regular expression matched against log messages.
-     * @param lsnr Listener to execute.
+     * @param regex Regular expression that is searched for in a log message.
+     * @param lsnr Listener to execute when {@code regex} expression occurs in a log message.
      * @throws PatternSyntaxException If the expression's syntax is invalid.
      */
     public void listen(@NotNull String regex, @NotNull CI1<String> lsnr) {
-        lsnrs.put(Pattern.compile(regex), lsnr);
+        lsnrs.add(new T2<>(Pattern.compile(regex), lsnr));
     }
 
     /**
@@ -91,7 +84,7 @@ public class GridEventLogger implements IgniteLogger {
     }
 
     /** {@inheritDoc} */
-    @Override public GridEventLogger getLogger(Object ctgr) {
+    @Override public ListeningTestLogger getLogger(Object ctgr) {
         return this;
     }
 
@@ -173,15 +166,15 @@ public class GridEventLogger implements IgniteLogger {
     }
 
     /**
-     * Apply listeners which regular expression matches message.
+     * Applies listeners whose pattern is found in the message.
      *
      * @param msg Message to check.
      */
     private void applyListeners(String msg) {
-        if (F.isEmpty(msg))
+        if (msg == null)
             return;
 
-        for (Map.Entry<Pattern, CI1<String>> entry : lsnrs.entrySet()) {
+        for (T2<Pattern, CI1<String>> entry : lsnrs) {
             if (entry.getKey().matcher(msg).find())
                 entry.getValue().apply(msg);
         }
