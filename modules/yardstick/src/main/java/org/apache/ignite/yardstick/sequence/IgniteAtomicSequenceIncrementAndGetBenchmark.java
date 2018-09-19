@@ -15,9 +15,19 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-import {igniteFormField, exposeIgniteFormFieldControl} from './directives';
+package org.apache.ignite.yardstick.sequence;
 
-export default angular
-.module('expose-ignite-form-field-control', [])
-.directive('exposeIgniteFormFieldControl', exposeIgniteFormFieldControl);
+import java.util.Map;
+import org.apache.ignite.IgniteAtomicSequence;
+
+/**
+ * {@link IgniteAtomicSequence#incrementAndGet()} benchmark.
+ */
+public class IgniteAtomicSequenceIncrementAndGetBenchmark extends IgniteAtomicSequenceAbstractBenchmark {
+    /** {@inheritDoc} */
+    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        seq.incrementAndGet();
+
+        return true;
+    }
+}
