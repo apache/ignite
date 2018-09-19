@@ -2197,9 +2197,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             GridCacheContext cctx = internalCache.context();
 
+            GridDhtTopologyFuture topFut = cctx.isLocal() ? null : cctx.shared().exchange().lastFinishedFuture();
+
             AffinityTopologyVersion topVer = cctx.isLocal() ?
                 cctx.affinity().affinityTopologyVersion() :
-                cctx.shared().exchange().readyAffinityVersion();
+                topFut.topologyVersion();
 
             GridCacheVersion ver = cctx.versions().isolatedStreamerVersion();
 
@@ -2258,6 +2260,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                                 ttl = 0;
 
                             expiryTime = CU.toExpireTime(ttl);
+                        }
+
+                        if (topFut != null) {
+                            Throwable err = topFut.validateCache(cctx, false, false, entry.key(), null);
+
+                            if (err != null)
+                                throw new IgniteCheckedException(err);
                         }
 
                         boolean primary = cctx.affinity().primaryByKey(cctx.localNode(), entry.key(), topVer);

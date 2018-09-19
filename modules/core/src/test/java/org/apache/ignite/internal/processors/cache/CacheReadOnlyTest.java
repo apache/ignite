@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Random;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -51,12 +54,21 @@ public class CacheReadOnlyTest extends GridCommonAbstractTest {
     /** Partitioned transactional cache. */
     private static final String PART_TX_CACHE = "part_tx_cache";
 
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(SRVS);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        changeCacheReadOnlyMode(REPL_ATOMIC_CACHE, false);
+        changeCacheReadOnlyMode(REPL_TX_CACHE, false);
+        changeCacheReadOnlyMode(PART_ATOMIC_CACHE, false);
+        changeCacheReadOnlyMode(PART_TX_CACHE, false);
     }
 
     /** {@inheritDoc} */
@@ -90,42 +102,83 @@ public class CacheReadOnlyTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testCacheReadOnly() {
-        assertCacheReadOnly(PART_ATOMIC_CACHE, false);
-        assertCacheReadOnly(PART_TX_CACHE, false);
-        assertCacheReadOnly(REPL_ATOMIC_CACHE, false);
-        assertCacheReadOnly(REPL_TX_CACHE, false);
+    public void testCachePutRemove() {
+        assertCacheReadOnlyMode(PART_ATOMIC_CACHE, false);
+        assertCacheReadOnlyMode(PART_TX_CACHE, false);
+        assertCacheReadOnlyMode(REPL_ATOMIC_CACHE, false);
+        assertCacheReadOnlyMode(REPL_TX_CACHE, false);
 
         changeCacheReadOnlyMode(REPL_ATOMIC_CACHE, true);
 
-        assertCacheReadOnly(PART_ATOMIC_CACHE, false);
-        assertCacheReadOnly(PART_TX_CACHE, false);
-        assertCacheReadOnly(REPL_ATOMIC_CACHE, true);
-        assertCacheReadOnly(REPL_TX_CACHE, false);
+        assertCacheReadOnlyMode(PART_ATOMIC_CACHE, false);
+        assertCacheReadOnlyMode(PART_TX_CACHE, false);
+        assertCacheReadOnlyMode(REPL_ATOMIC_CACHE, true);
+        assertCacheReadOnlyMode(REPL_TX_CACHE, false);
 
         changeCacheReadOnlyMode(REPL_ATOMIC_CACHE, false);
         // This will also change PART_TX_CACHE read-only mode, since caches are in the same cache group.
         changeCacheReadOnlyMode(PART_ATOMIC_CACHE, true);
 
-        assertCacheReadOnly(PART_ATOMIC_CACHE, true);
-        assertCacheReadOnly(PART_TX_CACHE, true);
-        assertCacheReadOnly(REPL_ATOMIC_CACHE, false);
-        assertCacheReadOnly(REPL_TX_CACHE, false);
+        assertCacheReadOnlyMode(PART_ATOMIC_CACHE, true);
+        assertCacheReadOnlyMode(PART_TX_CACHE, true);
+        assertCacheReadOnlyMode(REPL_ATOMIC_CACHE, false);
+        assertCacheReadOnlyMode(REPL_TX_CACHE, false);
 
         changeCacheReadOnlyMode(REPL_TX_CACHE, true);
         changeCacheReadOnlyMode(PART_ATOMIC_CACHE, false);
 
-        assertCacheReadOnly(PART_ATOMIC_CACHE, false);
-        assertCacheReadOnly(PART_TX_CACHE, false);
-        assertCacheReadOnly(REPL_ATOMIC_CACHE, false);
-        assertCacheReadOnly(REPL_TX_CACHE, true);
+        assertCacheReadOnlyMode(PART_ATOMIC_CACHE, false);
+        assertCacheReadOnlyMode(PART_TX_CACHE, false);
+        assertCacheReadOnlyMode(REPL_ATOMIC_CACHE, false);
+        assertCacheReadOnlyMode(REPL_TX_CACHE, true);
 
         changeCacheReadOnlyMode(REPL_TX_CACHE, false);
 
-        assertCacheReadOnly(PART_ATOMIC_CACHE, false);
-        assertCacheReadOnly(PART_TX_CACHE, false);
-        assertCacheReadOnly(REPL_ATOMIC_CACHE, false);
-        assertCacheReadOnly(REPL_TX_CACHE, false);
+        assertCacheReadOnlyMode(PART_ATOMIC_CACHE, false);
+        assertCacheReadOnlyMode(PART_TX_CACHE, false);
+        assertCacheReadOnlyMode(REPL_ATOMIC_CACHE, false);
+        assertCacheReadOnlyMode(REPL_TX_CACHE, false);
+    }
+
+    /**
+     *
+     */
+    public void testDataStreamerReadOnly() {
+        assertDataStreamerReadOnlyMode(PART_ATOMIC_CACHE, false);
+        assertDataStreamerReadOnlyMode(PART_TX_CACHE, false);
+        assertDataStreamerReadOnlyMode(REPL_ATOMIC_CACHE, false);
+        assertDataStreamerReadOnlyMode(REPL_TX_CACHE, false);
+
+        changeCacheReadOnlyMode(REPL_ATOMIC_CACHE, true);
+
+        assertDataStreamerReadOnlyMode(PART_ATOMIC_CACHE, false);
+        assertDataStreamerReadOnlyMode(PART_TX_CACHE, false);
+        assertDataStreamerReadOnlyMode(REPL_ATOMIC_CACHE, true);
+        assertDataStreamerReadOnlyMode(REPL_TX_CACHE, false);
+
+        changeCacheReadOnlyMode(REPL_ATOMIC_CACHE, false);
+        // This will also change PART_TX_CACHE read-only mode, since caches are in the same cache group.
+        changeCacheReadOnlyMode(PART_ATOMIC_CACHE, true);
+
+        assertDataStreamerReadOnlyMode(PART_ATOMIC_CACHE, true);
+        assertDataStreamerReadOnlyMode(PART_TX_CACHE, true);
+        assertDataStreamerReadOnlyMode(REPL_ATOMIC_CACHE, false);
+        assertDataStreamerReadOnlyMode(REPL_TX_CACHE, false);
+
+        changeCacheReadOnlyMode(REPL_TX_CACHE, true);
+        changeCacheReadOnlyMode(PART_ATOMIC_CACHE, false);
+
+        assertDataStreamerReadOnlyMode(PART_ATOMIC_CACHE, false);
+        assertDataStreamerReadOnlyMode(PART_TX_CACHE, false);
+        assertDataStreamerReadOnlyMode(REPL_ATOMIC_CACHE, false);
+        assertDataStreamerReadOnlyMode(REPL_TX_CACHE, true);
+
+        changeCacheReadOnlyMode(REPL_TX_CACHE, false);
+
+        assertDataStreamerReadOnlyMode(PART_ATOMIC_CACHE, false);
+        assertDataStreamerReadOnlyMode(PART_TX_CACHE, false);
+        assertDataStreamerReadOnlyMode(REPL_ATOMIC_CACHE, false);
+        assertDataStreamerReadOnlyMode(REPL_TX_CACHE, false);
     }
 
     /**
@@ -143,32 +196,70 @@ public class CacheReadOnlyTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Asserts cache read-only mode on all nodes.
+     * Asserts that cache in read-only or in read/write mode on all nodes.
      *
      * @param cacheName Cache name.
      * @param readOnly If {@code true} then cache must be in read only mode, else in read/write mode.
      */
-    private void assertCacheReadOnly(String cacheName, boolean readOnly) {
+    private void assertCacheReadOnlyMode(String cacheName, boolean readOnly) {
+        Random rnd = new Random();
+
         for (Ignite ignite : G.allGrids()) {
             IgniteCache<Integer, Integer> cache = ignite.cache(cacheName);
 
             for (int i = 0; i < 10; i++) {
-                cache.get(i); // All gets must succeed.
+                cache.get(rnd.nextInt(100)); // All gets must succeed.
 
                 if (readOnly) {
                     // All puts must fail.
                     try {
-                        cache.put(i, i);
+                        cache.put(rnd.nextInt(100), rnd.nextInt());
 
                         fail("Put must fail for cache " + cacheName);
                     }
                     catch (Exception e) {
                         // No-op.
                     }
+
+                    // All removes must fail.
+                    try {
+                        cache.remove(rnd.nextInt(100));
+
+                        fail("Remove must fail for cache " + cacheName);
+                    }
+                    catch (Exception e) {
+                        // No-op.
+                    }
                 }
-                else
-                    cache.put(i, i); // All puts must succeed.
+                else {
+                    cache.put(rnd.nextInt(100), rnd.nextInt()); // All puts must succeed.
+
+                    cache.remove(rnd.nextInt(100)); // All removes must succeed.
+                }
             }
+        }
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param readOnly If {@code true} then data streamer must fail, else succeed.
+     */
+    private void assertDataStreamerReadOnlyMode(String cacheName, boolean readOnly) {
+        Random rnd = new Random();
+
+        for (Ignite ignite : G.allGrids()) {
+            boolean failed = false;
+
+            try (IgniteDataStreamer<Integer, Integer> streamer = ignite.dataStreamer(cacheName)) {
+                for (int i = 0; i < 10; i++)
+                    streamer.addData(rnd.nextInt(1000), rnd.nextInt());
+            }
+            catch (CacheException ignored) {
+                failed = true;
+            }
+
+            if (failed != readOnly)
+                fail("Streaming to " + cacheName + " must " + (readOnly ? "fail" : "succeed"));
         }
     }
 }
