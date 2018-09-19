@@ -230,6 +230,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** Distributed latch manager. */
     private ExchangeLatchManager latchMgr;
 
+    private AtomicBoolean exchangeInProgress = new AtomicBoolean();
+
+    private AffinityTopologyVersion lastUpdatedTopVer;
+
     /** Discovery listener. */
     private final DiscoveryEventListener discoLsnr = new DiscoveryEventListener() {
         @Override public void onEvent(DiscoveryEvent evt, DiscoCache cache) {
@@ -1510,6 +1514,32 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 boolean updated = false;
 
+                AffinityTopologyVersion msgVer = msg.topologyVersion();
+
+                while (exchangeInProgress.get()
+                    && lastUpdatedTopVer.topologyVersion() <= msgVer.topologyVersion()
+                    && lastUpdatedTopVer.minorTopologyVersion() <= msgVer.minorTopologyVersion()){
+                    try {
+                        U.sleep(100L);
+                    }
+                    catch (Exception e0){
+                        log.error("", e0);
+                    }
+
+                    log.info("exchangeInProgress");
+
+                }
+
+
+
+                boolean res = msg.topologyVersion().topologyVersion() == 8
+                    && msg.topologyVersion().minorTopologyVersion() == 3
+                    && cctx.localNode().order() == 7;
+
+                if(res)
+                    log.info("process breakpoint. setSize = " + msg.partitions().entrySet().size());
+
+
                 for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
                     Integer grpId = entry.getKey();
 
@@ -1548,8 +1578,20 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (!hasMovingParts)
                     cctx.database().releaseHistoryForPreloading();
             }
-            else
+            else {
+                exchangeInProgress.set(true);
+
+                lastUpdatedTopVer = msg.topologyVersion();
+
+                log.info("++++++++++++++++++++++++++++++++++");
+
                 exchangeFuture(msg.exchangeId(), null, null, null, null).onReceiveFullMessage(node, msg);
+
+                log.info("----------------------------------");
+
+                exchangeInProgress.set(false);
+            }
+
         }
         finally {
             leaveBusy();
