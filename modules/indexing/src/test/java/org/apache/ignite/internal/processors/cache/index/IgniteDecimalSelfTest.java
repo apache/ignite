@@ -60,13 +60,13 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
     private static final MathContext MATH_CTX = new MathContext(PRECISION);
 
     /** */
-    private static final BigDecimal VAL_1 = new BigDecimal("123456789", MATH_CTX).setScale(SCALE, HALF_UP);
+    private static final BigDecimal VAL_1 = BigDecimal.valueOf(123456789);
 
     /** */
-    private static final BigDecimal VAL_2 = new BigDecimal("12345678.12345678", MATH_CTX).setScale(SCALE, HALF_UP);
+    private static final BigDecimal VAL_2 = BigDecimal.valueOf(1.23456789);
 
     /** */
-    private static final BigDecimal VAL_3 = new BigDecimal(".123456789", MATH_CTX).setScale(SCALE, HALF_UP);
+    private static final BigDecimal VAL_3 = BigDecimal.valueOf(.12345678);
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
