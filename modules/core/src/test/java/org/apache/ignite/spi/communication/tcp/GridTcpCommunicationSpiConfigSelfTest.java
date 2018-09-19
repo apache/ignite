@@ -17,9 +17,12 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
+import java.io.IOException;
 import java.net.BindException;
+import java.net.ServerSocket;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
@@ -56,34 +59,29 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
      * @throws Exception If failed.
      */
     public void testLocalPortRange() throws Exception {
-        for (int i = 0; i < 3; i++) {
-            try {
-                IgniteConfiguration cfg = getConfiguration();
+        IgniteConfiguration cfg = getConfiguration();
 
-                TcpCommunicationSpi spi = new TcpCommunicationSpi();
+        TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
-                spi.setLocalPortRange(0);
-                spi.setLocalPort(TcpCommunicationSpi.DFLT_PORT + i * 1000);
+        spi.setLocalPortRange(0);
+        spi.setLocalPort(getFreePort());
 
-                cfg.setCommunicationSpi(spi);
+        cfg.setCommunicationSpi(spi);
 
-                startGrid(cfg.getIgniteInstanceName(), cfg);
+        startGrid(cfg.getIgniteInstanceName(), cfg);
+    }
 
-                break;
-            }
-            catch (IgniteException e) {
-                if (e.hasCause(BindException.class)) {
-                    if (i < 2) {
-                        info("Failed to start SPIs because of BindException, will retry after delay.");
+    /**
+     * @return Free port number on localhost.
+     * @throws IOException If unable to find a free port.
+     */
+    private int getFreePort() throws IOException {
+        try (ServerSocket sock = new ServerSocket(0)) {
+            int port = sock.getLocalPort();
 
-                        afterTestsStopped();
-                    }
-                    else
-                        throw e;
-                }
-                else
-                    throw e;
-            }
+            log.info("Found available port: " + port);
+
+            return port;
         }
     }
 

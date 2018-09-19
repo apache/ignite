@@ -153,7 +153,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
     /**
      * @throws Exception If failed.
      */
-    public void testSendToOneNode() throws Exception {
+    public void t1estSendToOneNode() throws Exception {
         info(">>> Starting send to one node test. <<<");
 
         msgDestMap.clear();
