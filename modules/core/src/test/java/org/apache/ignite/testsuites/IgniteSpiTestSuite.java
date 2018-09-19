@@ -33,7 +33,7 @@ public class IgniteSpiTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite SPIs Test Suite");
 
         // Failover.
-        suite.addTest(IgniteSpiFailoverSelfTestSuite.suite());
+       /*suite.addTest(IgniteSpiFailoverSelfTestSuite.suite());
 
         // Collision.
         suite.addTest(IgniteSpiCollisionSelfTestSuite.suite());
@@ -51,16 +51,16 @@ public class IgniteSpiTestSuite extends TestSuite {
         suite.addTest(IgniteSpiDeploymentSelfTestSuite.suite());
 
         // Discovery.
-        suite.addTest(IgniteSpiDiscoverySelfTestSuite.suite());
+        suite.addTest(IgniteSpiDiscoverySelfTestSuite.suite());*/
 
         // Communication.
         suite.addTest(IgniteSpiCommunicationSelfTestSuite.suite());
 
         // All other tests.
-        suite.addTestSuite(GridNoopManagerSelfTest.class);
+       // suite.addTestSuite(GridNoopManagerSelfTest.class);
 
         // Local Message Listener tests.
-        suite.addTestSuite(GridManagerLocalMessageListenerSelfTest.class);
+       // suite.addTestSuite(GridManagerLocalMessageListenerSelfTest.class);
 
         return suite;
     }
