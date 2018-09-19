@@ -25,9 +25,13 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cache.query.annotations.QueryTextField;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.internal.processors.cache.CacheIteratorConverter;
+import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Map;
 
 /**
  * Main API for configuring and executing cache queries.
@@ -247,7 +251,9 @@ public interface CacheQuery<T> {
      * @param args Optional arguments.
      * @return Future for the query result.
      */
-    public CacheQueryFuture<T> execute(@Nullable Object... args);
+    GridCloseableIterator execute(@Nullable Object... args);
+
+    <R> CacheQueryFuture<R> execute(@Nullable IgniteReducer<T, R> rmtReducer, @Nullable Object... args);
 
     /**
      * Executes the query the same way as {@link #execute(Object...)} method but reduces result remotely.
@@ -256,7 +262,7 @@ public interface CacheQuery<T> {
      * @param args Optional arguments.
      * @return Future for the query result.
      */
-    public <R> CacheQueryFuture<R> execute(IgniteReducer<T, R> rmtReducer, @Nullable Object... args);
+    public <R> GridCloseableIterator<T> execute00(IgniteReducer<T, R> rmtReducer, @Nullable Object... args);
 
     /**
      * Gets metrics for this query.

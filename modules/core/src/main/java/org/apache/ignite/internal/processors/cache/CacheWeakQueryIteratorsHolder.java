@@ -29,6 +29,10 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteOutClosure;
+import org.jsr166.ConcurrentHashMap8;
+
+import javax.cache.CacheException;
 
 /**
  * @param <V> Type for cache query future.
@@ -57,7 +61,7 @@ public class CacheWeakQueryIteratorsHolder<V> {
      * @return Iterator over the cache.
      */
     public <T> WeakReferenceCloseableIterator<T> iterator(final CacheQueryFuture<V> fut,
-        CacheIteratorConverter<T, V> convert) {
+                                                          CacheIteratorConverter<T, V> convert) {
         WeakQueryFutureIterator it = new WeakQueryFutureIterator(fut, convert);
 
         AutoCloseable old = refs.put(it.weakReference(), fut);
@@ -142,7 +146,7 @@ public class CacheWeakQueryIteratorsHolder<V> {
         private static final long serialVersionUID = 0L;
 
         /** Query future. */
-        private final CacheQueryFuture<V> fut;
+        private CacheQueryFuture<V> fut;
 
         /** Weak reference. */
         private final WeakReference<WeakQueryFutureIterator<T>> weakRef;
@@ -241,7 +245,9 @@ public class CacheWeakQueryIteratorsHolder<V> {
          */
         private void init() throws IgniteCheckedException {
             if (!init) {
-                V futNext = fut.next();
+                V futNext;
+
+                    futNext = fut.next();
 
                 next = futNext != null ? convert.convert(futNext) : null;
 
@@ -291,6 +297,10 @@ public class CacheWeakQueryIteratorsHolder<V> {
             }
             catch (NoSuchElementException e){
                 clearWeakReference();
+
+                throw e;
+            } catch (CacheException e) {
+                System.err.print("!!!111");
 
                 throw e;
             }

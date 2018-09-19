@@ -413,7 +413,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         boolean isKeepBinary = opCtxCall != null && opCtxCall.isKeepBinary();
 
-        final CacheQueryFuture fut;
+        final GridCloseableIterator<Map.Entry<K, V>> iter;
 
         if (filter instanceof TextQuery) {
             TextQuery p = (TextQuery)filter;
@@ -423,9 +423,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             if (grp != null)
                 qry.projection(grp);
 
-            fut = ctx.kernalContext().query().executeQuery(GridCacheQueryType.TEXT, p.getText(), ctx,
-                new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
-                    @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() {
+            iter = ctx.kernalContext().query().executeQuery(GridCacheQueryType.TEXT, p.getText(), ctx,
+                new IgniteOutClosureX<GridCloseableIterator<Map.Entry<K, V>>>() {
+                    @Override public GridCloseableIterator<Map.Entry<K, V>> applyx() throws IgniteCheckedException {
                         return qry.execute();
                     }
                 }, false);
@@ -436,9 +436,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             if (grp != null)
                 qry.projection(grp);
 
-            fut = ctx.kernalContext().query().executeQuery(GridCacheQueryType.SPI, filter.getClass().getSimpleName(),
-                ctx, new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
-                    @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() {
+            iter = ctx.kernalContext().query().executeQuery(GridCacheQueryType.SPI, filter.getClass().getSimpleName(),
+                ctx, new IgniteOutClosureX<GridCloseableIterator<Map.Entry<K, V>>>() {
+                    @Override public GridCloseableIterator<Map.Entry<K, V>> applyx() {
                         return qry.execute(((SpiQuery)filter).getArgs());
                     }
                 }, false);
@@ -451,8 +451,10 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             throw new CacheException("Unsupported query type: " + filter);
         }
 
-        return new QueryCursorImpl<>(new GridCloseableIteratorAdapter<Entry<K, V>>() {
-            /** */
+        return new QueryCursorImpl(iter);
+
+/*        return new QueryCursorImpl<>(new GridCloseableIteratorAdapter<Entry<K, V>>() {
+            *//** *//*
             private Cache.Entry<K, V> cur;
 
             @Override protected Entry<K, V> onNext() throws IgniteCheckedException {
@@ -491,7 +493,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             @Override protected void onClose() throws IgniteCheckedException {
                 fut.cancel();
             }
-        });
+        });*/
     }
 
     /**

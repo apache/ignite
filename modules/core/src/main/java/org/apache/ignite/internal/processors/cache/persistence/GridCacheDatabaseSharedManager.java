@@ -45,6 +45,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
@@ -1428,7 +1429,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             clearFuts.add(entry.getKey().clearAsync((grpId, pageIdg) -> grpIds.contains(grpId), false));
         }
-
         for (IgniteInternalFuture<Void> clearFut : clearFuts) {
             try {
                 clearFut.get();
@@ -3440,19 +3440,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             boolean hasPages;
 
-            boolean hasPartitionsToDestroy;
-
-            IgniteFuture snapFut = null;
-
-            long cpTs = System.currentTimeMillis();
-
-            // This can happen in an unlikely event of two checkpoints happening
-            // within a currentTimeMillis() granularity window.
-            if (cpTs == lastCpTs)
-                cpTs++;
-
-            lastCpTs = cpTs;
-
             checkpointLock.writeLock().lock();
 
             try {
@@ -3494,7 +3481,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     lsnr.onCheckpointBegin(ctx0);
 
                 if (curr.nextSnapshot)
-                    snapFut = snapshotMgr.onMarkCheckPointBegin(curr.snapshotOperation, map);
+                    snapshotMgr.onMarkCheckPointBegin(curr.snapshotOperation, map);
 
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                     if (grp.isLocal() || !grp.walEnabled())
@@ -3553,17 +3540,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             curr.cpBeginFut.onDone();
 
-            if (snapFut != null) {
-                try {
-                    snapFut.get();
-                }
-                catch (IgniteException e) {
-                    U.error(log, "Failed to wait for snapshot operation initialization: " +
-                        curr.snapshotOperation + "]", e);
-                }
-            }
-
-            if (hasPages || hasPartitionsToDestroy) {
+            if (hasPages) {
                 assert cpPtr != null;
                 assert cp != null;
 

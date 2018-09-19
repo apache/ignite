@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteException;
@@ -37,6 +38,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 
+import javax.cache.CacheException;
+
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
@@ -47,7 +50,7 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
     private static final String SET_NAME = "testFailoverSet";
 
     /** */
-    private static final long TEST_DURATION = 60_000;
+    private static final long TEST_DURATION = 100_000;
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -85,6 +88,52 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
     }
 
     /**
+     * Exception need to be thrown, while iteration during node fail.
+     *
+     * @throws Exception
+     */
+    public void testIterationAfterNodeFail() throws Exception {
+        final IgniteSet<Integer> set = grid(0).set(SET_NAME, config(false));
+
+        final int ITEMS = 10_000;
+
+        Collection<Integer> items = new ArrayList<>(ITEMS);
+
+        for (int i = 0; i < ITEMS; i++)
+            items.add(i);
+
+        set.addAll(items);
+
+        assertEquals(ITEMS, set.size());
+
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        for (int i = 0; i < 10; i++) {
+            int idx = rnd.nextInt(1, gridCount());
+
+            Iterator<Integer> iter = set.iterator();
+
+            iter.hasNext();
+
+            iter.next();
+
+            stopGrid(idx);
+
+            assertTrue(iter.hasNext());
+
+            try {
+                iter.next();
+            } catch (CacheException ignored) {
+                // No-op.
+            }
+
+            startGrid(idx);
+        }
+
+        set.close();
+    }
+
+    /**
      * @throws Exception If failed.
      */
     @SuppressWarnings("WhileLoopReplaceableByForEach")
@@ -104,50 +153,12 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
 
         AtomicBoolean stop = new AtomicBoolean();
 
-        IgniteInternalFuture<?> killFut = startNodeKiller(stop);
+        IgniteInternalFuture<?> killFut = startNodeKiller(stop, null, null);
 
         long stopTime = System.currentTimeMillis() + TEST_DURATION;
 
         try {
-            ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
             while (System.currentTimeMillis() < stopTime) {
-                for (int i = 0; i < 10; i++) {
-                    try {
-                        int size = set.size();
-
-                        assertEquals(ITEMS, size);
-                    }
-                    catch (IgniteException ignore) {
-                        // No-op.
-                    }
-
-                    try {
-                        Iterator<Integer> iter = set.iterator();
-
-                        int cnt = 0;
-
-                        while (iter.hasNext()) {
-                            assertNotNull(iter.next());
-
-                            cnt++;
-                        }
-
-                        assertEquals(ITEMS, cnt);
-                    }
-                    catch (IgniteException ignore) {
-                        // No-op.
-                    }
-
-                    int val = rnd.nextInt(ITEMS);
-
-                    assertTrue("Not contains: " + val, set.contains(val));
-
-                    val = ITEMS + rnd.nextInt(ITEMS);
-
-                    assertFalse("Contains: " + val, set.contains(val));
-                }
-
                 log.info("Remove set.");
 
                 set.close();
@@ -200,12 +211,104 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
     }
 
     /**
+     * If iterator already initialized and node failed before iteration start no fail expected.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("WhileLoopReplaceableByForEach")
+    public void testNodeFailBeforeIteration() throws Exception {
+        IgniteSet<Integer> set = grid(0).set(SET_NAME, config(false));
+
+        final int ITEMS = 10_000;
+
+        Collection<Integer> items = new ArrayList<>(ITEMS);
+
+        for (int i = 0; i < ITEMS; i++)
+            items.add(i);
+
+        set.addAll(items);
+
+        //assertEquals(ITEMS, set.size());
+
+        final AtomicBoolean stop = new AtomicBoolean();
+
+        CyclicBarrier srvDown = new CyclicBarrier(2);
+
+        CyclicBarrier srvCanDown = new CyclicBarrier(2);
+
+        IgniteInternalFuture<?> killFut = startNodeKiller(stop, srvCanDown, srvDown);
+
+        try {
+            ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+            for (int i = 0; i < 10; i++) {
+/*                try {
+                    int size = set.size();
+
+                    assertTrue(size == ITEMS);
+                }
+                catch (IgniteException ignore) {
+                    // No-op.
+                }*/
+
+                Iterator<Integer> iter = set.iterator();
+
+                int cnt = 0;
+
+                srvCanDown.await();
+
+                srvDown.await();
+
+                Thread.sleep(500);
+
+                while (iter.hasNext()) {
+                    assertNotNull(iter.next());
+
+                    cnt++;
+                }
+
+                System.err.println("expect: " + ITEMS + " current: " + cnt);
+
+                assertTrue("expect: " + ITEMS + " current: " + cnt, cnt == ITEMS);
+
+                int val = rnd.nextInt(ITEMS);
+
+                assertTrue("Not contains: " + val, set.contains(val));
+
+                val = ITEMS + rnd.nextInt(ITEMS);
+
+                assertFalse("Contains: " + val, set.contains(val));
+
+                srvCanDown.reset();
+
+                log.info("Remove set.");
+
+                set.close();
+
+                log.info("Create new set.");
+
+                set = grid(0).set(SET_NAME, config(false));
+
+                set.addAll(items);
+            }
+        }
+        finally {
+            stop.set(true);
+        }
+
+        set.close();
+
+        killFut.cancel();
+    }
+
+    /**
      * Starts thread restarting random node.
      *
      * @param stop Stop flag.
      * @return Future completing when thread finishes.
      */
-    private IgniteInternalFuture<?> startNodeKiller(final AtomicBoolean stop) {
+    private IgniteInternalFuture<?> startNodeKiller(final AtomicBoolean stop, final CyclicBarrier srvCanDown,
+                                                    final CyclicBarrier srvDown) {
         return GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -213,11 +316,20 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
                 while (!stop.get()) {
                     int idx = rnd.nextInt(1, gridCount());
 
-                    U.sleep(rnd.nextLong(2000, 3000));
+                    if (srvCanDown != null)
+                        srvCanDown.await();
+                    else
+                        U.sleep(rnd.nextLong(2000, 3000));
 
                     log.info("Killing node: " + idx);
 
                     stopGrid(idx);
+
+                    if (srvCanDown != null) {
+                        srvDown.await();
+
+                        srvDown.reset();
+                    }
 
                     U.sleep(rnd.nextLong(500, 1000));
 

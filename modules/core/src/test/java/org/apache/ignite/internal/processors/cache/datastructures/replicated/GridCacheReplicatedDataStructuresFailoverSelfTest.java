@@ -40,30 +40,16 @@ public class GridCacheReplicatedDataStructuresFailoverSelfTest
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
-    @Override public void testFairReentrantLockConstantMultipleTopologyChangeNonFailoverSafe() {
+    public void testFairReentrantLockConstantMultipleTopologyChangeNonFailoverSafe() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-6454");
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
-    @Override public void testReentrantLockConstantMultipleTopologyChangeNonFailoverSafe() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-6454");
-    }
-
-    /**
-     *
-     */
-    @Override public void testReentrantLockConstantTopologyChangeNonFailoverSafe() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-6454");
-    }
-
-    /**
-     *
-     */
-    @Override public void testFairReentrantLockConstantTopologyChangeNonFailoverSafe() {
+    public void testReentrantLockConstantMultipleTopologyChangeNonFailoverSafe() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-6454");
     }
 }

@@ -1840,12 +1840,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             grpValidRes = m;
         }
 
-        if (!cctx.localNode().isClient())
-            tryToPerformLocalSnapshotOperation();
-
-        if (err == null)
-            cctx.coordinators().onExchangeDone(exchCtx.newMvccCoordinator(), exchCtx.events().discoveryCache(),
-                exchCtx.activeQueries());
+        tryToPerformLocalSnapshotOperation();
 
         cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
 
