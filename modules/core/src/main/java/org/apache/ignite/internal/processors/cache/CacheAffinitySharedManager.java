@@ -428,8 +428,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         Map<Integer, GridDhtAssignmentFetchFuture> fetchFuts = U.newHashMap(startDescs.size());
 
-        Set<String> startedCaches = U.newHashSet(startDescs.size());
-
         Map<Integer, Boolean> startedInfos = U.newHashMap(startDescs.size());
 
         List<StartCacheInfo> startCacheInfos = startDescs.stream()
@@ -444,6 +442,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 );
             })
             .collect(Collectors.toList());
+
+        Set<String> startedCaches = startCacheInfos.stream()
+            .map(info -> info.getCacheDescriptor().cacheName())
+            .collect(Collectors.toSet());
 
         try {
             cctx.cache().prepareCachesStartInParallel(startCacheInfos);
@@ -898,50 +900,29 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 }
             }
 
-            if (startCache) {
-                startCacheInfos.add(new T2<>(new StartCacheInfo(
-                    req.startCacheConfiguration(),
-                    cacheDesc,
-                    nearCfg,
-                    evts.topologyVersion(),
-                    req.disabledAfterStart()
-                ), req));
-            }
-        }
+            try {
+                if (startCache) {
+                    cctx.cache().prepareCacheStart(req.startCacheConfiguration(),
+                        cacheDesc,
+                        nearCfg,
+                        evts.topologyVersion(),
+                        req.disabledAfterStart());
 
-        doInParallel(
-            cctx.kernalContext().getSystemExecutorService(),
-            startCacheInfos,
-            startCacheInfoPair -> {
-                try {
-                    StartCacheInfo startCacheInfo = startCacheInfoPair.get1();
-
-                    DynamicCacheDescriptor desc = startCacheInfo.getCacheDescriptor();
-
-                    cctx.cache().prepareCacheStart(
-                        startCacheInfo.getStartedConfiguration(),
-                        desc,
-                        startCacheInfo.getReqNearCfg(),
-                        startCacheInfo.getExchangeTopVer(),
-                        startCacheInfo.isDisabledAfterStart());
-
-                    if (fut.cacheAddedOnExchange(desc.cacheId(), desc.receivedFrom())) {
-                        if (fut.events().discoveryCache().cacheGroupAffinityNodes(desc.groupId()).isEmpty())
-                            U.quietAndWarn(log, "No server nodes found for cache client: " + startCacheInfoPair.get2().cacheName());
+                    if (fut.cacheAddedOnExchange(cacheDesc.cacheId(), cacheDesc.receivedFrom())) {
+                        if (fut.events().discoveryCache().cacheGroupAffinityNodes(cacheDesc.groupId()).isEmpty())
+                            U.quietAndWarn(log, "No server nodes found for cache client: " + req.cacheName());
                     }
                 }
-                catch (IgniteCheckedException e) {
-                    DynamicCacheChangeRequest changeRequest = startCacheInfoPair.get2();
-
-                    U.error(log, "Failed to initialize cache. Will try to rollback cache start routine. " +
-                        "[cacheName=" + changeRequest.cacheName() + ']', e);
-
-                    cctx.cache().closeCaches(Collections.singleton(changeRequest.cacheName()), false);
-
-                    cctx.cache().completeCacheStartFuture(changeRequest, false, e);
-                }
             }
-        );
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to initialize cache. Will try to rollback cache start routine. " +
+                    "[cacheName=" + req.cacheName() + ']', e);
+
+                cctx.cache().closeCaches(Collections.singleton(req.cacheName()), false);
+
+                cctx.cache().completeCacheStartFuture(req, false, e);
+            }
+        }
 
         Set<Integer> gprs = new HashSet<>();
 
