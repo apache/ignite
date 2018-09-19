@@ -31,7 +31,6 @@ import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.ObjectHistogram;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /**
  * Class contains implementation of splitting point finding algorithm based on Gini metric (see
@@ -84,7 +83,7 @@ public class GiniHistogram extends ImpurityHistogram implements ImpurityComputer
 
     /** {@inheritDoc} */
     @Override public Optional<Double> getValue(Integer bucketId) {
-        throw new NotImplementedException();
+        throw new IllegalStateException("Gini histogram doesn't support 'getValue' method");
     }
 
     /** {@inheritDoc} */
