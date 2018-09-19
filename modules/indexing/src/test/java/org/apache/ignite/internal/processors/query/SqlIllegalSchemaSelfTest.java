@@ -17,16 +17,17 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import javax.cache.CacheException;
-import java.util.concurrent.Callable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Tests for illegal SQL schemas in node and cache configurations.
@@ -63,15 +64,19 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
     public void testBadCacheNameDynamic() throws Exception {
         Ignite node = startGrid();
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                node.getOrCreateCache(new CacheConfiguration().setName(QueryUtils.SCHEMA_SYS));
+        try {
+            node.getOrCreateCache(new CacheConfiguration().setName(QueryUtils.SCHEMA_SYS));
+        }
+        catch (Throwable e) {
+            assertTrue(hasCause(e, IgniteCheckedException.class,
+                "SQL schema name derived from cache name is reserved (please set explicit SQL " +
+                    "schema name through CacheConfiguration.setSqlSchema() or choose another cache name) [" +
+                    "cacheName=IGNITE, schemaName=null]"));
 
-                return null;
-            }
-        }, CacheException.class, "SQL schema name derived from cache name is reserved (please set explicit SQL " +
-            "schema name through CacheConfiguration.setSqlSchema() or choose another cache name) [" +
-            "cacheName=IGNITE, schemaName=null]");
+            return;
+        }
+
+        fail("Exception has not been thrown.");
     }
 
     /**
@@ -99,15 +104,19 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
     public void testBadSchemaLowerDynamic() throws Exception {
         Ignite node = startGrid();
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                node.getOrCreateCache(
-                    new CacheConfiguration().setName("CACHE").setSqlSchema(QueryUtils.SCHEMA_SYS.toLowerCase())
-                );
+        try {
+            node.getOrCreateCache(
+                new CacheConfiguration().setName("CACHE").setSqlSchema(QueryUtils.SCHEMA_SYS.toLowerCase())
+            );
+        }
+        catch (Throwable e) {
+            assertTrue(hasCause(e, IgniteCheckedException.class,
+                "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName=ignite]"));
 
-                return null;
-            }
-        }, CacheException.class, "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName=ignite]");
+            return;
+        }
+
+        fail("Exception has not been thrown.");
     }
 
     /**
@@ -135,16 +144,19 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
     public void testBadSchemaUpperDynamic() throws Exception {
         Ignite node = startGrid();
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                node.getOrCreateCache(
-                    new CacheConfiguration().setName("CACHE").setSqlSchema(QueryUtils.SCHEMA_SYS.toUpperCase())
-                );
+        try {
+            node.getOrCreateCache(
+                new CacheConfiguration().setName("CACHE").setSqlSchema(QueryUtils.SCHEMA_SYS.toUpperCase())
+            );
+        }
+        catch (Throwable e) {
+            assertTrue(hasCause(e, IgniteCheckedException.class,
+                "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName=IGNITE]"));
 
-                return null;
-            }
-        }, CacheException.class, "SQL schema name is reserved (please choose another one) [cacheName=CACHE, " +
-            "schemaName=IGNITE]");
+            return;
+        }
+
+        fail("Exception has not been thrown.");
     }
 
     /**
@@ -172,16 +184,54 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
     public void testBadSchemaQuotedDynamic() throws Exception {
         Ignite node = startGrid();
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                node.getOrCreateCache(
-                    new CacheConfiguration().setName("CACHE")
-                        .setSqlSchema("\"" + QueryUtils.SCHEMA_SYS.toUpperCase() + "\"")
-                );
+        try {
+            node.getOrCreateCache(
+                new CacheConfiguration().setName("CACHE")
+                    .setSqlSchema("\"" + QueryUtils.SCHEMA_SYS.toUpperCase() + "\"")
+            );
+        }
+        catch (Throwable e) {
+            assertTrue(hasCause(e, IgniteCheckedException.class,
+                "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName=\"IGNITE\"]"));
 
-                return null;
+            return;
+        }
+
+        fail("Exception has not been thrown.");
+    }
+
+    /**
+     * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy
+     * <b>including</b> that throwable itself and it contains passed message.
+     * <p>
+     * Note that this method follows includes {@link Throwable#getSuppressed()}
+     * into check.
+     *
+     * @param t Throwable to check (if {@code null}, {@code false} is returned).
+     * @param cls Cause class to check (if {@code null}, {@code false} is returned).
+     * @param msg Message to check.
+     * @return {@code True} if one of the causing exception is an instance of passed in classes
+     *      and it contains the passed message, {@code false} otherwise.
+     */
+    private boolean hasCause(@Nullable Throwable t, Class<?> cls, String msg) {
+        if (t == null)
+            return false;
+
+        assert cls != null;
+
+        for (Throwable th = t; th != null; th = th.getCause()) {
+            if (cls.isAssignableFrom(th.getClass()) && F.eq(th.getMessage(), msg))
+                return true;
+
+            for (Throwable n : th.getSuppressed()) {
+                if (hasCause(n, cls, msg))
+                    return true;
             }
-        }, CacheException.class, "SQL schema name is reserved (please choose another one) [cacheName=CACHE, " +
-            "schemaName=\"IGNITE\"]");
+
+            if (th.getCause() == th)
+                break;
+        }
+
+        return false;
     }
 }
