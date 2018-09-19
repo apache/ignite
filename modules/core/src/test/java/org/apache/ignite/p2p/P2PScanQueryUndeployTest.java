@@ -17,6 +17,9 @@
 package org.apache.ignite.p2p;
 
 import java.lang.reflect.Field;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
@@ -32,15 +35,47 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /** */
 public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
+    /** Class name of predicate. */
+    private static final String TEST_PREDICATE_NAME = "org.apache.ignite.tests.p2p.cache.TestScanQueryPredicate";
+
+    private static final String TEST_PREDICATE_CLASS_NAME = TEST_PREDICATE_NAME.substring(TEST_PREDICATE_NAME.lastIndexOf('.') + 1);
+
+    private static final String TEST_STATIC_PREDICATE_NAME = "org.apache.ignite.tests.p2p.cache.TestScanStaticQueryPredicate";
+
+    private static final String TEST_STATIC_PREDICATE_CLASS_NAME = TEST_STATIC_PREDICATE_NAME.substring(TEST_STATIC_PREDICATE_NAME.lastIndexOf('.') + 1);
+
+    private static final String FIELD_NAME = "VALUE";
+
+    private static final String VALUE_1 = "foo";
+    private static final String VALUE_2 = "bar";
+
+    /**
+     * URL of classes.
+     */
+    private static final URL[] URLS;
+
     /** Cache name. */
     private static final String CACHE_NAME = "foo";
 
     /** Client instance name. */
     private static final String CLIENT_INSTANCE_NAME = "client";
+
+    /**
+     * Initialize URLs.
+     */
+    static {
+        try {
+            URLS = new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))};
+        }
+        catch (MalformedURLException e) {
+            throw new RuntimeException("Define property p2p.uri.cls", e);
+        }
+    }
 
     /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {
@@ -67,7 +102,7 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
                 )
         );
 
-        cfg.setPeerClassLoadingLocalClassPathExclude(TestPredicate.class.getName());
+        cfg.setPeerClassLoadingLocalClassPathExclude(TestPredicate.class.getName(), TEST_PREDICATE_CLASS_NAME, TEST_STATIC_PREDICATE_CLASS_NAME);
 
         if (igniteInstanceName.equals(CLIENT_INSTANCE_NAME))
             cfg.setClientMode(true);
@@ -85,8 +120,6 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         stopAllGrids();
-
-        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -94,8 +127,70 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
         super.afterTest();
 
         stopAllGrids();
+    }
 
-        cleanPersistenceDir();
+    public void testStaticScanQueryUndeployedOnClientDisconnect() throws Exception {
+        doTest(TEST_STATIC_PREDICATE_NAME, true);
+    }
+
+    public void testScanQueryUndeployedOnClientDisconnect() throws Exception {
+        doTest(TEST_PREDICATE_NAME, false);
+    }
+
+    private void doTest(String className, boolean isStatic) throws Exception {
+        startGrids(2);
+
+        Ignite client = startGrid(CLIENT_INSTANCE_NAME);
+
+        stopGrid(0);
+
+        client.cluster().active(true);
+
+        ClassLoader ldr = new URLClassLoader(URLS, getClass().getClassLoader());
+
+        Class<?> predicateClass = ldr.loadClass(className);
+
+        createPredicateAndExecuteQuery(predicateClass, VALUE_1, client, isStatic);
+
+        stopGrid(CLIENT_INSTANCE_NAME);
+
+        client = startGrid(CLIENT_INSTANCE_NAME);
+
+        createPredicateAndExecuteQuery(predicateClass, VALUE_2, client, isStatic);
+    }
+
+    private void createPredicateAndExecuteQuery(
+        Class<?> predicateClass,
+        String value,
+        Ignite client,
+        boolean isStatic
+    ) throws Exception {
+        Field field = predicateClass.getDeclaredField(FIELD_NAME);
+
+        field.setAccessible(true);
+
+        IgniteBiPredicate<Integer, String> predicate;
+
+        if (isStatic) {
+            field.set(null, value);
+
+            assertEquals(value,field.get(null));
+
+            predicate = (IgniteBiPredicate<Integer, String>)predicateClass.newInstance();
+        }
+        else {
+            predicate = (IgniteBiPredicate<Integer, String>)predicateClass.newInstance();
+
+            field.set(predicate, value);
+
+            assertEquals(value,field.get(predicate));
+        }
+
+        IgniteCache<Integer, String> cache = client.getOrCreateCache(CACHE_NAME);
+
+        cache.put(1, value);
+
+        assertEquals(1, cache.query(new ScanQuery(predicate)).getAll().size());
     }
 
     /**
