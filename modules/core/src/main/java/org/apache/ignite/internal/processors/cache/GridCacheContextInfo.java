@@ -29,7 +29,6 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridToStringExclude
 public class GridCacheContextInfo<K, V> {
-
     /** Full cache context. Can be {@code null} in case lazy cache configuration. */
     @Nullable private volatile GridCacheContext gridCacheContext;
 

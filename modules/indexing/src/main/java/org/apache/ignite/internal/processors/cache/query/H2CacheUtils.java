@@ -17,16 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Utilities related to H2 cache
  */
 public class H2CacheUtils {
-
     /**
      *
      */

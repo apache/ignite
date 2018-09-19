@@ -235,7 +235,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
     /**
      * @return Cache configuration.
      */
-    private CacheConfiguration<?,?> cacheConfiguration() {
+    private CacheConfiguration<?, ?> cacheConfiguration() {
         CacheConfiguration ccfg = new CacheConfiguration(PERSON_CACHE);
 
         ccfg.setSqlSchema(PERSON_SCHEMA);
@@ -304,5 +304,4 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
             this.name = name;
         }
     }
-
 }
