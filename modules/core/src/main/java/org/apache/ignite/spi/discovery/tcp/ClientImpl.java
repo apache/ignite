@@ -1906,6 +1906,8 @@ class ClientImpl extends TcpDiscoveryImpl {
          */
         private void waitBeforeForceReconnect() throws InterruptedException {
             if (U.currentTimeMillis() - lastReconnectTimestamp > 2 * 60_000)
+                currentReconnectDelay = 0; // Skip pause on first reconnect.
+            else if (currentReconnectDelay == 0)
                 currentReconnectDelay = 200;
             else {
                 long maxDelay = spi.failureDetectionTimeoutEnabled()
@@ -1915,8 +1917,11 @@ class ClientImpl extends TcpDiscoveryImpl {
                 currentReconnectDelay = Math.min(maxDelay, (int)(currentReconnectDelay * 1.5));
             }
 
-            ThreadLocalRandom random = ThreadLocalRandom.current();
-            Thread.sleep(random.nextLong(currentReconnectDelay / 2, currentReconnectDelay));
+            if (currentReconnectDelay != 0) {
+                ThreadLocalRandom random = ThreadLocalRandom.current();
+
+                Thread.sleep(random.nextLong(currentReconnectDelay / 2, currentReconnectDelay));
+            }
 
             lastReconnectTimestamp = U.currentTimeMillis();
         }
