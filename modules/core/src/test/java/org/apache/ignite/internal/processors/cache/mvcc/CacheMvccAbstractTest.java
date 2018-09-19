@@ -224,6 +224,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        persistence = false;
+
         try {
             verifyOldVersionsCleaned();
 
@@ -231,11 +233,11 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         }
         finally {
             stopAllGrids();
+
+            MvccProcessorImpl.coordinatorAssignClosure(null);
+
+            cleanPersistenceDir();
         }
-
-        MvccProcessorImpl.coordinatorAssignClosure(null);
-
-        cleanPersistenceDir();
 
         super.afterTest();
     }
