@@ -470,7 +470,12 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 Collection<ClusterNode> top = updateTopologyHistory(topVer + 1, null);
 
-                lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, new TreeMap<>(topHist), null);
+                try {
+                    lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, new TreeMap<>(topHist), null).get();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException("Failed to wait for discovery listener notification", e);
+                }
             }
         }
 
@@ -2483,21 +2488,31 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param top Topology snapshot.
          * @param data Optional custom message data.
          */
-        private void notifyDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> top,
-            @Nullable DiscoverySpiCustomMessage data) {
+        private void notifyDiscovery(
+            int type,
+            long topVer,
+            ClusterNode node,
+            Collection<ClusterNode> top,
+            @Nullable DiscoverySpiCustomMessage data
+        ) {
             DiscoverySpiListener lsnr = spi.lsnr;
 
-            DebugLogger log = type == EVT_NODE_METRICS_UPDATED ? traceLog : debugLog;
+            DebugLogger debugLog = type == EVT_NODE_METRICS_UPDATED ? traceLog : ClientImpl.this.debugLog;
 
             if (lsnr != null) {
-                if (log.isDebugEnabled())
-                    log.debug("Discovery notification [node=" + node + ", type=" + U.gridEventName(type) +
+                if (debugLog.isDebugEnabled())
+                    debugLog.debug("Discovery notification [node=" + node + ", type=" + U.gridEventName(type) +
                         ", topVer=" + topVer + ']');
 
-                lsnr.onDiscovery(type, topVer, node, top, new TreeMap<>(topHist), data);
+                try {
+                    lsnr.onDiscovery(type, topVer, node, top, new TreeMap<>(topHist), data).get();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException("Failed to wait for discovery listener notification", e);
+                }
             }
-            else if (log.isDebugEnabled())
-                log.debug("Skipped discovery notification [node=" + node + ", type=" + U.gridEventName(type) +
+            else if (debugLog.isDebugEnabled())
+                debugLog.debug("Skipped discovery notification [node=" + node + ", type=" + U.gridEventName(type) +
                     ", topVer=" + topVer + ']');
         }
 
@@ -2569,7 +2584,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return sock.toString();
         }
     }

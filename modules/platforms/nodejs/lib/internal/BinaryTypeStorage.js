@@ -19,6 +19,7 @@
 
 const Errors = require('../Errors');
 const BinaryUtils = require('./BinaryUtils');
+const Util = require('util');
 
 class BinaryTypeStorage {
 
@@ -96,6 +97,10 @@ class BinaryTypeStorage {
     }
 
     async _putBinaryType(binaryType) {
+        if (!binaryType.isValid()) {
+            throw Errors.IgniteClientError.serializationError(
+                true, Util.format('type "%d" can not be registered', binaryType.id));
+        }
         await this._communicator.send(
             BinaryUtils.OPERATION.PUT_BINARY_TYPE,
             async (payload) => {

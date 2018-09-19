@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -93,11 +94,13 @@ public class GridDhtPartitionsStateValidator {
                 ignoringNodes.add(id);
         }
 
-        // Validate cache sizes.
-        result = validatePartitionsSizes(top, messages, ignoringNodes);
+        if (!MvccUtils.mvccEnabled(cctx.kernalContext())) { // TODO: Remove "if" clause in IGNITE-9451.
+            // Validate cache sizes.
+            result = validatePartitionsSizes(top, messages, ignoringNodes);
 
-        if (!result.isEmpty())
-            throw new IgniteCheckedException("Partitions cache sizes are inconsistent for " + fold(topVer, result));
+            if (!result.isEmpty())
+                throw new IgniteCheckedException("Partitions cache sizes are inconsistent for " + fold(topVer, result));
+        }
     }
 
     /**

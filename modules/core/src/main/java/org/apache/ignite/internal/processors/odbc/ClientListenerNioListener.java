@@ -128,8 +128,6 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
         if (connCtx == null) {
             onHandshake(ses, msg);
 
-            ses.addMeta(CONN_CTX_HANDSHAKE_PASSED, true);
-
             return;
         }
 
@@ -235,6 +233,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
                 throw new IgniteCheckedException("Unsupported version.");
 
             connCtx.handler().writeHandshake(writer);
+
+            ses.addMeta(CONN_CTX_HANDSHAKE_PASSED, true);
         }
         catch (IgniteAccessControlException authEx) {
             writer.writeBoolean(false);

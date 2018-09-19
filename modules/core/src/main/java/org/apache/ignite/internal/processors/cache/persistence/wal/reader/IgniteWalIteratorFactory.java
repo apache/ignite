@@ -43,9 +43,9 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.FileDescriptor;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -373,6 +373,12 @@ public class IgniteWalIteratorFactory {
      */
     public static class IteratorParametersBuilder {
         /** */
+        public static final FileWALPointer DFLT_LOW_BOUND = new FileWALPointer(Long.MIN_VALUE, 0, 0);
+
+        /** */
+        public static final FileWALPointer DFLT_HIGH_BOUND = new FileWALPointer(Long.MAX_VALUE, Integer.MAX_VALUE, 0);
+
+        /** */
         private File[] filesOrDirs;
 
         /** */
@@ -404,10 +410,10 @@ public class IgniteWalIteratorFactory {
         @Nullable private IgniteBiPredicate<RecordType, WALPointer> filter;
 
         /** */
-        private FileWALPointer lowBound = new FileWALPointer(Long.MIN_VALUE, 0, 0);
+        private FileWALPointer lowBound = DFLT_LOW_BOUND;
 
         /** */
-        private FileWALPointer highBound = new FileWALPointer(Long.MAX_VALUE, Integer.MAX_VALUE, 0);
+        private FileWALPointer highBound = DFLT_HIGH_BOUND;
 
         /**
          * @param filesOrDirs Paths to files or directories.

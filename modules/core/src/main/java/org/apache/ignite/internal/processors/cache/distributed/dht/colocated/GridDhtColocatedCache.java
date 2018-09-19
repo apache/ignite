@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
@@ -241,7 +242,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             skipVals,
             needVer,
             /*keepCacheObjects*/false,
-            opCtx != null && opCtx.recovery());
+            opCtx != null && opCtx.recovery(),
+            null);
 
         fut.init();
 
@@ -319,7 +321,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param needVer Need version.
      * @return Loaded values.
      */
-    public IgniteInternalFuture<Map<K, V>> loadAsync(
+    private IgniteInternalFuture<Map<K, V>> loadAsync(
         @Nullable Collection<KeyCacheObject> keys,
         boolean readThrough,
         boolean forcePrimary,
@@ -341,7 +343,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             expiryPlc,
             skipVals,
             needVer,
-            false);
+            false,
+            null);
     }
 
     /**
@@ -370,7 +373,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean skipVals,
         boolean needVer,
         boolean keepCacheObj,
-        boolean recovery
+        boolean recovery,
+        @Nullable MvccSnapshot mvccSnapshot
     ) {
         GridPartitionedSingleGetFuture fut = new GridPartitionedSingleGetFuture(ctx,
             ctx.toCacheKeyObject(key),
@@ -384,7 +388,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             skipVals,
             needVer,
             keepCacheObj,
-            recovery);
+            recovery,
+            mvccSnapshot);
 
         fut.init();
 
@@ -403,6 +408,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObj Keep cache objects flag.
+     * @param mvccSnapshot Mvcc snapshot.
      * @return Load future.
      */
     public final IgniteInternalFuture<Map<K, V>> loadAsync(
@@ -417,8 +423,11 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
-        boolean keepCacheObj
+        boolean keepCacheObj,
+        @Nullable MvccSnapshot mvccSnapshot
     ) {
+        assert mvccSnapshot == null || ctx.mvccEnabled();
+
         if (keys == null || keys.isEmpty())
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
 
@@ -426,7 +435,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             expiryPlc = expiryPolicy(null);
 
         // Optimization: try to resolve value locally and escape 'get future' creation.
-        if (!forcePrimary && ctx.affinityNode()) {
+        if (!forcePrimary && ctx.affinityNode() && (!ctx.mvccEnabled() || mvccSnapshot != null)) {
             try {
                 Map<K, V> locVals = null;
 
@@ -499,6 +508,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                             taskName,
                                             expiryPlc,
                                             !deserializeBinary,
+                                            mvccSnapshot,
                                             null);
 
                                         if (getRes != null) {
@@ -517,7 +527,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                             null,
                                             taskName,
                                             expiryPlc,
-                                            !deserializeBinary);
+                                            !deserializeBinary,
+                                            mvccSnapshot);
                                     }
 
                                     // Entry was not in memory or in swap, so we remove it from cache.
@@ -600,7 +611,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             expiryPlc,
             skipVals,
             needVer,
-            keepCacheObj);
+            keepCacheObj,
+            mvccSnapshot);
 
         fut.init(topVer);
 
