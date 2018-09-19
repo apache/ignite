@@ -24,7 +24,7 @@ a.wch-nav-item(
     a(ui-sref='base.sql.tabs' ui-sref-active='active')
         | Queries
 
-.wch-content(ignite-navbar)
+.wch-additional-nav-items(ignite-navbar)
     .wch-nav-item(ng-repeat='item in navbar.items')
         div(ng-if='$root.user.becomeUsed ? item.canBecomed : item.children' ng-click='$event.stopPropagation()'
                 ng-class='{active: $state.includes(item.sref)}'

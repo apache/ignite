@@ -2259,8 +2259,7 @@ public class IgnitionEx {
                         "(only recent 1.6 and 1.7 versions HotSpot VMs are supported). " +
                         "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release. " +
                         "Switching to standard JDK marshalling - " +
-                        "object serialization performance will be significantly slower.",
-                        "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release.");
+                        "object serialization performance will be significantly slower.");
 
                     marsh = new JdkMarshaller();
                 }
@@ -2350,12 +2349,8 @@ public class IgnitionEx {
                         "like TcpDiscoverySpi)");
 
                 for (CacheConfiguration ccfg : userCaches) {
-                    if (CU.isHadoopSystemCache(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.SYS_CACHE_HADOOP_MR +
-                            "\" because it is reserved for internal purposes.");
-
-                    if (CU.isUtilityCache(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.UTILITY_CACHE_NAME +
+                    if (CU.isReservedCacheName(ccfg.getName()))
+                        throw new IgniteCheckedException("Cache name cannot be \"" + ccfg.getName() +
                             "\" because it is reserved for internal purposes.");
 
                     if (IgfsUtils.matchIgfsCacheName(ccfg.getName()))
@@ -2604,15 +2599,12 @@ public class IgnitionEx {
                     throw e;
             }
             finally {
-                if (!grid0.context().invalid())
+                if (grid0.context().segmented())
+                    state = STOPPED_ON_SEGMENTATION;
+                else if (grid0.context().invalid())
+                    state = STOPPED_ON_FAILURE;
+                else
                     state = STOPPED;
-                else {
-                    FailureContext failure = grid0.context().failure().failureContext();
-
-                    state = failure.type() == FailureType.SEGMENTATION ?
-                        STOPPED_ON_SEGMENTATION :
-                        STOPPED_ON_FAILURE;
-                }
 
                 grid = null;
 
@@ -2651,6 +2643,10 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), execSvc, log);
 
             execSvc = null;
+
+            U.shutdownNow(getClass(), svcExecSvc, log);
+
+            svcExecSvc = null;
 
             U.shutdownNow(getClass(), sysExecSvc, log);
 

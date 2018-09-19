@@ -48,7 +48,9 @@ public class PersistenceDirectoryWarningLoggingTest extends GridCommonAbstractTe
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
-        dsCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
+        dsCfg.getDefaultDataRegionConfiguration()
+            .setPersistenceEnabled(true)
+            .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE);
 
         cfg.setDataStorageConfiguration(dsCfg);
 

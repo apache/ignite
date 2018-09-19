@@ -93,7 +93,8 @@ export class ModalImportModels {
     /** @type {ng.ICompiledExpression} */
     onHide;
 
-    static $inject = ['$uiRouter', ConfigSelectors.name, ConfigEffects.name, ConfigureState.name, '$http', 'IgniteConfirm', IgniteConfirmBatch.name, 'IgniteFocus', SqlTypes.name, JavaTypes.name, 'IgniteMessages', '$scope', '$rootScope', 'AgentManager', 'IgniteActivitiesData', 'IgniteLoading', 'IgniteFormUtils', 'IgniteLegacyUtils'];
+    static $inject = ['$uiRouter', 'ConfigSelectors', 'ConfigEffects', 'ConfigureState', '$http', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteFocus', 'SqlTypes', 'JavaTypes', 'IgniteMessages', '$scope', '$rootScope', 'AgentManager', 'IgniteActivitiesData', 'IgniteLoading', 'IgniteFormUtils', 'IgniteLegacyUtils'];
+
     /**
      * @param {UIRouter} $uiRouter
      * @param {ConfigSelectors} ConfigSelectors
@@ -123,11 +124,12 @@ export class ModalImportModels {
         this.ActivitiesData = ActivitiesData;
         Object.assign(this, {Confirm, Focus, Messages, Loading, FormUtils, LegacyUtils});
     }
+
     loadData() {
         return Observable.of(this.clusterID)
-        .switchMap((id = 'new') => {
-            return this.ConfigureState.state$.let(this.ConfigSelectors.selectClusterToEdit(id, defaultNames.importedCluster));
-        })
+            .switchMap((id = 'new') => {
+                return this.ConfigureState.state$.let(this.ConfigSelectors.selectClusterToEdit(id, defaultNames.importedCluster));
+            })
         .switchMap((cluster) => {
             return (!(cluster.caches || []).length && !(cluster.models || []).length)
                 ? Observable.of({
@@ -154,7 +156,9 @@ export class ModalImportModels {
         .take(1);
     }
     saveBatch(batch) {
-        if (!batch.length) return;
+        if (!batch.length)
+            return;
+
         this.Loading.start('importDomainFromDb');
         this.ConfigureState.dispatchAction({
             type: 'ADVANCED_SAVE_COMPLETE_CONFIGURATION',
@@ -212,8 +216,12 @@ export class ModalImportModels {
         return this.visibleTables = rows.map((r) => r.entity);
     }
     onCacheSelect(cacheID) {
-        if (cacheID < 0) return;
-        if (this.loadedCaches[cacheID]) return;
+        if (cacheID < 0)
+            return;
+
+        if (this.loadedCaches[cacheID])
+            return;
+
         return this.onCacheSelectSubcription = Observable.merge(
             Observable.timer(0, 1).take(1)
                 .do(() => this.ConfigureState.dispatchAction({type: 'LOAD_CACHE', cacheID})),
@@ -290,10 +298,10 @@ export class ModalImportModels {
         }).subscribe();
 
         // New
-
         this.loadedCaches = {
             ...CACHE_TEMPLATES.reduce((a, c) => ({...a, [c.value]: c.cache}), {})
         };
+
         this.actions = [
             {value: 'connect', label: this.$root.IgniteDemoMode ? 'Description' : 'Connection'},
             {value: 'schemas', label: 'Schemas'},
@@ -302,7 +310,6 @@ export class ModalImportModels {
         ];
 
         // Legacy
-
         $scope.ui.invalidKeyFieldsTooltip = 'Found key types without configured key fields<br/>' +
             'It may be a result of import tables from database without primary keys<br/>' +
             'Key field for such key types should be configured manually';
@@ -591,7 +598,6 @@ export class ModalImportModels {
 
                 if ($scope._curDbTable.actionWatch) {
                     $scope._curDbTable.actionWatch();
-
                     $scope._curDbTable.actionWatch = null;
                 }
             }
@@ -1135,7 +1141,7 @@ export class ModalImportModels {
                 ></tables-action-cell>
             `,
             visible: true,
-            minWidth: 500
+            minWidth: 450
         }
     ];
 }

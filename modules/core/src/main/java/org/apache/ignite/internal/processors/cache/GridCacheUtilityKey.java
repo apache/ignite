@@ -41,5 +41,5 @@ public abstract class GridCacheUtilityKey<K extends GridCacheUtilityKey> impleme
     protected abstract boolean equalsx(K key);
 
     /** {@inheritDoc} */
-    public abstract int hashCode();
+    @Override public abstract int hashCode();
 }

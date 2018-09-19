@@ -20,7 +20,7 @@ package org.apache.ignite.ml.structures;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Class for vector with label.

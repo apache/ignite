@@ -247,6 +247,45 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** */
         private readonly long _rebalancingClearingPartitionsLeft;
 
+        /** */
+        private readonly long _rebalancedKeys;
+
+        /** */
+        private readonly long _estimatedRebalancedKeys;
+
+        /** */
+        private readonly long _entryProcessorPuts;
+
+        /** */
+        private readonly float _entryProcessorAverageInvocationTime;
+
+        /** */
+        private readonly long _entryProcessorInvocations;
+
+        /** */
+        private readonly float _entryProcessorMaxInvocationTime;
+
+        /** */
+        private readonly float _entryProcessorMinInvocationTime;
+
+        /** */
+        private readonly long _entryProcessorReadOnlyInvocations;
+
+        /** */
+        private readonly float _entryProcessorHitPercentage;
+
+        /** */
+        private readonly long _entryProcessorHits;
+
+        /** */
+        private readonly long _entryProcessorMisses;
+
+        /** */
+        private readonly float _entryProcessorMissPercentage;
+
+        /** */
+        private readonly long _entryProcessorRemovals;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheMetricsImpl"/> class.
         /// </summary>
@@ -327,6 +366,19 @@ namespace Apache.Ignite.Core.Impl.Cache
             _rebalancingStartTime = reader.ReadLong();
             _rebalancingClearingPartitionsLeft = reader.ReadLong();
             _cacheSize = reader.ReadLong();
+            _rebalancedKeys = reader.ReadLong();
+            _estimatedRebalancedKeys = reader.ReadLong();
+            _entryProcessorPuts = reader.ReadLong();
+            _entryProcessorAverageInvocationTime = reader.ReadFloat();
+            _entryProcessorInvocations = reader.ReadLong();
+            _entryProcessorMaxInvocationTime = reader.ReadFloat();
+            _entryProcessorMinInvocationTime = reader.ReadFloat();
+            _entryProcessorReadOnlyInvocations = reader.ReadLong();
+            _entryProcessorHitPercentage = reader.ReadFloat();
+            _entryProcessorHits = reader.ReadLong();
+            _entryProcessorMisses = reader.ReadLong();
+            _entryProcessorMissPercentage = reader.ReadFloat();
+            _entryProcessorRemovals = reader.ReadLong();
         }
 
         /** <inheritDoc /> */
@@ -550,5 +602,44 @@ namespace Apache.Ignite.Core.Impl.Cache
 
         /** <inheritDoc /> */
         public long RebalanceClearingPartitionsLeft { get { return _rebalancingClearingPartitionsLeft; } }
+
+        /** <inheritDoc /> */
+        public long RebalancedKeys { get { return _rebalancedKeys; } }
+
+        /** <inheritDoc /> */
+        public long EstimatedRebalancingKeys { get { return _estimatedRebalancedKeys; } }
+
+        /** <inheritDoc /> */
+        public long EntryProcessorPuts { get { return _entryProcessorPuts; } }
+
+        /** <inheritDoc /> */
+        public float EntryProcessorAverageInvocationTime { get { return _entryProcessorAverageInvocationTime; } }
+
+        /** <inheritDoc /> */
+        public long EntryProcessorInvocations { get { return _entryProcessorInvocations; } }
+
+        /** <inheritDoc /> */
+        public float EntryProcessorMaxInvocationTime { get { return _entryProcessorMaxInvocationTime; } }
+
+        /** <inheritDoc /> */
+        public float EntryProcessorMinInvocationTime { get { return _entryProcessorMinInvocationTime; } }
+
+        /** <inheritDoc /> */
+        public long EntryProcessorReadOnlyInvocations { get { return _entryProcessorReadOnlyInvocations; } }
+
+        /** <inheritDoc /> */
+        public float EntryProcessorHitPercentage { get { return _entryProcessorHitPercentage; } }
+
+        /** <inheritDoc /> */
+        public long EntryProcessorHits { get { return _entryProcessorHits; } }
+
+        /** <inheritDoc /> */
+        public long EntryProcessorMisses { get { return _entryProcessorMisses; } }
+
+        /** <inheritDoc /> */
+        public float EntryProcessorMissPercentage { get { return _entryProcessorMissPercentage; } }
+
+        /** <inheritDoc /> */
+        public long EntryProcessorRemovals { get { return _entryProcessorRemovals; } }
     }
 }

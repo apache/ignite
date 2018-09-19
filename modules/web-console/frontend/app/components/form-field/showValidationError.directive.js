@@ -24,10 +24,14 @@ export function directive($timeout) {
         require: ['ngModel', '?^^bsCollapseTarget', '?^^igniteFormField', '?^^panelCollapsible'],
         link(scope, el, attr, [ngModel, bsCollapseTarget, igniteFormField, panelCollapsible]) {
             const off = scope.$on('$showValidationError', (e, target) => {
-                if (target !== ngModel) return;
+                if (target !== ngModel)
+                    return;
+
                 ngModel.$setTouched();
+
                 bsCollapseTarget && bsCollapseTarget.open();
                 panelCollapsible && panelCollapsible.open();
+
                 $timeout(() => {
                     if (el[0].scrollIntoViewIfNeeded)
                         el[0].scrollIntoViewIfNeeded();

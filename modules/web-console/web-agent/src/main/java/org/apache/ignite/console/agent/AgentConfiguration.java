@@ -25,6 +25,7 @@ import java.io.Reader;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import org.apache.ignite.internal.util.typedef.F;
@@ -57,10 +58,21 @@ public class AgentConfiguration {
     private String srvUri;
 
     /** */
-    @Parameter(names = {"-n", "--node-uri"}, description = "Comma-separated URIs for connect to Ignite node via REST" +
-        "                        " +
-        "      Default value: " + DFLT_NODE_URI)
-    private String nodeUri;
+    @Parameter(names = {"-n", "--node-uri"},
+        description = "Comma-separated URIs for connect to Ignite node via REST" +
+            "                        " +
+            "      Default value: " + DFLT_NODE_URI)
+    private List<String> nodeURIs;
+
+    /** */
+    @Parameter(names = {"-nl", "--node-login"},
+        description = "User name that will be used to connect to secured cluster")
+    private String nodeLogin;
+
+    /** */
+    @Parameter(names = {"-np", "--node-password"},
+        description = "Password that will be used to connect to secured cluster")
+    private String nodePwd;
 
     /** URI for connect to Ignite demo node REST server */
     private String demoNodeUri;
@@ -116,17 +128,45 @@ public class AgentConfiguration {
     }
 
     /**
-     * @return Node URI.
+     * @return Node URIs.
      */
-    public String nodeUri() {
-        return nodeUri;
+    public List<String> nodeURIs() {
+        return nodeURIs;
     }
 
     /**
-     * @param nodeUri Node URI.
+     * @param nodeURIs Node URIs.
      */
-    public void nodeUri(String nodeUri) {
-        this.nodeUri = nodeUri;
+    public void nodeURIs(List<String> nodeURIs) {
+        this.nodeURIs = nodeURIs;
+    }
+
+    /**
+     * @return User name for agent to authenticate on node.
+     */
+    public String nodeLogin() {
+        return nodeLogin;
+    }
+
+    /**
+     * @param nodeLogin User name for agent to authenticate on node.
+     */
+    public void nodeLogin(String nodeLogin) {
+        this.nodeLogin = nodeLogin;
+    }
+
+    /**
+     * @return Agent password to authenticate on node.
+     */
+    public String nodePassword() {
+        return nodePwd;
+    }
+
+    /**
+     * @param nodePwd Agent password to authenticate on node.
+     */
+    public void nodePassword(String nodePwd) {
+        this.nodePwd = nodePwd;
     }
 
     /**
@@ -208,7 +248,17 @@ public class AgentConfiguration {
         val = (String)props.remove("node-uri");
 
         if (val != null)
-            nodeUri(val);
+            nodeURIs(new ArrayList<>(Arrays.asList(val.split(","))));
+
+        val = (String)props.remove("node-login");
+
+        if (val != null)
+            nodeLogin(val);
+
+        val = (String)props.remove("node-password");
+
+        if (val != null)
+            nodePassword(val);
 
         val = (String)props.remove("driver-folder");
 
@@ -217,29 +267,35 @@ public class AgentConfiguration {
     }
 
     /**
-     * @param cmd Command.
+     * @param cfg Config to merge with.
      */
-    public void merge(AgentConfiguration cmd) {
+    public void merge(AgentConfiguration cfg) {
         if (tokens == null)
-            tokens(cmd.tokens());
+            tokens(cfg.tokens());
 
         if (srvUri == null)
-            serverUri(cmd.serverUri());
+            serverUri(cfg.serverUri());
 
         if (srvUri == null)
             serverUri(DFLT_SERVER_URI);
 
-        if (nodeUri == null)
-            nodeUri(cmd.nodeUri());
+        if (nodeURIs == null)
+            nodeURIs(cfg.nodeURIs());
 
-        if (nodeUri == null)
-            nodeUri(DFLT_NODE_URI);
+        if (nodeURIs == null)
+            nodeURIs(Collections.singletonList(DFLT_NODE_URI));
+
+        if (nodeLogin == null)
+            nodeLogin(cfg.nodeLogin());
+
+        if (nodePwd == null)
+            nodePassword(cfg.nodePassword());
 
         if (driversFolder == null)
-            driversFolder(cmd.driversFolder());
+            driversFolder(cfg.driversFolder());
 
         if (disableDemo == null)
-            disableDemo(cmd.disableDemo());
+            disableDemo(cfg.disableDemo());
     }
 
     /** {@inheritDoc} */
@@ -247,7 +303,7 @@ public class AgentConfiguration {
         StringBuilder sb = new StringBuilder();
 
         if (!F.isEmpty(tokens)) {
-            sb.append("User's security tokens        : ");
+            sb.append("User's security tokens          : ");
 
             boolean first = true;
 
@@ -269,9 +325,14 @@ public class AgentConfiguration {
             sb.append('\n');
         }
 
-        sb.append("URI to Ignite node REST server: ").append(nodeUri == null ? DFLT_NODE_URI : nodeUri).append('\n');
-        sb.append("URI to Ignite Console server  : ").append(srvUri == null ? DFLT_SERVER_URI : srvUri).append('\n');
-        sb.append("Path to agent property file   : ").append(configPath()).append('\n');
+        sb.append("URI to Ignite node REST server  : ")
+            .append(nodeURIs == null ? DFLT_NODE_URI : String.join(", ", nodeURIs)).append('\n');
+
+        if (nodeLogin != null)
+            sb.append("Login to Ignite node REST server: ").append(nodeLogin).append('\n');
+
+        sb.append("URI to Ignite Console server    : ").append(srvUri == null ? DFLT_SERVER_URI : srvUri).append('\n');
+        sb.append("Path to agent property file     : ").append(configPath()).append('\n');
 
         String drvFld = driversFolder();
 
@@ -282,8 +343,8 @@ public class AgentConfiguration {
                 drvFld = new File(agentHome, "jdbc-drivers").getPath();
         }
 
-        sb.append("Path to JDBC drivers folder   : ").append(drvFld).append('\n');
-        sb.append("Demo mode                     : ").append(disableDemo() ? "disabled" : "enabled");
+        sb.append("Path to JDBC drivers folder     : ").append(drvFld).append('\n');
+        sb.append("Demo mode                       : ").append(disableDemo() ? "disabled" : "enabled");
 
         return sb.toString();
     }

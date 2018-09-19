@@ -15,25 +15,42 @@
  * limitations under the License.
  */
 
-class FakeUiCanExitController {
+export class FakeUiCanExitController {
     static $inject = ['$element', '$transitions'];
     static CALLBACK_NAME = 'uiCanExit';
+
+    /** @type {string} Name of state to listen exit from */
+    fromState;
+
+    /**
+     * @param {JQLite} $element
+     * @param {import('@uirouter/angularjs').TransitionService} $transitions
+     */
     constructor($element, $transitions) {
-        Object.assign(this, {$element, $transitions});
+        this.$element = $element;
+        this.$transitions = $transitions;
     }
+
     $onInit() {
         const data = this.$element.data();
         const {CALLBACK_NAME} = this.constructor;
+
         const controllerWithCallback = Object.keys(data)
             .map((key) => data[key])
             .find((controller) => controller[CALLBACK_NAME]);
-        if (!controllerWithCallback) return;
-        const off = this.$transitions.onBefore({from: this.fromState}, (...args) => {
+
+        if (!controllerWithCallback)
+            return;
+
+        this.off = this.$transitions.onBefore({from: this.fromState}, (...args) => {
             return controllerWithCallback[CALLBACK_NAME](...args);
         });
     }
+
     $onDestroy() {
-        if (this.off) this.off();
+        if (this.off)
+            this.off();
+
         this.$element = null;
     }
 }

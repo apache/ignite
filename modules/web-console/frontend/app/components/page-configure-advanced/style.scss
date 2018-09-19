@@ -43,6 +43,7 @@ page-configure-advanced {
         background-color: #f9f9f9;
         list-style: none;
         border-bottom: 1px solid #dddddd !important;
+        position: -webkit-sticky;
         position: sticky;
 
         .pca-menu-link {
@@ -112,12 +113,6 @@ page-configure-advanced {
         align-items: baseline;
         user-select: none;
         cursor: pointer;
-
-        ignite-form-panel-chevron {
-            margin-right: 10px;
-            position: relative;
-            top: -3px;
-        }
 
         .pca-panel-heading-title {
             font-size: 16px;

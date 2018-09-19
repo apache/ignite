@@ -26,6 +26,8 @@ import org.apache.ignite.internal.processors.cache.datastructures.IgniteClientDa
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteClientDiscoveryDataStructuresTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructureUniqueNameTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructureWithJobTest;
+import org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructuresNoClassOnServerTest;
+import org.apache.ignite.internal.processors.cache.datastructures.IgniteSequenceInternalCleanupTest;
 import org.apache.ignite.internal.processors.cache.datastructures.SemaphoreFailoverNoWaitingAcquirerTest;
 import org.apache.ignite.internal.processors.cache.datastructures.SemaphoreFailoverSafeReleasePermitsTest;
 import org.apache.ignite.internal.processors.cache.datastructures.local.GridCacheLocalAtomicQueueApiSelfTest;
@@ -43,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.datastructures.partitioned.Gr
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicQueueMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicQueueRotativeMultiNodeTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicReferenceApiSelfTest;
+import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicReferenceMultiNodeTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicSequenceMultiThreadedTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicSequenceTxSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicSetFailoverSelfTest;
@@ -67,6 +70,7 @@ import org.apache.ignite.internal.processors.cache.datastructures.partitioned.Ig
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.IgnitePartitionedSemaphoreSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.IgnitePartitionedSetNoBackupsSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedAtomicReferenceApiSelfTest;
+import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedAtomicReferenceMultiNodeTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedAtomicStampedApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedDataStructuresFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedQueueApiSelfTest;
@@ -163,15 +167,21 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedAtomicReferenceApiSelfTest.class));
         suite.addTest(new TestSuite(GridCacheReplicatedAtomicReferenceApiSelfTest.class));
 
+        //suite.addTest(new TestSuite(GridCachePartitionedAtomicReferenceMultiNodeTest.class));
+        //suite.addTest(new TestSuite(GridCacheReplicatedAtomicReferenceMultiNodeTest.class));
+
         suite.addTest(new TestSuite(GridCachePartitionedNodeRestartTxSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedQueueJoinedNodeSelfTest.class));
 
         suite.addTest(new TestSuite(IgniteDataStructureUniqueNameTest.class));
+        //suite.addTest(new TestSuite(IgniteDataStructuresNoClassOnServerTest.class));
 
         suite.addTest(new TestSuite(IgniteClientDataStructuresTest.class));
         suite.addTest(new TestSuite(IgniteClientDiscoveryDataStructuresTest.class));
 
         suite.addTest(new TestSuite(IgnitePartitionedQueueNoBackupsTest.class));
+
+        suite.addTest(new TestSuite(IgniteSequenceInternalCleanupTest.class));
 
         suite.addTestSuite(AtomicCacheAffinityConfigurationTest.class);
 

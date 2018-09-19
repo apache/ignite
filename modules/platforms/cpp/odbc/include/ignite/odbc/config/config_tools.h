@@ -20,7 +20,6 @@
 
 #include <string>
 #include <vector>
-#include <sstream>
 
 #include "ignite/odbc/end_point.h"
 

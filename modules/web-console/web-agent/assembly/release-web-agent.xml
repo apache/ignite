@@ -41,13 +41,6 @@
             </includes>
         </fileSet>
         <fileSet>
-            <directory>${basedir}/config</directory>
-            <outputDirectory>/</outputDirectory>
-            <includes>
-                <include>java.util.logging.properties</include>
-            </includes>
-        </fileSet>
-        <fileSet>
             <directory>${basedir}/bin</directory>
             <outputDirectory>/</outputDirectory>
             <includes>

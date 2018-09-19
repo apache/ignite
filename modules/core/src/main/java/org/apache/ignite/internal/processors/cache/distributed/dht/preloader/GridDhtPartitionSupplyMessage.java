@@ -89,10 +89,12 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
      * @param topVer Topology version.
      * @param addDepInfo Deployment info flag.
      */
-    GridDhtPartitionSupplyMessage(long rebalanceId,
+    GridDhtPartitionSupplyMessage(
+        long rebalanceId,
         int grpId,
         AffinityTopologyVersion topVer,
-        boolean addDepInfo) {
+        boolean addDepInfo
+    ) {
         this.grpId = grpId;
         this.rebalanceId = rebalanceId;
         this.topVer = topVer;
@@ -443,7 +445,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
      * @return Estimated keys count.
      */
     public long estimatedKeysCount() {
-        return estimatedKeysCnt;
+        return -1;
     }
 
     /**
@@ -457,12 +459,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
      * @return Estimated keys count for a given cache ID.
      */
     public long keysForCache(int cacheId) {
-        if (this.keysPerCache == null)
-            return -1;
-
-        Long cnt = this.keysPerCache.get(cacheId);
-
-        return cnt != null ? cnt : 0;
+        return -1;
     }
 
     /**

@@ -74,6 +74,7 @@ import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -347,7 +348,10 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public Lock lockAll(final Collection<? extends K> keys) {
-        return new CacheLockImpl<>(ctx.gate(), delegate, new CacheOperationContext(), keys);
+        //TODO IGNITE-7764
+        MvccUtils.verifyMvccOperationSupport(ctx, "Lock");
+
+        return new CacheLockImpl<>(ctx.gate(), delegate, ctx.operationContextPerCall(), keys);
     }
 
     /** {@inheritDoc} */
@@ -375,7 +379,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         IgniteBiPredicate<K, V> p = scanQry.getFilter();
 
-        final CacheQuery<R> qry = ctx.queries().createScanQuery(p, transformer, scanQry.getPartition(), isKeepBinary);
+        final CacheQuery<R> qry = ctx.queries().createScanQuery(
+            p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal());
 
         if (scanQry.getPageSize() > 0)
             qry.pageSize(scanQry.getPageSize());
@@ -1709,6 +1714,11 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         throw new UnsupportedOperationException();
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteCache<K, V> withAllowAtomicOpsInTx() {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Method converts exception to IgniteCacheRestartingException in case of cache restarting
      * or to CacheException in other cases.
@@ -1782,6 +1792,16 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     @Override public void enableStatistics(boolean enabled) {
         try {
             ctx.kernalContext().cache().enableStatistics(Collections.singleton(getName()), enabled);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clearStatistics() {
+        try {
+            ctx.kernalContext().cache().clearStatistics(Collections.singleton(getName()));
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);

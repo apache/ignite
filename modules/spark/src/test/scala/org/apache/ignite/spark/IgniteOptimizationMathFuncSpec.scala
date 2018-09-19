@@ -36,7 +36,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
         it("ABS") {
             val df = igniteSession.sql("SELECT ABS(val) FROM numbers WHERE id = 6")
 
-            checkOptimizationResult(df, "SELECT ABS(val) FROM numbers WHERE id is not null AND id = 6")
+            checkOptimizationResult(df, "SELECT ABS(val) FROM numbers WHERE id = 6")
 
             val data = Tuple1(.5)
 
@@ -46,7 +46,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
         it("ACOS") {
             val df = igniteSession.sql("SELECT ACOS(val) FROM numbers WHERE id = 7")
 
-            checkOptimizationResult(df, "SELECT ACOS(val) FROM numbers WHERE id is not null AND id = 7")
+            checkOptimizationResult(df, "SELECT ACOS(val) FROM numbers WHERE id = 7")
 
             val data = Tuple1(Math.PI)
 
@@ -56,7 +56,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
         it("ASIN") {
             val df = igniteSession.sql("SELECT ASIN(val) FROM numbers WHERE id = 7")
 
-            checkOptimizationResult(df, "SELECT ASIN(val) FROM numbers WHERE id is not null AND id = 7")
+            checkOptimizationResult(df, "SELECT ASIN(val) FROM numbers WHERE id = 7")
 
             val data = Tuple1(-Math.PI/2)
 
@@ -66,7 +66,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
         it("ATAN") {
             val df = igniteSession.sql("SELECT ATAN(val) FROM numbers WHERE id = 7")
 
-            checkOptimizationResult(df, "SELECT ATAN(val) FROM numbers WHERE id is not null AND id = 7")
+            checkOptimizationResult(df, "SELECT ATAN(val) FROM numbers WHERE id = 7")
 
             val data = Tuple1(-Math.PI/4)
 
@@ -76,7 +76,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
         it("COS") {
             val df = igniteSession.sql("SELECT COS(val) FROM numbers WHERE id = 1")
 
-            checkOptimizationResult(df, "SELECT COS(val) FROM numbers WHERE id is not null AND id = 1")
+            checkOptimizationResult(df, "SELECT COS(val) FROM numbers WHERE id = 1")
 
             val data = Tuple1(1.0)
 
@@ -86,7 +86,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
         it("SIN") {
             val df = igniteSession.sql("SELECT SIN(val) FROM numbers WHERE id = 1")
 
-            checkOptimizationResult(df, "SELECT SIN(val) FROM numbers WHERE id is not null AND id = 1")
+            checkOptimizationResult(df, "SELECT SIN(val) FROM numbers WHERE id = 1")
 
             val data = Tuple1(.0)
 
@@ -96,7 +96,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
         it("TAN") {
             val df = igniteSession.sql("SELECT TAN(val) FROM numbers WHERE id = 1")
 
-            checkOptimizationResult(df, "SELECT TAN(val) FROM numbers WHERE id is not null AND id = 1")
+            checkOptimizationResult(df, "SELECT TAN(val) FROM numbers WHERE id = 1")
 
             val data = Tuple1(.0)
 
@@ -106,7 +106,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
         it("COSH") {
             val df = igniteSession.sql("SELECT COSH(val) FROM numbers WHERE id = 1")
 
-            checkOptimizationResult(df, "SELECT COSH(val) FROM numbers WHERE id is not null AND id = 1")
+            checkOptimizationResult(df, "SELECT COSH(val) FROM numbers WHERE id = 1")
 
             val data = Tuple1(1.0)
 
@@ -116,7 +116,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
         it("SINH") {
             val df = igniteSession.sql("SELECT SINH(val) FROM numbers WHERE id = 1")
 
-            checkOptimizationResult(df, "SELECT SINH(val) FROM numbers WHERE id is not null AND id = 1")
+            checkOptimizationResult(df, "SELECT SINH(val) FROM numbers WHERE id = 1")
 
             val data = Tuple1(.0)
 
@@ -126,7 +126,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
         it("TANH") {
             val df = igniteSession.sql("SELECT TANH(val) FROM numbers WHERE id = 1")
 
-            checkOptimizationResult(df, "SELECT TANH(val) FROM numbers WHERE id is not null AND id = 1")
+            checkOptimizationResult(df, "SELECT TANH(val) FROM numbers WHERE id = 1")
 
             val data = Tuple1(.0)
 
@@ -137,7 +137,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
             val df = igniteSession.sql("SELECT ATAN2(val, 0.0) FROM numbers WHERE id = 1")
 
             checkOptimizationResult(df, "SELECT ATAN2(val, 0.0) AS \"ATAN2(val, CAST(0.0 AS DOUBLE))\" " +
-                "FROM numbers WHERE id is not null AND id = 1")
+                "FROM numbers WHERE id = 1")
 
             val data = Tuple1(.0)
 
@@ -148,7 +148,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
             val df = igniteSession.sql("SELECT val % 9 FROM numbers WHERE id = 8")
 
             checkOptimizationResult(df, "SELECT val % 9.0 as \"(val % CAST(9 AS DOUBLE))\" " +
-                "FROM numbers WHERE id is not null AND id = 8")
+                "FROM numbers WHERE id = 8")
 
             val data = Tuple1(6.0)
 
@@ -159,7 +159,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
             val df = igniteSession.sql("SELECT CEIL(val) FROM numbers WHERE id = 2")
 
             checkOptimizationResult(df, "SELECT CAST(CEIL(val) AS LONG) as \"CEIL(val)\" " +
-                "FROM numbers WHERE id is not null AND id = 2")
+                "FROM numbers WHERE id = 2")
 
             val data = Tuple1(1)
 
@@ -183,7 +183,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
             val df = igniteSession.sql("SELECT FLOOR(val) FROM numbers WHERE id = 2")
 
             checkOptimizationResult(df, "SELECT CAST(FLOOR(val) AS LONG) as \"FLOOR(val)\" FROM numbers " +
-                "WHERE id is not null AND id = 2")
+                "WHERE id = 2")
 
             val data = Tuple1(0)
 
@@ -194,7 +194,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
             val df = igniteSession.sql("SELECT POWER(val, 3) FROM numbers WHERE id = 4")
 
             checkOptimizationResult(df, "SELECT POWER(val, 3.0) as \"POWER(val, CAST(3 AS DOUBLE))\" FROM numbers " +
-                "WHERE id is not null AND id = 4")
+                "WHERE id = 4")
 
             val data = Tuple1(8.0)
 
@@ -217,7 +217,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
             val df = igniteSession.sql("SELECT LOG(val) FROM numbers WHERE id = 12")
 
             checkOptimizationResult(df, "SELECT LOG(val) as \"LOG(E(), val)\" FROM numbers " +
-                "WHERE id IS NOT NULL AND id = 12")
+                "WHERE id = 12")
 
             val data = Tuple1(2.0)
 
@@ -227,7 +227,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
         it("LOG10") {
             val df = igniteSession.sql("SELECT LOG10(val) FROM numbers WHERE id = 11")
 
-            checkOptimizationResult(df, "SELECT LOG10(val) FROM numbers WHERE id IS NOT NULL AND id = 11")
+            checkOptimizationResult(df, "SELECT LOG10(val) FROM numbers WHERE id = 11")
 
             val data = Tuple1(2.0)
 
@@ -237,7 +237,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
         it("DEGREES") {
             val df = igniteSession.sql("SELECT DEGREES(val) FROM numbers WHERE id = 13")
 
-            checkOptimizationResult(df, "SELECT DEGREES(val) FROM numbers WHERE id IS NOT NULL AND id = 13")
+            checkOptimizationResult(df, "SELECT DEGREES(val) FROM numbers WHERE id = 13")
 
             val data = Tuple1(180.0)
 
@@ -247,7 +247,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
         it("RADIANS") {
             val df = igniteSession.sql("SELECT RADIANS(val) FROM numbers WHERE id = 14")
 
-            checkOptimizationResult(df, "SELECT RADIANS(val) FROM numbers WHERE id IS NOT NULL AND id = 14")
+            checkOptimizationResult(df, "SELECT RADIANS(val) FROM numbers WHERE id = 14")
 
             val data = Tuple1(Math.PI)
 
@@ -258,7 +258,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
             val df = igniteSession.sql("SELECT int_val&1 FROM numbers WHERE id = 15")
 
             checkOptimizationResult(df, "SELECT BITAND(int_val, 1) as \"(int_val & CAST(1 AS BIGINT))\" FROM numbers " +
-                "WHERE id IS NOT NULL AND id = 15")
+                "WHERE id = 15")
 
             val data = Tuple1(1)
 
@@ -269,7 +269,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
             val df = igniteSession.sql("SELECT int_val|1 FROM numbers WHERE id = 16")
 
             checkOptimizationResult(df, "SELECT BITOR(int_val, 1) as \"(int_val | CAST(1 AS BIGINt))\" FROM numbers " +
-                "WHERE id IS NOT NULL AND id = 16")
+                "WHERE id = 16")
 
             val data = Tuple1(3)
 
@@ -280,7 +280,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
             val df = igniteSession.sql("SELECT int_val^1 FROM numbers WHERE id = 17")
 
             checkOptimizationResult(df, "SELECT BITXOR(int_val, 1) AS \"(int_val ^ CAST(1 AS BIGINT))\" FROM numbers " +
-                "WHERE id IS NOT NULL AND id = 17")
+                "WHERE id = 17")
 
             val data = Tuple1(2)
 
@@ -290,7 +290,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
         it("RAND") {
             val df = igniteSession.sql("SELECT id, RAND(1) FROM numbers WHERE id = 17")
 
-            checkOptimizationResult(df, "SELECT id, RAND(1) FROM numbers WHERE id IS NOT NULL AND id = 17")
+            checkOptimizationResult(df, "SELECT id, RAND(1) FROM numbers WHERE id = 17")
 
             val data = df.rdd.collect
 

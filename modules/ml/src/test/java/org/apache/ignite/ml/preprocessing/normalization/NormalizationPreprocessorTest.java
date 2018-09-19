@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.preprocessing.normalization;
 
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.preprocessing.binarization.BinarizationPreprocessor;
 import org.junit.Test;
 
@@ -35,7 +37,7 @@ public class NormalizationPreprocessorTest {
             {1, 0, 0},
         };
 
-        NormalizationPreprocessor<Integer, double[]> preprocessor = new NormalizationPreprocessor<>(
+        NormalizationPreprocessor<Integer, Vector> preprocessor = new NormalizationPreprocessor<>(
             1,
             (k, v) -> v
         );
@@ -47,6 +49,6 @@ public class NormalizationPreprocessorTest {
         };
 
        for (int i = 0; i < data.length; i++)
-           assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]), 1e-2);
+           assertArrayEquals(postProcessedData[i], preprocessor.apply(i, VectorUtils.of(data[i])).asArray(), 1e-2);
     }
 }

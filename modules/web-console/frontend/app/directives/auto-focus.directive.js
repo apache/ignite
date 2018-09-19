@@ -16,7 +16,7 @@
  */
 
 // Directive to auto-focus specified element.
-export default ['igniteAutoFocus', ['$timeout', ($timeout) => {
+export default ['igniteAutoFocus', ['$timeout', function($timeout) {
     return {
         restrict: 'AC',
         link(scope, element) {

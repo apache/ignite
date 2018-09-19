@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.worker;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -41,7 +42,11 @@ public class WorkersControlMXBeanImpl implements WorkersControlMXBean {
 
     /** {@inheritDoc} */
     @Override public List<String> getWorkerNames() {
-        return new ArrayList<>(workerRegistry.names());
+        List<String> names = new ArrayList<>(workerRegistry.names());
+
+        Collections.sort(names);
+
+        return names;
     }
 
     /** {@inheritDoc} */

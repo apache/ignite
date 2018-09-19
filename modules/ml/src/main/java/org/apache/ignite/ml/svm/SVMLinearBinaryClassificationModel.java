@@ -22,7 +22,7 @@ import java.util.Objects;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Base class for SVM linear classification model.
@@ -31,11 +31,11 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
     /** */
     private static final long serialVersionUID = -996984622291440226L;
 
-    /** Output label format. -1 and +1 for false value and raw distances from the separating hyperplane otherwise. */
+    /** Output label format. '0' and '1' for false value and raw distances from the separating hyperplane otherwise. */
     private boolean isKeepingRawLabels = false;
 
-    /** Threshold to assign +1 label to the observation if raw value more than this threshold. */
-    private double threshold = 0.0;
+    /** Threshold to assign '1' label to the observation if raw value more than this threshold. */
+    private double threshold = 0.5;
 
     /** Multiplier of the objects's vector required to make prediction. */
     private Vector weights;
@@ -99,7 +99,7 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
         if (isKeepingRawLabels)
             return res;
         else
-            return res - threshold > 0 ? 1.0 : -1.0;
+            return res - threshold > 0 ? 1.0 : 0;
     }
 
     /**
@@ -181,9 +181,14 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
             return builder.toString();
         }
 
-        return "SVMModel{" +
+        return "SVMModel [" +
             "weights=" + weights +
             ", intercept=" + intercept +
-            '}';
+            ']';
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString(boolean pretty) {
+        return toString();
     }
 }

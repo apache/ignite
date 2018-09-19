@@ -27,7 +27,7 @@ import java.nio.file.OpenOption;
 /**
  * File I/O implementation based on {@link FileChannel}.
  */
-public class RandomAccessFileIO implements FileIO {
+public class RandomAccessFileIO extends AbstractFileIO {
     /**
      * File channel.
      */

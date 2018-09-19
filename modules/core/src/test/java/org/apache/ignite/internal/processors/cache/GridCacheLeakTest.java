@@ -135,17 +135,12 @@ public class GridCacheLeakTest extends GridCommonAbstractTest {
                     }
                 }
 
-                if (i == 500_000)
+                if (i == 50_000)
                     break;
             }
         }
         finally {
             stopAllGrids();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return Long.MAX_VALUE;
     }
 }

@@ -31,7 +31,8 @@ export default class ModelEditFormController {
     /** @type {ng.ICompiledExpression} */
     onSave;
 
-    static $inject = ['ModalImportModels', 'IgniteErrorPopover', 'IgniteLegacyUtils', Confirm.name, 'ConfigChangesGuard', IgniteVersion.name, '$scope', Models.name, 'IgniteFormUtils'];
+    static $inject = ['ModalImportModels', 'IgniteErrorPopover', 'IgniteLegacyUtils', 'Confirm', 'ConfigChangesGuard', 'IgniteVersion', '$scope', 'Models', 'IgniteFormUtils'];
+
     /**
      * @param {ModalImportModels} ModalImportModels
      * @param {Confirm} Confirm
@@ -171,22 +172,30 @@ export default class ModelEditFormController {
         if ('caches' in changes)
             this.cachesMenu = (changes.caches.currentValue || []).map((c) => ({label: c.name, value: c._id}));
     }
+
     /**
      * @param {ig.config.model.DomainModel} model
      */
     onQueryFieldsChange(model) {
         this.$scope.backupItem = this.Models.removeInvalidFields(model);
     }
+
     getValuesToCompare() {
         return [this.model, this.$scope.backupItem].map(this.Models.normalize);
     }
+
     save(download) {
         if (this.$scope.ui.inputForm.$invalid)
             return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
-        if (!this.validate(this.$scope.backupItem)) return;
+
+        if (!this.validate(this.$scope.backupItem))
+            return;
+
         this.onSave({$event: {model: cloneDeep(this.$scope.backupItem), download}});
     }
+
     reset = (forReal) => forReal ? this.$scope.backupItem = cloneDeep(this.model) : void 0;
+
     confirmAndReset() {
         return this.Confirm.confirm('Are you sure you want to undo all changes for current model?').then(() => true)
         .then(this.reset)

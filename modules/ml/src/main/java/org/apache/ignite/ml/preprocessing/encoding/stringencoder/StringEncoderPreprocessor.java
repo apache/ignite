@@ -18,8 +18,12 @@
 package org.apache.ignite.ml.preprocessing.encoding.stringencoder;
 
 import java.util.Map;
-import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownStringValue;
+import java.util.Set;
+import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownCategorialFeatureValue;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.preprocessing.encoding.EncoderPreprocessor;
 
 /**
  * Preprocessing function that makes String encoding.
@@ -27,25 +31,19 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class StringEncoderPreprocessor<K, V> implements IgniteBiFunction<K, V, double[]> {
+public class StringEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> {
     /** */
-    private static final long serialVersionUID = 6237812226382623469L;
-
-    /** Filling values. */
-    private final Map<String, Integer>[] encodingValues;
-
-    /** Base preprocessor. */
-    private final IgniteBiFunction<K, V, String[]> basePreprocessor;
+    protected static final long serialVersionUID = 6237712226382623488L;
 
     /**
      * Constructs a new instance of String Encoder preprocessor.
      *
      * @param basePreprocessor Base preprocessor.
+     * @param handledIndices   Handled indices.
      */
     public StringEncoderPreprocessor(Map<String, Integer>[] encodingValues,
-        IgniteBiFunction<K, V, String[]> basePreprocessor) {
-        this.encodingValues = encodingValues;
-        this.basePreprocessor = basePreprocessor;
+                                     IgniteBiFunction<K, V, Object[]> basePreprocessor, Set<Integer> handledIndices) {
+        super(encodingValues, basePreprocessor, handledIndices);
     }
 
     /**
@@ -55,16 +53,22 @@ public class StringEncoderPreprocessor<K, V> implements IgniteBiFunction<K, V, d
      * @param v Value.
      * @return Preprocessed row.
      */
-    @Override public double[] apply(K k, V v) {
-        String[] tmp = basePreprocessor.apply(k, v);
+    @Override public Vector apply(K k, V v) {
+        Object[] tmp = basePreprocessor.apply(k, v);
         double[] res = new double[tmp.length];
 
         for (int i = 0; i < res.length; i++) {
-            if (encodingValues[i].containsKey(tmp[i]))
-                res[i] = encodingValues[i].get(tmp[i]);
-            else
-                throw new UnknownStringValue(tmp[i]);
+            Object tmpObj = tmp[i];
+            if (handledIndices.contains(i)) {
+                if (tmpObj.equals(Double.NaN) && encodingValues[i].containsKey(KEY_FOR_NULL_VALUES))
+                    res[i] = encodingValues[i].get(KEY_FOR_NULL_VALUES);
+                else if (encodingValues[i].containsKey(tmpObj))
+                    res[i] = encodingValues[i].get(tmpObj);
+                else
+                    throw new UnknownCategorialFeatureValue(tmpObj.toString());
+            } else
+                res[i] = (double) tmpObj;
         }
-        return res;
+        return VectorUtils.of(res);
     }
 }

@@ -41,7 +41,7 @@ const ROW_IDX = {value: -2, type: 'java.lang.Integer', label: 'ROW_IDX'};
 
 const NON_COLLOCATED_JOINS_SINCE = '1.7.0';
 
-const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], '2.5.2'];
+const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], ['2.5.1-p13', '2.6.0'], '2.7.0'];
 
 const ENFORCE_JOIN_SINCE = [['1.7.9', '1.8.0'], ['1.8.4', '1.9.0'], '1.9.1'];
 
@@ -66,7 +66,7 @@ const _fullColName = (col) => {
 let paragraphId = 0;
 
 class Paragraph {
-    constructor($animate, $timeout, JavaTypes, paragraph) {
+    constructor($animate, $timeout, JavaTypes, errorParser, paragraph) {
         const self = this;
 
         self.id = 'paragraph-' + paragraphId++;
@@ -146,14 +146,14 @@ class Paragraph {
 
         this.setError = (err) => {
             this.error.root = err;
-            this.error.message = err.message;
+            this.error.message = errorParser.extractMessage(err);
 
             let cause = err;
 
             while (nonNil(cause)) {
                 if (nonEmpty(cause.className) &&
                     _.includes(['SQLException', 'JdbcSQLException', 'QueryCancelledException'], JavaTypes.shortClassName(cause.className))) {
-                    this.error.message = cause.message || cause.className;
+                    this.error.message = errorParser.extractMessage(cause.message || cause.className);
 
                     break;
                 }
@@ -251,16 +251,16 @@ class Paragraph {
 
 // Controller for SQL notebook screen.
 export class NotebookCtrl {
-    static $inject = ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', CSV.name];
+    static $inject = ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', 'CSV', 'IgniteErrorParser'];
 
     /**
      * @param {CSV} CSV
      */
-    constructor($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV) {
+    constructor($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV, errorParser) {
         const $ctrl = this;
 
         this.CSV = CSV;
-        Object.assign(this, { $root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes });
+        Object.assign(this, { $root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, errorParser });
 
         // Define template urls.
         $ctrl.paragraphRateTemplateUrl = paragraphRateTemplateUrl;
@@ -283,7 +283,15 @@ export class NotebookCtrl {
 
         $scope.caches = [];
 
-        $scope.pageSizes = [50, 100, 200, 400, 800, 1000];
+        $scope.pageSizesOptions = [
+            {value: 50, label: '50'},
+            {value: 100, label: '100'},
+            {value: 200, label: '200'},
+            {value: 400, label: '400'},
+            {value: 800, label: '800'},
+            {value: 1000, label: '1000'}
+        ];
+
         $scope.maxPages = [
             {label: 'Unlimited', value: 0},
             {label: '1', value: 1},
@@ -593,7 +601,7 @@ export class NotebookCtrl {
                         showControls: true,
                         legend: {
                             vers: 'furious',
-                            margin: {right: -25}
+                            margin: {right: -15}
                         }
                     }
                 };
@@ -659,9 +667,7 @@ export class NotebookCtrl {
                             donutRatio: 0.35,
                             legend: {
                                 vers: 'furious',
-                                margin: {
-                                    right: -25
-                                }
+                                margin: {right: -15}
                             }
                         },
                         title: {
@@ -701,9 +707,7 @@ export class NotebookCtrl {
                         useInteractiveGuideline: true,
                         legend: {
                             vers: 'furious',
-                            margin: {
-                                right: -25
-                            }
+                            margin: {right: -15}
                         }
                     }
                 };
@@ -745,7 +749,7 @@ export class NotebookCtrl {
                         style,
                         legend: {
                             vers: 'furious',
-                            margin: {right: -25}
+                            margin: {right: -15}
                         }
                     }
                 };
@@ -961,6 +965,10 @@ export class NotebookCtrl {
                 .subscribe();
         };
 
+        const _newParagraph = (paragraph) => {
+            return new Paragraph($animate, $timeout, JavaTypes, errorParser, paragraph);
+        };
+
         Notebook.find($state.params.noteId)
             .then((notebook) => {
                 $scope.notebook = _.cloneDeep(notebook);
@@ -973,8 +981,7 @@ export class NotebookCtrl {
                 if (!$scope.notebook.paragraphs)
                     $scope.notebook.paragraphs = [];
 
-                $scope.notebook.paragraphs = _.map($scope.notebook.paragraphs,
-                    (paragraph) => new Paragraph($animate, $timeout, JavaTypes, paragraph));
+                $scope.notebook.paragraphs = _.map($scope.notebook.paragraphs, (p) => _newParagraph(p));
 
                 if (_.isEmpty($scope.notebook.paragraphs))
                     $scope.addQuery();
@@ -1046,10 +1053,10 @@ export class NotebookCtrl {
 
             ActivitiesData.post({ action: '/queries/add/query' });
 
-            const paragraph = new Paragraph($animate, $timeout, JavaTypes, {
+            const paragraph = _newParagraph({
                 name: 'Query' + (sz === 0 ? '' : sz),
                 query: '',
-                pageSize: $scope.pageSizes[1],
+                pageSize: $scope.pageSizesOptions[1].value,
                 timeLineSpan: $scope.timeLineSpans[0],
                 result: 'none',
                 rate: {
@@ -1075,10 +1082,10 @@ export class NotebookCtrl {
 
             ActivitiesData.post({ action: '/queries/add/scan' });
 
-            const paragraph = new Paragraph($animate, $timeout, JavaTypes, {
+            const paragraph = _newParagraph({
                 name: 'Scan' + (sz === 0 ? '' : sz),
                 query: '',
-                pageSize: $scope.pageSizes[1],
+                pageSize: $scope.pageSizesOptions[1].value,
                 timeLineSpan: $scope.timeLineSpans[0],
                 result: 'none',
                 rate: {
@@ -1550,11 +1557,15 @@ export class NotebookCtrl {
         };
 
         $scope.explain = (paragraph) => {
+            const nonCollocatedJoins = !!paragraph.nonCollocatedJoins;
+            const enforceJoinOrder = !!paragraph.enforceJoinOrder;
+            const collocated = !!paragraph.collocated;
+
             if (!$scope.queryAvailable(paragraph))
                 return;
 
-            Notebook.save($scope.notebook)
-                .catch(Messages.showError);
+            if (!paragraph.partialQuery)
+                Notebook.save($scope.notebook).catch(Messages.showError);
 
             _cancelRefresh(paragraph);
 
@@ -1566,13 +1577,13 @@ export class NotebookCtrl {
                     const args = paragraph.queryArgs = {
                         type: 'EXPLAIN',
                         cacheName: $scope.cacheNameForSql(paragraph),
-                        query: 'EXPLAIN ' + paragraph.query,
+                        query: 'EXPLAIN ' + (paragraph.partialQuery || paragraph.query),
                         pageSize: paragraph.pageSize
                     };
 
                     ActivitiesData.post({ action: '/queries/explain' });
 
-                    return agentMgr.querySql(nid, args.cacheName, args.query, args.nonCollocatedJoins, !!paragraph.enforceJoinOrder, false, false, args.pageSize, false, args.collocated);
+                    return agentMgr.querySql(nid, args.cacheName, args.query, nonCollocatedJoins, enforceJoinOrder, false, false, args.pageSize, false, collocated);
                 })
                 .then((res) => _processQueryResult(paragraph, true, res))
                 .catch((err) => {
@@ -1937,9 +1948,7 @@ export class NotebookCtrl {
 
                 const addToTrace = (item) => {
                     if (nonNil(item)) {
-                        const clsName = _.isEmpty(item.className) ? '' : '[' + JavaTypes.shortClassName(item.className) + '] ';
-
-                        scope.content.push((scope.content.length > 0 ? tab : '') + clsName + (item.message || ''));
+                        scope.content.push((scope.content.length > 0 ? tab : '') + errorParser.extractFullMessage(item));
 
                         addToTrace(item.cause);
 
@@ -1955,11 +1964,8 @@ export class NotebookCtrl {
         };
     }
 
-    $onInit() {
-
-    }
-
     $onDestroy() {
-        this.refresh$.unsubscribe();
+        if (this.refresh$)
+            this.refresh$.unsubscribe();
     }
 }

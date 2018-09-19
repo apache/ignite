@@ -79,7 +79,7 @@ if %ERRORLEVEL% equ 0 (
     if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxMetaspaceSize=256m
 )
 
-set JVM_OPTS=%JVM_OPTS% -Djava.util.logging.config.file=java.util.logging.properties -Djava.net.useSystemProxies=true
+set JVM_OPTS=%JVM_OPTS% -Djava.net.useSystemProxies=true
 
 "%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp "*" org.apache.ignite.console.agent.AgentLauncher %*
 

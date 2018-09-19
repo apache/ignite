@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.rest;
 /**
  * Test REST with enabled authentication and credentials in each request.
  */
-public class JettyRestProcessorAuthenticationWithCredsSelfTest extends JettyRestProcessorAuthenticationSelfTest {
+public class JettyRestProcessorAuthenticationWithCredsSelfTest extends JettyRestProcessorAuthenticationAbstractTest {
     /** {@inheritDoc} */
     @Override protected String restUrl() {
         String url = super.restUrl();

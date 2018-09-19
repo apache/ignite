@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Test REST with enabled authentication and token.
  */
-public class JettyRestProcessorAuthenticationWithTokenSelfTest extends JettyRestProcessorAuthenticationSelfTest {
+public class JettyRestProcessorAuthenticationWithTokenSelfTest extends JettyRestProcessorAuthenticationAbstractTest {
     /** */
     private String tok = "";
 

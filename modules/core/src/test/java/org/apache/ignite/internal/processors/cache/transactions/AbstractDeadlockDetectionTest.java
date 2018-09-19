@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
@@ -183,6 +184,19 @@ public abstract class AbstractDeadlockDetectionTest extends GridCommonAbstractTe
             return ((IncrementalTestObject)key).increment(i);
         else
             throw new IgniteException("Unable to increment objects of class " + key.getClass().getName() + ".");
+    }
+
+    /**
+     * Wait for late affinity assignment after cache start.
+     * So we can be sure that there will not happen unpredictable PME.
+     *
+     * @param minorTopVer Minor topology version before cache start.
+     */
+    void waitForLateAffinityAssignment(int minorTopVer) throws IgniteInterruptedCheckedException {
+        assertTrue("Failed to wait for late affinity assignment",
+            GridTestUtils.waitForCondition(() ->
+                    grid(0).context().discovery().topologyVersionEx().minorTopologyVersion() == minorTopVer + 1,
+                10_000));
     }
 
     /**
