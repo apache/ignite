@@ -70,6 +70,18 @@ public class IgniteCacheLocalQueryReservationsTest extends GridCommonAbstractTes
     }
 
     /**
+     * Test for the local {@link SqlFieldsQuery} reservations.
+     *
+     * @throws Exception If failed.
+     */
+    //TODO: uncomment when working on IGNITE-9644
+//    public void testLocalSqlUpdateQueryReservations() throws Exception {
+//        Query qry = new SqlFieldsQuery("update person set name=name||'a' where age >= 0 or age < 1000000000");
+//
+//        checkReservations(qry);
+//    }
+
+    /**
      * Test for the local {@link SqlQuery} reservations.
      *
      * @throws Exception If failed.

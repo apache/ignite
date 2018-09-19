@@ -401,9 +401,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** */
     private final ConcurrentMap<ReservationKey, GridReservable> reservations = new ConcurrentHashMap<>();
 
-    /** Map from sql string to affected caches ids list */
-    private final ConcurrentMap<String, List<Integer>> sqlToCacheIdsCache = new ConcurrentHashMap<>();
-
     /** */
     private final IgniteInClosure<? super IgniteInternalFuture<?>> logger = new IgniteInClosure<IgniteInternalFuture<?>>() {
         @Override public void apply(IgniteInternalFuture<?> fut) {
@@ -1364,23 +1361,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return List of caches.
      */
     private List<Integer> getCacheIds(Prepared p) {
-        String sql = p.getSQL();
-
-        assert sql != null;
-
-        List<Integer> cacheIds = sqlToCacheIdsCache.get(sql);
-
-        if (cacheIds == null) {
             GridSqlQueryParser parser = new GridSqlQueryParser(false);
 
             parser.parse(p);
 
-            cacheIds = parser.getAffectedCacheIds();
-
-            sqlToCacheIdsCache.put(sql, cacheIds);
-        }
-
-        return cacheIds;
+            return parser.getAffectedCacheIds();
     }
 
     /** {@inheritDoc} */
@@ -3719,16 +3704,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 GridCacheTwoStepQuery qry = e.getValue().query();
 
                 if (!F.isEmpty(qry.cacheIds()) && qry.cacheIds().contains(cacheId))
-                    it.remove();
-            }
-
-            for (Iterator<Map.Entry<String, List<Integer>>> it = sqlToCacheIdsCache.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, List<Integer>> entry = it.next();
-
-                assert entry != null;
-                assert entry.getValue() != null;
-
-                if (entry.getValue().contains(cacheId))
                     it.remove();
             }
         }
