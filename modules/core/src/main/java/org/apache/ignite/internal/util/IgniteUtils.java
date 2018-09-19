@@ -10512,10 +10512,10 @@ public abstract class IgniteUtils {
      * @param srcDatas List of data for parallelization.
      * @param consumer Logic for execution of on each item of data.
      * @param <T> Type of data.
-     * @throws ParallelExecutionException if parallel execution was failed. It contains actual exception in suppressed section.
+     * @throws IgniteCheckedException if parallel execution was failed.
      */
     public static <T> void doInParallel(ExecutorService executorSvc, Collection<T> srcDatas,
-        IgniteThrowableConsumer<T> consumer) throws ParallelExecutionException, IgniteInterruptedCheckedException {
+        IgniteThrowableConsumer<T> consumer) throws IgniteCheckedException, IgniteInterruptedCheckedException {
 
         List<T2<T, Future<Object>>> consumerFutures = srcDatas.stream()
             .map(item -> new T2<>(
@@ -10527,8 +10527,6 @@ public abstract class IgniteUtils {
                 })))
             .collect(Collectors.toList());
 
-        ParallelExecutionException executionE = null;
-
         for (T2<T, Future<Object>> future : consumerFutures) {
             try {
                 future.get2().get();
@@ -10538,18 +10536,19 @@ public abstract class IgniteUtils {
 
                 throw new IgniteInterruptedCheckedException(e);
             }
-            catch (Exception e) {
-                if (executionE == null)
-                    executionE = new ParallelExecutionException("Failed during parallel execution.");
+            catch (ExecutionException e) {
+                if (e.getCause() instanceof IgniteCheckedException)
+                    throw (IgniteCheckedException)e.getCause();
 
-                executionE.addSuppressed(e);
+                if (e.getCause() instanceof RuntimeException)
+                    throw (RuntimeException)e.getCause();
 
-                executionE.addFailedData(future.get1());
+                if (e.getCause() instanceof Error)
+                    throw (Error)e.getCause();
+
+                throw new IgniteCheckedException(e.getCause());
             }
         }
-
-        if (executionE != null)
-            throw executionE;
     }
 
     /**

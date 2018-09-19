@@ -904,22 +904,22 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testDoInParallelException() throws IgniteInterruptedCheckedException {
+        String expectedException = "ExpectedException";
+
         try {
             IgniteUtils.doInParallel(
                 Executors.newFixedThreadPool(1),
                 Arrays.asList(1, 2, 3),
                 (i) -> {
-                    if (i < 3)
-                        throw new IgniteCheckedException("");
+                    if (i == 1)
+                        throw new IgniteCheckedException(expectedException);
                 }
             );
 
             fail("Should throw ParallelExecutionException");
         }
-        catch (ParallelExecutionException e) {
-            assertEquals(2, e.getFailedDatas().size());
-            assertTrue(e.getFailedDatas().contains(1));
-            assertTrue(e.getFailedDatas().contains(2));
+        catch (IgniteCheckedException e) {
+            assertEquals(expectedException, e.getMessage());
         }
     }
 

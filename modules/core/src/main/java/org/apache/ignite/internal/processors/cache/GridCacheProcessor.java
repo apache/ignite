@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import javax.cache.expiry.EternalExpiryPolicy;
 import javax.management.MBeanServer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -129,7 +128,6 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.InitializationProtector;
-import org.apache.ignite.internal.util.ParallelExecutionException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -1923,20 +1921,29 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * Start all input caches in parallel.
      *
      * @param startCacheInfos All caches information for start.
-     * @throws ParallelExecutionException if execution was failed.
      */
     void prepareCachesStartInParallel(Collection<StartCacheInfo> startCacheInfos) throws IgniteCheckedException {
-        doInParallel(
-            sharedCtx.kernalContext().getSystemExecutorService(),
-            startCacheInfos,
-            startCacheInfo -> prepareCacheStart(
-                startCacheInfo.getCacheDescriptor().cacheConfiguration(),
-                startCacheInfo.getCacheDescriptor(),
-                startCacheInfo.getReqNearCfg(),
-                startCacheInfo.getExchangeTopVer(),
-                startCacheInfo.isDisabledAfterStart()
-            )
-        );
+//        for (StartCacheInfo startCacheInfo : startCacheInfos) {
+//            prepareCacheStart(
+//                startCacheInfo.getCacheDescriptor().cacheConfiguration(),
+//                startCacheInfo.getCacheDescriptor(),
+//                startCacheInfo.getReqNearCfg(),
+//                startCacheInfo.getExchangeTopVer(),
+//                startCacheInfo.isDisabledAfterStart()
+//            );
+//        }
+
+            doInParallel(
+                sharedCtx.kernalContext().getSystemExecutorService(),
+                startCacheInfos,
+                startCacheInfo -> prepareCacheStart(
+                    startCacheInfo.getCacheDescriptor().cacheConfiguration(),
+                    startCacheInfo.getCacheDescriptor(),
+                    startCacheInfo.getReqNearCfg(),
+                    startCacheInfo.getExchangeTopVer(),
+                    startCacheInfo.isDisabledAfterStart()
+                )
+            );
     }
 
     /**

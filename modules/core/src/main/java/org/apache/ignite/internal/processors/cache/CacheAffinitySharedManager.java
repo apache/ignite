@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -64,12 +63,12 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
-import org.apache.ignite.internal.util.ParallelExecutionException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -83,6 +82,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 
 /**
  *
@@ -861,7 +861,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         final ExchangeDiscoveryEvents evts = fut.context().events();
 
-        Map<StartCacheInfo, DynamicCacheChangeRequest> startCacheInfos = new LinkedHashMap<>();
+        List<T2<StartCacheInfo, DynamicCacheChangeRequest>> startCacheInfos = new ArrayList<>();
 
         for (ExchangeActions.CacheActionData action : exchActions.cacheStartRequests()) {
             DynamicCacheDescriptor cacheDesc = action.descriptor();
@@ -899,48 +899,49 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
 
             if (startCache) {
-                startCacheInfos.put(new StartCacheInfo(
+                startCacheInfos.add(new T2<>(new StartCacheInfo(
                     req.startCacheConfiguration(),
                     cacheDesc,
                     nearCfg,
                     evts.topologyVersion(),
                     req.disabledAfterStart()
-                ), req);
+                ), req));
+            }
+        }
 
-                if (fut.cacheAddedOnExchange(cacheDesc.cacheId(), cacheDesc.receivedFrom())) {
-                    if (fut.events().discoveryCache().cacheGroupAffinityNodes(cacheDesc.groupId()).isEmpty())
-                        U.quietAndWarn(log, "No server nodes found for cache client: " + req.cacheName());
+        doInParallel(
+            cctx.kernalContext().getSystemExecutorService(),
+            startCacheInfos,
+            startCacheInfoPair -> {
+                try {
+                    StartCacheInfo startCacheInfo = startCacheInfoPair.get1();
+
+                    DynamicCacheDescriptor desc = startCacheInfo.getCacheDescriptor();
+
+                    cctx.cache().prepareCacheStart(
+                        startCacheInfo.getStartedConfiguration(),
+                        desc,
+                        startCacheInfo.getReqNearCfg(),
+                        startCacheInfo.getExchangeTopVer(),
+                        startCacheInfo.isDisabledAfterStart());
+
+                    if (fut.cacheAddedOnExchange(desc.cacheId(), desc.receivedFrom())) {
+                        if (fut.events().discoveryCache().cacheGroupAffinityNodes(desc.groupId()).isEmpty())
+                            U.quietAndWarn(log, "No server nodes found for cache client: " + startCacheInfoPair.get2().cacheName());
+                    }
+                }
+                catch (IgniteCheckedException e) {
+                    DynamicCacheChangeRequest changeRequest = startCacheInfoPair.get2();
+
+                    U.error(log, "Failed to initialize cache. Will try to rollback cache start routine. " +
+                        "[cacheName=" + changeRequest.cacheName() + ']', e);
+
+                    cctx.cache().closeCaches(Collections.singleton(changeRequest.cacheName()), false);
+
+                    cctx.cache().completeCacheStartFuture(changeRequest, false, e);
                 }
             }
-        }
-
-        try {
-            cctx.cache().prepareCachesStartInParallel(startCacheInfos.keySet());
-        }
-        catch (ParallelExecutionException e) {
-            for (Object data : e.getFailedDatas()) {
-                StartCacheInfo startCacheInfo = (StartCacheInfo)data;
-
-                U.error(log, "Failed to initialize cache. Will try to rollback cache start routine. " +
-                    "[cacheName=" + startCacheInfo.getStartedConfiguration().getName() + ']', e);
-
-                cctx.cache().closeCaches(Collections.singleton(startCacheInfo.getStartedConfiguration().getName()), false);
-
-                cctx.cache().completeCacheStartFuture(startCacheInfos.get(startCacheInfo), false, e);
-            }
-        }
-        catch (IgniteCheckedException e) {
-            Set<String> failedCaches = startCacheInfos.keySet().stream()
-                .map(c -> c.getStartedConfiguration().getName())
-                .collect(Collectors.toSet());
-
-            U.error(log, "Failed to initialize all caches. Will try to rollback cache start routine. " +
-                    "[cacheNames=" + failedCaches + ']', e);
-
-            cctx.cache().closeCaches(failedCaches, false);
-
-            startCacheInfos.values().forEach(changeRequest -> cctx.cache().completeCacheStartFuture(changeRequest, false, e));
-        }
+        );
 
         Set<Integer> gprs = new HashSet<>();
 
