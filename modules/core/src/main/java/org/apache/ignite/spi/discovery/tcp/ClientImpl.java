@@ -1905,7 +1905,7 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @throws InterruptedException If thread is interrupted.
          */
         private void waitBeforeForceReconnect() throws InterruptedException {
-            if (System.currentTimeMillis() - lastReconnectTimestamp > 2 * 60_000)
+            if (U.currentTimeMillis() - lastReconnectTimestamp > 2 * 60_000)
                 currentReconnectDelay = 200;
             else {
                 long maxDelay = spi.failureDetectionTimeoutEnabled()
@@ -1918,7 +1918,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             ThreadLocalRandom random = ThreadLocalRandom.current();
             Thread.sleep(random.nextLong(currentReconnectDelay / 2, currentReconnectDelay));
 
-            lastReconnectTimestamp = System.currentTimeMillis();
+            lastReconnectTimestamp = U.currentTimeMillis();
         }
 
         /**
