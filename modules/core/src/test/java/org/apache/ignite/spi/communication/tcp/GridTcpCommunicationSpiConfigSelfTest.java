@@ -20,7 +20,6 @@ package org.apache.ignite.spi.communication.tcp;
 import java.net.BindException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
@@ -32,7 +31,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
     /**
      * @throws Exception If failed.
      */
-    public void testNegativeConfig() throws Exception {
+    public void t1estNegativeConfig() throws Exception {
         checkNegativeSpiProperty(new TcpCommunicationSpi(), "localPort", 1023);
         checkNegativeSpiProperty(new TcpCommunicationSpi(), "localPort", 65636);
         checkNegativeSpiProperty(new TcpCommunicationSpi(), "localPortRange", -1);
@@ -64,6 +63,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
                 TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
                 spi.setLocalPortRange(0);
+                spi.setLocalPort(TcpCommunicationSpi.DFLT_PORT + i * 1000);
 
                 cfg.setCommunicationSpi(spi);
 
@@ -77,8 +77,6 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
                         info("Failed to start SPIs because of BindException, will retry after delay.");
 
                         afterTestsStopped();
-
-                        U.sleep(30_000);
                     }
                     else
                         throw e;

@@ -196,7 +196,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
      * @throws Exception If failed.
      */
     @SuppressWarnings("WaitWithoutCorrespondingNotify")
-    public void testSendToManyNodes() throws Exception {
+    public void t1estSendToManyNodes() throws Exception {
         msgDestMap.clear();
 
         // Send message from each SPI to all SPI's, including itself.
