@@ -3573,6 +3573,21 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
             Integer grpId = entry.getKey();
 
+            boolean res = msg instanceof GridDhtPartitionsFullMessage &&
+                ((GridDhtPartitionsFullMessage)msg).exchangeId() != null
+                && ((GridDhtPartitionsFullMessage)msg).topologyVersion().topologyVersion() == 8
+                && ((GridDhtPartitionsFullMessage)msg).topologyVersion().minorTopologyVersion() == 3;
+
+            if(res) {
+
+                try {
+                    Thread.sleep(2000L);
+                }
+                catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
             CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
             if (grp != null) {

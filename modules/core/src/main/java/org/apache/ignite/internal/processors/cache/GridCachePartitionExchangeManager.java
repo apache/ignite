@@ -36,8 +36,13 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -233,6 +238,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private AtomicBoolean exchangeInProgress = new AtomicBoolean();
 
     private AffinityTopologyVersion lastUpdatedTopVer;
+
+    private Future<?> updFut = null;
 
     /** Discovery listener. */
     private final DiscoveryEventListener discoLsnr = new DiscoveryEventListener() {
@@ -1507,7 +1514,30 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (!enterBusy())
             return;
 
+        ExecutorService excServ = Executors.newSingleThreadExecutor();
+
         try {
+
+            if (msg.exchangeId() != null){
+                updFut = excServ.submit(new Runnable() {
+                    @Override public void run() {
+                        exchangeInProgress.set(true);
+
+                        lastUpdatedTopVer = msg.topologyVersion();
+
+                        log.info("++++++++++++++++++++++++++++++++++");
+
+                        exchangeFuture(msg.exchangeId(), null, null, null, null).onReceiveFullMessage(node, msg);
+
+                        log.info("----------------------------------");
+
+                        exchangeInProgress.set(false);
+
+                    }
+                });
+            }
+
+
             if (msg.exchangeId() == null) {
                 if (log.isDebugEnabled())
                     log.debug("Received full partition update [node=" + node.id() + ", msg=" + msg + ']');
@@ -1516,18 +1546,21 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 AffinityTopologyVersion msgVer = msg.topologyVersion();
 
-                while (exchangeInProgress.get()
+                if (exchangeInProgress.get()
+                    && updFut != null
+                    && lastUpdatedTopVer != null
                     && lastUpdatedTopVer.topologyVersion() <= msgVer.topologyVersion()
                     && lastUpdatedTopVer.minorTopologyVersion() <= msgVer.minorTopologyVersion()){
+
                     try {
-                        U.sleep(100L);
+                        updFut.get(120_000L, TimeUnit.MILLISECONDS);
                     }
-                    catch (Exception e0){
-                        log.error("", e0);
+                    catch (InterruptedException | ExecutionException e) {
+                        e.printStackTrace();
                     }
-
-                    log.info("exchangeInProgress");
-
+                    catch (TimeoutException e) {
+                        e.printStackTrace();
+                    }
                 }
 
 
@@ -1579,21 +1612,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     cctx.database().releaseHistoryForPreloading();
             }
             else {
-                exchangeInProgress.set(true);
 
-                lastUpdatedTopVer = msg.topologyVersion();
-
-                log.info("++++++++++++++++++++++++++++++++++");
-
-                exchangeFuture(msg.exchangeId(), null, null, null, null).onReceiveFullMessage(node, msg);
-
-                log.info("----------------------------------");
-
-                exchangeInProgress.set(false);
             }
 
         }
         finally {
+            excServ.shutdown();
+
             leaveBusy();
         }
     }
