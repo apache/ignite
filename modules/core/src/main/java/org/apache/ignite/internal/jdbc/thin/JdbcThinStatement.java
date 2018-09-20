@@ -255,7 +255,7 @@ public class JdbcThinStatement implements Statement {
         else
             throw new SQLException("Unexpected result [res=" + res0 + ']');
 
-        assert resultSets.size() > 0 : "At least one results set is expected";
+        assert !resultSets.isEmpty() : "At least one results set is expected";
     }
 
     /**

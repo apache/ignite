@@ -1684,7 +1684,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     fetchFuts.add(fetchFut);
                 }
                 else {
-                    if (fut.events().discoveryCache().serverNodes().size() > 0)
+                    if (!fut.events().discoveryCache().serverNodes().isEmpty())
                         fut.context().addGroupAffinityRequestOnJoin(grp.groupId());
                     else
                         calculateAndInit(fut.events(), grp.affinity(), topVer);
@@ -2084,8 +2084,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 List<ClusterNode> newNodes = idealAssignment.get(p);
                 List<ClusterNode> curNodes = curAff.get(p);
 
-                ClusterNode curPrimary = curNodes.size() > 0 ? curNodes.get(0) : null;
-                ClusterNode newPrimary = newNodes.size() > 0 ? newNodes.get(0) : null;
+                ClusterNode curPrimary = !curNodes.isEmpty() ? curNodes.get(0) : null;
+                ClusterNode newPrimary = !newNodes.isEmpty() ? newNodes.get(0) : null;
 
                 if (curPrimary != null && newPrimary != null && !curPrimary.equals(newPrimary)) {
                     assert cctx.discovery().node(evts.topologyVersion(), curPrimary.id()) != null : curPrimary;
@@ -2255,8 +2255,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         ", topVer=" + fut.context().events().discoveryCache().version() +
                         ", evts=" + fut.context().events().events() + "]";
 
-                    ClusterNode curPrimary = curNodes.size() > 0 ? curNodes.get(0) : null;
-                    ClusterNode newPrimary = newNodes.size() > 0 ? newNodes.get(0) : null;
+                    ClusterNode curPrimary = !curNodes.isEmpty() ? curNodes.get(0) : null;
+                    ClusterNode newPrimary = !newNodes.isEmpty() ? newNodes.get(0) : null;
 
                     List<ClusterNode> newNodes0 = null;
 

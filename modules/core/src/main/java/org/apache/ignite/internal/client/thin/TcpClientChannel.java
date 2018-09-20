@@ -257,7 +257,7 @@ class TcpClientChannel implements ClientChannel {
             req.writeShort(ver.patch());
             req.writeByte((byte)2); // client code, always 2
 
-            if (ver.compareTo(V1_1_0) >= 0 && user != null && user.length() > 0) {
+            if (ver.compareTo(V1_1_0) >= 0 && user != null && !user.isEmpty()) {
                 req.writeByteArray(marshalString(user));
                 req.writeByteArray(marshalString(pwd));
             }
@@ -294,7 +294,7 @@ class TcpClientChannel implements ClientChannel {
                 else if (ver.equals(srvVer))
                     throw new ClientProtocolError(err);
                 else if (!supportedVers.contains(srvVer) ||
-                    (srvVer.compareTo(V1_1_0) < 0 && user != null && user.length() > 0))
+                    (srvVer.compareTo(V1_1_0) < 0 && user != null && !user.isEmpty()))
                     // Server version is not supported by this client OR server version is less than 1.1.0 supporting
                     // authentication and authentication is required.
                     throw new ClientProtocolError(String.format(
@@ -398,7 +398,7 @@ class TcpClientChannel implements ClientChannel {
                 }
             }
 
-            BiFunction<String, String, String> or = (val, dflt) -> val == null || val.length() == 0 ? dflt : val;
+            BiFunction<String, String, String> or = (val, dflt) -> val == null || val.isEmpty() ? dflt : val;
 
             String keyStore = or.apply(
                 cfg.getSslClientCertificateKeyStorePath(),
@@ -435,7 +435,7 @@ class TcpClientChannel implements ClientChannel {
             String proto = toString(cfg.getSslProtocol());
 
             if (Stream.of(keyStore, keyStorePwd, keyStoreType, trustStore, trustStorePwd, trustStoreType)
-                .allMatch(s -> s == null || s.length() == 0)
+                .allMatch(s -> s == null || s.isEmpty())
                 ) {
                 try {
                     return SSLContext.getDefault().getSocketFactory();
@@ -498,7 +498,7 @@ class TcpClientChannel implements ClientChannel {
                 throw new ClientError("Key manager cryptographic algorithm is not available", e);
             }
 
-            Predicate<String> empty = s -> s == null || s.length() == 0;
+            Predicate<String> empty = s -> s == null || s.isEmpty();
 
             if (!empty.test(keyStore) && !empty.test(keyStoreType)) {
                 char[] pwd = (keyStorePwd == null) ? new char[0] : keyStorePwd.toCharArray();
@@ -541,7 +541,7 @@ class TcpClientChannel implements ClientChannel {
                 throw new ClientError("Trust manager cryptographic algorithm is not available", e);
             }
 
-            Predicate<String> empty = s -> s == null || s.length() == 0;
+            Predicate<String> empty = s -> s == null || s.isEmpty();
 
             if (!empty.test(trustStore) && !empty.test(trustStoreType)) {
                 char[] pwd = (trustStorePwd == null) ? new char[0] : trustStorePwd.toCharArray();

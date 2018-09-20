@@ -160,7 +160,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (keys == null)
             throw new NullPointerException("keys");
 
-        if (keys.size() == 0)
+        if (keys.isEmpty())
             return new HashMap<>();
 
         return ch.service(
@@ -181,7 +181,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (map == null)
             throw new NullPointerException("map");
 
-        if (map.size() == 0)
+        if (map.isEmpty())
             return;
 
         ch.request(
@@ -280,7 +280,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (keys == null)
             throw new NullPointerException("keys");
 
-        if (keys.size() == 0)
+        if (keys.isEmpty())
             return;
 
         ch.request(

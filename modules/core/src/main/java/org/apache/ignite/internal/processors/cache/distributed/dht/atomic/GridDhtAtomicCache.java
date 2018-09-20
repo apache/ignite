@@ -3568,7 +3568,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     private void processDhtAtomicDeferredUpdateResponse(UUID nodeId, GridDhtAtomicDeferredUpdateResponse res) {
         GridLongList futIds = res.futureIds();
 
-        assert futIds != null && futIds.size() > 0 : futIds;
+        assert futIds != null && !futIds.isEmpty() : futIds;
 
         for (int i = 0; i < futIds.size(); i++) {
             long id = futIds.get(i);
