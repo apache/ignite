@@ -63,7 +63,7 @@ public class GridTcpCommunicationSpiTcpFailureDetectionSelfTest extends GridTcpC
     /**
      * @throws Exception if failed.
      */
-    public void t1estFailureDetectionEnabled() throws Exception {
+    public void testFailureDetectionEnabled() throws Exception {
         assertTrue(spis[0].failureDetectionTimeoutEnabled());
         assertTrue(spis[0].failureDetectionTimeout() == IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT);
 
