@@ -33,13 +33,19 @@ import org.jetbrains.annotations.Nullable;
  * It can be useful in tests to ensure that a specific message was (or was not) printed to the log.
  */
 public class ListeningTestLogger implements IgniteLogger {
-    /** */
-    private final IgniteLogger echo;
-
-    /** */
+    /**
+     * If set to {@code true}, enables debug and trace log messages processing.
+     */
     private final boolean dbg;
 
-    /** */
+    /**
+     * Logger to echo all messages, limited by {@code dbg} flag.
+     */
+    private final IgniteLogger echo;
+
+    /**
+     * Log messages listeners.
+     */
     private final List<T2<Pattern, CI1<String>>> lsnrs = new CopyOnWriteArrayList<>();
 
     /**
