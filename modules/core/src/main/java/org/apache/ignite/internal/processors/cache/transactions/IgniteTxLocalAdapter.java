@@ -1694,13 +1694,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      */
     public void markQueryEnlisted(MvccSnapshot ver) {
         if (!qryEnlisted) {
-            assert ver != null || near() && mvccSnapshot != null;
+            assert ver != null || mvccSnapshot != null;
 
-            if (mvccSnapshot == null && ver != null)
+            if (mvccSnapshot == null)
                 mvccSnapshot = ver;
 
-            if(dht())
-                cctx.coordinators().registerLocalTransaction(ver.coordinatorVersion(), ver.counter());
+            //TODO: IGNITE-7764: Check if next condition is sufficient and remove this comment after review.
+            // This fix hanging failover test: MvccTransactionsTest.testPutAllGetAll_ClientServer_Backups1_Restart_Scan
+            if(local())
+                cctx.coordinators().registerLocalTransaction(mvccSnapshot.coordinatorVersion(), mvccSnapshot.counter());
 
             qryEnlisted = true;
         }

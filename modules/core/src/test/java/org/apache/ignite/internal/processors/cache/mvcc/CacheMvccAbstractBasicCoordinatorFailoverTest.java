@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -169,7 +169,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
 
         final int KEYS = 100;
 
-        final Map<Integer, Integer> vals = new HashMap<>();
+        final Map<Integer, Integer> vals = new LinkedHashMap<>();
 
         for (int i = 0; i < KEYS; i++)
             vals.put(i, 0);
@@ -298,7 +298,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
                     Integer val = 1;
 
                     while (!done.get()) {
-                        Map<Integer, Integer> vals = new HashMap<>();
+                        Map<Integer, Integer> vals = new LinkedHashMap<>();
 
                         for (int i = 0; i < KEYS; i++)
                             vals.put(i, val);
@@ -510,7 +510,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
 
         final IgniteCache cache = getNode.createCache(ccfg);
 
-        final Set<Integer> keys = new HashSet<>();
+        final Set<Integer> keys = new TreeSet<>();
 
         List<Integer> keys1 = primaryKeys(jcache(COORDS), 10);
         List<Integer> keys2 = primaryKeys(jcache(COORDS + 1), 10);
@@ -518,7 +518,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
         keys.addAll(keys1);
         keys.addAll(keys2);
 
-        Map<Integer, Integer> vals = new HashMap();
+        Map<Integer, Integer> vals = new LinkedHashMap();
 
         for (Integer key : keys)
             vals.put(key, -1);
@@ -581,7 +581,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
             stopGrid(i);
 
         for (int i = 0; i < 10; i++) {
-            vals = new HashMap();
+            vals = new LinkedHashMap();
 
             for (Integer key : keys)
                 vals.put(key, i);
@@ -636,7 +636,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
 
         final IgniteCache cache = client.createCache(ccfg);
 
-        final Map<Integer, Integer> vals = new HashMap();
+        final Map<Integer, Integer> vals = new LinkedHashMap<>();
 
         for (int i = 0; i < 100; i++)
             vals.put(i, i);
