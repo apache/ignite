@@ -182,7 +182,7 @@ public class IgniteConfiguration {
     public static final long DFLT_SEG_CHK_FREQ = 10000;
 
     /** Default frequency of metrics log print out. */
-    public static final long DFLT_METRICS_LOG_FREQ = 60000;
+    public static final long DFLT_METRICS_LOG_FREQ = 20000;
 
     /** Default TCP server port. */
     public static final int DFLT_TCP_PORT = 11211;

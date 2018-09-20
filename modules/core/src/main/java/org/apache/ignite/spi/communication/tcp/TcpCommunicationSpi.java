@@ -1850,6 +1850,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         return lsnr;
     }
 
+    public Map<String, Long> getRcvdMessagesMap() {
+        return metricsLsnr.receivedMessagesByType();
+    }
+
+    public Map<String, Long> getSndMessagesMap() {
+        return metricsLsnr.sentMessagesByType();
+    }
+
     /** {@inheritDoc} */
     @Override public int getSentMessagesCount() {
         return metricsLsnr.sentMessagesCount();

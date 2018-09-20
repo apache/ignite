@@ -67,7 +67,11 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setAutoActivationEnabled(false);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName).setAutoActivationEnabled(false);
+
+        cfg.setMetricsLogFrequency(10 * 1000);
+
+        return cfg;
     }
 
     /**

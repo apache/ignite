@@ -210,6 +210,7 @@ import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiVersionCheckException;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
@@ -1299,7 +1300,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                                 dblFmt.format(freeNonHeapPct) + "%, comm=" + dblFmt.format(nonHeapCommInMBytes) + "MB]" + NL +
                                 "    ^-- Outbound messages queue [size=" + m.getOutboundMessagesQueueSize() + "]" + NL +
                                 "    ^-- " + createExecutorDescription("Public thread pool", execSvc) + NL +
-                                "    ^-- " + createExecutorDescription("System thread pool", sysExecSvc);
+                                "    ^-- " + createExecutorDescription("System thread pool", sysExecSvc) + NL +
+                                "    ^-- " + createMessagesStat() + NL;
+
 
                             if (customExecSvcs != null) {
                                 StringBuilder customSvcsMsg = new StringBuilder();
@@ -1350,6 +1353,30 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (!isDaemon())
             ctx.discovery().ackTopology(ctx.discovery().localJoin().joinTopologyVersion().topologyVersion(),
                 EventType.EVT_NODE_JOINED, localNode());
+    }
+
+    private String createMessagesStat() {
+        TcpCommunicationSpi spi = (TcpCommunicationSpi) ctx.config().getCommunicationSpi();
+
+        StringBuilder msgStat = new StringBuilder();
+
+        msgStat.append("RECEIVED: [");
+
+        for (Map.Entry<String, Long> rcvd : spi.getRcvdMessagesMap().entrySet()) {
+            msgStat.append(rcvd.getKey() + " ->" + rcvd.getValue() + "; ");
+        }
+
+        msgStat.append("]" + NL);
+
+        msgStat.append("    ^-- " + "SENT: [");
+
+        for (Map.Entry<String, Long> snd : spi.getSndMessagesMap().entrySet()) {
+            msgStat.append(snd.getKey() + " ->" + snd.getValue() + "; ");
+        }
+
+        msgStat.append("]" + NL);
+
+        return msgStat.toString();
     }
 
     /**
