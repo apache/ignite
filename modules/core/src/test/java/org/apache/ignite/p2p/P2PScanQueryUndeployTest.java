@@ -31,8 +31,10 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.config.GridTestProperties;
@@ -45,12 +47,6 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
 
     private static final String TEST_PREDICATE_CLASS_NAME = TEST_PREDICATE_NAME.substring(TEST_PREDICATE_NAME.lastIndexOf('.') + 1);
 
-    private static final String TEST_STATIC_PREDICATE_NAME = "org.apache.ignite.tests.p2p.cache.TestScanStaticQueryPredicate";
-
-    private static final String TEST_STATIC_PREDICATE_CLASS_NAME = TEST_STATIC_PREDICATE_NAME.substring(TEST_STATIC_PREDICATE_NAME.lastIndexOf('.') + 1);
-
-    private static final String FIELD_NAME = "VALUE";
-
     private static final String VALUE_1 = "foo";
     private static final String VALUE_2 = "bar";
 
@@ -60,7 +56,7 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
     private static final URL[] URLS;
 
     /** Cache name. */
-    private static final String CACHE_NAME = "foo";
+    private static final String CACHE_NAME = "test-cache";
 
     /** Client instance name. */
     private static final String CLIENT_INSTANCE_NAME = "client";
@@ -102,7 +98,7 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
                 )
         );
 
-        cfg.setPeerClassLoadingLocalClassPathExclude(TestPredicate.class.getName(), TEST_PREDICATE_CLASS_NAME, TEST_STATIC_PREDICATE_CLASS_NAME);
+        cfg.setPeerClassLoadingLocalClassPathExclude(TestPredicate.class.getName(), TEST_PREDICATE_CLASS_NAME, TestScanQueryPredicateDecorator.class.getName());
 
         if (igniteInstanceName.equals(CLIENT_INSTANCE_NAME))
             cfg.setClientMode(true);
@@ -129,9 +125,91 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    public void testStaticScanQueryUndeployedOnClientDisconnect() throws Exception {
-        doTest(TEST_STATIC_PREDICATE_NAME, true);
+    public void testScanQuery2() throws Exception {
+        startGrids(2);
+
+        Ignite client = startGrid(CLIENT_INSTANCE_NAME);
+
+        stopGrid(0);
+
+        client.cluster().active(true);
+
+        System.out.println("IGNITE-9381 start");
+
+        final ClassLoader delegate = grid(1).getClass().getClassLoader();
+
+        final ClassLoader root = new DelegateClassLoader(null, delegate);
+
+        IgniteCache<Integer, String> cache = client.getOrCreateCache(CACHE_NAME);
+
+        cache.put(1, "foo");
+
+        cache.query(new ScanQuery<>(new TestScanQueryPredicateDecorator())).getAll();
+
+        stopGrid(CLIENT_INSTANCE_NAME);
+
+        client = startGrid(CLIENT_INSTANCE_NAME);
+
+        cache = client.getOrCreateCache(CACHE_NAME);
+
+        cache.query(new ScanQuery<>(new TestScanQueryPredicateDecorator())).getAll();
     }
+
+    private static class TestScanQueryPredicateDecorator implements IgniteBiPredicate<Integer, String>, GridPeerDeployAware {
+
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        private TestScanQueryPredicateDecorator() {
+        }
+
+        @Override public Class<?> deployClass() {
+            try {
+                throw new RuntimeException("IGNITE-9381 TestScanQueryPredicateDecorator#deployClass()");
+            }
+            catch (RuntimeException e) {
+                e.printStackTrace();
+            }
+
+            return getClass();
+        }
+
+        @Override public ClassLoader classLoader() {
+            System.out.println("IGNITE-9381 TestScanQueryPredicateDecorator#classLoader()");
+            return ignite.getClass().getClassLoader();
+        }
+
+        @Override public boolean apply(Integer integer, String s) {
+            return s.equals("foo");
+        }
+    }
+
+    /** */
+    private static class DelegateClassLoader extends ClassLoader {
+        /** Delegate class loader. */
+        private ClassLoader delegateClsLdr;
+
+        /**
+         * @param parent Parent.
+         * @param delegateClsLdr Delegate class loader.
+         */
+        public DelegateClassLoader(ClassLoader parent, ClassLoader delegateClsLdr) {
+            super(parent); // Parent doesn't matter.
+            this.delegateClsLdr = delegateClsLdr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public URL getResource(String name) {
+            return delegateClsLdr.getResource(name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<?> loadClass(String name) throws ClassNotFoundException {
+            return delegateClsLdr.loadClass(name);
+        }
+    }
+
+    /*****************************************************************************************************/
 
     public void testScanQueryUndeployedOnClientDisconnect() throws Exception {
         doTest(TEST_PREDICATE_NAME, false);
@@ -146,51 +224,53 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
 
         client.cluster().active(true);
 
-        ClassLoader ldr = new URLClassLoader(URLS, getClass().getClassLoader());
+        System.out.println("IGNITE-9381 start");
 
-        Class<?> predicateClass = ldr.loadClass(className);
+        try (URLClassLoader fooLdr = new URLClassLoader(new URL[] {
+            new URL(
+                "file://localhost/C:\\IdeaProjects\\apache-ignite\\modules\\extdata\\p2p\\src\\main\\resources\\foo\\query-predicate-foo.jar"
+            )
+        })
+        ) {
+            Class<?> fooPredicateClass = fooLdr.loadClass(className);
 
-        createPredicateAndExecuteQuery(predicateClass, VALUE_1, client, isStatic);
+            createPredicateAndExecuteQuery(fooPredicateClass, VALUE_1, client);
+        }
 
         stopGrid(CLIENT_INSTANCE_NAME);
 
+        System.out.println("IGNITE-9381 stop");
+
         client = startGrid(CLIENT_INSTANCE_NAME);
 
-        createPredicateAndExecuteQuery(predicateClass, VALUE_2, client, isStatic);
+        try (URLClassLoader barLdr = new URLClassLoader(new URL[] {new URL("file://localhost/C:\\IdeaProjects\\apache-ignite\\modules\\extdata\\p2p\\src\\main\\resources\\bar\\query-predicate-bar.jar")})) {
+
+            Class<?> barPredicateClass = barLdr.loadClass(className);
+
+            createPredicateAndExecuteQuery(barPredicateClass, VALUE_2, client);
+        }
+
     }
 
     private void createPredicateAndExecuteQuery(
         Class<?> predicateClass,
         String value,
-        Ignite client,
-        boolean isStatic
+        Ignite client
     ) throws Exception {
-        Field field = predicateClass.getDeclaredField(FIELD_NAME);
 
-        field.setAccessible(true);
+        final ClassLoader delegate = grid(1).getClass().getClassLoader();
 
-        IgniteBiPredicate<Integer, String> predicate;
+        final ClassLoader root = new DelegateClassLoader(null, delegate);
 
-        if (isStatic) {
-            field.set(null, value);
-
-            assertEquals(value,field.get(null));
-
-            predicate = (IgniteBiPredicate<Integer, String>)predicateClass.newInstance();
-        }
-        else {
-            predicate = (IgniteBiPredicate<Integer, String>)predicateClass.newInstance();
-
-            field.set(predicate, value);
-
-            assertEquals(value,field.get(predicate));
-        }
+        IgniteBiPredicate<Integer, String> predicate = new TestScanQueryPredicateDecorator();
 
         IgniteCache<Integer, String> cache = client.getOrCreateCache(CACHE_NAME);
 
         cache.put(1, value);
 
-        assertEquals(1, cache.query(new ScanQuery(predicate)).getAll().size());
+        // assertTrue(predicate.apply(1, value));
+
+        assertEquals(1, cache.query(new ScanQuery<>(predicate)).getAll().size());
     }
 
     /**
