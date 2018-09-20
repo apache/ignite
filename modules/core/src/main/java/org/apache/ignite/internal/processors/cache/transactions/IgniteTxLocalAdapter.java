@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
@@ -469,36 +470,48 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         // TODO check already calculated counters properly
         if (counters != null && F.isEmpty(counters.updateCounters())) {
-            List<PartitionUpdateCountersMessage> cntrs = new ArrayList<>();
+            List<PartitionUpdateCountersMessage> cntrMsgs = new ArrayList<>();
 
-            int cacheId = CU.UNDEFINED_CACHE_ID;
-            PartitionUpdateCountersMessage curr = null;
-            GridDhtPartitionTopology top = null;
+            for (Map.Entry<Integer, Map<Integer, AtomicLong>> record : counters.accumulatedUpdateCounters().entrySet()) {
+                int cacheId = record.getKey();
 
-            for (TxCounters.PartitionUpdateRecord record : counters.partitionUpdateRecords()) {
-                if (record.cacheId() != cacheId) {
-                    if (curr != null)
-                        cntrs.add(curr); // add previous.
+                Map<Integer, AtomicLong> partToCntrs = record.getValue();
 
-                    cacheId = record.cacheId();
+                assert partToCntrs != null;
 
-                    curr = new PartitionUpdateCountersMessage(cacheId, 10);
-                    top = cctx.cacheContext(cacheId).topology();
-                }
+                if (F.isEmpty(partToCntrs))
+                    continue;
+
+                PartitionUpdateCountersMessage msg = new PartitionUpdateCountersMessage(cacheId, partToCntrs.size());
+                GridDhtPartitionTopology top = cctx.cacheContext(cacheId).topology();
 
                 assert top != null;
 
-                GridDhtLocalPartition part = top.localPartition(record.partition());
+                for (Map.Entry<Integer, AtomicLong> e : partToCntrs.entrySet()) {
+                    AtomicLong acc = e.getValue();
 
-                assert part != null && part.state() == GridDhtPartitionState.OWNING;
+                    assert acc != null;
 
-                curr.add(record.partition(), part.getAndIncrementUpdateCounter(record.updatesCount()), record.updatesCount());
+                    long cntr = acc.get();
+
+                    assert cntr >= 0;
+
+                    if (cntr != 0) {
+                        int p = e.getKey();
+
+                        GridDhtLocalPartition part = top.localPartition(p);
+
+                        assert part != null && part.state() == GridDhtPartitionState.OWNING;
+
+                        msg.add(p, part.getAndIncrementUpdateCounter(cntr), cntr);
+                    }
+                }
+
+                if (msg.size() > 0)
+                    cntrMsgs.add(msg);
             }
 
-            if (curr != null)
-                cntrs.add(curr);
-
-            counters.updateCounters(cntrs);
+            counters.updateCounters(cntrMsgs);
         }
     }
 

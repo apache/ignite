@@ -1126,11 +1126,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (res.resultType() == ResultType.PREV_NULL) {
                 TxCounters counters = tx.txCounters(true);
 
-                counters.onCreate(cctx.cacheId(), partition(), key());
+                counters.incrementUpdateCounter(cctx.cacheId(), partition());
                 counters.accumulateSizeDelta(cctx.cacheId(), partition(), 1);
             }
-            else
-                tx.txCounters(true).onUpdate(cctx.cacheId(), partition(), key());
+            else if (res.resultType() == ResultType.PREV_NOT_NULL && !res.isOwnValueOverridden()) {
+                TxCounters counters = tx.txCounters(true);
+
+                counters.incrementUpdateCounter(cctx.cacheId(), partition());
+            }
 
             if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
                 logPtr = cctx.shared().wal().log(new DataRecord(new DataEntry(
@@ -1224,7 +1227,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (res.resultType() == ResultType.PREV_NOT_NULL) {
                 TxCounters counters = tx.txCounters(true);
 
-                counters.onDelete(cctx.cacheId(), partition(), key());
+                if (res.isOwnValueOverridden()) {
+                    if (res.isKeyAbsentBefore()) // Do not count own update removal.
+                        counters.decrementUpdateCounter(cctx.cacheId(), partition());
+                }
+                else
+                    counters.incrementUpdateCounter(cctx.cacheId(), partition());
+
                 counters.accumulateSizeDelta(cctx.cacheId(), partition(), -1);
             }
 
@@ -5007,7 +5016,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (res.resultType() == ResultType.PREV_NOT_NULL) {
                     TxCounters counters = tx.txCounters(true);
 
-                    counters.onDelete(cctx.cacheId(), entry.partition(), entry.key());
+                    if (res.isOwnValueOverridden()) {
+                        if (res.isKeyAbsentBefore()) // Do not count own update removal.
+                            counters.decrementUpdateCounter(cctx.cacheId(), entry.partition());
+                    }
+                    else
+                        counters.incrementUpdateCounter(cctx.cacheId(), entry.partition());
+
                     counters.accumulateSizeDelta(cctx.cacheId(), entry.partition(), -1);
                 }
 
@@ -5291,11 +5306,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (res.resultType() == ResultType.PREV_NULL) {
                     TxCounters counters = tx.txCounters(true);
 
-                    counters.onCreate(cctx.cacheId(), entry.partition(), entry.key());
+                    counters.incrementUpdateCounter(cctx.cacheId(), entry.partition());
                     counters.accumulateSizeDelta(cctx.cacheId(), entry.partition(), 1);
                 }
-                else
-                    tx.txCounters(true).onUpdate(cctx.cacheId(), entry.partition(), entry.key());
+                else if (res.resultType() == ResultType.PREV_NOT_NULL && !res.isOwnValueOverridden()) {
+                    TxCounters counters = tx.txCounters(true);
+
+                    counters.incrementUpdateCounter(cctx.cacheId(), entry.partition());
+                }
 
                 if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
                     logPtr = cctx.shared().wal().log(new DataRecord(new DataEntry(

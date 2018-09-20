@@ -67,7 +67,7 @@ public class PartitionUpdateCountersMessage implements Message {
         return size;
     }
 
-    public int partition(int idx){
+    public int partition(int idx) {
         if (idx >= size)
             throw new ArrayIndexOutOfBoundsException();
 
@@ -118,7 +118,7 @@ public class PartitionUpdateCountersMessage implements Message {
     }
 
     private void ensureSpace(int newSize) {
-        int req = newSize + ITEM_SIZE;
+        int req = newSize * ITEM_SIZE;
 
         if (data.length < req)
             data = Arrays.copyOf(data, data.length << 1);
@@ -197,5 +197,26 @@ public class PartitionUpdateCountersMessage implements Message {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < size; i++) {
+            sb.append("[part=")
+                .append(partition(i))
+                .append(", initCntr=")
+                .append(initialCounter(i))
+                .append(", cntr=")
+                .append(updatesCount(i))
+                .append(']');
+        }
+
+        return "PartitionUpdateCountersMessage{" +
+            "cacheId=" + cacheId +
+            ", size=" + size +
+            ", cntrs=" + sb +
+            '}';
     }
 }

@@ -27,6 +27,9 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_BIT_OFF;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_MASK;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_KEY_ABSENT_BEFORE_OFF;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.EntryPart.CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.EntryPart.EXPIRE_TIME;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.EntryPart.KEY;
@@ -71,7 +74,8 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
                 // xid_min.
                 PageUtils.putLong(addr, 0, row.mvccCoordinatorVersion());
                 PageUtils.putLong(addr, 8, row.mvccCounter());
-                PageUtils.putInt(addr, 16, row.mvccOperationCounter() | (row.mvccTxState() << MVCC_HINTS_BIT_OFF));
+                PageUtils.putInt(addr, 16, row.mvccOperationCounter() | (row.mvccTxState() << MVCC_HINTS_BIT_OFF) |
+                    ((row.isKeyAbsentBefore() ? 1 : 0) << MVCC_KEY_ABSENT_BEFORE_OFF));
 
                 assert row.newMvccCoordinatorVersion() == 0
                     || MvccUtils.mvccVersionIsValid(row.newMvccCoordinatorVersion(), row.newMvccCounter(), row.newMvccOperationCounter());
@@ -211,7 +215,8 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
             writeMvccInfoFragment(buf,
                 row.mvccCoordinatorVersion(),
                 row.mvccCounter(),
-                row.mvccOperationCounter() | (row.mvccTxState() << MVCC_HINTS_BIT_OFF),
+                row.mvccOperationCounter() | (row.mvccTxState() << MVCC_HINTS_BIT_OFF) |
+                    ((row.isKeyAbsentBefore() ? 1 : 0) << MVCC_KEY_ABSENT_BEFORE_OFF),
                 row.newMvccCoordinatorVersion(),
                 row.newMvccCounter(),
                 row.newMvccOperationCounter() | (row.newMvccTxState() << MVCC_HINTS_BIT_OFF),

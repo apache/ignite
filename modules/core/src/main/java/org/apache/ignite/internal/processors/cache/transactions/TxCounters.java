@@ -17,35 +17,26 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
-import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Values which should be tracked during transaction execution and applied on commit.
  */
 public class TxCounters {
     /** Size changes for cache partitions made by transaction */
-    private final ConcurrentMap<Integer, ConcurrentMap<Integer, AtomicLong>> sizeDeltas = new ConcurrentHashMap<>();
+    private final Map<Integer, Map<Integer, AtomicLong>> sizeDeltas = new ConcurrentHashMap<>();
 
-    private final Map<Integer, Map<Integer, Collector>> collectors = new HashMap<>();
+    /** Per-partition update counter accumulator. */
+    private final Map<Integer, Map<Integer, AtomicLong>> updCntrsAcc = new HashMap<>();
 
-    /** Update counters for cache partitions in the end of transaction */
+    /** Final update counters for cache partitions in the end of transaction */
     private List<PartitionUpdateCountersMessage> updCntrs;
-
-    private static final Function<Integer, Map<Integer, Collector>> NEW_MAP_FUN = k -> new HashMap<>();
-
-    private static final BiFunction<KeyCacheObject, Boolean, Boolean> ON_DELETE_FUN = (k, v) -> v == null ? Boolean.FALSE : v ? null : v;
 
     /**
      * Accumulates size change for cache partition.
@@ -55,122 +46,83 @@ public class TxCounters {
      * @param delta Size delta.
      */
     public void accumulateSizeDelta(int cacheId, int part, long delta) {
-        ConcurrentMap<Integer, AtomicLong> partDeltas = sizeDeltas.get(cacheId);
-
-        if (partDeltas == null) {
-            ConcurrentMap<Integer, AtomicLong> partDeltas0 =
-                sizeDeltas.putIfAbsent(cacheId, partDeltas = new ConcurrentHashMap<>());
-
-            if (partDeltas0 != null)
-                partDeltas = partDeltas0;
-        }
-
-        AtomicLong accDelta = partDeltas.get(part);
-
-        if (accDelta == null) {
-            AtomicLong accDelta0 = partDeltas.putIfAbsent(part, accDelta = new AtomicLong());
-
-            if (accDelta0 != null)
-                accDelta = accDelta0;
-        }
+        AtomicLong accDelta = accumulator(sizeDeltas, cacheId, part);
 
         // here AtomicLong is used more as a container,
         // every instance is assumed to be accessed in thread-confined manner
         accDelta.set(accDelta.get() + delta);
     }
 
-    public void onCreate(int cacheId, int part, KeyCacheObject key) {
-        collector(cacheId, part).onCreate(key);
+    /**
+     * @return Map of size changes for cache partitions made by transaction.
+     */
+    public Map<Integer, Map<Integer, AtomicLong>> sizeDeltas() {
+        return sizeDeltas;
     }
 
-    public void onUpdate(int cacheId, int part, KeyCacheObject key) {
-        collector(cacheId, part).onUpdate(key);
-    }
-
-    public void onDelete(int cacheId, int part, KeyCacheObject key) {
-        collector(cacheId, part).onDelete(key);
-    }
-
-    private Collector collector(int cacheId, int part) {
-        Map<Integer, Collector> map = collectors.computeIfAbsent(cacheId, NEW_MAP_FUN);
-
-        Collector res = map.get(part);
-
-        if (res != null)
-            return res;
-
-        Collector res0 = map.putIfAbsent(part, res = new Collector(cacheId, part));
-
-        return res0 != null ? res0 : res;
-    }
-
-    /** */
+    /**
+     * @param updCntrs Final update counters.
+     */
     public void updateCounters(List<PartitionUpdateCountersMessage> updCntrs) {
         this.updCntrs = updCntrs;
     }
 
-    /** */
+    /**
+     * @return Final update counters.
+     */
     public List<PartitionUpdateCountersMessage> updateCounters() {
         return updCntrs != null ? updCntrs : Collections.emptyList();
     }
 
-    /** */
-    public Map<Integer, ? extends Map<Integer, AtomicLong>> sizeDeltas() {
-        return Collections.unmodifiableMap(sizeDeltas);
+    /**
+     * @return Accumulated update counters.
+     */
+    public Map<Integer, Map<Integer, AtomicLong>> accumulatedUpdateCounters() {
+        return updCntrsAcc;
     }
 
     /**
-     * @return
+     * @param cacheId Cache id.
+     * @param part Partition number.
      */
-    public Collection<PartitionUpdateRecord> partitionUpdateRecords() {
-        return F.castDown(
-                    F.view(
-                        F.flatCollections(
-                            F.transform(collectors.values(), Map::values)), c -> c.updatesCount() > 0));
+    public void incrementUpdateCounter(int cacheId, int part) {
+        accumulator(updCntrsAcc, cacheId, part).incrementAndGet();
     }
 
-    public interface PartitionUpdateRecord {
-        int cacheId();
-        int partition();
-        long updatesCount();
+    /**
+     * @param cacheId Cache id.
+     * @param part Partition number.
+     */
+    public void decrementUpdateCounter(int cacheId, int part) {
+        accumulator(updCntrsAcc, cacheId, part).decrementAndGet();
     }
 
-    /** */
-    private class Collector implements PartitionUpdateRecord {
-        private final int cacheId;
-        private final int partition;
+    /**
+     * @param accMap Map to obtain accumulator from.
+     * @param cacheId Cache id.
+     * @param part Partition number.
+     * @return Accumulator.
+     */
+    private AtomicLong accumulator(Map<Integer, Map<Integer, AtomicLong>> accMap, int cacheId, int part) {
+        Map<Integer, AtomicLong> cacheAccs = accMap.get(cacheId);
 
-        /** */
-        private Map<KeyCacheObject, Boolean> map = new HashMap<>();
+        if (cacheAccs == null) {
+            Map<Integer, AtomicLong> cacheAccs0 =
+                accMap.putIfAbsent(cacheId, cacheAccs = new ConcurrentHashMap<>());
 
-        private Collector(int cacheId, int partition) {
-            this.cacheId = cacheId;
-            this.partition = partition;
+            if (cacheAccs0 != null)
+                cacheAccs = cacheAccs0;
         }
 
-        public void onCreate(KeyCacheObject key) {
-            map.putIfAbsent(key, Boolean.TRUE);
+        AtomicLong acc = cacheAccs.get(part);
+
+        if (acc == null) {
+            AtomicLong accDelta0 = cacheAccs.putIfAbsent(part, acc = new AtomicLong());
+
+            if (accDelta0 != null)
+                acc = accDelta0;
         }
 
-        public void onUpdate(KeyCacheObject key) {
-            map.putIfAbsent(key, Boolean.FALSE);
-        }
-
-        public void onDelete(KeyCacheObject key) {
-            map.compute(key, ON_DELETE_FUN);
-        }
-
-        @Override public int cacheId() {
-            return cacheId;
-        }
-
-        @Override public int partition() {
-            return partition;
-        }
-
-        @Override public long updatesCount() {
-            // TODO may be higher than integer
-            return map.size();
-        }
+        return acc;
     }
 }
