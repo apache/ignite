@@ -280,8 +280,10 @@ public abstract class AbstractWalRecordsIterator
      * @return {@code null} if the error was handled and we can go ahead, {@code IgniteCheckedException} if the error
      * was not handled, and we should stop the iteration.
      */
-    protected IgniteCheckedException handleRecordException(@NotNull final Exception e,
-        @Nullable final FileWALPointer ptr) {
+    protected IgniteCheckedException handleRecordException(
+        @NotNull final Exception e,
+        @Nullable final FileWALPointer ptr
+    ) {
         if (log.isInfoEnabled())
             log.info("Stopping WAL iteration due to an exception: " + e.getMessage() + ", ptr=" + ptr);
 
