@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.DisappearedCacheCa
 import org.apache.ignite.internal.processors.query.h2.twostep.DisappearedCacheWasNotFoundMessageSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.NonCollocatedRetryMessageSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.RetryCauseMessageSelfTest;
+import org.apache.ignite.internal.processors.query.h2.twostep.TableViewSubquerySelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**
@@ -121,6 +122,8 @@ public class IgniteCacheQuerySelfTestSuite2 extends TestSuite {
         suite.addTestSuite(RetryCauseMessageSelfTest.class);
         suite.addTestSuite(DisappearedCacheCauseRetryMessageSelfTest.class);
         suite.addTestSuite(DisappearedCacheWasNotFoundMessageSelfTest.class);
+
+        suite.addTestSuite(TableViewSubquerySelfTest.class);
 
         return suite;
     }

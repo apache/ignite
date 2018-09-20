@@ -2370,7 +2370,8 @@ public class GridSqlQuerySplitter {
 
         GridSqlColumn column = (GridSqlColumn)left;
 
-        assert column.column().getTable() instanceof GridH2Table;
+        if (!(column.column().getTable() instanceof GridH2Table))
+            return null;
 
         GridH2Table tbl = (GridH2Table) column.column().getTable();
 
