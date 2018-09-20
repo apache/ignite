@@ -20,41 +20,79 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxKey;
+import org.apache.ignite.IgniteLogger;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * // TODO byte array heap structure for txs queue?
+ * Partition update counter with MVCC delta updates capabilities.
  */
 public class PartitionUpdateCounter {
-    final Queue<Item> queue = new PriorityQueue<>();
+    /** */
+    private IgniteLogger log;
 
-    final AtomicLong cntr = new AtomicLong();
+    /** Queue of counter update tasks*/
+    private final Queue<Item> queue = new PriorityQueue<>();
 
+    /** Counter. */
+    private final AtomicLong cntr = new AtomicLong();
+
+    /** Initial counter. */
     private long initCntr;
 
+    /**
+     * @param log Logger.
+     */
+    PartitionUpdateCounter(IgniteLogger log) {
+        this.log = log;
+    }
+
+    /**
+     * Sets init counter.
+     *
+     * @param updateCntr Init counter valus.
+     */
     public void init(long updateCntr) {
         initCntr = updateCntr;
 
         cntr.set(updateCntr);
     }
 
+    /**
+     * @return Initial counter value.
+     */
     public long initial() {
         return initCntr;
     }
 
+    /**
+     * @return Current update counter value.
+     */
     public long get() {
         return cntr.get();
     }
 
+    /**
+     * Adds delta to current counter value.
+     *
+     * @param delta Delta.
+     * @return Value before add.
+     */
     public long getAndAdd(long delta) {
         return cntr.getAndAdd(delta);
     }
 
+    /**
+     * @return Next update counter.
+     */
     public long next() {
         return cntr.incrementAndGet();
     }
 
+    /**
+     * Sets value to update counter,
+     *
+     * @param val Values.
+     */
     public void update(long val) {
         while (true) {
             long val0 = cntr.get();
@@ -67,15 +105,24 @@ public class PartitionUpdateCounter {
         }
     }
 
-    public synchronized void update(long start, long delta, TxKey tx) {
+    /**
+     * Updates counter by delta from start position.
+     *
+     * @param start Start.
+     * @param delta Delta.
+     */
+    public synchronized void update(long start, long delta) {
         long cur = cntr.get(), next;
 
-        if (cur > start)
-            return; // TODO warning??
+        if (cur > start) {
+            log.warning("Stale update counter task [cur=" + cur + ", start=" + start + ", delta=" + delta + ']');
+
+            return;
+        }
 
         if (cur < start) {
             // backup node with gaps
-            offer(new Item(start, delta, tx));
+            offer(new Item(start, delta));
 
             return;
         }
@@ -100,6 +147,9 @@ public class PartitionUpdateCounter {
         }
     }
 
+    /**
+     * @param cntr Sets initial counter.
+     */
     public void updateInitial(long cntr) {
         if (get() < cntr)
             update(cntr);
@@ -107,27 +157,44 @@ public class PartitionUpdateCounter {
         initCntr = cntr;
     }
 
+    /**
+     * @return Retrieves the minimum update counter task from queue.
+     */
     private Item poll() {
         return queue.poll();
     }
 
+    /**
+     * @return Checks the minimum update counter task from queue.
+     */
     private Item peek() {
         return queue.peek();
     }
 
+    /**
+     * @param item Adds update task to priority queue.
+     */
     private void offer(Item item) {
         queue.offer(item);
     }
 
+    /**
+     * Update counter task. Update from start value by delta value.
+     */
     private static class Item implements Comparable<Item> {
+        /** */
         private final long start;
-        private final long delta;
-        private final TxKey tx;
 
-        private Item(long start, long delta, TxKey tx) {
+        /** */
+        private final long delta;
+
+        /**
+         * @param start Start value.
+         * @param delta Delta value.
+         */
+        private Item(long start, long delta) {
             this.start = start;
             this.delta = delta;
-            this.tx = tx;
         }
 
         /** {@inheritDoc} */

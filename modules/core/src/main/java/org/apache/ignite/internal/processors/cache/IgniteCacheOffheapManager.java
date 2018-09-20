@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalP
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxKey;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
@@ -639,15 +638,24 @@ public interface IgniteCacheOffheapManager {
         void updateCounter(long val);
 
         /**
-         * @return Update counter.
+         * Updates counters from start value by delta value.
+         *
+         * @param start Start.
+         * @param delta Delta
          */
-        void updateCounter(long start, long delta, TxKey txKey);
+        void updateCounter(long start, long delta);
 
         /**
          * @return Next update counter.
          */
         public long nextUpdateCounter();
 
+        /**
+         * Returns current value and updates counter by delta.
+         *
+         * @param delta Delta.
+         * @return Current value.
+         */
         public long getAndIncrementUpdateCounter(long delta);
 
         /**

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import java.nio.ByteBuffer;
 import java.util.Set;
 import java.util.UUID;
-
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -55,6 +54,7 @@ public class GridNearTxQueryResultsEnlistResponse extends GridNearTxQueryEnlistR
      * @param res Result.
      * @param dhtFutId Dht future id.
      * @param dhtVer Dht version.
+     * @param newDhtNodes New
      */
     public GridNearTxQueryResultsEnlistResponse(int cacheId,
         IgniteUuid futId,

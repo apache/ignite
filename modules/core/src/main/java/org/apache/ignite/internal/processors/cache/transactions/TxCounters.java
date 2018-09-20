@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -36,7 +36,7 @@ public class TxCounters {
     private final Map<Integer, Map<Integer, AtomicLong>> updCntrsAcc = new HashMap<>();
 
     /** Final update counters for cache partitions in the end of transaction */
-    private List<PartitionUpdateCountersMessage> updCntrs;
+    private Collection<PartitionUpdateCountersMessage> updCntrs;
 
     /**
      * Accumulates size change for cache partition.
@@ -63,15 +63,15 @@ public class TxCounters {
     /**
      * @param updCntrs Final update counters.
      */
-    public void updateCounters(List<PartitionUpdateCountersMessage> updCntrs) {
+    public void updateCounters(Collection<PartitionUpdateCountersMessage> updCntrs) {
         this.updCntrs = updCntrs;
     }
 
     /**
      * @return Final update counters.
      */
-    public List<PartitionUpdateCountersMessage> updateCounters() {
-        return updCntrs != null ? updCntrs : Collections.emptyList();
+    public Collection<PartitionUpdateCountersMessage> updateCounters() {
+        return updCntrs;
     }
 
     /**

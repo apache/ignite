@@ -134,7 +134,10 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param last {@code True} if this is last prepare request for node.
      * @param addDepInfo Deployment info flag.
      * @param storeWriteThrough Cache store write through flag.
-     * @param retVal Need return value flag.
+     * @param retVal Need return value flag
+     * @param retVal Need return value
+     * @param mvccSnapshot Mvcc snapshot.
+     * @param counters Update counters for mvcc Tx.
      */
     public GridDhtTxPrepareRequest(
         IgniteUuid futId,
@@ -153,7 +156,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         boolean addDepInfo,
         boolean storeWriteThrough,
         boolean retVal,
-        MvccSnapshot mvccInfo,
+        MvccSnapshot mvccSnapshot,
         Collection<PartitionUpdateCountersMessage> counters) {
         super(tx,
             timeout,
@@ -175,7 +178,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         this.nearXidVer = nearXidVer;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
-        this.mvccSnapshot = mvccInfo;
+        this.mvccSnapshot = mvccSnapshot;
         this.counters = counters;
 
         storeWriteThrough(storeWriteThrough);
@@ -196,8 +199,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /**
-     *
-     * @return
+     * @return Update counters list.
      */
     public Collection<PartitionUpdateCountersMessage> updateCounters() {
         return counters;

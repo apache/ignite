@@ -55,14 +55,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteHistoricalIterator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxKey;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.migration.UpgradePendingTreeToPerPartitionTask;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
@@ -1594,6 +1592,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
         }
 
+        /** {@inheritDoc} */
         @Override public long getAndIncrementUpdateCounter(long delta) {
             try {
                 CacheDataStore delegate0 = init0(true);
@@ -1623,18 +1622,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
         }
 
-        /**
-         * @param start
-         * @param delta
-         * @param txKey
-         * @return Update counter.
-         */
-        @Override public void updateCounter(long start, long delta, TxKey txKey) {
+        /** {@inheritDoc} */
+        @Override public void updateCounter(long start, long delta) {
             try {
                 CacheDataStore delegate0 = init0(false);
 
                 if (delegate0 != null)
-                    delegate0.updateCounter(start, delta, txKey);
+                    delegate0.updateCounter(start, delta);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

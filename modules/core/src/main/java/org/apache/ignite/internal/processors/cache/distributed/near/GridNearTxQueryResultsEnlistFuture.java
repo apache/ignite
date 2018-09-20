@@ -301,7 +301,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
     }
 
     /**
-     *  @param primaryId Primary node id.
+     * @param primaryId Primary node id.
      * @param rows Rows.
      * @param dhtVer Dht version assigned at primary node.
      * @param dhtFutId Dht future id assigned at primary node.
@@ -504,8 +504,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
             Batch batch = batches.get(nodeId);
 
             if (batch != null && !F.isEmpty(batch.localBackupRows()) && res.dhtFutureId() != null)
-                processBatchLocalBackupKeys(nodeId, batch.localBackupRows(), res.dhtVersion(), res.dhtFutureId()
-                );
+                processBatchLocalBackupKeys(nodeId, batch.localBackupRows(), res.dhtVersion(), res.dhtFutureId());
             else
                 sendNextBatches(nodeId);
         }

@@ -105,6 +105,10 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
      * @param addDepInfo Deployment info flag.
+     * @param retVal Need return value
+     * @param waitRemoteTxs Wait remote transactions flag
+     * @param mvccSnapshot Mvcc snapshot.
+     * @param updCntrs Update counters for mvcc Tx.
      */
     public GridDhtTxFinishRequest(
         UUID nearNodeId,
@@ -193,6 +197,10 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param taskNameHash Task name hash.
      * @param updateIdxs Partition update idxs.
      * @param addDepInfo Deployment info flag.
+     * @param retVal Need return value
+     * @param waitRemoteTxs Wait remote transactions flag
+     * @param mvccSnapshot Mvcc snapshot.
+     * @param updCntrs Update counters for mvcc Tx.
      */
     public GridDhtTxFinishRequest(
         UUID nearNodeId,

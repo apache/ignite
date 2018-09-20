@@ -51,22 +51,34 @@ public class PartitionUpdateCountersMessage implements Message {
     }
 
     /**
+     * @param cacheId Cache id.
+     * @param initSize Initial size.
      */
-    public PartitionUpdateCountersMessage(int cacheId, int initialSize) {
-        assert initialSize >= 1;
+    public PartitionUpdateCountersMessage(int cacheId, int initSize) {
+        assert initSize >= 1;
 
         this.cacheId = cacheId;
-        data = new byte[initialSize * ITEM_SIZE];
+        data = new byte[initSize * ITEM_SIZE];
     }
 
+    /**
+     * @return Cache id.
+     */
     public int cacheId() {
         return cacheId;
     }
 
+    /**
+     * @return Size.
+     */
     public int size() {
         return size;
     }
 
+    /**
+     * @param idx Item number.
+     * @return Partition number.
+     */
     public int partition(int idx) {
         if (idx >= size)
             throw new ArrayIndexOutOfBoundsException();
@@ -76,6 +88,10 @@ public class PartitionUpdateCountersMessage implements Message {
         return GridUnsafe.getInt(data, off);
     }
 
+    /**
+     * @param idx Item number.
+     * @return Partition number.
+     */
     public long initialCounter(int idx){
         if (idx >= size)
             throw new ArrayIndexOutOfBoundsException();
@@ -85,6 +101,10 @@ public class PartitionUpdateCountersMessage implements Message {
         return GridUnsafe.getLong(data, off);
     }
 
+    /**
+     * @param idx Item number.
+     * @param value Initial partition counter.
+     */
     public void initialCounter(int idx, long value){
         if (idx >= size)
             throw new ArrayIndexOutOfBoundsException();
@@ -94,6 +114,10 @@ public class PartitionUpdateCountersMessage implements Message {
         GridUnsafe.putLong(data, off, value);
     }
 
+    /**
+     * @param idx Item number.
+     * @return Update counter delta.
+     */
     public long updatesCount(int idx){
         if (idx >= size)
             throw new ArrayIndexOutOfBoundsException();
@@ -103,20 +127,33 @@ public class PartitionUpdateCountersMessage implements Message {
         return GridUnsafe.getLong(data, off);
     }
 
-    public void add(int part, long init, long updatesCount) {
+    /**
+     * @param part Partition number.
+     * @param init Init partition counter.
+     * @param updatesCnt Update counter delta.
+     */
+    public void add(int part, long init, long updatesCnt) {
         ensureSpace(size + 1);
 
         long off = GridUnsafe.BYTE_ARR_OFF + size++ * ITEM_SIZE;
 
         GridUnsafe.putInt(data, off, part); off += 4;
         GridUnsafe.putLong(data, off, init); off += 8;
-        GridUnsafe.putLong(data, off, updatesCount);
+        GridUnsafe.putLong(data, off, updatesCnt);
     }
 
+    /**
+     * Clears message.
+     */
     public void clear() {
         size = 0;
     }
 
+    /**
+     * Check if there is enough space is allocated.
+     *
+     * @param newSize Size to ensure.
+     */
     private void ensureSpace(int newSize) {
         int req = newSize * ITEM_SIZE;
 

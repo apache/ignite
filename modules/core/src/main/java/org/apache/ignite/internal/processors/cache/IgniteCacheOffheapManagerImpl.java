@@ -50,7 +50,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Ign
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteRebalanceIteratorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxKey;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
@@ -1401,7 +1400,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** */
         private final CacheDataTree dataTree;
 
-        protected final PartitionUpdateCounter pCntr = new PartitionUpdateCounter();
+        /** Update counter. */
+        protected final PartitionUpdateCounter pCntr = new PartitionUpdateCounter(log);
 
         /** Partition size. */
         private final AtomicLong storageSize = new AtomicLong();
@@ -1507,6 +1507,17 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             return pCntr.next();
         }
 
+        /** {@inheritDoc} */
+        @Override public long initialUpdateCounter() {
+            return pCntr.initial();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void updateInitialCounter(long cntr) {
+            pCntr.updateInitial(cntr);
+        }
+
+        /** {@inheritDoc} */
         @Override public long getAndIncrementUpdateCounter(long delta) {
             return pCntr.getAndAdd(delta);
         }
@@ -1521,24 +1532,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             pCntr.update(val);
         }
 
-        /**
-         * @param start
-         * @param delta
-         * @param tx
-         * @return Update counter.
-         */
-        @Override public void updateCounter(long start, long delta, TxKey tx) {
-            pCntr.update(start, delta, tx);
-        }
-
         /** {@inheritDoc} */
-        @Override public long initialUpdateCounter() {
-            return pCntr.initial();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void updateInitialCounter(long cntr) {
-            pCntr.updateInitial(cntr);
+        @Override public void updateCounter(long start, long delta) {
+            pCntr.update(start, delta);
         }
 
         /** {@inheritDoc} */

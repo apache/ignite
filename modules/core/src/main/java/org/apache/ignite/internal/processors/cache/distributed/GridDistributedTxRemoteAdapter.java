@@ -50,12 +50,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWra
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxKey;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
@@ -855,36 +850,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
         TxCounters txCntrs = txCounters(false);
 
-        applyPartitionsUpdatesCounters(txCntrs);
-    }
-
-    private void applyPartitionsUpdatesCounters(TxCounters txCntrs) {
-        if (txCntrs == null)
-            return;
-
-        MvccSnapshot snapshot = mvccSnapshot();
-
-        assert snapshot != null;
-
-        TxKey tx = new TxKey(snapshot.coordinatorVersion(), snapshot.counter());
-
-        int cacheId = CU.UNDEFINED_CACHE_ID;
-        GridDhtPartitionTopology top = null;
-
-        for (PartitionUpdateCountersMessage counter : txCntrs.updateCounters()) {
-            if (counter.cacheId() != cacheId)
-                top = cctx.cacheContext(cacheId = counter.cacheId()).topology();
-
-            assert top != null;
-
-            for (int i = 0; i < counter.size(); i++) {
-                GridDhtLocalPartition part = top.localPartition(counter.partition(i));
-
-                assert part != null;
-
-                part.updateCounter(counter.initialCounter(i), counter.updatesCount(i), tx);
-            }
-        }
+        if (txCntrs != null)
+            cctx.applyPartitionsUpdatesCounters(txCntrs.updateCounters());
     }
 
     /** {@inheritDoc} */
@@ -973,7 +940,10 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             if (state(ROLLING_BACK) || state() == UNKNOWN) {
                 cctx.tm().rollbackTx(this, false, skipCompletedVers);
 
-                applyPartitionsUpdatesCounters(txCounters(false));
+                TxCounters counters = txCounters(false);
+
+                if (counters != null)
+                    cctx.applyPartitionsUpdatesCounters(counters.updateCounters());
 
                 state(ROLLED_BACK);
             }

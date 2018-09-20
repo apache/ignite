@@ -463,12 +463,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /**
-     * TODO IGNITE-9538 check whether it needs to synchronize with async rollback.
+     * Calculates partition update counters for current transaction. Each partition will be supplied with
+     * pair (init, delta) values, where init - initial update counter, and delta - updates count made
+     * by current transaction for a given partition.
      */
     private void calculatePartitionUpdateCounters() {
         TxCounters counters = txCounters(false);
 
-        // TODO check already calculated counters properly
         if (counters != null && F.isEmpty(counters.updateCounters())) {
             List<PartitionUpdateCountersMessage> cntrMsgs = new ArrayList<>();
 
@@ -483,7 +484,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     continue;
 
                 PartitionUpdateCountersMessage msg = new PartitionUpdateCountersMessage(cacheId, partToCntrs.size());
-                GridDhtPartitionTopology top = cctx.cacheContext(cacheId).topology();
+                GridCacheContext ctx0 = cctx.cacheContext(cacheId);
+
+                assert ctx0 != null && ctx0.mvccEnabled();
+
+                GridDhtPartitionTopology top = ctx0.topology();
 
                 assert top != null;
 

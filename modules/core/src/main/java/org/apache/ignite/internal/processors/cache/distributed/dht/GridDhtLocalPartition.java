@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxKey;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
@@ -970,17 +969,17 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @return Current update index.
+     * @return Current update counter.
      */
     public long updateCounter() {
         return store.updateCounter();
     }
 
     /**
-     * @return Current update index.
+     * @param val Update counter value.
      */
-    public void updateCounter(long start, long delta, TxKey txKey) {
-         store.updateCounter(start, delta, txKey);
+    public void updateCounter(long val) {
+        store.updateCounter(val);
     }
 
     /**
@@ -991,21 +990,30 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @param val Update index value.
+     * @param val Initial update counter value.
      */
-    public void updateCounter(long val) {
-        store.updateCounter(val);
+    public void initialUpdateCounter(long val) {
+        store.updateInitialCounter(val);
     }
 
+    /**
+     * Updates MVCC cache update counter on primary node.
+     *
+     * @param delta Value to be added to update counter.
+     * @return Update counter value before update.
+     */
     public long getAndIncrementUpdateCounter(long delta) {
         return store.getAndIncrementUpdateCounter(delta);
     }
 
     /**
-     * @param val Initial update index value.
+     * Updates MVCC cache update counter on backup node.
+     *
+     * @param start Start position
+     * @param delta Delta.
      */
-    public void initialUpdateCounter(long val) {
-        store.updateInitialCounter(val);
+    public void updateCounter(long start, long delta) {
+         store.updateCounter(start, delta);
     }
 
     /**

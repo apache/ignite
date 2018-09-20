@@ -899,33 +899,6 @@ public class GridFunc {
     }
 
     /**
-     * @param c Input collection of collections.
-     * @param <T> Type of the inner collections.
-     * @return Iterable over the elements of the inner collections.
-     */
-    public static <T> Collection<T> castDown(Collection<? extends T> c) {
-        return (Collection<T>) c;
-    }
-
-    /**
-     * @param c Input collection.
-     * @param <T> Type of the collection.
-     * @return Iterable over the elements of the inner collections.
-     */
-    public static <T> Iterable<T> castDown(Iterable<? extends T> c) {
-        return (Iterable<T>) c;
-    }
-
-    /**
-     * @param c Input collection.
-     * @param <T> Type of the collection.
-     * @return List of collection elements.
-     */
-    public static <T> List<T> asList(Collection<? extends T> c) {
-        return c == null ? null : c instanceof List ? (List<T>)c : new ArrayList<>(c);
-    }
-
-    /**
      * Flattens iterable-of-iterables and returns iterable over the
      * elements of the inner collections. This method doesn't create any
      * new collections or copies any elements.
