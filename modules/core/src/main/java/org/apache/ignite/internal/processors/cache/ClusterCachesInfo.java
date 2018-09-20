@@ -358,6 +358,9 @@ class ClusterCachesInfo {
                 CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityKeyBackups",
                     "Affinity key backups", locAttr.affinityKeyBackups(),
                     rmtAttr.affinityKeyBackups(), true);
+
+                CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "qryParallelism",
+                    "Query parallelism", locAttr.qryParallelism(), rmtAttr.qryParallelism(), true);
             }
         }
     }

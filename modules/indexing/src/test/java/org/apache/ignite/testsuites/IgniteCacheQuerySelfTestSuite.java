@@ -158,6 +158,7 @@ import org.apache.ignite.internal.processors.query.IgniteSqlGroupConcatNotColloc
 import org.apache.ignite.internal.processors.query.IgniteSqlKeyValueFieldsTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlNotNullConstraintTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlParameterizedQueryTest;
+import org.apache.ignite.internal.processors.query.IgniteSqlQueryParallelismTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlRoutingTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSchemaIndexingTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexMultiNodeSelfTest;
@@ -426,6 +427,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheDistributedJoinQueryConditionsTest.class);
         suite.addTestSuite(IgniteCacheDistributedJoinTest.class);
         suite.addTestSuite(IgniteSqlDistributedJoinSelfTest.class);
+        suite.addTestSuite(IgniteSqlQueryParallelismTest.class);
 
         // Other.
         suite.addTestSuite(CacheIteratorScanQueryTest.class);
