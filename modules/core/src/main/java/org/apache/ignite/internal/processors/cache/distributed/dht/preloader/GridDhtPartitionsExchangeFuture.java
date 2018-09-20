@@ -3139,7 +3139,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 validator.validatePartitionCountersAndSizes(this, top, msgs);
             }
             catch (IgniteCheckedException ex) {
-                log.warning("Partition states validation has failed for group: " + grpDesc.cacheOrGroupName() + ". " + ex.getMessage());
+//                log.warning("Partition states validation has failed for group: " + grpDesc.cacheOrGroupName() + ". " + ex.getMessage());
+                log.warning("Partition states validation has failed for group: " + grpDesc.cacheOrGroupName());
                 // TODO: Handle such errors https://issues.apache.org/jira/browse/IGNITE-7833
             }
         }
@@ -3573,22 +3574,19 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
             Integer grpId = entry.getKey();
 
-            boolean res = msg instanceof GridDhtPartitionsFullMessage &&
-                ((GridDhtPartitionsFullMessage)msg).exchangeId() != null
-                && ((GridDhtPartitionsFullMessage)msg).topologyVersion().topologyVersion() == 8
-                && ((GridDhtPartitionsFullMessage)msg).topologyVersion().minorTopologyVersion() == 3;
-
-            if(res) {
-
-                try {
-                    Thread.sleep(2000L);
-                }
-                catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
             CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+            boolean res = msg.topologyVersion().topologyVersion() == 8;
+
+//            if(res) {
+//
+//                try {
+//                    U.sleep(1000L);
+//                }
+//                catch (IgniteInterruptedCheckedException e) {
+//                    e.printStackTrace();
+//                }
+//            }
 
             if (grp != null) {
                 CachePartitionFullCountersMap cntrMap = msg.partitionUpdateCounters(grpId,
