@@ -55,7 +55,7 @@ public class GridMarshallerMappingConsistencyTest extends GridCommonAbstractTest
         igniteCfg.setConsistentId(igniteInstanceName);
 
         DataRegionConfiguration drCfg = new DataRegionConfiguration();
-        drCfg.setPersistenceEnabled(true);
+        drCfg.setPersistenceEnabled(true).setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
         dsCfg.setDefaultDataRegionConfiguration(drCfg);
