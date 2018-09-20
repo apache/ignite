@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.h2.util.StringUtils;
+import org.apache.ignite.internal.util.typedef.F;
+import org.h2.util.StatementBuilder;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.AVG;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.COUNT;
@@ -39,6 +40,15 @@ public class GridSqlAggregateFunction extends GridSqlFunction {
 
     /** */
     private final boolean distinct;
+
+    /** */
+    private GridSqlElement groupConcatSeparator;
+
+    /** */
+    private GridSqlElement[] groupConcatOrderExpression;
+
+    /** */
+    private boolean[] groupConcatOrderDesc;
 
     /**
      * @param distinct Distinct.
@@ -75,26 +85,74 @@ public class GridSqlAggregateFunction extends GridSqlFunction {
         return distinct;
     }
 
+    /**
+     * @param orderExpression Order expression.
+     * @param orderDesc Order descending flag.
+     * @return {@code this} for chaining.
+     */
+    public GridSqlAggregateFunction setGroupConcatOrder(GridSqlElement[] orderExpression, boolean[] orderDesc) {
+        groupConcatOrderExpression = orderExpression;
+        groupConcatOrderDesc = orderDesc;
+
+        return this;
+    }
+
+    /**
+     * @return {@code true} in case GROUP_CONCAT function contains ORDER BY expressions.
+     */
+    public boolean hasGroupConcatOrder() {
+        return ! F.isEmpty(groupConcatOrderExpression);
+    }
+
+    /**
+     * @param separator Separator expression.
+     * @return {@code this} for chaining.
+     */
+    public GridSqlAggregateFunction setGroupConcatSeparator(GridSqlElement separator) {
+        groupConcatSeparator = separator;
+
+        return this;
+    }
+
+    /**
+     * @return Separator expression.
+     */
+    public GridSqlElement getGroupConcatSeparator() {
+        return groupConcatSeparator;
+    }
+
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        String text;
+        if (type == COUNT_ALL)
+            return "COUNT(*)";
 
-        switch (type) {
-            case GROUP_CONCAT:
-                throw new UnsupportedOperationException();
-
-            case COUNT_ALL:
-                return "COUNT(*)";
-
-            default:
-                text = type.name();
-
-                break;
-        }
+        StatementBuilder buff = new StatementBuilder(name()).append('(');
 
         if (distinct)
-            return text + "(DISTINCT " + child().getSQL() + ")";
+            buff.append("DISTINCT ");
 
-        return text + StringUtils.enclose(child().getSQL());
+        buff.append(child().getSQL());
+
+        if (!F.isEmpty(groupConcatOrderExpression)) {
+            buff.append(" ORDER BY ");
+
+            buff.resetCount();
+
+            for (int i = 0; i < groupConcatOrderExpression.length; ++i) {
+                buff.appendExceptFirst(", ");
+
+                buff.append(groupConcatOrderExpression[i].getSQL());
+
+                if (groupConcatOrderDesc[i])
+                    buff.append(" DESC");
+            }
+        }
+
+        if (groupConcatSeparator != null)
+            buff.append(" SEPARATOR ").append(groupConcatSeparator.getSQL());
+
+        buff.append(')');
+
+        return buff.toString();
     }
 }
