@@ -17,14 +17,11 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import java.io.IOException;
-import java.net.BindException;
-import java.net.ServerSocket;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+
+import static org.apache.ignite.testframework.GridTestUtils.getFreePort;
 
 /**
  * TCP communication SPI config test.
@@ -61,32 +58,18 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
     public void testLocalPortRange() throws Exception {
         IgniteConfiguration cfg = getConfiguration();
 
-        TcpCommunicationSpi spi = new TcpCommunicationSpi();
+        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
-        spi.setLocalPortRange(0);
-        spi.setLocalPort(getFreePort());
+        commSpi.setLocalPortRange(0);
+        commSpi.setLocalPort(getFreePort());
 
-        cfg.setCommunicationSpi(spi);
+        cfg.setCommunicationSpi(commSpi);
 
-        startGrid(cfg.getIgniteInstanceName(), cfg);
-    }
-
-    /**
-     * @return Free port number on localhost.
-     * @throws IOException If unable to find a free port.
-     */
-    private int getFreePort() throws IOException {
-        try (ServerSocket sock = new ServerSocket(0)) {
-            int port = sock.getLocalPort();
-
-            log.info("Found available port: " + port);
-
-            return port;
-        }
+        startGrid(cfg);
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTestsStopped() {
         stopAllGrids();
     }
 }
