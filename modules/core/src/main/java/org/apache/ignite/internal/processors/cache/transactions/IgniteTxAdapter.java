@@ -769,10 +769,27 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /**
      * @param ex Root cause.
      */
-    public final Error heuristicException(Throwable ex) {
+    public final IgniteCheckedException heuristicException(Throwable ex) {
         return new IgniteTxHeuristicCheckedException("Commit produced a runtime exception " +
             "(this is a critical situation and will be handled according to configured " +
             "failure handling policy): " + CU.txString(this), ex);
+    }
+
+    /**
+     * @param log Log.
+     * @param commit Commit.
+     * @param e Exception.
+     */
+    public void logTxFinishErrorSafe(@Nullable IgniteLogger log, boolean commit, Throwable e) {
+        try {
+            // First try printing a full transaction. This is error prone.
+            U.error(log, "Failed completing the transaction: [commit=" + commit + ", tx=" + this + ']', e);
+        }
+        catch (Throwable e0) {
+            e.addSuppressed(e0);
+
+            U.error(log, "Failed completing the transaction: [commit=" + commit + ", tx=" + CU.txString(this) + ']', e);
+        }
     }
 
     /** {@inheritDoc} */

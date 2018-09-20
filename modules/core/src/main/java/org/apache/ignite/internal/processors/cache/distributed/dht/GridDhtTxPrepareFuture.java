@@ -36,6 +36,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -754,14 +756,41 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         };
 
                     try {
-                        if (prepErr == null)
-                            tx.commitAsync().listen(resClo);
-                        else if (!cctx.kernalContext().isStopping())
-                            tx.rollbackAsync().listen(resClo);
+                        if (prepErr == null) {
+                            try {
+                                tx.commitAsync().listen(resClo);
+                            }
+                            catch (Throwable e) {
+                                err = e;
+
+                                res.error(e);
+
+                                tx.systemInvalidate(true);
+
+                                try {
+                                    tx.rollbackAsync().listen(resClo);
+                                }
+                                catch (Throwable e1) {
+                                    e.addSuppressed(e1);
+                                }
+
+                                throw e;
+                            }
+                        }
+                        else if (!cctx.kernalContext().isStopping()) {
+                            try {
+                                tx.rollbackAsync().listen(resClo);
+                            }
+                            catch (Throwable e) {
+                                if (err != null)
+                                    err.addSuppressed(e);
+                            }
+                        }
                     }
-                    catch (Throwable t) {
-                        // Failure to commit or rollback tx at this point means possibility of stale tx.
-                        throw tx.heuristicException(t);
+                    finally {
+                        tx.logTxFinishErrorSafe(log, true, err);
+
+                        cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, err));
                     }
                 }
             }

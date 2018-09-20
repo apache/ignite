@@ -468,7 +468,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
             // Only one thread gets to commit.
             if (COMMIT_ALLOWED_UPD.compareAndSet(this, 0, 1)) {
-                Error err = null;
+                IgniteCheckedException err = null;
 
                 Map<IgniteTxKey, IgniteTxEntry> writeMap = txState.writeMap();
 
@@ -782,10 +782,16 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     catch (Throwable ex) {
                         state(UNKNOWN);
 
+                        if (X.hasCause(ex, NodeStoppingException.class)) {
+                            U.warn(log, "Failed to commit transaction, node is stopping [tx=" + CU.txString(this) +
+                                ", err=" + ex + ']');
+
+                            return;
+                        }
+
                         err = heuristicException(ex);
 
-                        if (!X.hasCause(ex, NodeStoppingException.class) &&
-                            !X.hasCause(ex, InvalidEnvironmentException.class)) {
+                        if (!X.hasCause(ex, InvalidEnvironmentException.class)) {
                             try {
                                 // Courtesy to minimize damage.
                                 uncommit();
@@ -799,6 +805,12 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     }
                     finally {
                         cctx.database().checkpointReadUnlock();
+
+                        if (err != null) {
+                            logTxFinishErrorSafe(log, true, err);
+
+                            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, err));
+                        }
 
                         notifyDrManager(state() == COMMITTING && err == null);
 

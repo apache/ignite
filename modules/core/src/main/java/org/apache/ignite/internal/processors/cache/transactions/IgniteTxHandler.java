@@ -1015,10 +1015,35 @@ public class IgniteTxHandler {
             }
         }
         catch (Throwable e) {
-            logTxFinishError(tx, req.commit(), e);
+            try {
+                if (tx != null) {
+                    tx.commitError(e);
 
-            // Trigger failure handler.
-            throw e;
+                    tx.systemInvalidate(true);
+
+                    try {
+                        IgniteInternalFuture<IgniteInternalTx> res = tx.rollbackDhtLocalAsync();
+
+                        // Only for error logging.
+                        res.listen(CU.errorLogger(log));
+
+                        return res;
+                    }
+                    catch (Throwable e1) {
+                        e.addSuppressed(e1);
+                    }
+
+                    tx.logTxFinishErrorSafe(log, req.commit(), e);
+                }
+
+                if (e instanceof Error)
+                    throw (Error)e;
+
+                return new GridFinishedFuture<>(e);
+            }
+            finally {
+                ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+            }
         }
     }
 
@@ -1043,10 +1068,26 @@ public class IgniteTxHandler {
                 return tx.rollbackAsyncLocal();
         }
         catch (Throwable e) {
-            logTxFinishError(tx, commit, e);
+            try {
+                if (tx != null) {
+                    try {
+                        return tx.rollbackNearTxLocalAsync();
+                    }
+                    catch (Throwable e1) {
+                        e.addSuppressed(e1);
+                    }
 
-            // Trigger failure handler.
-            throw e;
+                    tx.logTxFinishErrorSafe(log, commit, e);
+                }
+
+                if (e instanceof Error)
+                    throw e;
+
+                return new GridFinishedFuture<>(e);
+            }
+            finally {
+                ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+            }
         }
     }
 
@@ -1129,10 +1170,6 @@ public class IgniteTxHandler {
             else if (e instanceof IgniteTxOptimisticCheckedException) {
                 if (log.isDebugEnabled())
                     log.debug("Optimistic failure for remote transaction (will rollback): " + req);
-            }
-            else if (e instanceof IgniteTxHeuristicCheckedException) {
-                U.warn(log, "Failed to commit transaction (all transaction entries were invalidated): " +
-                    CU.txString(dhtTx));
             }
             else
                 U.error(log, "Failed to process prepare request: " + req, e);
@@ -1380,7 +1417,7 @@ public class IgniteTxHandler {
      */
     protected void finish(
         GridDistributedTxRemoteAdapter tx,
-        GridDhtTxPrepareRequest req) throws IgniteCheckedException{
+        GridDhtTxPrepareRequest req) throws IgniteTxHeuristicCheckedException {
         assert tx != null : "No transaction for one-phase commit prepare request: " + req;
 
         try {
@@ -1393,11 +1430,32 @@ public class IgniteTxHandler {
 
             tx.commitRemoteTx();
         }
-        catch (Throwable e) {
-            logTxFinishError(tx, true, e);
-
-            // Trigger failure handler.
+        catch (IgniteTxHeuristicCheckedException e) {
+            // Just rethrow this exception. Transaction was already uncommitted.
             throw e;
+        }
+        catch (Throwable e) {
+            try {
+                // Mark transaction for invalidate.
+                tx.invalidate(true);
+
+                tx.systemInvalidate(true);
+
+                try {
+                    tx.rollbackRemoteTx();
+                }
+                catch (Throwable e1) {
+                    e.addSuppressed(e1);
+                }
+
+                tx.logTxFinishErrorSafe(log, true, e);
+
+                if (e instanceof Error)
+                    throw (Error)e;
+            }
+            finally {
+                ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+            }
         }
     }
 
@@ -1919,27 +1977,5 @@ public class IgniteTxHandler {
             res.txState(fut.tx().txState());
 
         fut.onResult(nodeId, res);
-    }
-
-    /**
-     * @param tx Tx.
-     * @param commit Commit.
-     * @param e Exception.
-     */
-    private void logTxFinishError(@Nullable IgniteTxAdapter tx, boolean commit, Throwable e) {
-//        U.warn(log, "Failed to commit the transaction, node is stopping [tx=" +
-//            CU.txString(this) + ']');
-
-        try {
-            // First try printing a full transaction. This is error prone.
-            U.error(log, "Failed committing the transaction (this is a critical situation and will be handled according " +
-                "to configured policy): [commit=" + commit + ", tx=" + tx + ']', e);
-        }
-        catch (Throwable e0) {
-            e.addSuppressed(e0);
-
-            U.error(log, "Failed committing the transaction (this is a critical situation and will be handled according " +
-                "to configured policy): [commit=" + commit + ", tx=" + CU.txString(tx) + ']', e);
-        }
     }
 }

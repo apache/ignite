@@ -3491,7 +3491,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (log.isDebugEnabled())
             log.debug("Committing near local tx: " + this);
 
-        final NearTxFinishFuture fut, fut0 = finishFut; boolean fastFinish;
+        final NearTxFinishFuture fut, fut0 = finishFut;
+
+        boolean fastFinish;
 
         if (fut0 != null || !FINISH_FUT_UPD.compareAndSet(this, null, fut = finishFuture(fastFinish = fastFinish(), true)))
             return chainFinishFuture(finishFut, true, true, false);

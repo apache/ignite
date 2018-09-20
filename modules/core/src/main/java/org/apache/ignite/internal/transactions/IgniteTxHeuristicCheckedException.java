@@ -26,7 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
  * integrity, by invalidating all values participating in this transaction
  * on remote nodes.
  */
-public class IgniteTxHeuristicCheckedException extends Error {
+public class IgniteTxHeuristicCheckedException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -47,14 +47,5 @@ public class IgniteTxHeuristicCheckedException extends Error {
      */
     public IgniteTxHeuristicCheckedException(String msg, Throwable cause) {
         super(msg, cause);
-    }
-
-    /**
-     * Creates new heuristic exception with root cause.
-     *
-     * @param cause Root cause.
-     */
-    public IgniteTxHeuristicCheckedException(Throwable cause) {
-        super(cause);
     }
 }
