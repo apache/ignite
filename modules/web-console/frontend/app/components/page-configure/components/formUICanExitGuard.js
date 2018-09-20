@@ -43,7 +43,9 @@ class FormUICanExitGuardController {
             return;
 
         controller.uiCanExit = ($transition$) => {
-            if ($transition$.options().custom.justIDUpdate)
+            const options = $transition$.options();
+
+            if (options.custom.justIDUpdate || options.redirectedFrom)
                 return true;
 
             $transition$.onSuccess({}, controller.reset);
