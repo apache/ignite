@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.odbc.odbc;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * SQL listener column metadata.
@@ -106,5 +107,10 @@ public class OdbcColumnMeta {
         byte typeId = BinaryUtils.typeByClass(dataType);
 
         writer.writeByte(typeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(OdbcColumnMeta.class, this);
     }
 }
