@@ -25,12 +25,14 @@ public enum RolloverType {
     NONE,
 
     /**
-     * Record being logged is a rollover record and it should become the last record in the current segment.
+     * Record being logged is a rollover record and it should get to the current segment whenever possible.
+     * If current segment is full, then the record gets to the next segment. Anyway, logging implementation should
+     * guarantee segment rollover afterwards.
      */
     CURRENT_SEGMENT,
 
     /**
-     * Record being logged is a rollover record and it should get to the next segment.
+     * Record being logged is a rollover record and it should become the first record in the next segment.
      */
     NEXT_SEGMENT;
 }

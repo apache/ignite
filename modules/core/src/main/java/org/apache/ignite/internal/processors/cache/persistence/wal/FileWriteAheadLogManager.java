@@ -679,7 +679,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     "serializer to a new WAL segment [curFile=" + currHnd + ", newVer=" + serializer.version() +
                     ", oldVer=" + currHnd.serializer.version() + ']');
 
-            rollOver(currHnd);
+            rollOver(currHnd, null);
         }
 
         currHnd.resume = false;
@@ -761,7 +761,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         try {
             handle.buf.close();
 
-            rollOver(handle);
+            rollOver(handle, null);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Unable to perform segment rollover: " + e.getMessage(), e);
@@ -800,26 +800,21 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 assert cctx.database().checkpointLockIsHeldByThread();
 
                 if (rolloverType == RolloverType.NEXT_SEGMENT) {
-                    currWrHandle = closeBufAndRollover(currWrHandle, rec.type());
+                    currWrHandle = closeBufAndRollover(currWrHandle, rec, rolloverType);
 
-                    ptr = currWrHandle.addRecord(rec);
+                    ptr = rec.position();
                 }
-                else {
-                    assert rolloverType == RolloverType.CURRENT_SEGMENT;
-
+                else if (rolloverType == RolloverType.CURRENT_SEGMENT) {
                     FileWriteHandle h = currWrHandle;
 
-                    h.lock.lock();
-
-                    try {
+                    do {
                         ptr = h.addRecord(rec);
 
-                        currWrHandle = closeBufAndRollover(h, rec.type());
-                    }
-                    finally {
-                        h.lock.unlock();
-                    }
+                        currWrHandle = closeBufAndRollover(h, rec, rolloverType);
+                    } while (ptr == null);
                 }
+                else
+                    throw new IgniteCheckedException("Unknown rollover type: " + rolloverType);
             }
 
             if (ptr != null) {
@@ -833,7 +828,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 return ptr;
             }
             else
-                currWrHandle = rollOver(currWrHandle);
+                currWrHandle = rollOver(currWrHandle, null);
 
             checkNode();
 
@@ -843,16 +838,19 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** */
-    private FileWriteHandle closeBufAndRollover(FileWriteHandle currWriteHandle, WALRecord.RecordType recordType)
-        throws IgniteCheckedException {
+    private FileWriteHandle closeBufAndRollover(
+        FileWriteHandle currWriteHandle,
+        WALRecord rec,
+        RolloverType rolloverType
+    ) throws IgniteCheckedException {
         long idx = currWriteHandle.idx;
 
         currWriteHandle.buf.close();
 
-        FileWriteHandle res = rollOver(currWriteHandle);
+        FileWriteHandle res = rollOver(currWriteHandle, rolloverType == RolloverType.NEXT_SEGMENT ? rec : null);
 
         if (log != null && log.isInfoEnabled())
-            log.info("Rollover segment [" + idx + " to " + currWriteHandle.idx + "], recordType=" + recordType);
+            log.info("Rollover segment [" + idx + " to " + currWriteHandle.idx + "], recordType=" + rec.type());
 
         return res;
     }
@@ -1187,9 +1185,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /**
      * @param cur Handle that failed to fit the given entry.
+     * @param rec Optional record to be added right after header.
      * @return Handle that will fit the entry.
      */
-    private FileWriteHandle rollOver(FileWriteHandle cur) throws StorageException, IgniteCheckedException {
+    private FileWriteHandle rollOver(FileWriteHandle cur, @Nullable WALRecord rec) throws IgniteCheckedException {
         FileWriteHandle hnd = currentHandle();
 
         if (hnd != cur)
@@ -1202,6 +1201,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             FileWriteHandle next = initNextWriteHandle(cur);
 
             next.writeHeader();
+
+            if (rec != null) {
+                WALPointer ptr = next.addRecord(rec);
+
+                assert ptr != null;
+            }
 
             if (next.idx - lashCheckpointFileIdx() >= maxSegCountWithoutCheckpoint)
                 cctx.database().forceCheckpoint("too big size of WAL without checkpoint");
