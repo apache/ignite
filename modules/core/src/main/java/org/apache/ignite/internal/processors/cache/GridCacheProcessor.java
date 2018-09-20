@@ -2322,7 +2322,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      */
     private void processCacheStopRequestOnExchangeDone(ExchangeActions exchActions) {
         // Force checkpoint if there is any cache stop request
-        if (exchActions.cacheStopRequests().size() > 0) {
+        if (!exchActions.cacheStopRequests().isEmpty()) {
             try {
                 sharedCtx.database().waitForCheckpoint("caches stop");
             }
