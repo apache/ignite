@@ -135,7 +135,7 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
             Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 1)));
 
         Map<Integer, MvccTestAccount> updateMap = keysForUpdate.stream().collect(
-            Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 2)));
+            Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 3)));
 
         cache1.cache.putAll(initialMap);
 
@@ -155,6 +155,16 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
                 assertEquals(initialMap.get(key), cache1.cache.getAndRemove(key)); // Check remove existed.
 
                 assertNull(cache1.cache.getAndRemove(key)); // Check remove non-existed.
+            }
+
+            for (Integer key : allKeys) {
+                MvccTestAccount oldVal = new MvccTestAccount(key, 2);
+                MvccTestAccount newVal = new MvccTestAccount(key, 3);
+
+                if (keysForRemove.contains(key))
+                    assertNull(cache1.cache.getAndReplace(key, newVal)); // Omit update 'null'.
+                else
+                    assertEquals(oldVal, cache1.cache.getAndReplace(key, newVal)); // Check updated.
             }
 
             assertEquals(updateMap, getEntries(cache1, allKeys, SQL));

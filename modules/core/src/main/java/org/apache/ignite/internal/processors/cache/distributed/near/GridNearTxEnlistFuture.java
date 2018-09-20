@@ -78,6 +78,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
     private static final Object FINISHED = new Object();
 
     /** */
+    @GridToStringExclude
     private final UpdateSourceIterator<?> it;
 
     /** */
@@ -216,6 +217,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
                 if (F.isEmpty(nodes) || ((node = nodes.get(0)) == null))
                     throw new ClusterTopologyCheckedException("Failed to get primary node " +
                         "[topVer=" + topVer + ", key=" + key + ']');
+
+                tx.markQueryEnlisted(null);
 
                 if (!sequential)
                     batch = batches.get(node.id());

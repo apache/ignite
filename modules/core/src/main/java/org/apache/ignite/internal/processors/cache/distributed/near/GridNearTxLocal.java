@@ -760,8 +760,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         assert map0 != null || invokeMap0 != null;
 
-        final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
-
         if (F.isEmpty(map0) && F.isEmpty(invokeMap0)) {
             if (implicit())
                 try {
@@ -771,7 +769,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     return new GridFinishedFuture<>(e);
                 }
 
-            return new GridFinishedFuture<>(ret.success(true));
+            return new GridFinishedFuture<>(new GridCacheReturn(true, false));
         }
 
         try {
@@ -827,7 +825,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                     return new IgniteBiTuple<>(next.getKey(), next.getValue());
                 }
-            }, ret, retval, filter, remainingTime(), true);
+            }, retval, filter, remainingTime(), true);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture(e);
@@ -1943,8 +1941,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             return new GridFinishedFuture(e);
         }
 
-        final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
-
         if (F.isEmpty(keys)) {
             if (implicit()) {
                 try {
@@ -1955,7 +1951,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 }
             }
 
-            return new GridFinishedFuture<>(ret.success(true));
+            return new GridFinishedFuture<>(new GridCacheReturn(localResult(), true));
         }
 
         init();
@@ -1998,7 +1994,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             @Override public KeyCacheObject nextX() throws IgniteCheckedException {
                 return it.next();
             }
-        }, ret, retval, filter, remainingTime(), true);
+        }, retval, filter, remainingTime(), true);
     }
 
     /**
@@ -2081,7 +2077,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /**
      * @param cacheCtx Cache context.
      * @param it Entries iterator.
-     * @param ret Cache operation result.
      * @param retval Return value flag.
      * @param filter Filter.
      * @param timeout Timeout.
@@ -2090,7 +2085,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      */
     public IgniteInternalFuture<GridCacheReturn> updateAsync(GridCacheContext cacheCtx,
         UpdateSourceIterator<?> it,
-        GridCacheReturn ret,
         boolean retval,
         @Nullable CacheEntryPredicate filter,
         long timeout,
@@ -2111,17 +2105,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                     return true;
                 }
-            }), new PLC1<GridCacheReturn>(ret) {
+            }), new PLC1<GridCacheReturn>(null) {
                 @Override protected GridCacheReturn postLock(GridCacheReturn ret) throws IgniteCheckedException {
                     GridCacheReturn futRes = fut.get();
 
                     assert futRes != null;
 
-                    ret.set(cacheCtx, futRes.value(), futRes.success(), keepBinary);
-
                     mvccSnapshot.incrementOperationCounter();
 
-                    return ret;
+                    return new GridCacheReturn(cacheCtx, true, keepBinary, futRes.value(), futRes.success());
                 }
             }));
         }
