@@ -888,16 +888,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 state(UNKNOWN);
 
-                if (!X.hasCause(ex, NodeStoppingException.class) && !X.hasCause(ex, InvalidEnvironmentException.class)) {
-                    try {
-                        // Courtesy to minimize damage.
-                        uncommit();
-                    }
-                    catch (Throwable ex1) {
-                        err.addSuppressed(ex1);
-                    }
-                }
-
                 throw err;
             }
             finally {

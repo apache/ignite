@@ -87,10 +87,8 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
      * Throws a test {@link IgniteCheckedException} during tx commit from {@link BPlusTree} and checks after that data is consistent.
      */
     public void testPrimaryIndexCorruptionDuringCommitOnPrimaryNode3() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9082");
-
         doTestTransferAmount(new IndexCorruptionFailoverScenario(
-            false,
+            true,
             (hnd, tree) -> hnd instanceof BPlusTree.Search,
             failoverPredicate(true, () -> new IgniteCheckedException("Test")))
         );

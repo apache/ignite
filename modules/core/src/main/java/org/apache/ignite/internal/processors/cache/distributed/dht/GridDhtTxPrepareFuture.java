@@ -761,8 +761,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                 tx.commitAsync().listen(resClo);
                             }
                             catch (Throwable e) {
-                                err = e;
-
                                 res.error(e);
 
                                 tx.systemInvalidate(true);
@@ -784,13 +782,15 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             catch (Throwable e) {
                                 if (err != null)
                                     err.addSuppressed(e);
+
+                                throw err;
                             }
                         }
                     }
-                    finally {
-                        tx.logTxFinishErrorSafe(log, true, err);
+                    catch (Throwable e){
+                        tx.logTxFinishErrorSafe(log, true, e);
 
-                        cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, err));
+                        cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
                     }
                 }
             }

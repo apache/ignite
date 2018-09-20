@@ -771,8 +771,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      */
     public final IgniteCheckedException heuristicException(Throwable ex) {
         return new IgniteTxHeuristicCheckedException("Commit produced a runtime exception " +
-            "(this is a critical situation and will be handled according to configured " +
-            "failure handling policy): " + CU.txString(this), ex);
+            "(this is a critical situation and will be handled according to configured policy)", ex);
     }
 
     /**
@@ -781,14 +780,20 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @param e Exception.
      */
     public void logTxFinishErrorSafe(@Nullable IgniteLogger log, boolean commit, Throwable e) {
+        assert e != null : "Exception is expected";
+
+        final String fmt = "Failed completing the transaction: [commit=%s, tx=%s, plc=%s]";
+
         try {
             // First try printing a full transaction. This is error prone.
-            U.error(log, "Failed completing the transaction: [commit=" + commit + ", tx=" + this + ']', e);
+            U.error(log, String.format(fmt, commit, this,
+                cctx.gridConfig().getFailureHandler().getClass().getSimpleName()), e);
         }
         catch (Throwable e0) {
             e.addSuppressed(e0);
 
-            U.error(log, "Failed completing the transaction: [commit=" + commit + ", tx=" + CU.txString(this) + ']', e);
+            U.error(log, String.format(fmt, commit, CU.txString(this),
+                cctx.gridConfig().getFailureHandler().getClass().getSimpleName()), e);
         }
     }
 

@@ -43,7 +43,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -73,7 +72,7 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
     private static final int DFLT_ACCOUNTS_CNT = 32;
 
     /** Count of threads and caches. */
-    private static final int DFLT_TX_THREADS_CNT = 20;
+    private static final int DFLT_TX_THREADS_CNT = Runtime.getRuntime().availableProcessors();
 
     /** Count of nodes to start. */
     private static final int DFLT_NODES_CNT = 3;
@@ -148,8 +147,6 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
         cfg.setConsistentId(name);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
-        cfg.setLocalHost("127.0.0.1");
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
@@ -177,6 +174,8 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
         }
 
         cfg.setCacheConfiguration(cacheConfigurations);
+
+        cfg.setFailureDetectionTimeout(60_000);
 
         return cfg;
     }
@@ -230,26 +229,26 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
 
         igniteClient.cluster().active(true);
 
-        int[] initAmount = new int[txThreadsCount()];
+        int[] initAmounts = new int[txThreadsCount()];
         completedTxs = new ConcurrentLinkedHashMap[txThreadsCount()];
 
         //and: fill all accounts on all caches and calculate total amount for every cache.
         for (int cachePrefixIdx = 0; cachePrefixIdx < txThreadsCount(); cachePrefixIdx++) {
             IgniteCache<Integer, AccountState> cache = igniteClient.getOrCreateCache(cacheName(cachePrefixIdx));
 
-            AtomicInteger coinsCounter = new AtomicInteger();
+            AtomicInteger coinsCntr = new AtomicInteger();
 
             try (Transaction tx = igniteClient.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 for (int accountId = 0; accountId < accountsCount(); accountId++) {
-                    Set<Integer> initialAmount = generateCoins(coinsCounter, 5);
+                    Set<Integer> initAmount = generateCoins(coinsCntr, 5);
 
-                    cache.put(accountId, new AccountState(accountId, tx.xid(), initialAmount));
+                    cache.put(accountId, new AccountState(accountId, tx.xid(), initAmount));
                 }
 
                 tx.commit();
             }
 
-            initAmount[cachePrefixIdx] = coinsCounter.get();
+            initAmounts[cachePrefixIdx] = coinsCntr.get();
             completedTxs[cachePrefixIdx] = new ConcurrentLinkedHashMap();
         }
 
@@ -268,13 +267,12 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
 
         failoverScenario.afterFirstTransaction();
 
-        for (Thread thread : transferThreads) {
+        for (Thread thread : transferThreads)
             thread.join();
-        }
 
         failoverScenario.afterTransactionsFinished();
 
-        consistencyCheck(initAmount);
+        consistencyCheck(initAmounts);
     }
 
     /**
@@ -542,6 +540,9 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
             try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 acctFrom = cache.get(accIdFrom);
                 acctTo = cache.get(accIdTo);
+
+                if (acctFrom == null || acctTo == null)
+                    return;
 
                 Set<Integer> coinsToTransfer = acctFrom.coinsToTransfer(random);
 

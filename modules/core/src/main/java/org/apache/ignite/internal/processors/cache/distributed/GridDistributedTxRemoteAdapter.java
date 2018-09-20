@@ -791,16 +791,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                         err = heuristicException(ex);
 
-                        if (!X.hasCause(ex, InvalidEnvironmentException.class)) {
-                            try {
-                                // Courtesy to minimize damage.
-                                uncommit();
-                            }
-                            catch (Throwable ex1) {
-                                err.addSuppressed(ex1);
-                            }
-                        }
-
                         throw err;
                     }
                     finally {
