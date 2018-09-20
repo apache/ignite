@@ -21,7 +21,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
-import static org.apache.ignite.testframework.GridTestUtils.getFreePort;
+import static org.apache.ignite.testframework.GridTestUtils.getFreeCommPort;
 
 /**
  * TCP communication SPI config test.
@@ -61,7 +61,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
         commSpi.setLocalPortRange(0);
-        commSpi.setLocalPort(getFreePort());
+        commSpi.setLocalPort(getFreeCommPort());
 
         cfg.setCommunicationSpi(commSpi);
 

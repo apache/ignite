@@ -691,13 +691,20 @@ public final class GridTestUtils {
     }
 
     /**
-     * @return Free port number on localhost.
+     * @return Free communication port number on localhost.
      * @throws IOException If unable to find a free port.
      */
-    public static int getFreePort() throws IOException {
-        try (ServerSocket sock = new ServerSocket(0)) {
-            return sock.getLocalPort();
+    public static int getFreeCommPort() throws IOException {
+        for (int port = default_comm_port; port < max_comm_port; port++) {
+            try (ServerSocket sock = new ServerSocket(port)) {
+                return sock.getLocalPort();
+            }
+            catch (IOException ignored) {
+                // No-op.
+            }
         }
+
+        throw new IOException("Unable to find a free communication port.");
     }
 
     /**
