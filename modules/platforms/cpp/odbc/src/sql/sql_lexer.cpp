@@ -172,7 +172,7 @@ namespace ignite
                         }
 
                         // Word.
-                        while (!IsEod() && !IsDelimeter(sql[pos]))
+                        while (!IsEod() && !IsDelimiter(sql[pos]))
                             ++pos;
 
                         --pos;
@@ -227,7 +227,7 @@ namespace ignite
             return static_cast<size_t>(pos + num) < sql.size();
         }
 
-        bool SqlLexer::IsDelimeter(int c)
+        bool SqlLexer::IsDelimiter(int c)
         {
             return !isalnum(c) && c != '_';
         }

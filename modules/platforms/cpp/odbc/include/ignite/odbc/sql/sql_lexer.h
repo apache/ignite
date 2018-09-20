@@ -100,7 +100,7 @@ namespace ignite
              * @param c Character
              * @return True if the character is delimiter.
              */
-            static bool IsDelimeter(int c);
+            static bool IsDelimiter(int c);
 
             /** SQL string. */
             const std::string& sql;

@@ -40,15 +40,6 @@ public class OdbcQuery {
     }
 
     /**
-     * @param sql Query SQL.
-     * @param args Arguments.
-     */
-    public OdbcQuery(String sql, Object[] args) {
-        this.sql = sql;
-        this.args = args;
-    }
-
-    /**
      * @return Query SQL string.
      */
     public String sql() {

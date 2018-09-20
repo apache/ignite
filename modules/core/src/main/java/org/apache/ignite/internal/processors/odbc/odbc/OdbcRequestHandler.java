@@ -889,6 +889,12 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         return new OdbcResponse(res);
     }
 
+    /**
+     * Extract batching error from general exception.
+     * @param e Exception
+     * @param rowsAffected List containing the number of affected rows for every query in batch.
+     * @param err Error tuple containing error code and error message.
+     */
     private static void extractBatchError(Exception e, List<Long> rowsAffected, IgniteBiTuple<Integer, String> err) {
         if (e instanceof IgniteSQLException) {
             BatchUpdateException batchCause = X.cause(e, BatchUpdateException.class);
