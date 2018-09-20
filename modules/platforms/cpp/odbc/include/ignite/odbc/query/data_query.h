@@ -75,7 +75,7 @@ namespace ignite
                  * @return Operation result.
                  */
                 virtual SqlResult::Type FetchNextRow(app::ColumnBindingMap& columnBindings);
-                
+
                 /**
                  * Get data of the specified column in the result set.
                  *
@@ -108,7 +108,7 @@ namespace ignite
 
                 /**
                  * Move to the next result set.
-                 * 
+                 *
                  * @return Operaion result.
                  */
                 virtual SqlResult::Type NextResultSet();
@@ -125,6 +125,13 @@ namespace ignite
 
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(DataQuery);
+
+                /**
+                 * Check whether all cursors are closed remotely.
+                 *
+                 * @return true, if all cursors closed remotely.
+                 */
+                bool IsClosedRemotely() const;
 
                 /**
                  * Make query execute request and use response to set internal

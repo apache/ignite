@@ -211,9 +211,7 @@ namespace ignite
             SQLCHAR insertReq[] = "INSERT INTO TestType(_key, strField) VALUES(?, ?)";
             SQLCHAR mergeReq[] = "MERGE INTO TestType(_key, strField) VALUES(?, ?)";
 
-            SQLRETURN ret;
-
-            ret = SQLPrepare(stmt, merge ? mergeReq : insertReq, SQL_NTS);
+            SQLRETURN ret = SQLPrepare(stmt, merge ? mergeReq : insertReq, SQL_NTS);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
