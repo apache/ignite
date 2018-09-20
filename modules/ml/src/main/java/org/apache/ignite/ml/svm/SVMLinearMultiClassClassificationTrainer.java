@@ -93,7 +93,7 @@ public class SVMLinearMultiClassClassificationTrainer
                 if (lb.equals(clsLb))
                     return 1.0;
                 else
-                    return -1.0;
+                    return 0.0;
             };
 
             SVMLinearBinaryClassificationModel model;
