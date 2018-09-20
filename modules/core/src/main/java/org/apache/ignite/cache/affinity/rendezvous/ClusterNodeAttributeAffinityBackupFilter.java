@@ -29,16 +29,22 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  * cache templates in Spring that force each partition's primary and backup to different hardware which 
  * is not expected to fail simultaneously, e.g., in AWS, to different "availability zones".  This
  * is a per-partition selection, and different partitions may choose different primaries.
- * 
+ * <p>
  * This implementation will discard backups rather than place multiple on the same set of nodes. This avoids
  * trying to cram more data onto remaining nodes  when some have failed.
- * 
- * A list of node attributes to compare is provided on construction.  Note: "All cluster nodes, 
+ * <p>
+ * A list of node attributes to compare is provided on construction.  Note: "All cluster nodes,
  * on startup, automatically register all the environment and system properties as node attributes."
- *  
+ * <p> 
  * This class is constructed with a array of node attribute names, and a candidate node will be rejected if *any* of the 
- * previously selected nodes for a partition have the identical values for *all* of those attributes on the candidate node.  
- * 
+ * previously selected nodes for a partition have the identical values for *all* of those attributes on the candidate node.
+ * Another way to understand this is the set of attribute values defines the key of a group into which a node is placed,
+ * an the primaries and backups for a partition cannot share nodes in the same group.   A null attribute is treated  as
+ * a distinct value, so two nodes with a null attribute will be treated as having the same value.
+ * <p>
+ * Warning: the misspelling of an attribute name can cause all nodes to believe they have a null attribute, which would
+ * the number of cache entries seen in visor with the number of expected entries, e.g., SELECT COUNT(*) from YOUR_TABLE
+ * times the number of backups.
  * </pre>
  * <h2 class="header">Spring Example</h2>
  * Create a partitioned cache template plate with 1 backup, where the backup will not be placed in the same availability zone
@@ -97,8 +103,12 @@ public class ClusterNodeAttributeAffinityBackupFilter implements IgniteBiPredica
     * Defines a predicate which returns {@code true} if a node is acceptable for a backup
     * or {@code false} otherwise. An acceptable node is one where its set of attribute values
     * is not exact match with any of the previously selected nodes.  If an attribute does not
-    * exist on  either or both nodes, then the attribute does not match.
-    *
+    * exist on exactly one node of a pair, then the attribute does not match.  If the attribute
+    * does not exist both nodes of a pair, then the attribute matches.
+    * <p>
+    * Warning:  if an attribute is specified that does not exist on any node, then no backups
+    * will be created, because all nodes will match.
+    * <p>
     * @param candidate A node that is a candidate for becoming a backup node for a partition.
     * @param previouslySelected A list of primary/backup nodes already chosen for a partition.  
     * The primary is first.
@@ -110,24 +120,13 @@ public class ClusterNodeAttributeAffinityBackupFilter implements IgniteBiPredica
          boolean match = true;
          
          for (String attribute : attributeNames) {
-            Object candidateAttrValue = candidate.attribute(attribute);
-            
-
-            if (candidateAttrValue == null) {
-               match = false;
-               break;
-            }
-            else {
-               Object nodeAttributeValue = node.attribute(attribute); 
-               if ( nodeAttributeValue == null || !Objects.equals(candidateAttrValue, nodeAttributeValue) ) {
+               if (!Objects.equals(candidate.attribute(attribute), node.attribute(attribute)) ) {
                   match = false;
                   break;
-               }
-            }
+               }         
          }
-         if (match) {
-            return false;
-         }    
+         if (match)
+            return false;   
       }
       return true;
    }
