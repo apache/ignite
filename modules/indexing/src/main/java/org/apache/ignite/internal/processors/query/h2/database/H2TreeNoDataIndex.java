@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.util.HashSet;
 import java.util.List;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
