@@ -17,61 +17,35 @@
 package org.apache.ignite.p2p;
 
 import java.lang.reflect.Field;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /** */
 public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
-    /** Class name of predicate. */
-    private static final String TEST_PREDICATE_NAME = "org.apache.ignite.tests.p2p.cache.TestScanQueryPredicate";
-
-    private static final String TEST_PREDICATE_CLASS_NAME = TEST_PREDICATE_NAME.substring(TEST_PREDICATE_NAME.lastIndexOf('.') + 1);
-
-    private static final String VALUE_1 = "foo";
-    private static final String VALUE_2 = "bar";
-
-    /**
-     * URL of classes.
-     */
-    private static final URL[] URLS;
-
+    /** */
+    private static final String TEST_PREDICATE_RESOURCE_NAME = TestPredicate.class.getSimpleName()+".class";
     /** Cache name. */
     private static final String CACHE_NAME = "test-cache";
 
     /** Client instance name. */
     private static final String CLIENT_INSTANCE_NAME = "client";
-
-    /**
-     * Initialize URLs.
-     */
-    static {
-        try {
-            URLS = new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))};
-        }
-        catch (MalformedURLException e) {
-            throw new RuntimeException("Define property p2p.uri.cls", e);
-        }
-    }
 
     /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {
@@ -98,7 +72,9 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
                 )
         );
 
-        cfg.setPeerClassLoadingLocalClassPathExclude(TestPredicate.class.getName(), TEST_PREDICATE_CLASS_NAME, TestScanQueryPredicateDecorator.class.getName());
+        cfg.setPeerClassLoadingLocalClassPathExclude(TestPredicate.class.getName());
+
+        cfg.setCommunicationSpi(new MessageCountingCommunicationSpi());
 
         if (igniteInstanceName.equals(CLIENT_INSTANCE_NAME))
             cfg.setClientMode(true);
@@ -125,7 +101,13 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    public void testScanQuery2() throws Exception {
+    /**
+     * Checks, that after client's reconnect to cluster will be redeployed from client node.
+     *
+     * @throws Exception if test failed.
+     */
+    public void testAfterClientDisconnect() throws Exception {
+        // Starting server node on remote JVM and client node on local JVM.
         startGrids(2);
 
         Ignite client = startGrid(CLIENT_INSTANCE_NAME);
@@ -134,17 +116,19 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
 
         client.cluster().active(true);
 
-        System.out.println("IGNITE-9381 start");
-
-        final ClassLoader delegate = grid(1).getClass().getClassLoader();
-
-        final ClassLoader root = new DelegateClassLoader(null, delegate);
-
         IgniteCache<Integer, String> cache = client.getOrCreateCache(CACHE_NAME);
 
         cache.put(1, "foo");
 
-        cache.query(new ScanQuery<>(new TestScanQueryPredicateDecorator())).getAll();
+        int gridDeploymentRequests = client.compute(client.cluster().forRemotes()).call(MessageCountingCommunicationSpi::deploymentRequestCount);
+
+        assertEquals("Invalid number of sent grid deployment requests", 0, gridDeploymentRequests);
+
+        cache.query(new ScanQuery<>(new TestPredicate())).getAll();
+
+        gridDeploymentRequests = client.compute(client.cluster().forRemotes()).call(MessageCountingCommunicationSpi::deploymentRequestCount);
+
+        assertEquals("Invalid number of sent grid deployment requests", 1, gridDeploymentRequests);
 
         stopGrid(CLIENT_INSTANCE_NAME);
 
@@ -152,181 +136,60 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
 
         cache = client.getOrCreateCache(CACHE_NAME);
 
-        cache.query(new ScanQuery<>(new TestScanQueryPredicateDecorator())).getAll();
-    }
+        cache.query(new ScanQuery<>(new TestPredicate())).getAll();
 
-    private static class TestScanQueryPredicateDecorator implements IgniteBiPredicate<Integer, String>, GridPeerDeployAware {
+        gridDeploymentRequests = client.compute(client.cluster().forRemotes()).call(MessageCountingCommunicationSpi::deploymentRequestCount);
 
-        @IgniteInstanceResource
-        private Ignite ignite;
-
-        private TestScanQueryPredicateDecorator() {
-        }
-
-        @Override public Class<?> deployClass() {
-            try {
-                throw new RuntimeException("IGNITE-9381 TestScanQueryPredicateDecorator#deployClass()");
-            }
-            catch (RuntimeException e) {
-                e.printStackTrace();
-            }
-
-            return getClass();
-        }
-
-        @Override public ClassLoader classLoader() {
-            System.out.println("IGNITE-9381 TestScanQueryPredicateDecorator#classLoader()");
-            return ignite.getClass().getClassLoader();
-        }
-
-        @Override public boolean apply(Integer integer, String s) {
-            return s.equals("foo");
-        }
+        assertEquals("Invalid number of sent grid deployment requests", 2, gridDeploymentRequests);
     }
 
     /** */
-    private static class DelegateClassLoader extends ClassLoader {
-        /** Delegate class loader. */
-        private ClassLoader delegateClsLdr;
+    private static class MessageCountingCommunicationSpi extends TcpCommunicationSpi {
+        /** */
+        private static final AtomicInteger reqCnt = new AtomicInteger();
+
+        /** {@inheritDoc} */
+        @Override public void sendMessage(ClusterNode node,
+            Message msg,
+            IgniteInClosure<IgniteException> ackClosure
+        ) throws IgniteSpiException {
+            if (msg instanceof GridIoMessage && isDeploymentRequestMessage((GridIoMessage)msg))
+                reqCnt.incrementAndGet();
+
+            super.sendMessage(node, msg, ackClosure);
+        }
 
         /**
-         * @param parent Parent.
-         * @param delegateClsLdr Delegate class loader.
+         * @return Number of deployment requests.
          */
-        public DelegateClassLoader(ClassLoader parent, ClassLoader delegateClsLdr) {
-            super(parent); // Parent doesn't matter.
-            this.delegateClsLdr = delegateClsLdr;
+        public static int deploymentRequestCount() {
+            return reqCnt.get();
         }
 
-        /** {@inheritDoc} */
-        @Override public URL getResource(String name) {
-            return delegateClsLdr.getResource(name);
+        /**
+         * Checks if it is a p2p deployment request message with test predicate resource.
+         *
+         * @param msg Message to check.
+         * @return {@code True} if this is a p2p message.
+         */
+        private boolean isDeploymentRequestMessage(GridIoMessage msg) {
+            try {
+                if (msg.message() instanceof GridDeploymentRequest) {
+                    // rsrcName getter have only default access level. So, use reflection for access to field value.
+                    GridDeploymentRequest req = (GridDeploymentRequest)msg.message();
+
+                    Field f = GridDeploymentRequest.class.getDeclaredField("rsrcName");
+
+                    f.setAccessible(true);
+
+                    return ((String) f.get(req)).endsWith(TEST_PREDICATE_RESOURCE_NAME);
+                }
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            return false;
         }
-
-        /** {@inheritDoc} */
-        @Override public Class<?> loadClass(String name) throws ClassNotFoundException {
-            return delegateClsLdr.loadClass(name);
-        }
-    }
-
-    /*****************************************************************************************************/
-
-    public void testScanQueryUndeployedOnClientDisconnect() throws Exception {
-        doTest(TEST_PREDICATE_NAME, false);
-    }
-
-    private void doTest(String className, boolean isStatic) throws Exception {
-        startGrids(2);
-
-        Ignite client = startGrid(CLIENT_INSTANCE_NAME);
-
-        stopGrid(0);
-
-        client.cluster().active(true);
-
-        System.out.println("IGNITE-9381 start");
-
-        try (URLClassLoader fooLdr = new URLClassLoader(new URL[] {
-            new URL(
-                "file://localhost/C:\\IdeaProjects\\apache-ignite\\modules\\extdata\\p2p\\src\\main\\resources\\foo\\query-predicate-foo.jar"
-            )
-        })
-        ) {
-            Class<?> fooPredicateClass = fooLdr.loadClass(className);
-
-            createPredicateAndExecuteQuery(fooPredicateClass, VALUE_1, client);
-        }
-
-        stopGrid(CLIENT_INSTANCE_NAME);
-
-        System.out.println("IGNITE-9381 stop");
-
-        client = startGrid(CLIENT_INSTANCE_NAME);
-
-        try (URLClassLoader barLdr = new URLClassLoader(new URL[] {new URL("file://localhost/C:\\IdeaProjects\\apache-ignite\\modules\\extdata\\p2p\\src\\main\\resources\\bar\\query-predicate-bar.jar")})) {
-
-            Class<?> barPredicateClass = barLdr.loadClass(className);
-
-            createPredicateAndExecuteQuery(barPredicateClass, VALUE_2, client);
-        }
-
-    }
-
-    private void createPredicateAndExecuteQuery(
-        Class<?> predicateClass,
-        String value,
-        Ignite client
-    ) throws Exception {
-
-        final ClassLoader delegate = grid(1).getClass().getClassLoader();
-
-        final ClassLoader root = new DelegateClassLoader(null, delegate);
-
-        IgniteBiPredicate<Integer, String> predicate = new TestScanQueryPredicateDecorator();
-
-        IgniteCache<Integer, String> cache = client.getOrCreateCache(CACHE_NAME);
-
-        cache.put(1, value);
-
-        // assertTrue(predicate.apply(1, value));
-
-        assertEquals(1, cache.query(new ScanQuery<>(predicate)).getAll().size());
-    }
-
-    /**
-     * Checks that scan query will be undeployed after client disconnect.
-     *
-     * @throws Exception if failed.
-     */
-    public void testOnClientDisconnect() throws Exception {
-        startGrids(2);
-
-        Ignite client = startGrid(CLIENT_INSTANCE_NAME);
-
-        stopGrid(0);
-
-        client.cluster().active(true);
-
-        assertTrue(
-            TestPredicate.class + " must be excluded from local class loading!",
-            Arrays.asList(
-                grid(1)
-                    .configuration()
-                    .getPeerClassLoadingLocalClassPathExclude()
-            ).contains(TestPredicate.class.getName())
-        );
-
-        Set<String> cachedClassesBefore = client.compute(client.cluster().forRemotes()).call(new GetClassCacheTask());
-
-        assertFalse(
-            TestPredicate.class.getCanonicalName() + " can't be cached on remote node on remote jvm!",
-            cachedClassesBefore.contains(TestPredicate.class.getName())
-        );
-
-        IgniteCache<Integer, String> cache = client.getOrCreateCache(CACHE_NAME);
-
-        cache.put(1, "1");
-
-        cache.query(new ScanQuery(new TestPredicate())).getAll();
-
-        Set<String> cachedClassesAfterScanQry = client.compute(client.cluster().forRemotes()).call(new GetClassCacheTask());
-
-        assertTrue(
-            TestPredicate.class.getCanonicalName() + " must be cached on remote jvm!",
-            cachedClassesAfterScanQry.contains(TestPredicate.class.getName())
-        );
-
-        stopGrid(CLIENT_INSTANCE_NAME);
-
-        // Need's for checking, that TestPredicate was removed from node on remote jvm.
-        startGrid(0);
-
-        Set<String> cachedClassesAfterStopClient = grid(0).compute(grid(0).cluster().forRemotes()).call(new GetClassCacheTask());
-
-        assertFalse(
-            TestPredicate.class.getCanonicalName() + " must be removed from cache on remote node on remote jvm after disconnecting client!",
-            cachedClassesAfterStopClient.contains(TestPredicate.class.getName())
-        );
     }
 
     /** */
@@ -334,22 +197,6 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean apply(Integer integer, String s) {
             return true;
-        }
-    }
-
-    /** */
-    private static class GetClassCacheTask implements IgniteCallable<Set<String>> {
-        /** {@inheritDoc} */
-        @Override public Set<String> call() throws Exception {
-            Field clsCacheField = IgniteUtils.class.getDeclaredField("classCache");
-
-            clsCacheField.setAccessible(true);
-
-            return ((ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>>)clsCacheField.get(null))
-                .values()
-                .stream()
-                .flatMap(m -> m.keySet().stream())
-                .collect(Collectors.toSet());
         }
     }
 

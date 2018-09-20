@@ -61,8 +61,8 @@ import static org.apache.ignite.events.EventType.EVT_TASK_DEPLOYED;
 import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
 
 /**
- * Deployment storage for {@link org.apache.ignite.configuration.DeploymentMode#SHARED} and
- * {@link org.apache.ignite.configuration.DeploymentMode#CONTINUOUS} modes.
+ * Deployment storage for {@link org.apache.ignite.configuration.DeploymentMode#SHARED} and {@link
+ * org.apache.ignite.configuration.DeploymentMode#CONTINUOUS} modes.
  */
 public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
     /** Shared deployment cache. */
@@ -75,8 +75,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
     private GridLocalEventListener discoLsnr;
 
     /**
-     * Resources hits/misses cache (by loader ID). If missed resources cache is turned off,
-     * only hits are cached.
+     * Resources hits/misses cache (by loader ID). If missed resources cache is turned off, only hits are cached.
      */
     private final ConcurrentMap<IgniteUuid, Map<String, Boolean>> rsrcCache;
 
@@ -118,10 +117,10 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                     log.debug("Processing node departure event: " + evt);
 
                 synchronized (mux) {
-                    for (Iterator<List<SharedDeployment>> i1 = cache.values().iterator(); i1.hasNext();) {
+                    for (Iterator<List<SharedDeployment>> i1 = cache.values().iterator(); i1.hasNext(); ) {
                         List<SharedDeployment> deps = i1.next();
 
-                        for (Iterator<SharedDeployment> i2 = deps.iterator(); i2.hasNext();) {
+                        for (Iterator<SharedDeployment> i2 = deps.iterator(); i2.hasNext(); ) {
                             SharedDeployment dep = i2.next();
 
                             dep.removeParticipant(discoEvt.eventNode().id());
@@ -199,10 +198,10 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
         Collection<SharedDeployment> undeployed = new LinkedList<>();
 
         synchronized (mux) {
-            for (Iterator<List<SharedDeployment>> i1 = cache.values().iterator(); i1.hasNext();) {
+            for (Iterator<List<SharedDeployment>> i1 = cache.values().iterator(); i1.hasNext(); ) {
                 List<SharedDeployment> deps = i1.next();
 
-                for (Iterator<SharedDeployment> i2 = deps.iterator(); i2.hasNext();) {
+                for (Iterator<SharedDeployment> i2 = deps.iterator(); i2.hasNext(); ) {
                     SharedDeployment dep = i2.next();
 
                     for (UUID nodeId : dep.getParticipantNodeIds())
@@ -906,7 +905,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                                             Collection<SharedDeployment> deps = cache.get(undep.userVersion());
 
                                             if (deps != null) {
-                                                for (Iterator<SharedDeployment> i = deps.iterator(); i.hasNext();)
+                                                for (Iterator<SharedDeployment> i = deps.iterator(); i.hasNext(); )
                                                     if (i.next() == undep)
                                                         i.remove();
 
@@ -937,12 +936,11 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
         Collection<SharedDeployment> undeployed = new LinkedList<>();
 
         synchronized (mux) {
-            for (Iterator<List<SharedDeployment>> i1 = cache.values().iterator(); i1.hasNext();) {
+            for (Iterator<List<SharedDeployment>> i1 = cache.values().iterator(); i1.hasNext(); ) {
                 List<SharedDeployment> deps = i1.next();
 
-                for (Iterator<SharedDeployment> i2 = deps.iterator(); i2.hasNext();) {
+                for (Iterator<SharedDeployment> i2 = deps.iterator(); i2.hasNext(); ) {
                     SharedDeployment dep = i2.next();
-
 
                     if (dep.hasName(rsrcName)) {
                         if (!dep.undeployed()) {
@@ -1085,8 +1083,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
          * @param userVer User version.
          * @param sampleClsName Sample class name.
          */
-        @SuppressWarnings({"TypeMayBeWeakened"})
-        SharedDeployment(DeploymentMode depMode,
+        @SuppressWarnings({"TypeMayBeWeakened"}) SharedDeployment(DeploymentMode depMode,
             GridDeploymentClassLoader clsLdr, IgniteUuid clsLdrId,
             String userVer, String sampleClsName) {
             super(depMode, clsLdr, clsLdrId, userVer, sampleClsName, false);
@@ -1168,7 +1165,6 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
             return classLoader().registeredClassLoaderIds();
         }
-
 
         /**
          * @return {@code True} if deployment has any node participants.
@@ -1289,6 +1285,8 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 ClassLoader ldr = classLoader();
 
                 ctx.cache().onUndeployed(ldr);
+
+                U.clearClassFromClassCache(ctx.cache().context().deploy().globalLoader(), sampleClassName());
 
                 // Clear optimized marshaller's cache.
                 if (ctx.config().getMarshaller() instanceof AbstractMarshaller)
