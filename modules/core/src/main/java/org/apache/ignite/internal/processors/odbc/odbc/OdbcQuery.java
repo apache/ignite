@@ -53,7 +53,11 @@ public class OdbcQuery {
         return args;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Writes fields to provided writer.
+     *
+     * @param writer Binary object writer.
+     */
     public void writeBinary(BinaryWriterExImpl writer) {
         writer.writeString(sql);
 
@@ -67,7 +71,11 @@ public class OdbcQuery {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Reads fields from provided reader.
+     *
+     * @param reader Binary object reader.
+     */
     public void readBinary(BinaryReaderExImpl reader) {
         sql = reader.readString();
 
