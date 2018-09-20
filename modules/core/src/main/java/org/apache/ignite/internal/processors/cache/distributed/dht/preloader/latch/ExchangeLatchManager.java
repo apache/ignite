@@ -67,7 +67,7 @@ public class ExchangeLatchManager {
      * 2) Exchange latch coordinator now is second oldest node in a cluster.
      * TODO: Optimization 2) can be removed after resolving IGNITE-9492
      */
-    public static final IgniteProductVersion PROTOCOL_V2_VERSION_SINCE = IgniteProductVersion.fromString("2.7.0");
+    public static final IgniteProductVersion PROTOCOL_V2_VERSION_SINCE = IgniteProductVersion.fromString("2.5.0");
 
     /** Logger. */
     private final IgniteLogger log;
