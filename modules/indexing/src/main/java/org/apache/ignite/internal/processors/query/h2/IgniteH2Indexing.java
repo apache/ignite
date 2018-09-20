@@ -82,7 +82,6 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryPartitionInfo
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
-import org.apache.ignite.internal.processors.cache.query.H2CacheUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
@@ -3719,7 +3718,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 GridH2Table tbl = dataTable(tblKey);
 
                 if (tbl != null) {
-                    H2CacheUtils.checkAndInitLazyCache(tbl);
+                    H2Utils.checkAndInitLazyCache(tbl);
 
                     int cacheId = tbl.cacheId();
 

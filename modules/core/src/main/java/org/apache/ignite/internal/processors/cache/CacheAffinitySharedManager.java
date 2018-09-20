@@ -889,7 +889,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     }
                 }
                 else if (cctx.localNode().isClient())
-                    cctx.kernalContext().cache().lazyCacheStart(cacheDesc);
+                    cctx.kernalContext().cache().createLazyCache(cacheDesc);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to initialize cache. Will try to rollback cache start routine. " +

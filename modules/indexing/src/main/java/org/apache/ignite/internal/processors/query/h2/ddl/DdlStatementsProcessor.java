@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
-import org.apache.ignite.internal.processors.cache.query.H2CacheUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -530,7 +529,7 @@ public class DdlStatementsProcessor {
             tbl = idx.dataTable(schemaName, tableName);
         }
 
-        H2CacheUtils.checkAndInitLazyCache(tbl);
+        H2Utils.checkAndInitLazyCache(tbl);
 
         return tbl;
     }
@@ -552,7 +551,7 @@ public class DdlStatementsProcessor {
             tbl = idx.dataTableForIndex(schemaName, indexName);
         }
 
-        H2CacheUtils.checkAndInitLazyCache(tbl);
+        H2Utils.checkAndInitLazyCache(tbl);
 
         return tbl;
     }

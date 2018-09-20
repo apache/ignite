@@ -1224,11 +1224,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Start lazy cache.
+     * Initialize and start lazy cache.
      *
      * @param cacheName Name of lazy cache.
+     * @return {@code true} in case cash has been fully inited and started.
      */
-    public boolean startLazyCache(String cacheName) {
+    public boolean initializeLazyCache(String cacheName) {
         assert isCacheLazy(cacheName) : cacheName;
 
         try {
@@ -1248,7 +1249,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @throws IgniteCheckedException If failed.
      */
-    public void lazyCacheStart(DynamicCacheDescriptor cacheDesc) throws IgniteCheckedException {
+    public void createLazyCache(DynamicCacheDescriptor cacheDesc) throws IgniteCheckedException {
         QuerySchema schema = cacheDesc.schema() != null ? cacheDesc.schema() : new QuerySchema();
 
         GridCacheContextInfo cacheCtx = new GridCacheContextInfo(cacheDesc, ctx);
@@ -3393,7 +3394,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public boolean walEnabled(String cacheName) {
         if (isCacheLazy(cacheName))
-            startLazyCache(cacheName);
+            initializeLazyCache(cacheName);
 
         DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cacheName);
 

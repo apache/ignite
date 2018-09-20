@@ -704,8 +704,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (!F.isEmpty(qryEntities)) {
                     for (QueryEntity qryEntity : qryEntities) {
-                        QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(cacheName, schemaName, cctx, ctx,
-                            qryEntity, mustDeserializeClss, escape);
+                        QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(cacheName, schemaName, cctx, qryEntity,
+                            mustDeserializeClss, escape);
 
                         cands.add(cand);
                     }
@@ -1421,7 +1421,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         String cacheName = op.cacheName();
 
         if(ctx.cache().isCacheLazy(cacheName))
-            ctx.cache().startLazyCache(cacheName);
+            ctx.cache().initializeLazyCache(cacheName);
 
         GridCacheAdapter cache = ctx.cache().internalCache(cacheName);
 

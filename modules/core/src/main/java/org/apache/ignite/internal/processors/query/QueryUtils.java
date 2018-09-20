@@ -393,7 +393,6 @@ public class QueryUtils {
      * @param cacheName Cache name.
      * @param schemaName Schema name.
      * @param cctx Cache context.
-     * @param ctx Grid kernal context .
      * @param qryEntity Query entity.
      * @param mustDeserializeClss Classes which must be deserialized.
      * @param escape Escape flag.
@@ -401,8 +400,9 @@ public class QueryUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static QueryTypeCandidate typeForQueryEntity(String cacheName, String schemaName, GridCacheContextInfo cctx,
-        GridKernalContext ctx, QueryEntity qryEntity, List<Class<?>> mustDeserializeClss, boolean escape)
+        QueryEntity qryEntity, List<Class<?>> mustDeserializeClss, boolean escape)
         throws IgniteCheckedException {
+        GridKernalContext ctx = cctx.context();
         CacheConfiguration<?,?> ccfg = cctx.config();
 
         boolean binaryEnabled = ctx.cacheObjects().isBinaryEnabled(ccfg);
@@ -615,14 +615,14 @@ public class QueryUtils {
 
     /**
      * Add validate property to QueryTypeDescriptor.
-     * 
+     *
      * @param ctx Kernel context.
      * @param qryEntity Query entity.
      * @param d Descriptor.
      * @param name Field name.
      * @throws IgniteCheckedException
      */
-    private static void addKeyValueValidationProperty(GridKernalContext ctx, QueryEntity qryEntity, QueryTypeDescriptorImpl d, 
+    private static void addKeyValueValidationProperty(GridKernalContext ctx, QueryEntity qryEntity, QueryTypeDescriptorImpl d,
         String name, boolean isKey) throws IgniteCheckedException {
 
         Map<String, Object> dfltVals = qryEntity.getDefaultFieldValues();
@@ -634,12 +634,12 @@ public class QueryUtils {
         Object dfltVal = dfltVals.get(name);
 
         QueryBinaryProperty prop = buildBinaryProperty(
-            ctx, 
+            ctx,
             name,
             U.classForName(typeName, Object.class, true),
-            d.aliases(), 
-            isKey, 
-            true, 
+            d.aliases(),
+            isKey,
+            true,
             dfltVal,
             precision == null ? -1 : precision.getOrDefault(name, -1),
             scale == null ? -1 : scale.getOrDefault(name, -1));

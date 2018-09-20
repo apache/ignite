@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
@@ -284,5 +285,20 @@ public class H2Utils {
         resCur.fieldsMeta(UPDATE_RESULT_META);
 
         return resCur;
+    }
+
+    /**
+     * Check that given table has lazy cache and init it for such case.
+     *
+     * @param tbl Table to check on lazy cache
+     */
+    public static void checkAndInitLazyCache(GridH2Table tbl) {
+        if(tbl != null && tbl.isCacheLazy()){
+            String cacheName = tbl.cacheInfo().config().getName();
+
+            GridKernalContext ctx = tbl.cacheInfo().context();
+
+            ctx.cache().initializeLazyCache(cacheName);
+        }
     }
 }

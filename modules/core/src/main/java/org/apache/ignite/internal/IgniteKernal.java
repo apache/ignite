@@ -2859,7 +2859,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             Boolean res = false;
 
             if (ctx.cache().isCacheLazy(cacheName))
-                res = ctx.cache().startLazyCache(cacheName);
+                res = ctx.cache().initializeLazyCache(cacheName);
             else if (ctx.cache().cache(cacheName) == null) {
                 res =
                     sql ? ctx.cache().dynamicStartSqlCache(cacheCfg).get() :
