@@ -2708,13 +2708,23 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (log.isInfoEnabled())
                     log.info("Coordinator received all messages, try merge [ver=" + initialVersion() + ']');
 
+                long time = System.currentTimeMillis();
+
                 boolean finish = cctx.exchange().mergeExchangesOnCoordinator(this);
+
+                if (log.isInfoEnabled())
+                    log.info("Coordinator 1 action took " + (System.currentTimeMillis() - time) + " ms.");
+
+                time = System.currentTimeMillis();
 
                 // Synchronize in case of changed coordinator (thread switched to sys-*)
                 synchronized (mux) {
                     if (hasMergedExchanges())
                         updateTopologies(true);
                 }
+
+                if (log.isInfoEnabled())
+                    log.info("Coordinator 2 action took " + (System.currentTimeMillis() - time) + " ms.");
 
                 if (!finish)
                     return;
@@ -2765,10 +2775,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 exchCtx.events().processEvents(this);
 
+                long time = System.currentTimeMillis();
+
                 if (exchCtx.events().hasServerLeft())
                     idealAffDiff = cctx.affinity().onServerLeftWithExchangeMergeProtocol(this);
                 else
                     cctx.affinity().onServerJoinWithExchangeMergeProtocol(this, true);
+
+                if (log.isInfoEnabled())
+                    log.info("Coordinator 3 action took " + (System.currentTimeMillis() - time) + " ms.");
+
+                time = System.currentTimeMillis();
 
                 for (CacheGroupDescriptor desc : cctx.affinity().cacheGroups().values()) {
                     if (desc.config().getCacheMode() == CacheMode.LOCAL)
@@ -2781,9 +2798,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     top.beforeExchange(this, true, true);
                 }
+
+                if (log.isInfoEnabled())
+                    log.info("Coordinator 4 action took " + (System.currentTimeMillis() - time) + " ms.");
             }
 
             Map<Integer, CacheGroupAffinityMessage> joinedNodeAff = null;
+
+            long time = System.currentTimeMillis();
 
             for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
                 GridDhtPartitionsSingleMessage msg = e.getValue();
@@ -2814,14 +2836,24 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
 
+            if (log.isInfoEnabled())
+                log.info("Coordinator 5 action took " + (System.currentTimeMillis() - time) + " ms.");
+
             // Don't validate partitions state in case of caches start.
             boolean skipValidation = hasCachesToStart();
+
+            time = System.currentTimeMillis();
 
             if (!skipValidation)
                 validatePartitionsState();
 
+            if (log.isInfoEnabled())
+                log.info("Coordinator 6 action took " + (System.currentTimeMillis() - time) + " ms.");
+
             if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                 assert firstDiscoEvt instanceof DiscoveryCustomEvent;
+
+                time = System.currentTimeMillis();
 
                 if (activateCluster() || changedBaseline())
                     assignPartitionsStates();
@@ -2841,32 +2873,62 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 else if (discoveryCustomMessage instanceof SnapshotDiscoveryMessage
                         && ((SnapshotDiscoveryMessage)discoveryCustomMessage).needAssignPartitions())
                     assignPartitionsStates();
+
+                if (log.isInfoEnabled())
+                    log.info("Coordinator 7-1 action took " + (System.currentTimeMillis() - time) + " ms.");
             }
             else {
+                time = System.currentTimeMillis();
+
                 if (exchCtx.events().hasServerJoin())
                     assignPartitionsStates();
 
                 if (exchCtx.events().hasServerLeft())
                     detectLostPartitions(resTopVer);
+
+                if (log.isInfoEnabled())
+                    log.info("Coordinator 7-2 action took " + (System.currentTimeMillis() - time) + " ms.");
             }
+
+            time = System.currentTimeMillis();
 
             // Recalculate new affinity based on partitions availability.
             if (!exchCtx.mergeExchanges() && forceAffReassignment)
                 idealAffDiff = cctx.affinity().onCustomEventWithEnforcedAffinityReassignment(this);
+
+            if (log.isInfoEnabled())
+                log.info("Coordinator 8 action took " + (System.currentTimeMillis() - time) + " ms.");
+
+            time = System.currentTimeMillis();
 
             for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
                 if (!grpCtx.isLocal())
                     grpCtx.topology().applyUpdateCounters();
             }
 
+            if (log.isInfoEnabled())
+                log.info("Coordinator 9 action took " + (System.currentTimeMillis() - time) + " ms.");
+
             updateLastVersion(cctx.versions().last());
+
+            time = System.currentTimeMillis();
 
             cctx.versions().onExchange(lastVer.get().order());
 
             IgniteProductVersion minVer = exchCtx.events().discoveryCache().minimumNodeVersion();
 
+            if (log.isInfoEnabled())
+                log.info("Coordinator 10 action took " + (System.currentTimeMillis() - time) + " ms.");
+
+            time = System.currentTimeMillis();
+
             GridDhtPartitionsFullMessage msg = createPartitionsMessage(true,
                 minVer.compareToIgnoreTimestamp(PARTIAL_COUNTERS_MAP_SINCE) >= 0);
+
+            if (log.isInfoEnabled())
+                log.info("Coordinator 11 action took " + (System.currentTimeMillis() - time) + " ms.");
+
+            time = System.currentTimeMillis();
 
             if (exchCtx.mergeExchanges()) {
                 assert !centralizedAff;
@@ -2881,6 +2943,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             msg.prepareMarshal(cctx);
 
+            if (log.isInfoEnabled())
+                log.info("Coordinator 12 action took " + (System.currentTimeMillis() - time) + " ms.");
+
             synchronized (mux) {
                 finishState = new FinishState(crd.id(), resTopVer, msg);
 
@@ -2889,6 +2954,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (centralizedAff) {
                 assert !exchCtx.mergeExchanges();
+
+                time = System.currentTimeMillis();
 
                 IgniteInternalFuture<Map<Integer, Map<Integer, List<UUID>>>> fut = cctx.affinity().initAffinityOnNodeLeft(this);
 
@@ -2901,6 +2968,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
                 else
                     onAffinityInitialized(fut);
+
+                if (log.isInfoEnabled())
+                    log.info("Coordinator 13 action took " + (System.currentTimeMillis() - time) + " ms.");
             }
             else {
                 Set<ClusterNode> nodes;
@@ -2931,11 +3001,21 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         nodes.addAll(sndResNodes);
                 }
 
+                time = System.currentTimeMillis();
+
                 if (!nodes.isEmpty())
                     sendAllPartitions(msg, nodes, mergedJoinExchMsgs0, joinedNodeAff);
 
+                if (log.isInfoEnabled())
+                    log.info("Coordinator 14 action took " + (System.currentTimeMillis() - time) + " ms.");
+
+                time = System.currentTimeMillis();
+
                 if (!stateChangeExchange())
                     onDone(exchCtx.events().topologyVersion(), null);
+
+                if (log.isInfoEnabled())
+                    log.info("Coordinator 15 action took " + (System.currentTimeMillis() - time) + " ms.");
 
                 for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : pendingSingleMsgs.entrySet()) {
                     if (log.isInfoEnabled()) {
@@ -2980,10 +3060,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         }
                     }
 
+                    time = System.currentTimeMillis();
+
                     cctx.kernalContext().state().onExchangeFinishedOnCoordinator(this, hasMoving);
+
+                    if (log.isInfoEnabled())
+                        log.info("Coordinator 16 action took " + (System.currentTimeMillis() - time) + " ms.");
                 }
 
                 boolean active = !stateChangeErr && req.activate();
+
+                time = System.currentTimeMillis();
 
                 ChangeGlobalStateFinishMessage stateFinishMsg = new ChangeGlobalStateFinishMessage(
                     req.requestId(),
@@ -2992,8 +3079,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 cctx.discovery().sendCustomEvent(stateFinishMsg);
 
+                if (log.isInfoEnabled())
+                    log.info("Coordinator 17 action took " + (System.currentTimeMillis() - time) + " ms.");
+
+                time = System.currentTimeMillis();
+
                 if (!centralizedAff)
                     onDone(exchCtx.events().topologyVersion(), err);
+
+                if (log.isInfoEnabled())
+                    log.info("Coordinator 18 action took " + (System.currentTimeMillis() - time) + " ms.");
             }
         }
         catch (IgniteCheckedException e) {
