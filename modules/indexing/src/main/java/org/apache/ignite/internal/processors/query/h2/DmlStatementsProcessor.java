@@ -1232,7 +1232,7 @@ public class DmlStatementsProcessor {
 
         IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter = new BulkLoadDataConverter(plan);
 
-        IgniteDataStreamer<Object, Object> streamer = idx.ctx.grid().dataStreamer(tbl.cacheName());
+        IgniteDataStreamer<Object, Object> streamer = idx.kernalContext().grid().dataStreamer(tbl.cacheName());
 
         BulkLoadCacheWriter outputWriter = new BulkLoadStreamerWriter(streamer);
 
