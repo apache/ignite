@@ -880,6 +880,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         return new RecordsIterator(
             cctx,
             walArchiveDir,
+            walWorkDir,
             (FileWALPointer)start,
             end,
             dsCfg,
@@ -2855,11 +2856,17 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** */
         private final File walArchiveDir;
 
+        /** */
+        private final File walWorkDir;
+
         /** See {@link FileWriteAheadLogManager#archiver}. */
         @Nullable private final FileArchiver archiver;
 
         /** */
         private final FileDecompressor decompressor;
+
+        /** */
+        private final DataStorageConfiguration dsCfg;
 
         /** Optional start pointer. */
         @Nullable
@@ -2878,6 +2885,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /**
          * @param cctx Shared context.
          * @param walArchiveDir WAL archive dir.
+         * @param walWorkDir WAL dir.
          * @param start Optional start pointer.
          * @param end Optional end pointer.
          * @param dsCfg Database configuration.
@@ -2892,6 +2900,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private RecordsIterator(
             GridCacheSharedContext cctx,
             File walArchiveDir,
+            File walWorkDir,
             @Nullable FileWALPointer start,
             @Nullable FileWALPointer end,
             DataStorageConfiguration dsCfg,
@@ -2912,9 +2921,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 segmentFileInputFactory
             );
             this.walArchiveDir = walArchiveDir;
+            this.walWorkDir = walWorkDir;
             this.archiver = archiver;
             this.start = start;
             this.end = end;
+            this.dsCfg = dsCfg;
+
             this.decompressor = decompressor;
             this.segmentRouter = segmentRouter;
             this.segmentAware = segmentAware;
