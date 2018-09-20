@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolde
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1142,6 +1143,16 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public MetaStorage metaStorage() {
         return null;
+    }
+
+    /**
+     * Notifies {@link MetastorageLifecycleListener} that {@link MetaStorage} is ready for read.
+     * This method is called when all processors and managers have already started and right before discovery manager.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void notifyMetaStorageSubscribersOnReadyForRead() throws IgniteCheckedException {
+        // No-op.
     }
 
     /**
