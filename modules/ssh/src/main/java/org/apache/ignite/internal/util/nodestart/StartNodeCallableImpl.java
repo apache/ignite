@@ -280,6 +280,7 @@ public class StartNodeCallableImpl implements StartNodeCallable {
 
                 info("Starting remote node with SSH command: " + startNodeCmd, spec.logger(), log);
 
+                // Execute command via ssh and wait until id of new process will be found in the output.
                 shell(ses, startNodeCmd, "\\[(\\d)\\] (\\d)+");
 
                 findSuccess = "grep \"" + SUCCESSFUL_START_MSG + "\" " + scriptOutputPath;
