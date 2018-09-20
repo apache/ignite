@@ -287,16 +287,20 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
         boolean queryMapped = false;
 
-        for (GridDistributedTxMapping m : F.view(tx.mappings().mappings(), CU.FILTER_QUERY_MAPPING)) {
-            GridDistributedTxMapping nodeMapping = mappings.get(m.primary().id());
+        if(!tx.implicitSingle()) {
+            for (GridDistributedTxMapping m : F.view(tx.mappings().mappings(), CU.FILTER_QUERY_MAPPING)) {
+                GridDistributedTxMapping nodeMapping = mappings.get(m.primary().id());
 
-            if(nodeMapping == null)
-                mappings.put(m.primary().id(), m);
+                if (nodeMapping == null)
+                    mappings.put(m.primary().id(), m);
 
-            txMapping.addMapping(F.asList(m.primary()));
+                txMapping.addMapping(F.asList(m.primary()));
 
-            queryMapped = true;
+                queryMapped = true;
+            }
         }
+        else
+            assert tx.queryEnlisted(); // Non-mvcc implicit single use fast commit way.
 
         MvccCoordinator mvccCrd = null;
 

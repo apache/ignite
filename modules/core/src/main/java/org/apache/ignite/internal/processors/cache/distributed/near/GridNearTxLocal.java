@@ -762,6 +762,18 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
 
+        if (F.isEmpty(map0) && F.isEmpty(invokeMap0)) {
+            if (implicit())
+                try {
+                    commit();
+                }
+                catch (IgniteCheckedException e) {
+                    return new GridFinishedFuture<>(e);
+                }
+
+            return new GridFinishedFuture<>(ret.success(true));
+        }
+
         try {
             // Set transform flag for transaction.
             if (invokeMap != null)
@@ -3985,7 +3997,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @return {@code True} if 'fast finish' path can be used for transaction completion.
      */
     private boolean fastFinish() {
-        return writeMap().isEmpty()
+        return writeMap().isEmpty() && !queryEnlisted()
             && ((optimistic() && !serializable()) || readMap().isEmpty())
             && (mappings.single() || F.view(mappings.mappings(), CU.FILTER_QUERY_MAPPING).isEmpty());
     }
