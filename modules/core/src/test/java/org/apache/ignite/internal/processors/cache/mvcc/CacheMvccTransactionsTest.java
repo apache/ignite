@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -108,6 +109,65 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testEmptyTx() throws Exception {
+        Ignite node = startGrids(2);
+
+        IgniteCache cache = node.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, DFLT_PARTITION_COUNT));
+
+        cache.putAll(Collections.emptyMap());
+
+        IgniteTransactions txs = node.transactions();
+        try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            tx.commit();
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testImplicitTxOps() throws Exception {
+        checkTxWithAllCaches(new CI1<IgniteCache<Integer, Integer>>() {
+            @Override public void apply(IgniteCache<Integer, Integer> cache) {
+                try {
+                    List<Integer> keys = testKeys(cache);
+
+                    for (Integer key : keys) {
+                        log.info("Test key: " + key);
+
+                        Integer val = cache.get(key);
+
+                        assertNull(val);
+
+                        cache.put(key, key);
+
+                        val = (Integer)checkAndGet(true, cache, key, GET, SCAN);
+
+                        assertEquals(key, val);
+
+                        cache.remove(key);
+
+                        val = cache.get(key);
+
+                        assertNull(val);
+
+                        val = (Integer)checkAndGet(false, cache, key, SCAN, GET);
+
+                        assertNull(val);
+                    }
+                }
+                catch (Exception e) {
+                    throw new IgniteException(e);
+                }
+            }
+        });
     }
 
     /**
