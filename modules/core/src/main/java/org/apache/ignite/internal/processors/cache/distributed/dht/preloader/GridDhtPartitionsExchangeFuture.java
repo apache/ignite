@@ -89,7 +89,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsStateValidator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.Latch;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
@@ -1227,10 +1226,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         partHistReserved = cctx.database().reserveHistoryForExchange();
 
         // Skipping wait on local join is available when all cluster nodes have the same protocol.
-        boolean skipWaitOnLocalJoin = cctx.discovery().aliveServerNodes().stream()
-            .allMatch(node -> node.version().compareTo(ExchangeLatchManager.PROTOCOL_V2_VERSION_SINCE) >= 0)
-                &&
-            localJoinExchange();
+        boolean skipWaitOnLocalJoin = cctx.exchange().latch().canSkipJoiningNodes(initialVersion())
+            && localJoinExchange();
 
         // Skip partition release if node has locally joined (it doesn't have any updates to be finished).
         if (!skipWaitOnLocalJoin) {
@@ -1489,6 +1486,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         releaseLatch.countDown();
+
+        // For compatibility with old version where joining nodes are not waiting for latch.
+        if (!cctx.exchange().latch().canSkipJoiningNodes(initialVersion()))
+            return;
 
         try {
             while (true) {

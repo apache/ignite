@@ -271,10 +271,7 @@ public class ExchangeLatchManager {
                 .filter(node -> node.version().compareTo(VERSION_SINCE) >= 0)
                 .collect(Collectors.toList());
 
-        boolean protoV2applicable = participantNodes.stream()
-            .allMatch(node -> node.version().compareTo(PROTOCOL_V2_VERSION_SINCE) >=0);
-
-        if (protoV2applicable)
+        if (canSkipJoiningNodes(topVer))
             return excludeJoinedNodes(participantNodes, topVer);
 
         return participantNodes;
@@ -311,13 +308,20 @@ public class ExchangeLatchManager {
         if (applicableNodes.isEmpty())
             return null;
 
-        boolean protoV2applicable = applicableNodes.stream()
-            .allMatch(node -> node.version().compareTo(PROTOCOL_V2_VERSION_SINCE) >= 0);
-
-        if (protoV2applicable)
+        if (canSkipJoiningNodes(topVer))
             applicableNodes = excludeJoinedNodes(applicableNodes, topVer);
 
         return applicableNodes.get(0);
+    }
+
+    /**
+     * Checks that latch manager can use V2 protocol and skip joining nodes from latch participants.
+     *
+     * @param topVer Topology version.
+     */
+    public boolean canSkipJoiningNodes(AffinityTopologyVersion topVer) {
+        return discovery.topology(topVer.topologyVersion()).stream()
+            .allMatch(node -> node.version().compareTo(PROTOCOL_V2_VERSION_SINCE) >= 0);
     }
 
     /**
