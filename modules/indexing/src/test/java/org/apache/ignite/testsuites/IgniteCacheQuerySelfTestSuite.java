@@ -153,6 +153,8 @@ import org.apache.ignite.internal.processors.query.IgniteQueryDedicatedPoolTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlDefaultValueTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlDistributedJoinSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlEntryCacheModeAgnosticTest;
+import org.apache.ignite.internal.processors.query.IgniteSqlGroupConcatCollocatedTest;
+import org.apache.ignite.internal.processors.query.IgniteSqlGroupConcatNotCollocatedTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlKeyValueFieldsTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlNotNullConstraintTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlParameterizedQueryTest;
@@ -475,6 +477,10 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 
         // Partition loss.
         suite.addTestSuite(IndexingCachePartitionLossPolicySelfTest.class);
+
+        // GROUP_CONCAT
+        suite.addTestSuite(IgniteSqlGroupConcatCollocatedTest.class);
+        suite.addTestSuite(IgniteSqlGroupConcatNotCollocatedTest.class);
 
         return suite;
     }
