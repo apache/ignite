@@ -189,7 +189,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
             for (int p = 0; p < assignment.size(); p++) {
                 List<ClusterNode> nodes = assignment.get(p);
 
-                if (nodes.size() > 0)
+                if (!nodes.isEmpty())
                     res.addAll(nodes);
             }
 
@@ -209,7 +209,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
             for (int p = 0; p < assignment.size(); p++) {
                 List<ClusterNode> nodes = assignment.get(p);
 
-                if (nodes.size() > 0)
+                if (!nodes.isEmpty())
                     res.add(nodes.get(0));
             }
 
