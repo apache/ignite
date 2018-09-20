@@ -209,7 +209,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         IgniteTestSuite suite = new IgniteTestSuite("Ignite Cache Queries Test Suite");
 
-        suite.addTestSuite(PartitionedSqlTest.class);
+ /*       suite.addTestSuite(PartitionedSqlTest.class);
         suite.addTestSuite(ReplicatedSqlTest.class);
 
         suite.addTestSuite(SqlParserCreateIndexSelfTest.class);
@@ -431,9 +431,10 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteQueryDedicatedPoolTest.class);
         suite.addTestSuite(IgniteSqlEntryCacheModeAgnosticTest.class);
         suite.addTestSuite(QueryEntityCaseMismatchTest.class);
-        suite.addTestSuite(IgniteCacheDistributedPartitionQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheDistributedPartitionQuerySelfTest.class);*/
+        for (int i = 0; i < 30; i++)
         suite.addTestSuite(IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest.class);
-        suite.addTestSuite(IgniteCacheDistributedPartitionQueryConfigurationSelfTest.class);
+        /*suite.addTestSuite(IgniteCacheDistributedPartitionQueryConfigurationSelfTest.class);
         suite.addTestSuite(IgniteSqlKeyValueFieldsTest.class);
         suite.addTestSuite(IgniteSqlRoutingTest.class);
         suite.addTestSuite(IgniteSqlNotNullConstraintTest.class);
@@ -471,7 +472,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(PreparedStatementExSelfTest.class);
 
         // Partition loss.
-        suite.addTestSuite(IndexingCachePartitionLossPolicySelfTest.class);
+        suite.addTestSuite(IndexingCachePartitionLossPolicySelfTest.class);*/
 
         return suite;
     }
