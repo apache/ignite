@@ -427,14 +427,6 @@ export default ['IgniteFormUtils', ['$window', 'IgniteFocus', '$rootScope', func
         ensureActivePanel(panels, id, focusId) {
             ensureActivePanel(panels, id, focusId);
         },
-        confirmUnsavedChanges(dirty, selectFunc) {
-            if (dirty) {
-                if ($window.confirm('You have unsaved changes.\n\nAre you sure you want to discard them?'))
-                    selectFunc();
-            }
-            else
-                selectFunc();
-        },
         saveBtnTipText(dirty, objectName) {
             if (dirty)
                 return 'Save ' + objectName;
