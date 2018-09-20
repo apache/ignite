@@ -182,6 +182,7 @@
     <ClCompile Include="..\..\src\message.cpp" />
     <ClCompile Include="..\..\src\meta\column_meta.cpp" />
     <ClCompile Include="..\..\src\meta\table_meta.cpp" />
+    <ClCompile Include="..\..\src\nested_tx_mode.cpp" />
     <ClCompile Include="..\..\src\odbc.cpp" />
     <ClCompile Include="..\..\src\protocol_version.cpp" />
     <ClCompile Include="..\..\src\query\batch_query.cpp" />
@@ -230,6 +231,7 @@
     <ClInclude Include="..\..\include\ignite\odbc\meta\column_meta.h" />
     <ClInclude Include="..\..\include\ignite\odbc\meta\primary_key_meta.h" />
     <ClInclude Include="..\..\include\ignite\odbc\meta\table_meta.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\nested_tx_mode.h" />
     <ClInclude Include="..\..\include\ignite\odbc\odbc_error.h" />
     <ClInclude Include="..\..\include\ignite\odbc\parser.h" />
     <ClInclude Include="..\..\include\ignite\odbc\protocol_version.h" />

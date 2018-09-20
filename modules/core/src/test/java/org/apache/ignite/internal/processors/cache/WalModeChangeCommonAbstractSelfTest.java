@@ -296,8 +296,8 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
      * @param filter Whether node should be filtered out.
      * @return Node configuration.
      */
-    protected IgniteConfiguration config(String name, boolean cli, boolean filter) {
-        IgniteConfiguration cfg = new IgniteConfiguration();
+    protected IgniteConfiguration config(String name, boolean cli, boolean filter) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(name);
 
         cfg.setIgniteInstanceName(name);
         cfg.setClientMode(cli);

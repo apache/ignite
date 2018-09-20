@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopologyImpl;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsEvictor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
@@ -60,6 +59,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
@@ -126,10 +126,6 @@ public class CacheGroupContext {
 
     /** */
     private GridCachePreloader preldr;
-
-    /** Partition evictor. */
-    private GridDhtPartitionsEvictor evictor;
-
     /** */
     private final DataRegion dataRegion;
 
@@ -150,6 +146,9 @@ public class CacheGroupContext {
 
     /** */
     private boolean qryEnabled;
+
+    /** */
+    private boolean mvccEnabled;
 
     /** MXBean. */
     private CacheGroupMetricsMXBean mxBean;
@@ -217,11 +216,20 @@ public class CacheGroupContext {
 
         storeCacheId = affNode && dataRegion.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED;
 
+        mvccEnabled = ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
+
         log = ctx.kernalContext().log(getClass());
 
         caches = new ArrayList<>();
 
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
+    }
+
+    /**
+     * @return Mvcc flag.
+     */
+    public boolean mvccEnabled() {
+        return mvccEnabled;
     }
 
     /**
@@ -257,13 +265,6 @@ public class CacheGroupContext {
      */
     public GridCachePreloader preloader() {
         return preldr;
-    }
-
-    /**
-     * @return Partitions evictor.
-     */
-    public GridDhtPartitionsEvictor evictor() {
-        return evictor;
     }
 
     /**
@@ -404,6 +405,13 @@ public class CacheGroupContext {
      */
     public boolean eventRecordable(int type) {
         return cacheType.userCache() && ctx.gridEvents().isRecordable(type);
+    }
+
+    /**
+     * @return {@code True} if cache created by user.
+     */
+    public boolean userCache() {
+        return cacheType.userCache();
     }
 
     /**
@@ -733,7 +741,7 @@ public class CacheGroupContext {
         IgniteCheckedException err =
             new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
 
-        evictor.stop();
+        ctx.evict().onCacheGroupStopped(this);
 
         aff.cancelFutures(err);
 
@@ -787,8 +795,6 @@ public class CacheGroupContext {
                 cctx.dr().partitionEvicted(part);
 
             cctx.continuousQueries().onPartitionEvicted(part);
-
-            cctx.dataStructures().onPartitionEvicted(part);
         }
     }
 
@@ -908,8 +914,6 @@ public class CacheGroupContext {
         }
         else
             preldr = new GridCachePreloaderAdapter(this);
-
-        evictor = new GridDhtPartitionsEvictor(this);
 
         if (persistenceEnabled()) {
             try {

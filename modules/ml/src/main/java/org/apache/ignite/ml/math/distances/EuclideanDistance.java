@@ -41,7 +41,7 @@ public class EuclideanDistance implements DistanceMeasure {
         double res = 0.0;
 
         for (int i = 0; i < b.length; i++)
-            res+= Math.abs(b[i] - a.get(i));
+            res += Math.pow(Math.abs(b[i] - a.get(i)), 2.0);
 
         return Math.sqrt(res);
     }
@@ -62,5 +62,10 @@ public class EuclideanDistance implements DistanceMeasure {
             return true;
 
         return obj != null && getClass() == obj.getClass();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return getClass().hashCode();
     }
 }

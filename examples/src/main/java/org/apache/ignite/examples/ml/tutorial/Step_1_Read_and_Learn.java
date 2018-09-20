@@ -31,21 +31,30 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Usage of DecisionTreeClassificationTrainer to predict death in the disaster.
- *
- * Extract 3 features "pclass", "sibsp", "parch" to use in prediction.
+ * Usage of {@link DecisionTreeClassificationTrainer} to predict death in the disaster.
+ * <p>
+ * Extract 3 features "pclass", "sibsp", "parch" to use in prediction.</p>
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with test data (based on Titanic passengers data).</p>
+ * <p>
+ * After that it trains the model based on the specified data using decision tree classification.</p>
+ * <p>
+ * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_1_Read_and_Learn {
     /** Run example. */
     public static void main(String[] args) throws InterruptedException {
+        System.out.println();
+        System.out.println(">>> Tutorial step 1 (read and learn) example started.");
+
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 Step_1_Read_and_Learn.class.getSimpleName(), () -> {
                 try {
-
                     IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
 
-                    IgniteBiFunction<Integer, Object[], Vector> featureExtractor = (k, v) -> VectorUtils.of((double) v[0], (double) v[5], (double) v[6]);
+                    IgniteBiFunction<Integer, Object[], Vector> featureExtractor
+                        = (k, v) -> VectorUtils.of((double) v[0], (double) v[5], (double) v[6]);
 
                     IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
 
@@ -58,6 +67,8 @@ public class Step_1_Read_and_Learn {
                         lbExtractor
                     );
 
+                    System.out.println("\n>>> Trained model: " + mdl);
+
                     double accuracy = Evaluator.evaluate(
                         dataCache,
                         mdl,
@@ -69,6 +80,7 @@ public class Step_1_Read_and_Learn {
                     System.out.println("\n>>> Accuracy " + accuracy);
                     System.out.println("\n>>> Test Error " + (1 - accuracy));
 
+                    System.out.println(">>> Tutorial step 1 (read and learn) example completed.");
                 }
                 catch (FileNotFoundException e) {
                     e.printStackTrace();

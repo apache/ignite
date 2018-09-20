@@ -78,6 +78,9 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** */
     public static final int STORE_WRITE_THROUGH_FLAG_MASK = 0x20;
 
+    /** */
+    public static final int QUERY_UPDATE_FLAG_MASK = 0x40;
+
     /** Collection to message converter. */
     private static final C1<Collection<UUID>, UUIDCollectionMessage> COL_TO_MSG = new C1<Collection<UUID>, UUIDCollectionMessage>() {
         @Override public UUIDCollectionMessage apply(Collection<UUID> uuids) {
@@ -250,6 +253,25 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
             flags = (byte)(flags | STORE_WRITE_THROUGH_FLAG_MASK);
         else
             flags &= ~STORE_WRITE_THROUGH_FLAG_MASK;
+    }
+
+    /**
+     *
+     * @return Flag indicating whether it is a query update.
+     */
+    public boolean queryUpdate() {
+        return (flags & QUERY_UPDATE_FLAG_MASK) != 0;
+    }
+
+    /**
+     *
+     * @param queryUpdate Query update value.
+     */
+    public void queryUpdate(boolean queryUpdate) {
+        if (queryUpdate)
+            flags = (byte)(flags | QUERY_UPDATE_FLAG_MASK);
+        else
+            flags &= ~QUERY_UPDATE_FLAG_MASK;
     }
 
     /**

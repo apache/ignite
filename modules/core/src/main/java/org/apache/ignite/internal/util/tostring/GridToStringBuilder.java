@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -853,7 +854,7 @@ public class GridToStringBuilder {
      */
     private static void addArray(SBLimitedLength buf, Class arrType, Object obj) {
         if (arrType.getComponentType().isPrimitive()) {
-            buf.a(arrayToString(arrType, obj));
+            buf.a(arrayToString(obj));
 
             return;
         }
@@ -985,6 +986,7 @@ public class GridToStringBuilder {
             if (newStr)
                 return s;
 
+            // Called from another GTSB.toString(), so this string is already in the buffer and shouldn't be returned.
             return "";
         }
         finally {
@@ -1052,7 +1054,6 @@ public class GridToStringBuilder {
         }
         // Specifically catching all exceptions.
         catch (Exception e) {
-
             // Remove entry from cache to avoid potential memory leak
             // in case new class loader got loaded under the same identity hash.
             classCache.remove(cls.getName() + System.identityHashCode(cls.getClassLoader()));
@@ -1075,100 +1076,76 @@ public class GridToStringBuilder {
     }
 
     /**
-     * @param arrType Type of the array.
-     * @param arr Array object.
+     * Returns limited string representation of array.
+     *
+     * @param arr Array object. Each value is automatically wrapped if it has a primitive type.
      * @return String representation of an array.
      */
-    @SuppressWarnings({"ConstantConditions", "unchecked"})
-    public static <T> String arrayToString(Class arrType, Object arr) {
+    public static String arrayToString(Object arr) {
         if (arr == null)
             return "null";
 
         String res;
-        int more = 0;
 
-        if (arrType.equals(byte[].class)) {
-            byte[] byteArr = (byte[])arr;
-            if (byteArr.length > COLLECTION_LIMIT) {
-                more = byteArr.length - COLLECTION_LIMIT;
-                byteArr = Arrays.copyOf(byteArr, COLLECTION_LIMIT);
-            }
-            res = Arrays.toString(byteArr);
-        }
-        else if (arrType.equals(boolean[].class)) {
-            boolean[] boolArr = (boolean[])arr;
-            if (boolArr.length > COLLECTION_LIMIT) {
-                more = boolArr.length - COLLECTION_LIMIT;
-                boolArr = Arrays.copyOf(boolArr, COLLECTION_LIMIT);
-            }
-            res = Arrays.toString(boolArr);
-        }
-        else if (arrType.equals(short[].class)) {
-            short[] shortArr = (short[])arr;
-            if (shortArr.length > COLLECTION_LIMIT) {
-                more = shortArr.length - COLLECTION_LIMIT;
-                shortArr = Arrays.copyOf(shortArr, COLLECTION_LIMIT);
-            }
-            res = Arrays.toString(shortArr);
-        }
-        else if (arrType.equals(int[].class)) {
-            int[] intArr = (int[])arr;
-            if (intArr.length > COLLECTION_LIMIT) {
-                more = intArr.length - COLLECTION_LIMIT;
-                intArr = Arrays.copyOf(intArr, COLLECTION_LIMIT);
-            }
-            res = Arrays.toString(intArr);
-        }
-        else if (arrType.equals(long[].class)) {
-            long[] longArr = (long[])arr;
-            if (longArr.length > COLLECTION_LIMIT) {
-                more = longArr.length - COLLECTION_LIMIT;
-                longArr = Arrays.copyOf(longArr, COLLECTION_LIMIT);
-            }
-            res = Arrays.toString(longArr);
-        }
-        else if (arrType.equals(float[].class)) {
-            float[] floatArr = (float[])arr;
-            if (floatArr.length > COLLECTION_LIMIT) {
-                more = floatArr.length - COLLECTION_LIMIT;
-                floatArr = Arrays.copyOf(floatArr, COLLECTION_LIMIT);
-            }
-            res = Arrays.toString(floatArr);
-        }
-        else if (arrType.equals(double[].class)) {
-            double[] doubleArr = (double[])arr;
-            if (doubleArr.length > COLLECTION_LIMIT) {
-                more = doubleArr.length - COLLECTION_LIMIT;
-                doubleArr = Arrays.copyOf(doubleArr, COLLECTION_LIMIT);
-            }
-            res = Arrays.toString(doubleArr);
-        }
-        else if (arrType.equals(char[].class)) {
-            char[] charArr = (char[])arr;
-            if (charArr.length > COLLECTION_LIMIT) {
-                more = charArr.length - COLLECTION_LIMIT;
-                charArr = Arrays.copyOf(charArr, COLLECTION_LIMIT);
-            }
-            res = Arrays.toString(charArr);
-        }
-        else {
+        int arrLen;
+
+        if (arr instanceof Object[]) {
             Object[] objArr = (Object[])arr;
-            if (objArr.length > COLLECTION_LIMIT) {
-                more = objArr.length - COLLECTION_LIMIT;
+
+            arrLen = objArr.length;
+
+            if (arrLen > COLLECTION_LIMIT)
                 objArr = Arrays.copyOf(objArr, COLLECTION_LIMIT);
-            }
+
             res = Arrays.toString(objArr);
+        } else {
+            res = toStringWithLimit(arr, COLLECTION_LIMIT);
+
+            arrLen = Array.getLength(arr);
         }
-        if (more > 0) {
+
+        if (arrLen > COLLECTION_LIMIT) {
             StringBuilder resSB = new StringBuilder(res);
 
             resSB.deleteCharAt(resSB.length() - 1);
-            resSB.append("... and ").append(more).append(" more]");
+
+            resSB.append("... and ").append(arrLen - COLLECTION_LIMIT).append(" more]");
 
             res = resSB.toString();
         }
 
         return res;
+    }
+
+    /**
+     * Returns limited string representation of array.
+     *
+     * @param arr Input array. Each value is automatically wrapped if it has a primitive type.
+     * @param limit max array items to string limit.
+     * @return String representation of an array.
+     */
+    private static String toStringWithLimit(Object arr, int limit) {
+        int arrIdxMax = Array.getLength(arr) - 1;
+
+        if (arrIdxMax == -1)
+            return "[]";
+
+        int idxMax = Math.min(arrIdxMax, limit);
+
+        StringBuilder b = new StringBuilder();
+
+        b.append('[');
+
+        for (int i = 0; i <= idxMax; ++i) {
+            b.append(Array.get(arr, i));
+            
+            if (i == idxMax)
+                return b.append(']').toString();
+
+            b.append(", ");
+        }
+
+        return b.toString();
     }
 
     /**
@@ -1605,7 +1582,7 @@ public class GridToStringBuilder {
     private static String toStringImpl(String str, SBLimitedLength buf, Object[] propNames, Object[] propVals,
         boolean[] propSens, int propCnt) {
 
-        buf.setLength(0);
+        boolean newStr = buf.length() == 0;
 
         if (str != null)
             buf.a(str).a(" ");
@@ -1616,7 +1593,11 @@ public class GridToStringBuilder {
 
         buf.a(']');
 
-        return buf.toString();
+        if (newStr)
+            return buf.toString();
+
+        // Called from another GTSB.toString(), so this string is already in the buffer and shouldn't be returned.
+        return "";
     }
 
     /**

@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Log;
 
@@ -42,7 +43,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         public QueryField()
         {
-            // No-op.
+            Precision = -1;
+            Scale = -1;
         }
 
         /// <summary>
@@ -50,7 +52,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         /// <param name="name">Name.</param>
         /// <param name="javaFieldTypeName">Java type name.</param>
-        public QueryField(string name, string javaFieldTypeName)
+        public QueryField(string name, string javaFieldTypeName): this()
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             IgniteArgumentCheck.NotNullOrEmpty(javaFieldTypeName, "typeName");
@@ -64,7 +66,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         /// <param name="name">Name.</param>
         /// <param name="fieldType">Type.</param>
-        public QueryField(string name, Type fieldType)
+        public QueryField(string name, Type fieldType): this()
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             IgniteArgumentCheck.NotNull(fieldType, "type");
@@ -76,7 +78,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryField"/> class.
         /// </summary>
-        internal QueryField(IBinaryRawReader reader)
+        internal QueryField(IBinaryRawReader reader, ClientProtocolVersion srvVer)
         {
             Debug.Assert(reader != null);
 
@@ -85,14 +87,18 @@ namespace Apache.Ignite.Core.Cache.Configuration
             IsKeyField = reader.ReadBoolean();
             NotNull = reader.ReadBoolean();
             DefaultValue = reader.ReadObject<object>();
-            Precision = reader.ReadInt();
-            Scale = reader.ReadInt();
+
+            if (srvVer.CompareTo(ClientSocket.Ver120) >= 0)
+            {
+                Precision = reader.ReadInt();
+                Scale = reader.ReadInt();
+            }
         }
 
         /// <summary>
         /// Writes this instance to the specified writer.
         /// </summary>
-        internal void Write(IBinaryRawWriter writer)
+        internal void Write(IBinaryRawWriter writer, ClientProtocolVersion srvVer)
         {
             Debug.Assert(writer != null);
 
@@ -101,8 +107,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteBoolean(IsKeyField);
             writer.WriteBoolean(NotNull);
             writer.WriteObject(DefaultValue);
-            writer.WriteInt(Precision);
-            writer.WriteInt(Scale);
+
+            if (srvVer.CompareTo(ClientSocket.Ver120) >= 0)
+            {
+                writer.WriteInt(Precision);
+                writer.WriteInt(Scale);
+            }
         }
 
         /// <summary>

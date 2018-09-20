@@ -33,7 +33,7 @@ export default class AgentModal {
             show: false,
             backdrop: 'static',
             keyboard: false,
-            controller: () => self,
+            controller() { return self;},
             controllerAs: 'ctrl'
         });
 

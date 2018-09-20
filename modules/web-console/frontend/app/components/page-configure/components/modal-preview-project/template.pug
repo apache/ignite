@@ -20,7 +20,7 @@ include /app/helpers/jade/mixins
     .modal-dialog
         .modal-content
             .modal-header
-                h4.modal-title 
+                h4.modal-title
                     svg(ignite-icon="structure")
                     span See Project Structure
                 button.close(type='button' aria-label='Close' ng-click='$ctrl.onHide()')
@@ -44,4 +44,5 @@ include /app/helpers/jade/mixins
                 .pane-right
                     div.file-preview(ignite-ace='{mode: $ctrl.fileExt, readonly: true}' ng-model='$ctrl.fileText')
             .modal-footer
-                button.btn-ignite.btn-ignite--success(ng-click='$ctrl.onHide()') Close
+                div
+                    button.btn-ignite.btn-ignite--success(ng-click='$ctrl.onHide()') Close
