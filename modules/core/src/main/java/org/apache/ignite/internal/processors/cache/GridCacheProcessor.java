@@ -2268,7 +2268,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else
             unregisterLazyCache(cacheName);
 
-
         return null;
     }
 

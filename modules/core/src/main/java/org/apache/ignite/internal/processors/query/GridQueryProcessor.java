@@ -1425,7 +1425,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         GridCacheAdapter cache = ctx.cache().internalCache(cacheName);
 
-
         if (cache == null || !F.eq(depId, cache.context().dynamicDeploymentId()))
             throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, cacheName);
 
