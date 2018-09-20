@@ -480,10 +480,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut,
+    @Override public void beforeExchange(
+        GridDhtPartitionsExchangeFuture exchFut,
         boolean affReady,
-        boolean updateMoving)
-        throws IgniteCheckedException {
+        boolean updateMoving
+    ) throws IgniteCheckedException {
         ctx.database().checkpointReadLock();
 
         try {

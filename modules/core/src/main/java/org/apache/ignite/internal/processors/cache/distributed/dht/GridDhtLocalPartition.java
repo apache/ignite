@@ -551,21 +551,39 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     private boolean casState(long state, GridDhtPartitionState toState) {
         if (grp.persistenceEnabled() && grp.walEnabled()) {
             synchronized (this) {
+                GridDhtPartitionState prevState = state();
+
                 boolean update = this.state.compareAndSet(state, setPartState(state, toState));
 
-                if (update)
+                if (update) {
                     try {
                         ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, updateCounter()));
                     }
                     catch (IgniteCheckedException e) {
-                        U.error(log, "Error while writing to log", e);
+                        U.error(log, "Failed to log partition state change to WAL.", e);
                     }
+
+                    if (log.isDebugEnabled())
+                        log.debug("Partition changed state [grp=" + grp.cacheOrGroupName()
+                            + ", p=" + id + ", prev=" + prevState + ", to=" + toState + "]");
+                }
 
                 return update;
             }
         }
-        else
-            return this.state.compareAndSet(state, setPartState(state, toState));
+        else {
+            GridDhtPartitionState prevState = state();
+
+            boolean update = this.state.compareAndSet(state, setPartState(state, toState));
+
+            if (update) {
+                if (log.isDebugEnabled())
+                    log.debug("Partition changed state [grp=" + grp.cacheOrGroupName()
+                        + ", p=" + id + ", prev=" + prevState + ", to=" + toState + "]");
+            }
+
+            return update;
+        }
     }
 
     /**
@@ -585,12 +603,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             assert partState == MOVING || partState == LOST;
 
-            if (casState(state, OWNING)) {
-                if (log.isDebugEnabled())
-                    log.debug("Owned partition: " + this);
-
+            if (casState(state, OWNING))
                 return true;
-            }
         }
     }
 
@@ -605,12 +619,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             assert partState == OWNING || partState == RENTING : "Only partitions in state OWNING or RENTING can be moved to MOVING state";
 
-            if (casState(state, MOVING)) {
-                if (log.isDebugEnabled())
-                    log.debug("Forcibly moved partition to a MOVING state: " + this);
-
+            if (casState(state, MOVING))
                 break;
-            }
         }
     }
 
@@ -626,12 +636,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             if (partState == LOST)
                 return false;
 
-            if (casState(state, LOST)) {
-                if (log.isDebugEnabled())
-                    log.debug("Marked partition as LOST: " + this);
-
+            if (casState(state, LOST))
                 return true;
-            }
         }
     }
 
@@ -655,9 +661,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         if (getReservations(state0) == 0 && casState(state0, RENTING)) {
             delayedRenting = false;
-
-            if (log.isDebugEnabled())
-                log.debug("Moved partition to RENTING state: " + this);
 
             // Evict asynchronously, as the 'rent' method may be called
             // from within write locks on local partition.
@@ -690,10 +693,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         if (!reinitialized)
             return;
 
-        // Try fast eviction
-        if (isEmpty() && getSize(state) == 0 && !grp.queriesEnabled()
-                && getReservations(state) == 0 && !groupReserved()) {
-
+        // Try fast eviction.
+        if (freeAndEmpty(state) && !grp.queriesEnabled() && !groupReserved()) {
             if (partState == RENTING && casState(state, EVICTED) || clearingRequested) {
                 clearFuture.finish();
 
@@ -702,6 +703,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
                     destroy();
                 }
+
+                if (log.isDebugEnabled())
+                    log.debug("Partition has been fast evicted [grp=" + grp.cacheOrGroupName()
+                        + ", p=" + id + ", state=" + state() + "]");
 
                 return;
             }
@@ -743,6 +748,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         }
 
         return false;
+    }
+
+    private boolean freeAndEmpty(long state) {
+        return isEmpty() && getSize(state) == 0 && getReservations(state) == 0;
     }
 
     /**
@@ -807,12 +816,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         GridDhtPartitionState state = getPartState(state0);
 
-        if (state == EVICTED || (isEmpty() && getSize(state0) == 0 && getReservations(state0) == 0 && state == RENTING && casState(state0, EVICTED))) {
-            if (log.isDebugEnabled())
-                log.debug("Evicted partition: " + this);
-
+        if (state == EVICTED || (freeAndEmpty(state0) && state == RENTING && casState(state0, EVICTED)))
             updateSeqOnDestroy = updateSeq;
-        }
     }
 
     /**
@@ -896,7 +901,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 long clearedEntities = clearAll(evictionCtx);
 
                 if (log.isDebugEnabled())
-                    log.debug("Partition is cleared [clearedEntities=" + clearedEntities + ", part=" + this + "]");
+                    log.debug("Partition has been cleared [grp=" + grp.cacheOrGroupName()
+                        + ", p=" + id + ", state=" + state() + ", clearedCnt=" + clearedEntities + "]");
             }
             catch (NodeStoppingException e) {
                 clearFuture.finish(e);
