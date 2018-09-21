@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
@@ -244,7 +246,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
                         List<IgniteFuture<?>> futs = new ArrayList<>(opsPerThread);
 
                         for (int i = 0; i < opsPerThread; i++) {
-                            TreeMap<TestKey, TestValue> map = new TreeMap<>();
+                            Map<TestKey, TestValue> map = new HashMap<>(50);
 
                             int keys = rnd.nextInt(1, 50);
 
