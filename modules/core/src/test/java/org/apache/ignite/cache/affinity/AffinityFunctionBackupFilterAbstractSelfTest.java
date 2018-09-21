@@ -87,7 +87,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
                 return backupAssignedAttribute.get(nodeAttributeVal).equals(0);
             }
         };
-
+     
     /**
      * @param nodes List of cluster nodes.
      * @return Statistic.
@@ -125,7 +125,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
         if (backups < 2)
             cacheCfg.setAffinity(affinityFunction());
         else
-            cacheCfg.setAffinity(affinityFunctionWithAffinityBackupFilter());
+            cacheCfg.setAffinity(affinityFunctionWithAffinityBackupFilter(SPLIT_ATTRIBUTE_NAME));
 
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setRebalanceMode(SYNC);
@@ -151,7 +151,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
     /**
      * @return Affinity function for test.
      */
-    protected abstract AffinityFunction affinityFunctionWithAffinityBackupFilter();
+    protected abstract AffinityFunction affinityFunctionWithAffinityBackupFilter(String attributeName);
 
     /**
      * @throws Exception If failed.
@@ -233,6 +233,11 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
             stopAllGrids();
         }
     }
+    
+    /* Different affinityBackupFilters have different goals */
+    protected int expectedNodesForEachPartition() {
+       return backups + 1;
+    }
 
     /**
      * @throws Exception If failed.
@@ -244,15 +249,15 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
         int partCnt = aff.partitions();
 
         IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
-
+        
         for (int i = 0; i < partCnt; i++) {
             Collection<ClusterNode> nodes = affinity(cache).mapKeyToPrimaryAndBackups(i);
 
-            assertEquals(backups + 1, nodes.size());
+            assertEquals(expectedNodesForEachPartition(), nodes.size());
 
             Map<String, Integer> stat = getAttributeStatistic(nodes);
 
-            assertEquals(stat.get(FIRST_NODE_GROUP), new Integer(2));
+            assertEquals(stat.get(FIRST_NODE_GROUP), new Integer(expectedNodesForEachPartition() - 2 ));
 
             assertEquals(stat.get("B"), new Integer(1));
 
