@@ -119,7 +119,7 @@ object IgniteSQLRelation {
 
         StructType(columns.map { case (name, dataType) ⇒
             StructField(
-                name = name,
+                name = table.getAliases.getOrDefault(name, name),
                 dataType = IgniteRDD.dataType(dataType, name),
                 nullable = !isKeyColumn(table, name),
                 metadata = Metadata.empty)

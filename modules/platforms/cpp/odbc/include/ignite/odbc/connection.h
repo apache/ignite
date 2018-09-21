@@ -33,6 +33,7 @@ namespace ignite
 {
     namespace odbc
     {
+        class Environment;
         class Statement;
 
         /**
@@ -99,6 +100,11 @@ namespace ignite
             void Release();
 
             /**
+             * Deregister self from the parent.
+             */
+            void Deregister();
+
+            /**
              * Create statement associated with the connection.
              *
              * @return Pointer to valid instance on success and NULL on failure.
@@ -139,6 +145,13 @@ namespace ignite
              * @return Connection configuration.
              */
             const config::Configuration& GetConfiguration() const;
+
+            /**
+             * Is auto commit.
+             *
+             * @return @c true if the auto commit is enabled.
+             */
+            bool IsAutoCommit();
 
             /**
              * Create diagnostic record associated with the Connection instance.
@@ -432,7 +445,10 @@ namespace ignite
             /**
              * Constructor.
              */
-            Connection();
+            Connection(Environment* env);
+
+            /** Parent. */
+            Environment* env;
 
             /** Client Socket. */
             std::auto_ptr<SocketClient> socket;
@@ -442,6 +458,9 @@ namespace ignite
 
             /** Login timeout in seconds. */
             int32_t loginTimeout;
+
+            /** Autocommit flag. */
+            bool autoCommit;
 
             /** Message parser. */
             Parser parser;

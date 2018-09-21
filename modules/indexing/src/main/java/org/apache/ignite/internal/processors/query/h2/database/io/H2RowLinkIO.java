@@ -27,4 +27,38 @@ public interface H2RowLinkIO {
      * @return Row link.
      */
     public long getLink(long pageAddr, int idx);
+
+    /**
+     * @param pageAddr Page address.
+     * @param idx Index.
+     * @return Mvcc coordinator version.
+     */
+    public default long getMvccCoordinatorVersion(long pageAddr, int idx) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param idx Index.
+     * @return Mvcc counter.
+     */
+    public default long getMvccCounter(long pageAddr, int idx) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param idx Index.
+     * @return Mvcc operation counter.
+     */
+    public default int getMvccOperationCounter(long pageAddr, int idx) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @return {@code True} if IO stores mvcc information.
+     */
+    public default boolean storeMvccInfo() {
+        return false;
+    }
 }

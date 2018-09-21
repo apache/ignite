@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 
 /**
  * ODBC result set
@@ -30,25 +30,30 @@ public class OdbcQueryResults {
     private final List<FieldsQueryCursor<List<?>>> cursors;
 
     /** Rows affected. */
-    private final List<Long> rowsAffected;
+    private final long[] rowsAffected;
 
     /** Current result set. */
     private OdbcResultSet currentResultSet;
 
     /** Current result set index. */
-    private int currentResultSetIdx;
+    private int nextResultSetIdx;
+
+    /** Client version. */
+    private ClientListenerProtocolVersion ver;
 
     /**
      * @param cursors Result set cursors.
+     * @param ver Client version.
      */
-    OdbcQueryResults(List<FieldsQueryCursor<List<?>>> cursors) {
+    OdbcQueryResults(List<FieldsQueryCursor<List<?>>> cursors, ClientListenerProtocolVersion ver) {
         this.cursors = cursors;
-        this.currentResultSetIdx = 0;
+        this.nextResultSetIdx = 0;
+        this.ver = ver;
 
-        rowsAffected = new ArrayList<>(cursors.size());
+        rowsAffected = new long[cursors.size()];
 
-        for (FieldsQueryCursor<List<?>> cursor : cursors)
-            rowsAffected.add(OdbcUtils.rowsAffected(cursor));
+        for (int i = 0; i < cursors.size(); ++i)
+            rowsAffected[i] = OdbcUtils.rowsAffected(cursors.get(i));
 
         nextResultSet();
     }
@@ -57,7 +62,7 @@ public class OdbcQueryResults {
      * Get affected rows for all result sets.
      * @return List of numbers of table rows affected by every statement.
      */
-    public List<Long> rowsAffected() {
+    public long[] rowsAffected() {
         return rowsAffected;
     }
 
@@ -68,10 +73,10 @@ public class OdbcQueryResults {
         if (currentResultSet != null && currentResultSet.hasUnfetchedRows())
             return true;
 
-        for (FieldsQueryCursor<List<?>> cursor : cursors) {
-            QueryCursorImpl<List<?>> cursor0 = (QueryCursorImpl<List<?>>)cursor;
+        for (FieldsQueryCursor<List<?>> cursor0 : cursors) {
+            QueryCursorImpl<List<?>> cursor = (QueryCursorImpl<List<?>>)cursor0;
 
-            if (cursor0.isQuery())
+            if (cursor.isQuery())
                 return true;
         }
         return false;
@@ -98,9 +103,9 @@ public class OdbcQueryResults {
     public void nextResultSet() {
         currentResultSet = null;
 
-        if (currentResultSetIdx != cursors.size()) {
-            currentResultSet = new OdbcResultSet(cursors.get(currentResultSetIdx));
-            ++currentResultSetIdx;
+        if (nextResultSetIdx != cursors.size()) {
+            currentResultSet = new OdbcResultSet(cursors.get(nextResultSetIdx), ver);
+            ++nextResultSetIdx;
         }
     }
 }

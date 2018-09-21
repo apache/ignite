@@ -851,7 +851,7 @@ public class GridTcpRestParser implements GridNioParser {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(GridTcpRestParser.class, this);
     }
 

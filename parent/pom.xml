@@ -75,6 +75,7 @@
         <httpclient.version>4.5.1</httpclient.version>
         <httpcore.version>4.4.3</httpcore.version>
         <jackson.version>2.9.6</jackson.version>
+        <jackson1.version>1.9.13</jackson1.version>
         <javassist.version>3.20.0-GA</javassist.version>
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
         <javax.cache.tck.version>1.0.1</javax.cache.tck.version>
@@ -91,8 +92,8 @@
         <kafka.version>0.10.0.1</kafka.version>
         <karaf.version>4.0.2</karaf.version>
         <log4j.version>2.11.0</log4j.version>
-        <lucene.bundle.version>5.5.2_1</lucene.bundle.version>
-        <lucene.version>5.5.2</lucene.version>
+        <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
+        <lucene.version>7.4.0</lucene.version>
         <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>
         <mockito.version>1.10.19</mockito.version>
         <mysql.connector.version>5.1.39</mysql.connector.version>
@@ -110,10 +111,10 @@
         <slf4j16.version>1.6.4</slf4j16.version>
         <spark.hadoop.version>2.6.5</spark.hadoop.version>
         <spark.version>2.3.0</spark.version>
-        <spring.data.version>1.13.11.RELEASE</spring.data.version> <!-- don't forget to update spring version -->
-        <spring.version>4.3.16.RELEASE</spring.version><!-- don't forget to update spring-data version -->
-        <spring.data-2.0.version>2.0.6.RELEASE</spring.data-2.0.version> <!-- don't forget to update spring-5.0 version -->
-        <spring-5.0.version>5.0.5.RELEASE</spring-5.0.version><!-- don't forget to update spring-data-2.0 version -->
+        <spring.data.version>1.13.14.RELEASE</spring.data.version> <!-- don't forget to update spring version -->
+        <spring.version>4.3.18.RELEASE</spring.version><!-- don't forget to update spring-data version -->
+        <spring.data-2.0.version>2.0.9.RELEASE</spring.data-2.0.version> <!-- don't forget to update spring-5.0 version -->
+        <spring-5.0.version>5.0.8.RELEASE</spring-5.0.version><!-- don't forget to update spring-data-2.0 version -->
         <spring41.osgi.feature.version>4.1.7.RELEASE_1</spring41.osgi.feature.version>
         <storm.version>1.1.1</storm.version>
         <tomcat.version>9.0.10</tomcat.version>
@@ -122,7 +123,7 @@
         <yammer.metrics.core.version>2.2.0</yammer.metrics.core.version>
         <yardstick.version>0.8.3</yardstick.version>
         <zkclient.version>0.5</zkclient.version>
-        <zookeeper.version>3.4.6</zookeeper.version>
+        <zookeeper.version>3.4.13</zookeeper.version>
 
         <!-- OSGI Manifest generation default property values -->
         <osgi.import.package>*</osgi.import.package>
@@ -468,7 +469,11 @@
                                 <packages>org.apache.ignite.springdata.repository*</packages>
                             </group>
                             <group>
-                                <title>RocketMQ integration</title>
+                                <title>SpringData 2.0 integration</title>
+                                <packages>org.apache.ignite.springdata20.repository*</packages>
+                            </group>
+                            <group>
+                            <title>RocketMQ integration</title>
                                 <packages>org.apache.ignite.stream.rocketmq*</packages>
                             </group>
                             <group>
@@ -823,6 +828,7 @@
                                         <exclude>**/*.csv</exclude><!--CSV files-->
                                         <exclude>**/*.jks</exclude><!--bin-files-->
                                         <exclude>**/pom-installed.xml</exclude><!--tmp-files-->
+                                        <exclude>**/keystore</exclude><!--bin-files-->
                                         <exclude>**/keystore/*.jks</exclude><!--bin-files-->
                                         <exclude>**/keystore/*.pem</exclude><!--auto generated files-->
                                         <exclude>**/keystore/*.pfx</exclude><!--bin-files-->
