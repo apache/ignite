@@ -1814,6 +1814,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      * Also responsible for deleting raw copies of already compressed WAL archive segments if they are not reserved.
      */
     private class FileCompressor extends Thread {
+
         /** Current thread stopping advice. */
         private volatile boolean stopped;
 
@@ -1823,16 +1824,12 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         /** All segments prior to this (inclusive) can be compressed. */
         private volatile long minUncompressedIdxToKeep = -1L;
 
-        /**
-         *
-         */
+        /** */
         FileCompressor() {
             super("wal-file-compressor%" + cctx.igniteInstanceName());
         }
 
-        /**
-         *
-         */
+        /** */
         private void init() {
             File[] toDel = walArchiveDir.listFiles(WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER);
 
@@ -2003,6 +2000,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             }
 
             try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip)))) {
+                zos.setLevel(dsCfg.getWalCompactionLevel());
                 zos.putNextEntry(new ZipEntry(""));
 
                 zos.write(prepareSerializerVersionBuffer(nextSegment, segmentSerializerVer, true).array());
@@ -2041,6 +2039,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
             U.join(this);
         }
+
     }
 
     /**
