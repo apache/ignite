@@ -49,9 +49,6 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
     /** Client instance name. */
     private static final String CLIENT_INSTANCE_NAME = "client";
 
-    /** */
-    private String propValBeforeTest;
-
     /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {
         return true;
@@ -91,6 +88,7 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
     @Override protected void checkConfiguration(IgniteConfiguration cfg) {
         // No op.
     }
