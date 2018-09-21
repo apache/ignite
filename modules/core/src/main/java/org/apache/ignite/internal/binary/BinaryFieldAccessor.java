@@ -206,7 +206,7 @@ public abstract class BinaryFieldAccessor {
     /**
      * Base primitive field accessor.
      */
-    private static abstract class AbstractPrimitiveAccessor extends BinaryFieldAccessor {
+    private abstract static class AbstractPrimitiveAccessor extends BinaryFieldAccessor {
         /** Offset. */
         protected final long offset;
 

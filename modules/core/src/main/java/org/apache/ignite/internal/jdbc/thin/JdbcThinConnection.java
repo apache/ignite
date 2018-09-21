@@ -76,7 +76,7 @@ public class JdbcThinConnection implements Connection {
     private static final Logger LOG = Logger.getLogger(JdbcThinConnection.class.getName());
 
     /** Statements modification mutex. */
-    final private Object stmtsMux = new Object();
+    private final Object stmtsMux = new Object();
 
     /** Schema name. */
     private String schema;

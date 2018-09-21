@@ -392,7 +392,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
     /**
      * Dummy class to overcome ambiguous method name "setExpiryPolicyFactory".
      */
-    private final static class TestConfiguration extends CacheConfiguration {
+    private static final class TestConfiguration extends CacheConfiguration {
         /**
          *
          */
