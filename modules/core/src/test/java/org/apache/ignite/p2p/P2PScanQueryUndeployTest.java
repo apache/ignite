@@ -37,20 +37,20 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /** */
 public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
     /** */
-    private static final String TEST_PREDICATE_RESOURCE_NAME = TestPredicate.class.getSimpleName()+".class";
+    private static final String TEST_PREDICATE_RESOURCE_NAME = TestPredicate.class.getSimpleName() + ".class";
     /** Cache name. */
     private static final String CACHE_NAME = "test-cache";
 
     /** Client instance name. */
     private static final String CLIENT_INSTANCE_NAME = "client";
 
-    private String propertyValueBeforeTest;
+    /** */
+    private String propValBeforeTest;
 
     /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {
@@ -91,21 +91,23 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        propertyValueBeforeTest = System.getProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY);
+        propValBeforeTest = System.getProperty(PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY);
 
-        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "true");
+        System.setProperty(PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "true");
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        if(propertyValueBeforeTest==null)
-            System.clearProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY);
+        if (propValBeforeTest == null)
+            System.clearProperty(PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY);
         else
-            System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, propertyValueBeforeTest);
+            System.setProperty(PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, propValBeforeTest);
     }
 
     /** {@inheritDoc} */
@@ -144,7 +146,7 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
 
         stopGrid(0);
 
-        while(client.cluster().topologyVersion()!=4)
+        while (client.cluster().topologyVersion() != 4)
             U.sleep(10L);
 
         client.cluster().active(true);
@@ -155,19 +157,21 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
 
         cache.put(1, "foo");
 
-        int gridDeploymentRequests = client.compute(client.cluster().forRemotes()).call(MessageCountingCommunicationSpi::deploymentRequestCount);
+        int gridDeploymentRequests = client
+            .compute(client.cluster().forRemotes())
+            .call(MessageCountingCommunicationSpi::deploymentRequestCount);
 
         assertEquals("Invalid number of sent grid deployment requests", 0, gridDeploymentRequests);
 
         cache.query(new ScanQuery<>(new TestPredicate())).getAll();
 
-        gridDeploymentRequests = client.compute(client.cluster().forRemotes()).call(MessageCountingCommunicationSpi::deploymentRequestCount);
+        gridDeploymentRequests = client
+            .compute(client.cluster().forRemotes())
+            .call(MessageCountingCommunicationSpi::deploymentRequestCount);
 
         assertEquals("Invalid number of sent grid deployment requests", 1, gridDeploymentRequests);
 
         stopGrid(CLIENT_INSTANCE_NAME);
-
-        log.error("IGNITE-9381 first loop finished");
 
         client = startGrid(CLIENT_INSTANCE_NAME);
 
@@ -175,7 +179,9 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
 
         cache.query(new ScanQuery<>(new TestPredicate())).getAll();
 
-        gridDeploymentRequests = client.compute(client.cluster().forRemotes()).call(MessageCountingCommunicationSpi::deploymentRequestCount);
+        gridDeploymentRequests = client
+            .compute(client.cluster().forRemotes())
+            .call(MessageCountingCommunicationSpi::deploymentRequestCount);
 
         assertEquals("Invalid number of sent grid deployment requests", 2, gridDeploymentRequests);
     }
@@ -219,7 +225,7 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
 
                     f.setAccessible(true);
 
-                    return ((String) f.get(req)).endsWith(TEST_PREDICATE_RESOURCE_NAME);
+                    return ((String)f.get(req)).endsWith(TEST_PREDICATE_RESOURCE_NAME);
                 }
             }
             catch (Exception e) {

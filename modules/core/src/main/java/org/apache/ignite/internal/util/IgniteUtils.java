@@ -9566,9 +9566,9 @@ public abstract class IgniteUtils {
      * @return a SingletonList containing the element in the original collection
      */
     public static <T> Collection<T> convertToSingletonList(Collection<T> col) {
-        if (col.size() != 1)
+        if (col.size() != 1) {
             throw new IllegalArgumentException("Unexpected collection size for singleton list, expecting 1 but was: " + col.size());
-
+        }
         return Collections.singletonList(col.iterator().next());
     }
 

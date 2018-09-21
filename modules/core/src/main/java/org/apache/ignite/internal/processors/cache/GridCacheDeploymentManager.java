@@ -146,9 +146,10 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Gets distributed class loader. Note that {@link #p2pContext(UUID, IgniteUuid, String, DeploymentMode, Map)} must
-     * be called from the same thread prior to using this class loader, or the loading may happen for the wrong node or
-     * context.
+     * Gets distributed class loader. Note that
+     * {@link #p2pContext(UUID, IgniteUuid, String, DeploymentMode, Map)} must be
+     * called from the same thread prior to using this class loader, or the
+     * loading may happen for the wrong node or context.
      *
      * @return Cache class loader.
      */
@@ -371,7 +372,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
             if (node == null) {
                 if (log.isDebugEnabled())
-                    log.debug("Ignoring p2p context (sender has left) [sndId=" + sndId + ", ldrId=" + ldrId +
+                    log.debug("Ignoring p2p context (sender has left) [sndId=" + sndId + ", ldrId=" +  ldrId +
                         ", userVer=" + userVer + ", mode=" + mode + ", participants=" + participants + ']');
 
                 return;
@@ -403,7 +404,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         if (log.isDebugEnabled())
-            log.debug("Setting p2p context [sndId=" + sndId + ", ldrId=" + ldrId + ", userVer=" + userVer +
+            log.debug("Setting p2p context [sndId=" + sndId + ", ldrId=" +  ldrId + ", userVer=" + userVer +
                 ", seqNum=" + ldrId.localId() + ", mode=" + mode + ", participants=" + participants +
                 ", locDepOwner=false]");
 
@@ -446,6 +447,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 if (cctx.discovery().node(id) == null) {
                     if (depInfo.removeParticipant(id))
                         deps.remove(ldrId, depInfo);
+
 
                     allParticipants.remove(id);
                 }
@@ -726,7 +728,8 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
     /**
      * @param ldr Class loader to get ID for.
-     * @return ID for given class loader or {@code null} if given loader is not grid deployment class loader.
+     * @return ID for given class loader or {@code null} if given loader is not
+     *      grid deployment class loader.
      */
     @Nullable public IgniteUuid getClassLoaderId(@Nullable ClassLoader ldr) {
         if (ldr == null)
@@ -769,7 +772,8 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         /**
-         * Sets context class loader. If user's class loader is null then will be used default class loader.
+         * Sets context class loader.
+         * If user's class loader is null then will be used default class loader.
          *
          * @param classLdr User's class loader.
          */
@@ -830,7 +834,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
             if (cls != null)
                 return cls;
 
-            throw new ClassNotFoundException("Failed to load class [name=" + name + ", ctx=" + deps + ']');
+            throw new ClassNotFoundException("Failed to load class [name=" + name+ ", ctx=" + deps + ']');
         }
 
         /**
