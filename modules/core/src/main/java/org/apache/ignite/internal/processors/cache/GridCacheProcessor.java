@@ -1284,7 +1284,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ", mode=" + cfg.getCacheMode() +
                 ", atomicity=" + cfg.getAtomicityMode() +
                 ", backups=" + cfg.getBackups() +
-                ", mvcc=" + cacheCtx.mvccEnabled() +']');
+                ", mvcc=" + cacheCtx.mvccEnabled() +']' +
+                ", encryptionEnabled=" + cfg.isEncryptionEnabled() +']');
         }
     }
 

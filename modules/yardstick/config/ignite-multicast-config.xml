@@ -34,5 +34,22 @@
                 </property>
             </bean>
         </property>
+
+        <property name="encryptionSpi">
+            <bean class="org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi">
+                <property name="keyStorePath" value="tde.jks"/>
+                <property name="keyStorePassword" value="love_sex_god"/>
+            </bean>
+        </property>
+
+        <property name="dataStorageConfiguration" >
+            <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
+                <property name="defaultDataRegionConfiguration">
+                    <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+                        <property name="persistenceEnabled" value="true"/>
+                    </bean>
+                </property>
+            </bean>
+        </property>
     </bean>
 </beans>
