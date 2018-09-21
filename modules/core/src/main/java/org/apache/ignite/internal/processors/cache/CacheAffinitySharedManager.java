@@ -1415,6 +1415,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 assert grp != null;
 
                 if (affReq != null && affReq.contains(aff.groupId())) {
+                    System.out.println("IGNITE-9381 aff: " + aff.lastVersion());
                     assert AffinityTopologyVersion.NONE.equals(aff.lastVersion());
 
                     CacheGroupAffinityMessage affMsg = receivedAff.get(aff.groupId());

@@ -116,6 +116,8 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
 
         client.cluster().active(true);
 
+        awaitPartitionMapExchange();
+
         IgniteCache<Integer, String> cache = client.getOrCreateCache(CACHE_NAME);
 
         cache.put(1, "foo");
@@ -131,6 +133,8 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
         assertEquals("Invalid number of sent grid deployment requests", 1, gridDeploymentRequests);
 
         stopGrid(CLIENT_INSTANCE_NAME);
+
+        System.out.println("IGNITE-9381 first loop finished");
 
         client = startGrid(CLIENT_INSTANCE_NAME);
 
