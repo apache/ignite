@@ -725,7 +725,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 keys.add(new KeyCacheObjectWrapper(e.getKey()));
         }
 
-        load0(entries, fut, keys, 0);
+        load0(entries, fut, keys, 0, null);
     }
 
     /** {@inheritDoc} */
@@ -798,12 +798,15 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * @param resFut Result future.
      * @param activeKeys Active keys.
      * @param remaps Remaps count.
+     * @param remapNode Node for remap. In case update with {@code allowOverride() == false} fails on one node,
+     * we don't need to send update request to all affinity nodes again.
      */
     private void load0(
         Collection<? extends DataStreamerEntry> entries,
         final GridFutureAdapter<Object> resFut,
         @Nullable final Collection<KeyCacheObjectWrapper> activeKeys,
-        final int remaps
+        final int remaps,
+        ClusterNode remapNode
     ) {
         try {
             assert entries != null;
@@ -876,7 +879,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         if (key.partition() == -1)
                             key.partition(cctx.affinity().partition(key, false));
 
-                        nodes = nodes(key, topVer, cctx);
+                        if (!allowOverwrite() && remapNode != null)
+                            nodes = Collections.singletonList(remapNode);
+                        else
+                            nodes = nodes(key, topVer, cctx);
                     }
                     catch (IgniteCheckedException e) {
                         resFut.onDone(e);
@@ -903,6 +909,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 }
 
                 for (final Map.Entry<ClusterNode, Collection<DataStreamerEntry>> e : mappings.entrySet()) {
+                    final ClusterNode node = e.getKey();
                     final UUID nodeId = e.getKey().id();
 
                     Buffer buf = bufMappings.get(nodeId);
@@ -964,7 +971,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                                                     if (cancelled)
                                                         closedException();
 
-                                                    load0(entriesForNode, resFut, activeKeys, remaps + 1);
+                                                    load0(entriesForNode, resFut, activeKeys, remaps + 1, node);
                                                 }
                                                 catch (Throwable ex) {
                                                     resFut.onDone(
