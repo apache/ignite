@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -113,6 +114,9 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
         Ignite client = startGrid(CLIENT_INSTANCE_NAME);
 
         stopGrid(0);
+
+        while(client.cluster().topologyVersion()!=4)
+            U.sleep(10L);
 
         client.cluster().active(true);
 
