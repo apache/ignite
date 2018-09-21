@@ -216,7 +216,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
             @Override public Object call() throws Exception {
                 Thread.currentThread().setName("restart-thread");
 
-                while (!finished.get() && System.currentTimeMillis() < endTime) {
+                while (!finished.get()) {
                     U.sleep(500);
 
                     stopGrid(NODE_CNT);
@@ -225,7 +225,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
                 }
 
                 stopGrid(NODE_CNT);
-                
+
                 return null;
             }
         });
