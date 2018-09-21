@@ -37,6 +37,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /** */
@@ -48,6 +49,8 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
 
     /** Client instance name. */
     private static final String CLIENT_INSTANCE_NAME = "client";
+
+    private String propertyValueBeforeTest;
 
     /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {
@@ -86,6 +89,23 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
             cfg.setClientMode(true);
 
         return cfg;
+    }
+
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        propertyValueBeforeTest = System.getProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY);
+
+        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "true");
+    }
+
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        if(propertyValueBeforeTest==null)
+            System.clearProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY);
+        else
+            System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, propertyValueBeforeTest);
     }
 
     /** {@inheritDoc} */

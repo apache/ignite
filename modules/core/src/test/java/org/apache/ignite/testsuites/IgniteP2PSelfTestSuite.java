@@ -61,26 +61,26 @@ public class IgniteP2PSelfTestSuite extends TestSuite {
     public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("Ignite P2P Test Suite");
 
-//        suite.addTest(new TestSuite(GridP2PDoubleDeploymentSelfTest.class));
-//        suite.addTest(new TestSuite(GridP2PHotRedeploymentSelfTest.class));
-//        suite.addTest(new TestSuite(GridP2PClassLoadingSelfTest.class));
-//        suite.addTest(new TestSuite(GridP2PUndeploySelfTest.class));
-//        suite.addTest(new TestSuite(GridP2PRemoteClassLoadersSelfTest.class));
-//        suite.addTest(new TestSuite(GridP2PNodeLeftSelfTest.class));
-//        suite.addTest(new TestSuite(GridP2PDifferentClassLoaderSelfTest.class));
-//        suite.addTest(new TestSuite(GridP2PSameClassLoaderSelfTest.class));
-//        suite.addTest(new TestSuite(GridP2PJobClassLoaderSelfTest.class));
-//        suite.addTest(new TestSuite(GridP2PRecursionTaskSelfTest.class));
-//        suite.addTest(new TestSuite(GridP2PLocalDeploymentSelfTest.class));
-//        //suite.addTest(new TestSuite(GridP2PTestTaskExecutionTest.class));
-//        suite.addTest(new TestSuite(GridP2PTimeoutSelfTest.class));
-//        suite.addTest(new TestSuite(GridP2PMissedResourceCacheSizeSelfTest.class));
-//        suite.addTest(new TestSuite(GridP2PContinuousDeploymentSelfTest.class));
-//        suite.addTest(new TestSuite(DeploymentClassLoaderCallableTest.class));
-//        suite.addTest(new TestSuite(P2PStreamingClassLoaderTest.class));
-//        suite.addTest(new TestSuite(SharedDeploymentTest.class));
+        suite.addTest(new TestSuite(GridP2PDoubleDeploymentSelfTest.class));
+        suite.addTest(new TestSuite(GridP2PHotRedeploymentSelfTest.class));
+        suite.addTest(new TestSuite(GridP2PClassLoadingSelfTest.class));
+        suite.addTest(new TestSuite(GridP2PUndeploySelfTest.class));
+        suite.addTest(new TestSuite(GridP2PRemoteClassLoadersSelfTest.class));
+        suite.addTest(new TestSuite(GridP2PNodeLeftSelfTest.class));
+        suite.addTest(new TestSuite(GridP2PDifferentClassLoaderSelfTest.class));
+        suite.addTest(new TestSuite(GridP2PSameClassLoaderSelfTest.class));
+        suite.addTest(new TestSuite(GridP2PJobClassLoaderSelfTest.class));
+        suite.addTest(new TestSuite(GridP2PRecursionTaskSelfTest.class));
+        suite.addTest(new TestSuite(GridP2PLocalDeploymentSelfTest.class));
+        //suite.addTest(new TestSuite(GridP2PTestTaskExecutionTest.class));
+        suite.addTest(new TestSuite(GridP2PTimeoutSelfTest.class));
+        suite.addTest(new TestSuite(GridP2PMissedResourceCacheSizeSelfTest.class));
+        suite.addTest(new TestSuite(GridP2PContinuousDeploymentSelfTest.class));
+        suite.addTest(new TestSuite(DeploymentClassLoaderCallableTest.class));
+        suite.addTest(new TestSuite(P2PStreamingClassLoaderTest.class));
+        suite.addTest(new TestSuite(SharedDeploymentTest.class));
         suite.addTest(new TestSuite(P2PScanQueryUndeployTest.class));
-      //  GridTestUtils.addTestIfNeeded(suite, GridDeploymentMessageCountSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridDeploymentMessageCountSelfTest.class, ignoredTests);
 
         return suite;
     }
