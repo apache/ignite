@@ -1176,7 +1176,8 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
         }
         catch (IgniteCheckedException e) {
             onException(ex, e);
-        } finally {
+        }
+        finally {
             phaser.forceTermination();
         }
 
@@ -1223,7 +1224,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
                     try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         tx.timeout(TX_TIMEOUT);
 
-                        barrier.await();
+                        barrier.await(TX_TIMEOUT, TimeUnit.MILLISECONDS);
 
                         IgniteCache<Object, Object> cache0 = node.cache(DEFAULT_CACHE_NAME);
 
@@ -1237,7 +1238,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
                             }
                         }
 
-                        barrier.await();
+                        barrier.await(TX_TIMEOUT, TimeUnit.MILLISECONDS);
 
                         qry = new SqlFieldsQuery("UPDATE Integer SET _val = (_key * 10)");
 
@@ -1795,7 +1796,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
         do {
             p = phaser.arriveAndAwaitAdvance();
         }
-        while (p < phase);
+        while (p < phase && p >= 0 /* check termination */ );
     }
 
     /**
