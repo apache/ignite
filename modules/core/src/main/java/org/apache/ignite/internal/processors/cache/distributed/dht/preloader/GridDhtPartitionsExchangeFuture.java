@@ -3575,12 +3575,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         partHistSuppliers.putAll(msg.partitionHistorySuppliers());
 
-        ExecutorService serv = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-
         List<Future<?>> futList = new ArrayList<>();
 
         for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
-            futList.add(serv.submit(new Runnable() {
+            futList.add(cctx.kernalContext().getExecutorService().submit(new Runnable() {
                 @Override public void run() {
                     Integer grpId = entry.getKey();
 
@@ -3642,10 +3640,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 e.printStackTrace();
             }
         }
-
-        serv.shutdown();
-
-
     }
 
     /**

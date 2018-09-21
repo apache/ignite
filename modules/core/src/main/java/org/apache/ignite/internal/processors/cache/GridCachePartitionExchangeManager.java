@@ -1571,12 +1571,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (res)
                     log.info("process breakpoint. setSize = " + msg.partitions().entrySet().size());
 
-                ExecutorService serv = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-
                 List<Future<Boolean>> futList = new ArrayList<>();
 
                 for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
-                    futList.add(serv.submit(new Callable<Boolean>() {
+                    futList.add(cctx.kernalContext().getExecutorService().submit(new Callable<Boolean>() {
                         @Override public Boolean call() {
                             boolean res = false;
 
@@ -1618,8 +1616,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         e.printStackTrace();
                     }
                 }
-
-                serv.shutdown();
 
                 if (!cctx.kernalContext().clientNode() && updated)
                     refreshPartitions();
