@@ -91,23 +91,8 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        propValBeforeTest = System.getProperty(PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY);
-
-        System.setProperty(PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "true");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        if (propValBeforeTest == null)
-            System.clearProperty(PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY);
-        else
-            System.setProperty(PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, propValBeforeTest);
+    @Override protected void checkConfiguration(IgniteConfiguration cfg) {
+        // No op.
     }
 
     /** {@inheritDoc} */
