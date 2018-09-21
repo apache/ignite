@@ -3482,6 +3482,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             AffinityTopologyVersion resTopVer = initialVersion();
 
+            System.out.println("IGNITE-9381 this: " + this + " msg: " + msg + " resTopVer: " + resTopVer);
+
             if (exchCtx.mergeExchanges()) {
                 if (msg.resultTopologyVersion() != null && !initialVersion().equals(msg.resultTopologyVersion())) {
                     if (log.isInfoEnabled()) {
