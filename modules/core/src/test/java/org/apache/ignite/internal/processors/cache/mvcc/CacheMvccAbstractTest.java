@@ -910,16 +910,17 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                     // Unordered key sequence.
                     Set<Integer> keys = new LinkedHashSet<>();
 
-                    while (keys.size() < RANGE)
-                        keys.add(rnd.nextInt(min, max));
-
                     int v = idx * 1_000_000;
 
                     boolean first = true;
 
                     while (!stop.get()) {
-                        for(int i = min; i < max; i++)
-                            map.put(i, v);
+                        while (keys.size() < RANGE) {
+                            int key = rnd.nextInt(min, max);
+
+                            if (keys.add(key))
+                                map.put(key, v);
+                        }
 
                         TestCache<Integer, Integer> cache = randomCache(caches, rnd);
 
@@ -955,6 +956,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                         }
                         finally {
                             cache.readUnlock();
+
+                            keys.clear();
 
                             map.clear();
                         }

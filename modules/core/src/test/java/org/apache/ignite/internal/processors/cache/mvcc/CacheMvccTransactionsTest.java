@@ -1623,7 +1623,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         txReadsSnapshot(4, 2, 1, 64, SCAN);
     }
 
-
     /**
      * @param srvs Number of server nodes.
      * @param clients Number of client nodes.

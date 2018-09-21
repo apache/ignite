@@ -828,6 +828,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFlushTimeout() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9321");
+
         // Local caches are not allowed with MVCC enabled.
         mode = getCacheAtomicityMode() != TRANSACTIONAL_SNAPSHOT ? LOCAL : PARTITIONED;
 

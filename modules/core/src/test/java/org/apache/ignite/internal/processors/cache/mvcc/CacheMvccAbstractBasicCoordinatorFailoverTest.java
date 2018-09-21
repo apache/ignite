@@ -52,10 +52,8 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
-import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Base class for Mvcc coordinator failover test.
@@ -73,6 +71,8 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
         ReadMode readMode,
         WriteMode writeMode
     ) throws Exception {
+        assert concurrency == PESSIMISTIC && isolation == REPEATABLE_READ;
+
         testSpi = true;
 
         startGrids(3);
@@ -479,9 +479,6 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
             ", crdChangeCnt=" + crdChangeCnt +
             ", readInTx=" + readInTx + ']');
 
-        TransactionConcurrency concurrency = readMode == ReadMode.GET ? OPTIMISTIC : PESSIMISTIC; // TODO IGNITE-7184
-        TransactionIsolation isolation = readMode == ReadMode.GET ? SERIALIZABLE : REPEATABLE_READ; // TODO IGNITE-7184
-
         testSpi = true;
 
         client = false;
@@ -544,7 +541,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
                 Map<Integer, Integer> res = null;
 
                 if (readInTx) {
-                    try (Transaction tx = getNode.transactions().txStart(concurrency, isolation)) {
+                    try (Transaction tx = getNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         res = readAllByMode(cache, keys, readMode, INTEGER_CODEC);
 
                         tx.rollback();
