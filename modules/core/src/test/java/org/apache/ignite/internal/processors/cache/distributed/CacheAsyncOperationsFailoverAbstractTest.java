@@ -219,12 +219,12 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
                 while (!finished.get()) {
                     U.sleep(500);
 
-                    stopGrid(NODE_CNT);
-
-                    startGrid(NODE_CNT);
+//                    stopGrid(NODE_CNT);
+//
+//                    startGrid(NODE_CNT);
                 }
 
-                stopGrid(NODE_CNT);
+//                stopGrid(NODE_CNT);
 
                 return null;
             }
