@@ -33,12 +33,12 @@ import org.jetbrains.annotations.Nullable;
  */
 public enum CacheAtomicityMode {
     /**
-     * Specified fully {@code ACID}-compliant transactional cache behavior for key-value API. See
-     * {@link Transaction} for more information about transactions.
+     * Enables fully {@code ACID}-compliant transactional cache behavior for the key-value API.
      * <p>
-     * <b>Note:</b> this mode guaranties transactional behavior <b>only for key-value API</b> operations.
-     * For ACID SQL transactions use {@code CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT} mode.
-     * </p>
+     * <b>Note!</b> In this mode, transactional consistency is guaranteed for key-value API operations only.
+     * To enable ACID capabilities for SQL transactions, use the {@code TRANSACTIONAL_SNAPSHOT} mode.
+     * <p>
+     * See {@link Transaction} for more information about transactions.
      */
     TRANSACTIONAL,
 
