@@ -59,8 +59,10 @@ public class CacheQueryEvictDataLostTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setMaxSize(256L * 1024 * 1024));
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration()
+                    .setMaxSize(256L * 1024 * 1024));
         cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
