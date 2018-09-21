@@ -2051,8 +2051,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridQueryCancel cancel) {
         boolean mvccEnabled = mvccEnabled(ctx), startTx = autoStartTx(qry);
 
+        final long startTime = U.currentTimeMillis();
+
+        Throwable error = null;
+
+        List<FieldsQueryCursor<List<?>>> res = null;
+
         try {
-            List<FieldsQueryCursor<List<?>>> res = tryQueryDistributedSqlFieldsNative(schemaName, qry, cliCtx);
+            res = tryQueryDistributedSqlFieldsNative(schemaName, qry, cliCtx);
 
             if (res != null)
                 return res;
@@ -2138,7 +2144,28 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (mvccEnabled && (tx = tx(ctx)) != null)
                 tx.setRollbackOnly();
 
+            error = e;
+
             throw e;
+        } finally {
+            long duration = U.currentTimeMillis() - startTime;
+
+            boolean failed = error != null;
+
+            H2TwoStepCachedQuery query = twoStepCache.get(new H2TwoStepCachedQueryKey(schemaName, qry.getSql(),
+                qry.isCollocated(), qry.isDistributedJoins(), qry.isEnforceJoinOrder(), qry.isLocal()));
+
+            if (query != null)
+                for (Integer cacheId: query.query().cacheIds()) {
+                    GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
+
+                    if (cctx != null)
+                        cctx.queries().collectMetrics(SQL_FIELDS, qry.getSql(), startTime, duration, failed);
+                }
+
+            if (log.isTraceEnabled())
+                log.trace("Query execution [startTime=" + startTime + ", duration=" + duration +
+                    ", fail=" + failed + ", res=" + res + ']');
         }
     }
 
@@ -2159,6 +2186,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private List<? extends FieldsQueryCursor<List<?>>> doRunPrepared(String schemaName, Prepared prepared,
         SqlFieldsQuery qry, GridCacheTwoStepQuery twoStepQry, List<GridQueryFieldMetadata> meta, boolean keepBinary,
         boolean startTx, MvccQueryTracker tracker, GridQueryCancel cancel) {
+
         String sqlQry = qry.getSql();
 
         boolean loc = qry.isLocal();

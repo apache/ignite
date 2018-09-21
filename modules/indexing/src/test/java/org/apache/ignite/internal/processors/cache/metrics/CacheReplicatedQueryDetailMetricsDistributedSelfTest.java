@@ -14,24 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.examples
+
+package org.apache.ignite.internal.processors.cache.metrics;
+
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
-  */
-package object spark {
-    /**
-      * Utility object.
-      * Takes a `AutoCloseable` resource and closure to work with it.
-      * After work is done - closes the resource.
-      */
-    object closeAfter {
-        def apply[R <: AutoCloseable, T](r: R)(c: (R) ⇒ T) = {
-            try {
-                c(r)
-            }
-            finally {
-                r.close
-            }
-        }
+ * Tests for replicated distributed cache query metrics.
+ */
+public class CacheReplicatedQueryDetailMetricsDistributedSelfTest extends CacheAbstractQueryDetailMetricsSelfTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        gridCnt = 2;
+        cacheMode = REPLICATED;
+
+        super.beforeTest();
     }
 }

@@ -15,17 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples;
+package org.apache.ignite.internal.processors.cache.metrics;
 
-import org.apache.ignite.examples.datagrid.SpatialQueryExample;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
- * * Tests {@link SpatialQueryExample} in the multi node mode.
+ * Tests for local cache query metrics.
  */
-public class SpatialQueryExampleMultiNodeSelfTest extends SpatialQueryExampleSelfTest {
+public class CacheLocalQueryDetailMetricsSelfTest extends CacheAbstractQueryDetailMetricsSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        for (int i = 0; i < RMT_NODES_CNT; i++)
-            startGrid("node-" + i, "examples/config/example-ignite.xml");
+        gridCnt = 1;
+        cacheMode = LOCAL;
+
+        super.beforeTest();
     }
 }

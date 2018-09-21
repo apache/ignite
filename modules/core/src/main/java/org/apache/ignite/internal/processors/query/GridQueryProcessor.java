@@ -122,6 +122,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_SCHEMA;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SCHEMA_POOL;
+import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 
 /**
  * Indexing processor.
@@ -2734,17 +2735,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IgniteCheckedException(e);
         }
         finally {
-            boolean failed = err != null;
+            if (!SQL_FIELDS.equals(qryType)) {
+                boolean failed = err != null;
 
-            long duration = U.currentTimeMillis() - startTime;
+                long duration = U.currentTimeMillis() - startTime;
 
-            if (complete || failed) {
-                if (cctx != null)
-                    cctx.queries().collectMetrics(qryType, qry, startTime, duration, failed);
+                if (complete || failed) {
+                    if (cctx != null)
+                        cctx.queries().collectMetrics(qryType, qry, startTime, duration, failed);
 
-                if (log.isTraceEnabled())
-                    log.trace("Query execution [startTime=" + startTime + ", duration=" + duration +
-                        ", fail=" + failed + ", res=" + res + ']');
+                    if (log.isTraceEnabled())
+                        log.trace("Query execution [startTime=" + startTime + ", duration=" + duration +
+                            ", fail=" + failed + ", res=" + res + ']');
+                }
             }
         }
     }

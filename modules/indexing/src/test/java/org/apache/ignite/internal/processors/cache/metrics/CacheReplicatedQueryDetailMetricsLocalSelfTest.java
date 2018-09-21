@@ -15,19 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples;
+package org.apache.ignite.internal.processors.cache.metrics;
 
-import org.apache.ignite.examples.datagrid.SpatialQueryExample;
-import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
- * Tests {@link SpatialQueryExample}.
+ * Tests for replicated local cache query metrics.
  */
-public class SpatialQueryExampleSelfTest extends GridAbstractExamplesTest {
-    /**
-     * @throws Exception If failed.
-     */
-    public void testSpatialQueryExample() throws Exception {
-        SpatialQueryExample.main(EMPTY_ARGS);
+public class CacheReplicatedQueryDetailMetricsLocalSelfTest extends CacheAbstractQueryDetailMetricsSelfTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        gridCnt = 1;
+        cacheMode = REPLICATED;
+
+        super.beforeTest();
     }
 }

@@ -15,8 +15,19 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.processors.cache.metrics;
+
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+
 /**
- * <!-- Package description. -->
- * Contains Hibernate-based cache store implementation.
+ * Tests for partitioned distributed cache query metrics.
  */
-package org.apache.ignite.examples.datagrid.store.hibernate;
+public class CachePartitionedQueryDetailMetricsDistributedSelfTest extends CacheAbstractQueryDetailMetricsSelfTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        gridCnt = 2;
+        cacheMode = PARTITIONED;
+
+        super.beforeTest();
+    }
+}

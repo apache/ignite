@@ -15,17 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples;
+package org.apache.ignite.internal.processors.cache.metrics;
 
-import org.apache.ignite.examples.datagrid.hibernate.HibernateL2CacheExample;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
- * Multi-node test for {@link HibernateL2CacheExample}.
+ * Tests for partitioned local cache query metrics.
  */
-public class HibernateL2CacheExampleMultiNodeSelfTest extends HibernateL2CacheExampleSelfTest {
+public class CachePartitionedQueryDetailMetricsLocalSelfTest extends CacheAbstractQueryDetailMetricsSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        for (int i = 0; i < RMT_NODES_CNT; i++)
-            startGrid("node-" + i, "examples/config/example-ignite.xml");
+        gridCnt = 1;
+        cacheMode = PARTITIONED;
+
+        super.beforeTest();
     }
 }
