@@ -28,6 +28,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.ZipCompressorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
@@ -93,7 +94,7 @@ public class IgniteWalIteratorExceptionDuringReadTest extends GridCommonAbstract
 
         ig.cluster().active(false);
 
-        IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory(log);
+        IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory(new ZipCompressorFactory(), log);
 
         FileWALPointer failOnPtr = new FileWALPointer(3, 1024 * 1024 * 5, 0);
 

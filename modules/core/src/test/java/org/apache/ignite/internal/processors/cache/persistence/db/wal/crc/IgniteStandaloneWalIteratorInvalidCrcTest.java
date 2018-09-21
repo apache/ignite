@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.processors.cache.persistence.ZipCompressorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -43,7 +44,7 @@ public class IgniteStandaloneWalIteratorInvalidCrcTest extends IgniteAbstractWal
         File walArchiveDir = U.field(walMgr, "walArchiveDir");
         File walDir = U.field(walMgr, "walWorkDir");
 
-        IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory();
+        IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory(new ZipCompressorFactory());
 
         return ignoreArchiveDir ? iterFactory.iterator(walDir) : iterFactory.iterator(walArchiveDir, walDir);
     }

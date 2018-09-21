@@ -39,6 +39,7 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
@@ -64,6 +65,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  * Factory for creating iterator over WAL files
  */
 public class IgniteWalIteratorFactory {
+    /** Factory to provide I/O interfaces for read/write operations with archive. */
+    @NotNull protected final CompressorFactory compressorFactory;
     /** Logger. */
     private final IgniteLogger log;
 
@@ -73,18 +76,22 @@ public class IgniteWalIteratorFactory {
     /**
      * Creates WAL files iterator factory.
      * WAL iterator supports automatic converting from CacheObjects and KeyCacheObject into BinaryObjects
+     *
+     * @param compressorFactory Factory to provide I/O interfaces for read/write operations with archive.
      */
-    public IgniteWalIteratorFactory() {
-        this(ConsoleLogger.INSTANCE);
+    public IgniteWalIteratorFactory(@NotNull CompressorFactory compressorFactory) {
+        this(compressorFactory, ConsoleLogger.INSTANCE);
     }
 
     /**
      * Creates WAL files iterator factory.
      * WAL iterator supports automatic converting from CacheObjects and KeyCacheObject into BinaryObjects
      *
+     * @param compressorFactory Factory to provide I/O interfaces for read/write operations with archive.
      * @param log Logger.
      */
-    public IgniteWalIteratorFactory(@NotNull final IgniteLogger log) {
+    public IgniteWalIteratorFactory(@NotNull CompressorFactory compressorFactory, @NotNull final IgniteLogger log) {
+        this.compressorFactory = compressorFactory;
         this.log = log;
     }
 
@@ -176,6 +183,7 @@ public class IgniteWalIteratorFactory {
         return new StandaloneWalRecordsIterator(log,
             prepareSharedCtx(iteratorParametersBuilder),
             iteratorParametersBuilder.ioFactory,
+            compressorFactory,
             resolveWalFiles(iteratorParametersBuilder),
             iteratorParametersBuilder.filter,
             iteratorParametersBuilder.lowBound,
@@ -308,7 +316,7 @@ public class IgniteWalIteratorFactory {
             !WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(fileName).matches())
             return;  // Filter out this because it is not segment file.
 
-        FileDescriptor desc = readFileDescriptor(file, ioFactory);
+        FileDescriptor desc = readFileDescriptor(file, ioFactory, compressorFactory);
 
         if (desc != null)
             descriptors.add(desc);
@@ -317,11 +325,13 @@ public class IgniteWalIteratorFactory {
     /**
      * @param file File to read.
      * @param ioFactory IO factory.
+     * @param compressorFactory Factory to provide I/O interfaces for read/write operations with archive.
      */
-    private FileDescriptor readFileDescriptor(File file, FileIOFactory ioFactory) {
+    private FileDescriptor readFileDescriptor(File file, FileIOFactory ioFactory, CompressorFactory compressorFactory) {
         FileDescriptor ds = new FileDescriptor(file);
 
         try (
+            FileIO fileIO = ds.isCompressed(compressorFactory.filenameExtension()) ? new CompressorFileIO(compressorFactory, file) : ioFactory.create(file);
             SegmentIO fileIO = ds.toIO(ioFactory);
             ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())
         ) {
@@ -367,7 +377,7 @@ public class IgniteWalIteratorFactory {
             kernalCtx, null, null, null,
             null, null, null, dbMgr, null,
             null, null, null, null,
-            null, null,null, null, null
+            null, null, null, null, null
         );
     }
 

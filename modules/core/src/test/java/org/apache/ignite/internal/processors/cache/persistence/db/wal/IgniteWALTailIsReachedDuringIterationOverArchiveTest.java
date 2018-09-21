@@ -35,6 +35,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.ZipCompressorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
@@ -125,7 +126,7 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
 
         File walArchiveDir = U.field(wal, "walArchiveDir");
 
-        IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory();
+        IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory(new ZipCompressorFactory(), log);
 
         doTest(wal, iteratorFactory.iterator(walArchiveDir));
     }
@@ -151,7 +152,7 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
     private void doTest(IgniteWriteAheadLogManager walMgr, WALIterator it) throws IOException, IgniteCheckedException {
         File walArchiveDir = U.field(walMgr, "walArchiveDir");
 
-        IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory();
+        IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory(new ZipCompressorFactory(), log);
 
         List<FileDescriptor> descs = iteratorFactory.resolveWalFiles(
             new IteratorParametersBuilder()

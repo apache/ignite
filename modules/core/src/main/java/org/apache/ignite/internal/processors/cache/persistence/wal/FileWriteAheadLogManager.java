@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileFilter;
@@ -26,6 +25,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -59,9 +60,6 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -87,6 +85,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
+import org.apache.ignite.internal.processors.cache.persistence.CompressorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
@@ -205,7 +204,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     };
 
     /** */
-    public static final Pattern WAL_SEGMENT_FILE_COMPACTED_PATTERN = Pattern.compile("\\d{16}\\.wal\\.zip");
+    public static final Pattern WAL_SEGMENT_FILE_COMPACTED_PATTERN = Pattern.compile("\\d{16}\\.wal\\.[A-Za-z0-9]+");
 
     /** WAL segment file filter, see {@link #WAL_NAME_PATTERN} */
     public static final FileFilter WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER = new FileFilter() {
@@ -216,7 +215,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     };
 
     /** */
-    private static final Pattern WAL_SEGMENT_TEMP_FILE_COMPACTED_PATTERN = Pattern.compile("\\d{16}\\.wal\\.zip\\.tmp");
+    private static final Pattern WAL_SEGMENT_TEMP_FILE_COMPACTED_PATTERN = Pattern.compile("\\d{16}\\.wal\\.[A-Za-z0-9]+\\.tmp");
 
     /** */
     private static final FileFilter WAL_SEGMENT_FILE_COMPACTED_FILTER = new FileFilter() {
@@ -319,6 +318,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Factory to provide I/O interfaces for read/write operations with files */
     private volatile FileIOFactory ioFactory;
 
+    /** Factory to provide I/O interfaces for read/write operations with archive. */
+    private final CompressorFactory compressorFactory;
+
     /** Factory to provide I/O interfaces for read primitives with files */
     private final SegmentFileInputFactory segmentFileInputFactory;
 
@@ -412,6 +414,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         fsyncDelay = dsCfg.getWalFsyncDelayNanos();
         alwaysWriteFullPages = dsCfg.isAlwaysWriteFullPages();
         ioFactory = new RandomAccessFileIOFactory();
+        compressorFactory = dsCfg.getWalCompactionFactory();
         segmentFileInputFactory = new SimpleSegmentFileInputFactory();
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
 
@@ -560,7 +563,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             String segmentName = FileDescriptor.fileName(i);
 
             File file = new File(walArchiveDir, segmentName);
-            File fileZip = new File(walArchiveDir, segmentName + FilePageStoreManager.ZIP_SUFFIX);
+            File fileZip = new File(walArchiveDir, segmentName + '.'+compressorFactory.filenameExtension());
 
             if (file.exists())
                 res.add(file);
@@ -931,6 +934,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             dsCfg,
             new RecordSerializerFactoryImpl(cctx),
             ioFactory,
+            compressorFactory,
             archiver,
             decompressor,
             log,
@@ -974,7 +978,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private boolean hasIndex(long absIdx) {
         String segmentName = FileDescriptor.fileName(absIdx);
 
-        String zipSegmentName = FileDescriptor.fileName(absIdx) + FilePageStoreManager.ZIP_SUFFIX;
+        String zipSegmentName = FileDescriptor.fileName(absIdx) + '.'+compressorFactory.filenameExtension();
 
         boolean inArchive = new File(walArchiveDir, segmentName).exists() ||
             new File(walArchiveDir, zipSegmentName).exists();
@@ -2066,9 +2070,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     deleteObsoleteRawSegments();
 
                     File tmpZip = new File(walArchiveDir, FileDescriptor.fileName(segIdx)
-                            + FilePageStoreManager.ZIP_SUFFIX + FilePageStoreManager.TMP_SUFFIX);
+                            + '.'+compressorFactory.filenameExtension() + FilePageStoreManager.TMP_SUFFIX);
 
-                    File zip = new File(walArchiveDir, FileDescriptor.fileName(segIdx) + FilePageStoreManager.ZIP_SUFFIX);
+                    File zip = new File(walArchiveDir, FileDescriptor.fileName(segIdx) + '.'+compressorFactory.filenameExtension());
 
                     File raw = new File(walArchiveDir, FileDescriptor.fileName(segIdx));
 
@@ -2124,9 +2128,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 segmentSerializerVer = readSegmentHeader(new SegmentIO(nextSegment, fileIO), segmentFileInputFactory).getSerializerVersion();
             }
 
-            try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip)))) {
-                zos.setLevel(dsCfg.getWalCompactionLevel());
-                zos.putNextEntry(new ZipEntry(""));
+            try (OutputStream zos = compressorFactory.compress(new FileOutputStream(zip))) {
 
                 ByteBuffer buf = ByteBuffer.allocate(HEADER_RECORD_SIZE);
                 buf.order(ByteOrder.nativeOrder());
@@ -2147,7 +2149,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 };
 
                 try (SingleSegmentLogicalRecordsIterator iter = new SingleSegmentLogicalRecordsIterator(
-                        log, cctx, ioFactory, BUF_SIZE, nextSegment, walArchiveDir, appendToZipC)) {
+                        log, cctx, ioFactory, compressorFactory, BUF_SIZE, nextSegment, walArchiveDir, appendToZipC)) {
 
                     while (iter.hasNextX())
                         iter.nextX();
@@ -2254,14 +2256,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             break;
 
                         File zip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress)
-                            + FilePageStoreManager.ZIP_SUFFIX);
+                            + '.'+compressorFactory.filenameExtension());
                         File unzipTmp = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress)
                             + FilePageStoreManager.TMP_SUFFIX);
                         File unzip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress));
 
-                        try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zip)));
+                        try (InputStream zis = compressorFactory.decompress(new BufferedInputStream(new FileInputStream(zip)));
                              FileIO io = ioFactory.create(unzipTmp)) {
-                            zis.getNextEntry();
 
                             while (io.writeFully(arr, 0, zis.read(arr)) > 0)
                                 updateHeartbeat();
@@ -3018,6 +3019,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @param end Optional end pointer.
          * @param dsCfg Database configuration.
          * @param serializerFactory Serializer factory.
+         * @param ioFactory
+         * @param compressorFactory Factory to provide I/O interfaces for read/write operations with archive.
          * @param archiver File Archiver.
          * @param decompressor Decompressor.
          * @param log Logger  @throws IgniteCheckedException If failed to initialize WAL segment.
@@ -3034,6 +3037,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             DataStorageConfiguration dsCfg,
             @NotNull RecordSerializerFactory serializerFactory,
             FileIOFactory ioFactory,
+            CompressorFactory compressorFactory,
             @Nullable FileArchiver archiver,
             FileDecompressor decompressor,
             IgniteLogger log,
@@ -3045,6 +3049,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 cctx,
                 serializerFactory,
                 ioFactory,
+                compressorFactory,
                 dsCfg.getWalRecordIteratorBufferSize(),
                 segmentFileInputFactory
             );
@@ -3074,7 +3079,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (!desc.file().exists()) {
                 FileDescriptor zipFile = new FileDescriptor(
                     new File(walArchiveDir, FileDescriptor.fileName(desc.idx())
-                        + FilePageStoreManager.ZIP_SUFFIX));
+                        + '.'+compressorFactory.filenameExtension()));
 
                 if (!zipFile.file.exists()) {
                     throw new FileNotFoundException("Both compressed and raw segment files are missing in archive " +

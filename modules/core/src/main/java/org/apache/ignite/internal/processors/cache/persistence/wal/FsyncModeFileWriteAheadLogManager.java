@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileFilter;
@@ -26,6 +24,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.FileAlreadyExistsException;
@@ -55,9 +55,6 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -82,6 +79,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
+import org.apache.ignite.internal.processors.cache.persistence.CompressorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
@@ -264,6 +262,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     /** Factory to provide I/O interfaces for read/write operations with files */
     private volatile FileIOFactory ioFactory;
 
+    /** Factory to provide I/O interfaces for read/write operations with archive. */
+    private final CompressorFactory compressorFactory;
+
     /** Factory to provide I/O interfaces for read primitives with files */
     private final SegmentFileInputFactory segmentFileInputFactory;
 
@@ -349,6 +350,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         fsyncDelay = dsCfg.getWalFsyncDelayNanos();
         alwaysWriteFullPages = dsCfg.isAlwaysWriteFullPages();
         ioFactory = dsCfg.getFileIOFactory();
+        compressorFactory = dsCfg.getWalCompactionFactory();
         segmentFileInputFactory = new SimpleSegmentFileInputFactory();
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
         evt = ctx.event();
@@ -632,7 +634,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             String segmentName = FileDescriptor.fileName(i);
 
             File file = new File(walArchiveDir, segmentName);
-            File fileZip = new File(walArchiveDir, segmentName + FilePageStoreManager.ZIP_SUFFIX);
+            File fileZip = new File(walArchiveDir, segmentName + '.'+compressorFactory.filenameExtension());
 
             if (file.exists())
                 res.add(file);
@@ -800,6 +802,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             dsCfg,
             new RecordSerializerFactoryImpl(cctx),
             ioFactory,
+            compressorFactory,
             archiver,
             decompressor,
             log,
@@ -851,7 +854,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     private boolean hasIndex(long absIdx) {
         String segmentName = FileDescriptor.fileName(absIdx);
 
-        String zipSegmentName = FileDescriptor.fileName(absIdx) + FilePageStoreManager.ZIP_SUFFIX;
+        String zipSegmentName = FileDescriptor.fileName(absIdx) + '.'+compressorFactory.filenameExtension();
 
         boolean inArchive = new File(walArchiveDir, segmentName).exists() ||
             new File(walArchiveDir, zipSegmentName).exists();
@@ -1967,7 +1970,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             FileArchiver archiver0 = archiver;
 
             for (FileDescriptor desc : descs) {
-                if (desc.isCompressed())
+                if (desc.isCompressed(compressorFactory.filenameExtension()))
                     continue;
 
                 // Do not delete reserved or locked segment and any segment after it.
@@ -1997,10 +2000,10 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                         continue;
 
                     File tmpZip = new File(walArchiveDir, FileDescriptor.fileName(currReservedSegment)
-                        + FilePageStoreManager.ZIP_SUFFIX + FilePageStoreManager.TMP_SUFFIX);
+                        + '.'+compressorFactory.filenameExtension() + FilePageStoreManager.TMP_SUFFIX);
 
                     File zip = new File(walArchiveDir, FileDescriptor.fileName(currReservedSegment)
-                        + FilePageStoreManager.ZIP_SUFFIX);
+                        + '.'+compressorFactory.filenameExtension());
 
                     File raw = new File(walArchiveDir, FileDescriptor.fileName(currReservedSegment));
                     if (!Files.exists(raw.toPath()))
@@ -2061,9 +2064,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 segmentSerializerVer = readSegmentHeader(new SegmentIO(nextSegment, fileIO), segmentFileInputFactory).getSerializerVersion();
             }
 
-            try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip)))) {
-                zos.setLevel(dsCfg.getWalCompactionLevel());
-                zos.putNextEntry(new ZipEntry(""));
+            try (OutputStream zos = compressorFactory.compress(new FileOutputStream(zip))) {
 
                 zos.write(prepareSerializerVersionBuffer(nextSegment, segmentSerializerVer, true).array());
 
@@ -2081,7 +2082,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 };
 
                 try (SingleSegmentLogicalRecordsIterator iter = new SingleSegmentLogicalRecordsIterator(
-                    log, cctx, ioFactory, tlbSize, nextSegment, walArchiveDir, appendToZipC)) {
+                    log, cctx, ioFactory, compressorFactory, tlbSize, nextSegment, walArchiveDir, appendToZipC)) {
 
                     while (iter.hasNextX())
                         iter.nextX();
@@ -2146,14 +2147,13 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                             break;
 
                         File zip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress)
-                            + FilePageStoreManager.ZIP_SUFFIX);
+                            + '.'+compressorFactory.filenameExtension());
                         File unzipTmp = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress)
                             + FilePageStoreManager.TMP_SUFFIX);
                         File unzip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress));
 
-                        try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zip)));
+                        try (InputStream zis = compressorFactory.decompress(new FileInputStream(zip));
                              FileIO io = ioFactory.create(unzipTmp)) {
-                            zis.getNextEntry();
 
                             while (io.writeFully(arr, 0, zis.read(arr)) > 0)
                                 updateHeartbeat();
@@ -3179,6 +3179,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
          * @param end Optional end pointer.
          * @param psCfg Database configuration.
          * @param serializerFactory Serializer factory.
+         * @param ioFactory
+         * @param compressorFactory Factory to provide I/O interfaces for read/write operations with archive.
          * @param archiver Archiver.
          * @param decompressor Decompressor.
          * @param log Logger  @throws IgniteCheckedException If failed to initialize WAL segment.
@@ -3193,6 +3195,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             DataStorageConfiguration psCfg,
             @NotNull RecordSerializerFactory serializerFactory,
             FileIOFactory ioFactory,
+            CompressorFactory compressorFactory,
             FileArchiver archiver,
             FileDecompressor decompressor,
             IgniteLogger log,
@@ -3203,6 +3206,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 cctx,
                 serializerFactory,
                 ioFactory,
+                compressorFactory,
                 psCfg.getWalRecordIteratorBufferSize(),
                 segmentFileInputFactory
             );
@@ -3229,7 +3233,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             if (!desc.file().exists()) {
                 FileDescriptor zipFile = new FileDescriptor(
                         new File(walArchiveDir, FileDescriptor.fileName(desc.idx())
-                            + FilePageStoreManager.ZIP_SUFFIX));
+                            + '.'+compressorFactory.filenameExtension()));
 
                 if (!zipFile.file.exists()) {
                     throw new FileNotFoundException("Both compressed and raw segment files are missing in archive " +

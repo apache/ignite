@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.ZipCompressorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
@@ -57,7 +58,7 @@ public class IgniteWalConverter {
         boolean printRecords = IgniteSystemProperties.getBoolean("PRINT_RECORDS", false); //TODO read them from argumetns
         boolean printStat = IgniteSystemProperties.getBoolean("PRINT_STAT", true); //TODO read them from argumetns
 
-        final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(new NullLogger());
+        final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(new ZipCompressorFactory(), new NullLogger());
 
         final File walWorkDirWithConsistentId = new File(args[1]);
 

@@ -25,6 +25,7 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
@@ -59,6 +60,7 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
      * @param log Logger.
      * @param sharedCtx Shared context.
      * @param ioFactory Io factory.
+     * @param compressorFactory Factory to provide I/O interfaces for read/write operations with archive.
      * @param bufSize Buffer size.
      * @param archivedSegIdx Archived seg index.
      * @param archiveDir Directory with segment.
@@ -68,12 +70,13 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
         @NotNull IgniteLogger log,
         @NotNull GridCacheSharedContext sharedCtx,
         @NotNull FileIOFactory ioFactory,
+        @NotNull final CompressorFactory compressorFactory,
         int bufSize,
         long archivedSegIdx,
         File archiveDir,
         CIX1<WALRecord> advanceC
     ) throws IgniteCheckedException {
-        super(log, sharedCtx, initLogicalRecordsSerializerFactory(sharedCtx), ioFactory, bufSize, new SimpleSegmentFileInputFactory());
+        super(log, sharedCtx, initLogicalRecordsSerializerFactory(sharedCtx), ioFactory, compressorFactory, bufSize, new SimpleSegmentFileInputFactory());
 
         curWalSegmIdx = archivedSegIdx;
         this.archiveDir = archiveDir;

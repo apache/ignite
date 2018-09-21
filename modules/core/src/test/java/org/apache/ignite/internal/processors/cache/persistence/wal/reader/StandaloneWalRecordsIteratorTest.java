@@ -33,6 +33,7 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.ZipCompressorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
@@ -139,7 +140,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
 
         params.ioFactory(new CountedFileIOFactory());
 
-        return new IgniteWalIteratorFactory(log).iterator(params.filesOrDirs(walDir));
+        return new IgniteWalIteratorFactory(new ZipCompressorFactory(), log).iterator(params.filesOrDirs(walDir));
     }
 
     /**

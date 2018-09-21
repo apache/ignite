@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
@@ -103,6 +104,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * @param sharedCtx Shared context. Cache processor is to be configured if Cache Object Key & Data Entry is
      * required.
      * @param ioFactory File I/O factory.
+     * @param compressorFactory Factory to provide I/O interfaces for read/write operations with archive.
      * @param keepBinary Keep binary. This flag disables converting of non primitive types (BinaryObjects will be used
      * instead)
      * @param walFiles Wal files.
@@ -111,6 +113,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         @NotNull IgniteLogger log,
         @NotNull GridCacheSharedContext sharedCtx,
         @NotNull FileIOFactory ioFactory,
+        @NotNull CompressorFactory compressorFactory,
         @NotNull List<FileDescriptor> walFiles,
         IgniteBiPredicate<RecordType, WALPointer> readTypeFilter,
         FileWALPointer lowBound,
@@ -123,6 +126,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             sharedCtx,
             new RecordSerializerFactoryImpl(sharedCtx, readTypeFilter),
             ioFactory,
+            compressorFactory,
             initialReadBufferSize,
             FILE_INPUT_FACTORY
         );
@@ -272,6 +276,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         SegmentHeader segmentHeader;
         while (true) {
             try {
+                fileIO = fd.isCompressed(compressorFactory.filenameExtension()) ? new CompressorFileIO(compressorFactory, fd.file()) : ioFactory.create(fd.file());
                 fileIO = fd.toIO(ioFactory);
 
                 segmentHeader = readSegmentHeader(fileIO, FILE_INPUT_FACTORY);

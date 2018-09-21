@@ -66,6 +66,8 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.persistence.CompressorFactory;
+import org.apache.ignite.internal.processors.cache.persistence.ZipCompressorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
@@ -132,6 +134,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /** Whether to enable WAL archive compaction. */
     private boolean enableWalCompaction;
 
+    /** Factory to provide I/O interfaces for read/write operations with archive. */
+    private final CompressorFactory compressorFactory = new ZipCompressorFactory();
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -158,6 +163,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             .setWalSegments(WAL_SEGMENTS)
             .setWalMode(customWalMode != null ? customWalMode : WALMode.BACKGROUND)
             .setWalCompactionEnabled(enableWalCompaction);
+        dsCfg.setWalCompactionFactory(compressorFactory);
 
         if (archiveIncompleteSegmentAfterInactivityMs > 0)
             dsCfg.setWalAutoArchiveAfterInactivity(archiveIncompleteSegmentAfterInactivityMs);
@@ -223,7 +229,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
 
-        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
+        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(compressorFactory, log);
 
         IteratorParametersBuilder params =
             createIteratorParametersBuilder(workDir, subfolderName)
@@ -445,7 +451,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         String workDir = U.defaultWorkDirectory();
 
-        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
+        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(compressorFactory, log);
 
         IteratorParametersBuilder iterParametersBuilder = createIteratorParametersBuilder(workDir, subfolderName);
 
@@ -508,7 +514,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         params.filesOrDirs(workDir);
 
-        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
+        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(compressorFactory, log);
 
         IgniteBiInClosure<Object, Object> objConsumer = (key, val) -> {
             boolean rmv = remove(ctrlMap, key, val);
@@ -654,7 +660,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         String workDir = U.defaultWorkDirectory();
 
-        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
+        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(compressorFactory, log);
 
         IteratorParametersBuilder params0 = createIteratorParametersBuilder(workDir, subfolderName);
 
@@ -762,7 +768,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         params1.filesOrDirs(workDir).keepBinary(true);
 
         //Validate same WAL log with flag binary objects only
-        IgniteWalIteratorFactory keepBinFactory = new IgniteWalIteratorFactory(log);
+        IgniteWalIteratorFactory keepBinFactory = new IgniteWalIteratorFactory(compressorFactory, log);
 
         scanIterateAndCount(keepBinFactory, params1, cntEntries, 0, binObjConsumer, binObjToStrChecker);
 
@@ -793,7 +799,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         String workDir = U.defaultWorkDirectory();
 
-        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
+        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(compressorFactory, log);
 
         IteratorParametersBuilder iterParametersBuilder =
             createIteratorParametersBuilder(workDir, subfolderName)
@@ -879,7 +885,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         String workDir = U.defaultWorkDirectory();
 
-        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
+        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(compressorFactory, log);
 
         IteratorParametersBuilder params = createIteratorParametersBuilder(workDir, subfolderName);
 
@@ -965,7 +971,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         String workDir = U.defaultWorkDirectory();
 
-        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
+        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(compressorFactory, log);
 
         StringBuilder sb = new StringBuilder();
 
@@ -1064,7 +1070,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(new NullLogger());
+        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(compressorFactory, new NullLogger());
 
         IteratorParametersBuilder params = createIteratorParametersBuilder(workDir, subfolderName);
 
@@ -1099,7 +1105,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         String workDir = U.defaultWorkDirectory();
 
-        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory();
+        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(compressorFactory, log);
 
         try (WALIterator it = factory.iterator(workDir)) {
             while (it.hasNext()) {

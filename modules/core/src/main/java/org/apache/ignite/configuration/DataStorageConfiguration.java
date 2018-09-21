@@ -20,6 +20,8 @@ package org.apache.ignite.configuration;
 import java.io.Serializable;
 import java.util.zip.Deflater;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.processors.cache.persistence.CompressorFactory;
+import org.apache.ignite.internal.processors.cache.persistence.ZipCompressorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
@@ -160,6 +162,9 @@ public class DataStorageConfiguration implements Serializable {
     /** Default wal compaction level. */
     public static final int DFLT_WAL_COMPACTION_LEVEL = Deflater.BEST_SPEED;
 
+    /** Default wal compaction factory. */
+    private static final CompressorFactory DFLT_WAL_COMPACTION_FACTORY = new ZipCompressorFactory();
+
     /** Initial size of a memory chunk reserved for system cache. */
     private long sysRegionInitSize = DFLT_SYS_REG_INIT_SIZE;
 
@@ -269,18 +274,6 @@ public class DataStorageConfiguration implements Serializable {
      * Compressed WAL archive gets automatically decompressed on demand.
      */
     private boolean walCompactionEnabled = DFLT_WAL_COMPACTION_ENABLED;
-
-    /**
-     * ZIP level to WAL compaction.
-     *
-     * @see java.util.zip.ZipOutputStream#setLevel(int)
-     * @see java.util.zip.Deflater#BEST_SPEED
-     * @see java.util.zip.Deflater#BEST_COMPRESSION
-     */
-    private int walCompactionLevel = DFLT_WAL_COMPACTION_LEVEL;
-
-    /** Timeout for checkpoint read lock acquisition. */
-    private Long checkpointReadLockTimeout;
 
     /**
      * Initial size of a data region reserved for system cache.
@@ -1008,6 +1001,20 @@ public class DataStorageConfiguration implements Serializable {
         this.checkpointReadLockTimeout = checkpointReadLockTimeout;
 
         return this;
+    }
+
+    /**
+     * @return Factory to provide I/O interface for data storage archive
+     */
+    public CompressorFactory getWalCompactionFactory() {
+        return walCompactionFactory;
+    }
+
+    /**
+     * @param walCompactionFactory New factory to provide I/O interface for data storage archive
+     */
+    public void setWalCompactionFactory(CompressorFactory walCompactionFactory) {
+        this.walCompactionFactory = walCompactionFactory;
     }
 
     /** {@inheritDoc} */

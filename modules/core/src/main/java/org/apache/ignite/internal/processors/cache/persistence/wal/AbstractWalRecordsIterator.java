@@ -28,6 +28,8 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.CompressorFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.CompressorFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
@@ -86,6 +88,9 @@ public abstract class AbstractWalRecordsIterator
     /** Factory to provide I/O interfaces for read/write operations with files */
     @NotNull protected final FileIOFactory ioFactory;
 
+    /** Factory to provide I/O interfaces for read/write operations with archive. */
+    @NotNull protected final CompressorFactory compressorFactory;
+
     /** Utility buffer for reading records */
     private final ByteBufferExpander buf;
 
@@ -97,6 +102,7 @@ public abstract class AbstractWalRecordsIterator
      * @param sharedCtx Shared context.
      * @param serializerFactory Serializer of current version to read headers.
      * @param ioFactory ioFactory for file IO access.
+     * @param compressorFactory Factory to provide I/O interfaces for read/write operations with archive.
      * @param initialReadBufferSize buffer for reading records size.
      * @param segmentFileInputFactory Factory to provide I/O interfaces for read primitives with files.
      */
@@ -105,12 +111,14 @@ public abstract class AbstractWalRecordsIterator
         @NotNull final GridCacheSharedContext sharedCtx,
         @NotNull final RecordSerializerFactory serializerFactory,
         @NotNull final FileIOFactory ioFactory,
+        @NotNull final CompressorFactory compressorFactory,
         final int initialReadBufferSize,
         SegmentFileInputFactory segmentFileInputFactory) {
         this.log = log;
         this.sharedCtx = sharedCtx;
         this.serializerFactory = serializerFactory;
         this.ioFactory = ioFactory;
+        this.compressorFactory = compressorFactory;
         this.segmentFileInputFactory = segmentFileInputFactory;
 
         buf = new ByteBufferExpander(initialReadBufferSize, ByteOrder.nativeOrder());
@@ -375,7 +383,7 @@ public abstract class AbstractWalRecordsIterator
         SegmentIO fileIO = null;
 
         try {
-            fileIO = desc.toIO(ioFactory);
+            fileIO = desc.isCompressed(compressorFactory.filenameExtension()) ? new CompressorFileIO(compressorFactory, desc.file()) : desc.toIO(ioFactory);
 
             SegmentHeader segmentHeader;
 
@@ -471,8 +479,10 @@ public abstract class AbstractWalRecordsIterator
 
     /** */
     protected interface AbstractFileDescriptor {
-        /** */
-        boolean isCompressed();
+        /**
+         * @param filenameExtension Archive filename extension.
+         */
+        boolean isCompressed(String filenameExtension);
 
         /** */
         File file();

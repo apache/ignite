@@ -37,6 +37,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.ZipCompressorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
@@ -187,7 +188,7 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
     ) throws IOException, IgniteCheckedException {
         IgniteWriteAheadLogManager walMgr = ignite.context().cache().context().wal();
 
-        IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory();
+        IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory(new ZipCompressorFactory());
 
         File walArchiveDir = U.field(walMgr, "walArchiveDir");
         List<FileDescriptor> archiveDescs = iterFactory.resolveWalFiles(

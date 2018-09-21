@@ -123,8 +123,8 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isCompressed() {
-        return file.getName().endsWith(FilePageStoreManager.ZIP_SUFFIX);
+    @Override public boolean isCompressed(String filenameExtension) {
+        return file.getName().endsWith('.'+filenameExtension);
     }
 
     /** {@inheritDoc} */

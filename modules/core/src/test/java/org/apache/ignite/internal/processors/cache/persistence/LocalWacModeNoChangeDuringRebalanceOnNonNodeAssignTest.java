@@ -120,7 +120,7 @@ public class LocalWacModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
 
         ig4.cluster().setBaselineTopology(ig4.context().discovery().topologyVersion());
 
-        IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory(log);
+        IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory(new ZipCompressorFactory(), log);
 
         String name = ig4.name();
 
