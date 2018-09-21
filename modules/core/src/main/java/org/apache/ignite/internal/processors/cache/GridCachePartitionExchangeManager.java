@@ -347,8 +347,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         }
                     }
                     else if (exchangeInProgress()) {
-                        if (log.isDebugEnabled())
-                            log.debug("Ignore single message without exchange id (there is exchange in progress) [nodeId=" + node.id() + "]");
+                        if (log.isInfoEnabled())
+                            log.info("Ignore single message without exchange id (there is exchange in progress) [nodeId=" + node.id() + "]");
 
                         return;
                     }
@@ -2252,7 +2252,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (finished == null || finished.result().compareTo(current.initialVersion()) < 0) {
             ClusterNode triggeredBy = current.firstEvent().eventNode();
 
-            if (!triggeredBy.isClient())
+            if (current.partitionChangesInProgress() && !triggeredBy.isClient())
                 return true;
        }
 
