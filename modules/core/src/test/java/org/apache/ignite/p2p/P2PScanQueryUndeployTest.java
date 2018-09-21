@@ -147,7 +147,7 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
 
         stopGrid(CLIENT_INSTANCE_NAME);
 
-        System.out.println("IGNITE-9381 first loop finished");
+        log.error("IGNITE-9381 first loop finished");
 
         client = startGrid(CLIENT_INSTANCE_NAME);
 
