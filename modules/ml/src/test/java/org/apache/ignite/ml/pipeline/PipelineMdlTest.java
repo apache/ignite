@@ -38,6 +38,11 @@ public class PipelineMdlTest {
         verifyPredict(getMdl(new LogisticRegressionModel(weights, 1.0).withRawLabels(true)));
     }
 
+    /**
+     * Get the empty internal model.
+     *
+     * @param internalMdl Internal model.
+     */
     private PipelineMdl<Integer, double[]> getMdl(LogisticRegressionModel internalMdl) {
         return new PipelineMdl<Integer, double[]>()
             .withFeatureExtractor(null)
