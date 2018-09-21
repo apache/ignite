@@ -210,18 +210,22 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
 
         final long endTime = System.currentTimeMillis() + TEST_TIME;
 
+        startGrid(NODE_CNT);
+
         IgniteInternalFuture<Object> restartFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 Thread.currentThread().setName("restart-thread");
 
                 while (!finished.get() && System.currentTimeMillis() < endTime) {
-                    startGrid(NODE_CNT);
-
-                    U.sleep(1000);
+                    U.sleep(500);
 
                     stopGrid(NODE_CNT);
+
+                    startGrid(NODE_CNT);
                 }
 
+                stopGrid(NODE_CNT);
+                
                 return null;
             }
         });
@@ -251,7 +255,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
                             int keys = rnd.nextInt(1, 50);
 
                             for (int k = 0; k < keys; k++)
-                                map.put(new TestKey(rnd.nextInt(5_000)), new TestValue(iter));
+                                map.put(new TestKey(rnd.nextInt(10_000)), new TestValue(iter));
 
                             IgniteFuture<?> fut = cache.putAllAsync(map);
 
