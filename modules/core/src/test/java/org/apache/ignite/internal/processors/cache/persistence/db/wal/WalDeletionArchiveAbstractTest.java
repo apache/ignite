@@ -159,7 +159,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
 
         CheckpointHistory hist = dbMgr.checkpointHistory();
 
-        assertTrue(hist.checkpoints().size() > 0);
+        assertTrue(!hist.checkpoints().isEmpty());
     }
 
     /**

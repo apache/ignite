@@ -22,7 +22,7 @@ include /app/helpers/jade/mixins
 panel-collapsible(opened=`::true` ng-form=form)
     panel-title General
     panel-description
-        | General IGFS configuration. 
+        | General IGFS configuration.
         a.link-success(href="https://apacheignite-fs.readme.io/docs/in-memory-file-system" target="_blank") More info
     panel-content.pca-form-row
         .pca-form-column-6.pc-form-grid-row
@@ -38,7 +38,7 @@ panel-collapsible(opened=`::true` ng-form=form)
                     ignite-unique-property='name'
                     ignite-unique-skip=`["_id", ${model}]`
                 )
-                    +unique-feedback(`${model}.name`, 'IGFS name should be unique.')
+                    +form-field__error({ error: 'igniteUnique', message: 'IGFS name should be unique.' })
             .pc-form-grid-col-30
                 +form-field__dropdown({
                     label: 'IGFS mode:',

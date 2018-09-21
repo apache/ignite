@@ -125,7 +125,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
@@ -994,7 +994,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // be able to start receiving messages once discovery completes.
             try {
                 startProcessor(new PdsConsistentIdProcessor(ctx));
-                startProcessor(MvccUtils.createProcessor(ctx));
+                startProcessor(new MvccProcessorImpl(ctx));
                 startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
                 startProcessor(new GridAffinityProcessor(ctx));
                 startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
@@ -1032,6 +1032,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 ctx.cluster().initDiagnosticListeners();
 
                 fillNodeAttributes(clusterProc.updateNotifierEnabled());
+
+                ctx.cache().context().database().notifyMetaStorageSubscribersOnReadyForRead();
             }
             catch (Throwable e) {
                 U.error(

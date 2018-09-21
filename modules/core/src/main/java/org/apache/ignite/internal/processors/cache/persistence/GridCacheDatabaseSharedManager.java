@@ -372,8 +372,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             persistenceCfg.getMetricsSubIntervalCount()
         );
 
-        metastorageLifecycleLsnrs = ctx.internalSubscriptionProcessor().getMetastorageSubscribers();
-
         ioFactory = persistenceCfg.getFileIOFactory();
     }
 
@@ -490,9 +488,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             cleanupTempCheckpointDirectory();
 
             persStoreMetrics.wal(cctx.wal());
-
-            // Here we can get data from metastorage
-            readMetastore();
         }
     }
 
@@ -811,6 +806,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointReadLock();
 
         try {
+            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
+                lsnr.beforeMemoryRestore(this);
+
             cctx.pageStore().initializeForMetastorage();
 
             CheckpointStatus status = readCheckpointStatus();
@@ -1934,8 +1932,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         initAndStartRegions(cctx.kernalContext().config().getDataStorageConfiguration());
 
         // Only presistence caches to start.
-        for (DynamicCacheDescriptor desc : caches)
-            storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
+        if (!F.isEmpty(caches)) {
+            for (DynamicCacheDescriptor desc : caches) {
+                if (CU.affinityNode(cctx.localNode(), desc.cacheConfiguration().getNodeFilter()))
+                    storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
+            }
+        }
 
         WALPointer restoredPtr = restoreBinaryMemory();
 
@@ -4085,7 +4087,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return S.toString(CheckpointStatus.class, this);
         }
     }
@@ -4362,6 +4364,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** {@inheritDoc} */
     @Override public MetaStorage metaStorage() {
         return metaStorage;
+    }
+
+    /** {@inheritDoc} */
+    public void notifyMetaStorageSubscribersOnReadyForRead() throws IgniteCheckedException {
+        metastorageLifecycleLsnrs = cctx.kernalContext().internalSubscriptionProcessor().getMetastorageSubscribers();
+
+        readMetastore();
     }
 
     /** {@inheritDoc} */

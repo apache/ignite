@@ -15,33 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.cache;
+package org.apache.ignite.internal.processors.cache.persistence.db.wal.crc;
 
-import java.util.Map;
-import org.apache.ignite.IgniteAtomicSequence;
-import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
-import org.yardstickframework.BenchmarkConfiguration;
+import org.apache.ignite.configuration.WALMode;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * Ignite atomic sequence benchmark.
+ *
  */
-public class IgniteAtomicSequenceBenchmark extends IgniteAbstractBenchmark {
-    /** Cache. */
-    private IgniteAtomicSequence seq;
-
+public class IgniteFsyncReplayWalIteratorInvalidCrcTest extends IgniteReplayWalIteratorInvalidCrcTest {
     /** {@inheritDoc} */
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
-        super.setUp(cfg);
-
-        seq = ignite().atomicSequence("benchSequence", 0, true);
-
-        seq.batchSize(args.batch());
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        seq.incrementAndGet();
-
-        return true;
+    @NotNull @Override protected WALMode getWalMode() {
+        return WALMode.FSYNC;
     }
 }

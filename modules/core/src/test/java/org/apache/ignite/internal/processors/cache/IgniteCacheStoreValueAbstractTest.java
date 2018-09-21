@@ -504,7 +504,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return "TestValue [val=" + val + ']';
         }
     }
