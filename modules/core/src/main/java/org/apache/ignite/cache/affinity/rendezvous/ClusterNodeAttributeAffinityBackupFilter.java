@@ -17,16 +17,15 @@
 
 package org.apache.ignite.cache.affinity.rendezvous;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
-
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
- * This class can be used as a {@link RendezvousAffinityFunction#affinityBackupFilter } to create 
- * cache templates in Spring that force each partition's primary and backup to different hardware which 
+ * This class can be used as a {@link RendezvousAffinityFunction#affinityBackupFilter } to create
+ * cache templates in Spring that force each partition's primary and backup to different hardware which
  * is not expected to fail simultaneously, e.g., in AWS, to different "availability zones".  This
  * is a per-partition selection, and different partitions may choose different primaries.
  * <p>
@@ -35,8 +34,8 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  * <p>
  * A list of node attributes to compare is provided on construction.  Note: "All cluster nodes,
  * on startup, automatically register all the environment and system properties as node attributes."
- * <p> 
- * This class is constructed with a array of node attribute names, and a candidate node will be rejected if *any* of the 
+ * <p>
+ * This class is constructed with a array of node attribute names, and a candidate node will be rejected if *any* of the
  * previously selected nodes for a partition have the identical values for *all* of those attributes on the candidate node.
  * Another way to understand this is the set of attribute values defines the key of a group into which a node is placed,
  * an the primaries and backups for a partition cannot share nodes in the same group.   A null attribute is treated  as
@@ -48,87 +47,85 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  * </pre>
  * <h2 class="header">Spring Example</h2>
  * Create a partitioned cache template plate with 1 backup, where the backup will not be placed in the same availability zone
- * as the primary.   Note: This example requires that the environment variable "AVAILABILTY_ZONE" be set appropriately on 
- * each node via some means external to Ignite.  On AWS, some nodes might have AVAILABILTY_ZONE=us-east-1a and others 
- * AVAILABILTY_ZONE=us-east-1b. 
+ * as the primary.   Note: This example requires that the environment variable "AVAILABILTY_ZONE" be set appropriately on
+ * each node via some means external to Ignite.  On AWS, some nodes might have AVAILABILTY_ZONE=us-east-1a and others
+ * AVAILABILTY_ZONE=us-east-1b.
  * <pre name="code" class="xml">
- * 
- * &lt;property name="cacheConfiguration"&gt; 
- *     &lt;list&gt; 
- *         &lt;bean id="cache-template-bean" abstract="true" class="org.apache.ignite.configuration.CacheConfiguration"&gt; 
- *             &lt;property name="name" value="JobcaseDefaultCacheConfig*"/&gt; 
- *             &lt;property name="cacheMode" value="PARTITIONED" /&gt; 
- *             &lt;property name="backups" value="1" /&gt; 
+ * &lt;property name="cacheConfiguration"&gt;
+ *     &lt;list&gt;
+ *         &lt;bean id="cache-template-bean" abstract="true" class="org.apache.ignite.configuration.CacheConfiguration"&gt;
+ *             &lt;property name="name" value="JobcaseDefaultCacheConfig*"/&gt;
+ *             &lt;property name="cacheMode" value="PARTITIONED" /&gt;
+ *             &lt;property name="backups" value="1" /&gt;
  *             &lt;property name="affinity"&gt;
  *                 &lt;bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction"&gt;
  *                     &lt;property name="affinityBackupFilter"&gt;
  *                         &lt;bean class="org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeAffinityBackupFilter"&gt;
- *                            &lt;constructor-arg&gt;
- *                                &lt;array value-type="java.lang.String"&gt;
+ *                             &lt;constructor-arg&gt;
+ *                                 &lt;array value-type="java.lang.String"&gt;
  *                                     &lt;!-- Backups must go to different AZs --&gt;
  *                                     &lt;value&gt;AVAILABILITY_ZONE&lt;/value&gt;
- *                                &lt;/array&gt;
- *                            &lt;/constructor-arg&gt;                                   
+ *                                 &lt;/array&gt;
+ *                             &lt;/constructor-arg&gt;
  *                         &lt;/bean&gt;
  *                     &lt;/property&gt;
- *                &lt;/bean&gt;
+ *                 &lt;/bean&gt;
  *             &lt;/property&gt;
- *        &lt;/bean&gt; 
- *    &lt;/list&gt; 
- *  &lt;/property&gt; 
+ *         &lt;/bean&gt;
+ *     &lt;/list&gt;
+ * &lt;/property&gt;
  * </pre>
- * 
- * With more backups, multiple properties, e.g., SITE, ZONE,  could be used to force backups to different subgroups. 
+ * <p>
+ * With more backups, multiple properties, e.g., SITE, ZONE,  could be used to force backups to different subgroups.
  */
-public class ClusterNodeAttributeAffinityBackupFilter implements IgniteBiPredicate<ClusterNode, List<ClusterNode>>, Serializable {
-   /**
-    * 
-    */
-   private static final long serialVersionUID = 1L;
+public class ClusterNodeAttributeAffinityBackupFilter implements IgniteBiPredicate<ClusterNode, List<ClusterNode>> {
+    /** */
+    private static final long serialVersionUID = 1L;
 
-   
-   final String [] attributeNames;
+    /** Attribute names. */
+    private final String[] attributeNames;
 
-   /*
-    * @param attributeNames - the list of attribute names for the set of attributes to compare. Must be at least one.
-    */
-   ClusterNodeAttributeAffinityBackupFilter(String[] attributeNames)
-   {
-      assert attributeNames.length > 0;
-      
-      this.attributeNames = attributeNames;
-   }
+    /**
+     * @param attributeNames The list of attribute names for the set of attributes to compare. Must be at least one.
+     */
+    ClusterNodeAttributeAffinityBackupFilter(String... attributeNames) {
+        A.ensure(attributeNames.length > 0, "attributeNames.length > 0");
 
-   /**
-    * Defines a predicate which returns {@code true} if a node is acceptable for a backup
-    * or {@code false} otherwise. An acceptable node is one where its set of attribute values
-    * is not exact match with any of the previously selected nodes.  If an attribute does not
-    * exist on exactly one node of a pair, then the attribute does not match.  If the attribute
-    * does not exist both nodes of a pair, then the attribute matches.
-    * <p>
-    * Warning:  if an attribute is specified that does not exist on any node, then no backups
-    * will be created, because all nodes will match.
-    * <p>
-    * @param candidate A node that is a candidate for becoming a backup node for a partition.
-    * @param previouslySelected A list of primary/backup nodes already chosen for a partition.  
-    * The primary is first.
-    */
-   @Override
-   public boolean apply(ClusterNode candidate, List<ClusterNode> previouslySelected) {
+        this.attributeNames = attributeNames;
+    }
 
-      for (ClusterNode node : previouslySelected) {
-         boolean match = true;
-         
-         for (String attribute : attributeNames) {
-               if (!Objects.equals(candidate.attribute(attribute), node.attribute(attribute)) ) {
-                  match = false;
-                  break;
-               }         
-         }
-         if (match)
-            return false;   
-      }
-      return true;
-   }
+    /**
+     * Defines a predicate which returns {@code true} if a node is acceptable for a backup
+     * or {@code false} otherwise. An acceptable node is one where its set of attribute values
+     * is not exact match with any of the previously selected nodes.  If an attribute does not
+     * exist on exactly one node of a pair, then the attribute does not match.  If the attribute
+     * does not exist both nodes of a pair, then the attribute matches.
+     * <p>
+     * Warning:  if an attribute is specified that does not exist on any node, then no backups
+     * will be created, because all nodes will match.
+     * <p>
+     *
+     * @param candidate          A node that is a candidate for becoming a backup node for a partition.
+     * @param previouslySelected A list of primary/backup nodes already chosen for a partition.
+     *                           The primary is first.
+     */
+    @Override public boolean apply(ClusterNode candidate, List<ClusterNode> previouslySelected) {
+        for (ClusterNode node : previouslySelected) {
+            boolean match = true;
+
+            for (String attribute : attributeNames) {
+                if (!Objects.equals(candidate.attribute(attribute), node.attribute(attribute))) {
+                    match = false;
+
+                    break;
+                }
+            }
+
+            if (match)
+                return false;
+        }
+
+        return true;
+    }
 
 }
