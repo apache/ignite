@@ -320,7 +320,11 @@ public class ExchangeLatchManager {
      * @param topVer Topology version.
      */
     public boolean canSkipJoiningNodes(AffinityTopologyVersion topVer) {
-        return discovery.topology(topVer.topologyVersion()).stream()
+        Collection<ClusterNode> applicableNodes = topVer.equals(AffinityTopologyVersion.NONE)
+            ? discovery.aliveServerNodes()
+            : discovery.topology(topVer.topologyVersion());
+
+        return applicableNodes.stream()
             .allMatch(node -> node.version().compareTo(PROTOCOL_V2_VERSION_SINCE) >= 0);
     }
 
