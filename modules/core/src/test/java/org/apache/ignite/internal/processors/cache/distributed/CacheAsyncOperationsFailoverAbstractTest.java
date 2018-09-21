@@ -249,7 +249,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
                             int keys = rnd.nextInt(1, 50);
 
                             for (int k = 0; k < keys; k++)
-                                map.put(new TestKey(rnd.nextInt(10_000)), new TestValue(iter));
+                                map.put(new TestKey(rnd.nextInt(1_000)), new TestValue(iter));
 
                             IgniteFuture<?> fut = cache.putAllAsync(map);
 
