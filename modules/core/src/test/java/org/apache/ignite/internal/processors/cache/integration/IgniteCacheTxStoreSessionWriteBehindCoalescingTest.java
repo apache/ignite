@@ -40,7 +40,7 @@ public class IgniteCacheTxStoreSessionWriteBehindCoalescingTest extends IgniteCa
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    @SuppressWarnings("unchecked")
+    @Override @SuppressWarnings("unchecked")
     protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 

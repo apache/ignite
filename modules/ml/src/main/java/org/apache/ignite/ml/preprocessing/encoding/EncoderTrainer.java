@@ -207,7 +207,7 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
      * @param idx The index of encoded feature.
      * @return The changed trainer.
      */
-    public EncoderTrainer<K, V> encodeFeature(int idx) {
+    public EncoderTrainer<K, V> withEncodedFeature(int idx) {
         handledIndices.add(idx);
         return this;
     }
@@ -220,6 +220,17 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
      */
     public EncoderTrainer<K, V> withEncoderType(EncoderType type) {
         this.encoderType = type;
+        return this;
+    }
+
+    /**
+     * Sets the indices of features which should be encoded.
+     *
+     * @param handledIndices Indices of features which should be encoded.
+     * @return The changed trainer.
+     */
+    public EncoderTrainer<K, V> withEncodedFeatures(Set<Integer> handledIndices) {
+        this.handledIndices = handledIndices;
         return this;
     }
 }

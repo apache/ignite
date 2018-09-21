@@ -59,7 +59,7 @@ public class GridQueryFailResponse implements Message {
      */
     public GridQueryFailResponse(long qryReqId, Throwable err) {
         this.qryReqId = qryReqId;
-        this.errMsg = err.getClass() + ":" + err.getMessage();
+        this.errMsg = err.getMessage();
         this.failCode = err instanceof QueryCancelledException ? CANCELLED_BY_ORIGINATOR : GENERAL_ERROR;
     }
 

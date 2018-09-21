@@ -22,11 +22,12 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.h2.index.Cursor;
 import org.h2.result.Row;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Iterator that transparently and sequentially traverses a bunch of {@link GridMergeIndex} objects.
@@ -59,6 +60,9 @@ class GridMergeIndexIterator implements Iterator<List<?>>, AutoCloseable {
     /** Whether remote resources were released. */
     private boolean released;
 
+    /** */
+    private MvccQueryTracker mvccTracker;
+
     /**
      * Constructor.
      *
@@ -69,14 +73,19 @@ class GridMergeIndexIterator implements Iterator<List<?>>, AutoCloseable {
      * @param distributedJoins Distributed joins.
      * @throws IgniteCheckedException if failed.
      */
-    GridMergeIndexIterator(GridReduceQueryExecutor rdcExec, Collection<ClusterNode> nodes, ReduceQueryRun run,
-        long qryReqId, boolean distributedJoins)
+    GridMergeIndexIterator(GridReduceQueryExecutor rdcExec,
+        Collection<ClusterNode> nodes,
+        ReduceQueryRun run,
+        long qryReqId,
+        boolean distributedJoins,
+        @Nullable MvccQueryTracker mvccTracker)
         throws IgniteCheckedException {
         this.rdcExec = rdcExec;
         this.nodes = nodes;
         this.run = run;
         this.qryReqId = qryReqId;
         this.distributedJoins = distributedJoins;
+        this.mvccTracker = mvccTracker;
 
         this.idxIter = run.indexes().iterator();
 
@@ -155,7 +164,7 @@ class GridMergeIndexIterator implements Iterator<List<?>>, AutoCloseable {
     private void releaseIfNeeded() {
         if (!released) {
             try {
-                rdcExec.releaseRemoteResources(nodes, run, qryReqId, distributedJoins);
+                rdcExec.releaseRemoteResources(nodes, run, qryReqId, distributedJoins, mvccTracker);
             }
             finally {
                 released = true;

@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -388,7 +389,7 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
         }
 
         /** {@inheritDoc} */
-        @Override public void onDiscovery(
+        @Override public IgniteInternalFuture onDiscovery(
             int type,
             long topVer,
             ClusterNode node,
@@ -396,9 +397,9 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
             @Nullable Map<Long, Collection<ClusterNode>> topHist,
             @Nullable DiscoverySpiCustomMessage data
         ) {
-            delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, data);
+            IgniteInternalFuture fut = delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, data);
 
-            if (type == EVT_CLIENT_NODE_DISCONNECTED)
+            if (type == EVT_CLIENT_NODE_DISCONNECTED) {
                 try {
                     System.out.println("Await cluster change state");
 
@@ -407,6 +408,9 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
                 catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
+            }
+
+            return fut;
         }
     }
 

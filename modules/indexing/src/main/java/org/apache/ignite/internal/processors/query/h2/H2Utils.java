@@ -211,11 +211,13 @@ public class H2Utils {
             String typeName = rsMeta.getTableName(i);
             String name = rsMeta.getColumnLabel(i);
             String type = rsMeta.getColumnClassName(i);
+            int precision = rsMeta.getPrecision(i);
+            int scale = rsMeta.getScale(i);
 
             if (type == null) // Expression always returns NULL.
                 type = Void.class.getName();
 
-            meta.add(new H2SqlFieldMetadata(schemaName, typeName, name, type));
+            meta.add(new H2SqlFieldMetadata(schemaName, typeName, name, type, precision, scale));
         }
 
         return meta;

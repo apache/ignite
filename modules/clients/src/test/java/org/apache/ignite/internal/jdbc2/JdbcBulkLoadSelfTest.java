@@ -130,7 +130,7 @@ public class JdbcBulkLoadSelfTest extends GridCommonAbstractTest {
                 conn = createConnection();
 
                 try (Statement stmt = conn.createStatement()) {
-                    stmt.executeUpdate("copy from \"dummy.csv\" into Person" +
+                    stmt.executeUpdate("copy from 'dummy.csv' into Person" +
                         " (_key, id, firstName, lastName) format csv");
 
                     return null;

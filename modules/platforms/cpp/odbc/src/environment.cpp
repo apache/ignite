@@ -25,7 +25,8 @@ namespace ignite
 {
     namespace odbc
     {
-        Environment::Environment() : 
+        Environment::Environment() :
+            connections(),
             odbcVersion(SQL_OV_ODBC3),
             odbcNts(SQL_TRUE)
         {
@@ -46,9 +47,14 @@ namespace ignite
             return connection;
         }
 
+        void Environment::DeregisterConnection(Connection* conn)
+        {
+            connections.erase(conn);
+        }
+
         SqlResult::Type Environment::InternalCreateConnection(Connection*& connection)
         {
-            connection = new Connection;
+            connection = new Connection(this);
 
             if (!connection)
             {
@@ -56,6 +62,8 @@ namespace ignite
 
                 return SqlResult::AI_ERROR;
             }
+
+            connections.insert(connection);
 
             return SqlResult::AI_SUCCESS;
         }
@@ -67,7 +75,25 @@ namespace ignite
 
         SqlResult::Type Environment::InternalTransactionCommit()
         {
-            return SqlResult::AI_SUCCESS;
+            SqlResult::Type res = SqlResult::AI_SUCCESS;
+
+            for (ConnectionSet::iterator it = connections.begin(); it != connections.end(); ++it)
+            {
+                Connection* conn = *it;
+
+                conn->TransactionCommit();
+
+                diagnostic::DiagnosticRecordStorage& diag = conn->GetDiagnosticRecords();
+
+                if (diag.GetStatusRecordsNumber() > 0)
+                {
+                    AddStatusRecord(diag.GetStatusRecord(1));
+
+                    res = SqlResult::AI_SUCCESS_WITH_INFO;
+                }
+            }
+
+            return res;
         }
 
         void Environment::TransactionRollback()
@@ -77,10 +103,25 @@ namespace ignite
 
         SqlResult::Type Environment::InternalTransactionRollback()
         {
-            AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
-                "Rollback operation is not supported.");
+            SqlResult::Type res = SqlResult::AI_SUCCESS;
 
-            return SqlResult::AI_ERROR;
+            for (ConnectionSet::iterator it = connections.begin(); it != connections.end(); ++it)
+            {
+                Connection* conn = *it;
+
+                conn->TransactionRollback();
+
+                diagnostic::DiagnosticRecordStorage& diag = conn->GetDiagnosticRecords();
+
+                if (diag.GetStatusRecordsNumber() > 0)
+                {
+                    AddStatusRecord(diag.GetStatusRecord(1));
+
+                    res = SqlResult::AI_SUCCESS_WITH_INFO;
+                }
+            }
+
+            return res;
         }
 
         void Environment::SetAttribute(int32_t attr, void* value, int32_t len)

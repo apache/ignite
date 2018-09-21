@@ -191,7 +191,7 @@ public class GridClientNodeImpl implements GridClientNode {
     }
 
     /** {@inheritDoc} */
-    public long order() {
+    @Override public long order() {
         return order;
     }
 

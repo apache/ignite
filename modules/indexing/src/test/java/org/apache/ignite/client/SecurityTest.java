@@ -31,8 +31,11 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.SslContextFactory;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -41,6 +44,10 @@ import static org.junit.Assert.assertTrue;
  * Thin client security test.
  */
 public class SecurityTest {
+    /** Per test timeout */
+    @Rule
+    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+
     /** Ignite home. */
     private static final String IGNITE_HOME = U.getIgniteHome();
 

@@ -248,7 +248,7 @@ public class GridCacheTxFinishSync<K, V> {
                     log.trace("Moved transaction synchronizer to waiting state [nodeId=" + nodeId +
                         ", threadId=" + threadId + ']');
 
-                assert cnt == 0 || nodeLeft;
+                assert cnt == 0 || nodeLeft : cnt;
 
                 if (nodeLeft)
                     return;

@@ -30,6 +30,7 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -108,6 +109,9 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      */
     private GridDhtPartitionsFullMessage finishMsg;
 
+    /** */
+    private GridLongList activeQryTrackers;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -129,6 +133,20 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
         this.client = client;
         this.compress = compress;
+    }
+
+    /**
+     * @return Active queries started with previous coordinator.
+     */
+    GridLongList activeQueries() {
+        return activeQryTrackers;
+    }
+
+    /**
+     * @param activeQrys Active queries started with previous coordinator.
+     */
+    void activeQueries(GridLongList activeQrys) {
+        this.activeQryTrackers = activeQrys;
     }
 
     /**
@@ -331,7 +349,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             byte[] partsBytes0 = null;
             byte[] partCntrsBytes0 = null;
             byte[] partHistCntrsBytes0 = null;
-            byte[] partSizesBytes0 = null;
+            byte[] partsSizesBytes0 = null;
             byte[] errBytes0 = null;
 
             if (parts != null && partsBytes == null)
@@ -344,7 +362,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                 partHistCntrsBytes0 = U.marshal(ctx, partHistCntrs);
 
             if (partsSizes != null && partsSizesBytes == null)
-                partSizesBytes0 = U.marshal(ctx, partsSizes);
+                partsSizesBytes0 = U.marshal(ctx, partsSizes);
 
             if (err != null && errBytes == null)
                 errBytes0 = U.marshal(ctx, err);
@@ -356,13 +374,13 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                     byte[] partsBytesZip = U.zip(partsBytes0);
                     byte[] partCntrsBytesZip = U.zip(partCntrsBytes0);
                     byte[] partHistCntrsBytesZip = U.zip(partHistCntrsBytes0);
-                    byte[] partSizesBytesZip = U.zip(partSizesBytes0);
+                    byte[] partsSizesBytesZip = U.zip(partsSizesBytes0);
                     byte[] exBytesZip = U.zip(errBytes0);
 
                     partsBytes0 = partsBytesZip;
                     partCntrsBytes0 = partCntrsBytesZip;
                     partHistCntrsBytes0 = partHistCntrsBytesZip;
-                    partSizesBytes0 = partSizesBytesZip;
+                    partsSizesBytes0 = partsSizesBytesZip;
                     errBytes0 = exBytesZip;
 
                     compressed(true);
@@ -375,7 +393,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             partsBytes = partsBytes0;
             partCntrsBytes = partCntrsBytes0;
             partHistCntrsBytes = partHistCntrsBytes0;
-            partsSizesBytes = partSizesBytes0;
+            partsSizesBytes = partsSizesBytes0;
             errBytes = errBytes0;
         }
     }
@@ -508,6 +526,12 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                     return false;
 
                 writer.incrementState();
+
+            case 14:
+                if (!writer.writeMessage("activeQryTrackers", activeQryTrackers))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -595,6 +619,14 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                     return false;
 
                 reader.incrementState();
+
+            case 14:
+                activeQryTrackers = reader.readMessage("activeQryTrackers");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDhtPartitionsSingleMessage.class);
@@ -607,7 +639,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 14;
+        return 15;
     }
 
     /** {@inheritDoc} */

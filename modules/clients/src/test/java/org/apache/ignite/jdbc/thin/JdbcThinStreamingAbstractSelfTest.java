@@ -32,6 +32,7 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.jdbc2.JdbcStreamingSelfTest;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
@@ -77,9 +78,19 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
         super.afterTest();
     }
 
-        /** {@inheritDoc} */
+    /** {@inheritDoc} */
+    @Override protected Connection createStreamedConnection(boolean allowOverwrite, long flushFreq) throws Exception {
+        Connection c = connect(grid(0), null);
+
+        execute(c, "SET STREAMING 1 BATCH_SIZE " + batchSize + " ALLOW_OVERWRITE " + (allowOverwrite ? 1 : 0) +
+            " PER_NODE_BUFFER_SIZE 1000 FLUSH_FREQUENCY " + flushFreq);
+
+        return c;
+    }
+
+    /** {@inheritDoc} */
     @Override protected Connection createOrdinaryConnection() throws SQLException {
-        return JdbcThinAbstractSelfTest.connect(grid(0), null);
+        return connect(grid(0), null);
     }
 
     /**
@@ -495,11 +506,11 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
 
         /** {@inheritDoc} */
         @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-            @Nullable SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts,
+            @Nullable SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker,
             GridQueryCancel cancel) {
             IndexingWithContext.cliCtx = cliCtx;
 
-            return super.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, cancel);
+            return super.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, tracker, cancel);
         }
     }
 }

@@ -32,7 +32,8 @@ import {default as ConfigureState} from 'app/components/page-configure/services/
 import {default as Models} from 'app/services/Models';
 
 export default class PageConfigureAdvancedModels {
-    static $inject = [ConfigSelectors.name, ConfigureState.name, '$uiRouter', Models.name, '$state', 'configSelectionManager'];
+    static $inject = ['ConfigSelectors', 'ConfigureState', '$uiRouter', 'Models', '$state', 'configSelectionManager'];
+
     /**
      * @param {ConfigSelectors} ConfigSelectors
      * @param {ConfigureState} ConfigureState

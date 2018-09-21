@@ -15,10 +15,50 @@
  * limitations under the License.
  */
 
+.ignite-grid-table,
 ignite-grid-table {
 	@import 'public/stylesheets/variables';
 
-    .ui-grid.ui-grid--ignite {
+    .ui-grid.ui-grid--ignite.ui-grid--thin {
+        // Start section row height.
+        .ui-grid-row {
+            height: 36px;
+
+            .ui-grid-cell {
+                height: 100%;
+            }
+        }
+
+        .ui-grid-cell .ui-grid-cell-contents {
+            padding: 8px 20px;
+            min-height: 35px;
+            max-height: 35px;
+        }
+
+        // Set force header height.
+        // Fix hide border bottom of pinned column without data.
+        .ui-grid-header-canvas {
+            height: 48px;
+        }
+    }
+
+    .ui-grid.ui-grid--ignite.ui-grid--thin-rows {
+        .ui-grid-row {
+            height: 36px !important;
+
+            .ui-grid-cell {
+                height: 100% !important;
+            }
+        }
+
+        .ui-grid-cell .ui-grid-cell-contents {
+            padding: 8px 20px !important;
+            min-height: 35px !important;
+            max-height: 35px !important;
+        }
+    }
+
+    .ui-grid.ui-grid--ignite:not(.ui-grid--thin) {
         // Start section row height.
         .ui-grid-row {
             height: 48px;
@@ -30,6 +70,8 @@ ignite-grid-table {
 
         .ui-grid-cell .ui-grid-cell-contents {
             padding: 14px 20px;
+            min-height: 47px;
+            max-height: 47px;
         }
 
         // Set force header height.
@@ -39,18 +81,29 @@ ignite-grid-table {
         }
 
         [role="columnheader"] {
-            display: flex;
-            align-items: center;
             margin: 11px 0;
-        }
-
-        .ui-grid-header--subcategories [role="columnheader"] {
-            margin: 0;
         }
 
         // Fix checkbox position.
         .ui-grid-header-cell  .ui-grid-selection-row-header-buttons {
             margin-top: 12px;
+        }
+    }
+
+    .ui-grid.ui-grid--ignite {
+        .ui-grid-header .ui-grid-tree-base-row-header-buttons.ui-grid-icon-plus-squared,
+        .ui-grid-header .ui-grid-tree-base-row-header-buttons.ui-grid-icon-minus-squared {
+            top: 14px;
+        }
+
+        [role="columnheader"] {
+            display: flex;
+            align-items: center;
+        }
+
+        .ui-grid-header--subcategories [role="columnheader"] {
+            margin: 0;
+            background-color: white;
         }
 
         // Removes unwanted box-shadow and border-right from checkboxes column

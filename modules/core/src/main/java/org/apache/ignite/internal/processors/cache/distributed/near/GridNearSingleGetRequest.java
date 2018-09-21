@@ -26,11 +26,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -81,6 +83,9 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     /** TTL for read operation. */
     private long accessTtl;
 
+    /** */
+    private MvccSnapshot mvccSnapshot;
+
     /**
      * Empty constructor required for {@link Message}.
      */
@@ -103,6 +108,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
      * @param addReader Add reader flag.
      * @param needVer {@code True} if entry version is needed.
      * @param addDepInfo Deployment info.
+     * @param mvccSnapshot MVCC snapshot.
      */
     public GridNearSingleGetRequest(
         int cacheId,
@@ -118,7 +124,8 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         boolean addReader,
         boolean needVer,
         boolean addDepInfo,
-        boolean recovery
+        boolean recovery,
+        MvccSnapshot mvccSnapshot
     ) {
         assert key != null;
 
@@ -131,6 +138,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.addDepInfo = addDepInfo;
+        this.mvccSnapshot = mvccSnapshot;
 
         if (readThrough)
             flags |= READ_THROUGH_FLAG_MASK;
@@ -146,6 +154,13 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
 
         if (recovery)
             flags |= RECOVERY_FLAG_MASK;
+    }
+
+    /**
+     * @return Mvcc version.
+     */
+    @Nullable public MvccSnapshot mvccSnapshot() {
+        return mvccSnapshot;
     }
 
     /**
@@ -345,6 +360,14 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
 
                 reader.incrementState();
 
+            case 11:
+                mvccSnapshot = reader.readMessage("mvccSnapshot");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridNearSingleGetRequest.class);
@@ -413,6 +436,12 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
 
                 writer.incrementState();
 
+            case 11:
+                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -430,7 +459,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 12;
     }
 
     /** {@inheritDoc} */

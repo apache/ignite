@@ -688,7 +688,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_PUT, "key", "key0");
 
         assertResponseContainsError(ret,
-            "Failed to handle request: [req=CACHE_PUT, err=Failed to find mandatory parameter in request: val]");
+            "Failed to find mandatory parameter in request: val");
     }
 
     /**

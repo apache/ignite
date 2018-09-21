@@ -19,7 +19,7 @@ import controller from './activities-user-dialog.controller';
 import templateUrl from './activities-user-dialog.tpl.pug';
 
 export default ['$modal', function($modal) {
-    return ({ show = true, user }) => {
+    return function({ show = true, user }) {
         const ActivitiesUserDialog = $modal({
             templateUrl,
             show,

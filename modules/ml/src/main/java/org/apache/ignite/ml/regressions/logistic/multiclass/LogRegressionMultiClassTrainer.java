@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -33,6 +34,7 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
+import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
 import org.apache.ignite.ml.structures.partition.LabelPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.structures.partition.LabelPartitionDataOnHeap;
@@ -61,15 +63,28 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
     /**
      * Trains model based on the specified data.
      *
-     * @param datasetBuilder   Dataset builder.
+     * @param datasetBuilder Dataset builder.
      * @param featureExtractor Feature extractor.
-     * @param lbExtractor      Label extractor.
+     * @param lbExtractor Label extractor.
      * @return Model.
      */
     @Override public <K, V> LogRegressionMultiClassModel fit(DatasetBuilder<K, V> datasetBuilder,
-                                                                IgniteBiFunction<K, V, Vector> featureExtractor,
-                                                                IgniteBiFunction<K, V, Double> lbExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor) {
         List<Double> classes = extractClassLabels(datasetBuilder, lbExtractor);
+
+        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> LogRegressionMultiClassModel updateModel(LogRegressionMultiClassModel newMdl,
+        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        List<Double> classes = extractClassLabels(datasetBuilder, lbExtractor);
+
+        if(classes.isEmpty())
+            return getLastTrainedModelOrThrowEmptyDatasetException(newMdl);
 
         LogRegressionMultiClassModel multiClsMdl = new LogRegressionMultiClassModel();
 
@@ -85,14 +100,26 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
                 else
                     return 0.0;
             };
-            multiClsMdl.add(clsLb, trainer.fit(datasetBuilder, featureExtractor, lbTransformer));
+
+            LogisticRegressionModel mdl = Optional.ofNullable(newMdl)
+                .flatMap(multiClassModel -> multiClassModel.getModel(clsLb))
+                .map(learnedModel -> trainer.update(learnedModel, datasetBuilder, featureExtractor, lbTransformer))
+                .orElseGet(() -> trainer.fit(datasetBuilder, featureExtractor, lbTransformer));
+
+            multiClsMdl.add(clsLb, mdl);
         });
 
         return multiClsMdl;
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(LogRegressionMultiClassModel mdl) {
+        return true;
+    }
+
     /** Iterates among dataset and collects class labels. */
-    private <K, V> List<Double> extractClassLabels(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Double> lbExtractor) {
+    private <K, V> List<Double> extractClassLabels(DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Double> lbExtractor) {
         assert datasetBuilder != null;
 
         PartitionDataBuilder<K, V, EmptyContext, LabelPartitionDataOnHeap> partDataBuilder = new LabelPartitionDataBuilderOnHeap<>(lbExtractor);
@@ -108,14 +135,23 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
 
                 final double[] lbs = data.getY();
 
-                for (double lb : lbs) locClsLabels.add(lb);
+                for (double lb : lbs)
+                    locClsLabels.add(lb);
 
                 return locClsLabels;
-            }, (a, b) -> a == null ? b : Stream.of(a, b).flatMap(Collection::stream).collect(Collectors.toSet()));
+            }, (a, b) -> {
+                if (a == null)
+                    return b == null ? new HashSet<>() : b;
+                if (b == null)
+                    return a;
+                return Stream.of(a, b).flatMap(Collection::stream).collect(Collectors.toSet());
+            });
 
-            res.addAll(clsLabels);
+            if (clsLabels != null)
+                res.addAll(clsLabels);
 
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
         return res;
@@ -133,20 +169,20 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
     }
 
     /**
-     * Gets the batch size.
+     * Get the batch size.
      *
      * @return The parameter value.
      */
-    public double batchSize() {
+    public double getBatchSize() {
         return batchSize;
     }
 
     /**
-     * Gets the amount of outer iterations of SGD algorithm.
+     * Get the amount of outer iterations of SGD algorithm.
      *
      * @return The parameter value.
      */
-    public int amountOfIterations() {
+    public int getAmountOfIterations() {
         return amountOfIterations;
     }
 
@@ -162,11 +198,11 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
     }
 
     /**
-     * Gets the amount of local iterations.
+     * Get the amount of local iterations.
      *
      * @return The parameter value.
      */
-    public int amountOfLocIterations() {
+    public int getAmountOfLocIterations() {
         return amountOfLocIterations;
     }
 
@@ -182,7 +218,7 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
     }
 
     /**
-     * Set up the regularization parameter.
+     * Set up the random seed parameter.
      *
      * @param seed Seed for random generator.
      * @return Trainer with new seed parameter value.
@@ -193,7 +229,7 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
     }
 
     /**
-     * Gets the seed for random generator.
+     * Get the seed for random generator.
      *
      * @return The parameter value.
      */
@@ -213,11 +249,11 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
     }
 
     /**
-     * Gets the update strategy..
+     * Get the update strategy..
      *
      * @return The parameter value.
      */
-    public UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy() {
+    public UpdatesStrategy<? super MultilayerPerceptron, P> getUpdatesStgy() {
         return updatesStgy;
     }
 }

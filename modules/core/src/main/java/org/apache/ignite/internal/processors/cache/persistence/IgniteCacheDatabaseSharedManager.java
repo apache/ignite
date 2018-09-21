@@ -42,6 +42,7 @@ import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
@@ -56,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolde
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.F;
@@ -69,6 +71,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_MAX_SIZE;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_HISTORY_SIZE;
 
 /**
  *
@@ -223,6 +227,16 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (dataRegionsInitialized)
             return;
 
+        initDataRegions0(memCfg);
+
+        dataRegionsInitialized = true;
+    }
+
+    /**
+     * @param memCfg Database config.
+     * @throws IgniteCheckedException If failed to initialize swap path.
+     */
+    protected void initDataRegions0(DataStorageConfiguration memCfg) throws IgniteCheckedException {
         DataRegionConfiguration[] dataRegionCfgs = memCfg.getDataRegionConfigurations();
 
         int dataRegions = dataRegionCfgs == null ? 0 : dataRegionCfgs.length;
@@ -251,8 +265,17 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             CU.isPersistenceEnabled(memCfg)
         );
 
+        for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext())) {
+            lsnr.onInitDataRegions(this);
+        }
+    }
 
-        dataRegionsInitialized = true;
+    /**
+     * @param kctx Kernal context.
+     * @return Database lifecycle listeners.
+     */
+    protected List<DatabaseLifecycleListener> getDatabaseListeners(GridKernalContext kctx) {
+        return kctx.internalSubscriptionProcessor().getDatabaseListeners();
     }
 
     /**
@@ -260,7 +283,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param dataRegionCfg Data region config.
      * @throws IgniteCheckedException If failed to initialize swap path.
      */
-    protected void addDataRegion(
+    public void addDataRegion(
         DataStorageConfiguration dataStorageCfg,
         DataRegionConfiguration dataRegionCfg,
         boolean trackable
@@ -369,6 +392,30 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         }
 
         checkDataRegionConfiguration(memCfg, regNames, memCfg.getDefaultDataRegionConfiguration());
+
+        checkWalArchiveSizeConfiguration(memCfg);
+    }
+
+    /**
+     * Check wal archive size configuration for correctness.
+     *
+     * @param memCfg durable memory configuration for an Apache Ignite node.
+     */
+    private void checkWalArchiveSizeConfiguration(DataStorageConfiguration memCfg) throws IgniteCheckedException {
+        if (memCfg.getWalHistorySize() == DFLT_WAL_HISTORY_SIZE || memCfg.getWalHistorySize() == Integer.MAX_VALUE)
+            LT.warn(log, "DataRegionConfiguration.maxWalArchiveSize instead DataRegionConfiguration.walHistorySize " +
+            "would be used for removing old archive wal files");
+        else if(memCfg.getMaxWalArchiveSize() == DFLT_WAL_ARCHIVE_MAX_SIZE)
+            LT.warn(log, "walHistorySize was deprecated. maxWalArchiveSize should be used instead");
+        else
+            throw new IgniteCheckedException("Should be used only one of wal history size or max wal archive size." +
+                "(use DataRegionConfiguration.maxWalArchiveSize because DataRegionConfiguration.walHistorySize was deprecated)"
+            );
+
+        if(memCfg.getMaxWalArchiveSize() < memCfg.getWalSegmentSize())
+            throw new IgniteCheckedException(
+                "DataRegionConfiguration.maxWalArchiveSize should be greater than DataRegionConfiguration.walSegmentSize"
+            );
     }
 
     /**
@@ -729,6 +776,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @return Last checkpoint mark WAL pointer.
+     */
+    public WALPointer lastCheckpointMarkWalPointer() {
+        return null;
+    }
+
+    /**
      * Allows to wait checkpoint finished.
      *
      * @param reason Reason.
@@ -984,6 +1038,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         final DataRegionMetricsImpl memMetrics
     ) {
         return new DirectMemoryProvider() {
+            /** */
             private final DirectMemoryProvider memProvider = memoryProvider0;
 
             @Override public void initialize(long[] chunkSizes) {
@@ -1039,10 +1094,18 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         startMemoryPolicies();
 
         initPageMemoryDataStructures(memCfg);
+
+        for (DatabaseLifecycleListener lsnr : getDatabaseListeners(kctx)) {
+            lsnr.afterInitialise(this);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
+        for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext())) {
+            lsnr.beforeStop(this);
+        }
+
         if (dataRegionMap != null) {
             for (DataRegion memPlc : dataRegionMap.values()) {
                 memPlc.pageMemory().stop();
@@ -1080,6 +1143,16 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public MetaStorage metaStorage() {
         return null;
+    }
+
+    /**
+     * Notifies {@link MetastorageLifecycleListener} that {@link MetaStorage} is ready for read.
+     * This method is called when all processors and managers have already started and right before discovery manager.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void notifyMetaStorageSubscribersOnReadyForRead() throws IgniteCheckedException {
+        // No-op.
     }
 
     /**

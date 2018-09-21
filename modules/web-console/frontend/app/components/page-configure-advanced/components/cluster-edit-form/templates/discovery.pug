@@ -27,24 +27,55 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-20
-                +text-ip-address('Local address:', `${model}.localAddress`, '"discoLocalAddress"', 'true', '228.1.2.4',
-                    'Local host IP address that discovery SPI uses<br/>\
-                    If not provided a first found non-loopback address will be used')
+                +form-field__ip-address({
+                    label: 'Local address:',
+                    model: `${model}.localAddress`,
+                    name: '"discoLocalAddress"',
+                    enabled: 'true',
+                    placeholder: '228.1.2.4',
+                    tip: 'Local host IP address that discovery SPI uses<br/>\
+                         If not provided a first found non-loopback address will be used'
+                })
             .pc-form-grid-col-20
-                +number-min-max('Local port:', `${model}.localPort`, '"discoLocalPort"', 'true', '47500', '1024', '65535', 'Local port which node uses')
+                +form-field__number({
+                    label: 'Local port:',
+                    model: `${model}.localPort`,
+                    name: '"discoLocalPort"',
+                    placeholder: '47500',
+                    min: '1024',
+                    max: '65535',
+                    tip: 'Local port which node uses'
+                })
             .pc-form-grid-col-20
-                +number('Local port range:', `${model}.localPortRange`, '"discoLocalPortRange"', 'true', '100', '1', 'Local port range')
+                +form-field__number({
+                    label: 'Local port range:',
+                    model: `${model}.localPortRange`,
+                    name: '"discoLocalPortRange"',
+                    placeholder: '100',
+                    min: '1',
+                    tip: 'Local port range'
+                })
             .pc-form-grid-col-60
-                +java-class('Address resolver:', `${model}.addressResolver`, '"discoAddressResolver"', 'true', 'false',
-                    'Provides resolution between external and internal addresses')
+                +form-field__java-class({
+                    label:'Address resolver:',
+                    model: `${model}.addressResolver`,
+                    name: '"discoAddressResolver"',
+                    tip: 'Provides resolution between external and internal addresses'
+                })
             .pc-form-grid-col-30
-                +number('Socket timeout:', `${model}.socketTimeout`, '"socketTimeout"', 'true', '5000', '0', 'Socket operations timeout')
+                +form-field__number({
+                    label: 'Socket timeout:',
+                    model: `${model}.socketTimeout`,
+                    name: '"socketTimeout"',
+                    placeholder: '5000',
+                    min: '0',
+                    tip: 'Socket operations timeout'
+                })
             .pc-form-grid-col-30
                 +form-field__number({
                     label: 'Acknowledgement timeout:',
                     model: `${model}.ackTimeout`,
                     name: '"ackTimeout"',
-                    disabled: 'false',
                     placeholder: '5000',
                     min: '0',
                     max: `{{ ${model}.maxAckTimeout || 600000 }}`,
@@ -52,46 +83,149 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 })
                     +form-field__error({ error: 'max', message: `Acknowledgement timeout should be less than max acknowledgement timeout ({{ ${model}.maxAckTimeout || 60000 }}).` })
             .pc-form-grid-col-30
-                +number('Max acknowledgement timeout:', `${model}.maxAckTimeout`, '"maxAckTimeout"', 'true', '600000', '0', 'Maximum message acknowledgement timeout')
+                +form-field__number({
+                    label: 'Max acknowledgement timeout:',
+                    model: `${model}.maxAckTimeout`,
+                    name: '"maxAckTimeout"',
+                    placeholder: '600000',
+                    min: '0',
+                    tip: 'Maximum message acknowledgement timeout'
+                })
             .pc-form-grid-col-30
-                +number('Network timeout:', `${model}.networkTimeout`, '"discoNetworkTimeout"', 'true', '5000', '1', 'Timeout to use for network operations')
+                +form-field__number({
+                    label: 'Network timeout:',
+                    model: `${model}.networkTimeout`,
+                    name: '"discoNetworkTimeout"',
+                    placeholder: '5000',
+                    min: '1',
+                    tip: 'Timeout to use for network operations'
+                })
             .pc-form-grid-col-30
-                +number('Join timeout:', `${model}.joinTimeout`, '"joinTimeout"', 'true', '0', '0',
-                    'Join timeout<br/>' +
-                    '0 means wait forever')
+                +form-field__number({
+                    label: 'Join timeout:',
+                    model: `${model}.joinTimeout`,
+                    name: '"joinTimeout"',
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Join timeout<br/>' +
+                          '0 means wait forever'
+                })
             .pc-form-grid-col-30
-                +number('Thread priority:', `${model}.threadPriority`, '"threadPriority"', 'true', '10', '1', 'Thread priority for all threads started by SPI')
+                +form-field__number({
+                    label: 'Thread priority:',
+                    model: `${model}.threadPriority`,
+                    name: '"threadPriority"',
+                    placeholder: '10',
+                    min: '1',
+                    tip: 'Thread priority for all threads started by SPI'
+                })
 
             //- Removed in ignite 2.0
             .pc-form-grid-col-60(ng-if-start='$ctrl.available(["1.0.0", "2.0.0"])')
-                +number('Heartbeat frequency:', `${model}.heartbeatFrequency`, '"heartbeatFrequency"', 'true', '2000', '1', 'Heartbeat messages issuing frequency')
+                +form-field__number({
+                    label: 'Heartbeat frequency:',
+                    model: `${model}.heartbeatFrequency`,
+                    name: '"heartbeatFrequency"',
+                    placeholder: '2000',
+                    min: '1',
+                    tip: 'Heartbeat messages issuing frequency'
+                })
             .pc-form-grid-col-30
-                +number('Max heartbeats miss w/o init:', `${model}.maxMissedHeartbeats`, '"maxMissedHeartbeats"', 'true', '1', '1',
-                    'Max heartbeats count node can miss without initiating status check')
+                +form-field__number({
+                    label: 'Max heartbeats miss w/o init:',
+                    model: `${model}.maxMissedHeartbeats`,
+                    name: '"maxMissedHeartbeats"',
+                    placeholder: '1',
+                    min: '1',
+                    tip: 'Max heartbeats count node can miss without initiating status check'
+                })
             .pc-form-grid-col-30(ng-if-end)
-                +number('Max missed client heartbeats:', `${model}.maxMissedClientHeartbeats`, '"maxMissedClientHeartbeats"', 'true', '5', '1',
-                    'Max heartbeats count node can miss without failing client node')
+                +form-field__number({
+                    label: 'Max missed client heartbeats:',
+                    model: `${model}.maxMissedClientHeartbeats`,
+                    name: '"maxMissedClientHeartbeats"',
+                    placeholder: '5',
+                    min: '1',
+                    tip: 'Max heartbeats count node can miss without failing client node'
+                })
 
             .pc-form-grid-col-60
-                +number('Topology history:', `${model}.topHistorySize`, '"topHistorySize"', 'true', '1000', '0', 'Size of topology snapshots history')
+                +form-field__number({
+                    label: 'Topology history:',
+                    model: `${model}.topHistorySize`,
+                    name: '"topHistorySize"',
+                    placeholder: '1000',
+                    min: '0',
+                    tip: 'Size of topology snapshots history'
+                })
             .pc-form-grid-col-60
-                +java-class('Discovery listener:', `${model}.listener`, '"discoListener"', 'true', 'false', 'Listener for grid node discovery events')
+                +form-field__java-class({
+                    label: 'Discovery listener:',
+                    model: `${model}.listener`,
+                    name: '"discoListener"',
+                    tip: 'Listener for grid node discovery events'
+                })
             .pc-form-grid-col-60
-                +java-class('Data exchange:', `${model}.dataExchange`, '"dataExchange"', 'true', 'false', 'Class name of handler for initial data exchange between Ignite nodes')
+                +form-field__java-class({
+                    label: 'Data exchange:',
+                    model: `${model}.dataExchange`,
+                    name: '"dataExchange"',
+                    tip: 'Class name of handler for initial data exchange between Ignite nodes'
+                })
             .pc-form-grid-col-60
-                +java-class('Metrics provider:', `${model}.metricsProvider`, '"metricsProvider"', 'true', 'false', 'Class name of metric provider to discovery SPI')
+                +form-field__java-class({
+                    label: 'Metrics provider:',
+                    model: `${model}.metricsProvider`,
+                    name: '"metricsProvider"',
+                    tip: 'Class name of metric provider to discovery SPI'
+                })
             .pc-form-grid-col-30
-                +number('Reconnect count:', `${model}.reconnectCount`, '"discoReconnectCount"', 'true', '10', '1', 'Reconnect attempts count')
+                +form-field__number({
+                    label: 'Reconnect count:',
+                    model: `${model}.reconnectCount`,
+                    name: '"discoReconnectCount"',
+                    placeholder: '10',
+                    min: '1',
+                    tip: 'Reconnect attempts count'
+                })
             .pc-form-grid-col-30
-                +number('Statistics frequency:', `${model}.statisticsPrintFrequency`, '"statisticsPrintFrequency"', 'true', '0', '1', 'Statistics print frequency')
+                +form-field__number({
+                    label: 'Statistics frequency:',
+                    model: `${model}.statisticsPrintFrequency`,
+                    name: '"statisticsPrintFrequency"',
+                    placeholder: '0',
+                    min: '1',
+                    tip: 'Statistics print frequency'
+                })
             .pc-form-grid-col-60
-                +number('IP finder clean frequency:', `${model}.ipFinderCleanFrequency`, '"ipFinderCleanFrequency"', 'true', '60000', '1', 'IP finder clean frequency')
+                +form-field__number({
+                    label: 'IP finder clean frequency:',
+                    model: `${model}.ipFinderCleanFrequency`,
+                    name: '"ipFinderCleanFrequency"',
+                    placeholder: '60000',
+                    min: '1',
+                    tip: 'IP finder clean frequency'
+                })
             .pc-form-grid-col-60
-                +java-class('Node authenticator:', `${model}.authenticator`, '"authenticator"', 'true', 'false', 'Class name of node authenticator implementation')
+                +form-field__java-class({
+                    label: 'Node authenticator:',
+                    model: `${model}.authenticator`,
+                    name: '"authenticator"',
+                    tip: 'Class name of node authenticator implementation'
+                })
             .pc-form-grid-col-60
-                +checkbox('Force server mode', `${model}.forceServerMode`, '"forceServerMode"', 'Force start TCP/IP discovery in server mode')
+                +form-field__checkbox({
+                    label: 'Force server mode',
+                    model: `${model}.forceServerMode`,
+                    name: '"forceServerMode"',
+                    tip: 'Force start TCP/IP discovery in server mode'
+                })
             .pc-form-grid-col-60
-                +checkbox('Client reconnect disabled', `${model}.clientReconnectDisabled`, '"clientReconnectDisabled"',
-                    'Disable try of client to reconnect after server detected client node failure')
+                +form-field__checkbox({
+                    label: 'Client reconnect disabled',
+                    model: `${model}.clientReconnectDisabled`,
+                    name: '"clientReconnectDisabled"',
+                    tip: 'Disable try of client to reconnect after server detected client node failure'
+                })
         .pca-form-column-6
             +preview-xml-java(model, 'clusterDiscovery')

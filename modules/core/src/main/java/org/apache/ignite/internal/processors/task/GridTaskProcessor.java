@@ -537,8 +537,12 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         String taskClsName;
 
-        if (task != null)
-            taskClsName = task.getClass().getName();
+        if (task != null) {
+            if (task instanceof GridPeerDeployAware)
+                taskClsName = ((GridPeerDeployAware)task).deployClass().getName();
+            else
+                taskClsName = task.getClass().getName();
+        }
         else
             taskClsName = taskCls != null ? taskCls.getName() : taskName;
 

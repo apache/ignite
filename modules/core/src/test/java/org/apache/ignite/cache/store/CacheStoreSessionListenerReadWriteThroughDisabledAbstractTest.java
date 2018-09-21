@@ -46,7 +46,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
  */
 public abstract class CacheStoreSessionListenerReadWriteThroughDisabledAbstractTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
-    protected int gridCount() {
+    @Override protected int gridCount() {
         return 2;
     }
 
@@ -54,7 +54,7 @@ public abstract class CacheStoreSessionListenerReadWriteThroughDisabledAbstractT
     protected final int CNT = 100;
 
     /** {@inheritDoc} */
-    protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration cacheCfg = super.cacheConfiguration(igniteInstanceName);
 
         cacheCfg.setCacheStoreFactory(FactoryBuilder.factoryOf(EmptyCacheStore.class));
@@ -70,7 +70,7 @@ public abstract class CacheStoreSessionListenerReadWriteThroughDisabledAbstractT
     }
 
     /** {@inheritDoc} */
-    protected NearCacheConfiguration nearConfiguration() {
+    @Override protected NearCacheConfiguration nearConfiguration() {
         return null;
     }
 

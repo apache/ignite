@@ -33,8 +33,12 @@ import org.jetbrains.annotations.Nullable;
  */
 public enum CacheAtomicityMode {
     /**
-     * Specified fully {@code ACID}-compliant transactional cache behavior. See
+     * Specified fully {@code ACID}-compliant transactional cache behavior for key-value API. See
      * {@link Transaction} for more information about transactions.
+     * <p>
+     * <b>Note:</b> this mode guaranties transactional behavior <b>only for key-value API</b> operations.
+     * For ACID SQL transactions use {@code CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT} mode.
+     * </p>
      */
     TRANSACTIONAL,
 
@@ -88,7 +92,32 @@ public enum CacheAtomicityMode {
      *
      * @see IgniteCache#withNoRetries()
      */
-    ATOMIC;
+    ATOMIC,
+
+    /**
+     * Specified fully {@code ACID}-compliant transactional cache behavior not only for key-value API,
+     * but also for SQL transactions.
+     * <p>
+     * This cache atomicity mode is implemented within multiversion concurrency control (MVCC) where database can
+     * contain multiple versions of each row to allow readers do not collide with writers.
+     * Each update in this mode generates a new version of a row and don't remove a previous one.
+     * Old versions are cleaned only when they are not visible to anyone.
+     * </p>
+     * <p>
+     * There is one node in cluster is elected as MVCC coordinator. This node tracks all in-flight transactions and
+     * queries in the cluster.
+     * Each transaction or query over the cache with {@code TRANSACTIONAL_SNAPSHOT} mode obtains current
+     * database snapshot from the coordinator. This snapshot allows transactions and queries to skip invisible
+     * updates made by concurrent transactions to always observe the same consistent database state.
+     * </p>
+     * <p>
+     * <b>Note!</b> This atomicity mode is not interoperable with the other atomicity modes in the same transaction.
+     * Caches participated in transaction should either be all {@code TRANSACTIONAL} or all
+     * {@code TRANSACTIONAL_SNAPSHOT}, but not the mixed ones.
+     * </p>
+     * See {@link Transaction} for more information about transactions.
+     */
+    TRANSACTIONAL_SNAPSHOT;
 
     /** Enumerated values. */
     private static final CacheAtomicityMode[] VALS = values();

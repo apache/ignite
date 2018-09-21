@@ -45,8 +45,11 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Version 1.1.0. */
         private static readonly ClientProtocolVersion Ver110 = new ClientProtocolVersion(1, 1, 0);
 
+        /** Version 1.2.0. */
+        public static readonly ClientProtocolVersion Ver120 = new ClientProtocolVersion(1, 2, 0);
+
         /** Current version. */
-        private static readonly ClientProtocolVersion CurrentProtocolVersion = Ver110;
+        public static readonly ClientProtocolVersion CurrentProtocolVersion = Ver120;
 
         /** Handshake opcode. */
         private const byte OpHandshake = 1;
@@ -68,6 +71,9 @@ namespace Apache.Ignite.Core.Impl.Client
 
         /** Callback checker guard. */
         private volatile bool _checkingTimeouts;
+
+        /** Server protocol version. */
+        public ClientProtocolVersion ServerVersion { get; private set; }
 
         /** Current async operations, map from request id. */
         private readonly ConcurrentDictionary<long, Request> _requests
@@ -105,9 +111,11 @@ namespace Apache.Ignite.Core.Impl.Client
             _socket = Connect(clientConfiguration);
             _stream = GetSocketStream(_socket, clientConfiguration);
 
+            ServerVersion = version ?? CurrentProtocolVersion;
+
             Validate(clientConfiguration);
 
-            Handshake(clientConfiguration, version ?? CurrentProtocolVersion);
+            Handshake(clientConfiguration, ServerVersion);
 
             // Check periodically if any request has timed out.
             if (_timeout > TimeSpan.Zero)
@@ -303,10 +311,12 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 if (success)
                 {
+                    ServerVersion = version;
+
                     return;
                 }
 
-                var serverVersion =
+                ServerVersion =
                     new ClientProtocolVersion(stream.ReadShort(), stream.ReadShort(), stream.ReadShort());
 
                 var errMsg = BinaryUtils.Marshaller.Unmarshal<string>(stream);
@@ -325,17 +335,17 @@ namespace Apache.Ignite.Core.Impl.Client
                 }
 
                 // Re-try if possible.
-                bool retry = serverVersion.CompareTo(version) < 0 && serverVersion.Equals(Ver100);
+                bool retry = ServerVersion.CompareTo(version) < 0 && ServerVersion.Equals(Ver100);
 
                 if (retry)
                 {
-                    Handshake(clientConfiguration, serverVersion);
+                    Handshake(clientConfiguration, ServerVersion);
                 }
                 else
                 {
                     throw new IgniteClientException(string.Format(
                         "Client handshake failed: '{0}'. Client version: {1}. Server version: {2}",
-                        errMsg, version, serverVersion), null, errCode);
+                        errMsg, version, ServerVersion), null, errCode);
                 }
             }
         }

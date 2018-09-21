@@ -139,7 +139,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return syncMsgFuts.size() == 0;
+                    return syncMsgFuts.isEmpty();
                 }
             }, 5000);
 

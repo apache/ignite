@@ -32,17 +32,23 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     list-editable-item-edit.pc-form-grid-row
                         - form = '$parent.form'
                         .pc-form-grid-col-60
-                            +java-class-autofocus('Type name:', '$item.typeName', '"cacheKeyTypeName"', 'true', 'true', 'true', 'Type name')(
+                            +form-field__java-class({
+                                label: 'Type name:',
+                                model: '$item.typeName',
+                                name: '"cacheKeyTypeName"',
+                                required: 'true',
+                                tip: 'Type name'
+                            })(
+                                ignite-form-field-input-autofocus='true'
                                 ignite-unique=model
                                 ignite-unique-property='typeName'
                             )
-                                +unique-feedback(`cacheKeyTypeName`, 'Type name should be unique.')
+                                +form-field__error({ error: 'igniteUnique', message: 'Type name should be unique.' })
                         .pc-form-grid-col-60
                             +form-field__text({
                                 label: 'Affinity key field name:',
                                 model: '$item.affinityKeyFieldName',
                                 name: '"affinityKeyFieldName"',
-                                disabled: 'false',
                                 placeholder: 'Enter field name',
                                 tip: 'Affinity key field name',
                                 required: true

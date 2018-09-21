@@ -76,6 +76,11 @@ public class GridCacheAttributes implements Serializable {
     }
 
     /**
+     * @return Query parallelism.
+     */
+    public int qryParallelism() { return ccfg.getQueryParallelism(); }
+
+    /**
      * @return Cache mode.
      */
     public CacheMode cacheMode() {

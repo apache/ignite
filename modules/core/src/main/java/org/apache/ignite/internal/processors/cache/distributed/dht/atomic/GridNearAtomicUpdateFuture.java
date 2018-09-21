@@ -1159,7 +1159,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     }
 
     /** {@inheritDoc} */
-    public synchronized String toString() {
+    @Override public synchronized String toString() {
         return S.toString(GridNearAtomicUpdateFuture.class, this, super.toString());
     }
 }

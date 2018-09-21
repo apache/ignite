@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
@@ -59,5 +60,50 @@ public class LogisticRegressionSGDTrainerTest extends TrainerTest {
 
         TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(100, 10)), PRECISION);
         TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(10, 100)), PRECISION);
+    }
+
+    /** */
+    @Test
+    public void testUpdate() {
+        Map<Integer, double[]> cacheMock = new HashMap<>();
+
+        for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
+            cacheMock.put(i, twoLinearlySeparableClasses[i]);
+
+        LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>(new UpdatesStrategy<>(
+            new SimpleGDUpdateCalculator().withLearningRate(0.2),
+            SimpleGDParameterUpdate::sumLocal,
+            SimpleGDParameterUpdate::avg
+        ), 100000, 10, 100, 123L);
+
+        LogisticRegressionModel originalModel = trainer.fit(
+            cacheMock,
+            parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+            (k, v) -> v[0]
+        );
+
+        LogisticRegressionModel updatedOnSameDS = trainer.update(
+            originalModel,
+            cacheMock,
+            parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+            (k, v) -> v[0]
+        );
+
+        LogisticRegressionModel updatedOnEmptyDS = trainer.update(
+            originalModel,
+            new HashMap<Integer, double[]>(),
+            parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+            (k, v) -> v[0]
+        );
+
+        Vector v1 = VectorUtils.of(100, 10);
+        Vector v2 = VectorUtils.of(10, 100);
+        TestUtils.assertEquals(originalModel.apply(v1), updatedOnSameDS.apply(v1), PRECISION);
+        TestUtils.assertEquals(originalModel.apply(v2), updatedOnSameDS.apply(v2), PRECISION);
+        TestUtils.assertEquals(originalModel.apply(v2), updatedOnEmptyDS.apply(v2), PRECISION);
+        TestUtils.assertEquals(originalModel.apply(v1), updatedOnEmptyDS.apply(v1), PRECISION);
     }
 }

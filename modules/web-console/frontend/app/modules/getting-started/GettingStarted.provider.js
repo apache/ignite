@@ -54,11 +54,15 @@ angular
         const scope = $root.$new();
 
         scope.ui = {
-            showGettingStarted: false
+            dontShowGettingStarted: false
         };
 
         function _fillPage() {
-            scope.title = _model[_page].title;
+            if (_page === 0)
+                scope.title = `${_model[_page].title}`;
+            else
+                scope.title = `${_page}. ${_model[_page].title}`;
+
             scope.message = _model[_page].message.join(' ');
         }
 
@@ -82,7 +86,7 @@ angular
 
         scope.close = () => {
             try {
-                localStorage.showGettingStarted = scope.ui.showGettingStarted;
+                localStorage.showGettingStarted = !scope.ui.dontShowGettingStarted;
             }
             catch (ignore) {
                 // No-op.
@@ -94,14 +98,14 @@ angular
         return {
             tryShow: (force) => {
                 try {
-                    scope.ui.showGettingStarted = _.isNil(localStorage.showGettingStarted)
-                        || localStorage.showGettingStarted === 'true';
+                    scope.ui.dontShowGettingStarted = !(_.isNil(localStorage.showGettingStarted)
+                        || localStorage.showGettingStarted === 'true');
                 }
                 catch (ignore) {
                     // No-op.
                 }
 
-                if (force || scope.ui.showGettingStarted) {
+                if (force || !scope.ui.dontShowGettingStarted) {
                     _page = 0;
 
                     _fillPage();

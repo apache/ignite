@@ -19,5 +19,12 @@ include /app/helpers/jade/mixins
 -var model = `${modelAt}.discovery.ZooKeeper.retryPolicy.Forever`
 
 .pc-form-grid-col-30(ng-if-start=`${modelRetryPolicyKind} === 'Forever'`)
-    +number('Interval:', `${model}.retryIntervalMs`, '"feRetryIntervalMs"', 'true', '1000', '0', 'Time in ms between retry attempts')
+    +form-field__number({
+        label: 'Interval:',
+        model: `${model}.retryIntervalMs`,
+        name: '"feRetryIntervalMs"',
+        placeholder: '1000',
+        min: '0',
+        tip: 'Time in ms between retry attempts'
+    })
 .pc-form-grid__break(ng-if-end)

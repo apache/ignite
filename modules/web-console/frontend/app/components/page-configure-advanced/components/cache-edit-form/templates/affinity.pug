@@ -19,68 +19,123 @@ include /app/helpers/jade/mixins
 -var form = 'affinity'
 -var model = '$ctrl.clonedCache'
 -var affModel = model + '.affinity'
--var affMapModel = model + '.affinityMapper'
 -var rendezvousAff = affModel + '.kind === "Rendezvous"'
 -var fairAff = affModel + '.kind === "Fair"'
 -var customAff = affModel + '.kind === "Custom"'
--var customAffMapper = affMapModel + '.kind === "Custom"'
 -var rendPartitionsRequired = rendezvousAff + ' && ' + affModel + '.Rendezvous.affinityBackupFilter'
 -var fairPartitionsRequired = fairAff + ' && ' + affModel + '.Fair.affinityBackupFilter'
 
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-title Affinity Collocation
     panel-description
-        | Collocate data with data to improve performance and scalability of your application. 
+        | Collocate data with data to improve performance and scalability of your application.
         a.link-success(href="https://apacheignite.readme.io/docs/affinity-collocation" target="_blank") More info
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-60(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
-                +dropdown('Function:', `${affModel}.kind`, '"AffinityKind"', 'true', 'Default', 'affinityFunction',
-                    'Key topology resolver to provide mapping from keys to nodes<br/>\
-                    <ul>\
-                        <li>Rendezvous - Based on Highest Random Weight algorithm</li>\
-                        <li>Fair - Tries to ensure that all nodes get equal number of partitions with minimum amount of reassignments between existing nodes</li>\
-                        <li>Custom - Custom implementation of key affinity fynction</li>\
-                        <li>Default - By default rendezvous affinity function  with 1024 partitions is used</li>\
-                    </ul>')
+                +form-field__dropdown({
+                    label: 'Function:',
+                    model: `${affModel}.kind`,
+                    name: '"AffinityKind"',
+                    placeholder: 'Default',
+                    options: 'affinityFunction',
+                    tip: 'Key topology resolver to provide mapping from keys to nodes<br/>\
+                                        <ul>\
+                                            <li>Rendezvous - Based on Highest Random Weight algorithm</li>\
+                                            <li>Fair - Tries to ensure that all nodes get equal number of partitions with minimum amount of reassignments between existing nodes</li>\
+                                            <li>Custom - Custom implementation of key affinity fynction</li>\
+                                            <li>Default - By default rendezvous affinity function  with 1024 partitions is used</li>\
+                                        </ul>'
+                })
             .pc-form-grid-col-60(ng-if='$ctrl.available("2.0.0")')
-                +dropdown('Function:', `${affModel}.kind`, '"AffinityKind"', 'true', 'Default', 'affinityFunction',
-                    'Key topology resolver to provide mapping from keys to nodes<br/>\
-                    <ul>\
-                        <li>Rendezvous - Based on Highest Random Weight algorithm</li>\
-                        <li>Custom - Custom implementation of key affinity fynction</li>\
-                        <li>Default - By default rendezvous affinity function  with 1024 partitions is used</li>\
-                    </ul>')
+                +form-field__dropdown({
+                    label: 'Function:',
+                    model: `${affModel}.kind`,
+                    name: '"AffinityKind"',
+                    placeholder: 'Default',
+                    options: 'affinityFunction',
+                    tip: 'Key topology resolver to provide mapping from keys to nodes<br/>\
+                                       <ul>\
+                                           <li>Rendezvous - Based on Highest Random Weight algorithm</li>\
+                                           <li>Custom - Custom implementation of key affinity fynction</li>\
+                                           <li>Default - By default rendezvous affinity function  with 1024 partitions is used</li>\
+                                       </ul>'
+                })
             .pc-form-group
                 .pc-form-grid-row(ng-if=rendezvousAff)
                     .pc-form-grid-col-60
-                        +number-required('Partitions', `${affModel}.Rendezvous.partitions`, '"RendPartitions"', 'true', rendPartitionsRequired, '1024', '1', 'Number of partitions')
+                        +form-field__number({
+                            label: 'Partitions',
+                            model: `${affModel}.Rendezvous.partitions`,
+                            name: '"RendPartitions"',
+                            required: rendPartitionsRequired,
+                            placeholder: '1024',
+                            min: '1',
+                            tip: 'Number of partitions'
+                        })
                     .pc-form-grid-col-60
-                        +java-class('Backup filter', `${affModel}.Rendezvous.affinityBackupFilter`, '"RendAffinityBackupFilter"', 'true', 'false',
-                            'Backups will be selected from all nodes that pass this filter')
+                        +form-field__java-class({
+                            label: 'Backup filter',
+                            model: `${affModel}.Rendezvous.affinityBackupFilter`,
+                            name: '"RendAffinityBackupFilter"',
+                            tip: 'Backups will be selected from all nodes that pass this filter'
+                        })
                     .pc-form-grid-col-60
-                        +checkbox('Exclude neighbors', `${affModel}.Rendezvous.excludeNeighbors`, '"RendExcludeNeighbors"',
-                            'Exclude same - host - neighbors from being backups of each other and specified number of backups')
+                        +form-field__checkbox({
+                            label: 'Exclude neighbors',
+                            model: `${affModel}.Rendezvous.excludeNeighbors`,
+                            name: '"RendExcludeNeighbors"',
+                            tip: 'Exclude same - host - neighbors from being backups of each other and specified number of backups'
+                        })
                 .pc-form-grid-row(ng-if=fairAff)
                     .pc-form-grid-col-60
-                        +number-required('Partitions', `${affModel}.Fair.partitions`, '"FairPartitions"', 'true', fairPartitionsRequired, '256', '1', 'Number of partitions')
+                        +form-field__number({
+                            label: 'Partitions',
+                            model: `${affModel}.Fair.partitions`,
+                            name: '"FairPartitions"',
+                            required: fairPartitionsRequired,
+                            placeholder: '256',
+                            min: '1',
+                            tip: 'Number of partitions'
+                        })
                     .pc-form-grid-col-60
-                        +java-class('Backup filter', `${affModel}.Fair.affinityBackupFilter`, '"FairAffinityBackupFilter"', 'true', 'false',
-                            'Backups will be selected from all nodes that pass this filter')
+                        +form-field__java-class({
+                            label: 'Backup filter',
+                            model: `${affModel}.Fair.affinityBackupFilter`,
+                            name: '"FairAffinityBackupFilter"',
+                            tip: 'Backups will be selected from all nodes that pass this filter'
+                        })
                     .pc-form-grid-col-60
-                        +checkbox('Exclude neighbors', `${affModel}.Fair.excludeNeighbors`, '"FairExcludeNeighbors"',
-                            'Exclude same - host - neighbors from being backups of each other and specified number of backups')
+                        +form-field__checkbox({
+                            label: 'Exclude neighbors',
+                            model: `${affModel}.Fair.excludeNeighbors`,
+                            name: '"FairExcludeNeighbors"',
+                            tip: 'Exclude same - host - neighbors from being backups of each other and specified number of backups'
+                        })
                 .pc-form-grid-row(ng-if=customAff)
                     .pc-form-grid-col-60
-                        +java-class('Class name:', `${affModel}.Custom.className`, '"AffCustomClassName"', 'true', customAff,
-                            'Custom key affinity function implementation class name')
+                        +form-field__java-class({
+                            label: 'Class name:',
+                            model: `${affModel}.Custom.className`,
+                            name: '"AffCustomClassName"',
+                            required: customAff,
+                            tip: 'Custom key affinity function implementation class name'
+                        })
             .pc-form-grid-col-60
-                +java-class('Mapper:', model + '.affinityMapper', '"AffMapCustomClassName"', 'true', 'false',
-                    'Provide custom affinity key for any given key')
+                +form-field__java-class({
+                    label: 'Mapper:',
+                    model: `${model}.affinityMapper`,
+                    name: '"AffMapCustomClassName"',
+                    tip: 'Provide custom affinity key for any given key'
+                })
 
             //- Since ignite 2.0
             .pc-form-grid-col-60(ng-if='$ctrl.available("2.0.0")')
-                +java-class('Topology validator:', model + '.topologyValidator', '"topologyValidator"', 'true', 'false')
+                +form-field__java-class({
+                    label: 'Topology validator:',
+                    model: `${model}.topologyValidator`,
+                    name: '"topologyValidator"'
+                })
 
         .pca-form-column-6
             +preview-xml-java(model, 'cacheAffinity')

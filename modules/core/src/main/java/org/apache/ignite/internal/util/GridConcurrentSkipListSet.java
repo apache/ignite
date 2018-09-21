@@ -164,7 +164,7 @@ public class GridConcurrentSkipListSet<E> extends GridSerializableSet<E> impleme
     }
 
     /** {@inheritDoc} */
-    public boolean equals(Object o) {
+    @Override public boolean equals(Object o) {
         // Override AbstractSet version to avoid calling size()
         if (o == this)
             return true;

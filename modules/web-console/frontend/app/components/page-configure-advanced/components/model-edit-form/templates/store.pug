@@ -49,9 +49,16 @@ mixin list-db-field-edit({ items, itemName, itemsName })
                         ignite-unique=items
                         ignite-unique-property='databaseFieldName'
                     )
-                        +unique-feedback(_, 'DB name should be unique')
+                        +form-field__error({ error: 'igniteUnique', message: 'DB name should be unique' })
                 .pc-form-grid-col-30
-                    +dropdown-required('DB type:', '$item.databaseFieldType', '"databaseFieldType"', true, true, 'Choose DB type', 'supportedJdbcTypes')
+                    +form-field__dropdown({
+                        label: 'DB type:',
+                        model:'$item.databaseFieldType',
+                        name: '"databaseFieldType"',
+                        required: 'true',
+                        placeholder: 'Choose DB type',
+                        options: 'supportedJdbcTypes'
+                    })
                 .pc-form-grid-col-30(divider='/')
                     +form-field__text({
                         label: 'Java name:',
@@ -64,9 +71,16 @@ mixin list-db-field-edit({ items, itemName, itemsName })
                         ignite-unique=items
                         ignite-unique-property='javaFieldName'
                     )
-                        +unique-feedback(_, 'Java name should be unique')
+                        +form-field__error({ error: 'igniteUnique', message: 'Java name should be unique' })
                 .pc-form-grid-col-30
-                    +dropdown-required('Java type:', '$item.javaFieldType', '"javaFieldType"', true, true, 'Choose Java type', 'supportedJavaTypes')
+                    +form-field__dropdown({
+                        label: 'Java type:',
+                        model: '$item.javaFieldType',
+                        name: '"javaFieldType"',
+                        required: 'true',
+                        placeholder: 'Choose Java type',
+                        options: 'supportedJavaTypes'
+                    })
 
         list-editable-no-items
             list-editable-add-item-button(
@@ -78,14 +92,26 @@ mixin list-db-field-edit({ items, itemName, itemsName })
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-title#store-title Domain model for cache store
     panel-description
-        | Domain model properties for binding database with cache via POJO cache store. 
+        | Domain model properties for binding database with cache via POJO cache store.
         a.link-success(href="https://apacheignite.readme.io/docs/3rd-party-store" target="_blank") More info
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-30
-                +text('Database schema:', model + '.databaseSchema', '"databaseSchema"', 'false', 'Input DB schema name', 'Schema name in database')
+                +form-field__text({
+                    label: 'Database schema:',
+                    model: model + '.databaseSchema',
+                    name: '"databaseSchema"',
+                    placeholder: 'Input DB schema name',
+                    tip: 'Schema name in database'
+                })
             .pc-form-grid-col-30
-                +text('Database table:', model + '.databaseTable', '"databaseTable"', 'false', 'Input DB table name', 'Table name in database')
+                +form-field__text({
+                    label: 'Database table:',
+                    model: model + '.databaseTable',
+                    name: '"databaseTable"',
+                    placeholder: 'Input DB table name',
+                    tip: 'Table name in database'
+                })
             .pc-form-grid-col-60
                 .ignite-form-field
                     +form-field__label({ label: 'Key fields:', name: '"keyFields"' })

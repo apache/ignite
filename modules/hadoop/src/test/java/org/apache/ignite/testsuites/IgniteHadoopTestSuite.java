@@ -176,7 +176,7 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopFileSystemsTest.class.getName())));
 
-        //suite.addTest(new TestSuite(ldr.loadClass(HadoopExecutorServiceTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopExecutorServiceTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopValidationSelfTest.class.getName())));
 
@@ -207,6 +207,7 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopSortingTest.class.getName())));
 
+        // TODO https://issues.apache.org/jira/browse/IGNITE-3167
 //        suite.addTest(new TestSuite(ldr.loadClass(HadoopExternalTaskExecutionSelfTest.class.getName())));
 //        suite.addTest(new TestSuite(ldr.loadClass(HadoopExternalCommunicationSelfTest.class.getName())));
 //        suite.addTest(new TestSuite(ldr.loadClass(HadoopSortingExternalTest.class.getName())));

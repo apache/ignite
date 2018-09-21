@@ -27,6 +27,7 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeGetRequest;
@@ -204,17 +205,24 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
+    
+    /** Client version */
+    private final ClientListenerProtocolVersion ver;
 
     /**
      * Ctor.
      *
      * @param ctx Kernal context.
+     * @param ver Client version.
      */
-    ClientMessageParser(GridKernalContext ctx) {
+    ClientMessageParser(GridKernalContext ctx, ClientListenerProtocolVersion ver) {
         assert ctx != null;
+        assert ver != null;
 
         CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
         marsh = cacheObjProc.marshaller();
+        
+        this.ver = ver;
     }
 
     /** {@inheritDoc} */
@@ -343,13 +351,13 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientCacheGetNamesRequest(reader);
 
             case OP_CACHE_GET_CONFIGURATION:
-                return new ClientCacheGetConfigurationRequest(reader);
+                return new ClientCacheGetConfigurationRequest(reader, ver);
 
             case OP_CACHE_CREATE_WITH_CONFIGURATION:
-                return new ClientCacheCreateWithConfigurationRequest(reader);
+                return new ClientCacheCreateWithConfigurationRequest(reader, ver);
 
             case OP_CACHE_GET_OR_CREATE_WITH_CONFIGURATION:
-                return new ClientCacheGetOrCreateWithConfigurationRequest(reader);
+                return new ClientCacheGetOrCreateWithConfigurationRequest(reader, ver);
 
             case OP_QUERY_SQL:
                 return new ClientCacheSqlQueryRequest(reader);

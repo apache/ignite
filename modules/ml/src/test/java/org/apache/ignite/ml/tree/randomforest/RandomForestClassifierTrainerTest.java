@@ -21,11 +21,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.ml.composition.ModelOnFeaturesSubspace;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
+import org.apache.ignite.ml.dataset.feature.FeatureMeta;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -75,27 +75,46 @@ public class RandomForestClassifierTrainerTest {
             sample.put(new double[] {x1, x2, x3, x4}, (double)(i % 2));
         }
 
-        RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(4, 3, 5, 0.3, 4, 0.1)
-            .withUseIndex(false);
+        ArrayList<FeatureMeta> meta = new ArrayList<>();
+        for (int i = 0; i < 4; i++)
+            meta.add(new FeatureMeta("", i, false));
+        RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(meta)
+            .withCountOfTrees(5)
+            .withFeaturesCountSelectionStrgy(x -> 2);
 
         ModelsComposition mdl = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
 
-        mdl.getModels().forEach(m -> {
-            assertTrue(m instanceof ModelOnFeaturesSubspace);
-
-            ModelOnFeaturesSubspace mdlOnFeaturesSubspace = (ModelOnFeaturesSubspace) m;
-
-            assertTrue(mdlOnFeaturesSubspace.getMdl() instanceof DecisionTreeConditionalNode);
-
-            assertTrue(mdlOnFeaturesSubspace.getFeaturesMapping().size() > 0);
-
-            String expClsName = "ModelOnFeatureSubspace";
-            assertTrue(mdlOnFeaturesSubspace.toString().contains(expClsName));
-            assertTrue(mdlOnFeaturesSubspace.toString(true).contains(expClsName));
-            assertTrue(mdlOnFeaturesSubspace.toString(false).contains(expClsName));
-        });
-
         assertTrue(mdl.getPredictionsAggregator() instanceof OnMajorityPredictionsAggregator);
         assertEquals(5, mdl.getModels().size());
+    }
+
+    /** */
+    @Test
+    public void testUpdate() {
+        int sampleSize = 1000;
+        Map<double[], Double> sample = new HashMap<>();
+        for (int i = 0; i < sampleSize; i++) {
+            double x1 = i;
+            double x2 = x1 / 10.0;
+            double x3 = x2 / 10.0;
+            double x4 = x3 / 10.0;
+
+            sample.put(new double[] {x1, x2, x3, x4}, (double)(i % 2));
+        }
+
+        ArrayList<FeatureMeta> meta = new ArrayList<>();
+        for (int i = 0; i < 4; i++)
+            meta.add(new FeatureMeta("", i, false));
+        RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(meta)
+            .withCountOfTrees(100)
+            .withFeaturesCountSelectionStrgy(x -> 2);
+
+        ModelsComposition originalModel = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
+        ModelsComposition updatedOnSameDS = trainer.update(originalModel, sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
+        ModelsComposition updatedOnEmptyDS = trainer.update(originalModel, new HashMap<double[], Double>(), parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
+
+        Vector v = VectorUtils.of(5, 0.5, 0.05, 0.005);
+        assertEquals(originalModel.apply(v), updatedOnSameDS.apply(v), 0.01);
+        assertEquals(originalModel.apply(v), updatedOnEmptyDS.apply(v), 0.01);
     }
 }

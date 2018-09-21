@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -442,12 +441,12 @@ public class GridH2Table extends TableBase {
      * @param prevRowAvailable Whether previous row is available.
      * @throws IgniteCheckedException If failed.
      */
-    public void update(CacheDataRow row, @Nullable CacheDataRow prevRow, boolean prevRowAvailable)
-        throws IgniteCheckedException {
+    public void update(CacheDataRow row, @Nullable CacheDataRow prevRow, boolean prevRowAvailable) throws IgniteCheckedException {
         assert desc != null;
 
         GridH2KeyValueRowOnheap row0 = (GridH2KeyValueRowOnheap)desc.createRow(row);
-        GridH2KeyValueRowOnheap prevRow0 = prevRow != null ? (GridH2KeyValueRowOnheap)desc.createRow(prevRow) : null;
+        GridH2KeyValueRowOnheap prevRow0 = prevRow != null ? (GridH2KeyValueRowOnheap)desc.createRow(prevRow) :
+            null;
 
         row0.prepareValuesCache();
 
@@ -539,7 +538,6 @@ public class GridH2Table extends TableBase {
 
     /**
      * Add row to index.
-     *
      * @param idx Index to add row to.
      * @param row Row to add to index.
      * @param prevRow Previous row state, if any.

@@ -473,50 +473,6 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception if failed.
-     */
-    public void testCheckpointHistory() throws Exception {
-        Ignite ignite = startGrid();
-
-        ignite.cluster().active(true);
-
-        try {
-            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
-                .cache().context().database();
-
-            dbMgr.waitForCheckpoint("test");
-
-            // This number depends on wal history size.
-            int entries = WAL_HIST_SIZE * 2;
-
-            IgniteCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
-
-            for (int i = 0; i < entries; i++) {
-                // Put to partition 0.
-                cache.put(i * PARTS, i * PARTS);
-
-                // Put to partition 1.
-                cache.put(i * PARTS + 1, i * PARTS + 1);
-
-                dbMgr.waitForCheckpoint("test");
-            }
-
-            CheckpointHistory hist = dbMgr.checkpointHistory();
-
-            assertTrue(hist.checkpoints().size() <= WAL_HIST_SIZE);
-
-            File cpDir = dbMgr.checkpointDirectory();
-
-            File[] cpFiles = cpDir.listFiles();
-
-            assertTrue(cpFiles.length <= WAL_HIST_SIZE * 2 + 1); // starts & ends + node_start
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
      * @throws Exception If failed.
      */
     public void testWalAfterPreloading() throws Exception {

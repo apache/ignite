@@ -18,7 +18,7 @@
 import AgentManager from 'app/modules/agent/AgentManager.service';
 
 export default class {
-    static $inject = [AgentManager.name, 'ConnectedClustersDialog'];
+    static $inject = ['AgentManager', 'ConnectedClustersDialog'];
 
     /** @type {Number} */
     connectedClusters = 0;

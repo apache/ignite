@@ -356,7 +356,7 @@ class VisorCacheCommand extends VisorConsoleCommand {
 
             val sumT = VisorTextTable()
 
-            sumT #= ("Name(@)", "Mode", "Nodes", "Entries (Heap / Off-heap)", "Hits", "Misses", "Reads", "Writes")
+            sumT #= ("Name(@)", "Mode", "Nodes", "Total entries (Heap / Off-heap)", "Primary entries (Heap / Off-heap)", "Hits", "Misses", "Reads", "Writes")
 
             sortAggregatedData(aggrData, sortType.getOrElse("cn"), reversed).foreach(
                 ad => {
@@ -367,6 +367,7 @@ class VisorCacheCommand extends VisorConsoleCommand {
                         mkCacheName(ad.getName),
                         ad.getMode,
                         ad.getNodes.size(),
+                        (ad.getTotalHeapSize + ad.getTotalOffHeapSize) + " (" + ad.getTotalHeapSize + " / " + ad.getTotalOffHeapSize + ")",
                         (
                             "min: " + (ad.getMinimumHeapSize + ad.getMinimumOffHeapPrimarySize) +
                                 " (" + ad.getMinimumHeapSize + " / " + ad.getMinimumOffHeapPrimarySize + ")",
@@ -424,6 +425,8 @@ class VisorCacheCommand extends VisorConsoleCommand {
                     val csT = VisorTextTable()
 
                     csT += ("Name(@)", cacheNameVar)
+                    csT += ("Total entries (Heap / Off-heap)", (ad.getTotalHeapSize + ad.getTotalOffHeapSize) +
+                        " (" + ad.getTotalHeapSize + " / " + ad.getTotalOffHeapSize + ")")
                     csT += ("Nodes", m.size())
                     csT += ("Total size Min/Avg/Max", (ad.getMinimumHeapSize + ad.getMinimumOffHeapPrimarySize) + " / " +
                         formatDouble(ad.getAverageHeapSize + ad.getAverageOffHeapPrimarySize) + " / " +
@@ -435,7 +438,7 @@ class VisorCacheCommand extends VisorConsoleCommand {
 
                     val ciT = VisorTextTable()
 
-                    ciT #= ("Node ID8(@), IP", "CPUs", "Heap Used", "CPU Load", "Up Time", "Size", "Hi/Mi/Rd/Wr")
+                    ciT #= ("Node ID8(@), IP", "CPUs", "Heap Used", "CPU Load", "Up Time", "Size (Primary / Backup)", "Hi/Mi/Rd/Wr")
 
                     sortData(m.toMap, sortType.getOrElse("hi"), reversed).foreach { case (nid, cm) =>
                         val nm = ignite.cluster.node(nid).metrics()
@@ -448,10 +451,14 @@ class VisorCacheCommand extends VisorConsoleCommand {
                             formatDouble(nm.getCurrentCpuLoad * 100d) + " %",
                             X.timeSpan2HMSM(nm.getUpTime),
                             (
-                                "Total: " + (cm.getHeapEntriesCount + cm.getOffHeapPrimaryEntriesCount),
-                                "  Heap: " + cm.getHeapEntriesCount,
-                                "  Off-Heap: " + cm.getOffHeapPrimaryEntriesCount,
-                                "  Off-Heap Memory: " + formatMemory(cm.getOffHeapAllocatedSize)
+                                "Total: " + (cm.getHeapEntriesCount + cm.getOffHeapEntriesCount) +
+                                    " (" + (cm.getHeapEntriesCount + cm.getOffHeapPrimaryEntriesCount) + " / " + cm.getOffHeapBackupEntriesCount + ")",
+                                "  Heap: " + cm.getHeapEntriesCount + " (" + cm.getHeapEntriesCount + " / " + NA + ")",
+                                "  Off-Heap: " + cm.getOffHeapEntriesCount +
+                                    " (" + cm.getOffHeapPrimaryEntriesCount + " / " + cm.getOffHeapBackupEntriesCount + ")",
+                                "  Off-Heap Memory: " + (if (cm.getOffHeapPrimaryEntriesCount == 0) "0"
+                                    else if (cm.getOffHeapAllocatedSize > 0) formatMemory(cm.getOffHeapAllocatedSize)
+                                    else NA)
                             ),
                             (
                                 "Hi: " + cm.getHits,

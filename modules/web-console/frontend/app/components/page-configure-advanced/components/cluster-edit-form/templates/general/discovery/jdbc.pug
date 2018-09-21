@@ -22,11 +22,24 @@ mixin discovery-jdbc(modelAt = '$ctrl.clonedCluster')
 
     .pc-form-grid-row&attributes(attributes=attributes)
         .pc-form-grid-col-30
-            +text('Data source bean name:', `${model}.dataSourceBean`,
-                '"dataSourceBean"', required, 'Input bean name', 'Name of the data source bean in Spring context')
+            +form-field__text({
+                label: 'Data source bean name:',
+                model: `${model}.dataSourceBean`,
+                name: '"dataSourceBean"',
+                required: required,
+                placeholder:'Input bean name',
+                tip: 'Name of the data source bean in Spring context'
+            })
         .pc-form-grid-col-30
-            +dialect('Dialect:', `${model}.dialect`, '"dialect"', required,
-                'Dialect of SQL implemented by a particular RDBMS:', 'Generic JDBC dialect', 'Choose JDBC dialect')
+            +form-field__dialect({
+                label: 'Dialect:',
+                model: `${model}.dialect`,
+                name: '"dialect"',
+                required,
+                tip: 'Dialect of SQL implemented by a particular RDBMS:',
+                genericDialectName: 'Generic JDBC dialect',
+                placeholder: 'Choose JDBC dialect'
+            })
         .pc-form-grid-col-60
             +form-field__checkbox({
                 label: 'DB schema should be initialized by Ignite',

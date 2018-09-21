@@ -220,7 +220,7 @@ public class IndexStorageImpl implements IndexStorage {
         }
 
         /** {@inheritDoc} */
-        @Override protected IndexItem getRow(final BPlusIO<IndexItem> io, final long pageAddr,
+        @Override public IndexItem getRow(final BPlusIO<IndexItem> io, final long pageAddr,
             final int idx, Object ignore) throws IgniteCheckedException {
             return readRow(pageAddr, ((IndexIO)io).getOffset(pageAddr, idx));
         }

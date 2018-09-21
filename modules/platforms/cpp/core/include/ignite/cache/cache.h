@@ -259,12 +259,14 @@ namespace ignite
              */
             V LocalPeek(const K& key, int32_t peekModes, IgniteError& err)
             {
+                V val;
+
                 impl::InCacheLocalPeekOperation<K> inOp(key, peekModes);
-                impl::Out1Operation<V> outOp;
+                impl::Out1Operation<V> outOp(val);
 
                 impl.Get()->LocalPeek(inOp, outOp, peekModes, err);
 
-                return outOp.GetResult();
+                return val;
             }
 
             /**
@@ -305,12 +307,13 @@ namespace ignite
              */
             V Get(const K& key, IgniteError& err)
             {
+                V val;
                 impl::In1Operation<K> inOp(key);
-                impl::Out1Operation<V> outOp;
+                impl::Out1Operation<V> outOp(val);
 
                 impl.Get()->Get(inOp, outOp, err);
 
-                return outOp.GetResult();
+                return val;
             }
 
             /**
@@ -351,12 +354,14 @@ namespace ignite
              */
             std::map<K, V> GetAll(const std::set<K>& keys, IgniteError& err)
             {
+                std::map<K, V> res;
+
                 impl::InSetOperation<K> inOp(keys);
-                impl::OutMapOperation<K, V> outOp;
+                impl::OutMapOperation<K, V> outOp(res);
 
                 impl.Get()->GetAll(inOp, outOp, err);
 
-                return outOp.GetResult();
+                return res;
             }
 
             /**
@@ -515,12 +520,14 @@ namespace ignite
              */
             V GetAndPut(const K& key, const V& val, IgniteError& err)
             {
+                V oldVal;
+
                 impl::In2Operation<K, V> inOp(key, val);
-                impl::Out1Operation<V> outOp;
+                impl::Out1Operation<V> outOp(oldVal);
 
                 impl.Get()->GetAndPut(inOp, outOp, err);
 
-                return outOp.GetResult();
+                return oldVal;
             }
 
             /**
@@ -559,12 +566,14 @@ namespace ignite
              */
             V GetAndReplace(const K& key, const V& val, IgniteError& err)
             {
+                V oldVal;
+
                 impl::In2Operation<K, V> inOp(key, val);
-                impl::Out1Operation<V> outOp;
+                impl::Out1Operation<V> outOp(oldVal);
 
                 impl.Get()->GetAndReplace(inOp, outOp, err);
 
-                return outOp.GetResult();
+                return oldVal;
             }
 
             /**
@@ -597,12 +606,14 @@ namespace ignite
              */
             V GetAndRemove(const K& key, IgniteError& err)
             {
+                V oldVal;
+
                 impl::In1Operation<K> inOp(key);
-                impl::Out1Operation<V> outOp;
+                impl::Out1Operation<V> outOp(oldVal);
 
                 impl.Get()->GetAndRemove(inOp, outOp, err);
 
-                return outOp.GetResult();
+                return oldVal;
             }
 
             /**
@@ -694,12 +705,14 @@ namespace ignite
              */
             V GetAndPutIfAbsent(const K& key, const V& val, IgniteError& err)
             {
+                V oldVal;
+
                 impl::In2Operation<K, V> inOp(key, val);
-                impl::Out1Operation<V> outOp;
+                impl::Out1Operation<V> outOp(oldVal);
 
                 impl.Get()->GetAndPutIfAbsent(inOp, outOp, err);
 
-                return outOp.GetResult();
+                return oldVal;
             }
 
             /**
@@ -1607,14 +1620,15 @@ namespace ignite
             {
                 typedef impl::cache::CacheEntryProcessorHolder<P, A> ProcessorHolder;
 
+                R res;
                 ProcessorHolder procHolder(processor, arg);
 
                 impl::In2Operation<K, ProcessorHolder> inOp(key, procHolder);
-                impl::Out1Operation<R> outOp;
+                impl::Out1Operation<R> outOp(res);
 
                 impl.Get()->Invoke(inOp, outOp, err);
 
-                return outOp.GetResult();
+                return res;
             }
 
             /**

@@ -43,6 +43,8 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
@@ -53,6 +55,7 @@ import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
+import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -223,6 +226,11 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
      */
     private static class FailedIndexing implements GridQueryIndexing {
         /** {@inheritDoc} */
+        @Override public void onClientDisconnect() throws IgniteCheckedException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
         @Override public void start(GridKernalContext ctx, GridSpinBusyLock busyLock) throws IgniteCheckedException {
             // No-op
         }
@@ -240,7 +248,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-            SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, GridQueryCancel cancel) {
+            SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker, GridQueryCancel cancel) {
             return null;
         }
 
@@ -312,6 +320,14 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
+        @Override public UpdateSourceIterator<?> prepareDistributedUpdate(GridCacheContext<?, ?> cctx, int[] ids, int[] parts,
+            String schema, String qry, Object[] params, int flags, int pageSize, int timeout,
+            AffinityTopologyVersion topVer,
+            MvccSnapshot mvccVer, GridQueryCancel cancel) throws IgniteCheckedException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean registerType(GridCacheContext cctx,
             GridQueryTypeDescriptor desc) throws IgniteCheckedException {
             return false;
@@ -319,7 +335,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public void store(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow row,
-            CacheDataRow prevRow, boolean prevRowAvailable) {
+            CacheDataRow prevRow, boolean prevRowAvailable) throws IgniteCheckedException {
             // No-op.
         }
 

@@ -20,7 +20,7 @@ import controller from './controller.js';
 
 export default {
     template: `
-        <i>Showing: {{ $ctrl.count }} rows</i>
+        <i ng-pluralize count="$ctrl.count" when="{'one': 'Showing: 1 row', 'other': 'Showing: {} rows'}"></i>
     `,
     controller,
     bindings: {

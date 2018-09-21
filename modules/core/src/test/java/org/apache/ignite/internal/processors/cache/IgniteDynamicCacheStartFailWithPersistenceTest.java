@@ -34,7 +34,7 @@ public class IgniteDynamicCacheStartFailWithPersistenceTest extends IgniteAbstra
         return 5 * 60 * 1000;
     }
 
-    protected boolean persistenceEnabled() {
+    @Override protected boolean persistenceEnabled() {
         return true;
     }
 
@@ -75,7 +75,7 @@ public class IgniteDynamicCacheStartFailWithPersistenceTest extends IgniteAbstra
     }
 
     /** {@inheritDoc} */
-    protected void checkCacheOperations(IgniteCache<Integer, Value> cache) throws Exception {
+    @Override protected void checkCacheOperations(IgniteCache<Integer, Value> cache) throws Exception {
         super.checkCacheOperations(cache);
 
         // Disable write-ahead log.

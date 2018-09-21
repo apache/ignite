@@ -866,7 +866,7 @@ namespace ignite
                 for (app::ColumnBindingMap::iterator it = columnBindings.begin(); it != columnBindings.end(); ++it)
                     it->second.SetByteOffset(*columnBindOffset);
             }
-            
+
             SqlResult::Type res = currentQuery->FetchNextRow(columnBindings);
 
             if (res == SqlResult::AI_SUCCESS)

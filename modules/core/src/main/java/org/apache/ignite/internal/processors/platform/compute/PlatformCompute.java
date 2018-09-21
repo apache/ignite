@@ -74,6 +74,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
     /** */
     private static final int OP_EXEC_NATIVE = 8;
 
+    /** */
+    private static final int OP_WITH_NO_RESULT_CACHE = 9;
+
     /** Compute instance. */
     private final IgniteComputeImpl compute;
 
@@ -142,6 +145,13 @@ public class PlatformCompute extends PlatformAbstractTarget {
             case OP_WITH_NO_FAILOVER: {
                 compute.withNoFailover();
                 computeForPlatform.withNoFailover();
+
+                return TRUE;
+            }
+
+            case OP_WITH_NO_RESULT_CACHE: {
+                compute.withNoResultCache();
+                computeForPlatform.withNoResultCache();
 
                 return TRUE;
             }

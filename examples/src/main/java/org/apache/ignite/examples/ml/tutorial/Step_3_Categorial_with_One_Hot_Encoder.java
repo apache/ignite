@@ -68,9 +68,9 @@ public class Step_3_Categorial_with_One_Hot_Encoder {
 
                     IgniteBiFunction<Integer, Object[], Vector> oneHotEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
                         .withEncoderType(EncoderType.ONE_HOT_ENCODER)
-                        .encodeFeature(0)
-                        .encodeFeature(1)
-                        .encodeFeature(4)
+                        .withEncodedFeature(0)
+                        .withEncodedFeature(1)
+                        .withEncodedFeature(4)
                         .fit(ignite,
                             dataCache,
                             featureExtractor

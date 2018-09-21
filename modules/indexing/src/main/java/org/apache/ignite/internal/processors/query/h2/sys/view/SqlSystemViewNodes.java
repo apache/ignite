@@ -39,11 +39,10 @@ public class SqlSystemViewNodes extends SqlAbstractLocalSystemView {
      * @param ctx Grid context.
      */
     public SqlSystemViewNodes(GridKernalContext ctx) {
-        super("NODES", "Topology nodes", ctx, new String[] {"ID", "IS_LOCAL"},
+        super("NODES", "Topology nodes", ctx, new String[] {"ID"},
             newColumn("ID", Value.UUID),
             newColumn("CONSISTENT_ID"),
             newColumn("VERSION"),
-            newColumn("IS_LOCAL", Value.BOOLEAN),
             newColumn("IS_CLIENT", Value.BOOLEAN),
             newColumn("IS_DAEMON", Value.BOOLEAN),
             newColumn("NODE_ORDER", Value.INT),
@@ -58,12 +57,9 @@ public class SqlSystemViewNodes extends SqlAbstractLocalSystemView {
 
         Collection<ClusterNode> nodes;
 
-        SqlSystemViewColumnCondition locCond = conditionForColumn("IS_LOCAL", first, last);
         SqlSystemViewColumnCondition idCond = conditionForColumn("ID", first, last);
 
-        if (locCond.isEquality() && locCond.valueForEquality().getBoolean())
-            nodes = Collections.singleton(ctx.discovery().localNode());
-        else if (idCond.isEquality()) {
+        if (idCond.isEquality()) {
             UUID nodeId = uuidFromValue(idCond.valueForEquality());
 
             nodes = nodeId == null ? Collections.emptySet() : Collections.singleton(ctx.discovery().node(nodeId));
@@ -78,7 +74,6 @@ public class SqlSystemViewNodes extends SqlAbstractLocalSystemView {
                         node.id(),
                         node.consistentId(),
                         node.version(),
-                        node.isLocal(),
                         node.isClient(),
                         node.isDaemon(),
                         node.order(),

@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -85,6 +86,9 @@ public class GridH2QueryContext {
     private GridH2CollocationModel qryCollocationMdl;
 
     /** */
+    private MvccSnapshot mvccSnapshot;
+
+    /** */
     private MapQueryLazyWorker lazyWorker;
 
     /**
@@ -106,10 +110,31 @@ public class GridH2QueryContext {
      * @param segmentId Index segment ID.
      * @param type Query type.
      */
-    public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, int segmentId, GridH2QueryType type) {
+    public GridH2QueryContext(UUID locNodeId,
+        UUID nodeId,
+        long qryId,
+        int segmentId,
+        GridH2QueryType type) {
         assert segmentId == 0 || type == MAP;
 
         key = new Key(locNodeId, nodeId, qryId, segmentId, type);
+    }
+
+    /**
+     * @return Mvcc snapshot.
+     */
+    @Nullable public MvccSnapshot mvccSnapshot() {
+        return mvccSnapshot;
+    }
+
+    /**
+     * @param mvccSnapshot Mvcc snapshot.
+     * @return {@code this}.
+     */
+    public GridH2QueryContext mvccSnapshot(MvccSnapshot mvccSnapshot) {
+        this.mvccSnapshot = mvccSnapshot;
+
+        return this;
     }
 
     /**

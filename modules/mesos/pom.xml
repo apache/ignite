@@ -35,9 +35,10 @@
     <url>http://ignite.apache.org</url>
 
     <properties>
-        <mesos.version>0.22.0</mesos.version>
-        <ignite.latest.url>http://ignite.run/download_ignite.php</ignite.latest.url>
-        <ignite.direct.url>https://archive.apache.org/dist/ignite/%s/apache-ignite-fabric-%s-bin.zip</ignite.direct.url>
+        <mesos.version>1.5.0</mesos.version>
+        <ignite.version.url>https://ignite.apache.org/latest</ignite.version.url>
+        <ignite.path>/ignite/%s/apache-ignite-fabric-%s-bin.zip</ignite.path>
+        <apache.mirror.url>https://www.apache.org/dyn/closer.cgi?as_json=1</apache.mirror.url>
     </properties>
 
     <dependencies>
@@ -51,6 +52,12 @@
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
             <version>${jetty.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
         </dependency>
 
         <dependency>
@@ -76,23 +83,30 @@
                         <phase>generate-sources</phase>
                         <configuration>
                             <target>
-                                <echo message="Update download url in mesos module." />
-                                <echo message="Direct link ${ignite.direct.url}." />
-                                <echo message="Latest link ${ignite.latest.url}." />
+                                <echo message="Update download url in mesos module."/>
+                                <echo message="Latest version ${ignite.version.url}."/>
 
                                 <replaceregexp byline="true" encoding="UTF-8">
-                                    <regexp pattern="(.*DOWNLOAD_LINK = &quot;)(.*)(&quot;.*)" />
-                                    <substitution expression="\1${ignite.latest.url}\3" />
+                                    <regexp pattern="(.*IGNITE_LATEST_VERSION_URL = &quot;)(.*)(&quot;.*)"/>
+                                    <substitution expression="\1${ignite.version.url}\3"/>
                                     <fileset dir="${basedir}/">
-                                        <include name="**/IgniteProvider.java" />
+                                        <include name="**/IgniteProvider.java"/>
                                     </fileset>
                                 </replaceregexp>
 
                                 <replaceregexp byline="true" encoding="UTF-8">
-                                    <regexp pattern="(.*DOWNLOAD_URL_PATTERN = &quot;)(.*)(&quot;.*)" />
-                                    <substitution expression="\1${ignite.direct.url}\3" />
+                                    <regexp pattern="(.*APACHE_MIRROR_URL = &quot;)(.*)(&quot;.*)"/>
+                                    <substitution expression="\1${apache.mirror.url}\3"/>
                                     <fileset dir="${basedir}/">
-                                        <include name="**/IgniteProvider.java" />
+                                        <include name="**/IgniteProvider.java"/>
+                                    </fileset>
+                                </replaceregexp>
+
+                                <replaceregexp byline="true" encoding="UTF-8">
+                                    <regexp pattern="(.*IGNITE_PATH = &quot;)(.*)(&quot;.*)"/>
+                                    <substitution expression="\1${ignite.path}\3"/>
+                                    <fileset dir="${basedir}/">
+                                        <include name="**/IgniteProvider.java"/>
                                     </fileset>
                                 </replaceregexp>
                             </target>

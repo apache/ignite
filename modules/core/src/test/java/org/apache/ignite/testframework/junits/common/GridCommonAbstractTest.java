@@ -83,7 +83,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
@@ -91,10 +90,6 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
-import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
-import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTask;
-import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -102,13 +97,10 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTask;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskResult;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskV2;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -128,7 +120,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.retryTopologySafe;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -1807,7 +1798,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         if (nodesCnt == -1) {
             nodes = G.allGrids();
 
-            assertTrue(nodes.size() > 0);
+            assertTrue(!nodes.isEmpty());
         }
         else {
             nodes = new ArrayList<>(nodesCnt);
@@ -1994,5 +1985,28 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             VisorIdleVerifyTaskV2.class.getName(),
             new VisorTaskArgument<>(node.id(), taskArg, false)
         );
+    }
+
+    /**
+     * Checks if all txs and mvcc futures are finished.
+     */
+    protected void checkFutures() {
+        for (Ignite ignite : G.allGrids()) {
+            IgniteEx ig = (IgniteEx)ignite;
+
+            final Collection<GridCacheFuture<?>> futs = ig.context().cache().context().mvcc().activeFutures();
+
+            for (GridCacheFuture<?> fut : futs)
+                log.info("Waiting for future: " + fut);
+
+            assertTrue("Expecting no active futures: node=" + ig.localNode().id(), futs.isEmpty());
+
+            Collection<IgniteInternalTx> txs = ig.context().cache().context().tm().activeTransactions();
+
+            for (IgniteInternalTx tx : txs)
+                log.info("Waiting for tx: " + tx);
+
+            assertTrue("Expecting no active transactions: node=" + ig.localNode().id(), txs.isEmpty());
+        }
     }
 }

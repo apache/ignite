@@ -36,6 +36,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -489,7 +490,8 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
             .setName(CACHE1)
             .setGroupName(GROUP)
             .setCacheMode(CacheMode.PARTITIONED)
-            .setAtomicityMode(CacheAtomicityMode.ATOMIC);
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         cfg.setCacheConfiguration(cacheCfg);
 

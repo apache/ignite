@@ -56,9 +56,9 @@ public class IgniteUriDeploymentTestSuite {
         suite.addTest(new TestSuite(GridFileDeploymentUndeploySelfTest.class));
         suite.addTest(new TestSuite(GridHttpDeploymentSelfTest.class));
 
-        //suite.addTest(new TestSuite(GridFileDeploymentSelfTest.class));
-        //suite.addTest(new TestSuite(GridUriDeploymentMultiScannersErrorThrottlingTest.class));
-        //suite.addTest(new TestSuite(GridUriDeploymentMd5CheckSelfTest.class));
+        suite.addTest(new TestSuite(GridFileDeploymentSelfTest.class));
+        suite.addTest(new TestSuite(GridUriDeploymentMultiScannersErrorThrottlingTest.class));
+        suite.addTest(new TestSuite(GridUriDeploymentMd5CheckSelfTest.class));
 
         // GAR Ant task tests.
         suite.addTest(IgniteToolsSelfTestSuite.suite());

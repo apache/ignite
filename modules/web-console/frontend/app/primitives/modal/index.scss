@@ -122,7 +122,7 @@
         opacity: 1;
         background: none;
         color: $gray-light;
-        
+
         [ignite-icon] {
             height: 12px;
         }
@@ -174,11 +174,21 @@
         }
 
         .modal-body {
-            margin: 0;
             padding: 5px 20px;
+            margin: 0;
 
             .input-tip {
                 padding-top: 0;
+            }
+
+            .modal-body--inner-content {
+                max-height: 300px;
+                overflow-x: auto;
+
+                p {
+                    text-align: left;
+                    white-space: nowrap;
+                }
             }
         }
 
@@ -227,6 +237,10 @@
         &:last-child {
             flex: 1;
             justify-content: flex-end;
+
+            &.modal-footer--no-grow {
+                flex-grow: 0;
+            }
         }
     }
 }

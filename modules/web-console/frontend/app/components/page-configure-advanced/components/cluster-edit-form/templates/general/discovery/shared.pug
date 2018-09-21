@@ -21,4 +21,10 @@ mixin discovery-shared(modelAt = '$ctrl.clonedCluster')
 
     .pc-form-grid-row&attributes(attributes=attributes)
         .pc-form-grid-col-60
-            +text('File path:', `${model}.path`, '"path"', 'false', 'disco/tcp', 'Shared path')
+            +form-field__text({
+                label: 'File path:',
+                model: `${model}.path`,
+                name: '"path"',
+                placeholder: 'disco/tcp',
+                tip: 'Shared path'
+            })

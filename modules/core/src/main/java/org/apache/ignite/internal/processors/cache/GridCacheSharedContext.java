@@ -37,7 +37,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
@@ -48,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
@@ -794,6 +794,13 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
+     * @return Cache mvcc coordinator manager.
+     */
+    public MvccProcessor coordinators() {
+        return kernalCtx.coordinators();
+    }
+
+    /**
      * @return Partition evict manager.
      */
     public PartitionsEvictManager evict() {
@@ -855,7 +862,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * Captures all ongoing operations that we need to wait before we can proceed to the next topology version.
      * This method must be called only after
-     * {@link GridDhtPartitionTopology#updateTopologyVersion(GridDhtTopologyFuture, DiscoCache, long, boolean)}
+     * {@link GridDhtPartitionTopology#updateTopologyVersion}
      * method is called so that all new updates will wait to switch to the new version.
      * This method will capture:
      * <ul>

@@ -20,7 +20,7 @@ import template from './template.pug';
 import AgentManager from 'app/modules/agent/AgentManager.service';
 
 class controller {
-    static $inject = [AgentManager.name];
+    static $inject = ['AgentManager'];
 
     /**
      * @param {AgentManager} agentMgr

@@ -5758,7 +5758,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         assertTrue(storeStgy.getStoreSize() != 0);
 
         try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
-            assertTrue(cacheSkipStore.getAll(data.keySet()).size() == 0);
+            assertTrue(cacheSkipStore.getAll(data.keySet()).isEmpty());
 
             for (String key : keys) {
                 assertNull(cacheSkipStore.get(key));

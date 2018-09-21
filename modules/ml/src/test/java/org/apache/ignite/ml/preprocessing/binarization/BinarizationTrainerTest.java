@@ -69,14 +69,14 @@ public class BinarizationTrainerTest {
         BinarizationTrainer<Integer, double[]> binarizationTrainer = new BinarizationTrainer<Integer, double[]>()
             .withThreshold(10);
 
-        assertEquals(10., binarizationTrainer.threshold(), 0);
+        assertEquals(10., binarizationTrainer.getThreshold(), 0);
 
         BinarizationPreprocessor<Integer, double[]> preprocessor = binarizationTrainer.fit(
             datasetBuilder,
             (k, v) -> VectorUtils.of(v)
         );
 
-        assertEquals(binarizationTrainer.threshold(), preprocessor.threshold(), 0);
+        assertEquals(binarizationTrainer.getThreshold(), preprocessor.getThreshold(), 0);
 
         assertArrayEquals(new double[] {0, 0, 1}, preprocessor.apply(5, new double[] {1, 10, 100}).asArray(), 1e-8);
     }
@@ -93,7 +93,7 @@ public class BinarizationTrainerTest {
         BinarizationTrainer<Integer, double[]> binarizationTrainer = new BinarizationTrainer<Integer, double[]>()
             .withThreshold(10);
 
-        assertEquals(10., binarizationTrainer.threshold(), 0);
+        assertEquals(10., binarizationTrainer.getThreshold(), 0);
 
         IgniteBiFunction<Integer, double[], Vector> preprocessor = binarizationTrainer.fit(
             data,

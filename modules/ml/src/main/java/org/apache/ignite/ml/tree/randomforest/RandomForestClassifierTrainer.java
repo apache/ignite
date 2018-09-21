@@ -17,72 +17,97 @@
 
 package org.apache.ignite.ml.tree.randomforest;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
-import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
-import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
-import org.apache.ignite.ml.tree.DecisionTreeNode;
+import org.apache.ignite.ml.dataset.Dataset;
+import org.apache.ignite.ml.dataset.feature.FeatureMeta;
+import org.apache.ignite.ml.dataset.feature.ObjectHistogram;
+import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedDatasetPartition;
+import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.tree.randomforest.data.TreeRoot;
+import org.apache.ignite.ml.tree.randomforest.data.impurity.GiniHistogram;
+import org.apache.ignite.ml.tree.randomforest.data.impurity.GiniHistogramsComputer;
+import org.apache.ignite.ml.tree.randomforest.data.impurity.ImpurityHistogramsComputer;
+import org.apache.ignite.ml.tree.randomforest.data.statistics.ClassifierLeafValuesComputer;
+import org.apache.ignite.ml.tree.randomforest.data.statistics.LeafValuesComputer;
 
 /**
- * Random forest classifier trainer.
+ * Classifier trainer based on RandomForest algorithm.
  */
-public class RandomForestClassifierTrainer extends RandomForestTrainer {
-    /**
-     * Constructs new instance of RandomForestClassifierTrainer.
-     *
-     * @param predictionsAggregator Predictions aggregator.
-     * @param featureVectorSize Feature vector size.
-     * @param maximumFeaturesCntPerMdl Number of features to draw from original features vector to train each model.
-     * @param ensembleSize Ensemble size.
-     * @param samplePartSizePerMdl Size of sample part in percent to train one model.
-     * @param maxDeep Max decision tree deep.
-     * @param minImpurityDecrease Min impurity decrease.
-     */
-    public RandomForestClassifierTrainer(PredictionsAggregator predictionsAggregator,
-        int featureVectorSize,
-        int maximumFeaturesCntPerMdl,
-        int ensembleSize,
-        double samplePartSizePerMdl,
-        int maxDeep,
-        double minImpurityDecrease) {
-
-        super(predictionsAggregator, featureVectorSize, maximumFeaturesCntPerMdl,
-            ensembleSize, samplePartSizePerMdl, maxDeep, minImpurityDecrease);
-    }
+public class RandomForestClassifierTrainer
+    extends RandomForestTrainer<ObjectHistogram<BootstrappedVector>, GiniHistogram, RandomForestClassifierTrainer> {
+    /** Label mapping. */
+    private Map<Double, Integer> lblMapping = new HashMap<>();
 
     /**
-     * Constructs new instance of RandomForestClassifierTrainer.
+     * Constructs an instance of RandomForestClassifierTrainer.
      *
-     * @param featureVectorSize Feature vector size.
-     * @param maximumFeaturesCntPerMdl Number of features to draw from original features vector to train each model.
-     * @param ensembleSize Ensemble size.
-     * @param samplePartSizePerMdl Size of sample part in percent to train one model.
-     * @param maxDeep Max decision tree deep.
-     * @param minImpurityDecrease Min impurity decrease.
+     * @param meta Features meta.
      */
-    public RandomForestClassifierTrainer(int featureVectorSize,
-        int maximumFeaturesCntPerMdl,
-        int ensembleSize,
-        double samplePartSizePerMdl,
-        int maxDeep, double minImpurityDecrease) {
-
-        this(new OnMajorityPredictionsAggregator(), featureVectorSize, maximumFeaturesCntPerMdl,
-            ensembleSize, samplePartSizePerMdl, maxDeep, minImpurityDecrease);
+    public RandomForestClassifierTrainer(List<FeatureMeta> meta) {
+        super(meta);
     }
 
     /** {@inheritDoc} */
-    @Override protected DatasetTrainer<DecisionTreeNode, Double> buildDatasetTrainerForModel() {
-        return new DecisionTreeClassificationTrainer(maxDeep, minImpurityDecrease).withUseIndex(useIndex);
+    @Override protected RandomForestClassifierTrainer instance() {
+        return this;
     }
 
     /**
-     * Sets useIndex parameter and returns trainer instance.
+     * Aggregates all unique labels from dataset and assigns integer id value for each label.
+     * This id can be used as index in arrays or lists.
      *
-     * @param useIndex Use index.
-     * @return Decision tree trainer.
+     * @param dataset Dataset.
+     * @return true if initialization was done.
      */
-    public RandomForestClassifierTrainer withUseIndex(boolean useIndex) {
-        this.useIndex = useIndex;
-        return this;
+    @Override protected boolean init(Dataset<EmptyContext, BootstrappedDatasetPartition> dataset) {
+        Set<Double> uniqLabels = dataset.compute(
+            x -> {
+                Set<Double> labels = new HashSet<>();
+                for (int i = 0; i < x.getRowsCount(); i++)
+                    labels.add(x.getRow(i).label());
+                return labels;
+            },
+            (l, r) -> {
+                if (l == null)
+                    return r;
+                if (r == null)
+                    return l;
+                Set<Double> lbls = new HashSet<>();
+                lbls.addAll(l);
+                lbls.addAll(r);
+                return lbls;
+            }
+        );
+
+        if(uniqLabels == null)
+            return false;
+
+        int i = 0;
+        for (Double label : uniqLabels)
+            lblMapping.put(label, i++);
+
+        return super.init(dataset);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected ModelsComposition buildComposition(List<TreeRoot> models) {
+        return new ModelsComposition(models, new OnMajorityPredictionsAggregator());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected ImpurityHistogramsComputer<GiniHistogram> createImpurityHistogramsComputer() {
+        return new GiniHistogramsComputer(lblMapping);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected LeafValuesComputer<ObjectHistogram<BootstrappedVector>> createLeafStatisticsAggregator() {
+        return new ClassifierLeafValuesComputer(lblMapping);
     }
 }

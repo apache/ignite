@@ -313,18 +313,30 @@ namespace ignite
              */
             std::string ReadString()
             {
+                std::string res;
+
+                ReadString(res);
+
+                return res;
+            }
+
+            /**
+             * Read string from the stream.
+             *
+             * @param dst String.
+             */
+            void ReadString(std::string& dst)
+            {
                 int32_t len = ReadString(NULL, 0);
 
                 if (len != -1)
                 {
-                    ignite::common::FixedSizeArray<char> arr(len + 1);
+                    dst.resize(static_cast<size_t>(len));
 
-                    ReadString(arr.GetData(), static_cast<int32_t>(arr.GetSize()));
-
-                    return std::string(arr.GetData());
+                    ReadString(&dst[0], len);
                 }
                 else
-                    return std::string();
+                    dst.clear();
             }
 
             /**

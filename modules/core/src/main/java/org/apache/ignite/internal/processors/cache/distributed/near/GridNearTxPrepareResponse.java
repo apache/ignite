@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -97,6 +98,9 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     /** Not {@code null} if client node should remap transaction. */
     private AffinityTopologyVersion clientRemapVer;
 
+    /** */
+    private MvccSnapshot mvccSnapshot;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -143,6 +147,20 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
         if (onePhaseCommit)
             flags |= NEAR_PREPARE_ONE_PHASE_COMMIT_FLAG_MASK;
+    }
+
+    /**
+     * @param mvccSnapshot Mvcc info.
+     */
+    public void mvccSnapshot(MvccSnapshot mvccSnapshot) {
+        this.mvccSnapshot = mvccSnapshot;
+    }
+
+    /**
+     * @return Mvcc info.
+     */
+    @Nullable public MvccSnapshot mvccSnapshot() {
+        return mvccSnapshot;
     }
 
     /**
@@ -418,6 +436,12 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
                 writer.incrementState();
 
+            case 20:
+                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -514,6 +538,14 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
                 reader.incrementState();
 
+            case 20:
+                mvccSnapshot = reader.readMessage("mvccSnapshot");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridNearTxPrepareResponse.class);
@@ -526,7 +558,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 20;
+        return 21;
     }
 
     /** {@inheritDoc} */

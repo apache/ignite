@@ -19,6 +19,7 @@ package org.apache.ignite.examples.ml.genetic.helloworld;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.genetic.Chromosome;
@@ -56,8 +57,6 @@ public class HelloWorldGAExample {
     public static void main(String args[]) {
         System.out.println(">>> HelloWorld GA grid example started.");
 
-        System.setProperty("IGNITE_QUIET", "false");
-
         try {
             // Create an Ignite instance as you would in any other use case.
             Ignite ignite = Ignition.start("examples/config/example-ignite.xml");
@@ -79,10 +78,14 @@ public class HelloWorldGAExample {
             gaCfg.setFitnessFunction(function);
 
             // Create and set TerminateCriteria.
-            HelloWorldTerminateCriteria termCriteria = new HelloWorldTerminateCriteria(ignite);
-            gaCfg.setTerminateCriteria(termCriteria);
+            AtomicInteger cnt = new AtomicInteger(0);
+            HelloWorldTerminateCriteria termCriteria = new HelloWorldTerminateCriteria(ignite,
+                msg -> {
+                    if (cnt.getAndIncrement() % 20 == 0)
+                        System.out.println(msg);
+                });
 
-            ignite.log();
+            gaCfg.setTerminateCriteria(termCriteria);
 
             GAGrid gaGrid = new GAGrid(gaCfg, ignite);
 

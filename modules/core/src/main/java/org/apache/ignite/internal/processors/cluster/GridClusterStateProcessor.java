@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -510,13 +511,16 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                 transitionFuts.put(msg.requestId(), new GridFutureAdapter<Void>());
 
+                DiscoveryDataClusterState prevState = globalState;
+
                 globalState = DiscoveryDataClusterState.createTransitionState(
-                    globalState,
+                    prevState,
                     msg.activate(),
-                    msg.activate() ? msg.baselineTopology() : globalState.baselineTopology(),
+                    msg.activate() ? msg.baselineTopology() : prevState.baselineTopology(),
                     msg.requestId(),
                     topVer,
-                    nodeIds);
+                    nodeIds
+                );
 
                 if (msg.forceChangeBaselineTopology())
                     globalState.setTransitionResult(msg.requestId(), msg.activate());
@@ -1460,6 +1464,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /**
      *
      */
+    @GridInternal
     private static class ClientChangeGlobalStateComputeRequest implements IgniteRunnable {
         /** */
         private static final long serialVersionUID = 0L;

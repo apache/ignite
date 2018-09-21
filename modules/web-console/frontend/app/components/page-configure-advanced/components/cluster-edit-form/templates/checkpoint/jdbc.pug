@@ -19,29 +19,106 @@ include /app/helpers/jade/mixins
 -var jdbcCheckpoint = '$checkpointSPI.kind === "JDBC"'
 
 .pc-form-grid-col-30(ng-if-start='$checkpointSPI.kind === "JDBC"')
-    +text('Data source bean name:', '$checkpointSPI.JDBC.dataSourceBean', '"checkpointJdbcDataSourceBean"', jdbcCheckpoint, 'Input bean name',
-    'Name of the data source bean in Spring context')
+    +form-field__text({
+        label: 'Data source bean name:',
+        model: '$checkpointSPI.JDBC.dataSourceBean',
+        name: '"checkpointJdbcDataSourceBean"',
+        required: jdbcCheckpoint,
+        placeholder: 'Input bean name',
+        tip: 'Name of the data source bean in Spring context'
+    })
 .pc-form-grid-col-30
-    +dialect('Dialect:', '$checkpointSPI.JDBC.dialect', '"checkpointJdbcDialect"', jdbcCheckpoint,
-    'Dialect of SQL implemented by a particular RDBMS:', 'Generic JDBC dialect', 'Choose JDBC dialect')
+    +form-field__dialect({
+        label: 'Dialect:',
+        model: '$checkpointSPI.JDBC.dialect',
+        name: '"checkpointJdbcDialect"',
+        required: jdbcCheckpoint,
+        tip: 'Dialect of SQL implemented by a particular RDBMS:',
+        genericDialectName: 'Generic JDBC dialect',
+        placeholder: 'Choose JDBC dialect'
+    })
+
 .pc-form-grid-col-60
-    +java-class('Listener:', '$checkpointSPI.JDBC.checkpointListener', '"checkpointJdbcListener"', 'true', 'false',
-        'Checkpoint listener implementation class name', jdbcCheckpoint)
+    +form-field__java-class({
+        label: 'Listener:',
+        model: '$checkpointSPI.JDBC.checkpointListener',
+        name: '"checkpointJdbcListener"',
+        tip: 'Checkpoint listener implementation class name',
+        validationActive: jdbcCheckpoint
+    })
 .pc-form-grid-col-60
-    +text('User:', '$checkpointSPI.JDBC.user', '"checkpointJdbcUser"', 'false', 'Input user name', 'Checkpoint jdbc user name')
+    +form-field__text({
+        label: 'User:',
+        model: '$checkpointSPI.JDBC.user',
+        name: '"checkpointJdbcUser"',
+        placeholder: 'Input user name',
+        tip: 'Checkpoint jdbc user name'
+    })
 .pc-form-grid-col-30
-    +text('Table name:', '$checkpointSPI.JDBC.checkpointTableName', '"checkpointJdbcCheckpointTableName"', 'false', 'CHECKPOINTS', 'Checkpoint table name')
+    +form-field__text({
+        label: 'Table name:',
+        model: '$checkpointSPI.JDBC.checkpointTableName',
+        name: '"checkpointJdbcCheckpointTableName"',
+        placeholder: 'CHECKPOINTS',
+        tip: 'Checkpoint table name'
+    })
 .pc-form-grid-col-30
-    +number('Number of retries:', '$checkpointSPI.JDBC.numberOfRetries', '"checkpointJdbcNumberOfRetries"', 'true', '2', '0', 'Number of retries in case of DB failure')
+    +form-field__number({
+        label: 'Number of retries:',
+        model: '$checkpointSPI.JDBC.numberOfRetries',
+        name: '"checkpointJdbcNumberOfRetries"',
+        placeholder: '2',
+        min: '0',
+        tip: 'Number of retries in case of DB failure'
+    })
 .pc-form-grid-col-30
-    +text('Key field name:', '$checkpointSPI.JDBC.keyFieldName', '"checkpointJdbcKeyFieldName"', 'false', 'NAME', 'Checkpoint key field name')
+    +form-field__text({
+        label: 'Key field name:',
+        model: '$checkpointSPI.JDBC.keyFieldName',
+        name: '"checkpointJdbcKeyFieldName"',
+        placeholder: 'NAME',
+        tip: 'Checkpoint key field name'
+    })
 .pc-form-grid-col-30
-    +dropdown('Key field type:', '$checkpointSPI.JDBC.keyFieldType', '"checkpointJdbcKeyFieldType"', 'true', 'VARCHAR', '::$ctrl.supportedJdbcTypes', 'Checkpoint key field type')
+    +form-field__dropdown({
+        label: 'Key field type:',
+        model: '$checkpointSPI.JDBC.keyFieldType',
+        name: '"checkpointJdbcKeyFieldType"',
+        placeholder: 'VARCHAR',
+        options: '::$ctrl.supportedJdbcTypes',
+        tip: 'Checkpoint key field type'
+    })
 .pc-form-grid-col-30
-    +text('Value field name:', '$checkpointSPI.JDBC.valueFieldName', '"checkpointJdbcValueFieldName"', 'false', 'VALUE', 'Checkpoint value field name')
+    +form-field__text({
+        label: 'Value field name:',
+        model: '$checkpointSPI.JDBC.valueFieldName',
+        name: '"checkpointJdbcValueFieldName"',
+        placeholder: 'VALUE',
+        tip: 'Checkpoint value field name'
+    })
 .pc-form-grid-col-30
-    +dropdown('Value field type:', '$checkpointSPI.JDBC.valueFieldType', '"checkpointJdbcValueFieldType"', 'true', 'BLOB', '::$ctrl.supportedJdbcTypes', 'Checkpoint value field type')
+    +form-field__dropdown({
+        label: 'Value field type:',
+        model: '$checkpointSPI.JDBC.valueFieldType',
+        name: '"checkpointJdbcValueFieldType"',
+        placeholder: 'BLOB',
+        options: '::$ctrl.supportedJdbcTypes',
+        tip: 'Checkpoint value field type'
+    })
 .pc-form-grid-col-30
-    +text('Expire date field name:', '$checkpointSPI.JDBC.expireDateFieldName', '"checkpointJdbcExpireDateFieldName"', 'false', 'EXPIRE_DATE', 'Checkpoint expire date field name')
+    +form-field__text({
+        label:'Expire date field name:',
+        model: '$checkpointSPI.JDBC.expireDateFieldName',
+        name: '"checkpointJdbcExpireDateFieldName"',
+        placeholder: 'EXPIRE_DATE',
+        tip: 'Checkpoint expire date field name'
+    })
 .pc-form-grid-col-30(ng-if-end)
-    +dropdown('Expire date field type:', '$checkpointSPI.JDBC.expireDateFieldType', '"checkpointJdbcExpireDateFieldType"', 'true', 'DATETIME', '::$ctrl.supportedJdbcTypes', 'Checkpoint expire date field type')
+    +form-field__dropdown({
+        label: 'Expire date field type:',
+        model: '$checkpointSPI.JDBC.expireDateFieldType',
+        name: '"checkpointJdbcExpireDateFieldType"',
+        placeholder: 'DATETIME',
+        options: '::$ctrl.supportedJdbcTypes',
+        tip: 'Checkpoint expire date field type'
+    })

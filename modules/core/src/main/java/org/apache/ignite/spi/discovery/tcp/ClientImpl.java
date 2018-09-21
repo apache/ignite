@@ -48,6 +48,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.Ignite;
@@ -60,6 +61,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
@@ -79,6 +81,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
@@ -146,6 +149,12 @@ class ClientImpl extends TcpDiscoveryImpl {
 
     /** */
     private static final Object SPI_RECONNECT = "SPI_RECONNECT";
+
+    /** */
+    private static final long CLIENT_THROTTLE_RECONNECT_RESET_TIMEOUT = IgniteSystemProperties.getLong(
+        IgniteSystemProperties.CLIENT_THROTTLE_RECONNECT_RESET_TIMEOUT_INTERVAL,
+        2 * 60_000
+    );
 
     /** Remote nodes. */
     private final ConcurrentMap<UUID, TcpDiscoveryNode> rmtNodes = new ConcurrentHashMap<>();
@@ -470,7 +479,12 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 Collection<ClusterNode> top = updateTopologyHistory(topVer + 1, null);
 
-                lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, new TreeMap<>(topHist), null);
+                try {
+                    lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, new TreeMap<>(topHist), null).get();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException("Failed to wait for discovery listener notification", e);
+                }
             }
         }
 
@@ -1610,6 +1624,12 @@ class ClientImpl extends TcpDiscoveryImpl {
         /** */
         private boolean nodeAdded;
 
+        /** */
+        private long lastReconnectTimestamp = -1;
+
+        /** */
+        private long currentReconnectDelay = -1;
+
         /**
          * @param log Logger.
          */
@@ -1691,6 +1711,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                                 ", locNode=" + locNode+ ']');
 
                             locNode.onClientDisconnected(newId);
+
+                            throttleClientReconnect();
 
                             tryJoin();
                         }
@@ -1878,6 +1900,36 @@ class ClientImpl extends TcpDiscoveryImpl {
                     reconnector.join();
                 }
             }
+        }
+
+        /**
+         * Wait random delay before trying to reconnect. Delay will grow exponentially every time client is forced to
+         * reconnect, but only if all these reconnections happened in small period of time (2 minutes). Maximum delay
+         * could be configured with {@link IgniteSpiAdapter#clientFailureDetectionTimeout()}, default value is
+         * {@link IgniteConfiguration#DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT}.
+         *
+         * @throws InterruptedException If thread is interrupted.
+         */
+        private void throttleClientReconnect() throws InterruptedException {
+            if (U.currentTimeMillis() - lastReconnectTimestamp > CLIENT_THROTTLE_RECONNECT_RESET_TIMEOUT)
+                currentReconnectDelay = 0; // Skip pause on first reconnect.
+            else if (currentReconnectDelay == 0)
+                currentReconnectDelay = 200;
+            else {
+                long maxDelay = spi.failureDetectionTimeoutEnabled()
+                    ? spi.clientFailureDetectionTimeout()
+                    : IgniteConfiguration.DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT;
+
+                currentReconnectDelay = Math.min(maxDelay, (int)(currentReconnectDelay * 1.5));
+            }
+
+            if (currentReconnectDelay != 0) {
+                ThreadLocalRandom random = ThreadLocalRandom.current();
+
+                Thread.sleep(random.nextLong(currentReconnectDelay / 2, currentReconnectDelay));
+            }
+
+            lastReconnectTimestamp = U.currentTimeMillis();
         }
 
         /**
@@ -2483,21 +2535,31 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param top Topology snapshot.
          * @param data Optional custom message data.
          */
-        private void notifyDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> top,
-            @Nullable DiscoverySpiCustomMessage data) {
+        private void notifyDiscovery(
+            int type,
+            long topVer,
+            ClusterNode node,
+            Collection<ClusterNode> top,
+            @Nullable DiscoverySpiCustomMessage data
+        ) {
             DiscoverySpiListener lsnr = spi.lsnr;
 
-            DebugLogger log = type == EVT_NODE_METRICS_UPDATED ? traceLog : debugLog;
+            DebugLogger debugLog = type == EVT_NODE_METRICS_UPDATED ? traceLog : ClientImpl.this.debugLog;
 
             if (lsnr != null) {
-                if (log.isDebugEnabled())
-                    log.debug("Discovery notification [node=" + node + ", type=" + U.gridEventName(type) +
+                if (debugLog.isDebugEnabled())
+                    debugLog.debug("Discovery notification [node=" + node + ", type=" + U.gridEventName(type) +
                         ", topVer=" + topVer + ']');
 
-                lsnr.onDiscovery(type, topVer, node, top, new TreeMap<>(topHist), data);
+                try {
+                    lsnr.onDiscovery(type, topVer, node, top, new TreeMap<>(topHist), data).get();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException("Failed to wait for discovery listener notification", e);
+                }
             }
-            else if (log.isDebugEnabled())
-                log.debug("Skipped discovery notification [node=" + node + ", type=" + U.gridEventName(type) +
+            else if (debugLog.isDebugEnabled())
+                debugLog.debug("Skipped discovery notification [node=" + node + ", type=" + U.gridEventName(type) +
                     ", topVer=" + topVer + ']');
         }
 
@@ -2569,7 +2631,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return sock.toString();
         }
     }

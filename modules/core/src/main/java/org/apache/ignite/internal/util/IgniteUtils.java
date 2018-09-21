@@ -1319,7 +1319,7 @@ public abstract class IgniteUtils {
 
         final Set<Long> deadlockedThreadsIds = getDeadlockedThreadIds(mxBean);
 
-        if (deadlockedThreadsIds.size() == 0)
+        if (deadlockedThreadsIds.isEmpty())
             warn(log, "No deadlocked threads detected.");
         else
             warn(log, "Deadlocked threads detected (see thread dump below) " +
@@ -4016,6 +4016,22 @@ public abstract class IgniteUtils {
             }
             catch (Exception e) {
                 warn(log, "Failed to close resource: " + e.getMessage());
+            }
+    }
+
+    /**
+     * Closes given resource suppressing possible checked exception.
+     *
+     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
+     * @param e Suppressor exception
+     */
+    public static void closeWithSuppressingException(@Nullable AutoCloseable rsrc, @NotNull Exception e) {
+        if (rsrc != null)
+            try {
+                rsrc.close();
+            }
+            catch (Exception suppressed) {
+               e.addSuppressed(suppressed);
             }
     }
 

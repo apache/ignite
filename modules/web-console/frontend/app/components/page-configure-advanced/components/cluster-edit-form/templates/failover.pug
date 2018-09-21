@@ -24,17 +24,29 @@ include /app/helpers/jade/mixins
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-title Failover configuration
     panel-description
-        | Failover SPI provides ability to supply custom logic for handling failed execution of a grid job. 
+        | Failover SPI provides ability to supply custom logic for handling failed execution of a grid job.
         | #[a.link-success(href="https://apacheignite.readme.io/docs/fault-tolerance" target="_blank") More info]
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             //- Since ignite 2.0
             .pc-form-grid-col-60(ng-if-start='$ctrl.available("2.0.0")')
-                +number('Failure detection timeout:', model + '.failureDetectionTimeout', '"failureDetectionTimeout"', 'true',
-                    '10000', '1', 'Failure detection timeout is used to determine how long the communication or discovery SPIs should wait before considering a remote connection failed')
+                +form-field__number({
+                    label: 'Failure detection timeout:',
+                    model: model + '.failureDetectionTimeout',
+                    name: '"failureDetectionTimeout"',
+                    placeholder: '10000',
+                    min: '1',
+                    tip: 'Failure detection timeout is used to determine how long the communication or discovery SPIs should wait before considering a remote connection failed'
+                })
             .pc-form-grid-col-60(ng-if-end)
-                +number('Client failure detection timeout:', model + '.clientFailureDetectionTimeout', '"clientFailureDetectionTimeout"', 'true',
-                    '30000', '1', 'Failure detection timeout is used to determine how long the communication or discovery SPIs should wait before considering a remote connection failed')
+                +form-field__number({
+                    label: 'Client failure detection timeout:',
+                    model: model + '.clientFailureDetectionTimeout',
+                    name: '"clientFailureDetectionTimeout"',
+                    placeholder: '30000',
+                    min: '1',
+                    tip: 'Failure detection timeout is used to determine how long the communication or discovery SPIs should wait before considering a remote connection failed'
+                })
 
             .pc-form-grid-col-60
                 mixin clusters-failover-spi
@@ -65,14 +77,32 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                                     })
 
                                 .pc-form-grid-col-60(ng-show='$item.kind === "JobStealing"')
-                                    +number('Maximum failover attempts:', '$item.JobStealing.maximumFailoverAttempts', '"jsMaximumFailoverAttempts"', 'true', '5', '0',
-                                        'Maximum number of attempts to execute a failed job on another node')
+                                    +form-field__number({
+                                        label: 'Maximum failover attempts:',
+                                        model: '$item.JobStealing.maximumFailoverAttempts',
+                                        name: '"jsMaximumFailoverAttempts"',
+                                        placeholder: '5',
+                                        min: '0',
+                                        tip: 'Maximum number of attempts to execute a failed job on another node'
+                                    })
                                 .pc-form-grid-col-60(ng-show='$item.kind === "Always"')
-                                    +number('Maximum failover attempts:', '$item.Always.maximumFailoverAttempts', '"alwaysMaximumFailoverAttempts"', 'true', '5', '0',
-                                        'Maximum number of attempts to execute a failed job on another node')
+                                    +form-field__number({
+                                        label: 'Maximum failover attempts:',
+                                        model: '$item.Always.maximumFailoverAttempts',
+                                        name: '"alwaysMaximumFailoverAttempts"',
+                                        placeholder: '5',
+                                        min: '0',
+                                        tip: 'Maximum number of attempts to execute a failed job on another node'
+                                    })
                                 .pc-form-grid-col-60(ng-show=failoverCustom)
-                                    +java-class('SPI implementation', '$item.Custom.class', '"failoverSpiClass"', 'true', failoverCustom,
-                                        'Custom FailoverSpi implementation class name.', failoverCustom)
+                                    +form-field__java-class({
+                                        label: 'SPI implementation',
+                                        model: '$item.Custom.class',
+                                        name: '"failoverSpiClass"',
+                                        required: failoverCustom,
+                                        tip: 'Custom FailoverSpi implementation class name.',
+                                        validationActive: failoverCustom
+                                    })
 
                             list-editable-no-items
                                 list-editable-add-item-button(

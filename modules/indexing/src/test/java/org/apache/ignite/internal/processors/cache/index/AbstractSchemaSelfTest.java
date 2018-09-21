@@ -21,12 +21,15 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -36,12 +39,17 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -51,6 +59,9 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,6 +70,9 @@ import org.jetbrains.annotations.Nullable;
  */
 @SuppressWarnings("unchecked")
 public abstract class AbstractSchemaSelfTest extends GridCommonAbstractTest {
+    /** IP finder. */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
     /** Cache. */
     protected static final String CACHE_NAME = "cache";
 
@@ -100,6 +114,59 @@ public abstract class AbstractSchemaSelfTest extends GridCommonAbstractTest {
 
     /** Field 2 escaped. */
     protected static final String FIELD_NAME_2_ESCAPED = "field2";
+
+    /**
+     * Create common node configuration.
+     *
+     * @param idx Index.
+     * @return Configuration.
+     * @throws Exception If failed.
+     */
+    protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(getTestIgniteInstanceName(idx));
+
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
+
+        cfg.setMarshaller(new BinaryMarshaller());
+
+        DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setMaxSize(128 * 1024 * 1024));
+
+        cfg.setDataStorageConfiguration(memCfg);
+
+        return optimize(cfg);
+    }
+
+    /**
+     * Ensure that SQL exception is thrown.
+     *
+     * @param r Runnable.
+     * @param expCode Error code.
+     */
+    static void assertSqlException(DynamicIndexAbstractBasicSelfTest.RunnableX r, int expCode) {
+        try {
+            try {
+                r.run();
+            }
+            catch (CacheException e) {
+                if (e.getCause() != null)
+                    throw (Exception)e.getCause();
+                else
+                    throw e;
+            }
+        }
+        catch (IgniteSQLException e) {
+            assertEquals("Unexpected error code [expected=" + expCode + ", actual=" + e.statusCode() + ']',
+                expCode, e.statusCode());
+
+            return;
+        }
+        catch (Exception e) {
+            fail("Unexpected exception: " + e);
+        }
+
+        fail(IgniteSQLException.class.getSimpleName() +  " is not thrown.");
+    }
 
     /**
      * Get type on the given node for the given cache and table name. Type must exist.
@@ -230,7 +297,7 @@ public abstract class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param node Node to connect to.
      * @return Thin JDBC connection to specified node.
      */
-    static Connection connect(IgniteEx node) {
+    public static Connection connect(IgniteEx node) {
         Collection<GridPortRecord> recs = node.context().ports().records();
 
         GridPortRecord cliLsnrRec = null;
@@ -250,6 +317,17 @@ public abstract class AbstractSchemaSelfTest extends GridCommonAbstractTest {
         }
         catch (SQLException e) {
             throw new AssertionError(e);
+        }
+    }
+
+    /**
+     * @param conn Connection.
+     * @param sql Statement.
+     * @throws SQLException if failed.
+     */
+    public static void execute(Connection conn, String sql) throws SQLException {
+        try (Statement s = conn.createStatement()) {
+            s.execute(sql);
         }
     }
 
@@ -348,13 +426,33 @@ public abstract class AbstractSchemaSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Execute SQL statement on given node.
+     *
+     * @param node Node.
+     * @param sql Statement.
+     */
+    protected List<List<?>> execute(Ignite node, String sql) {
+        return queryProcessor(node).querySqlFields(new SqlFieldsQuery(sql).setSchema("PUBLIC"), true).getAll();
+    }
+
+    /**
      * Get query processor.
      *
      * @param node Node.
      * @return Query processor.
      */
     static GridQueryProcessor queryProcessor(Ignite node) {
-        return ((IgniteEx)node).context().query();
+        return queryProcessor((IgniteEx)node);
+    }
+
+    /**
+     * Get query processor.
+     *
+     * @param node Node.
+     * @return Query processor.
+     */
+    protected static GridQueryProcessor queryProcessor(IgniteEx node) {
+        return node.context().query();
     }
 
     /**

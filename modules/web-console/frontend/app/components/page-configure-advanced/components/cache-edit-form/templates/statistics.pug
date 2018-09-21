@@ -25,10 +25,19 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-60
-                +checkbox('Statistics enabled', `${model}.statisticsEnabled`, '"statisticsEnabled"', 'Flag indicating whether statistics gathering is enabled on this cache')
+                +form-field__checkbox({
+                    label: 'Statistics enabled',
+                    model: `${model}.statisticsEnabled`,
+                    name: '"statisticsEnabled"',
+                    tip: 'Flag indicating whether statistics gathering is enabled on this cache'
+                })
             .pc-form-grid-col-60
-                +checkbox('Management enabled', `${model}.managementEnabled`, '"managementEnabled"',
-                'Flag indicating whether management is enabled on this cache<br/>\
-                If enabled the CacheMXBean for each cache is registered in the platform MBean server')
+                +form-field__checkbox({
+                    label: 'Management enabled',
+                    model: `${model}.managementEnabled`,
+                    name: '"managementEnabled"',
+                    tip: 'Flag indicating whether management is enabled on this cache<br/>\
+                         If enabled the CacheMXBean for each cache is registered in the platform MBean server'
+                })
         .pca-form-column-6
             +preview-xml-java(model, 'cacheStatistics')

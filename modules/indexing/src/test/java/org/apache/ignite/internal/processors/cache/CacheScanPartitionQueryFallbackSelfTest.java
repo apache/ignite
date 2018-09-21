@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -57,6 +58,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -142,6 +144,66 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
                 cache.query(new ScanQuery<Integer, Integer>().setPartition(part));
 
             doTestScanQuery(qry, part);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * Scan (with explicit {@code setLocal(true)}) should perform on the local node.
+     *
+     * @throws Exception If failed.
+     */
+    public void testScanLocalExplicit() throws Exception {
+        cacheMode = CacheMode.PARTITIONED;
+        backups = 0;
+        commSpiFactory = new TestLocalCommunicationSpiFactory();
+
+        try {
+            Ignite ignite = startGrids(GRID_CNT);
+
+            IgniteCacheProxy<Integer, Integer> cache = fillCache(ignite);
+
+            int part = anyLocalPartition(cache.context());
+
+            QueryCursor<Cache.Entry<Integer, Integer>> qry =
+                cache.query(new ScanQuery<Integer, Integer>().setPartition(part).setLocal(true));
+
+            doTestScanQuery(qry, part);
+
+            GridTestUtils.assertThrows(log, (Callable<Void>)() -> {
+                int remPart = remotePartition(cache.context()).getKey();
+
+                cache.query(new ScanQuery<Integer, Integer>().setPartition(remPart).setLocal(true));
+
+                return null;
+            }, IgniteCheckedException.class, null);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * Scan (with explicit {@code setLocal(true)}, no partition specified) should perform on the local node.
+     *
+     * @throws Exception If failed.
+     */
+    public void testScanLocalExplicitNoPart() throws Exception {
+        cacheMode = CacheMode.PARTITIONED;
+        backups = 0;
+        commSpiFactory = new TestLocalCommunicationSpiFactory();
+
+        try {
+            Ignite ignite = startGrids(GRID_CNT);
+
+            IgniteCacheProxy<Integer, Integer> cache = fillCache(ignite);
+
+            QueryCursor<Cache.Entry<Integer, Integer>> qry =
+                cache.query(new ScanQuery<Integer, Integer>().setLocal(true));
+
+            assertFalse(qry.getAll().isEmpty());
         }
         finally {
             stopAllGrids();

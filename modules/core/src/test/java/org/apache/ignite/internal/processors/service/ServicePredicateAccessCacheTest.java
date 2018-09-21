@@ -131,17 +131,17 @@ public class ServicePredicateAccessCacheTest extends GridCommonAbstractTest {
      */
     public static class TestService implements Service {
         /** {@inheritDoc} */
-        public void execute(ServiceContext ctx) {
+        @Override public void execute(ServiceContext ctx) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        public void init(ServiceContext ctx) {
+        @Override public void init(ServiceContext ctx) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        public void cancel(ServiceContext ctx) {
+        @Override public void cancel(ServiceContext ctx) {
             // No-op.
         }
     }

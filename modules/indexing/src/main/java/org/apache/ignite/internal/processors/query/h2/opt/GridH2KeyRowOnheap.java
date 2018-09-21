@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.h2.value.Value;
 
@@ -59,5 +60,15 @@ public class GridH2KeyRowOnheap extends GridH2Row {
     /** {@inheritDoc} */
     @Override public long expireTime() {
         return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int size() throws IgniteCheckedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int headerSize() {
+        throw new UnsupportedOperationException();
     }
 }

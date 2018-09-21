@@ -214,6 +214,12 @@ public class IgniteConfiguration {
     /** Default timeout after which long query warning will be printed. */
     public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
 
+    /** Default size of MVCC vacuum thread pool. */
+    public static final int DFLT_MVCC_VACUUM_THREAD_CNT = 2;
+
+    /** Default time interval between vacuum process runs (ms). */
+    public static final int DFLT_MVCC_VACUUM_FREQUENCY = 5000;
+
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
 
@@ -487,6 +493,12 @@ public class IgniteConfiguration {
     /** Client connector configuration. */
     private ClientConnectorConfiguration cliConnCfg = ClientListenerProcessor.DFLT_CLI_CFG;
 
+    /** Size of MVCC vacuum thread pool. */
+    private int mvccVacuumThreadCnt = DFLT_MVCC_VACUUM_THREAD_CNT;
+
+    /** Time interval between vacuum process runs (ms). */
+    private int mvccVacuumFreq = DFLT_MVCC_VACUUM_FREQUENCY;
+
     /** User authentication enabled. */
     private boolean authEnabled;
 
@@ -535,6 +547,7 @@ public class IgniteConfiguration {
         addrRslvr = cfg.getAddressResolver();
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
+        authEnabled = cfg.isAuthenticationEnabled();
         autoActivation = cfg.isAutoActivationEnabled();
         binaryCfg = cfg.getBinaryConfiguration();
         dsCfg = cfg.getDataStorageConfiguration();
@@ -578,6 +591,8 @@ public class IgniteConfiguration {
         metricsLogFreq = cfg.getMetricsLogFrequency();
         metricsUpdateFreq = cfg.getMetricsUpdateFrequency();
         mgmtPoolSize = cfg.getManagementThreadPoolSize();
+        mvccVacuumThreadCnt = cfg.getMvccVacuumThreadCount();
+        mvccVacuumFreq = cfg.getMvccVacuumFrequency();
         netTimeout = cfg.getNetworkTimeout();
         nodeId = cfg.getNodeId();
         odbcCfg = cfg.getOdbcConfiguration();
@@ -612,7 +627,6 @@ public class IgniteConfiguration {
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
-        authEnabled = cfg.isAuthenticationEnabled();
     }
 
     /**
@@ -2981,6 +2995,48 @@ public class IgniteConfiguration {
      */
     @Nullable public ClientConnectorConfiguration getClientConnectorConfiguration() {
         return cliConnCfg;
+    }
+
+    /**
+     * Returns number of MVCC vacuum cleanup threads.
+     *
+     * @return Number of MVCC vacuum cleanup threads.
+     */
+    public int getMvccVacuumThreadCount() {
+        return mvccVacuumThreadCnt;
+    }
+
+    /**
+     * Sets number of MVCC vacuum cleanup threads.
+     *
+     * @param mvccVacuumThreadCnt Number of MVCC vacuum cleanup threads.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setMvccVacuumThreadCount(int mvccVacuumThreadCnt) {
+        this.mvccVacuumThreadCnt = mvccVacuumThreadCnt;
+
+        return this;
+    }
+
+    /**
+     * Returns time interval between vacuum runs.
+     *
+     * @return Time interval between vacuum runs.
+     */
+    public int getMvccVacuumFrequency() {
+        return mvccVacuumFreq;
+    }
+
+    /**
+     * Sets time interval between vacuum runs.
+     *
+     * @param mvccVacuumFreq Time interval between vacuum runs.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setMvccVacuumFrequency(int mvccVacuumFreq) {
+        this.mvccVacuumFreq = mvccVacuumFreq;
+
+        return this;
     }
 
     /**

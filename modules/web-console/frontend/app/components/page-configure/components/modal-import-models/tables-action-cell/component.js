@@ -59,7 +59,6 @@ export class TablesActionCell {
 }
 
 export const component = {
-    name: 'tablesActionCell',
     controller: TablesActionCell,
     bindings: {
         onEditStart: '&',

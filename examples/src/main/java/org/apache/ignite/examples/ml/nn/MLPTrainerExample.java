@@ -41,7 +41,8 @@ import org.apache.ignite.thread.IgniteThread;
  * <p>
  * Code in this example launches Ignite grid and fills the cache with simple test data.</p>
  * <p>
- * After that it defines a layered architecture and a neural network trainer, trains neural network
+ * After that it defines a layered architecture and a
+ * <a href="https://en.wikipedia.org/wiki/Neural_network">neural network</a> trainer, trains neural network
  * and obtains multilayer perceptron model.</p>
  * <p>
  * Finally, this example loops over the test set, applies the trained model to predict the value and

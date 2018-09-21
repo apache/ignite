@@ -177,7 +177,7 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
      *
      * @throws Exception If failed.
      */
-    public void testUpdateParentRootPathMissing() throws Exception {
+    @Override public void testUpdateParentRootPathMissing() throws Exception {
         doUpdateParentRootPathMissing(properties(TEST_GROUP, "0555"));
     }
 

@@ -1855,6 +1855,11 @@
                                 <xs:documentation>If true, system will filter and compress WAL archive in background. Compressed WAL archive gets automatically decompressed on demand.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="maxWalArchiveSize" type="xs:long">
+                            <xs:annotation>
+                                <xs:documentation>Maximum size of wal archive folder, in bytes.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                         <xs:attribute name="pageSize" type="xs:int">
                             <xs:annotation>
                                 <xs:documentation>Size of the memory page.</xs:documentation>

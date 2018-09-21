@@ -61,7 +61,7 @@ public class CachePartitionStateTest extends GridCommonAbstractTest {
     private CacheConfiguration ccfg;
 
     /** {@inheritDoc} */
-    protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);

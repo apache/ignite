@@ -174,6 +174,11 @@ public abstract class NNClassificationModel implements Model<Vector, Double>, Ex
             return 1.0; // strategy.SIMPLE
     }
 
+    /** */
+    public DistanceMeasure getDistanceMeasure() {
+        return distanceMeasure;
+    }
+
     /** {@inheritDoc} */
     @Override public int hashCode() {
         int res = 1;
@@ -210,6 +215,17 @@ public abstract class NNClassificationModel implements Model<Vector, Double>, Ex
             .addField("measure", distanceMeasure.getClass().getSimpleName())
             .addField("strategy", stgy.name())
             .toString();
+    }
+
+    /**
+     * Sets parameters from other model to this model.
+     *
+     * @param mdl Model.
+     */
+    protected void copyParametersFrom(NNClassificationModel mdl) {
+        this.k = mdl.k;
+        this.distanceMeasure = mdl.distanceMeasure;
+        this.stgy = mdl.stgy;
     }
 
     /** */

@@ -322,7 +322,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
         }
 
         /** {@inheritDoc} */
-        public void setValue(Object val) {
+        @Override public void setValue(Object val) {
             this.val = val;
         }
     }

@@ -71,10 +71,18 @@
             <version>${guava16.version}</version>
         </dependency>
 
+        <!-- Do not remove org.codehaus.jackson:jackson-core-asl it is required by Apache Curator at runtime -->
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-            <version>${jackson.version}</version>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-core-asl</artifactId>
+            <version>${jackson1.version}</version>
+        </dependency>
+
+        <!-- Do not remove org.codehaus.jackson:jackson-mapper-asl it is required by Apache Curator at runtime -->
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-mapper-asl</artifactId>
+            <version>${jackson1.version}</version>
         </dependency>
 
         <dependency>

@@ -25,14 +25,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * This class used by {@link GridUriDeploymentTestTask2} which loaded from GAR file.
  * GridDependency loaded from {@code /lib/*.jar} in GAR file.
- * GridDependency load resource {@code test.properties} from the same jar in {@code /lib/*.jar}
+ * GridDependency load resource {@code test2.properties} from the same jar in {@code /lib/*.jar}
  */
 public class GridUriDeploymentDependency2 {
     /** */
-    public static final String RESOURCE = "org/apache/ignite/grid/spi/deployment/uri/tasks/test2.properties";
+    public static final String RESOURCE = "org/apache/ignite/spi/deployment/uri/tasks/test2.properties";
 
     /**
-     * @return Value of the property {@code test1.txt} loaded from the {@code test2.properties} file.
+     * @return Value of the property {@code test2.txt} loaded from the {@code test2.properties} file.
      */
     public String getMessage() {
         InputStream in = null;
@@ -44,7 +44,7 @@ public class GridUriDeploymentDependency2 {
 
             props.load(in);
 
-            return props.getProperty("test1.txt");
+            return props.getProperty("test2.txt");
         }
         catch (IOException e) {
             e.printStackTrace();

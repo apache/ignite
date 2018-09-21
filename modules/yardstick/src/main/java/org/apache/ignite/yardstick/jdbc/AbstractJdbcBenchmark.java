@@ -92,7 +92,7 @@ public abstract class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
      * @throws Exception On error.
      */
     protected void setupData() throws Exception {
-        fillData(cfg, (IgniteEx)ignite(), args.range());
+        fillData(cfg, (IgniteEx)ignite(), args.range(), args.atomicMode());
     }
 
     /**

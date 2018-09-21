@@ -205,6 +205,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select * from Person");
         checkQuery("select distinct * from Person");
         checkQuery("select p.name, date from Person p");
+        checkQuery("select p.name, date from Person p for update");
 
         checkQuery("select * from Person p, sch2.Address a");
         checkQuery("select * from Person, sch2.Address");

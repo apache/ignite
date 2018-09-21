@@ -22,4 +22,4 @@ metadata:
 provisioner: kubernetes.io/azure-disk
 parameters:
   storageaccounttype: Standard_LRS
-  kind: dedicated
+  kind: managed

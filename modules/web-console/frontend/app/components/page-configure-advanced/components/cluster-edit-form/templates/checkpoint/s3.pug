@@ -28,177 +28,416 @@ include /app/helpers/jade/mixins
 -var checkpointS3CustomRetry = checkpointS3 + ' && ' + clientRetryModel + '.kind === "Custom"'
 
 .pc-form-grid-col-60(ng-if-start='$checkpointSPI.kind === "S3"')
-    +dropdown-required('AWS credentials:', '$checkpointSPI.S3.awsCredentials.kind', '"checkpointS3AwsCredentials"', 'true', checkpointS3, 'Custom', '[\
-        {value: "Basic", label: "Basic"},\
-        {value: "Properties", label: "Properties"},\
-        {value: "Anonymous", label: "Anonymous"},\
-        {value: "BasicSession", label: "Basic with session"},\
-        {value: "Custom", label: "Custom"}\
-    ]',
-    'AWS credentials\
-    <ul>\
-        <li>Basic - Allows callers to pass in the AWS access key and secret access in the constructor</li>\
-        <li>Properties - Reads in AWS access keys from a properties file</li>\
-        <li>Anonymous - Allows use of "anonymous" credentials</li>\
-        <li>Database - Session credentials with keys and session token</li>\
-        <li>Custom - Custom AWS credentials provider</li>\
-    </ul>')
+    +form-field__dropdown({
+        label: 'AWS credentials:',
+        model: '$checkpointSPI.S3.awsCredentials.kind',
+        name: '"checkpointS3AwsCredentials"',
+        required: checkpointS3,
+        placeholder: 'Custom',
+        options: '[\
+                {value: "Basic", label: "Basic"},\
+                {value: "Properties", label: "Properties"},\
+                {value: "Anonymous", label: "Anonymous"},\
+                {value: "BasicSession", label: "Basic with session"},\
+                {value: "Custom", label: "Custom"}\
+            ]',
+        tip: 'AWS credentials\
+            <ul>\
+                <li>Basic - Allows callers to pass in the AWS access key and secret access in the constructor</li>\
+                <li>Properties - Reads in AWS access keys from a properties file</li>\
+                <li>Anonymous - Allows use of "anonymous" credentials</li>\
+                <li>Database - Session credentials with keys and session token</li>\
+                <li>Custom - Custom AWS credentials provider</li>\
+            </ul>'
+    })
+
 .pc-form-group.pc-form-grid-row(ng-if=checkpointS3Path)
     .pc-form-grid-col-60
-        +text('Path:', credentialsModel + '.Properties.path', '"checkpointS3PropertiesPath"', checkpointS3Path, 'Input properties file path',
-        'The file from which to read the AWS credentials properties')
+        +form-field__text({
+            label: 'Path:',
+            model: `${credentialsModel}.Properties.path`,
+            name: '"checkpointS3PropertiesPath"',
+            required: checkpointS3Path,
+            placeholder: 'Input properties file path',
+            tip: 'The file from which to read the AWS credentials properties'
+        })
 .pc-form-group.pc-form-grid-row(ng-if=checkpointS3Custom)
     .pc-form-grid-col-60
-        +java-class('Class name:', credentialsModel + '.Custom.className', '"checkpointS3CustomClassName"', 'true', checkpointS3Custom,
-        'Custom AWS credentials provider implementation class', checkpointS3Custom)
+        +form-field__java-class({
+            label: 'Class name:',
+            model: credentialsModel + '.Custom.className',
+            name: '"checkpointS3CustomClassName"',
+            required: checkpointS3Custom,
+            tip: 'Custom AWS credentials provider implementation class',
+            validationActive:checkpointS3Custom
+        })
 .pc-form-grid-col-60
     label Note, AWS credentials will be generated as stub
 .pc-form-grid-col-60
-    +text('Bucket name suffix:', '$checkpointSPI.S3.bucketNameSuffix', '"checkpointS3BucketNameSuffix"', 'false', 'default-bucket')
+    +form-field__text({
+        label: 'Bucket name suffix:',
+        model: '$checkpointSPI.S3.bucketNameSuffix',
+        name: '"checkpointS3BucketNameSuffix"',
+        placeholder: 'default-bucket'
+    })
 .pc-form-grid-col-60(ng-if-start=`$ctrl.available("2.4.0")`)
-    +text('Bucket endpoint:', `$checkpointSPI.S3.bucketEndpoint`, '"checkpointS3BucketEndpoint"', false, 'Input bucket endpoint',
-    'Bucket endpoint for IP finder<br/> \
-    For information about possible endpoint names visit <a href="http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region">docs.aws.amazon.com</a>')
+    +form-field__text({
+        label: 'Bucket endpoint:',
+        model: `$checkpointSPI.S3.bucketEndpoint`,
+        name: '"checkpointS3BucketEndpoint"',
+        placeholder: 'Input bucket endpoint',
+        tip: 'Bucket endpoint for IP finder<br/> \
+            For information about possible endpoint names visit <a href="http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region">docs.aws.amazon.com</a>'
+    })
 .pc-form-grid-col-60(ng-if-end)
-    +text('SSE algorithm:', `$checkpointSPI.S3.SSEAlgorithm`, '"checkpointS3SseAlgorithm"', false, 'Input SSE algorithm',
-    'Server-side encryption algorithm for Amazon S3-managed encryption keys<br/> \
-    For information about possible S3-managed encryption keys visit <a href="http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingServerSideEncryption.html">docs.aws.amazon.com</a>')
+    +form-field__text({
+        label: 'SSE algorithm:',
+        model: `$checkpointSPI.S3.SSEAlgorithm`,
+        name: '"checkpointS3SseAlgorithm"',
+        placeholder: 'Input SSE algorithm',
+        tip: 'Server-side encryption algorithm for Amazon S3-managed encryption keys<br/> \
+              For information about possible S3-managed encryption keys visit <a href="http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingServerSideEncryption.html">docs.aws.amazon.com</a>'
+    })
 .pc-form-grid-col-60
-    +java-class('Listener:', '$checkpointSPI.S3.checkpointListener', '"checkpointS3Listener"', 'true', 'false',
-        'Checkpoint listener implementation class name', checkpointS3)
+    +form-field__java-class({
+        label: 'Listener:',
+        model: '$checkpointSPI.S3.checkpointListener',
+        name: '"checkpointS3Listener"',
+        tip: 'Checkpoint listener implementation class name',
+        validationActive: checkpointS3
+    })
 .pc-form-grid-col-60.pc-form-group__text-title
     span Client configuration
 .pc-form-group.pc-form-grid-row(ng-if-end)
     .pc-form-grid-col-30
-        +dropdown('Protocol:', clientCfgModel + '.protocol', '"checkpointS3Protocol"', 'true', 'HTTPS', '[\
-                {value: "HTTP", label: "HTTP"},\
-                {value: "HTTPS", label: "HTTPS"}\
-            ]',
-        'Provides an ability to save an intermediate job state\
-        <ul>\
-            <li>HTTP - Using the HTTP protocol is less secure than HTTPS, but can slightly reduce\
-                the system resources used when communicating with AWS</li>\
-            <li>HTTPS - Using the HTTPS protocol is more secure than using the HTTP protocol, but\
-                may use slightly more system resources. AWS recommends using HTTPS for maximize security</li>\
-        </ul>')
+        +form-field__dropdown({
+            label: 'Protocol:',
+            model: clientCfgModel + '.protocol',
+            name: '"checkpointS3Protocol"',
+            placeholder: 'HTTPS',
+            options: '[\
+                            {value: "HTTP", label: "HTTP"},\
+                            {value: "HTTPS", label: "HTTPS"}\
+                        ]',
+            tip: 'Provides an ability to save an intermediate job state\
+                    <ul>\
+                        <li>HTTP - Using the HTTP protocol is less secure than HTTPS, but can slightly reduce\
+                            the system resources used when communicating with AWS</li>\
+                        <li>HTTPS - Using the HTTPS protocol is more secure than using the HTTP protocol, but\
+                            may use slightly more system resources. AWS recommends using HTTPS for maximize security</li>\
+                    </ul>'
+        })
     .pc-form-grid-col-30
-        +number('Maximum connections:', clientCfgModel + '.maxConnections', '"checkpointS3MaxConnections"',
-        'true', '50', '1', 'Maximum number of allowed open HTTP connections')
+        +form-field__number({
+            label:'Maximum connections:',
+            model:clientCfgModel + '.maxConnections',
+            name: '"checkpointS3MaxConnections"',
+            placeholder: '50',
+            min: '1',
+            tip: 'Maximum number of allowed open HTTP connections'
+        })
     .pc-form-grid-col-60
-        +text('User agent prefix:', clientCfgModel + '.userAgentPrefix', '"checkpointS3UserAgentPrefix"', 'false', 'System specific header',
-        'HTTP user agent prefix to send with all requests')
+        +form-field__text({
+            label: 'User agent prefix:',
+            model: `${clientCfgModel}.userAgentPrefix`,
+            name: '"checkpointS3UserAgentPrefix"',
+            placeholder: 'System specific header',
+            tip: 'HTTP user agent prefix to send with all requests'
+        })
     .pc-form-grid-col-60
-        +text('User agent suffix:', clientCfgModel + '.userAgentSuffix', '"checkpointS3UserAgentSuffix"', 'false', 'System specific header',
-        'HTTP user agent suffix to send with all requests')
+        +form-field__text({
+            label: 'User agent suffix:',
+            model: `${clientCfgModel}.userAgentSuffix`,
+            name: '"checkpointS3UserAgentSuffix"',
+            placeholder: 'System specific header',
+            tip: 'HTTP user agent suffix to send with all requests'
+        })
     .pc-form-grid-col-60
-        +text-ip-address('Local address:', clientCfgModel + '.localAddress', '"checkpointS3LocalAddress"', 'true', 'Not specified',
-        'Optionally specifies the local address to bind to')
+        +form-field__ip-address({
+            label: 'Local address:',
+            model: clientCfgModel + '.localAddress',
+            name: '"checkpointS3LocalAddress"',
+            enabled: 'true',
+            placeholder: 'Not specified',
+            tip: 'Optionally specifies the local address to bind to'
+        })
     .pc-form-grid-col-40
-        +text('Proxy host:', clientCfgModel + '.proxyHost', '"checkpointS3ProxyHost"', 'false', 'Not specified',
-        'Optional proxy host the client will connect through')
+        +form-field__text({
+            label: 'Proxy host:',
+            model: `${clientCfgModel}.proxyHost`,
+            name: '"checkpointS3ProxyHost"',
+            placeholder: 'Not specified',
+            tip: 'Optional proxy host the client will connect through'
+        })
     .pc-form-grid-col-20
-        +number('Proxy port:', clientCfgModel + '.proxyPort', '"checkpointS3ProxyPort"', 'true', 'Not specified', '0',
-        'Optional proxy port the client will connect through')
+        +form-field__number({
+            label: 'Proxy port:',
+            model: clientCfgModel + '.proxyPort',
+            name: '"checkpointS3ProxyPort"',
+            placeholder: 'Not specified',
+            min: '0',
+            tip: 'Optional proxy port the client will connect through'
+        })
     .pc-form-grid-col-30
-        +text('Proxy user:', clientCfgModel + '.proxyUsername', '"checkpointS3ProxyUsername"', 'false', 'Not specified',
-        'Optional proxy user name to use if connecting through a proxy')
+        +form-field__text({
+            label: 'Proxy user:',
+            model: clientCfgModel + '.proxyUsername',
+            name: '"checkpointS3ProxyUsername"',
+            placeholder: 'Not specified',
+            tip: 'Optional proxy user name to use if connecting through a proxy'
+        })
     .pc-form-grid-col-30
-        +text('Proxy domain:', clientCfgModel + '.proxyDomain', '"checkpointS3ProxyDomain"', 'false', 'Not specified',
-        'Optional Windows domain name for configuring an NTLM proxy')
+        +form-field__text({
+            label: 'Proxy domain:',
+            model: `${clientCfgModel}.proxyDomain`,
+            name: '"checkpointS3ProxyDomain"',
+            placeholder: 'Not specified',
+            tip: 'Optional Windows domain name for configuring an NTLM proxy'
+        })
     .pc-form-grid-col-60
-        +text('Proxy workstation:', clientCfgModel + '.proxyWorkstation', '"checkpointS3ProxyWorkstation"', 'false', 'Not specified',
-        'Optional Windows workstation name for configuring NTLM proxy support')
+        +form-field__text({
+            label: 'Proxy workstation:',
+            model: `${clientCfgModel}.proxyWorkstation`,
+            name: '"checkpointS3ProxyWorkstation"',
+            placeholder: 'Not specified',
+            tip: 'Optional Windows workstation name for configuring NTLM proxy support'
+        })
     .pc-form-grid-col-60
-        +text('Non proxy hosts:', clientCfgModel + '.nonProxyHosts', '"checkpointS3NonProxyHosts"', 'false', 'Not specified',
-        'Optional hosts the client will access without going through the proxy')
+        +form-field__text({
+            label: 'Non proxy hosts:',
+            model: `${clientCfgModel}.nonProxyHosts`,
+            name: '"checkpointS3NonProxyHosts"',
+            placeholder: 'Not specified',
+            tip: 'Optional hosts the client will access without going through the proxy'
+        })
     .pc-form-grid-col-60
-        +dropdown('Retry policy:', clientRetryModel + '.kind', '"checkpointS3RetryPolicy"', 'true', 'Default', '[\
-                                            {value: "Default", label: "Default SDK retry policy"},\
-                                            {value: "DefaultMaxRetries", label: "Default with the specified max retry count"},\
-                                            {value: "DynamoDB", label: "Default for DynamoDB client"},\
-                                            {value: "DynamoDBMaxRetries", label: "DynamoDB with the specified max retry count"},\
-                                            {value: "Custom", label: "Custom configured"}\
-                                        ]',
-        'Provides an ability to save an intermediate job state\
-        <ul>\
-            <li>SDK default retry policy - This policy will honor the maxErrorRetry set in ClientConfiguration</li>\
-            <li>Default with the specified max retry count - Default SDK retry policy with the specified max retry count</li>\
-            <li>Default for DynamoDB client - This policy will honor the maxErrorRetry set in ClientConfiguration</li>\
-            <li>DynamoDB with the specified max retry count - This policy will honor the maxErrorRetry set in ClientConfiguration with the specified max retry count</li>\
-            <li>Custom configured - Custom configured SDK retry policy</li>\
-        </ul>')
+        +form-field__dropdown({
+            label: 'Retry policy:',
+            model: `${clientRetryModel}.kind`,
+            name: '"checkpointS3RetryPolicy"',
+            placeholder: 'Default',
+            options: '[\
+                                                        {value: "Default", label: "Default SDK retry policy"},\
+                                                        {value: "DefaultMaxRetries", label: "Default with the specified max retry count"},\
+                                                        {value: "DynamoDB", label: "Default for DynamoDB client"},\
+                                                        {value: "DynamoDBMaxRetries", label: "DynamoDB with the specified max retry count"},\
+                                                        {value: "Custom", label: "Custom configured"}\
+                                                    ]',
+            tip: 'Provides an ability to save an intermediate job state\
+                    <ul>\
+                        <li>SDK default retry policy - This policy will honor the maxErrorRetry set in ClientConfiguration</li>\
+                        <li>Default with the specified max retry count - Default SDK retry policy with the specified max retry count</li>\
+                        <li>Default for DynamoDB client - This policy will honor the maxErrorRetry set in ClientConfiguration</li>\
+                        <li>DynamoDB with the specified max retry count - This policy will honor the maxErrorRetry set in ClientConfiguration with the specified max retry count</li>\
+                        <li>Custom configured - Custom configured SDK retry policy</li>\
+                    </ul>'
+        })
     .pc-form-group.pc-form-grid-row(ng-if=checkpointS3DefaultMaxRetry)
         .pc-form-grid-col-60
-            +number-required('Maximum retry attempts:', clientRetryModel + '.DefaultMaxRetries.maxErrorRetry', '"checkpointS3DefaultMaxErrorRetry"', 'true', checkpointS3DefaultMaxRetry, '-1', '1',
-            'Maximum number of retry attempts for failed requests')
+            +form-field__number({
+                label: 'Maximum retry attempts:',
+                model: clientRetryModel + '.DefaultMaxRetries.maxErrorRetry',
+                name: '"checkpointS3DefaultMaxErrorRetry"',
+                required: checkpointS3DefaultMaxRetry,
+                placeholder: '-1',
+                min: '1',
+                tip: 'Maximum number of retry attempts for failed requests'
+            })
     .pc-form-group.pc-form-grid-row(ng-if=checkpointS3DynamoDbMaxRetry)
         .pc-form-grid-col-60
-            +number-required('Maximum retry attempts:', clientRetryModel + '.DynamoDBMaxRetries.maxErrorRetry', '"checkpointS3DynamoDBMaxErrorRetry"', 'true', checkpointS3DynamoDbMaxRetry, '-1', '1',
-            'Maximum number of retry attempts for failed requests')
+            +form-field__number({
+                label: 'Maximum retry attempts:',
+                model: clientRetryModel + '.DynamoDBMaxRetries.maxErrorRetry',
+                name: '"checkpointS3DynamoDBMaxErrorRetry"',
+                required: checkpointS3DynamoDbMaxRetry,
+                placeholder: '-1',
+                min: '1',
+                tip: 'Maximum number of retry attempts for failed requests'
+            })
     .pc-form-group.pc-form-grid-row(ng-if=checkpointS3CustomRetry)
         .pc-form-grid-col-60
-            +java-class('Retry condition:', clientRetryModel + '.Custom.retryCondition', '"checkpointS3CustomRetryPolicy"', 'true', checkpointS3CustomRetry,
-            'Retry condition on whether a specific request and exception should be retried', checkpointS3CustomRetry)
+            +form-field__java-class({
+                label: 'Retry condition:',
+                model: clientRetryModel + '.Custom.retryCondition',
+                name: '"checkpointS3CustomRetryPolicy"',
+                required: checkpointS3CustomRetry,
+                tip: 'Retry condition on whether a specific request and exception should be retried',
+                validationActive: checkpointS3CustomRetry
+            })
         .pc-form-grid-col-60
-            +java-class('Backoff strategy:', clientRetryModel + '.Custom.backoffStrategy', '"checkpointS3CustomBackoffStrategy"', 'true', checkpointS3CustomRetry,
-            'Back-off strategy for controlling how long the next retry should wait', checkpointS3CustomRetry)
+            +form-field__java-class({
+                label: 'Backoff strategy:',
+                model: clientRetryModel + '.Custom.backoffStrategy',
+                name: '"checkpointS3CustomBackoffStrategy"',
+                required: checkpointS3CustomRetry,
+                tip: 'Back-off strategy for controlling how long the next retry should wait',
+                validationActive: checkpointS3CustomRetry
+            })
         .pc-form-grid-col-60
-            +number-required('Maximum retry attempts:', clientRetryModel + '.Custom.maxErrorRetry', '"checkpointS3CustomMaxErrorRetry"', 'true', checkpointS3CustomRetry, '-1', '1',
-            'Maximum number of retry attempts for failed requests')
+            +form-field__number({
+                label: 'Maximum retry attempts:',
+                model: clientRetryModel + '.Custom.maxErrorRetry',
+                name: '"checkpointS3CustomMaxErrorRetry"',
+                required: checkpointS3CustomRetry,
+                placeholder: '-1',
+                min: '1',
+                tip: 'Maximum number of retry attempts for failed requests'
+            })
         .pc-form-grid-col-60
-            +checkbox('Honor the max error retry set', clientRetryModel + '.Custom.honorMaxErrorRetryInClientConfig', '"checkpointS3CustomHonorMaxErrorRetryInClientConfig"',
-            'Whether this retry policy should honor the max error retry set by ClientConfiguration#setMaxErrorRetry(int)')
+            +form-field__checkbox({
+                label: 'Honor the max error retry set',
+                model: clientRetryModel + '.Custom.honorMaxErrorRetryInClientConfig',
+                name: '"checkpointS3CustomHonorMaxErrorRetryInClientConfig"',
+                tip: 'Whether this retry policy should honor the max error retry set by ClientConfiguration#setMaxErrorRetry(int)'
+            })
     .pc-form-grid-col-60
-        +number('Maximum retry attempts:', clientCfgModel + '.maxErrorRetry', '"checkpointS3MaxErrorRetry"', 'true', '-1', '0',
-        'Maximum number of retry attempts for failed retryable requests<br/>\
-        If -1 the configured RetryPolicy will be used to control the retry count')
+        +form-field__number({
+            label: 'Maximum retry attempts:',
+            model: `${clientCfgModel}.maxErrorRetry`,
+            name: '"checkpointS3MaxErrorRetry"',
+            placeholder: '-1',
+            min: '0',
+            tip: 'Maximum number of retry attempts for failed retryable requests<br/>\
+                  If -1 the configured RetryPolicy will be used to control the retry count'
+        })
     .pc-form-grid-col-30
-        +number('Socket timeout:', clientCfgModel + '.socketTimeout', '"checkpointS3SocketTimeout"', 'true', '50000', '0',
-        'Amount of time in milliseconds to wait for data to be transfered over an established, open connection before the connection times out and is closed<br/>\
-        A value of <b>0</b> means infinity')
+        +form-field__number({
+            label: 'Socket timeout:',
+            model: `${clientCfgModel}.socketTimeout`,
+            name: '"checkpointS3SocketTimeout"',
+            placeholder: '50000',
+            min: '0',
+            tip: 'Amount of time in milliseconds to wait for data to be transfered over an established, open connection before the connection times out and is closed<br/>\
+                  A value of <b>0</b> means infinity'
+        })
     .pc-form-grid-col-30
-        +number('Connection timeout:', clientCfgModel + '.connectionTimeout', '"checkpointS3ConnectionTimeout"', 'true', '50000', '0',
-        'Amount of time in milliseconds to wait when initially establishing a connection before giving up and timing out<br/>\
-        A value of <b>0</b> means infinity')
+        +form-field__number({
+            label: 'Connection timeout:',
+            model: `${clientCfgModel}.connectionTimeout`,
+            name: '"checkpointS3ConnectionTimeout"',
+            placeholder: '50000',
+            min: '0',
+            tip: 'Amount of time in milliseconds to wait when initially establishing a connection before giving up and timing out<br/>\
+                  A value of <b>0</b> means infinity'
+        })
     .pc-form-grid-col-30
-        +number('Request timeout:', clientCfgModel + '.requestTimeout', '"checkpointS3RequestTimeout"', 'true', '0', '-1',
-        'Amount of time in milliseconds to wait for the request to complete before giving up and timing out<br/>\
-        A non - positive value means infinity')
+        +form-field__number({
+            label: 'Request timeout:',
+            model: `${clientCfgModel}.requestTimeout`,
+            name: '"checkpointS3RequestTimeout"',
+            placeholder: '0',
+            min: '-1',
+            tip: 'Amount of time in milliseconds to wait for the request to complete before giving up and timing out<br/>\
+                  A non - positive value means infinity'
+        })
     .pc-form-grid-col-30
-        +number('Idle timeout:', clientCfgModel + '.connectionMaxIdleMillis', '"checkpointS3ConnectionMaxIdleMillis"', 'true', '60000', '0',
-        'Maximum amount of time that an idle connection may sit in the connection pool and still be eligible for reuse')
+        +form-field__number({
+            label: 'Idle timeout:',
+            model: `${clientCfgModel}.connectionMaxIdleMillis`,
+            name: '"checkpointS3ConnectionMaxIdleMillis"',
+            placeholder: '60000',
+            min: '0',
+            tip: 'Maximum amount of time that an idle connection may sit in the connection pool and still be eligible for reuse'
+        })
     .pc-form-grid-col-30
-        +text('Signature algorithm:', clientCfgModel + '.signerOverride', '"checkpointS3SignerOverride"', 'false', 'Not specified',
-        'Name of the signature algorithm to use for signing requests made by this client')
+        +form-field__text({
+            label: 'Signature algorithm:',
+            model: `${clientCfgModel}.signerOverride`,
+            name: '"checkpointS3SignerOverride"',
+            placeholder: 'Not specified',
+            tip: 'Name of the signature algorithm to use for signing requests made by this client'
+        })
     .pc-form-grid-col-30
-        +number('Connection TTL:', clientCfgModel + '.connectionTTL', '"checkpointS3ConnectionTTL"', 'true', '-1', '-1',
-        'Expiration time in milliseconds for a connection in the connection pool<br/>\
-        By default, it is set to <b>-1</b>, i.e. connections do not expire')
+        +form-field__number({
+            label: 'Connection TTL:',
+            model: `${clientCfgModel}.connectionTTL`,
+            name: '"checkpointS3ConnectionTTL"',
+            placeholder: '-1',
+            min: '-1',
+            tip: 'Expiration time in milliseconds for a connection in the connection pool<br/>\
+                  By default, it is set to <b>-1</b>, i.e. connections do not expire'
+        })
     .pc-form-grid-col-60
-        +java-class('DNS resolver:', clientCfgModel + '.dnsResolver', '"checkpointS3DnsResolver"', 'true', 'false',
-        'DNS Resolver that should be used to for resolving AWS IP addresses', checkpointS3)
+        +form-field__java-class({
+            label: 'DNS resolver:',
+            model: clientCfgModel + '.dnsResolver',
+            name: '"checkpointS3DnsResolver"',
+            tip: 'DNS Resolver that should be used to for resolving AWS IP addresses',
+            validationActive: checkpointS3
+        })
     .pc-form-grid-col-60
-        +number('Response metadata cache size:', clientCfgModel + '.responseMetadataCacheSize', '"checkpointS3ResponseMetadataCacheSize"', 'true', '50', '0',
-        'Response metadata cache size')
+        +form-field__number({
+            label: 'Response metadata cache size:',
+            model: `${clientCfgModel}.responseMetadataCacheSize`,
+            name: '"checkpointS3ResponseMetadataCacheSize"',
+            placeholder: '50',
+            min: '0',
+            tip: 'Response metadata cache size'
+        })
     .pc-form-grid-col-60
-        +java-class('SecureRandom class name:', clientCfgModel + '.secureRandom', '"checkpointS3SecureRandom"', 'true', 'false',
-        'SecureRandom to be used by the SDK class name', checkpointS3)
+        +form-field__java-class({
+            label: 'SecureRandom class name:',
+            model: clientCfgModel + '.secureRandom',
+            name: '"checkpointS3SecureRandom"',
+            tip: 'SecureRandom to be used by the SDK class name',
+            validationActive: checkpointS3
+        })
     .pc-form-grid-col-60
-        +number('Client execution timeout:', clientCfgModel + '.clientExecutionTimeout', '"checkpointS3ClientExecutionTimeout"', 'true', '0', '0',
-        'Amount of time in milliseconds to allow the client to complete the execution of an API call<br/>\
-        <b>0</b> value disables that feature')
+        +form-field__number({
+            label: 'Client execution timeout:',
+            model: `${clientCfgModel}.clientExecutionTimeout`,
+            name: '"checkpointS3ClientExecutionTimeout"',
+            placeholder: '0',
+            min: '0',
+            tip: 'Amount of time in milliseconds to allow the client to complete the execution of an API call<br/>\
+                  <b>0</b> value disables that feature'
+        })
     .pc-form-grid-col-60
-        +checkbox('Cache response metadata', clientCfgModel + '.cacheResponseMetadata', '"checkpointS3CacheResponseMetadata"', 'Cache response metadata')
+        +form-field__checkbox({
+            label: 'Cache response metadata',
+            model: clientCfgModel + '.cacheResponseMetadata',
+            name: '"checkpointS3CacheResponseMetadata"',
+            tip: 'Cache response metadata'
+        })
     .pc-form-grid-col-60
-        +checkbox('Use expect continue', clientCfgModel + '.useExpectContinue', '"checkpointS3UseExpectContinue"', 'Optional override to enable/disable support for HTTP/1.1 handshake utilizing EXPECT: 100-Continue')
+        +form-field__checkbox({
+            label: 'Use expect continue',
+            model: clientCfgModel + '.useExpectContinue',
+            name: '"checkpointS3UseExpectContinue"',
+            tip: 'Optional override to enable/disable support for HTTP/1.1 handshake utilizing EXPECT: 100-Continue'
+        })
     .pc-form-grid-col-60
-        +checkbox('Use throttle retries', clientCfgModel + '.useThrottleRetries', '"checkpointS3UseThrottleRetries"', 'Retry throttling will be used')
+        +form-field__checkbox({
+            label: 'Use throttle retries',
+            model: clientCfgModel + '.useThrottleRetries',
+            name: '"checkpointS3UseThrottleRetries"',
+            tip: 'Retry throttling will be used'
+        })
     .pc-form-grid-col-60
-        +checkbox('Use reaper', clientCfgModel + '.useReaper', '"checkpointS3UseReaper"', 'Checks if the IdleConnectionReaper is to be started')
+        +form-field__checkbox({
+            label: 'Use reaper',
+            model: clientCfgModel + '.useReaper',
+            name: '"checkpointS3UseReaper"',
+            tip: 'Checks if the IdleConnectionReaper is to be started'
+        })
     .pc-form-grid-col-60
-        +checkbox('Use GZIP', clientCfgModel + '.useGzip', '"checkpointS3UseGzip"', 'Checks if gzip compression is used')
+        +form-field__checkbox({
+            label: 'Use GZIP',
+            model: clientCfgModel + '.useGzip',
+            name: '"checkpointS3UseGzip"',
+            tip: 'Checks if gzip compression is used'
+        })
     .pc-form-grid-col-60
-        +checkbox('Preemptively basic authentication', clientCfgModel + '.preemptiveBasicProxyAuth', '"checkpointS3PreemptiveBasicProxyAuth"',
-        'Attempt to authenticate preemptively against proxy servers using basic authentication')
+        +form-field__checkbox({
+            label: 'Preemptively basic authentication',
+            model: clientCfgModel + '.preemptiveBasicProxyAuth',
+            name: '"checkpointS3PreemptiveBasicProxyAuth"',
+            tip: 'Attempt to authenticate preemptively against proxy servers using basic authentication'
+        })
     .pc-form-grid-col-60
-        +checkbox('TCP KeepAlive', clientCfgModel + '.useTcpKeepAlive', '"checkpointS3UseTcpKeepAlive"', 'TCP KeepAlive support is enabled')
+        +form-field__checkbox({
+            label: 'TCP KeepAlive',
+            model: clientCfgModel + '.useTcpKeepAlive',
+            name: '"checkpointS3UseTcpKeepAlive"',
+            tip: 'TCP KeepAlive support is enabled'
+        })

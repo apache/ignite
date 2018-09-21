@@ -93,7 +93,7 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
             String msg = "Failed to allocate next memory chunk: " + U.readableSize(chunkSize, true) +
                 ". Check if chunkSize is too large and 32-bit JVM is used.";
 
-            if (regions.size() == 0)
+            if (regions.isEmpty())
                 throw new IgniteException(msg, e);
 
             U.error(log, msg);

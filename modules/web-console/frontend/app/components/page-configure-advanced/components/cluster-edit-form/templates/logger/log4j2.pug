@@ -21,18 +21,30 @@ include /app/helpers/jade/mixins
 -var log4j2Required = '$ctrl.clonedCluster.logger.kind === "Log4j2"'
 
 .pc-form-grid-col-60
-    +dropdown('Level:', `${model}.level`, '"log4j2Level"', 'true', 'Default',
-        '[\
-            {value: "OFF", label: "OFF"},\
-            {value: "FATAL", label: "FATAL"},\
-            {value: "ERROR", label: "ERROR"},\
-            {value: "WARN", label: "WARN"},\
-            {value: "INFO", label: "INFO"},\
-            {value: "DEBUG", label: "DEBUG"},\
-            {value: "TRACE", label: "TRACE"},\
-            {value: "ALL", label: "ALL"},\
-            {value: null, label: "Default"}\
-        ]',
-        'Level for internal log4j2 implementation')
+    +form-field__dropdown({
+        label: 'Level:',
+        model: `${model}.level`,
+        name: '"log4j2Level"',
+        placeholder: 'Default',
+        options: '[\
+                    {value: "OFF", label: "OFF"},\
+                    {value: "FATAL", label: "FATAL"},\
+                    {value: "ERROR", label: "ERROR"},\
+                    {value: "WARN", label: "WARN"},\
+                    {value: "INFO", label: "INFO"},\
+                    {value: "DEBUG", label: "DEBUG"},\
+                    {value: "TRACE", label: "TRACE"},\
+                    {value: "ALL", label: "ALL"},\
+                    {value: null, label: "Default"}\
+                ]',
+        tip: 'Level for internal log4j2 implementation'
+    })
 .pc-form-grid-col-60
-    +text('Path:', `${model}.path`, '"log4j2Path"', log4j2Required, 'Input path', 'Path or URI to XML configuration')
+    +form-field__text({
+        label: 'Path:',
+        model: `${model}.path`,
+        name: '"log4j2Path"',
+        required: log4j2Required,
+        placeholder: 'Input path',
+        tip: 'Path or URI to XML configuration'
+    })

@@ -23,27 +23,32 @@ include /app/helpers/jade/mixins
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-title Collision configuration
     panel-description
-        | Configuration Collision SPI allows to regulate how grid jobs get executed when they arrive on a destination node for execution. 
+        | Configuration Collision SPI allows to regulate how grid jobs get executed when they arrive on a destination node for execution.
         | #[a.link-success(href="https://apacheignite.readme.io/docs/job-scheduling" target="_blank") More info]
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-60
-                +dropdown('CollisionSpi:', modelCollisionKind, '"collisionKind"', 'true', '',
-                    '[\
+                +form-field__dropdown({
+                    label:'CollisionSpi:',
+                    model: modelCollisionKind,
+                    name: '"collisionKind"',
+                    placeholder: 'Choose discovery',
+                    options: '[\
                         {value: "JobStealing", label: "Job stealing"},\
                         {value: "FifoQueue", label: "FIFO queue"},\
                         {value: "PriorityQueue", label: "Priority queue"},\
                         {value: "Custom", label: "Custom"},\
                         {value: "Noop", label: "Default"}\
                     ]',
-                    'Regulate how grid jobs get executed when they arrive on a destination node for execution\
-                    <ul>\
-                        <li>Job stealing - supports job stealing from over-utilized nodes to under-utilized nodes</li>\
-                        <li>FIFO queue - jobs are ordered as they arrived</li>\
-                        <li>Priority queue - jobs are first ordered by their priority</li>\
-                        <li>Custom - custom CollisionSpi implementation</li>\
-                        <li>Default - jobs are activated immediately on arrival to mapped node</li>\
-                    </ul>')
+                    tip: 'Regulate how grid jobs get executed when they arrive on a destination node for execution\
+                       <ul>\
+                           <li>Job stealing - supports job stealing from over-utilized nodes to under-utilized nodes</li>\
+                           <li>FIFO queue - jobs are ordered as they arrived</li>\
+                           <li>Priority queue - jobs are first ordered by their priority</li>\
+                           <li>Custom - custom CollisionSpi implementation</li>\
+                           <li>Default - jobs are activated immediately on arrival to mapped node</li>\
+                       </ul>'
+                })
             .pc-form-group(ng-show=`${modelCollisionKind} !== 'Noop'`)
                 .pc-form-grid-row(ng-show=`${modelCollisionKind} === 'JobStealing'`)
                     include ./collision/job-stealing

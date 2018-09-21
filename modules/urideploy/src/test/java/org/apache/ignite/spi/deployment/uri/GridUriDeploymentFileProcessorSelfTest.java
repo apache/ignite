@@ -128,14 +128,7 @@ public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbs
 
         try {
             // Wait for SPI
-            GridTestUtils.waitForCondition(new GridAbsPredicateX() {
-                @Override public boolean applyx() throws IgniteCheckedException {
-                    if (deployed)
-                        return getSpi().findResource(taskId) != null;
-                    else
-                        return getSpi().findResource(taskId) == null;
-                }
-            }, 5000);
+            waitForTask(taskId, deployed, 5000);
 
             if (deployed)
                 assert getSpi().findResource(taskId) != null;

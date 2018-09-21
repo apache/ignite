@@ -54,6 +54,9 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCa
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -82,7 +85,7 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRELOAD;
  * Cache lock future.
  */
 public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boolean>
-    implements GridCacheVersionedFuture<Boolean>, GridDhtFuture<Boolean>, GridCacheMappedVersion {
+    implements GridCacheVersionedFuture<Boolean>, GridDhtFuture<Boolean>, GridCacheMappedVersion, DhtLockFuture<Boolean> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -264,7 +267,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
         if (tx != null) {
             while(true) {
-                IgniteInternalFuture<Boolean> fut = tx.lockFut;
+                IgniteInternalFuture fut = tx.lockFut;
 
                 if (fut != null) {
                     if (fut == GridDhtTxLocalAdapter.ROLLBACK_FUT)
@@ -274,8 +277,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                         assert fut instanceof GridDhtColocatedLockFuture : fut;
 
                         // Terminate this future if parent(collocated) future is terminated by rollback.
-                        fut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
-                            @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                        fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
+                            @Override public void apply(IgniteInternalFuture fut) {
                                 try {
                                     fut.get();
                                 }
@@ -643,7 +646,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     /**
      * @param t Error.
      */
-    public void onError(Throwable t) {
+    @Override public void onError(Throwable t) {
         synchronized (this) {
             if (err != null)
                 return;
@@ -1307,6 +1310,10 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                             try {
                                 if (entry.initialValue(info.value(),
                                     info.version(),
+                                    cctx.mvccEnabled() ? ((MvccVersionAware)info).mvccVersion() : null,
+                                    cctx.mvccEnabled() ? ((MvccUpdateVersionAware)info).newMvccVersion() : null,
+                                    cctx.mvccEnabled() ? ((MvccVersionAware)entry).mvccTxState() : TxState.NA,
+                                    cctx.mvccEnabled() ? ((MvccUpdateVersionAware)entry).newMvccTxState() : TxState.NA,
                                     info.ttl(),
                                     info.expireTime(),
                                     true,

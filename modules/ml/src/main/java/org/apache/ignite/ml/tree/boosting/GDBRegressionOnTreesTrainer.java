@@ -27,13 +27,13 @@ import org.jetbrains.annotations.NotNull;
  */
 public class GDBRegressionOnTreesTrainer extends GDBRegressionTrainer {
     /** Max depth. */
-    private final int maxDepth;
+    private int maxDepth;
 
     /** Min impurity decrease. */
-    private final double minImpurityDecrease;
+    private double minImpurityDecrease;
 
     /** Use index structure instead of using sorting while learning. */
-    private boolean useIndex = true;
+    private boolean usingIdx = true;
 
     /**
      * Constructs instance of GDBRegressionOnTreesTrainer.
@@ -53,22 +53,71 @@ public class GDBRegressionOnTreesTrainer extends GDBRegressionTrainer {
 
     /** {@inheritDoc} */
     @NotNull @Override protected DecisionTreeRegressionTrainer buildBaseModelTrainer() {
-        return new DecisionTreeRegressionTrainer(maxDepth, minImpurityDecrease).withUseIndex(useIndex);
+        return new DecisionTreeRegressionTrainer(maxDepth, minImpurityDecrease).withUsingIdx(usingIdx);
     }
 
     /**
-     * Sets useIndex parameter and returns trainer instance.
+     * Set useIndex parameter and returns trainer instance.
      *
-     * @param useIndex Use index.
+     * @param usingIdx Use index.
      * @return Decision tree trainer.
      */
-    public GDBRegressionOnTreesTrainer withUseIndex(boolean useIndex) {
-        this.useIndex = useIndex;
+    public GDBRegressionOnTreesTrainer withUsingIdx(boolean usingIdx) {
+        this.usingIdx = usingIdx;
         return this;
+    }
+
+    /**
+     * Get the max depth.
+     *
+     * @return The property value.
+     */
+    public int getMaxDepth() {
+        return maxDepth;
+    }
+
+    /**
+     * Set up the max depth.
+     *
+     * @param maxDepth The parameter value.
+     * @return Decision tree trainer.
+     */
+    public GDBRegressionOnTreesTrainer setMaxDepth(int maxDepth) {
+        this.maxDepth = maxDepth;
+        return this;
+    }
+
+    /**
+     * Get the min impurity decrease.
+     *
+     * @return The property value.
+     */
+    public double getMinImpurityDecrease() {
+        return minImpurityDecrease;
+    }
+
+    /**
+     * Set up the min impurity decrease.
+     *
+     * @param minImpurityDecrease The parameter value.
+     * @return Decision tree trainer.
+     */
+    public GDBRegressionOnTreesTrainer setMinImpurityDecrease(double minImpurityDecrease) {
+        this.minImpurityDecrease = minImpurityDecrease;
+        return this;
+    }
+
+    /**
+     * Get the using index structure property instead of using sorting during the learning process.
+     *
+     * @return The property value.
+     */
+    public boolean isUsingIdx() {
+        return usingIdx;
     }
 
     /** {@inheritDoc} */
     @Override protected GDBLearningStrategy getLearningStrategy() {
-        return new GDBOnTreesLearningStrategy(useIndex);
+        return new GDBOnTreesLearningStrategy(usingIdx);
     }
 }

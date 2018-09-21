@@ -807,7 +807,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
          * @param part the partition
          * @return the set for the given partition
          */
-        public Set<IntegerKey> ensureKeySet(final int part) {
+        @Override public Set<IntegerKey> ensureKeySet(final int part) {
             return ensureKeySet(part, partMap);
         }
 

@@ -46,25 +46,25 @@ import org.apache.ignite.ml.util.Utils;
  */
 public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer<MultilayerPerceptron> {
     /** Multilayer perceptron architecture supplier that defines layers and activators. */
-    private final IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier;
+    private IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier;
 
     /** Loss function to be minimized during the training. */
-    private final IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
+    private IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
 
     /** Update strategy that defines how to update model parameters during the training. */
-    private final UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy;
+    private UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy;
 
     /** Maximal number of iterations before the training will be stopped. */
-    private final int maxIterations;
+    private int maxIterations = 100;
 
     /** Batch size (per every partition). */
-    private final int batchSize;
+    private int batchSize = 100;
 
     /** Maximal number of local iterations before synchronization. */
-    private final int locIterations;
+    private int locIterations = 100;
 
     /** Multilayer perceptron model initializer. */
-    private final long seed;
+    private long seed = 1234L;
 
     /**
      * Constructs a new instance of multilayer perceptron trainer.
@@ -111,12 +111,29 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
     public <K, V> MultilayerPerceptron fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
 
+        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected <K, V> MultilayerPerceptron updateModel(MultilayerPerceptron lastLearnedModel,
+        DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
+
+        assert archSupplier != null;
+        assert loss!= null;
+        assert updatesStgy!= null;
+
         try (Dataset<EmptyContext, SimpleLabeledDatasetData> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
             new SimpleLabeledDatasetDataBuilder<>(featureExtractor, lbExtractor)
         )) {
-            MLPArchitecture arch = archSupplier.apply(dataset);
-            MultilayerPerceptron mdl = new MultilayerPerceptron(arch, new RandomInitializer(seed));
+            MultilayerPerceptron mdl;
+            if (lastLearnedModel != null)
+                mdl = lastLearnedModel;
+            else {
+                MLPArchitecture arch = archSupplier.apply(dataset);
+                mdl = new MultilayerPerceptron(arch, new RandomInitializer(seed));
+            }
             ParameterUpdateCalculator<? super MultilayerPerceptron, P> updater = updatesStgy.getUpdatesCalculator();
 
             for (int i = 0; i < maxIterations; i += locIterations) {
@@ -178,6 +195,9 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
                     }
                 );
 
+                if (totUp == null)
+                    return getLastTrainedModelOrThrowEmptyDatasetException(lastLearnedModel);
+
                 P update = updatesStgy.allUpdatesReducer().apply(totUp);
                 mdl = updater.update(mdl, update);
             }
@@ -187,6 +207,154 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Get the multilayer perceptron architecture supplier that defines layers and activators.
+     *
+     * @return The property value.
+     */
+    public IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> getArchSupplier() {
+        return archSupplier;
+    }
+
+    /**
+     * Set up the multilayer perceptron architecture supplier that defines layers and activators.
+     *
+     * @param archSupplier The parameter value.
+     * @return Model with the multilayer perceptron architecture supplier that defines layers and activators.
+     */
+    public MLPTrainer<P> withArchSupplier(
+        IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier) {
+        this.archSupplier = archSupplier;
+        return this;
+    }
+
+    /**
+     * Get the loss function to be minimized during the training.
+     *
+     * @return The property value.
+     */
+    public IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> getLoss() {
+        return loss;
+    }
+
+    /**
+     * Set up the loss function to be minimized during the training.
+     *
+     * @param loss The parameter value.
+     * @return Model with the loss function to be minimized during the training.
+     */
+    public MLPTrainer<P> withLoss(
+        IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
+        this.loss = loss;
+        return this;
+    }
+
+    /**
+     * Get the update strategy that defines how to update model parameters during the training.
+     *
+     * @return The property value.
+     */
+    public UpdatesStrategy<? super MultilayerPerceptron, P> getUpdatesStgy() {
+        return updatesStgy;
+    }
+
+    /**
+     * Set up the update strategy that defines how to update model parameters during the training.
+     *
+     * @param updatesStgy The parameter value.
+     * @return Model with the update strategy that defines how to update model parameters during the training.
+     */
+    public MLPTrainer<P> withUpdatesStgy(
+        UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy) {
+        this.updatesStgy = updatesStgy;
+        return this;
+    }
+
+    /**
+     * Get the maximal number of iterations before the training will be stopped.
+     *
+     * @return The property value.
+     */
+    public int getMaxIterations() {
+        return maxIterations;
+    }
+
+    /**
+     * Set up the maximal number of iterations before the training will be stopped.
+     *
+     * @param maxIterations The parameter value.
+     * @return Model with the maximal number of iterations before the training will be stopped.
+     */
+    public MLPTrainer<P> withMaxIterations(int maxIterations) {
+        this.maxIterations = maxIterations;
+        return this;
+    }
+
+    /**
+     * Get the batch size (per every partition).
+     *
+     * @return The property value.
+     */
+    public int getBatchSize() {
+        return batchSize;
+    }
+
+    /**
+     * Set up the batch size (per every partition).
+     *
+     * @param batchSize The parameter value.
+     * @return Model with the batch size (per every partition).
+     */
+    public MLPTrainer<P> withBatchSize(int batchSize) {
+        this.batchSize = batchSize;
+        return this;
+    }
+
+    /**
+     * Get the maximal number of local iterations before synchronization.
+     *
+     * @return The property value.
+     */
+    public int getLocIterations() {
+        return locIterations;
+    }
+
+    /**
+     * Set up the maximal number of local iterations before synchronization.
+     *
+     * @param locIterations The parameter value.
+     * @return Model with the maximal number of local iterations before synchronization.
+     */
+    public MLPTrainer<P>  withLocIterations(int locIterations) {
+        this.locIterations = locIterations;
+        return this;
+    }
+
+    /**
+     * Get the multilayer perceptron model initializer.
+     *
+     * @return The property value.
+     */
+    public long getSeed() {
+        return seed;
+    }
+
+    /**
+     * Set up the multilayer perceptron model initializer.
+     *
+     * @param seed The parameter value.
+     * @return Model with the multilayer perceptron model initializer.
+     */
+    public MLPTrainer<P>  withSeed(long seed) {
+        this.seed = seed;
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(MultilayerPerceptron mdl) {
+        return true;
     }
 
     /**

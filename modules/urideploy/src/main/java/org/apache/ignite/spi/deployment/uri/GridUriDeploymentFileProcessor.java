@@ -28,6 +28,7 @@ import java.net.URLClassLoader;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import org.apache.commons.codec.binary.Hex;
@@ -227,6 +228,8 @@ final class GridUriDeploymentFileProcessor {
 
         if (files == null)
             return true;
+
+        Arrays.sort(files);
 
         for (File visited : files) {
             if (visited.isFile()) {

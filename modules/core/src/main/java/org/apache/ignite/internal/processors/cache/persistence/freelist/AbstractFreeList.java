@@ -100,7 +100,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             throws IgniteCheckedException {
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
-            int rowSize = io.getRowSize(row);
+            int rowSize = row.size();
 
             boolean updated = io.updateRow(pageAddr, itemId, pageSize(), null, row, rowSize);
 
@@ -146,7 +146,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             throws IgniteCheckedException {
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
-            int rowSize = io.getRowSize(row);
+            int rowSize = row.size();
             int oldFreeSpace = io.getFreeSpace(pageAddr);
 
             assert oldFreeSpace > 0 : oldFreeSpace;
@@ -466,7 +466,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** {@inheritDoc} */
     @Override public void insertDataRow(T row) throws IgniteCheckedException {
-        int rowSize = ioVersions().latest().getRowSize(row);
+        int rowSize = row.size();
 
         int written = 0;
 
@@ -543,6 +543,20 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         assert updated != null; // Can't fail here.
 
         return updated;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <S, R> R updateDataRow(long link, PageHandler<S, R> pageHnd, S arg) throws IgniteCheckedException {
+        assert link != 0;
+
+        long pageId = PageIdUtils.pageId(link);
+        int itemId = PageIdUtils.itemId(link);
+
+        R updRes = write(pageId, pageHnd, arg, itemId, null);
+
+        assert updRes != null; // Can't fail here.
+
+        return updRes;
     }
 
     /** {@inheritDoc} */

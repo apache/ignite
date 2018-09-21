@@ -199,7 +199,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                 for (int i = 0; i < gridCount(); i++) {
                     GridContinuousProcessor proc = grid(i).context().continuous();
 
-                    if(((Map)U.field(proc, "rmtInfos")).size() > 0)
+                    if(!((Map)U.field(proc, "rmtInfos")).isEmpty())
                         return false;
                 }
 

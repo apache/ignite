@@ -22,13 +22,10 @@ import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;
@@ -37,7 +34,6 @@ import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTask;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.mxbean.TransactionsMXBean;
 
 /**
@@ -103,21 +99,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
                     w.println(key.toString());
 
                     for (VisorTxInfo info : entry.getValue().getInfos())
-                        w.println("    Tx: [xid=" + info.getXid() +
-                            ", label=" + info.getLabel() +
-                            ", state=" + info.getState() +
-                            ", startTime=" + info.getFormattedStartTime() +
-                            ", duration=" + info.getDuration() / 1000 +
-                            ", isolation=" + info.getIsolation() +
-                            ", concurrency=" + info.getConcurrency() +
-                            ", timeout=" + info.getTimeout() +
-                            ", size=" + info.getSize() +
-                            ", dhtNodes=" + F.transform(info.getPrimaryNodes(), new IgniteClosure<UUID, String>() {
-                            @Override public String apply(UUID id) {
-                                return U.id8(id);
-                            }
-                        }) +
-                            ']');
+                        w.println(info.toUserString());
                 }
 
                 w.flush();

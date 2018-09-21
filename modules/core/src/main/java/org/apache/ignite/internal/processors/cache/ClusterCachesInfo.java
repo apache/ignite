@@ -69,6 +69,7 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -357,6 +358,9 @@ class ClusterCachesInfo {
                 CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityKeyBackups",
                     "Affinity key backups", locAttr.affinityKeyBackups(),
                     rmtAttr.affinityKeyBackups(), true);
+
+                CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "qryParallelism",
+                    "Query parallelism", locAttr.qryParallelism(), rmtAttr.qryParallelism(), true);
             }
         }
     }
@@ -1866,7 +1870,7 @@ class ClusterCachesInfo {
      * @param ccfg Cache configuration to start.
      * @throws IgniteCheckedException If failed.
      */
-    public void validateStartCacheConfiguration(CacheConfiguration ccfg) throws IgniteCheckedException {
+    void validateStartCacheConfiguration(CacheConfiguration ccfg) throws IgniteCheckedException {
         if (ccfg.getGroupName() != null) {
             CacheGroupDescriptor grpDesc = cacheGroupByName(ccfg.getGroupName());
 
@@ -1890,6 +1894,10 @@ class ClusterCachesInfo {
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "cacheMode", "Cache mode",
             cfg.getCacheMode(), startCfg.getCacheMode(), true);
+
+        if (cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT || startCfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+            CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "atomicityMode", "Atomicity mode",
+                attr1.atomicityMode(), attr2.atomicityMode(), true);
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "affinity", "Affinity function",
             attr1.cacheAffinityClassName(), attr2.cacheAffinityClassName(), true);

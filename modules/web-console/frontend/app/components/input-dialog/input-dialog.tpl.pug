@@ -20,7 +20,7 @@ include /app/helpers/jade/mixins
     .modal-dialog
         form.modal-content(name='ctrl.form' novalidate)
             .modal-header
-                h4.modal-title 
+                h4.modal-title
                     i.fa.fa-clone
                     span {{ ctrl.title }}
                 button.close(type='button' aria-label='Close' ng-click='$hide()')
@@ -36,7 +36,7 @@ include /app/helpers/jade/mixins
                             required: true,
                             placeholder: 'Enter value'
                         })(
-                            data-ignite-form-field-input-autofocus='true'
+                            ignite-form-field-input-autofocus='true'
                             ignite-on-enter='form.$valid && ctrl.confirm()'
                         )
 

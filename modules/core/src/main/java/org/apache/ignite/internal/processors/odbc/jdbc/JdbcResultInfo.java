@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -75,14 +76,16 @@ public class JdbcResultInfo implements JdbcRawBinarylizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) {
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        ClientListenerProtocolVersion ver) {
         writer.writeBoolean(isQuery);
         writer.writeLong(updCnt);
         writer.writeLong(qryId);
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) {
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        ClientListenerProtocolVersion ver) {
         isQuery = reader.readBoolean();
         updCnt = reader.readLong();
         qryId = reader.readLong();

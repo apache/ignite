@@ -229,7 +229,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      *
      * @param consistentId Consistent globally unique node ID.
      */
-    public void setConsistentId(Serializable consistentId) {
+    @Override public void setConsistentId(Serializable consistentId) {
         this.consistentId = consistentId;
 
         final Map<String, Object> map = new HashMap<>(attrs);
@@ -291,14 +291,14 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     }
 
     /** {@inheritDoc} */
-    public void setMetrics(ClusterMetrics metrics) {
+    @Override public void setMetrics(ClusterMetrics metrics) {
         assert metrics != null;
 
         this.metrics = metrics;
     }
 
     /** {@inheritDoc} */
-    public Map<Integer, CacheMetrics> cacheMetrics() {
+    @Override public Map<Integer, CacheMetrics> cacheMetrics() {
         if (metricsProvider != null) {
             Map<Integer, CacheMetrics> cacheMetrics0 = metricsProvider.cacheMetrics();
 
@@ -311,7 +311,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     }
 
     /** {@inheritDoc} */
-    public void setCacheMetrics(Map<Integer, CacheMetrics> cacheMetrics) {
+    @Override public void setCacheMetrics(Map<Integer, CacheMetrics> cacheMetrics) {
         this.cacheMetrics = cacheMetrics != null ? cacheMetrics : Collections.<Integer, CacheMetrics>emptyMap();
     }
 

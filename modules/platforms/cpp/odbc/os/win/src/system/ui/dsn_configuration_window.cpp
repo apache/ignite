@@ -36,7 +36,7 @@ namespace ignite
                 DsnConfigurationWindow::DsnConfigurationWindow(Window* parent, config::Configuration& config):
                     CustomWindow(parent, "IgniteConfigureDsn", "Configure Apache Ignite DSN"),
                     width(360),
-                    height(580),
+                    height(600),
                     connectionSettingsGroupBox(),
                     sslSettingsGroupBox(),
                     authSettingsGroupBox(),
@@ -59,6 +59,7 @@ namespace ignite
                     userEdit(),
                     passwordLabel(),
                     passwordEdit(),
+                    nestedTxModeComboBox(),
                     okButton(),
                     cancelButton(),
                     config(config),
@@ -286,7 +287,7 @@ namespace ignite
 
                 int DsnConfigurationWindow::CreateAdditionalSettingsGroup(int posX, int posY, int sizeX)
                 {
-                    enum { LABEL_WIDTH = 80 };
+                    enum { LABEL_WIDTH = 130 };
 
                     int labelPosX = posX + INTERVAL;
 
@@ -306,6 +307,29 @@ namespace ignite
 
                     pageSizeEdit = CreateEdit(editPosX, rowPos, editSizeX,
                         ROW_HEIGHT, val, ChildId::PAGE_SIZE_EDIT, ES_NUMBER);
+
+                    rowPos += INTERVAL + ROW_HEIGHT;
+
+                    nestedTxModeLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
+                        "Nested Transaction Mode:", ChildId::NESTED_TX_MODE_LABEL);
+                    nestedTxModeComboBox = CreateComboBox(editPosX, rowPos, editSizeX, ROW_HEIGHT,
+                        "", ChildId::NESTED_TX_MODE_COMBO_BOX);
+
+                    int id = 0;
+
+                    const NestedTxMode::ModeSet& supported = NestedTxMode::GetValidValues();
+
+                    for (NestedTxMode::ModeSet::const_iterator it = supported.begin(); it != supported.end(); ++it)
+                    {
+                        nestedTxModeComboBox->AddString(NestedTxMode::ToString(*it));
+
+                        if (*it == config.GetNestedTxMode())
+                            nestedTxModeComboBox->SetSelection(id);
+
+                        ++id;
+                    }
+
+                    nestedTxModeComboBox->SetEnabled(version >= ProtocolVersion::VERSION_2_5_0);
 
                     rowPos += INTERVAL + ROW_HEIGHT;
 
@@ -429,6 +453,7 @@ namespace ignite
                                     ProtocolVersion version = ProtocolVersion::FromString(versionStr);
                                     lazyCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_1_5);
                                     skipReducerOnUpdateCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_3_0);
+                                    nestedTxModeComboBox->SetEnabled(version >= ProtocolVersion::VERSION_2_5_0);
 
                                     break;
                                 }
@@ -568,13 +593,6 @@ namespace ignite
                 {
                     std::string pageSizeStr;
 
-                    bool distributedJoins;
-                    bool enforceJoinOrder;
-                    bool replicatedOnly;
-                    bool collocated;
-                    bool lazy;
-                    bool skipReducerOnUpdate;
-
                     pageSizeEdit->GetText(pageSizeStr);
 
                     int32_t pageSize = common::LexicalCast<int32_t>(pageSizeStr);
@@ -582,15 +600,22 @@ namespace ignite
                     if (pageSize <= 0)
                         pageSize = config.GetPageSize();
 
-                    distributedJoins = distributedJoinsCheckBox->IsChecked();
-                    enforceJoinOrder = enforceJoinOrderCheckBox->IsChecked();
-                    replicatedOnly = replicatedOnlyCheckBox->IsChecked();
-                    collocated = collocatedCheckBox->IsChecked();
-                    lazy = lazyCheckBox->IsChecked();
-                    skipReducerOnUpdate = skipReducerOnUpdateCheckBox->IsChecked();
+                    std::string nestedTxModeStr;
+
+                    nestedTxModeComboBox->GetText(nestedTxModeStr);
+
+                    NestedTxMode::Type mode = NestedTxMode::FromString(nestedTxModeStr, config.GetNestedTxMode());
+
+                    bool distributedJoins = distributedJoinsCheckBox->IsChecked();
+                    bool enforceJoinOrder = enforceJoinOrderCheckBox->IsChecked();
+                    bool replicatedOnly = replicatedOnlyCheckBox->IsChecked();
+                    bool collocated = collocatedCheckBox->IsChecked();
+                    bool lazy = lazyCheckBox->IsChecked();
+                    bool skipReducerOnUpdate = skipReducerOnUpdateCheckBox->IsChecked();
 
                     LOG_MSG("Retrieving arguments:");
                     LOG_MSG("Page size:              " << pageSize);
+                    LOG_MSG("Nested TX Mode:         " << NestedTxMode::ToString(mode));
                     LOG_MSG("Distributed Joins:      " << (distributedJoins ? "true" : "false"));
                     LOG_MSG("Enforce Join Order:     " << (enforceJoinOrder ? "true" : "false"));
                     LOG_MSG("Replicated only:        " << (replicatedOnly ? "true" : "false"));
@@ -599,6 +624,7 @@ namespace ignite
                     LOG_MSG("Skip reducer on update: " << (skipReducerOnUpdate ? "true" : "false"));
 
                     cfg.SetPageSize(pageSize);
+                    cfg.SetNestedTxMode(mode);
                     cfg.SetDistributedJoins(distributedJoins);
                     cfg.SetEnforceJoinOrder(enforceJoinOrder);
                     cfg.SetReplicatedOnly(replicatedOnly);

@@ -168,7 +168,7 @@ public class MessageCodeGenerator {
 
 //        gen.generateAll(true);
 
-//        gen.generateAndWrite(GridChangeGlobalStateMessageResponse.class);
+//        gen.generateAndWrite(GridNearTxQueryResultsEnlistRequest.class);
 
 //        gen.generateAndWrite(GridNearAtomicUpdateRequest.class);
 
@@ -235,6 +235,8 @@ public class MessageCodeGenerator {
 //        gen.generateAndWrite(GridCacheVersionEx.class);
 //        gen.generateAndWrite(GridH2DmlRequest.class);
 //        gen.generateAndWrite(GridH2DmlResponse.class);
+//        gen.generateAndWrite(GridNearTxEnlistRequest.class);
+//        gen.generateAndWrite(GridNearTxEnlistResponse.class);
     }
 
     /**

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 
 /**
@@ -48,7 +49,7 @@ public class MetastorageDataRow implements MetastorageSearchRow, Storable {
     /**
      * @return Key.
      */
-    public String key() {
+    @Override public String key() {
         return key;
     }
 
@@ -61,6 +62,16 @@ public class MetastorageDataRow implements MetastorageSearchRow, Storable {
     /** {@inheritDoc} */
     @Override
     public int partition() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int size() throws IgniteCheckedException {
+        return 4 + value().length;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int headerSize() {
         return 0;
     }
 

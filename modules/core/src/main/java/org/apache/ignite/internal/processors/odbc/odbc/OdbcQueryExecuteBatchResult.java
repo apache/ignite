@@ -26,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class OdbcQueryExecuteBatchResult {
     /** Rows affected. */
-    private final Collection<Long> affectedRows;
+    private final long[] affectedRows;
 
     /** Index of the set which caused an error. */
     private final long errorSetIdx;
@@ -40,7 +40,7 @@ public class OdbcQueryExecuteBatchResult {
     /**
      * @param affectedRows Number of rows affected by the query.
      */
-    public OdbcQueryExecuteBatchResult(Collection<Long> affectedRows) {
+    public OdbcQueryExecuteBatchResult(long[] affectedRows) {
         this.affectedRows = affectedRows;
         this.errorSetIdx = -1;
         this.errorMessage = null;
@@ -53,7 +53,7 @@ public class OdbcQueryExecuteBatchResult {
      * @param errorCode Error code.
      * @param errorMessage Error message.
      */
-    public OdbcQueryExecuteBatchResult(Collection<Long> affectedRows, long errorSetIdx, int errorCode,
+    public OdbcQueryExecuteBatchResult(long[] affectedRows, long errorSetIdx, int errorCode,
         String errorMessage) {
         this.affectedRows = affectedRows;
         this.errorSetIdx = errorSetIdx;
@@ -64,7 +64,7 @@ public class OdbcQueryExecuteBatchResult {
     /**
      * @return Number of rows affected by the query.
      */
-    public Collection<Long> affectedRows() {
+    public long[] affectedRows() {
         return affectedRows;
     }
 

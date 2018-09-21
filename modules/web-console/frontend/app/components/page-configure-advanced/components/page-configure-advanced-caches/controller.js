@@ -27,16 +27,17 @@ import Caches from 'app/services/Caches';
 // Controller for Caches screen.
 export default class Controller {
     static $inject = [
-        ConfigSelectors.name,
+        'ConfigSelectors',
         'configSelectionManager',
         '$uiRouter',
         '$transitions',
-        ConfigureState.name,
+        'ConfigureState',
         '$state',
         'IgniteFormUtils',
         'IgniteVersion',
-        Caches.name
+        'Caches'
     ];
+
     /**
      * @param {ConfigSelectors} ConfigSelectors
      * @param {object} configSelectionManager

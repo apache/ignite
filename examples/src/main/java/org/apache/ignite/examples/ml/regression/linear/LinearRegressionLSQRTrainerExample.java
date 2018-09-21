@@ -32,7 +32,8 @@ import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run linear regression model ({@link LinearRegressionLSQRTrainer}) over cached dataset.
+ * Run linear regression model based on <a href="http://web.stanford.edu/group/SOL/software/lsqr/">LSQR algorithm</a>
+ * ({@link LinearRegressionLSQRTrainer}) over cached dataset.
  * <p>
  * Code in this example launches Ignite grid and fills the cache with simple test data.</p>
  * <p>

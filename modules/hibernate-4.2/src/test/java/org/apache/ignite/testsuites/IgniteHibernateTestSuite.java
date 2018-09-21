@@ -46,7 +46,7 @@ public class IgniteHibernateTestSuite extends TestSuite {
         suite.addTestSuite(HibernateL2CacheTransactionalUseSyncSelfTest.class);
         suite.addTestSuite(HibernateL2CacheConfigurationSelfTest.class);
         suite.addTestSuite(HibernateL2CacheStrategySelfTest.class);
-        //suite.addTestSuite(HibernateL2CacheMultiJvmTest.class);
+        suite.addTestSuite(HibernateL2CacheMultiJvmTest.class);
 
         suite.addTestSuite(CacheHibernateBlobStoreSelfTest.class);
 

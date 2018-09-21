@@ -66,8 +66,8 @@ public class Step_3_Categorial {
 
                     IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
                         .withEncoderType(EncoderType.STRING_ENCODER)
-                        .encodeFeature(1)
-                        .encodeFeature(4)
+                        .withEncodedFeature(1)
+                        .withEncodedFeature(4)
                         .fit(ignite,
                             dataCache,
                             featureExtractor

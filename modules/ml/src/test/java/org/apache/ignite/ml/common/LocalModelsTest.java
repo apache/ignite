@@ -32,6 +32,7 @@ import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.knn.NNClassificationModel;
 import org.apache.ignite.ml.knn.ann.ANNClassificationModel;
+import org.apache.ignite.ml.knn.ann.ANNClassificationTrainer;
 import org.apache.ignite.ml.knn.ann.ANNModelFormat;
 import org.apache.ignite.ml.knn.ann.ProbableLabel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
@@ -195,7 +196,7 @@ public class LocalModelsTest {
         data.put(1, new double[] {1.0, 1960, 373200});
 
         KMeansTrainer trainer = new KMeansTrainer()
-            .withK(1);
+            .withAmountOfClusters(1);
 
         return trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
@@ -237,7 +238,7 @@ public class LocalModelsTest {
         executeModelTest(mdlFilePath -> {
             final LabeledVectorSet<ProbableLabel, LabeledVector> centers = new LabeledVectorSet<>();
 
-            NNClassificationModel mdl = new ANNClassificationModel(centers)
+            NNClassificationModel mdl = new ANNClassificationModel(centers, new ANNClassificationTrainer.CentroidStat())
                 .withK(4)
                 .withDistanceMeasure(new ManhattanDistance())
                 .withStrategy(NNStrategy.WEIGHTED);
@@ -250,7 +251,7 @@ public class LocalModelsTest {
             Assert.assertNotNull(load);
 
 
-            NNClassificationModel importedMdl = new ANNClassificationModel(load.getCandidates())
+            NNClassificationModel importedMdl = new ANNClassificationModel(load.getCandidates(), new ANNClassificationTrainer.CentroidStat())
                 .withK(load.getK())
                 .withDistanceMeasure(load.getDistanceMeasure())
                 .withStrategy(load.getStgy());
