@@ -507,7 +507,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        Ignite ig0 = startGrids(2);
+        startGrids(2);
 
         awaitPartitionMapExchange();
 
