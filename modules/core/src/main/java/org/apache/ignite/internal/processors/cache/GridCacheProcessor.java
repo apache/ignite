@@ -99,6 +99,9 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -190,7 +193,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersi
  * Cache processor.
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened", "deprecation"})
-public class GridCacheProcessor extends GridProcessorAdapter {
+public class GridCacheProcessor extends GridProcessorAdapter implements MetastorageLifecycleListener {
     /** Template of message of conflicts during configuration merge*/
     private static final String MERGE_OF_CONFIG_CONFLICTS_MESSAGE =
         "Conflicts during configuration merge for cache '%s' : \n%s";
@@ -695,8 +698,42 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
+        startCachesOnStart();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onReadyForReadWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
+    }
+
+    /**
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    private void startCachesOnStart() throws IgniteCheckedException {
+        if (!ctx.isDaemon()) {
+            Map<String, CacheInfo> caches = new HashMap<>();
+
+            Map<String, CacheInfo> templates = new HashMap<>();
+
+            addCacheOnJoinFromConfig(caches, templates);
+
+            CacheJoinNodeDiscoveryData discoData = new CacheJoinNodeDiscoveryData(
+                IgniteUuid.randomUuid(),
+                caches,
+                templates,
+                startAllCachesOnClientStart()
+            );
+
+            cachesInfo.onStart(discoData);
+        }
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public void start() throws IgniteCheckedException {
+        ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
+
         cachesInfo = new ClusterCachesInfo(ctx);
 
         DeploymentMode depMode = ctx.config().getDeploymentMode();
@@ -720,25 +757,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheSharedManager mgr : sharedCtx.managers())
             mgr.start(sharedCtx);
 
-        if (!ctx.isDaemon()) {
-            Map<String, CacheInfo> caches = new HashMap<>();
+        if (!ctx.isDaemon() && (!CU.isPersistenceEnabled(ctx.config())) || ctx.config().isClientMode())
+            startCachesOnStart();
 
-            Map<String, CacheInfo> templates = new HashMap<>();
-
-            addCacheOnJoinFromConfig(caches, templates);
-
-            CacheJoinNodeDiscoveryData discoData = new CacheJoinNodeDiscoveryData(
-                IgniteUuid.randomUuid(),
-                caches,
-                templates,
-                startAllCachesOnClientStart()
-            );
-
-            cachesInfo.onStart(discoData);
-
-            if (log.isDebugEnabled())
-                log.debug("Started cache processor.");
-        }
+        if (log.isDebugEnabled())
+            log.debug("Started cache processor.");
 
         ctx.state().cacheProcessorStarted();
         ctx.authentication().cacheProcessorStarted();
@@ -2329,7 +2352,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private void processCacheStopRequestOnExchangeDone(ExchangeActions exchActions) {
         // Force checkpoint if there is any cache stop request
-        if (exchActions.cacheStopRequests().size() > 0) {
+        if (!exchActions.cacheStopRequests().isEmpty()) {
             try {
                 sharedCtx.database().waitForCheckpoint("caches stop");
             }
@@ -2508,11 +2531,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgniteWriteAheadLogManager walMgr = null;
 
         if (CU.isPersistenceEnabled(ctx.config()) && !ctx.clientNode()) {
-            if (ctx.clientNode()) {
-                U.warn(log, "Persistent Store is not supported on client nodes (Persistent Store's" +
-                    " configuration will be ignored).");
-            }
-
             dbMgr = new GridCacheDatabaseSharedManager(ctx);
 
             pageStoreMgr = ctx.plugins().createComponent(IgnitePageStoreManager.class);
@@ -2530,8 +2548,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     walMgr = new FileWriteAheadLogManager(ctx);
             }
         }
-        else
+        else {
+            if (CU.isPersistenceEnabled(ctx.config()) && ctx.clientNode()) {
+                U.warn(log, "Persistent Store is not supported on client nodes (Persistent Store's" +
+                    " configuration will be ignored).");
+            }
+
             dbMgr = new IgniteCacheDatabaseSharedManager();
+        }
 
         WalStateManager walStateMgr = new WalStateManager(ctx);
 

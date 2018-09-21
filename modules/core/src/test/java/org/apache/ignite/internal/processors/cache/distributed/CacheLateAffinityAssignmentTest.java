@@ -1847,7 +1847,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                 }
 
                 case 4: {
-                    if (caches.size() > 0) {
+                    if (!caches.isEmpty()) {
                         String cacheName = caches.get(rnd.nextInt(caches.size()));
 
                         Ignite node = randomNode(rnd, srvs, clients);
@@ -1887,7 +1887,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                 }
 
                 case 6: {
-                    if (caches.size() > 0) {
+                    if (!caches.isEmpty()) {
                         for (int j = 0; j < 3; j++) {
                             String cacheName = caches.get(rnd.nextInt(caches.size()));
 
@@ -2289,7 +2289,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         String name = null;
 
         if (rnd.nextBoolean()) {
-            if (clients.size() > 0)
+            if (!clients.isEmpty())
                 name = clients.get(rnd.nextInt(clients.size()));
         }
 
@@ -2350,7 +2350,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             Set<String> exclude = new HashSet<>();
 
             for (int i = 0; i < 10; i++) {
-                if (i % 2 == 0 && srvs.size() > 0)
+                if (i % 2 == 0 && !srvs.isEmpty())
                     exclude.add(srvs.get(rnd.nextInt(srvs.size())));
                 else
                     exclude.add("server-" + (srvIdx + rnd.nextInt(10)));
@@ -2777,7 +2777,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             }
         });
 
-        assert all.size() > 0;
+        assert !all.isEmpty();
 
         Map<Integer, List<List<ClusterNode>>> assignments = idealAff.get(topVer);
 
@@ -2868,7 +2868,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                         List<ClusterNode> nodes0 = prev.get(p);
                         List<ClusterNode> nodes1 = assignment.get(p);
 
-                        if (nodes0.size() > 0 && nodes1.size() > 0) {
+                        if (!nodes0.isEmpty() && !nodes1.isEmpty()) {
                             ClusterNode p0 = nodes0.get(0);
                             ClusterNode p1 = nodes1.get(0);
 
