@@ -65,7 +65,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
-import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
@@ -762,7 +761,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                     txEntry.cached(cacheCtx.cache().entryEx(txEntry.key(), topologyVersion()));
                                 }
                             }
-
                         }
 
                         applyTxCounters();
@@ -782,6 +780,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     catch (Throwable ex) {
                         state(UNKNOWN);
 
+                        // TODO Node should not stop (gracefully) until all pending transactions are processed.
                         if (X.hasCause(ex, NodeStoppingException.class)) {
                             U.warn(log, "Failed to commit transaction, node is stopping [tx=" + CU.txString(this) +
                                 ", err=" + ex + ']');
