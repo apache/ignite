@@ -89,7 +89,7 @@ public class H2TreeNoDataIndex extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow lower, SearchRow upper) {
-        return GridH2Cursor.EMPTY;
+        throw new IgniteSQLException("Shouldn't be invoked, due to it's not affinity node");
     }
 
     /** {@inheritDoc} */
