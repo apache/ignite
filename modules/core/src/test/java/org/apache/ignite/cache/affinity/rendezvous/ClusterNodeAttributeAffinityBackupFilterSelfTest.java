@@ -17,10 +17,6 @@
 
 package org.apache.ignite.cache.affinity.rendezvous;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionBackupFilterAbstractSelfTest;
 
@@ -40,19 +36,18 @@ public class ClusterNodeAttributeAffinityBackupFilterSelfTest extends AffinityFu
     /** {@inheritDoc} */
     @Override protected AffinityFunction affinityFunctionWithAffinityBackupFilter(String attributeName) {
         RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false);
-        
+
         String[] stringArray = new String[1];
-       
+
         stringArray[0] = attributeName;
-        
+
         aff.setAffinityBackupFilter(new ClusterNodeAttributeAffinityBackupFilter(stringArray));
 
         return aff;
     }
-    
+
     /** {@inheritDoc} */
-    @Override
-    protected int expectedNodesForEachPartition() {
+    @Override protected int expectedNodesForEachPartition() {
        return 3;
     }
 }

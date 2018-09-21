@@ -87,7 +87,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
                 return backupAssignedAttribute.get(nodeAttributeVal).equals(0);
             }
         };
-     
+
     /**
      * @param nodes List of cluster nodes.
      * @return Statistic.
@@ -233,7 +233,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
             stopAllGrids();
         }
     }
-    
+
     /* Different affinityBackupFilters have different goals */
     protected int expectedNodesForEachPartition() {
        return backups + 1;
@@ -249,7 +249,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
         int partCnt = aff.partitions();
 
         IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
-        
+
         for (int i = 0; i < partCnt; i++) {
             Collection<ClusterNode> nodes = affinity(cache).mapKeyToPrimaryAndBackups(i);
 
