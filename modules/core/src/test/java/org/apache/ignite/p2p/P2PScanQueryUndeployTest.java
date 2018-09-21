@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
@@ -77,6 +78,10 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
 
         cfg.setCommunicationSpi(new MessageCountingCommunicationSpi());
 
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration());
+
+        cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
+
         if (igniteInstanceName.equals(CLIENT_INSTANCE_NAME))
             cfg.setClientMode(true);
 
@@ -93,6 +98,8 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -100,6 +107,8 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
         super.afterTest();
 
         stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /**
