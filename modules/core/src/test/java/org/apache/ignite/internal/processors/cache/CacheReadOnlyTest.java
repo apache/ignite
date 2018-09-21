@@ -56,9 +56,6 @@ public class CacheReadOnlyTest extends GridCommonAbstractTest {
     /** Partitioned transactional cache. */
     private static final String PART_TX_CACHE = "part_tx_cache";
 
-    /** Local cache. */
-    private static final String LOCAL_CACHE = "local_cache";
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -70,7 +67,6 @@ public class CacheReadOnlyTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        changeCacheReadOnlyMode(LOCAL_CACHE, false);
         changeCacheReadOnlyMode(REPL_ATOMIC_CACHE, false);
         changeCacheReadOnlyMode(REPL_TX_CACHE, false);
         changeCacheReadOnlyMode(PART_ATOMIC_CACHE, false);
@@ -82,7 +78,6 @@ public class CacheReadOnlyTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(
-            cacheConfiguration(LOCAL_CACHE, LOCAL, ATOMIC, null),
             cacheConfiguration(REPL_ATOMIC_CACHE, REPLICATED, ATOMIC, null),
             cacheConfiguration(REPL_TX_CACHE, REPLICATED, TRANSACTIONAL, null),
             cacheConfiguration(PART_ATOMIC_CACHE, PARTITIONED, ATOMIC, "part_grp"),
@@ -110,7 +105,6 @@ public class CacheReadOnlyTest extends GridCommonAbstractTest {
      *
      */
     public void testCachePutRemove() {
-        assertCacheReadOnlyMode(LOCAL_CACHE, false);
         assertCacheReadOnlyMode(PART_ATOMIC_CACHE, false);
         assertCacheReadOnlyMode(PART_TX_CACHE, false);
         assertCacheReadOnlyMode(REPL_ATOMIC_CACHE, false);
@@ -118,7 +112,6 @@ public class CacheReadOnlyTest extends GridCommonAbstractTest {
 
         changeCacheReadOnlyMode(REPL_ATOMIC_CACHE, true);
 
-        assertCacheReadOnlyMode(LOCAL_CACHE, false);
         assertCacheReadOnlyMode(PART_ATOMIC_CACHE, false);
         assertCacheReadOnlyMode(PART_TX_CACHE, false);
         assertCacheReadOnlyMode(REPL_ATOMIC_CACHE, true);
@@ -128,7 +121,6 @@ public class CacheReadOnlyTest extends GridCommonAbstractTest {
         // This will also change PART_TX_CACHE read-only mode, since caches are in the same cache group.
         changeCacheReadOnlyMode(PART_ATOMIC_CACHE, true);
 
-        assertCacheReadOnlyMode(LOCAL_CACHE, false);
         assertCacheReadOnlyMode(PART_ATOMIC_CACHE, true);
         assertCacheReadOnlyMode(PART_TX_CACHE, true);
         assertCacheReadOnlyMode(REPL_ATOMIC_CACHE, false);
@@ -137,24 +129,13 @@ public class CacheReadOnlyTest extends GridCommonAbstractTest {
         changeCacheReadOnlyMode(REPL_TX_CACHE, true);
         changeCacheReadOnlyMode(PART_ATOMIC_CACHE, false);
 
-        assertCacheReadOnlyMode(LOCAL_CACHE, false);
         assertCacheReadOnlyMode(PART_ATOMIC_CACHE, false);
         assertCacheReadOnlyMode(PART_TX_CACHE, false);
         assertCacheReadOnlyMode(REPL_ATOMIC_CACHE, false);
         assertCacheReadOnlyMode(REPL_TX_CACHE, true);
 
         changeCacheReadOnlyMode(REPL_TX_CACHE, false);
-        changeCacheReadOnlyMode(LOCAL_CACHE, true);
 
-        assertCacheReadOnlyMode(LOCAL_CACHE, true);
-        assertCacheReadOnlyMode(PART_ATOMIC_CACHE, false);
-        assertCacheReadOnlyMode(PART_TX_CACHE, false);
-        assertCacheReadOnlyMode(REPL_ATOMIC_CACHE, false);
-        assertCacheReadOnlyMode(REPL_TX_CACHE, false);
-
-        changeCacheReadOnlyMode(LOCAL_CACHE, false);
-
-        assertCacheReadOnlyMode(LOCAL_CACHE, false);
         assertCacheReadOnlyMode(PART_ATOMIC_CACHE, false);
         assertCacheReadOnlyMode(PART_TX_CACHE, false);
         assertCacheReadOnlyMode(REPL_ATOMIC_CACHE, false);
