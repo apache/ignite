@@ -253,8 +253,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
 
         stop0(true);
-
-        idxCacheStores.clear();
     }
 
     /** {@inheritDoc} */

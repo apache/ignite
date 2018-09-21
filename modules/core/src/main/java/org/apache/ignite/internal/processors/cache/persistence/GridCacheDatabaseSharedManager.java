@@ -806,11 +806,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointReadLock();
 
         try {
-            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
-                lsnr.beforeMemoryRestore(this);
-
-            cctx.pageStore().initializeForMetastorage();
-
             CheckpointStatus status = readCheckpointStatus();
 
             // Memory should be recovered at startup.
@@ -1934,7 +1929,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         // Only presistence caches to start.
         if (!F.isEmpty(caches)) {
             for (DynamicCacheDescriptor desc : caches) {
-                if (CU.affinityNode(cctx.localNode(), desc.cacheConfiguration().getNodeFilter()))
+                if (CU.isPersistentCache(desc.cacheConfiguration(), cctx.gridConfig().getDataStorageConfiguration()))
                     storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
             }
         }
