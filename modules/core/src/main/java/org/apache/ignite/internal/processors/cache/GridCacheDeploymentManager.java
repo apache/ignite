@@ -123,11 +123,6 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                     }
 
                     allParticipants.remove(id);
-
-                    if (log.isDebugEnabled())
-                        log.debug("Clearing cached classes");
-
-                    U.clearClassCache(globalLdr);
                 }
             };
 
