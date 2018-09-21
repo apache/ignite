@@ -80,7 +80,7 @@ public class IgniteP2PSelfTestSuite extends TestSuite {
 //        suite.addTest(new TestSuite(P2PStreamingClassLoaderTest.class));
 //        suite.addTest(new TestSuite(SharedDeploymentTest.class));
         suite.addTest(new TestSuite(P2PScanQueryUndeployTest.class));
-        GridTestUtils.addTestIfNeeded(suite, GridDeploymentMessageCountSelfTest.class, ignoredTests);
+      //  GridTestUtils.addTestIfNeeded(suite, GridDeploymentMessageCountSelfTest.class, ignoredTests);
 
         return suite;
     }
