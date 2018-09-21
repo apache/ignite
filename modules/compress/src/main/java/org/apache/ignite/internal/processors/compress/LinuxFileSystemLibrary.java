@@ -3,6 +3,7 @@ package org.apache.ignite.internal.processors.compress;
 import com.sun.jna.LastErrorException;
 import com.sun.jna.Native;
 import com.sun.jna.Platform;
+import java.nio.file.Path;
 
 public class LinuxFileSystemLibrary {
     /**
@@ -139,5 +140,24 @@ public class LinuxFileSystemLibrary {
 
         if (res != 0)
             throw new IllegalStateException("errno: " + Native.getLastError());
+    }
+
+    /**
+     * @param path Path.
+     * @return File system block size in bytes.
+     */
+    public static int getFileSystemBlockSize(Path path) {
+        return stat(path.toString()).st_blksize;
+    }
+
+    /**
+     * @param path Path.
+     * @return File system info.
+     */
+    public static native Stat stat(String path);
+
+    static final class Stat {
+        /** File system block size in bytes. */
+        int st_blksize;
     }
 }
