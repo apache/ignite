@@ -55,7 +55,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
     /** */
     private long threadId;
 
-    /** */
+    /** Future id. */
     private IgniteUuid futId;
 
     /** */
@@ -73,7 +73,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
     /** */
     private GridCacheVersion lockVer;
 
-    /** */
+    /** Mvcc snapshot. */
     private MvccSnapshot mvccSnapshot;
 
     /** */
@@ -85,26 +85,26 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
     /** */
     private int taskNameHash;
 
-    /** */
+    /** Rows to enlist. */
     @GridDirectTransient
     private Collection<Object> rows;
 
-    /** */
+    /** Serialized rows keys. */
     @GridToStringExclude
     private KeyCacheObject[] keys;
 
-    /**  */
+    /** Serialized rows values. */
     @GridToStringExclude
     private CacheObject[] values;
 
-    /** */
+    /** Enlist operation. */
     private EnlistOperation op;
 
-    /** */
+    /** Filter. */
     @GridToStringExclude
     private CacheEntryPredicate filter;
 
-    /** */
+    /** Need previous value flag. */
     private boolean needRes;
 
     /**
@@ -115,6 +115,8 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
     }
 
     /**
+     * Constructor.
+     *
      * @param cacheId Cache id.
      * @param threadId Thread id.
      * @param futId Future id.

@@ -38,16 +38,16 @@ import org.jetbrains.annotations.Nullable;
  * Future processing transaction enlisting and locking of entries produces by cache API operations.
  */
 public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<GridCacheReturn> implements UpdateSourceIterator<Object> {
-    /** */
+    /** Enlist operation. */
     private EnlistOperation op;
 
-    /** */
+    /** Source iterator. */
     private Iterator<Object> it;
 
-    /** */
+    /** Future result. */
     private GridCacheReturn res;
 
-    /** */
+    /** Need result flag. If {@code True} previous value should be returned as well. */
     private boolean needRes;
 
     /**

@@ -77,6 +77,8 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
     }
 
     /**
+     * Constructor for normal result.
+     *
      * @param cacheId Cache id.
      * @param futId Future id.
      * @param miniId Mini future id.
@@ -105,6 +107,8 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
     }
 
     /**
+     * Constructor for error result.
+     *
      * @param cacheId Cache id.
      * @param futId Future id.
      * @param miniId Mini future id.

@@ -1358,9 +1358,12 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                 }
             }, readers, "reader");
 
-            Thread.sleep(1000);
-
             while (System.currentTimeMillis() < stopTime && !stop.get()) {
+                Thread.sleep(1000);
+
+                if (System.currentTimeMillis() >= stopTime || stop.get())
+                    break;
+
                 if (restartMode != null) {
                     switch (restartMode) {
                         case RESTART_CRD: {
@@ -1409,8 +1412,6 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                             fail();
                     }
                 }
-
-                Thread.sleep(1000);
             }
 
             stop.set(true);

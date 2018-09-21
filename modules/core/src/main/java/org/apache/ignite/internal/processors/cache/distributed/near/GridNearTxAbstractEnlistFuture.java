@@ -120,7 +120,7 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
      * @param rdc Compound future reducer.
      */
     public GridNearTxAbstractEnlistFuture(
-        GridCacheContext<?, ?> cctx, GridNearTxLocal tx, long timeout, IgniteReducer<T, T> rdc) {
+        GridCacheContext<?, ?> cctx, GridNearTxLocal tx, long timeout, @Nullable IgniteReducer<T, T> rdc) {
         super(rdc);
 
         assert cctx != null;

@@ -45,10 +45,10 @@ public class GridCacheUpdateTxResult {
     /** */
     private WALPointer logPtr;
 
-    /** */
+    /** Mvcc history. */
     private List<MvccLinkAwareSearchRow> mvccHistory;
 
-    /** */
+    /** Previous value. */
     private CacheObject prevVal;
 
     /**

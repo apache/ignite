@@ -199,6 +199,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         final boolean recovery = opCtx != null && opCtx.recovery();
 
+        // Get operation bypass Tx in Mvcc mode.
         if (!ctx.mvccEnabled() && tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<V>() {
                 @Override public IgniteInternalFuture<V> op(GridNearTxLocal tx, AffinityTopologyVersion readyTopVer) {
@@ -318,8 +319,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         if (!ctx.mvccEnabled() && tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
-                @Override
-                public IgniteInternalFuture<Map<K, V>> op(GridNearTxLocal tx, AffinityTopologyVersion readyTopVer) {
+                /** {@inheritDoc} */
+                @Override public IgniteInternalFuture<Map<K, V>> op(GridNearTxLocal tx,
+                    AffinityTopologyVersion readyTopVer) {
                     return tx.getAllAsync(ctx,
                         readyTopVer,
                         ctx.cacheKeysView(keys),
@@ -376,6 +378,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             final MvccQueryTracker mvccTracker0 = mvccTracker;
 
             fut.listen(new CI1<IgniteInternalFuture<Map<K, V>>>() {
+                /** {@inheritDoc} */
                 @Override public void apply(IgniteInternalFuture<Map<K, V>> future) {
                     if(future.isDone())
                         mvccTracker0.onDone();

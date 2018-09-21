@@ -47,7 +47,6 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
     private final IgniteLogger log;
 
     /** */
-    @GridToStringExclude
     private long crdVer;
 
     /** */
@@ -260,8 +259,8 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
         IgniteInternalFuture<AffinityTopologyVersion> waitFut =
             cctx.shared().exchange().affinityReadyFuture(topVer.nextMinorVersion());
 
-        if(log.isTraceEnabled())
-            log.trace("Remap on new topology: " + waitFut);
+        if(log.isDebugEnabled())
+            log.debug("Remap on new topology: " + waitFut);
 
         if (waitFut == null)
             requestSnapshot(cctx.shared().exchange().readyAffinityVersion(), lsnr);

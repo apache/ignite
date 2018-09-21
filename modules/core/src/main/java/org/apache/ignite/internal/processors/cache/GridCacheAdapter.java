@@ -1942,7 +1942,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         if (tx == null || tx.implicit()) {
-            assert !ctx.mvccEnabled() || mvccSnapshot != null; // Non-mvcc or get request provides mvcc-snapshot.
+            assert !ctx.mvccEnabled() || mvccSnapshot != null;
 
             Map<KeyCacheObject, EntryGetResult> misses = null;
 

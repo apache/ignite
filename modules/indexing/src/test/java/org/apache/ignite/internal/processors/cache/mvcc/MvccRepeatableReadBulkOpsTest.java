@@ -280,7 +280,7 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
                 keySet2.add(keys0.get(i));
         }
 
-        assert allKeys.size() == 6; //Expects no duplicates.
+        assert allKeys.size() == 6; // Expects no duplicates.
 
         return allKeys;
     }

@@ -117,8 +117,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicR
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.NO_KEY;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.CONCURRENT_UPDATE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
-import static org.apache.ignite.internal.processors.cache.tree.mvcc.data.ResultType.FILTERED;
-import static org.apache.ignite.internal.processors.cache.tree.mvcc.data.ResultType.PREV_NOT_NULL;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_BACKUP;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
@@ -1105,7 +1103,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             if (res.resultType() == ResultType.VERSION_MISMATCH)
                 throw new IgniteSQLException("Mvcc version mismatch.", CONCURRENT_UPDATE);
-            else if (res.resultType() == FILTERED || (noCreate && res.resultType() == ResultType.PREV_NULL))
+            else if (res.resultType() == ResultType.FILTERED || (noCreate && res.resultType() == ResultType.PREV_NULL))
                 return new GridCacheUpdateTxResult(false);
             else if (res.resultType() == ResultType.LOCKED) {
                 unlockEntry();
@@ -1170,7 +1168,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         CacheDataRow oldRow = ((MvccUpdateDataRow)res).oldRow();
 
-        if(retVal && (res.resultType() == PREV_NOT_NULL || res.resultType() == ResultType.VERSION_FOUND)) {
+        if(retVal && (res.resultType() == ResultType.PREV_NOT_NULL || res.resultType() == ResultType.VERSION_FOUND)) {
             assert oldRow != null;
 
             updRes.prevValue(oldRow.value());
@@ -1217,7 +1215,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             if (res.resultType() == ResultType.VERSION_MISMATCH)
                 throw new IgniteSQLException("Mvcc version mismatch.", CONCURRENT_UPDATE);
-            else if (res.resultType() == ResultType.PREV_NULL || res.resultType() == FILTERED)
+            else if (res.resultType() == ResultType.PREV_NULL || res.resultType() == ResultType.FILTERED)
                 return new GridCacheUpdateTxResult(false);
             else if (res.resultType() == ResultType.LOCKED) {
                 unlockEntry();
@@ -1269,7 +1267,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         CacheDataRow oldRow = ((MvccUpdateDataRow)res).oldRow();
 
-        if(retVal && (res.resultType() == PREV_NOT_NULL || res.resultType() == ResultType.VERSION_FOUND)) {
+        if(retVal && (res.resultType() == ResultType.PREV_NOT_NULL || res.resultType() == ResultType.VERSION_FOUND)) {
             assert oldRow != null;
 
             updRes.prevValue(oldRow.value());
@@ -4961,10 +4959,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         /** */
         private final GridFutureAdapter<GridCacheUpdateTxResult> resFut;
 
-        /** */
+        /** Need previous value flag. */
         private final boolean needVal;
 
-        /** */
+        /** Filter. */
         private final CacheEntryPredicate filter;
 
         /** */
@@ -4980,7 +4978,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             boolean needHistory,
             GridFutureAdapter<GridCacheUpdateTxResult> resFut,
             boolean retVal,
-            CacheEntryPredicate filter) {
+            @Nullable CacheEntryPredicate filter) {
             this.tx = tx;
             this.entry = entry;
             this.topVer = topVer;
@@ -5036,7 +5034,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     return;
                 }
-                else if (res.resultType() == ResultType.PREV_NULL || res.resultType() == FILTERED) {
+                else if (res.resultType() == ResultType.PREV_NULL || res.resultType() == ResultType.FILTERED) {
                     resFut.onDone(new GridCacheUpdateTxResult(false));
 
                     return;
@@ -5244,10 +5242,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         /** */
         private final boolean noCreate;
 
-        /** */
+        /** Filter. */
         private final CacheEntryPredicate filter;
 
-        /** */
+        /** Need previous value flag.*/
         private final boolean needVal;
 
         /** */
@@ -5347,7 +5345,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     return;
                 }
-                else if (op == CREATE && tx.local() && (res.resultType() == PREV_NOT_NULL ||
+                else if (op == CREATE && tx.local() && (res.resultType() == ResultType.PREV_NOT_NULL ||
                     res.resultType() == ResultType.VERSION_FOUND)) {
                     resFut.onDone(new IgniteSQLException("Duplicate key during INSERT [key=" + entry.key() + ']',
                         DUPLICATE_KEY));

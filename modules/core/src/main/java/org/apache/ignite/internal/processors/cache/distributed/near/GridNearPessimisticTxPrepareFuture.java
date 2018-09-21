@@ -287,7 +287,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
         boolean queryMapped = false;
 
-        assert !tx.implicitSingle() || tx.queryEnlisted(); // Non-mvcc implicit single use fast commit way.
+        assert !tx.implicitSingle() || tx.queryEnlisted(); // Non-mvcc implicit-single tx goes fast commit way.
 
         Collection<GridDistributedTxMapping> txMappings = !tx.implicitSingle() ? tx.mappings().mappings()
             : Collections.singleton(tx.mappings().singleMapping());

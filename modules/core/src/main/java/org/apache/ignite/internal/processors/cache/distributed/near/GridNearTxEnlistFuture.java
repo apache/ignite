@@ -67,7 +67,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
     /** */
     private static final long serialVersionUID = 4339957209840477447L;
 
-    /** */
+    /** Default batch size. */
     public static final int DFLT_BATCH_SIZE = 1024;
 
     /** SkipCntr field updater. */
@@ -77,11 +77,11 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
     /** Marker object. */
     private static final Object FINISHED = new Object();
 
-    /** */
+    /** Source iterator. */
     @GridToStringExclude
     private final UpdateSourceIterator<?> it;
 
-    /** */
+    /** Batch size. */
     private int batchSize;
 
     /** */
@@ -92,7 +92,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
     @GridToStringExclude
     private volatile int skipCntr;
 
-    /** */
+    /** Future result. */
     @GridToStringExclude
     private volatile GridCacheReturn res;
 
@@ -105,13 +105,13 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
     /** Topology locked flag. */
     private boolean topLocked;
 
-    /** */
+    /** Ordered batch sending flag. */
     private final boolean sequential;
 
-    /** */
+    /** Filter. */
     private final CacheEntryPredicate filter;
 
-    /** */
+    /** Need previous value flag. */
     private final boolean needRes;
 
     /**
@@ -298,7 +298,12 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
         return peek != FINISHED;
     }
 
-    /** */
+    /**
+     * Add batch to batch collection if it is ready.
+     *
+     * @param batches Collection of batches.
+     * @param batch Batch to be added.
+     */
     private ArrayList<Batch> markReady(ArrayList<Batch> batches, Batch batch) {
         if (!batch.ready()) {
             batch.ready(true);

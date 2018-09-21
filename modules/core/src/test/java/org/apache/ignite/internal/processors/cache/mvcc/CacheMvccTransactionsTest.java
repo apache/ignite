@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -455,8 +456,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testTxReadIsolationSimple() throws Exception {
-        disableScheduledVacuum = true;
-
         Ignite srv0 = startGrids(4);
 
         client = true;
@@ -1453,8 +1452,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testPutAllGetAll_ClientServer_Backups1_Restart_Scan() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
-
         putAllGetAll(RestartMode.RESTART_RND_SRV, 4, 2, 1, 64, null, SCAN, PUT);
     }
 
@@ -1612,21 +1609,20 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         txReadsSnapshot(4, 2, 1, 64, GET);
     }
 
-//    TODO: IGNITE-7371
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testPessimisticTxScanReadsSnapshot_SingleNode_SinglePartition() throws Exception {
-//        txReadsSnapshot(1, 0, 0, 1, true, SCAN);
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testPessimisticTxScanReadsSnapshot_ClientServer() throws Exception {
-//        txReadsSnapshot(4, 2, 1, 64, true, SCAN);
-//    }
-//
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPessimisticTxScanReadsSnapshot_SingleNode_SinglePartition() throws Exception {
+        txReadsSnapshot(1, 0, 0, 1, SCAN);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPessimisticTxScanReadsSnapshot_ClientServer() throws Exception {
+        txReadsSnapshot(4, 2, 1, 64, SCAN);
+    }
+
 
     /**
      * @param srvs Number of server nodes.
@@ -1691,7 +1687,13 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                             while (id1.equals(id2))
                                 id2 = rnd.nextInt(ACCOUNTS);
 
-                            TreeSet<Integer> keys = new TreeSet<>();
+                            if(id1 > id2) {
+                                int tmp = id1;
+                                id1 = id2;
+                                id2 = tmp;
+                            }
+
+                            Set<Integer> keys = new HashSet<>();
 
                             keys.add(id1);
                             keys.add(id2);
@@ -2022,14 +2024,19 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                     Map<Integer, Integer> map = new TreeMap<>();
+                    Set<Integer> keys = new LinkedHashSet();
 
                     int cnt = 0;
 
                     while (!stop.get()) {
-                        int keys = rnd.nextInt(32) + 1;
+                        int keysCnt = rnd.nextInt(32) + 1;
 
-                        while (map.size() < keys)
-                            map.put(rnd.nextInt(KEYS), cnt);
+                        while (keys.size() < keysCnt) {
+                            int key = rnd.nextInt(KEYS);
+
+                            if(keys.add(key))
+                                map.put(key, cnt);
+                        }
 
                         TestCache<Integer, Integer> cache = randomCache(caches, rnd);
 
@@ -2054,9 +2061,10 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                         }
                         finally {
                             cache.readUnlock();
-                        }
 
-                        map.clear();
+                            keys.clear();
+                            map.clear();
+                        }
 
                         cnt++;
                     }
@@ -2347,7 +2355,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         );
 
         if (fut.isDone())
-            fut.get(); // Fail fast.
+            fut.get(); // Just to fail with future error.
 
         assertFalse(fut.isDone());
 
@@ -2832,6 +2840,12 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
                         while (k1.equals(k2))
                             k2 = partKeys.get(rnd.nextInt(KEYS_PER_PART));
+
+                        if(k1 > k2) {
+                            int tmp = k1;
+                            k1 = k2;
+                            k2 = tmp;
+                        }
 
                         TreeSet<Integer> keys = new TreeSet<>();
 

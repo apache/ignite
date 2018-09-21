@@ -37,10 +37,10 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstr
     /** */
     private static final long serialVersionUID = -4933550335145438798L;
 
-    /** */
+    /** Enlist operation. */
     private EnlistOperation op;
 
-    /** */
+    /** Source iterator. */
     private Iterator<Object> it;
 
     /**

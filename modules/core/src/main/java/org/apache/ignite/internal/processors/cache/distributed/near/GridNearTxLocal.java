@@ -701,6 +701,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
+     * Validate Tx mode.
      *
      * @param ctx Cache context.
      * @throws IgniteCheckedException If tx mode is not supported.
@@ -713,8 +714,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
-     * Internal method for MVCC put and transform operations. Only one of {@code map}, {@code transformMap}
-     * maps must be non-null.
+     * Internal method for put and transform operations in Mvcc mode.
+     * Note: Only one of {@code map}, {@code transformMap} maps must be non-null.
      *
      * @param cacheCtx Context.
      * @param map Key-value map to store.
@@ -1835,6 +1836,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 -1L);
 
             PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
+                /** {@inheritDoc} */
                 @Override protected GridCacheReturn postLock(GridCacheReturn ret)
                     throws IgniteCheckedException {
                     if (log.isDebugEnabled())
@@ -1913,6 +1915,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
+     * Internal method for remove operations in Mvcc mode.
+     *
      * @param cacheCtx Cache context.
      * @param keys Keys to remove.
      * @param retval Flag indicating whether a value should be returned.
@@ -2075,6 +2079,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
+     * Executes key-value update operation in Mvcc mode.
+     *
      * @param cacheCtx Cache context.
      * @param it Entries iterator.
      * @param retval Return value flag.
@@ -2083,7 +2089,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param sequential Sequential locking flag.
      * @return Operation future.
      */
-    public IgniteInternalFuture<GridCacheReturn> updateAsync(GridCacheContext cacheCtx,
+    private IgniteInternalFuture<GridCacheReturn> updateAsync(GridCacheContext cacheCtx,
         UpdateSourceIterator<?> it,
         boolean retval,
         @Nullable CacheEntryPredicate filter,
@@ -2125,6 +2131,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
+     * Executes update query operation in Mvcc mode.
+     *
      * @param fut Enlist future.
      * @return Operation future.
      */
@@ -3892,6 +3900,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
+     * Finish transaction.
+     *
      * @param fast {@code True} in case of fast finish.
      * @param commit {@code True} if commit.
      * @return Transaction commit future.

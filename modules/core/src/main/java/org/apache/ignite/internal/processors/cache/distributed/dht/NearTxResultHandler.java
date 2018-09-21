@@ -32,16 +32,16 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
- *
+ * Response factory.
  */
 public final class NearTxResultHandler implements CI1<IgniteInternalFuture<GridCacheReturn>> {
     /** */
     private static final long serialVersionUID = 0;
 
-    /** */
+    /** Singleton instance.*/
     private static final NearTxResultHandler INSTANCE = new NearTxResultHandler();
 
-    /** */
+    /** Constructor. */
     private NearTxResultHandler() {
     }
 
@@ -53,6 +53,8 @@ public final class NearTxResultHandler implements CI1<IgniteInternalFuture<GridC
     }
 
     /**
+     * Response factory method.
+     *
      * @param future Enlist future.
      * @return Enlist response.
      */
@@ -68,7 +70,12 @@ public final class NearTxResultHandler implements CI1<IgniteInternalFuture<GridC
             throw new IllegalStateException();
     }
 
-    /** Response constructor. */
+    /**
+     * Response factory method.
+     *
+     * @param fut Enlist future.
+     * @return Enlist response.
+     */
     public static GridNearTxEnlistResponse createResponse(GridDhtTxEnlistFuture fut) {
         try {
             GridCacheReturn res = fut.get();

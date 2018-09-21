@@ -88,7 +88,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     private static final int FAST_MISMATCH = FAST_UPDATE << 1;
     /** */
     private static final int DELETED = FAST_MISMATCH << 1;
-    /** Force read full entry instead of header.  */
+    /** Force read full entry instead of header only.  */
     private static final int NEED_PREV_VALUE = DELETED << 1;
 
     /** */

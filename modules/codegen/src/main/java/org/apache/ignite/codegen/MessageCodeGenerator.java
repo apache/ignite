@@ -170,8 +170,7 @@ public class MessageCodeGenerator {
 
 //        gen.generateAll(true);
 
-        gen.generateAndWrite(GridNearTxEnlistRequest.class);
-        gen.generateAndWrite(GridNearTxEnlistResponse.class);
+//        gen.generateAndWrite(GridNearTxQueryResultsEnlistRequest.class);
 
 //        gen.generateAndWrite(GridNearAtomicUpdateRequest.class);
 
