@@ -3444,6 +3444,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> activeAsync() {
+        guard();
+
+        try {
+            return context().state().publicApiActiveStateAsync();
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void active(boolean active) {
         cluster().active(active);
     }

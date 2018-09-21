@@ -58,8 +58,10 @@ import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
+import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.IgnitePlugin;
@@ -575,6 +577,11 @@ public class IgfsIgniteMock implements IgniteEx {
         throwUnsupported();
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> activeAsync() {
+        return new IgniteFinishedFutureImpl<>(active());
     }
 
     /** {@inheritDoc} */
