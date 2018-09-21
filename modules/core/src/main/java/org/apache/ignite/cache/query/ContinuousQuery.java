@@ -125,7 +125,7 @@ public final class ContinuousQuery<K, V> extends AbstractContinuousQuery<K, V> {
     }
 
     /** {@inheritDoc} */
-    public ContinuousQuery<K, V> setInitialQuery(Query<Cache.Entry<K, V>> initQry) {
+    @Override public ContinuousQuery<K, V> setInitialQuery(Query<Cache.Entry<K, V>> initQry) {
         return (ContinuousQuery<K, V>)super.setInitialQuery(initQry);
     }
 
@@ -199,12 +199,12 @@ public final class ContinuousQuery<K, V> extends AbstractContinuousQuery<K, V> {
     }
 
     /** {@inheritDoc} */
-    public ContinuousQuery<K, V> setTimeInterval(long timeInterval) {
+    @Override public ContinuousQuery<K, V> setTimeInterval(long timeInterval) {
         return (ContinuousQuery<K, V>)super.setTimeInterval(timeInterval);
     }
 
     /** {@inheritDoc} */
-    public ContinuousQuery<K, V> setAutoUnsubscribe(boolean autoUnsubscribe) {
+    @Override public ContinuousQuery<K, V> setAutoUnsubscribe(boolean autoUnsubscribe) {
         return (ContinuousQuery<K, V>)super.setAutoUnsubscribe(autoUnsubscribe);
     }
 

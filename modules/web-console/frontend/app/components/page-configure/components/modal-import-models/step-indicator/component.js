@@ -25,7 +25,6 @@ export class ModalImportModelsStepIndicator {
 }
 
 export const component = {
-    name: 'modalImportModelsStepIndicator',
     template,
     controller: ModalImportModelsStepIndicator,
     bindings: {

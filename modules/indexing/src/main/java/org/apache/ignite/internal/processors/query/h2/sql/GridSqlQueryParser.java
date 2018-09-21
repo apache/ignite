@@ -64,6 +64,7 @@ import org.h2.command.dml.Insert;
 import org.h2.command.dml.Merge;
 import org.h2.command.dml.Query;
 import org.h2.command.dml.Select;
+import org.h2.command.dml.SelectOrderBy;
 import org.h2.command.dml.SelectUnion;
 import org.h2.command.dml.Update;
 import org.h2.engine.Constants;
@@ -243,6 +244,14 @@ public class GridSqlQueryParser {
 
     /** */
     private static final Getter<Aggregate, Expression> ON = getter(Aggregate.class, "on");
+
+    /** */
+    private static final Getter<Aggregate, Expression> GROUP_CONCAT_SEPARATOR = getter(Aggregate.class,
+        "groupConcatSeparator");
+
+    /** */
+    private static final Getter<Aggregate, ArrayList<SelectOrderBy>> GROUP_CONCAT_ORDER_LIST = getter(Aggregate.class,
+        "groupConcatOrderList");
 
     /** */
     private static final Getter<RangeTable, Expression> RANGE_MIN = getter(RangeTable.class, "min");
@@ -1483,6 +1492,8 @@ public class GridSqlQueryParser {
                     atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
                 else if (CacheAtomicityMode.ATOMIC.name().equalsIgnoreCase(val))
                     atomicityMode = CacheAtomicityMode.ATOMIC;
+                else if (CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT.name().equalsIgnoreCase(val))
+                    atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
                 else
                     throw new IgniteSQLException("Invalid value of \"" + PARAM_ATOMICITY + "\" parameter " +
                         "(should be either TRANSACTIONAL or ATOMIC): " + val, IgniteQueryErrorCode.PARSING);
@@ -2136,12 +2147,23 @@ public class GridSqlQueryParser {
             Aggregate.AggregateType type = TYPE.get((Aggregate)expression);
 
             if (GridSqlAggregateFunction.isValidType(type)) {
-                GridSqlAggregateFunction res = new GridSqlAggregateFunction(DISTINCT.get((Aggregate)expression), type);
+                GridSqlAggregateFunction res = new GridSqlAggregateFunction(
+                    DISTINCT.get((Aggregate)expression), type);
 
                 Expression on = ON.get((Aggregate)expression);
 
                 if (on != null)
                     res.addChild(parseExpression(on, calcTypes));
+
+                ArrayList<SelectOrderBy> orders = GROUP_CONCAT_ORDER_LIST.get((Aggregate)expression);
+
+                if (!F.isEmpty(orders))
+                    parseGroupConcatOrder(res, orders, calcTypes);
+
+                Expression separator = GROUP_CONCAT_SEPARATOR.get((Aggregate)expression);
+
+                if (separator!= null)
+                    res.setGroupConcatSeparator(parseExpression(separator, calcTypes));
 
                 return res;
             }
@@ -2182,6 +2204,26 @@ public class GridSqlQueryParser {
         Prepared prep = prepared(nativeStmt);
 
         return prep instanceof Insert && INSERT_QUERY.get((Insert)prep) == null;
+    }
+
+    /**
+     * @param f Aggregate function.
+     * @param orders Orders.
+     * @param calcTypes Calculate types for all the expressions.
+     */
+    private void parseGroupConcatOrder(GridSqlAggregateFunction f, ArrayList<SelectOrderBy> orders,
+        boolean calcTypes) {
+        GridSqlElement[] grpConcatOrderExpression = new GridSqlElement[orders.size()];
+        boolean[] grpConcatOrderDesc = new boolean[orders.size()];
+
+        for (int i = 0; i < orders.size(); ++i) {
+            SelectOrderBy o = orders.get(i);
+
+            grpConcatOrderExpression[i] = parseExpression(o.expression, calcTypes);
+            grpConcatOrderDesc[i] = o.descending;
+        }
+
+        f.setGroupConcatOrder(grpConcatOrderExpression, grpConcatOrderDesc);
     }
 
     /**

@@ -467,12 +467,17 @@ public class ZookeeperDiscoveryImpl {
         if (rtState.joined) {
             assert rtState.evtsData != null;
 
-            lsnr.onDiscovery(EVT_CLIENT_NODE_DISCONNECTED,
-                rtState.evtsData.topVer,
-                locNode,
-                rtState.top.topologySnapshot(),
-                Collections.<Long, Collection<ClusterNode>>emptyMap(),
-                null);
+            try {
+                lsnr.onDiscovery(EVT_CLIENT_NODE_DISCONNECTED,
+                    rtState.evtsData.topVer,
+                    locNode,
+                    rtState.top.topologySnapshot(),
+                    Collections.emptyMap(),
+                    null).get();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to wait for discovery listener notification", e);
+            }
         }
 
         try {
@@ -533,14 +538,19 @@ public class ZookeeperDiscoveryImpl {
         List<ClusterNode> nodes = rtState.top.topologySnapshot();
 
         if (nodes.isEmpty())
-            nodes = Collections.singletonList((ClusterNode)locNode);
+            nodes = Collections.singletonList(locNode);
 
-        lsnr.onDiscovery(EVT_NODE_SEGMENTED,
-            rtState.evtsData != null ? rtState.evtsData.topVer : 1L,
-            locNode,
-            nodes,
-            Collections.<Long, Collection<ClusterNode>>emptyMap(),
-            null);
+        try {
+            lsnr.onDiscovery(EVT_NODE_SEGMENTED,
+                rtState.evtsData != null ? rtState.evtsData.topVer : 1L,
+                locNode,
+                nodes,
+                Collections.emptyMap(),
+                null).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to wait for discovery listener notification", e);
+        }
     }
 
     /**
@@ -1334,7 +1344,9 @@ public class ZookeeperDiscoveryImpl {
             }
         }
 
-        assert !aliveClients.isEmpty();
+        // This situation may appear while reconnection and this callback can be skipped.
+        if(!aliveClients.containsKey(locInternalOrder))
+            return;
 
         Map.Entry<Long, String> oldest = aliveClients.firstEntry();
 
@@ -2240,12 +2252,19 @@ public class ZookeeperDiscoveryImpl {
 
         final List<ClusterNode> topSnapshot = Collections.singletonList((ClusterNode)locNode);
 
-        lsnr.onDiscovery(EVT_NODE_JOINED,
-            1L,
-            locNode,
-            topSnapshot,
-            Collections.<Long, Collection<ClusterNode>>emptyMap(),
-            null);
+        try {
+            lsnr.onDiscovery(EVT_NODE_JOINED,
+                1L,
+                locNode,
+                topSnapshot,
+                Collections.emptyMap(),
+                null).get();
+        }
+        catch (IgniteCheckedException e) {
+            joinFut.onDone(e);
+
+            throw new IgniteException("Failed to wait for discovery listener notification", e);
+        }
 
         // Reset events (this is also notification for clients left from previous cluster).
         rtState.zkClient.setData(zkPaths.evtsPath, marshalZip(rtState.evtsData), -1);
@@ -2940,16 +2959,16 @@ public class ZookeeperDiscoveryImpl {
                 joinedEvtData.topVer,
                 locNode,
                 topSnapshot,
-                Collections.<Long, Collection<ClusterNode>>emptyMap(),
-                null);
+                Collections.emptyMap(),
+                null).get();
 
             if (rtState.prevJoined) {
                 lsnr.onDiscovery(EVT_CLIENT_NODE_RECONNECTED,
                     joinedEvtData.topVer,
                     locNode,
                     topSnapshot,
-                    Collections.<Long, Collection<ClusterNode>>emptyMap(),
-                    null);
+                    Collections.emptyMap(),
+                    null).get();
 
                 U.quietAndWarn(log, "Client node was reconnected after it was already considered failed [locId=" + locNode.id() + ']');
             }
@@ -3400,13 +3419,23 @@ public class ZookeeperDiscoveryImpl {
 
         final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
-        lsnr.onDiscovery(
+        IgniteInternalFuture fut = lsnr.onDiscovery(
             DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
             evtData.topologyVersion(),
             sndNode,
             topSnapshot,
-            Collections.<Long, Collection<ClusterNode>>emptyMap(),
-            msg);
+            Collections.emptyMap(),
+            msg
+        );
+
+        if (msg != null && msg.isMutable()) {
+            try {
+                fut.get();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to wait for discovery listener notification", e);
+            }
+        }
     }
 
     /**
@@ -3424,12 +3453,17 @@ public class ZookeeperDiscoveryImpl {
 
         final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
-        lsnr.onDiscovery(EVT_NODE_JOINED,
-            joinedEvtData.topVer,
-            joinedNode,
-            topSnapshot,
-            Collections.<Long, Collection<ClusterNode>>emptyMap(),
-            null);
+        try {
+            lsnr.onDiscovery(EVT_NODE_JOINED,
+                joinedEvtData.topVer,
+                joinedNode,
+                topSnapshot,
+                Collections.emptyMap(),
+                null).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to wait for discovery listener notification", e);
+        }
     }
 
     /**
@@ -3455,12 +3489,17 @@ public class ZookeeperDiscoveryImpl {
 
         final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
-        lsnr.onDiscovery(EVT_NODE_FAILED,
-            topVer,
-            failedNode,
-            topSnapshot,
-            Collections.<Long, Collection<ClusterNode>>emptyMap(),
-            null);
+        try {
+            lsnr.onDiscovery(EVT_NODE_FAILED,
+                topVer,
+                failedNode,
+                topSnapshot,
+                Collections.emptyMap(),
+                null).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to wait for discovery listener notification", e);
+        }
 
         stats.onNodeFailed();
     }

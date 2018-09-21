@@ -21,4 +21,4 @@ import directive from './directive';
 
 export default angular
     .module('ignite-console.list-editable.one-way', [])
-    .directive(directive.name, directive);
+    .directive('listEditableOneWay', directive);

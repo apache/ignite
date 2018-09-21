@@ -611,7 +611,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         }
     }
 
-
     /**
      * @param cacheMsg Cache message.
      * @param nodeId Node ID.

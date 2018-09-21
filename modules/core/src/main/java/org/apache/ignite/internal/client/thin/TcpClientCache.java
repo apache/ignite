@@ -75,7 +75,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    public V get(K key) throws ClientException {
+    @Override public V get(K key) throws ClientException {
         if (key == null)
             throw new NullPointerException("key");
 
@@ -90,7 +90,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    public void put(K key, V val) throws ClientException {
+    @Override public void put(K key, V val) throws ClientException {
         if (key == null)
             throw new NullPointerException("key");
 
@@ -160,7 +160,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (keys == null)
             throw new NullPointerException("keys");
 
-        if (keys.size() == 0)
+        if (keys.isEmpty())
             return new HashMap<>();
 
         return ch.service(
@@ -181,7 +181,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (map == null)
             throw new NullPointerException("map");
 
-        if (map.size() == 0)
+        if (map.isEmpty())
             return;
 
         ch.request(
@@ -280,7 +280,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (keys == null)
             throw new NullPointerException("keys");
 
-        if (keys.size() == 0)
+        if (keys.isEmpty())
             return;
 
         ch.request(

@@ -202,9 +202,6 @@ public final class IgniteNodeAttributes {
     /** Internal attribute name constant. */
     public static final String ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED = ATTR_PREFIX + ".dynamic.cache.start.rollback.supported";
 
-    /** Mvcc enabled flag. */
-    public static final String ATTR_MVCC_ENABLED = ATTR_PREFIX + ".mvcc.enabled";
-
     /**
      * Enforces singleton.
      */
