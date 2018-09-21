@@ -807,11 +807,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 else if (rolloverType == RolloverType.CURRENT_SEGMENT) {
                     FileWriteHandle h = currWrHandle;
 
-                    do {
-                        ptr = h.addRecord(rec);
+                    ptr = h.addRecord(rec);
 
-                        currWrHandle = closeBufAndRollover(h, rec, rolloverType);
-                    } while (ptr == null);
+                    currWrHandle = closeBufAndRollover(h, rec, rolloverType);
+
+                    if (ptr == null) {
+                        ptr = currWrHandle.addRecord(rec);
+
+                        assert ptr == null;
+                    }
                 }
                 else
                     throw new IgniteCheckedException("Unknown rollover type: " + rolloverType);

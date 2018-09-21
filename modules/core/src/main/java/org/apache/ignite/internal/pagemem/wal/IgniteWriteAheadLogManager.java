@@ -62,7 +62,8 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public WALPointer log(WALRecord entry) throws IgniteCheckedException, StorageException;
 
     /**
-     * Appends the given log entry to the write-ahead log.
+     * Appends the given log entry to the write-ahead log. If entry logging leads to rollover, caller can specify
+     * whether to write the entry to the current segment or to th next one.
      *
      * @param entry Entry to log.
      * @param rolloverType Rollover type.
@@ -70,6 +71,8 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      *      written to the log.
      * @throws IgniteCheckedException If failed to construct log entry.
      * @throws StorageException If IO error occurred while writing log entry.
+     *
+     * @see RolloverType
      */
     public WALPointer log(WALRecord entry, RolloverType rolloverType)
         throws IgniteCheckedException, StorageException;
