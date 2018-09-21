@@ -814,7 +814,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (ptr == null) {
                         ptr = currWrHandle.addRecord(rec);
 
-                        assert ptr == null;
+                        assert ptr != null;
                     }
                 }
                 else

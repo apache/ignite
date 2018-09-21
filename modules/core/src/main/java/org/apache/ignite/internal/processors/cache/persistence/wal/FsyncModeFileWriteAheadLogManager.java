@@ -538,7 +538,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     "serializer to a new WAL segment [curFile=" + currentHnd + ", newVer=" + serializer.version() +
                     ", oldVer=" + currentHnd.serializer.version() + ']');
 
-            rollOver(currentHnd);
+            rollOver(currentHnd, null);
         }
 
         if (mode == WALMode.BACKGROUND) {
@@ -670,7 +670,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         final FileWriteHandle handle = currentHandle();
 
         try {
-            rollOver(handle);
+            rollOver(handle, null);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Unable to perform segment rollover: " + e.getMessage(), e);
@@ -709,24 +709,21 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 assert cctx.database().checkpointLockIsHeldByThread();
 
                 if (rolloverType == RolloverType.NEXT_SEGMENT) {
-                    currWrHandle = rollOver(currWrHandle);
+                    currWrHandle = rollOver(currWrHandle, record);
 
-                    ptr = currWrHandle.addRecord(record);
+                    ptr = record.position();
                 }
                 else {
                     assert rolloverType == RolloverType.CURRENT_SEGMENT;
 
-                    FileWriteHandle h = currWrHandle;
+                    ptr = currWrHandle.addRecord(record);
 
-                    h.lock.lock();
+                    currWrHandle = rollOver(currWrHandle, null);
 
-                    try {
-                        ptr = h.addRecord(record);
+                    if (ptr == null) {
+                        ptr = currWrHandle.addRecord(record);
 
-                        currWrHandle = rollOver(h);
-                    }
-                    finally {
-                        h.lock.unlock();
+                        assert ptr != null;
                     }
                 }
             }
@@ -742,7 +739,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 return ptr;
             }
             else
-                currWrHandle = rollOver(currWrHandle);
+                currWrHandle = rollOver(currWrHandle, null);
 
             checkNode();
 
@@ -1132,9 +1129,10 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
     /**
      * @param cur Handle that failed to fit the given entry.
+     * @param rec Optional record to be added to the beginning of the segment.
      * @return Handle that will fit the entry.
      */
-    private FileWriteHandle rollOver(FileWriteHandle cur) throws IgniteCheckedException {
+    private FileWriteHandle rollOver(FileWriteHandle cur, @Nullable WALRecord rec) throws IgniteCheckedException {
         FileWriteHandle hnd = currentHandle();
 
         if (hnd != cur)
@@ -1145,6 +1143,12 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 metrics.onWallRollOver();
 
             FileWriteHandle next = initNextWriteHandle(cur.idx);
+
+            if (rec != null) {
+                WALPointer ptr = next.addRecord(rec);
+
+                assert ptr != null;
+            }
 
             if (next.idx - lashCheckpointFileIdx() >= maxSegCountWithoutCheckpoint)
                 cctx.database().forceCheckpoint("too big size of WAL without checkpoint");
