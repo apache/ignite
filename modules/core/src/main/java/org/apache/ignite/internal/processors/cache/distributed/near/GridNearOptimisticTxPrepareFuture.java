@@ -1029,7 +1029,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     /**
      *
      */
-    private static class MappingKey {
+    static class MappingKey {
         /** */
         private final UUID nodeId;
 
