@@ -3450,7 +3450,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            return context().state().publicApiActiveStateAsync();
+            return context().state().publicApiActiveStateAsync(true);
         }
         finally {
             unguard();

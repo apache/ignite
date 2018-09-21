@@ -44,7 +44,7 @@ public interface IGridClusterStateProcessor extends GridProcessor {
     /**
      * @return Cluster state to be used on public API.
      */
-    IgniteFuture<Boolean> publicApiActiveStateAsync();
+    IgniteFuture<Boolean> publicApiActiveStateAsync(boolean asyncWaitForTransition);
 
     /**
      * @param discoCache Discovery data cache.

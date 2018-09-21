@@ -175,15 +175,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public boolean publicApiActiveState(boolean waitForTransition) {
-        IgniteFuture<Boolean> fut = publicApiActiveStateAsync();
-        if(waitForTransition || fut.isDone())
-            return fut.get();
-        else
-            return false;
+        return publicApiActiveStateAsync(waitForTransition).get();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> publicApiActiveStateAsync() {
+    @Override public IgniteFuture<Boolean> publicApiActiveStateAsync(boolean asyncWaitForTransition) {
         if (ctx.isDaemon())
             return sendComputeCheckGlobalState();
 
@@ -199,22 +195,25 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             else {
                 GridFutureAdapter<Void> fut = transitionFuts.get(globalState.transitionRequestId());
                 if (fut != null) {
-                    return new IgniteFutureImpl<>(fut.chain(x -> {
-                        try {
-                            ctx.gateway().readLock();
-                            DiscoveryDataClusterState gs = this.globalState;
-                            if(gs == null)
-                                return false;
+                    if(asyncWaitForTransition) {
+                        return new IgniteFutureImpl<>(fut.chain(x -> {
+                            try {
+                                ctx.gateway().readLock();
+                                DiscoveryDataClusterState gs = this.globalState;
+                                if (gs == null)
+                                    return false;
 
-                            Boolean res = gs.transitionResult();
-                            assert res != null;
+                                Boolean res = gs.transitionResult();
+                                assert res != null;
 
-                            return res;
-                        }
-                        finally {
-                            ctx.gateway().readUnlock();
-                        }
-                    }));
+                                return res;
+                            }
+                            finally {
+                                ctx.gateway().readUnlock();
+                            }
+                        }));
+                    } else
+                        return new IgniteFinishedFutureImpl<>(false);
                 }
 
                 transitionRes = globalState.transitionResult();
