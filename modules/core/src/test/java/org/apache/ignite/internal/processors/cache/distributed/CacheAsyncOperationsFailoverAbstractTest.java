@@ -99,7 +99,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
      * @throws Exception If failed.
      */
     public void testPutAllAsyncFailover() throws Exception {
-        putAllAsyncFailover(5, 10);
+        putAllAsyncFailover(1, 10);
     }
 
     /**
@@ -210,21 +210,17 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
 
         final long endTime = System.currentTimeMillis() + TEST_TIME;
 
-        startGrid(NODE_CNT);
-
         IgniteInternalFuture<Object> restartFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 Thread.currentThread().setName("restart-thread");
 
-                while (!finished.get()) {
+                while (!finished.get() && System.currentTimeMillis() < endTime) {
+                    startGrid(NODE_CNT);
+
                     U.sleep(500);
 
-//                    stopGrid(NODE_CNT);
-//
-//                    startGrid(NODE_CNT);
+                    stopGrid(NODE_CNT);
                 }
-
-//                stopGrid(NODE_CNT);
 
                 return null;
             }
