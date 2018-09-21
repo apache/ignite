@@ -634,6 +634,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
             return;
         }
 
+        // We replace txMap here because further we need previous values, which are overwritten in the transaction.
         Map<IgniteTxKey, IgniteTxEntry> initTxMap = extractSavepoint(savepoint);
 
         if (tx.optimistic())
