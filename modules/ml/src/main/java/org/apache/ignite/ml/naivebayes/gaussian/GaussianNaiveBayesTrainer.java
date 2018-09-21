@@ -17,9 +17,17 @@
 
 package org.apache.ignite.ml.naivebayes.gaussian;
 
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.structures.LabeledVectorSet;
+import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
@@ -39,6 +47,37 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
     @Override protected <K, V> GaussianNaiveBayesModel updateModel(GaussianNaiveBayesModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
+        assert datasetBuilder != null;
+
+        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder
+            = new LabeledDatasetPartitionDataBuilderOnHeap<>(
+            featureExtractor,
+            lbExtractor
+        );
+
+        try (Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = datasetBuilder.build(
+            (upstream, upstreamSize) -> new EmptyContext(),
+            partDataBuilder
+        )) {
+            final Map<?, Double> stat = new HashMap<>();
+            final int cols = dataset.compute(
+                data -> {
+                    return null;
+                }
+                , (a, b) -> {
+                    if (a == null)
+                        return b == null ? 0 : b;
+                    if (b == null)
+                        return a;
+                    return b;
+                });
+
+        }
+        catch (Exception e) {
+            throw new
+                RuntimeException(e);
+        }
+
         return null;
     }
 }
