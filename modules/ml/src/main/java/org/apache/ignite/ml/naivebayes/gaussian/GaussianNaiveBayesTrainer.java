@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.naivebayes.gaussian;
 
+import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.dataset.Dataset;
@@ -59,9 +61,40 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
             (upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
-            final Map<?, Double> stat = new HashMap<>();
-            final int cols = dataset.compute(
+            final Map<Object, double[]> stat = new HashMap<>();
+            final Map<Object, Integer> labelCount = new HashMap<>();
+            dataset.compute(
                 data -> {
+                    for (int i = 0; i < data.rowSize(); i++) {
+                        LabeledVector row = data.getRow(i);
+                        Vector features = row.features();
+                        Object label = row.label();
+
+                        double[] toMeans;
+
+                        if (!stat.containsKey(label)) {
+                            toMeans = new double[features.size()];
+                            Arrays.fill(toMeans, 0.);
+                            stat.put(label, toMeans);
+                        }
+
+                        if (!labelCount.containsKey(label)) {
+                            labelCount.put(label, 1);
+                        }
+                        toMeans = stat.get(label);
+                        for (int j = 0; j < features.size(); j++) {
+                            toMeans[j] += features.get(j);
+                        }
+
+                    }
+                    labelCount.keySet().forEach(key -> {
+                        int count = labelCount.get(key);
+                        double[] means = stat.get(key);
+                        for (int i = 0; i < means.length; i++) {
+                            means[i] /= count;
+                        }
+                    });
+
                     return null;
                 }
                 , (a, b) -> {
@@ -79,5 +112,9 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
         }
 
         return null;
+    }
+
+    public static class Stat implements Serializable {
+
     }
 }
