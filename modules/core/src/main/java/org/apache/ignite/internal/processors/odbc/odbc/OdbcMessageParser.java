@@ -381,7 +381,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
      * @param writer Writer to use.
      * @param affectedRows Affected rows.
      */
-    private void writeAffectedRows(BinaryWriterExImpl writer, Collection<Long> affectedRows) {
+    private void writeAffectedRows(BinaryWriterExImpl writer, long[] affectedRows) {
         if (ver.compareTo(OdbcConnectionContext.VER_2_3_2) < 0) {
             long summ = 0;
 
@@ -391,8 +391,9 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
             writer.writeLong(summ);
         }
         else {
-            writer.writeInt(affectedRows.size());
-            for (Long value : affectedRows)
+            writer.writeInt(affectedRows.length);
+
+            for (long value : affectedRows)
                 writer.writeLong(value);
         }
     }
