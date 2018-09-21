@@ -2360,7 +2360,7 @@ public class GridSqlQuerySplitter {
 
         int colId = column.column().getColumnId();
 
-        if ((affKeyCol == null || !desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT) || colId != affKeyCol.column.getColumnId()) && !desc.isKeyColumn(colId))
+        if ((affKeyCol == null || colId < DEFAULT_COLUMNS_COUNT || !desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT) || colId != affKeyCol.column.getColumnId()) && !desc.isKeyColumn(colId))
             return null;
 
         if (right instanceof GridSqlConst) {
