@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -94,7 +93,9 @@ public class TxCounters {
      * @param part Partition number.
      */
     public void decrementUpdateCounter(int cacheId, int part) {
-        accumulator(updCntrsAcc, cacheId, part).decrementAndGet();
+        long acc = accumulator(updCntrsAcc, cacheId, part).decrementAndGet();
+
+        assert acc >= 0;
     }
 
     /**

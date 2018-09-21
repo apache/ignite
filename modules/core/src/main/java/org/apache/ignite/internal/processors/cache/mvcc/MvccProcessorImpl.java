@@ -1085,7 +1085,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             }
 
             if (workers == null) {
-                U.warn(log, "Attempting to stop inactive vacuum.");
+                if (log.isInfoEnabled())
+                    log.info("Attempting to stop inactive vacuum.");
 
                 return;
             }

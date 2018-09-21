@@ -173,6 +173,9 @@ public class MvccDataRow extends DataRow {
         newMvccOpCntr = withHint & ~MVCC_OP_COUNTER_MASK;
         newMvccTxState = (byte)(withHint >>> MVCC_HINTS_BIT_OFF);
 
+        if (newMvccCrd != MVCC_CRD_COUNTER_NA)
+            keyAbsentBefore = ((withHint & MVCC_KEY_ABSENT_BEFORE_MASK) >>> MVCC_KEY_ABSENT_BEFORE_OFF) == 1;
+
         assert newMvccCrd == MVCC_CRD_COUNTER_NA || MvccUtils.mvccVersionIsValid(newMvccCrd, newMvccCntr, newMvccOpCntr);
 
         return MVCC_INFO_SIZE;

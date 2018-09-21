@@ -83,7 +83,8 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
                 // xid_max.
                 PageUtils.putLong(addr, 20, row.newMvccCoordinatorVersion());
                 PageUtils.putLong(addr, 28, row.newMvccCounter());
-                PageUtils.putInt(addr, 36, row.newMvccOperationCounter() | (row.newMvccTxState() << MVCC_HINTS_BIT_OFF));
+                PageUtils.putInt(addr, 36, row.newMvccOperationCounter() | (row.newMvccTxState() << MVCC_HINTS_BIT_OFF) |
+                    ((row.isKeyAbsentBefore() ? 1 : 0) << MVCC_KEY_ABSENT_BEFORE_OFF));
 
                 addr += mvccInfoSize;
             }
@@ -219,7 +220,8 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
                     ((row.isKeyAbsentBefore() ? 1 : 0) << MVCC_KEY_ABSENT_BEFORE_OFF),
                 row.newMvccCoordinatorVersion(),
                 row.newMvccCounter(),
-                row.newMvccOperationCounter() | (row.newMvccTxState() << MVCC_HINTS_BIT_OFF),
+                row.newMvccOperationCounter() | (row.newMvccTxState() << MVCC_HINTS_BIT_OFF) |
+                    ((row.isKeyAbsentBefore() ? 1 : 0) << MVCC_KEY_ABSENT_BEFORE_OFF),
                 len);
         else if (type != VERSION) {
             // Write key or value.

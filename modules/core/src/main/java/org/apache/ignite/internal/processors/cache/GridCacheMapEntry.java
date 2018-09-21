@@ -39,7 +39,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
-import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
@@ -61,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryListener;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -112,11 +112,11 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DEL
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
+import static org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult.UpdateOutcome.INVOKE_NO_OP;
+import static org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult.UpdateOutcome.REMOVE_NO_VAL;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.NO_KEY;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.CONCURRENT_UPDATE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
-import static org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult.UpdateOutcome.INVOKE_NO_OP;
-import static org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult.UpdateOutcome.REMOVE_NO_VAL;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_BACKUP;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
@@ -1126,7 +1126,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (res.resultType() == ResultType.PREV_NULL) {
                 TxCounters counters = tx.txCounters(true);
 
-                counters.incrementUpdateCounter(cctx.cacheId(), partition());
+                if (res.isOwnValueOverridden()) {
+                    if (res.isKeyAbsentBefore())
+                        counters.incrementUpdateCounter(cctx.cacheId(), partition());
+                }
+                else
+                    counters.incrementUpdateCounter(cctx.cacheId(), partition());
+
                 counters.accumulateSizeDelta(cctx.cacheId(), partition(), 1);
             }
             else if (res.resultType() == ResultType.PREV_NOT_NULL && !res.isOwnValueOverridden()) {
@@ -5306,7 +5312,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (res.resultType() == ResultType.PREV_NULL) {
                     TxCounters counters = tx.txCounters(true);
 
-                    counters.incrementUpdateCounter(cctx.cacheId(), entry.partition());
+                    if (res.isOwnValueOverridden()) {
+                        if (res.isKeyAbsentBefore())
+                            counters.incrementUpdateCounter(cctx.cacheId(), entry.partition());
+                    }
+                    else
+                        counters.incrementUpdateCounter(cctx.cacheId(), entry.partition());
+
                     counters.accumulateSizeDelta(cctx.cacheId(), entry.partition(), 1);
                 }
                 else if (res.resultType() == ResultType.PREV_NOT_NULL && !res.isOwnValueOverridden()) {

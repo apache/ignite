@@ -216,10 +216,6 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
         // Check whether the row was updated by current transaction.
         // In this case the row is already locked by current transaction and visible to it.
         if (isFlagsSet(FIRST)) {
-            // Copy new key flag from the previous row version if it was created by the current tx.
-            if (isFlagsSet(PRIMARY) && compare(mvccSnapshot, row.mvccCoordinatorVersion(), row.mvccCounter()) == 0)
-                keyAbsentBefore = row.isKeyAbsentBefore();
-
             boolean removed = row.newMvccCoordinatorVersion() != MVCC_CRD_COUNTER_NA;
 
             long rowCrd, rowCntr; int rowOpCntr;
@@ -245,6 +241,10 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                     oldRow = row;
 
                 setFlags(LAST_COMMITTED_FOUND | OWN_VALUE_OVERRIDDEN);
+
+                // Copy new key flag from the previous row version if it was created by the current tx.
+                if (isFlagsSet(PRIMARY))
+                    keyAbsentBefore = row.isKeyAbsentBefore();
             }
         }
 

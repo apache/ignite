@@ -135,7 +135,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param addDepInfo Deployment info flag.
      * @param storeWriteThrough Cache store write through flag.
      * @param retVal Need return value flag
-     * @param retVal Need return value
      * @param mvccSnapshot Mvcc snapshot.
      * @param counters Update counters for mvcc Tx.
      */
