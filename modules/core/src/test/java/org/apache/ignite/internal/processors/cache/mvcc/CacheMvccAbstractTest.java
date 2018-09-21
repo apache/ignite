@@ -228,7 +228,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         persistence = false;
 
         try {
-            verifyOldVersionsCleaned();
+            if(disableScheduledVacuum)
+                verifyOldVersionsCleaned();
 
             verifyCoordinatorInternalState();
         }
