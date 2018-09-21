@@ -346,4 +346,19 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
             assertTrue(((JdbcConnection)conn).skipReducerOnUpdate());
         }
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSetReadOnly() throws Exception {
+        String url = CFG_URL_PREFIX + configURL();
+
+        try (Connection conn = DriverManager.getConnection(url)) {
+            conn.setReadOnly(false);
+            assertFalse(conn.isReadOnly());
+
+            conn.setReadOnly(true);
+            assertTrue(conn.isReadOnly());
+        }
+    }
 }
