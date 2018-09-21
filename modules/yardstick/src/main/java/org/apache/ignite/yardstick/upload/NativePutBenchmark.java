@@ -21,7 +21,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.yardstick.upload.model.Values10;
 
 /**
- * Benchmark that performs single upload of number of entries using {@link IgniteCache#put(Object, Object)}.
+ * Benchmark performs single upload of number of entries using {@link IgniteCache#put(Object, Object)}.
  */
 public class NativePutBenchmark extends AbstractNativeBenchmark {
     /**
