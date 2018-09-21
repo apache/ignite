@@ -2301,7 +2301,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     long segmentToDecompress = -1L;
 
                     try {
-                        segmentToDecompress = segmentsQueue.take();
+                        blockingSectionBegin();
+
+                        try {
+                            segmentToDecompress = segmentsQueue.take();
+                        }
+                        finally {
+                            blockingSectionEnd();
+                        }
 
                         if (isCancelled())
                             break;
@@ -2317,7 +2324,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             zis.getNextEntry();
 
                             while (io.writeFully(arr, 0, zis.read(arr)) > 0)
-                                ;
+                                updateHeartbeat();
                         }
 
                         try {
@@ -2330,6 +2337,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             if (!unzipTmp.delete())
                                 U.error(log, "Can't delete temporary unzipped segment [tmp=" + unzipTmp + "]");
                         }
+
+                        updateHeartbeat();
 
                         synchronized (this) {
                             decompressionFutures.remove(segmentToDecompress).onDone();

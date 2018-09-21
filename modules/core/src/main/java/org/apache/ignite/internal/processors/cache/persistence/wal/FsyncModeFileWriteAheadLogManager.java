@@ -2111,7 +2111,14 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     long segmentToDecompress = -1L;
 
                     try {
-                        segmentToDecompress = segmentsQueue.take();
+                        blockingSectionBegin();
+
+                        try {
+                            segmentToDecompress = segmentsQueue.take();
+                        }
+                        finally {
+                            blockingSectionEnd();
+                        }
 
                         if (isCancelled())
                             break;
@@ -2127,7 +2134,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                             zis.getNextEntry();
 
                             while (io.writeFully(arr, 0, zis.read(arr)) > 0)
-                                ;
+                                updateHeartbeat();
                         }
 
                         try {
@@ -2140,6 +2147,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                             if (!unzipTmp.delete())
                                 U.error(log, "Can't delete temporary unzipped segment [tmp=" + unzipTmp + ']');
                         }
+
+                        updateHeartbeat();
 
                         synchronized (this) {
                             decompressionFutures.remove(segmentToDecompress).onDone();
