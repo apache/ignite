@@ -1524,19 +1524,19 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         try {
             if (msg.exchangeId() != null) {
-                lastUpdatedTopVer = msg.topologyVersion();
-
-                log.info("++++++++++++++++++++++++++++++++++");
-
-                latch = new CountDownLatch(1);
+//                lastUpdatedTopVer = msg.topologyVersion();
+//
+//                log.info("++++++++++++++++++++++++++++++++++");
+//
+//                latch = new CountDownLatch(1);
 
                 exchangeFuture(msg.exchangeId(), null, null, null, null).onReceiveFullMessage(node, msg);
 
-                log.info("----------------------------------");
-
-                exchangeInProgress.set(false);
-
-                latch.countDown();
+//                log.info("----------------------------------");
+//
+//                exchangeInProgress.set(false);
+//
+//                latch.countDown();
             }
 
             if (msg.exchangeId() == null) {
@@ -1551,18 +1551,18 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 CountDownLatch latch0 = latch;
 
-                if (latch0 != null
-                    && lastVer != null
-                    && lastVer.topologyVersion() <= msgVer.topologyVersion()
-                    && lastVer.minorTopologyVersion() <= msgVer.minorTopologyVersion()) {
-
-                    try {
-                        latch0.await(120_000L, TimeUnit.MILLISECONDS);
-                    }
-                    catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
+//                if (latch0 != null
+//                    && lastVer != null
+//                    && lastVer.topologyVersion() <= msgVer.topologyVersion()
+//                    && lastVer.minorTopologyVersion() <= msgVer.minorTopologyVersion()) {
+//
+//                    try {
+//                        latch0.await(120_000L, TimeUnit.MILLISECONDS);
+//                    }
+//                    catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
 
                 boolean res = msg.topologyVersion().topologyVersion() == 8
                     && msg.topologyVersion().minorTopologyVersion() == 3
@@ -1631,9 +1631,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (!hasMovingParts)
                     cctx.database().releaseHistoryForPreloading();
             }
-            else {
 
-            }
 
         }
         finally {
