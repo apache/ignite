@@ -484,7 +484,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
             final List<Integer> parts = noPrimaryOrBackupPartition(aliveNodes);
 
-            if (parts.size() == 0)
+            if (parts.isEmpty())
                 throw new IllegalStateException("No partition on nodes: " + killNodes);
 
             final List<Map<Integer, Semaphore>> lostMap = new ArrayList<>();

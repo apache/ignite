@@ -217,6 +217,7 @@ export class IgniteChartController {
                         duration: this.currentRange.value * 1000 * 60,
                         frameRate: 1000 / this.refreshRate || 1 / 3,
                         refresh: this.refreshRate || 3000,
+                        ttl: this.maxRangeInMilliseconds,
                         onRefresh: () => {
                             this.onRefresh();
                         }
@@ -290,10 +291,6 @@ export class IgniteChartController {
                     datasetIndex = this.config.data.datasets.length;
                     this.addDataset(key);
                 }
-
-                // Prune excessive data points.
-                if (this.maxPointsNumber && this.config.data.datasets[datasetIndex].length - this.maxPointsNumber > 0)
-                    this.config.data.datasets[datasetIndex].data.splice(0, this.config.data.datasets[datasetIndex].length - this.maxPointsNumber);
 
                 this.config.data.datasets[datasetIndex].data.push({x: dataPoint.x, y: dataPoint.y[key]});
                 this.config.data.datasets[datasetIndex].borderColor = this.chartColors[datasetIndex];
