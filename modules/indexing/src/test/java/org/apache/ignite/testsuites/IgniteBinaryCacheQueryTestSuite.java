@@ -35,12 +35,12 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = IgniteCacheQuerySelfTestSuite.suite();
 
-       /* // Serialization.
+        // Serialization.
         suite.addTestSuite(BinarySerializationQuerySelfTest.class);
         suite.addTestSuite(BinarySerializationQueryWithReflectiveSerializerSelfTest.class);
         suite.addTestSuite(IgniteCacheBinaryObjectsScanSelfTest.class);
         suite.addTestSuite(IgniteCacheBinaryObjectsScanWithEventsSelfTest.class);
-        suite.addTestSuite(BigEntryQueryTest.class);*/
+        suite.addTestSuite(BigEntryQueryTest.class);
 
         //Should be adjusted. Not ready to be used with BinaryMarshaller.
         //suite.addTestSuite(GridCacheBinarySwapScanQuerySelfTest.class);
