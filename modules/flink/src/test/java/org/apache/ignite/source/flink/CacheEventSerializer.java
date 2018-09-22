@@ -33,7 +33,9 @@ import java.io.Serializable;
  */
 public class CacheEventSerializer extends Serializer<CacheEvent> implements Serializable {
 
+    /** Serial version Id. */
     private static final long serialVersionUID = 0L;
+
     /** Marshaller. */
     private Marshaller marsh;
 

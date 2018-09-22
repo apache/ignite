@@ -27,6 +27,10 @@ import org.apache.ignite.resources.IgniteInstanceResource;
  * Remote filter.
  */
 public class TaskRemoteFilter implements IgnitePredicate<CacheEvent> {
+
+    /** Serial version Id. */
+    private static final long serialVersionUID = 1L;
+
     /** Ignite Instance Resource. */
     @IgniteInstanceResource
     Ignite ignite;

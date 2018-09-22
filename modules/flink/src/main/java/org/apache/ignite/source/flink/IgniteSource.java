@@ -58,7 +58,7 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     private UUID rmtLsnrId;
 
     /** Flag for stopped state. */
-    public AtomicBoolean stopped = new AtomicBoolean(false);
+    public final AtomicBoolean stopped = new AtomicBoolean(false);
 
     /** Max number of events taken from the buffer at once. */
     private int evtBatchSize = DFLT_EVT_BATCH_SIZE;
@@ -124,8 +124,6 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     public void start(IgnitePredicate<CacheEvent> filter, int... cacheEvts) throws Exception {
         A.notNull(cacheName, "Cache name");
 
-        stopped = new AtomicBoolean(false);
-
         TaskRemoteFilter rmtLsnr = new TaskRemoteFilter(cacheName, filter);
 
         try {
@@ -147,11 +145,11 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     @Override public void run(SourceContext<CacheEvent> ctx) {
         List<CacheEvent> evts = new ArrayList<>(evtBatchSize);
 
-        if (stopped != null && stopped.get())
+        if (stopped.get())
             return;
 
         try{
-            while (stopped != null && !stopped.get()) {
+            while (!stopped.get()) {
                 if (evtBuf.drainTo(evts, evtBatchSize) > 0) {
                     synchronized (ctx.getCheckpointLock()) {
                         for (CacheEvent evt : evts)
@@ -168,7 +166,7 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-        if (stopped != null && stopped.get())
+        if (stopped.get())
             return;
 
         stopped.set(true);
