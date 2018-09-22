@@ -33,6 +33,7 @@ import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -1510,25 +1511,44 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 boolean updated = false;
 
+                List<IgniteInternalFuture<Boolean>> futList = new ArrayList<>();
+
                 for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
-                    Integer grpId = entry.getKey();
+                    futList.add(cctx.kernalContext().closure().callLocalSafe(new Callable<Boolean>() {
+                        @Override public Boolean call() throws Exception {
+                            boolean res = false;
 
-                    CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+                            Integer grpId = entry.getKey();
 
-                    GridDhtPartitionTopology top = null;
+                            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-                    if (grp == null)
-                        top = clientTops.get(grpId);
-                    else if (!grp.isLocal())
-                        top = grp.topology();
+                            GridDhtPartitionTopology top = null;
 
-                    if (top != null) {
-                        updated |= top.update(null,
-                            entry.getValue(),
-                            null,
-                            msg.partsToReload(cctx.localNodeId(), grpId),
-                            msg.partitionSizes(grpId),
-                            msg.topologyVersion());
+                            if (grp == null)
+                                top = clientTops.get(grpId);
+                            else if (!grp.isLocal())
+                                top = grp.topology();
+
+                            if (top != null) {
+                                res |= top.update(null,
+                                    entry.getValue(),
+                                    null,
+                                    msg.partsToReload(cctx.localNodeId(), grpId),
+                                    msg.partitionSizes(grpId),
+                                    msg.topologyVersion());
+                            }
+
+                            return res;
+                        }
+                    }));
+                }
+
+                for(IgniteInternalFuture<Boolean> fut : futList) {
+                    try {
+                        updated |= fut.get();
+                    }
+                    catch (IgniteCheckedException e) {
+                        e.printStackTrace();
                     }
                 }
 
