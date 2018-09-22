@@ -1571,10 +1571,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (res)
                     log.info("process breakpoint. setSize = " + msg.partitions().entrySet().size());
 
-                List<Future<Boolean>> futList = new ArrayList<>();
+                List<IgniteInternalFuture<Boolean>> futList = new ArrayList<>();
 
                 for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
-                    futList.add(cctx.kernalContext().getExecutorService().submit(new Callable<Boolean>() {
+                    futList.add(cctx.kernalContext().closure().callLocalSafe(new Callable<Boolean>() {
                         @Override public Boolean call() {
                             boolean res = false;
 
@@ -1605,14 +1605,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 }
 
-                for(Future<Boolean> fut : futList) {
+                for(IgniteInternalFuture<Boolean> fut : futList) {
                     try {
                         updated |= fut.get();
                     }
-                    catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    catch (ExecutionException e) {
+
+                    catch (IgniteCheckedException e) {
                         e.printStackTrace();
                     }
                 }
