@@ -378,13 +378,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.io().addCacheHandler(0, GridDhtPartitionsFullMessage.class,
             new MessageHandler<GridDhtPartitionsFullMessage>() {
                 @Override public void onMessage(ClusterNode node, GridDhtPartitionsFullMessage msg) {
-                    if (msg.exchangeId() == null && exchangeInProgress()) {
-                        if (log.isInfoEnabled())
-                            log.info("Ignore full message without exchange id (there is exchange in progress) [nodeId=" + node.id() + "]");
-
-                        return;
-                    }
-
                     processFullPartitionUpdate(node, msg);
                 }
             });
