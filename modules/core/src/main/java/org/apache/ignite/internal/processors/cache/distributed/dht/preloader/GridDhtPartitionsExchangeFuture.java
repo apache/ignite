@@ -921,35 +921,54 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @throws IgniteCheckedException If failed.
      */
     private void updateTopologies(ClusterNode exchCrd, boolean crd, MvccCoordinator mvccCrd) throws IgniteCheckedException {
+        List<IgniteInternalFuture<?>> futList = new ArrayList<>();
+
+        final GridDhtPartitionsExchangeFuture thisFut = this;
+
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
             if (grp.isLocal())
                 continue;
 
-            GridClientPartitionTopology clientTop = cctx.exchange().clearClientTopology(grp.groupId());
+            futList.add(cctx.kernalContext().closure().callLocalSafe(new Callable() {
+                    @Override public Object call() throws IgniteInterruptedCheckedException {
+                        GridClientPartitionTopology clientTop = cctx.exchange().clearClientTopology(grp.groupId());
 
-            long updSeq = clientTop == null ? -1 : clientTop.lastUpdateSequence();
+                        long updSeq = clientTop == null ? -1 : clientTop.lastUpdateSequence();
 
-            GridDhtPartitionTopology top = grp.topology();
+                        GridDhtPartitionTopology top = grp.topology();
 
-            if (crd) {
-                boolean updateTop = exchId.topologyVersion().equals(grp.localStartVersion());
+                        if (crd) {
+                            boolean updateTop = exchId.topologyVersion().equals(grp.localStartVersion());
 
-                if (updateTop && clientTop != null) {
-                    top.update(null,
-                        clientTop.partitionMap(true),
-                        clientTop.fullUpdateCounters(),
-                        Collections.emptySet(),
-                        null,
-                        null);
-                }
+                            if (updateTop && clientTop != null) {
+                                top.update(null,
+                                    clientTop.partitionMap(true),
+                                    clientTop.fullUpdateCounters(),
+                                    Collections.emptySet(),
+                                    null,
+                                    null);
+                            }
+                        }
+
+                        top.updateTopologyVersion(
+                            thisFut,
+                            events().discoveryCache(),
+                            mvccCrd,
+                            updSeq,
+                            cacheGroupStopping(grp.groupId()));
+
+                        return null;
+                    }
+                }));
+        }
+
+        for(IgniteInternalFuture<?> fut : futList) {
+            try {
+                fut.get();
             }
-
-            top.updateTopologyVersion(
-                this,
-                events().discoveryCache(),
-                mvccCrd,
-                updSeq,
-                cacheGroupStopping(grp.groupId()));
+            catch (IgniteCheckedException e) {
+                e.printStackTrace();
+            }
         }
 
         for (GridClientPartitionTopology top : cctx.exchange().clientTopologies()) {
