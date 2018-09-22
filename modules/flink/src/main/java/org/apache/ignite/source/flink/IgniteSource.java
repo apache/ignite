@@ -166,10 +166,7 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-        if (stopped.get())
-            return;
-
-        stopped.set(true);
+        stopped.getAndSet(true);
 
         if (rmtLsnrId != null && ignite != null) {
             ignite.events(ignite.cluster().forCacheNodes(cacheName))
