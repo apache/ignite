@@ -204,19 +204,13 @@ namespace ignite
 
             bool DataQuery::IsClosedRemotely() const
             {
-                for (size_t i = rowsAffectedIdx + 1; i < rowsAffected.size(); ++i)
+                for (size_t i = 0; i < rowsAffected.size(); ++i)
                 {
                     if (rowsAffected[i] < 0)
                         return false;
                 }
 
-                if (rowsAffected[rowsAffectedIdx] >= 0)
-                    return true;
-
-                if (cachedNextPage.get())
-                    return cachedNextPage->IsLast();
-
-                return cursor->IsClosedRemotely();
+                return true;
             }
 
             SqlResult::Type DataQuery::MakeRequestExecute()
