@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
@@ -141,9 +142,11 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(50 * 1024 * 1024)
-                .setPersistenceEnabled(persistent()))
-        );
+                    .setPersistenceEnabled(true)
+                    .setMaxSize(50 * 1024 * 1024)
+            )
+            .setPageSize(1024)
+            .setWalMode(WALMode.LOG_ONLY));
 
         CacheConfiguration[] cacheConfigurations = new CacheConfiguration[txThreadsCount()];
 
@@ -550,10 +553,10 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
 
             try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 acctFrom = cache.get(accIdFrom);
-                acctTo = cache.get(accIdTo);
+                assertNotNull(acctFrom);
 
-                if (acctFrom == null || acctTo == null)
-                    return;
+                acctTo = cache.get(accIdTo);
+                assertNotNull(acctTo);
 
                 Set<Integer> coinsToTransfer = acctFrom.coinsToTransfer(random);
 

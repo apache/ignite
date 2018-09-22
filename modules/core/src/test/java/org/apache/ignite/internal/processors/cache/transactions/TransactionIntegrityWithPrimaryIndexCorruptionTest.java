@@ -23,11 +23,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import junit.framework.AssertionFailedError;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
@@ -54,62 +52,62 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
     }
 
     /** */
-    public void testPrimaryIndexCorruptionDuringCommitOnPrimaryNodePrimaryColocatedThrowsError() throws Exception {
+    public void testPrimaryIndexCorruptionDuringCommitPrimaryColocatedThrowsError() throws Exception {
         doTestTransferAmount0(true, true, () -> new AssertionError("Test"));
     }
 
     /** */
-    public void testPrimaryIndexCorruptionDuringCommitOnPrimaryNodePrimaryColocatedThrowsUnchecked() throws Exception {
+    public void testPrimaryIndexCorruptionDuringCommitPrimaryColocatedThrowsUnchecked() throws Exception {
         doTestTransferAmount0(true, true, () -> new RuntimeException("Test"));
     }
 
     /** */
-    public void testPrimaryIndexCorruptionDuringCommitOnPrimaryNodePrimaryColocatedThrowsChecked() throws Exception {
+    public void testPrimaryIndexCorruptionDuringCommitPrimaryColocatedThrowsChecked() throws Exception {
         doTestTransferAmount0(true, true, () -> new IgniteCheckedException("Test"));
     }
 
     /** */
-    public void testPrimaryIndexCorruptionDuringCommitOnPrimaryNodePrimaryNonColocatedThrowsError() throws Exception {
+    public void testPrimaryIndexCorruptionDuringCommitPrimaryNonColocatedThrowsError() throws Exception {
         doTestTransferAmount0(false, true, () -> new AssertionError("Test"));
     }
 
     /** */
-    public void testPrimaryIndexCorruptionDuringCommitOnPrimaryNodePrimaryNonColocatedThrowsUnchecked() throws Exception {
+    public void testPrimaryIndexCorruptionDuringCommitPrimaryNonColocatedThrowsUnchecked() throws Exception {
         doTestTransferAmount0(false, true, () -> new RuntimeException("Test"));
     }
 
     /** */
-    public void testPrimaryIndexCorruptionDuringCommitOnPrimaryNodePrimaryNonColocatedThrowsChecked() throws Exception {
+    public void testPrimaryIndexCorruptionDuringCommitPrimaryNonColocatedThrowsChecked() throws Exception {
         doTestTransferAmount0(false, true, () -> new IgniteCheckedException("Test"));
     }
 
     /** */
-    public void testPrimaryIndexCorruptionDuringCommitOnPrimaryNodeBackupColocatedThrowsError() throws Exception {
+    public void testPrimaryIndexCorruptionDuringCommitBackupColocatedThrowsError() throws Exception {
         doTestTransferAmount0(true, false, () -> new AssertionError("Test"));
     }
 
     /** */
-    public void testPrimaryIndexCorruptionDuringCommitOnPrimaryNodeBackupColocatedThrowsUnchecked() throws Exception {
+    public void testPrimaryIndexCorruptionDuringCommitBackupColocatedThrowsUnchecked() throws Exception {
         doTestTransferAmount0(true, false, () -> new RuntimeException("Test"));
     }
 
     /** */
-    public void testPrimaryIndexCorruptionDuringCommitOnPrimaryNodeBackupColocatedThrowsChecked() throws Exception {
+    public void testPrimaryIndexCorruptionDuringCommitBackupColocatedThrowsChecked() throws Exception {
         doTestTransferAmount0(true, false, () -> new IgniteCheckedException("Test"));
     }
 
     /** */
-    public void testPrimaryIndexCorruptionDuringCommitOnPrimaryNodeBackupNonColocatedThrowsError() throws Exception {
+    public void testPrimaryIndexCorruptionDuringCommitBackupNonColocatedThrowsError() throws Exception {
         doTestTransferAmount0(false, false, () -> new AssertionError("Test"));
     }
 
     /** */
-    public void testPrimaryIndexCorruptionDuringCommitOnPrimaryNodeBackupNonColocatedThrowsUnchecked() throws Exception {
+    public void testPrimaryIndexCorruptionDuringCommitBackupNonColocatedThrowsUnchecked() throws Exception {
         doTestTransferAmount0(false, false, () -> new RuntimeException("Test"));
     }
 
     /** */
-    public void testPrimaryIndexCorruptionDuringCommitOnPrimaryNodeBackupNonColocatedThrowsChecked() throws Exception {
+    public void testPrimaryIndexCorruptionDuringCommitBackupNonColocatedThrowsChecked() throws Exception {
         doTestTransferAmount0(false, false, () -> new IgniteCheckedException("Test"));
     }
 
@@ -153,9 +151,6 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
         /** Failed node index. */
         static final int failedNodeIdx = 1;
 
-        /** Is node stopping expected after failover. */
-        private final boolean nodeStoppingExp;
-
         /**
          * Predicate that will choose an instance of {@link BPlusTree} and page operation to make further failover in
          * this tree using {@link #failoverPred}.
@@ -166,16 +161,13 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
         private final BiFunction<IgniteEx, SearchRow, Throwable> failoverPred;
 
         /**
-         * @param nodeStoppingExp Node stopping expected.
          * @param treeCorruptionPred Tree corruption predicate.
          * @param failoverPred Failover predicate.
          */
         IndexCorruptionFailoverScenario(
-            boolean nodeStoppingExp,
             BiFunction<PageHandler, BPlusTree, Boolean> treeCorruptionPred,
             BiFunction<IgniteEx, SearchRow, Throwable> failoverPred
         ) {
-            this.nodeStoppingExp = nodeStoppingExp;
             this.treeCorruptionPred = treeCorruptionPred;
             this.failoverPred = failoverPred;
         }
@@ -185,18 +177,20 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
             BPlusTree.pageHndWrapper = (tree, hnd) -> {
                 final IgniteEx locIgnite = (IgniteEx)Ignition.localIgnite();
 
-                if (!locIgnite.name().endsWith(String.valueOf(failedNodeIdx)))
+                if (getTestIgniteInstanceIndex(locIgnite.name()) != failedNodeIdx)
                     return hnd;
 
                 if (treeCorruptionPred.apply(hnd, tree)) {
-                    log.info("Created corrupted tree handler for -> " + hnd + " " + tree);
+                    log.info("Created corrupted tree handler [nodeOrder=" + locIgnite.localNode().order() + ", hnd=" + hnd +
+                        ", tree=" + tree + ']');
 
                     PageHandler<Object, BPlusTree.Result> delegate = (PageHandler<Object, BPlusTree.Result>)hnd;
 
                     return new PageHandler<BPlusTree.Get, BPlusTree.Result>() {
                         @Override public BPlusTree.Result run(int cacheId, long pageId, long page, long pageAddr, PageIO io,
                             Boolean walPlc, BPlusTree.Get arg, int lvl) throws IgniteCheckedException {
-                            log.info("Invoked " + " " + cacheId + " " + arg.toString() + " for BTree (" + corruptionEnabled + ") -> " + arg.row() + " / " + arg.row().getClass());
+                            log.info("Invoked [cachedId=" + cacheId + ", hnd=" + arg.toString() +
+                                ", corruption=" + corruptionEnabled + ", row=" + arg.row() + ", rowCls=" + arg.row().getClass() + ']');
 
                             if (corruptionEnabled && (arg.row() instanceof SearchRow)) {
                                 SearchRow row = (SearchRow)arg.row();
@@ -239,27 +233,25 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
             // Disable index corruption.
             BPlusTree.pageHndWrapper = (tree, hnd) -> hnd;
 
-            if (nodeStoppingExp) {
-                // Wait until node with corrupted index will left cluster.
-                GridTestUtils.waitForCondition(() -> {
-                    try {
-                        grid(failedNodeIdx);
-                    }
-                    catch (IgniteIllegalStateException e) {
-                        return true;
-                    }
+            // Wait until node with corrupted index will left cluster.
+            GridTestUtils.waitForCondition(() -> {
+                try {
+                    grid(failedNodeIdx);
+                }
+                catch (IgniteIllegalStateException e) {
+                    return true;
+                }
 
-                    return false;
-                }, getTestTimeout());
+                return false;
+            }, getTestTimeout());
 
-                // Failed node should be stopped.
-                GridTestUtils.assertThrows(log, () -> grid(failedNodeIdx), IgniteIllegalStateException.class, "");
+            // Failed node should be stopped.
+            GridTestUtils.assertThrows(log, () -> grid(failedNodeIdx), IgniteIllegalStateException.class, null);
 
-                // Re-start failed node.
-                startGrid(failedNodeIdx);
+            // Re-start failed node.
+            startGrid(failedNodeIdx);
 
-                awaitPartitionMapExchange();
-            }
+            awaitPartitionMapExchange();
         }
     }
 
@@ -276,7 +268,6 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
 
         doTestTransferAmount(
             new IndexCorruptionFailoverScenario(
-                true,
                 (hnd, tree) -> hnd instanceof BPlusTree.Search,
                 failoverPredicate(failOnPrimary, supplier, t)),
             colocatedAccount
