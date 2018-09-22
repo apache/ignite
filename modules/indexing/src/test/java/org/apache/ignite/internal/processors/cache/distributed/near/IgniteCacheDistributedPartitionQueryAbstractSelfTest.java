@@ -515,12 +515,16 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
 
                 if (regionId != UNMAPPED_REGION) {
                     e.printStackTrace();
-                    System.out.println("MY DEBUG: UNMAPPED_REGION="+UNMAPPED_REGION);
-                    System.out.println("MY DEBUG: regionId="+regionId);
-                    System.out.println("MY DEBUG: pSet="+ Arrays.toString(pSet));
-                    System.out.println("MY DEBUG: orig.name="+ orig.name());
-                    System.out.println("MY DEBUG: orig.localNode="+ orig.cluster().localNode());
-                    
+                    try {
+                        U.sleep(1000);
+                    }
+                    catch (IgniteInterruptedCheckedException e1) {
+                        e1.printStackTrace();
+                    }
+                    System.out.println("MY DEBUG: UNMAPPED_REGION="+UNMAPPED_REGION +" MY DEBUG: regionId="+regionId+
+                        " MY DEBUG: pSet="+ Arrays.toString(pSet)+" MY DEBUG: orig.name="+ orig.name()+
+                        " MY DEBUG: orig.localNode="+ orig.cluster().localNode());
+
                     fail();
                 }
             }
