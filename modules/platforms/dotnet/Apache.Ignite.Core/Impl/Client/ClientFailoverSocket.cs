@@ -46,8 +46,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Config. */
         private readonly IgniteClientConfiguration _config;
 
-        /** Endpoints. */
-        private readonly List<IPEndPoint> _endPoints;
+        /** Endpoints with corresponding hosts. */
+        private readonly List<KeyValuePair<IPEndPoint, string>> _endPoints;
 
         /** Locker. */
         private readonly object _syncRoot = new object();
@@ -182,7 +182,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 try
                 {
-                    _socket = new ClientSocket(_config, endPoint, OnSocketError);
+                    _socket = new ClientSocket(_config, endPoint.Key, endPoint.Value, OnSocketError);
                     _endPointIndex = idx;
 
                     return;
@@ -223,25 +223,25 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Gets the endpoints: all combinations of IP addresses and ports according to configuration.
         /// </summary>
-        private static IEnumerable<IPEndPoint> GetIpEndPoints(IgniteClientConfiguration cfg)
+        private static IEnumerable<KeyValuePair<IPEndPoint, string>> GetIpEndPoints(IgniteClientConfiguration cfg)
         {
             foreach (var e in GetEndpoints(cfg))
             {
-                Debug.Assert(e.Host != null);  // Checked by GetEndpoints.
+                var host = e.Host;
+                Debug.Assert(host != null);  // Checked by GetEndpoints.
 
                 // GetHostEntry accepts IPs, but TryParse is a more efficient shortcut.
                 IPAddress ip;
 
-                if (IPAddress.TryParse(e.Host, out ip))
+                if (IPAddress.TryParse(host, out ip))
                 {
-                    yield return new IPEndPoint(ip, e.Port);
+                    yield return new KeyValuePair<IPEndPoint, string>(new IPEndPoint(ip, e.Port), host);
                 }
                 else
                 {
-                    // TODO: Preserve original host somehow.
-                    foreach (var x in Dns.GetHostEntry(e.Host).AddressList)
+                    foreach (var x in Dns.GetHostEntry(host).AddressList)
                     {
-                        yield return new IPEndPoint(x, e.Port);
+                        yield return new KeyValuePair<IPEndPoint, string>(new IPEndPoint(x, e.Port), host);
                     }
                 }
             }

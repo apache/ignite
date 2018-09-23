@@ -103,6 +103,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         /// <param name="clientConfiguration">The client configuration.</param>
         /// <param name="endPoint">The end point to connect to.</param>
+        /// <param name="host">The host name (required for SSL).</param>
         /// <param name="onError">Error callback.</param>
         /// <param name="version">Protocol version.</param>
         public ClientSocket(IgniteClientConfiguration clientConfiguration, EndPoint endPoint, string host,
@@ -114,7 +115,7 @@ namespace Apache.Ignite.Core.Impl.Client
             _timeout = clientConfiguration.SocketTimeout;
 
             _socket = Connect(clientConfiguration, endPoint);
-            _stream = GetSocketStream(_socket, clientConfiguration, endPoint, host);
+            _stream = GetSocketStream(_socket, clientConfiguration, host);
 
             ServerVersion = version ?? CurrentProtocolVersion;
 
@@ -579,8 +580,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Gets the socket stream.
         /// </summary>
-        private static Stream GetSocketStream(Socket socket, IgniteClientConfiguration cfg, EndPoint endPoint,
-            string host)
+        private static Stream GetSocketStream(Socket socket, IgniteClientConfiguration cfg, string host)
         {
             var stream = new NetworkStream(socket)
             {
