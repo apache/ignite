@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
-    /// Defines Ignite client endpoint.
+    /// Internal representation of client endpoint.
     /// </summary>
     internal class Endpoint
     {
@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Initializes a new instance of the <see cref="Endpoint"/> class.
         /// </summary>
-        public Endpoint(string host, int port = IgniteClientConfiguration.DefaultPort, int portRange = 0)
+        private Endpoint(string host, int port = IgniteClientConfiguration.DefaultPort, int portRange = 0)
         {
             Host = IgniteArgumentCheck.NotNullOrEmpty(host, "host");
             Port = port;
