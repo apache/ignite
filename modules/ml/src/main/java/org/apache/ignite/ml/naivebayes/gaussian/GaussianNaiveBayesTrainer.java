@@ -80,13 +80,14 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                         }
 
                         if (!stat.featureCount.containsKey(label)) {
-                            stat.featureCount.put(label, 1);
+                            stat.featureCount.put(label, 0);
                         }
+                        stat.featureCount.put(label, stat.featureCount.get(label)+1);
+
                         toMeans = stat.featureSum.get(label);
                         for (int j = 0; j < features.size(); j++) {
                             toMeans[j] += features.get(j);
                         }
-
                     }
 
                     return stat;
