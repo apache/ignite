@@ -30,14 +30,14 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
-    /// Socket wrapper with failover functionality: reconnects on failure.
+    /// Socket wrapper with reconnect/failover functionality: reconnects on failure.
     /// </summary>
     internal class ClientFailoverSocket : IClientSocket
     {
         /** Underlying socket. */
         private ClientSocket _socket;
 
-        /** Current endpoint index. */
+        /** Current global endpoint index for Round-robin. */
         private static long _endPointIndex;
 
         /** Config. */
