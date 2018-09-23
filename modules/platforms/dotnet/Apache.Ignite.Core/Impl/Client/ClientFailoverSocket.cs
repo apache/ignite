@@ -235,13 +235,19 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 if (IPAddress.TryParse(host, out ip))
                 {
-                    yield return new KeyValuePair<IPEndPoint, string>(new IPEndPoint(ip, e.Port), host);
+                    for (var i = 0; i <= e.PortRange; i++)
+                    {
+                        yield return new KeyValuePair<IPEndPoint, string>(new IPEndPoint(ip, e.Port + i), host);
+                    }
                 }
                 else
                 {
-                    foreach (var x in Dns.GetHostEntry(host).AddressList)
+                    for (var i = 0; i <= e.PortRange; i++)
                     {
-                        yield return new KeyValuePair<IPEndPoint, string>(new IPEndPoint(x, e.Port), host);
+                        foreach (var x in Dns.GetHostEntry(host).AddressList)
+                        {
+                            yield return new KeyValuePair<IPEndPoint, string>(new IPEndPoint(x, e.Port + i), host);
+                        }
                     }
                 }
             }

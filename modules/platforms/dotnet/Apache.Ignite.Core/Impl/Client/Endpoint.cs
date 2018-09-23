@@ -33,6 +33,7 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             Host = IgniteArgumentCheck.NotNullOrEmpty(host, "host");
             Port = port;
+            PortRange = portRange;
         }
 
         /// <summary>
