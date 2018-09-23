@@ -178,23 +178,7 @@
                     </xs:annotation>
                     <xs:complexType>
                         <xs:sequence>
-                            <xs:element name="endpoint" minOccurs="1" maxOccurs="unbounded">
-                                <xs:annotation>
-                                    <xs:documentation>Ignite thin client connection endpoint.</xs:documentation>
-                                </xs:annotation>
-                                <xs:complexType>
-                                    <xs:attribute name="host" type="xs:string" use="required">
-                                        <xs:annotation>
-                                            <xs:documentation>Host to connect to, required property.</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
-                                    <xs:attribute name="port" type="xs:int">
-                                        <xs:annotation>
-                                            <xs:documentation>Target port.</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
-                                </xs:complexType>
-                            </xs:element>
+                            <xs:element maxOccurs="unbounded" name="string" type="xs:string" />
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
