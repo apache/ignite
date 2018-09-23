@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using System.Linq;
     using System.Net;
     using System.Net.Sockets;
+    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -37,8 +38,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private ClientSocket _socket;
 
         /** Current endpoint index. */
-        // TODO: Have a global static starting index (take mod of it) so we have global round-robin
-        private int _endPointIndex;
+        private static long _endPointIndex;
 
         /** Config. */
         private readonly IgniteClientConfiguration _config;
@@ -76,10 +76,6 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 throw new IgniteClientException("Failed to resolve all specified hosts.");
             }
-
-            // Choose random endpoint for load balancing.
-            // TODO: use global static counter
-            _endPointIndex = new Random().Next(_endPoints.Count - 1);
 
             Connect();
         }
@@ -171,17 +167,16 @@ namespace Apache.Ignite.Core.Impl.Client
         private void Connect()
         {
             List<Exception> errors = null;
+            var startIdx = (int) Interlocked.Increment(ref _endPointIndex);
 
             for (var i = 0; i < _endPoints.Count; i++)
             {
-                var idx = (_endPointIndex + i) % _endPoints.Count;
+                var idx = (startIdx + i) % _endPoints.Count;
                 var endPoint = _endPoints[idx];
 
                 try
                 {
                     _socket = new ClientSocket(_config, endPoint.Key, endPoint.Value, OnSocketError);
-                    _endPointIndex = idx;
-
                     return;
                 }
                 catch (SocketException e)
@@ -212,7 +207,6 @@ namespace Apache.Ignite.Core.Impl.Client
             // Reconnect on next operation.
             lock (_syncRoot)
             {
-                _endPointIndex++;
                 _socket = null;
             }
         }
