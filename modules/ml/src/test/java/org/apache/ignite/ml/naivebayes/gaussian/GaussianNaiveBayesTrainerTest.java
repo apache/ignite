@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -36,18 +37,22 @@ public class GaussianNaiveBayesTrainerTest {
 
     /** Data. */
     private static final Map<Integer, double[]> data = new HashMap<>();
+    private static final Map<Integer, double[]> singleLabeldata = new HashMap<>();
 
     static {
-        data.put(0, new double[] {1.0, 1.0, LABEL_1});
-        data.put(1, new double[] {1.0, 2.0, LABEL_1});
-        data.put(2, new double[] {2.0, 1.0, LABEL_1});
-        data.put(3, new double[] {-1.0, -1.0, LABEL_2});
-        data.put(4, new double[] {-1.0, -2.0, LABEL_2});
-        data.put(5, new double[] {-2.0, -1.0, LABEL_2});
+        data.put(0, new double[] {1.0, -1.0, LABEL_1});
+        data.put(1, new double[] {-1.0, 2.0, LABEL_1});
+        data.put(2, new double[] {6.0, 1.0, LABEL_1});
+        data.put(3, new double[] {-3.0, 2.0, LABEL_2});
+        data.put(4, new double[] {-5.0, -2.0, LABEL_2});
+
+        singleLabeldata.put(0, new double[] {1.0, -1.0, LABEL_1});
+        singleLabeldata.put(1, new double[] {-1.0, 2.0, LABEL_1});
+        singleLabeldata.put(2, new double[] {6.0, 1.0, LABEL_1});
     }
 
     @Test
-    public void fit_returnsCorrectModel() {
+    public void fit_returnsCorrectLabelProbalities() {
         GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer();
         GaussianNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
@@ -55,6 +60,20 @@ public class GaussianNaiveBayesTrainerTest {
             (k, v) -> v[2]
         );
 
-        System.out.println(model);
+        Assert.assertEquals(model.getClassProbabilities().get(0), 3./data.size(), PRECISION);
+        Assert.assertEquals(model.getClassProbabilities().get(1), 2./data.size(), PRECISION);
+    }
+
+
+    @Test
+    public void fit_returnsCorrectMeans() {
+        GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer();
+        GaussianNaiveBayesModel model = trainer.fit(
+            new LocalDatasetBuilder<>(singleLabeldata, 2),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
+            (k, v) -> v[2]
+        );
+
+        Assert.assertArrayEquals(model.getMeans()[0], new double[]{2.0, 2./3.}, PRECISION);
     }
 }

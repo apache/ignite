@@ -108,7 +108,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
             for (Object label : statistic.featureCount.keySet()) {
                 int count = statistic.featureCount.get(label);
                 double[] tmp = statistic.featureSum.get(label);
-                for (int i = 0; i < means.length; i++) {
+                for (int i = 0; i <featureCount; i++) {
                     means[lbl][i] = tmp[i] / count;
                 }
                 classProbabilities[lbl] = (double)count / rowsSize;

@@ -73,6 +73,18 @@ public class GaussianNaiveBayesModel implements Model<Vector, Integer>, Exportab
         return max;
     }
 
+    public double[][] getMeans() {
+        return means;
+    }
+
+    public double[][] getVariances() {
+        return variances;
+    }
+
+    public Vector getClassProbabilities() {
+        return classProbabilities;
+    }
+
     private double gauss(double x, double mean, double variance) {
         return Math.exp((-1. * (x - mean) * (x - mean)) / (2. * variance)) / Math.sqrt(2. * Math.PI * variance);
     }
