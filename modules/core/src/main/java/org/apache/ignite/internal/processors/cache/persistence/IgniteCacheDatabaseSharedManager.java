@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
@@ -822,11 +823,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Handle {@link GridCacheProcessor} started event.
-     *
-     * @param caches Cache descriptons on started cache processor.
+     * Perform memory restore before {@link GridDiscoveryManager} start.
      */
-    public void cacheProcessorStarted(Collection<DynamicCacheDescriptor> caches) throws IgniteCheckedException {
+    public void startMemoryRestore() throws IgniteCheckedException {
         // No-op.
     }
 

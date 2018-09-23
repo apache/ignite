@@ -1919,7 +1919,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public void cacheProcessorStarted(Collection<DynamicCacheDescriptor> caches) throws IgniteCheckedException {
+    @Override public void startMemoryRestore() throws IgniteCheckedException {
         if (cctx.kernalContext().clientNode())
             return;
 
@@ -1927,7 +1927,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         initAndStartRegions(cctx.kernalContext().config().getDataStorageConfiguration());
 
         // Only presistence caches to start.
-        for (DynamicCacheDescriptor desc : caches) {
+        for (DynamicCacheDescriptor desc : cctx.cache().cacheDescriptors().values()) {
             if (CU.isPersistentCache(desc.cacheConfiguration(), cctx.gridConfig().getDataStorageConfiguration()))
                 storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
         }

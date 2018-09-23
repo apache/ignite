@@ -680,8 +680,6 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     /** {@inheritDoc} */
     @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
         startCachesOnStart();
-
-        sharedCtx.database().cacheProcessorStarted(cacheDescriptors().values());
     }
 
     /** {@inheritDoc} */
