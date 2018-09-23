@@ -18,17 +18,37 @@
 package org.apache.ignite.thread;
 
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.LongAdder;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 
 /**
  * An {@link ExecutorService} that executes submitted tasks using pooled grid threads.
+ *
+ * In addition to what it allows to track all enqueued tasks completion.
  */
-public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
+public class IgniteTrackingThreadPoolExecutor extends ThreadPoolExecutor {
+    /** */
+    private final LongAdder pendingTaskCnt = new LongAdder();
+
+    /** */
+    private final LongAdder completedTaskCnt = new LongAdder();
+
+    /** */
+    private volatile boolean initialized;
+
+    /** */
+    private Queue<Throwable> exceptions = new ConcurrentLinkedQueue<>();
+
     /**
      * Creates a new service with the given initial parameters.
      *
@@ -41,7 +61,7 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
      * @param workQ The queue to use for holding tasks before they are executed. This queue will hold only
      *      runnable tasks submitted by the {@link #execute(Runnable)} method.
      */
-    public IgniteThreadPoolExecutor(
+    public IgniteTrackingThreadPoolExecutor(
         String threadNamePrefix,
         String igniteInstanceName,
         int corePoolSize,
@@ -72,7 +92,7 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
      * @param plc {@link GridIoPolicy} for thread pool.
      * @param eHnd Uncaught exception handler for thread pool.
      */
-    public IgniteThreadPoolExecutor(
+    public IgniteTrackingThreadPoolExecutor(
         String threadNamePrefix,
         String igniteInstanceName,
         int corePoolSize,
@@ -102,7 +122,7 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
      *      runnable tasks submitted by the {@link #execute(Runnable)} method.
      * @param threadFactory Thread factory.
      */
-    public IgniteThreadPoolExecutor(
+    public IgniteTrackingThreadPoolExecutor(
         int corePoolSize,
         int maxPoolSize,
         long keepAliveTime,
@@ -119,7 +139,76 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
         );
     }
 
+    /** {@inheritDoc} */
+    @Override public void execute(Runnable cmd) {
+        pendingTaskCnt.add(1);
+
+        super.execute(cmd);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterExecute(Runnable r, Throwable t) {
         super.afterExecute(r, t);
+
+        completedTaskCnt.add(1);
+
+        if (t != null)
+            exceptions.add(t);
+
+        if (initialized && pendingTaskCnt.sum() == completedTaskCnt.sum()) {
+            synchronized (this) {
+                notify();
+            }
+        }
+    }
+
+    /**
+     * Mark this executor as initialized. This method should be called when all task are enqueued for execution.
+     */
+    public void markInitialized() {
+        initialized = true;
+    }
+
+    /**
+     *
+     * @return {@code True} when all enqueued task are completed.
+     */
+    public boolean isDone() {
+        return initialized && completedTaskCnt.sum() == pendingTaskCnt.sum();
+    }
+
+    /**
+     * Wait synchronously until all tasks are completed and reset executor state for subsequent reuse.
+     *
+     * @throws IgniteCheckedException if some tasks execution result in error.
+     */
+    public synchronized void awaitDone() throws IgniteCheckedException {
+        while(!(initialized && completedTaskCnt.sum() == pendingTaskCnt.sum())) {
+            try {
+                wait();
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        if (!exceptions.isEmpty()) {
+            IgniteCheckedException ex = new IgniteCheckedException("An execution resulted in exception");
+
+            for (Throwable exception : exceptions)
+                ex.addSuppressed(exception);
+
+            throw ex;
+        }
+    }
+
+    /**
+     * Reset task completion tracking context. The method should be called before adding tasks to the executor.
+     */
+    public void reset() {
+        initialized = false;
+        completedTaskCnt.reset();
+        pendingTaskCnt.reset();
+        exceptions.clear();
     }
 }
