@@ -270,5 +270,5 @@ public class IgniteProvider {
         String[] split = url.split("/");
 
         return split[split.length - 1];
-    }
+    } foo
 }
