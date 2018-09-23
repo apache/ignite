@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.Client
         public Endpoint(string host, int port = IgniteClientConfiguration.DefaultPort, int portRange = 0)
         {
             Host = IgniteArgumentCheck.NotNullOrEmpty(host, "host");
-            Port = IgniteClientConfiguration.DefaultPort;
+            Port = port;
         }
 
         /// <summary>
