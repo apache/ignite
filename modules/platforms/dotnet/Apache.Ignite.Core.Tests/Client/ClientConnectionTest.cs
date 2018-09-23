@@ -588,8 +588,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 Endpoints = new[]
                 {
                     "localhost",
-                    "127.0.0.1:" + (port + 1),
-                    "127.0.0.1:" + (port + 2)
+                    string.Format("127.0.0.1:{0}..{1}", port + 1, port + 2)
                 }
             };
 
