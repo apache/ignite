@@ -61,7 +61,9 @@ namespace Apache.Ignite.Core.Client
         /// </summary>
         public IgniteClientConfiguration()
         {
+#pragma warning disable 618
             Port = DefaultPort;
+#pragma warning restore 618
             SocketSendBufferSize = DefaultSocketBufferSize;
             SocketReceiveBufferSize = DefaultSocketBufferSize;
             TcpNoDelay = DefaultTcpNoDelay;
@@ -72,6 +74,7 @@ namespace Apache.Ignite.Core.Client
         /// Initializes a new instance of the <see cref="IgniteClientConfiguration" /> class.
         /// </summary>
         /// <param name="host">The host to connect to.</param>
+        [Obsolete("Use Endpoints instead")]
         public IgniteClientConfiguration(string host) : this()
         {
             IgniteArgumentCheck.NotNull(host, "host");
@@ -90,8 +93,10 @@ namespace Apache.Ignite.Core.Client
                 return;
             }
 
+#pragma warning disable 618
             Host = cfg.Host;
             Port = cfg.Port;
+#pragma warning restore 618
             SocketSendBufferSize = cfg.SocketSendBufferSize;
             SocketReceiveBufferSize = cfg.SocketReceiveBufferSize;
             TcpNoDelay = cfg.TcpNoDelay;
