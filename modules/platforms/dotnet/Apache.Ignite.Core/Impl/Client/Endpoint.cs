@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Impl.Client
                     "IgniteClientConfiguration.Endpoints[...] can't be null or whitespace.");
             }
 
-            var parts = endpoint.Split(HostSeparators, StringSplitOptions.RemoveEmptyEntries);
+            var parts = endpoint.Split(HostSeparators, StringSplitOptions.None);
 
             if (parts.Length == 1)
             {
@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 var host = parts[0];
                 var port = parts[1];
 
-                var ports = port.Split(PortsSeparators, StringSplitOptions.RemoveEmptyEntries);
+                var ports = port.Split(PortsSeparators, StringSplitOptions.None);
 
                 if (ports.Length == 1)
                 {

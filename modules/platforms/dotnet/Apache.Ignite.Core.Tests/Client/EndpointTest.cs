@@ -15,6 +15,26 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             var ex = AssertThrowsClientException("");
             Assert.AreEqual("IgniteClientConfiguration.Endpoints[...] can't be null or whitespace.", ex.Message);
+
+            ex = AssertThrowsClientException("host:");
+            Assert.AreEqual(
+                "Unrecognized format of IgniteClientConfiguration.Endpoint, failed to parse port: host:",
+                ex.Message);
+
+            ex = AssertThrowsClientException("host:port");
+            Assert.AreEqual(
+                "Unrecognized format of IgniteClientConfiguration.Endpoint, failed to parse port: host:port",
+                ex.Message);
+
+            ex = AssertThrowsClientException("host:1..");
+            Assert.AreEqual(
+                "Unrecognized format of IgniteClientConfiguration.Endpoint, failed to parse port: host:1..",
+                ex.Message);
+
+            ex = AssertThrowsClientException("host:1..2..3");
+            Assert.AreEqual(
+                "Unrecognized format of IgniteClientConfiguration.Endpoint: host:1..2..3",
+                ex.Message);
         }
 
         [Test]
