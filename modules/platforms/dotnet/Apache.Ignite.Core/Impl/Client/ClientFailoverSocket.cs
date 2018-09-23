@@ -33,9 +33,6 @@ namespace Apache.Ignite.Core.Impl.Client
     /// </summary>
     internal class ClientFailoverSocket : IClientSocket
     {
-        private static readonly string[] HostSeparators = {":"};
-        private static readonly string[] PortsSeparators = {".."};
-
         /** Underlying socket. */
         private ClientSocket _socket;
 
@@ -225,7 +222,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private static IEnumerable<KeyValuePair<IPEndPoint, string>> GetIpEndPoints(IgniteClientConfiguration cfg)
         {
-            foreach (var e in GetEndpoints(cfg))
+            foreach (var e in Endpoint.GetEndpoints(cfg))
             {
                 var host = e.Host;
                 Debug.Assert(host != null);  // Checked by GetEndpoints.
@@ -251,85 +248,6 @@ namespace Apache.Ignite.Core.Impl.Client
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// Gets the client endpoints.
-        /// </summary>
-        private static IEnumerable<Endpoint> GetEndpoints(IgniteClientConfiguration cfg)
-        {
-#pragma warning disable 618 // Type or member is obsolete
-            if (cfg.Host != null)
-            {
-                yield return new Endpoint(cfg.Host, cfg.Port);
-            }
-#pragma warning restore 618
-
-            if (cfg.Endpoints != null)
-            {
-                foreach (var endpoint in cfg.Endpoints)
-                {
-                    yield return ParseEndpoint(endpoint);
-                }
-            }
-        }
-
-        private static Endpoint ParseEndpoint(string endpoint)
-        {
-            if (string.IsNullOrWhiteSpace(endpoint))
-            {
-                throw new IgniteClientException(
-                    "IgniteClientConfiguration.Endpoints[...] can't be null or whitespace.");
-            }
-
-            var parts = endpoint.Split(HostSeparators, StringSplitOptions.RemoveEmptyEntries);
-
-            if (parts.Length == 1)
-            {
-                return new Endpoint(endpoint);
-            }
-
-            if (parts.Length == 2)
-            {
-                var host = parts[0];
-                var port = parts[1];
-
-                var ports = port.Split(PortsSeparators, StringSplitOptions.RemoveEmptyEntries);
-
-                if (ports.Length == 1)
-                {
-                    return new Endpoint(host, ParsePort(endpoint, port));
-                }
-
-                if (ports.Length == 2)
-                {
-                    var minPort = ParsePort(endpoint, ports[0]);
-                    var maxPort = ParsePort(endpoint, ports[1]);
-
-                    if (maxPort < minPort)
-                    {
-                        throw new IgniteClientException(
-                            "Invalid format of IgniteClientConfiguration.Endpoint, port range is empty: " + endpoint);
-                    }
-
-                    return new Endpoint(host, minPort, maxPort - minPort);
-                }
-            }
-
-            throw new IgniteClientException("Unrecognized format of IgniteClientConfiguration.Endpoint: " + endpoint);
-        }
-
-        private static int ParsePort(string endpoint, string portString)
-        {
-            int port;
-
-            if (int.TryParse(portString, out port))
-            {
-                return port;
-            }
-
-            throw new IgniteClientException(
-                "Unrecognized format of IgniteClientConfiguration.Endpoint, failed to parse port: " + endpoint);
         }
     }
 }
