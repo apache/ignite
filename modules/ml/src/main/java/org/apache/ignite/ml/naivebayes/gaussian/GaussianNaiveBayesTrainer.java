@@ -19,14 +19,15 @@ package org.apache.ignite.ml.naivebayes.gaussian;
 
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
+import org.apache.ignite.ml.math.util.MapUtil;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
@@ -61,10 +62,10 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
             (upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
-            final Map<Object, double[]> stat = new HashMap<>();
-            final Map<Object, Integer> labelCount = new HashMap<>();
-            dataset.compute(
+
+            Stat statistic = dataset.compute(
                 data -> {
+                    Stat stat = new Stat();
                     for (int i = 0; i < data.rowSize(); i++) {
                         LabeledVector row = data.getRow(i);
                         Vector features = row.features();
@@ -72,49 +73,78 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
 
                         double[] toMeans;
 
-                        if (!stat.containsKey(label)) {
+                        if (!stat.featureSum.containsKey(label)) {
                             toMeans = new double[features.size()];
                             Arrays.fill(toMeans, 0.);
-                            stat.put(label, toMeans);
+                            stat.featureSum.put(label, toMeans);
                         }
 
-                        if (!labelCount.containsKey(label)) {
-                            labelCount.put(label, 1);
+                        if (!stat.featureCount.containsKey(label)) {
+                            stat.featureCount.put(label, 1);
                         }
-                        toMeans = stat.get(label);
+                        toMeans = stat.featureSum.get(label);
                         for (int j = 0; j < features.size(); j++) {
                             toMeans[j] += features.get(j);
                         }
 
                     }
-                    labelCount.keySet().forEach(key -> {
-                        int count = labelCount.get(key);
-                        double[] means = stat.get(key);
-                        for (int i = 0; i < means.length; i++) {
-                            means[i] /= count;
-                        }
-                    });
 
-                    return null;
-                }
-                , (a, b) -> {
+                    return stat;
+                }, (a, b) -> {
                     if (a == null)
-                        return b == null ? 0 : b;
+                        return b == null ? new Stat() : b;
                     if (b == null)
                         return a;
-                    return b;
+                    return a.merge(b);
                 });
+            int labelCount = statistic.featureCount.keySet().size();
+            int featureCount = statistic.featureSum.values().stream().findFirst().get().length;
+            double[][] means = new double[labelCount][featureCount];
+            double[] classProbabilities = new double[labelCount];
+            long rowsSize = statistic.featureCount.values().stream().mapToInt(i -> i).sum();
 
+            int lbl = 0;
+            for (Object label : statistic.featureCount.keySet()) {
+                int count = statistic.featureCount.get(label);
+                double[] tmp = statistic.featureSum.get(label);
+                for (int i = 0; i < means.length; i++) {
+                    means[lbl][i] = tmp[i] / count;
+                }
+                classProbabilities[lbl] = (double)count / rowsSize;
+                ++lbl;
+            }
+
+            return new GaussianNaiveBayesModel(means, null, new DenseVector(classProbabilities));
         }
         catch (Exception e) {
             throw new
                 RuntimeException(e);
         }
 
-        return null;
     }
 
     public static class Stat implements Serializable {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 1L;
+        ConcurrentHashMap<Object, double[]> featureSum = new ConcurrentHashMap<>();
+        ConcurrentHashMap<Object, Integer> featureCount = new ConcurrentHashMap<>();
 
+        /** Merge current */
+        Stat merge(Stat other) {
+            this.featureSum = MapUtil.mergeMaps(featureSum, other.featureSum, this::sum, ConcurrentHashMap::new);
+            this.featureCount = MapUtil.mergeMaps(featureCount, other.featureCount, (i1, i2) -> i1 + i2, ConcurrentHashMap::new);
+            return this;
+        }
+
+        private double[] sum(double[] arr1, double[] arr2) {
+            for (int i = 0; i < arr1.length; i++) {
+                arr1[i] += arr2[i];
+            }
+            return arr1;
+        }
+
+        public void coutStat() {
+
+        }
     }
 }
