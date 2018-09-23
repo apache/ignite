@@ -13,7 +13,8 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void GetEndpoints_InvalidConfigFormat_ThrowsIgniteClientException()
         {
-            var cfg = new IgniteClientConfiguration("");
+            var ex = AssertThrowsClientException("");
+            Assert.AreEqual("IgniteClientConfiguration.Endpoints[...] can't be null or whitespace.", ex.Message);
         }
 
         [Test]
@@ -62,6 +63,14 @@ namespace Apache.Ignite.Core.Tests.Client
             Assert.AreEqual(port, hostWithPortRange.Port);
             Assert.AreEqual(port2 - port, hostWithPortRange.PortRange);
 
+        }
+
+        private static IgniteClientException AssertThrowsClientException(string endpoint)
+        {
+            var endpoints = Endpoint.GetEndpoints(new IgniteClientConfiguration(endpoint));
+
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            return Assert.Throws<IgniteClientException>(() => endpoints.ToList());
         }
     }
 }
