@@ -218,8 +218,7 @@ namespace Apache.Ignite.Core.Tests.Client
 
             var clientCfg = new IgniteClientConfiguration
             {
-                Host = "localhost",
-                Port = 2000
+                Endpoints = new[] {"localhost:2000"}
             };
 
             using (Ignition.Start(servCfg))

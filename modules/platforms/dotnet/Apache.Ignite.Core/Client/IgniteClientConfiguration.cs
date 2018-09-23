@@ -74,12 +74,11 @@ namespace Apache.Ignite.Core.Client
         /// Initializes a new instance of the <see cref="IgniteClientConfiguration" /> class.
         /// </summary>
         /// <param name="host">The host to connect to.</param>
-        [Obsolete("Use Endpoints instead")]
         public IgniteClientConfiguration(string host) : this()
         {
             IgniteArgumentCheck.NotNull(host, "host");
 
-            Host = host;
+            Endpoints = new List<string> {host};
         }
 
         /// <summary>
