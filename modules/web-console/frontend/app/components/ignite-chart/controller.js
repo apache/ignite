@@ -217,7 +217,7 @@ export class IgniteChartController {
                         duration: this.currentRange.value * 1000 * 60,
                         frameRate: 1000 / this.refreshRate || 1 / 3,
                         refresh: this.refreshRate || 3000,
-                        ttl: this.maxPointsNumber,
+                        ttl: this.maxRangeInMilliseconds,
                         onRefresh: () => {
                             this.onRefresh();
                         }

@@ -1097,7 +1097,7 @@ public class GridFilenameUtils {
     public static boolean isExtension(String filename, String extension) {
         if (filename == null)
             return false;
-        if (extension == null || extension.length() == 0)
+        if (extension == null || extension.isEmpty())
             return indexOfExtension(filename) == -1;
         String fileExt = getExtension(filename);
         return fileExt.equals(extension);
@@ -1233,7 +1233,7 @@ public class GridFilenameUtils {
 
         // loop around a backtrack stack, to handle complex * matching
         do {
-            if (backtrack.size() > 0) {
+            if (!backtrack.isEmpty()) {
                 int[] array = backtrack.pop();
                 wcsIdx = array[0];
                 textIdx = array[1];
@@ -1288,7 +1288,7 @@ public class GridFilenameUtils {
             if (wcsIdx == wcs.length && textIdx == filename.length())
                 return true;
 
-        } while (backtrack.size() > 0);
+        } while (!backtrack.isEmpty());
 
         return false;
     }
