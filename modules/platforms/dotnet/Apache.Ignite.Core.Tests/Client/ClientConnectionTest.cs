@@ -245,10 +245,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 // DnsEndPoint.
                 var cfg = new IgniteClientConfiguration
                 {
-                    Endpoints = new[]
-                    {
-                        new Endpoint("localhost")
-                    }
+                    Endpoints = new[] { "localhost" }
                 };
 
                 using (var client = Ignition.StartClient(cfg))
@@ -259,10 +256,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 // IPEndPoint.
                 cfg = new IgniteClientConfiguration
                 {
-                    Endpoints = new[]
-                    {
-                        new Endpoint("127.0.0.1", port)
-                    }
+                    Endpoints = new[] { "127.0.0.1:" + port }
                 };
 
                 using (var client = Ignition.StartClient(cfg))
@@ -320,7 +314,7 @@ namespace Apache.Ignite.Core.Tests.Client
 
             var clientCfg = new IgniteClientConfiguration
             {
-                Host = "localhost"
+                Endpoints = new[] {"localhost"}
             };
 
             using (Ignition.Start(servCfg))
@@ -502,7 +496,7 @@ namespace Apache.Ignite.Core.Tests.Client
             using (Ignition.Start(TestUtils.GetTestConfiguration()))
             {
                 // Connect to Ignite REST endpoint.
-                var cfg = new IgniteClientConfiguration {Host = "127.0.0.1", Port = 11211};
+                var cfg = new IgniteClientConfiguration("127.0.0.1:11211");
                 var ex = GetSocketException(Assert.Catch(() => Ignition.StartClient(cfg)));
                 Assert.AreEqual(SocketError.ConnectionAborted, ex.SocketErrorCode);
             }
@@ -592,9 +586,9 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 Endpoints = new[]
                 {
-                    new Endpoint("localhost"),
-                    new Endpoint("127.0.0.1", port + 1),
-                    new Endpoint {Host = "127.0.0.1", Port = port + 2}
+                    "localhost",
+                    "127.0.0.1:" + (port + 1),
+                    "127.0.0.1:" + (port + 2)
                 }
             };
 
@@ -642,7 +636,7 @@ namespace Apache.Ignite.Core.Tests.Client
         /// </summary>
         private static IgniteClientConfiguration GetClientConfiguration()
         {
-            return new IgniteClientConfiguration { Host = IPAddress.Loopback.ToString() };
+            return new IgniteClientConfiguration(IPAddress.Loopback.ToString());
         }
 
         /// <summary>
@@ -697,9 +691,8 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <returns>Client configuration.</returns>
         private static IgniteClientConfiguration GetSecureClientConfig()
         {
-            return new IgniteClientConfiguration
+            return new IgniteClientConfiguration("localhost")
             {
-                Host = "localhost",
                 UserName = "ignite",
                 Password = "ignite"
             };
