@@ -137,12 +137,16 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
+        assert false : "???";
+
         out.writeLong(topVer);
         out.writeInt(minorTopVer);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        assert false : "???";
+
         topVer = in.readLong();
         minorTopVer = in.readInt();
     }
