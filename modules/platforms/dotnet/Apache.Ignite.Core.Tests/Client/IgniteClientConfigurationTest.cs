@@ -89,7 +89,8 @@ namespace Apache.Ignite.Core.Tests.Client
                 Endpoints = new []
                 {
                     "foo",
-                    "bar:123"
+                    "bar:123",
+                    "baz:100..103"
                 }
             };
 
