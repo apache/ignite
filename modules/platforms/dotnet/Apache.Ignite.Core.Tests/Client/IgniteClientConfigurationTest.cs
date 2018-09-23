@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618
 namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
@@ -25,7 +26,6 @@ namespace Apache.Ignite.Core.Tests.Client
     using System.Xml;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client;
-    using Apache.Ignite.Core.Impl.Client;
     using NUnit.Framework;
 
     /// <summary>
@@ -88,8 +88,8 @@ namespace Apache.Ignite.Core.Tests.Client
                 },
                 Endpoints = new []
                 {
-                    new Endpoint("foo"),
-                    new Endpoint("bar", 123)
+                    "foo",
+                    "bar:123"
                 }
             };
 
@@ -183,7 +183,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 }
 
                 // Missing section content.
-                ex = Assert.Throws<ConfigurationErrorsException>(() => 
+                ex = Assert.Throws<ConfigurationErrorsException>(() =>
                     Ignition.StartClient("igniteClientConfiguration3"));
                 Assert.AreEqual("IgniteClientConfigurationSection with name 'igniteClientConfiguration3' is " +
                                 "defined in <configSections>, but not present in configuration.", ex.Message);
