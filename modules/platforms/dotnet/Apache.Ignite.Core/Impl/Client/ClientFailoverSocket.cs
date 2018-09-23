@@ -259,13 +259,30 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 foreach (var e in cfg.Endpoints)
                 {
-                    if (e.Host == null)
+                    if (string.IsNullOrWhiteSpace(e))
                     {
                         throw new IgniteClientException(
-                            "IgniteClientConfiguration.Endpoints[...].Host can't be null.");
+                            "IgniteClientConfiguration.Endpoints[...] can't be null or whitespace.");
                     }
 
-                    yield return e;
+                    var parts = e.Split(':');
+
+                    if (parts.Length == 1)
+                    {
+                        yield return new Endpoint(e);
+                    }
+                    else if (parts.Length == 2)
+                    {
+                        var host = parts[0];
+                        var port = parts[1];
+
+                        var ports = port.Split(new[] {".."}, StringSplitOptions.RemoveEmptyEntries);
+                    }
+                    else
+                    {
+                        throw new IgniteClientException(
+                            "Unrecognized format of IgniteClientConfiguration.Endpoint: " + e);
+                    }
                 }
             }
         }
