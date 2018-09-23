@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Client
 {
     using System.ComponentModel;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Defines Ignite client endpoint.
@@ -28,37 +29,26 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Initializes a new instance of the <see cref="Endpoint"/> class.
         /// </summary>
-        public Endpoint()
+        public Endpoint(string host, int port = IgniteClientConfiguration.DefaultPort, int portRange = 0)
         {
+            Host = IgniteArgumentCheck.NotNullOrEmpty(host, "host");
             Port = IgniteClientConfiguration.DefaultPort;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Endpoint"/> class with specified host and default port
-        /// (see <see cref="IgniteClientConfiguration.DefaultPort"/>).
-        /// </summary>
-        public Endpoint(string host) : this()
-        {
-            Host = host;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Endpoint"/> class.
-        /// </summary>
-        public Endpoint(string host, int port) : this(host)
-        {
-            Port = port;
         }
 
         /// <summary>
         /// Gets or sets the host.
         /// </summary>
-        public string Host { get; set; }
+        public string Host { get; private set; }
 
         /// <summary>
         /// Gets or sets the port.
         /// </summary>
         [DefaultValue(IgniteClientConfiguration.DefaultPort)]
-        public int Port { get; set; }
+        public int Port { get; private set; }
+
+        /// <summary>
+        /// Size of the port range. Default is 0, meaning only one port is used, defined by <see cref="Port"/>.
+        /// </summary>
+        public int PortRange { get; private set; }
     }
 }
