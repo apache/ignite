@@ -105,8 +105,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <param name="endPoint">The end point to connect to.</param>
         /// <param name="onError">Error callback.</param>
         /// <param name="version">Protocol version.</param>
-        public ClientSocket(IgniteClientConfiguration clientConfiguration, EndPoint endPoint, Action onError = null,
-            ClientProtocolVersion? version = null)
+        public ClientSocket(IgniteClientConfiguration clientConfiguration, EndPoint endPoint, string host,
+            Action onError = null, ClientProtocolVersion? version = null)
         {
             Debug.Assert(clientConfiguration != null);
 
@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Impl.Client
             _timeout = clientConfiguration.SocketTimeout;
 
             _socket = Connect(clientConfiguration, endPoint);
-            _stream = GetSocketStream(_socket, clientConfiguration, endPoint);
+            _stream = GetSocketStream(_socket, clientConfiguration, endPoint, host);
 
             ServerVersion = version ?? CurrentProtocolVersion;
 
@@ -579,7 +579,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Gets the socket stream.
         /// </summary>
-        private static Stream GetSocketStream(Socket socket, IgniteClientConfiguration cfg, EndPoint endPoint)
+        private static Stream GetSocketStream(Socket socket, IgniteClientConfiguration cfg, EndPoint endPoint,
+            string host)
         {
             var stream = new NetworkStream(socket)
             {
@@ -591,10 +592,6 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 return stream;
             }
-
-            // TODO: Get host from other types of endPoints.
-            var dnsEndPoint = endPoint as DnsEndPoint;
-            var host = dnsEndPoint != null ? dnsEndPoint.Host : null;
 
             return cfg.SslStreamFactory.Create(stream, host);
         }

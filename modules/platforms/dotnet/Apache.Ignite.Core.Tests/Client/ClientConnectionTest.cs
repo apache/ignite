@@ -292,6 +292,7 @@ namespace Apache.Ignite.Core.Tests.Client
                             ClientConnectorConfiguration.DefaultPort,
                             AddressFamily.InterNetwork),
                         null,
+                        null,
                         new ClientProtocolVersion(-1, -1, -1)));
 
                 Assert.AreEqual(ClientStatusCode.Fail, ex.StatusCode);

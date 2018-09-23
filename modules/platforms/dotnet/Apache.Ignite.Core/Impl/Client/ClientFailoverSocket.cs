@@ -238,6 +238,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 }
                 else
                 {
+                    // TODO: Preserve original host somehow.
                     foreach (var x in Dns.GetHostEntry(e.Host).AddressList)
                     {
                         yield return new IPEndPoint(x, e.Port);
