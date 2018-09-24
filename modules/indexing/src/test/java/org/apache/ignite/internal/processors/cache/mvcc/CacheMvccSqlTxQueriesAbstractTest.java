@@ -649,7 +649,27 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testQueryDeadlock() throws Exception {
+    public void testQueryDeadlockWithTxTimeout() throws Exception {
+        checkQueryDeadlock(TimeoutMode.TX);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryDeadlockWithStmtTimeout() throws Exception {
+        checkQueryDeadlock(TimeoutMode.STMT);
+    }
+
+    /** */
+    private enum TimeoutMode {
+        /** */
+        TX,
+        /** */
+        STMT
+    }
+
+    /** */
+    private void checkQueryDeadlock(TimeoutMode timeoutMode) throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
@@ -671,7 +691,8 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
 
                 try {
                     try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        tx.timeout(TX_TIMEOUT);
+                        if (timeoutMode == TimeoutMode.TX)
+                            tx.timeout(TX_TIMEOUT);
 
                         IgniteCache<Object, Object> cache0 = node.cache(DEFAULT_CACHE_NAME);
 
@@ -680,6 +701,9 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
 
                         SqlFieldsQuery qry = new SqlFieldsQuery((id % 2) == 0 ? qry1 : qry2);
 
+                        if (timeoutMode == TimeoutMode.STMT)
+                            qry.setTimeout(TX_TIMEOUT, TimeUnit.MILLISECONDS);
+
                         try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
                             cur.getAll();
                         }
@@ -687,6 +711,9 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
                         barrier.await();
 
                         qry = new SqlFieldsQuery((id % 2) == 0 ? qry2 : qry1);
+
+                        if (timeoutMode == TimeoutMode.STMT)
+                            qry.setTimeout(TX_TIMEOUT, TimeUnit.MILLISECONDS);
 
                         try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
                             cur.getAll();
