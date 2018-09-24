@@ -142,7 +142,7 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setPersistenceEnabled(true)
+                    .setPersistenceEnabled(persistent())
                     .setMaxSize(50 * 1024 * 1024)
             )
             .setPageSize(1024)
