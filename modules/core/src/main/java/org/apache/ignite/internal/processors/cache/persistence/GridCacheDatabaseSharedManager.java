@@ -807,7 +807,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         try {
             for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
-                lsnr.beforeMemoryRestore(this);
+                lsnr.beforeResumeWalLogging(this);
 
             cctx.pageStore().initializeForMetastorage();
 
@@ -855,7 +855,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         try {
             for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
-                lsnr.beforeMemoryRestore(this);
+                lsnr.beforeBinaryMemoryRestore(this);
 
             cctx.pageStore().initializeForMetastorage();
 
