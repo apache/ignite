@@ -30,8 +30,8 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.AbstractFailureHandler;
 import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -82,8 +82,8 @@ public class CacheGetReadFromBackupFailoverTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setFailureHandler(new FailureHandler() {
-            @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+        cfg.setFailureHandler(new AbstractFailureHandler() {
+            @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
                 err.compareAndSet(null, failureCtx.error());
                 stop.set(true);
                 return false;
