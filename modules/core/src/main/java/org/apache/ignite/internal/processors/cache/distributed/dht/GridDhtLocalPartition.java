@@ -235,6 +235,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             // TODO ignite-db
             throw new IgniteException(e);
         }
+
+        if (log.isDebugEnabled())
+            log.debug("Partition has been created [grp=" + grp.cacheOrGroupName()
+                + ", p=" + id + ", state=" + state() + "]");
     }
 
     /**
