@@ -1129,9 +1129,7 @@ public class IgniteTxHandler {
             nearTx = !F.isEmpty(req.nearWrites()) ? startNearRemoteTx(ctx.deploy().globalLoader(), nodeId, req) : null;
             dhtTx = startRemoteTx(nodeId, req, res);
 
-            if (dhtTx == null)
-                ctx.applyPartitionsUpdatesCounters(req.updateCounters());
-            else if (req.updateCounters() != null)
+            if (dhtTx != null && req.updateCounters() != null) // Remember update counters on prepare state.
                 dhtTx.txCounters(true).updateCounters(req.updateCounters());
 
             // Set evicted keys from near transaction.
@@ -1187,8 +1185,6 @@ public class IgniteTxHandler {
             }
             else
                 U.error(log, "Failed to process prepare request: " + req, e);
-
-            ctx.applyPartitionsUpdatesCounters(req.updateCounters());
 
             if (nearTx != null)
                 try {
@@ -1372,8 +1368,6 @@ public class IgniteTxHandler {
                 ctx.tm().addCommittedTx(tx, req.version(), null);
             else
                 ctx.tm().addRolledbackTx(tx, req.version());
-
-            ctx.applyPartitionsUpdatesCounters(req.updateCounters());
 
             if (log.isDebugEnabled())
                 log.debug("Received finish request for non-existing transaction (added to completed set) " +
