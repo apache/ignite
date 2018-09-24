@@ -16,13 +16,11 @@
  */
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.UUID;
-import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -32,18 +30,15 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  *
  */
 public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTest {
-
-    private static final String TEST_CACHE_NAME = "cache123";
+    /** Number records in cache. */
+    private static final int NUMBER_RECORDS = 30;
 
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
+        DataRegionConfiguration drCfg = new DataRegionConfiguration().setPersistenceEnabled(true);
 
-        if (dsCfg == null)
-            dsCfg = new DataStorageConfiguration();
-
-        dsCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(drCfg);
 
         cfg.setDataStorageConfiguration(dsCfg);
 
@@ -66,49 +61,31 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
         cleanPersistenceDir();
     }
 
-    public void test() throws Exception {
-        startGrids(3);
+    public void testStartNodeAfterCacheDestroy() throws Exception {
+        IgniteEx ignite0 = startGrid(0);
+        IgniteEx ignite1 = startGrid(1);
 
-        Ignite node0 = grid(0);
+        CacheConfiguration<Long, Long> cacheCfg = new CacheConfiguration<Long, Long>(DEFAULT_CACHE_NAME).setBackups(0);
 
-        node0.cluster().active(true);
+        ignite1.cluster().active(true);
 
-        stopGrid(2);
+        IgniteCache<Long, Long> cache0 = ignite0.getOrCreateCache(cacheCfg);
 
-        node0.cluster().setBaselineTopology(node0.cluster().topologyVersion());
+        for (int i = 0; i < NUMBER_RECORDS; i++)
+            cache0.put(1L << i, 1L << i);
 
-        CacheConfiguration<Integer, Integer> cacheCfg =
-            new CacheConfiguration<Integer, Integer>(TEST_CACHE_NAME)
-                .setCacheMode(CacheMode.PARTITIONED)
-                .setBackups(0);
+        IgniteCache<Long, Long> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
-        try (IgniteCache<Integer, Integer> cache = node0.getOrCreateCache(cacheCfg)) {
-            IntStream.range(0, 10).forEach(i -> cache.put(i, i));
-        }
+        for (int i = 0; i < NUMBER_RECORDS; i++)
+            assertTrue(cache1.containsKey(1L << i));
 
-        stopGrid(0);
+        stopGrid(1);
 
-        IgniteEx node1 = grid(1);
+        cache0.destroy();
 
-        try(IgniteCache<Integer, Integer> cache = node1.getOrCreateCache(cacheCfg)){
-            Affinity<Object> affinity = node1.affinity(TEST_CACHE_NAME);
+        // Starting grid with stored DEFAULT_CACHE_NAME configuration after DEFAULT_CACHE_NAME cache was destroyed.
+        startGrid(1);
 
-            long lost = IntStream.range(0,10)
-                .filter(i->!affinity.isPrimaryOrBackup(node1.localNode(), i) || !cache.containsKey(i))
-                .count();
-
-            log.info("Lost keys count: " + lost);
-
-            assertNotSame("Some keys must be lost!", 0, lost);
-        }
-
-        stopAllGrids();
-
-        startGrids(3);
-
-        Ignite node2 = grid(2);
-
-        node2.cluster().active(true);
-
+        awaitPartitionMapExchange();
     }
 }
