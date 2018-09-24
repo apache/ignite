@@ -103,6 +103,8 @@ public class NativeSqlJoinQueryRangeBenchmark extends IgniteAbstractBenchmark {
 
         if (args.partitionedCachesNumber() == 1)
             withExpr.append("template=replicated");
+        else
+            withExpr.append("template=partitioned");
 
         withExpr.append("\"");
 
@@ -114,8 +116,7 @@ public class NativeSqlJoinQueryRangeBenchmark extends IgniteAbstractBenchmark {
         if (args.atomicMode() != null)
             withExpr.append("atomicity=").append(args.atomicMode().name()).append(",");
 
-        if (args.partitionedCachesNumber() == 1)
-            withExpr.append("template=partitioned");
+        withExpr.append("template=partitioned");
 
         withExpr.append("\"");
 
