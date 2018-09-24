@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -31,10 +30,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTrackerImpl.State.ACTIVE;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTrackerImpl.State.DONE;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTrackerImpl.State.INIT;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTrackerImpl.State.REQUESTING;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.noCoordinatorError;
 
 /**
@@ -42,6 +37,18 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.noCoord
  */
 @SuppressWarnings("unchecked")
 public class MvccQueryTrackerImpl implements MvccQueryTracker {
+    /** */
+    private enum State {
+        /** */
+        INIT,
+
+        /** */
+        REQUESTING,
+
+        /** */
+        CLOSED
+    }
+
     /** */
     @GridToStringExclude
     private final GridCacheContext cctx;
@@ -51,23 +58,20 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
     private final IgniteLogger log;
 
     /** */
-    @GridToStringExclude
-    private long crdVer;
+    private final boolean canRemap;
 
     /** */
     private final long id;
 
     /** */
-    private MvccSnapshot snapshot;
+    @GridToStringExclude
+    private long crdVer;
 
     /** */
     private volatile AffinityTopologyVersion topVer;
 
     /** */
-    private final boolean canRemap;
-
-    /** */
-    private AtomicReference state = new AtomicReference(INIT);
+    private Object state = State.INIT;
 
     /**
      * @param cctx Cache context.
@@ -82,9 +86,9 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
      */
     public MvccQueryTrackerImpl(GridCacheContext cctx, boolean canRemap) {
         this.cctx = cctx;
-        this.id = ID_CNTR.incrementAndGet();
         this.canRemap = canRemap;
 
+        id = ID_CNTR.incrementAndGet();
         log = cctx.logger(getClass());
     }
 
@@ -95,7 +99,9 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
 
     /** {@inheritDoc} */
     @Override public synchronized MvccSnapshot snapshot() {
-        return snapshot;
+        assert state != null : this;
+
+        return state.getClass() == State.class ? null : (MvccSnapshot)state;
     }
 
     /** {@inheritDoc} */
@@ -147,85 +153,77 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
 
     /** {@inheritDoc} */
     @Override public void onDone() {
-        if (state.getAndSet(DONE) != ACTIVE)
-            return;
+        MvccSnapshot snapshot = null;
 
-        releaseResources();
-    }
+        synchronized (this) {
+            if (state == State.CLOSED)
+                return;
+            else if (state.getClass() != State.class)
+                snapshot = (MvccSnapshot)state;
 
-    /** Release resources. */
-    private void releaseResources() {
-        MvccProcessor prc = cctx.shared().coordinators();
-        MvccSnapshot snapshot = snapshot();
+            state = State.CLOSED;
+        }
 
-        prc.removeQueryTracker(id);
+        cctx.shared().coordinators().removeQueryTracker(id);
 
         if (snapshot != null)
-            prc.ackQueryDone(snapshot, id);
+            cctx.shared().coordinators().ackQueryDone(snapshot, id);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Void> onDone(@NotNull GridNearTxLocal tx, boolean commit) {
-        if (state.getAndSet(DONE) != ACTIVE)
-            return commit ? new GridFinishedFuture<>() : null;
+        MvccSnapshot snapshot = null;
 
-        MvccSnapshot snapshot = snapshot();
+        synchronized (this) {
+            if (state == State.CLOSED) {
+                assert !commit : this;
+
+                return null;
+            }
+            else if (state.getClass() != State.class)
+                snapshot = (MvccSnapshot)state;
+
+            state = State.CLOSED;
+        }
+
+        cctx.shared().coordinators().removeQueryTracker(id);
+
         MvccSnapshot txSnapshot = tx.mvccSnapshot();
 
         if (snapshot == null && txSnapshot == null)
             return commit ? new GridFinishedFuture<>() : null;
 
-        MvccProcessor prc = cctx.shared().coordinators();
-
-        if (snapshot != null)
-            prc.removeQueryTracker(id);
-
         if (txSnapshot == null)
-            prc.ackQueryDone(snapshot, id);
+            cctx.shared().coordinators().ackQueryDone(snapshot, id);
         else if (commit)
-            return prc.ackTxCommit(txSnapshot, snapshot, id);
+            return cctx.shared().coordinators().ackTxCommit(txSnapshot, snapshot, id);
         else
-            prc.ackTxRollback(txSnapshot, snapshot, id);
+            cctx.shared().coordinators().ackTxRollback(txSnapshot, snapshot, id);
 
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public synchronized long onMvccCoordinatorChange(MvccCoordinator newCrd) {
-        if (snapshot != null) {
+        if (snapshot() != null && crdVer != newCrd.coordinatorVersion()) {
             assert crdVer != 0 : this;
 
-            if (crdVer != newCrd.coordinatorVersion()) {
-                crdVer = newCrd.coordinatorVersion();
-
-                return id;
-            }
-            else
-                return MVCC_TRACKER_ID_NA;
+            return id;
         }
-        else if (crdVer != 0)
+
+        if (state == State.REQUESTING)
             crdVer = 0; // Mark for remap.
 
         return MVCC_TRACKER_ID_NA;
     }
 
-    /** */
+    /**
+     * @param topVer Topology version.
+     * @param lsnr Response listener.
+     */
     private void requestSnapshot0(AffinityTopologyVersion topVer, MvccSnapshotResponseListener lsnr) {
-        if (checkTopology(topVer, lsnr = decorate(lsnr))) {
-            if (state.compareAndSet(INIT, REQUESTING))
-                cctx.shared().coordinators().addQueryTracker(this);
-
+        if (checkActive(lsnr) && checkTopology(topVer, lsnr = decorate(lsnr))) {
             try {
-                Object state0 = state.get();
-
-                if (state0 == DONE) {
-                    lsnr.onError(new IgniteCheckedException("Mvcc Tracker has been concurrently closed."));
-
-                    releaseResources();
-
-                    return;
-                }
-
                 MvccSnapshot snapshot = cctx.shared().coordinators().tryRequestSnapshotLocal();
 
                 if (snapshot == null)
@@ -239,7 +237,12 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
         }
     }
 
-    /** */
+    /**
+     * Decorate response listener if needed.
+     *
+     * @param lsnr Listener to decorate.
+     * @return Decorated listener.
+     */
     private MvccSnapshotResponseListener decorate(MvccSnapshotResponseListener lsnr) {
         assert lsnr != null;
 
@@ -252,6 +255,8 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
     /**
      * Validates if mvcc snapshot could be requested on the given topology.
      *
+     * @param topVer Topology version.
+     * @param lsnr Response listener.
      * @return {@code True} if topology is valid.
      */
     private boolean checkTopology(AffinityTopologyVersion topVer, MvccSnapshotResponseListener lsnr) {
@@ -263,17 +268,33 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
             return false;
         }
 
-        if (state.get() == DONE) {
-            lsnr.onError(new IgniteCheckedException("Mvcc Tracker has been concurrently closed."));
+        boolean closed = false;
+
+        synchronized (this) {
+            assert state != null && state.getClass() == State.class : this;
+
+            switch ((State)state) {
+                case INIT:
+                    cctx.shared().coordinators().addQueryTracker(this);
+
+                    state = State.REQUESTING;
+
+                case REQUESTING:
+                    crdVer = crd.coordinatorVersion();
+
+                    break;
+                case CLOSED:
+                    closed = true;
+            }
+        }
+
+        if (closed) {
+            lsnr.onError(new IgniteCheckedException("Query was closed."));
 
             return false;
         }
 
         this.topVer = topVer;
-
-        synchronized (this) {
-            crdVer = crd.coordinatorVersion();
-        }
 
         MvccCoordinator curCrd = cctx.topology().mvccCoordinator();
 
@@ -288,7 +309,36 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
         return true;
     }
 
-    /** */
+    /**
+     * Validates if mvcc snapshot has been already requested by a client.
+     *
+     * @return {@code True} if it is a system remap or snapshot has not been requested yet.
+     */
+    private boolean checkActive(@NotNull MvccSnapshotResponseListener lsnr) {
+        if (lsnr.getClass() == ListenerDecorator.class)
+            return true;
+
+        IgniteCheckedException ex;
+
+        synchronized (this) {
+            if (state == State.INIT)
+                return true;
+            else if (state == State.CLOSED)
+                ex = new IgniteCheckedException("Query was closed.");
+            else
+                ex = new IgniteCheckedException("Mvcc snapshot has been already requested.");
+        }
+
+        lsnr.onError(ex);
+
+        return false;
+    }
+
+    /**
+     * Tries to remap snapshot request to actual topology.
+     *
+     * @param lsnr Response listener.
+     */
     private void tryRemap(MvccSnapshotResponseListener lsnr) {
         if (!canRemap) {
             lsnr.onError(new ClusterTopologyCheckedException("Failed to request mvcc version, coordinator failed."));
@@ -316,72 +366,59 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
     }
 
     /**
-     * @param res Response.
+     * Response callback.
+     *
+     * @param res Snapshot result.
      * @param lsnr Response listener.
      * @return {@code false} if need to remap.
      */
     private boolean onResponse0(@NotNull MvccSnapshot res, MvccSnapshotResponseListener lsnr) {
-        assert state.get() != INIT : "Got response without request.";
-
         boolean needRemap = false;
 
         synchronized (this) {
-            assert snapshot() == null : "[this=" + this + ", rcvdVer=" + res + "]";
+            assert state == State.REQUESTING || state == State.CLOSED : "[this=" + this + ", rcvdVer=" + res + "]";
 
-            if (crdVer != 0)
-                this.snapshot = res;
-            else
-                needRemap = true;
+            if (state != State.CLOSED) {
+                if (crdVer != 0) {
+                    this.state = res;
+
+                    return true;
+                }
+                else
+                    needRemap = true;
+            }
         }
 
-        if (needRemap) { // Coordinator failed or reassigned, need remap.
+        if (needRemap) // Coordinator failed or reassigned, need remap.
             tryRemap(lsnr);
+        else { // Query was concurrently closed.
+            cctx.shared().coordinators().ackQueryDone(res, id);
 
-            return false;
-        }
-        else if (!state.compareAndSet(REQUESTING, ACTIVE)) {
-            assert state.get() == DONE;
-
-            releaseResources();
+            lsnr.onError(new IgniteCheckedException("Query was closed."));
         }
 
-        return true;
+        return false;
     }
 
     /**
+     * Error callback.
+     *
      * @param e Exception.
      * @param lsnr Response listener.
      * @return {@code false} if need to remap.
      */
     private boolean onError0(IgniteCheckedException e, MvccSnapshotResponseListener lsnr) {
         if (e instanceof ClusterTopologyCheckedException && canRemap) {
-            if (e instanceof ClusterTopologyServerNotFoundException) {
-                if (log.isDebugEnabled())
-                    log.debug("No Mvcc coordinator assigned.");
-            }
-            else {
-                if (log.isDebugEnabled())
-                    log.debug("Mvcc coordinator failed, need remap: " + e);
+            if (e instanceof ClusterTopologyServerNotFoundException)
+                return true; // No Mvcc coordinator assigned
 
-                tryRemap(lsnr);
+            if (log.isDebugEnabled())
+                log.debug("Mvcc coordinator failed, need remap: " + e);
 
-                return false;
-            }
+            tryRemap(lsnr);
+
+            return false;
         }
-
-        Object state = this.state.getAndSet(DONE);
-
-        if (log.isDebugEnabled()) {
-            if (state == REQUESTING)
-                log.debug("Failed to request mvcc version, tracker will be closed.");
-            else {
-                assert this.state.get() == DONE;
-
-                log.debug("Tracker has been concurrently closed.");
-            }
-        }
-
-        releaseResources();
 
         return true;
     }
@@ -396,26 +433,16 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
             this.lsnr = lsnr;
         }
 
+        /** {@inheritDoc} */
         @Override public void onResponse(MvccSnapshot res) {
             if (onResponse0(res, this))
                 lsnr.onResponse(res);
         }
 
+        /** {@inheritDoc} */
         @Override public void onError(IgniteCheckedException e) {
             if (onError0(e, this))
                 lsnr.onError(e);
         }
-    }
-
-    /** Tracker state. */
-    enum State {
-        /** Initial state. */
-        INIT,
-        /** Snapshot request in fly. */
-        REQUESTING,
-        /** Snapshot requested. */
-        ACTIVE,
-        /** Tracker is closed. */
-        DONE
     }
 }
