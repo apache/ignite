@@ -246,6 +246,7 @@ ln -sf %{_log}/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 %{_datadir}/%{name}/libs
 %{_datadir}/%{name}/platforms
 %{_datadir}/%{name}/work
+%{_datadir}/doc/%{name}-%{version}
 %{_libdir}/%{name}
 %{_sysconfdir}/systemd/system/%{name}@.service
 %{_sharedstatedir}/%{name}/log
