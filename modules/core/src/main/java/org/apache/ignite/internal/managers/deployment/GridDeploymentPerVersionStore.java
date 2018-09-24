@@ -704,7 +704,8 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 ctx.config().getPeerClassLoadingLocalClassPathExclude(),
                 0,
                 false,
-                true);
+                true,
+                false);
 
             String path = U.classNameToResourceName(clsName);
 
@@ -1006,7 +1007,8 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 ctx.config().getPeerClassLoadingLocalClassPathExclude(),
                 ctx.config().getPeerClassLoadingMissedResourcesCacheSize(),
                 meta.deploymentMode() == CONTINUOUS /* enable class byte cache in CONTINUOUS mode */,
-                false);
+                false,
+                true);
 
             if (meta.participants() != null)
                 for (Map.Entry<UUID, IgniteUuid> e : meta.participants().entrySet())
@@ -1036,7 +1038,8 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 ctx.config().getPeerClassLoadingLocalClassPathExclude(),
                 ctx.config().getPeerClassLoadingMissedResourcesCacheSize(),
                 false,
-                false);
+                false,
+                true);
 
             if (log.isDebugEnabled())
                 log.debug("Created classloader in SHARED mode with participants " +

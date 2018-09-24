@@ -100,6 +100,9 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
     /** {@code True} to omit any output to INFO or higher. */
     private boolean quiet;
 
+    /** {@code False} if serialized classes/resources no necessary loaded from remote node. */
+    private final boolean needsBinaryData;
+
     /** */
     private final Object mux = new Object();
 
@@ -125,6 +128,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
      * @param missedResourcesCacheSize Size of the missed resources cache.
      * @param clsBytesCacheEnabled Flag to enable class byte cache.
      * @param quiet {@code True} to omit output to log.
+     * @param needsBinaryData {@code False} if serialized classes/resources no necessary loaded from remote node.
      * @throws SecurityException If a security manager exists and its
      *      {@code checkCreateClassLoader} method doesn't allow creation
      *      of a new class loader.
@@ -144,7 +148,8 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
         String[] p2pExclude,
         int missedResourcesCacheSize,
         boolean clsBytesCacheEnabled,
-        boolean quiet) throws SecurityException {
+        boolean quiet,
+        boolean needsBinaryData) throws SecurityException {
         super(parent);
 
         assert id != null;
@@ -182,6 +187,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
         byteMap = clsBytesCacheEnabled ? new ConcurrentHashMap<String, byte[]>() : null;
 
         this.quiet = quiet;
+        this.needsBinaryData = needsBinaryData;
     }
 
     /**
@@ -205,9 +211,9 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
      * @param missedResourcesCacheSize Size of the missed resources cache.
      * @param clsBytesCacheEnabled Flag to enable class byte cache.
      * @param quiet {@code True} to omit output to log.
-     * @throws SecurityException If a security manager exists and its
-     *      {@code checkCreateClassLoader} method doesn't allow creation
-     *      of a new class loader.
+     * @param needsBinaryData {@code False} if serialized classes/resources no necessary loaded from remote node.
+     * @throws SecurityException If a security manager exists and its {@code checkCreateClassLoader} method doesn't
+     * allow creation of a new class loader.
      */
     GridDeploymentClassLoader(
         IgniteUuid id,
@@ -223,7 +229,8 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
         String[] p2pExclude,
         int missedResourcesCacheSize,
         boolean clsBytesCacheEnabled,
-        boolean quiet) throws SecurityException {
+        boolean quiet,
+        boolean needsBinaryData) throws SecurityException {
         super(parent);
 
         assert id != null;
@@ -254,6 +261,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
         byteMap = clsBytesCacheEnabled ? new ConcurrentHashMap<String, byte[]>() : null;
 
         this.quiet = quiet;
+        this.needsBinaryData = needsBinaryData;
     }
 
     /** {@inheritDoc} */
@@ -505,7 +513,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
         String path = U.classNameToResourceName(name);
 
-        GridByteArrayList byteSrc = sendClassRequest(name, path);
+        GridByteArrayList byteSrc = sendClassRequest(name, path, needsBinaryData);
 
         synchronized (this) {
             Class<?> cls = findLoadedClass(name);
@@ -552,14 +560,17 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
     }
 
     /**
-     * Sends class-loading request to all nodes associated with this class loader.
+     * Sends class-loading request to all nodes associated with this class loader. If {@code needsBinaryData=true} and
+     * class found length of byte array will be 1.
      *
      * @param name Class name.
      * @param path Class path.
+     * @param needsBinaryData Needs serialized class in response or not.
      * @return Class byte source.
      * @throws ClassNotFoundException If class was not found.
      */
-    private GridByteArrayList sendClassRequest(String name, String path) throws ClassNotFoundException {
+    private GridByteArrayList sendClassRequest(String name, String path,
+        boolean needsBinaryData) throws ClassNotFoundException {
         assert !Thread.holdsLock(mux);
 
         long endTime = computeEndTime(p2pTimeout);
@@ -598,7 +609,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
             }
 
             try {
-                GridDeploymentResponse res = comm.sendResourceRequest(path, ldrId, node, endTime);
+                GridDeploymentResponse res = comm.sendResourceRequest(path, ldrId, node, endTime, needsBinaryData);
 
                 if (res == null) {
                     String msg = "Failed to send class-loading request to node (is node alive?) [node=" +
@@ -691,18 +702,20 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
         }
 
         if (in == null)
-            in = sendResourceRequest(name);
+            in = sendResourceRequest(name, needsBinaryData);
 
         return in;
     }
 
     /**
-     * Sends resource request to all remote nodes associated with this class loader.
+     * Sends resource request to all remote nodes associated with this class loader. If {@code needsBinaryData=true} and
+     * class found length of byte array will be 1.
      *
      * @param name Resource name.
+     * @param needsBinaryData Needs serialized class in response or not.
      * @return InputStream for resource or {@code null} if resource could not be found.
      */
-    @Nullable private InputStream sendResourceRequest(String name) {
+    @Nullable private InputStream sendResourceRequest(String name, boolean needsBinaryData) {
         assert !Thread.holdsLock(mux);
 
         long endTime = computeEndTime(p2pTimeout);
@@ -739,7 +752,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
             try {
                 // Request is sent with timeout that is why we can use synchronization here.
-                GridDeploymentResponse res = comm.sendResourceRequest(name, ldrId, node, endTime);
+                GridDeploymentResponse res = comm.sendResourceRequest(name, ldrId, node, endTime, needsBinaryData);
 
                 if (res == null) {
                     U.warn(log, "Failed to get resource from node (is node alive?) [nodeId=" +

@@ -304,7 +304,8 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
                     ctx.config().getPeerClassLoadingLocalClassPathExclude(),
                     ctx.config().getPeerClassLoadingMissedResourcesCacheSize(),
                     false,
-                    false);
+                    false,
+                    true);
 
                 dep = new IsolatedDeployment(meta.deploymentMode(), clsLdr, meta.classLoaderId(),
                     meta.userVersion(), snd, meta.className());

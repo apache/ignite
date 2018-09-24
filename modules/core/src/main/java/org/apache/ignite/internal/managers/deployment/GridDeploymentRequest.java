@@ -54,6 +54,9 @@ public class GridDeploymentRequest implements Message {
     /** Undeploy flag. */
     private boolean isUndeploy;
 
+    /** Needs serialized class in response flag. */
+    private boolean needsBinaryData = true;
+
     /** Nodes participating in request (chain). */
     @GridToStringInclude
     @GridDirectCollection(UUID.class)
@@ -75,7 +78,7 @@ public class GridDeploymentRequest implements Message {
      * @param rsrcName Resource name that should be found and sent back.
      * @param isUndeploy Undeploy property.
      */
-    GridDeploymentRequest(Object resTopic, IgniteUuid ldrId, String rsrcName, boolean isUndeploy) {
+    GridDeploymentRequest(Object resTopic, IgniteUuid ldrId, String rsrcName, boolean isUndeploy, boolean needsBinaryData) {
         assert isUndeploy || resTopic != null;
         assert isUndeploy || ldrId != null;
         assert rsrcName != null;
@@ -84,6 +87,7 @@ public class GridDeploymentRequest implements Message {
         this.ldrId = ldrId;
         this.rsrcName = rsrcName;
         this.isUndeploy = isUndeploy;
+        this.needsBinaryData = needsBinaryData;
     }
 
     /**
@@ -159,6 +163,16 @@ public class GridDeploymentRequest implements Message {
         this.nodeIds = nodeIds;
     }
 
+    /**
+     * @return needs serialized class in response flag.
+     */
+    boolean needsBinaryData() { return needsBinaryData; }
+
+    /**
+     * @param needsBinaryData needs serialized class in response flag.
+     */
+    void needsBinaryData(boolean needsBinaryData) { this.needsBinaryData = needsBinaryData; }
+
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
@@ -202,6 +216,12 @@ public class GridDeploymentRequest implements Message {
 
             case 4:
                 if (!writer.writeString("rsrcName", rsrcName))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeBoolean("needsBinaryData", needsBinaryData))
                     return false;
 
                 writer.incrementState();
@@ -259,6 +279,14 @@ public class GridDeploymentRequest implements Message {
 
                 reader.incrementState();
 
+            case 5:
+                needsBinaryData = reader.readBoolean("needsBinaryData");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridDeploymentRequest.class);
@@ -271,7 +299,7 @@ public class GridDeploymentRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 6;
     }
 
     /** {@inheritDoc} */

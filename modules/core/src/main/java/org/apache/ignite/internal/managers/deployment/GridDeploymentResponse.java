@@ -51,6 +51,13 @@ public class GridDeploymentResponse implements Message {
     }
 
     /**
+     * Checks, that byte source present.
+     *
+     * @return true if present, false if not.
+     */
+    boolean byteSourcePresent() { return byteSrc!=null && byteSrc.size()>1; }
+
+    /**
      * Sets raw class/resource or serialized task as bytes array.
      *
      * @param byteSrc Class/resource/task source.

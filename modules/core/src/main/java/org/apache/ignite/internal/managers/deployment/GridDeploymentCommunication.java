@@ -253,12 +253,17 @@ class GridDeploymentCommunication {
             }
             else {
                 try {
-                    GridByteArrayList bytes = new GridByteArrayList(1024);
-
-                    bytes.readAll(in);
-
                     res.success(true);
-                    res.byteSource(bytes);
+
+                    if (req.needsBinaryData()) {
+                        GridByteArrayList bytes = new GridByteArrayList(1024);
+
+                        bytes.readAll(in);
+
+                        res.byteSource(bytes);
+                    }
+                    else
+                        res.byteSource(new GridByteArrayList(1));
                 }
                 catch (IOException e) {
                     String errMsg = "Failed to read resource due to IO failure: " + req.resourceName();
@@ -327,7 +332,7 @@ class GridDeploymentCommunication {
     void sendUndeployRequest(String rsrcName, Collection<ClusterNode> rmtNodes) throws IgniteCheckedException {
         assert !rmtNodes.contains(ctx.discovery().localNode());
 
-        Message req = new GridDeploymentRequest(null, null, rsrcName, true);
+        Message req = new GridDeploymentRequest(null, null, rsrcName, true, false);
 
         if (!rmtNodes.isEmpty()) {
             ctx.io().sendToGridTopic(
@@ -348,12 +353,13 @@ class GridDeploymentCommunication {
      * @param dstNode Remote node request should be sent to.
      * @param threshold Time in milliseconds when request is decided to
      *      be obsolete.
+     * @param needsBinaryData Needs serialized class in response or not.
      * @return Either response value or {@code null} if timeout occurred.
      * @throws IgniteCheckedException Thrown if there is no connection with remote node.
      */
     @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     GridDeploymentResponse sendResourceRequest(final String rsrcName, IgniteUuid clsLdrId,
-        final ClusterNode dstNode, long threshold) throws IgniteCheckedException {
+        final ClusterNode dstNode, long threshold, boolean needsBinaryData) throws IgniteCheckedException {
         assert rsrcName != null;
         assert dstNode != null;
         assert clsLdrId != null;
@@ -378,7 +384,7 @@ class GridDeploymentCommunication {
 
         Object resTopic = TOPIC_CLASSLOAD.topic(IgniteUuid.fromUuid(ctx.localNodeId()));
 
-        GridDeploymentRequest req = new GridDeploymentRequest(resTopic, clsLdrId, rsrcName, false);
+        GridDeploymentRequest req = new GridDeploymentRequest(resTopic, clsLdrId, rsrcName, false, needsBinaryData);
 
         // Send node IDs chain with request.
         req.nodeIds(nodeIds);
