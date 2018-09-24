@@ -57,7 +57,7 @@ public class IgniteStripedThreadPoolExecutorMXBeanAdapter implements IgniteStrip
        int count = 0;
        for (int i = 0; i < exec.stripes(); i++) {
           ThreadPoolMXBeanAdapter a = new ThreadPoolMXBeanAdapter(exec.stripe(i));
-          
+
           count += a.getActiveCount();
        }
 
@@ -69,7 +69,7 @@ public class IgniteStripedThreadPoolExecutorMXBeanAdapter implements IgniteStrip
        int count = 0;
        for (int i = 0; i < exec.stripes(); i++) {
           ThreadPoolMXBeanAdapter a = new ThreadPoolMXBeanAdapter(exec.stripe(i));
-          
+
           count += a.getCompletedTaskCount();
        }
 
@@ -81,7 +81,7 @@ public class IgniteStripedThreadPoolExecutorMXBeanAdapter implements IgniteStrip
        int count = 0;
        for (int i = 0; i < exec.stripes(); i++) {
           ThreadPoolMXBeanAdapter a = new ThreadPoolMXBeanAdapter(exec.stripe(i));
-          
+
           count += a.getCorePoolSize();
        }
 
@@ -93,10 +93,9 @@ public class IgniteStripedThreadPoolExecutorMXBeanAdapter implements IgniteStrip
        int count = 0;
        for (int i = 0; i < exec.stripes(); i++) {
           ThreadPoolMXBeanAdapter a = new ThreadPoolMXBeanAdapter(exec.stripe(i));
-         
-          if (count <  a.getLargestPoolSize()) {
+
+          if (count <  a.getLargestPoolSize())
              count = a.getLargestPoolSize();
-          }
        }
 
        return count;
@@ -107,10 +106,9 @@ public class IgniteStripedThreadPoolExecutorMXBeanAdapter implements IgniteStrip
        int count = 0;
        for (int i = 0; i < exec.stripes(); i++) {
           ThreadPoolMXBeanAdapter a = new ThreadPoolMXBeanAdapter(exec.stripe(i));
-          
-          if (count <  a.getMaximumPoolSize()) {
+
+          if (count <  a.getMaximumPoolSize())
              count = a.getMaximumPoolSize();
-          }
        }
 
        return count;
@@ -121,7 +119,7 @@ public class IgniteStripedThreadPoolExecutorMXBeanAdapter implements IgniteStrip
        int count = 0;
        for (int i = 0; i < exec.stripes(); i++) {
           ThreadPoolMXBeanAdapter a = new ThreadPoolMXBeanAdapter(exec.stripe(i));
-          
+
           count += a.getPoolSize();
        }
 
@@ -133,7 +131,7 @@ public class IgniteStripedThreadPoolExecutorMXBeanAdapter implements IgniteStrip
        int count = 0;
        for (int i = 0; i < exec.stripes(); i++) {
           ThreadPoolMXBeanAdapter a = new ThreadPoolMXBeanAdapter(exec.stripe(i));
-          
+
           count += a.getTaskCount();
        }
 
@@ -145,7 +143,7 @@ public class IgniteStripedThreadPoolExecutorMXBeanAdapter implements IgniteStrip
        int count = 0;
        for (int i = 0; i < exec.stripes(); i++) {
           ThreadPoolMXBeanAdapter a = new ThreadPoolMXBeanAdapter(exec.stripe(i));
-          
+
           count += a.getQueueSize();
        }
 
@@ -161,10 +159,9 @@ public class IgniteStripedThreadPoolExecutorMXBeanAdapter implements IgniteStrip
     @Override public boolean isShutdown() {
        for (int i = 0; i < exec.stripes(); i++) {
           ThreadPoolMXBeanAdapter a = new ThreadPoolMXBeanAdapter(exec.stripe(i));
-          
-          if (!a.isShutdown()) {
-             return false;         
-          }
+
+          if (!a.isShutdown())
+             return false;
        }
        return true;
     }
@@ -173,10 +170,9 @@ public class IgniteStripedThreadPoolExecutorMXBeanAdapter implements IgniteStrip
     @Override public boolean isTerminated() {
        for (int i = 0; i < exec.stripes(); i++) {
           ThreadPoolMXBeanAdapter a = new ThreadPoolMXBeanAdapter(exec.stripe(i));
-          
-          if (!a.isTerminated()) {
-             return false;         
-          }
+
+          if (!a.isTerminated())
+             return false;
        }
        return true;
     }
@@ -185,10 +181,9 @@ public class IgniteStripedThreadPoolExecutorMXBeanAdapter implements IgniteStrip
     @Override public boolean isTerminating() {
        for (int i = 0; i < exec.stripes(); i++) {
           ThreadPoolMXBeanAdapter a = new ThreadPoolMXBeanAdapter(exec.stripe(i));
-          
-          if (a.isTerminating()) {
-             return true;         
-          }
+
+          if (a.isTerminating())
+             return true;
        }
 
        return false;
@@ -208,14 +203,14 @@ public class IgniteStripedThreadPoolExecutorMXBeanAdapter implements IgniteStrip
     @Override public String toString() {
         return S.toString(IgniteStripedThreadPoolExecutorMXBeanAdapter.class, this, super.toString());
     }
-    
+
     @MXBeanDescription("Number of completed tasks per stripe.")
     public long[] getStripesCompletedTasksCounts() {
        long [] result = new long[exec.stripes()];
-       
+
        for (int i = 0; i < exec.stripes(); i++) {
           ThreadPoolMXBeanAdapter a = new ThreadPoolMXBeanAdapter(exec.stripe(i));
-          
+
           result[i] = a.getCompletedTaskCount();
        }
 
@@ -228,10 +223,10 @@ public class IgniteStripedThreadPoolExecutorMXBeanAdapter implements IgniteStrip
     @MXBeanDescription("Number of active tasks per stripe.")
     public int[] getStripesActiveCount() {
        int [] result = new int[exec.stripes()];
-       
+
        for (int i = 0; i < exec.stripes(); i++) {
           ThreadPoolMXBeanAdapter a = new ThreadPoolMXBeanAdapter(exec.stripe(i));
-          
+
           result[i] = a.getActiveCount();
        }
 
@@ -244,26 +239,26 @@ public class IgniteStripedThreadPoolExecutorMXBeanAdapter implements IgniteStrip
     @MXBeanDescription("Size of queue per stripe.")
     public int[] getStripesQueueSizes() {
        int [] result = new int[exec.stripes()];
-       
+
        for (int i = 0; i < exec.stripes(); i++) {
           ThreadPoolMXBeanAdapter a = new ThreadPoolMXBeanAdapter(exec.stripe(i));
-          
+
           result[i] = a.getQueueSize();
        }
 
        return result;
     }
-    
+
     /**
      * @return Size of queue per stripe.
      */
     @MXBeanDescription("Size of queue per stripe.")
     public int[] getStripesLargestPoolSize() {
        int [] result = new int[exec.stripes()];
-       
+
        for (int i = 0; i < exec.stripes(); i++) {
           ThreadPoolMXBeanAdapter a = new ThreadPoolMXBeanAdapter(exec.stripe(i));
-          
+
           result[i] = a.getLargestPoolSize();
        }
 
@@ -273,10 +268,10 @@ public class IgniteStripedThreadPoolExecutorMXBeanAdapter implements IgniteStrip
    @Override
    public boolean[] getStripesActiveStatuses() {
       boolean [] result = new boolean[exec.stripes()];
-      
+
       for (int i = 0; i < exec.stripes(); i++) {
          ThreadPoolMXBeanAdapter a = new ThreadPoolMXBeanAdapter(exec.stripe(i));
-         
+
          result[i] = a.getActiveCount() > 0 ;
       }
 

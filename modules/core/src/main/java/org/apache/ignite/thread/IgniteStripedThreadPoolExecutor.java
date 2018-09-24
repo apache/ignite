@@ -177,14 +177,14 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
     @Override public String toString() {
         return S.toString(IgniteStripedThreadPoolExecutor.class, this);
     }
-     
+
     /**
      * @return Stripes count.
      */
     public int stripes() {
         return execs.length;
     }
-    
+
     /**
      * @return The executor service for stripe idx or null if out of range
      */

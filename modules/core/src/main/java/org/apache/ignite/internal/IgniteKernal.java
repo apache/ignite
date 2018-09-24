@@ -4293,7 +4293,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     new StripedExecutorMXBeanAdapter(stripedExecSvc),
                     StripedExecutorMXBean.class);
             }
-            
+
             if (dataStreamExecSvc != null) {
                // striped executor uses a custom adapter
                registerMBean("Thread Pools",
@@ -4301,7 +4301,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                    new StripedExecutorMXBeanAdapter(dataStreamExecSvc),
                    StripedExecutorMXBean.class);
             }
-            
+
             if (callbackExecSvc != null) {
                // striped executor uses a custom adapter
                registerMBean("Thread Pools",

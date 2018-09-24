@@ -28,8 +28,7 @@ public interface IgniteStripedThreadPoolExecutorMXBean extends ThreadPoolMXBean 
      */
     @MXBeanDescription("Stripes count.")
     public int getStripesCount();
-    
-    
+
     @MXBeanDescription("Number of completed tasks per stripe.")
     public long[] getStripesCompletedTasksCounts();
 
