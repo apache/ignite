@@ -1,5 +1,5 @@
 Apache Ignite Direct IO Module
-------------------------
+-------------------------------------
 
 Apache Ignite Direct IO is plugin, which provides page store with ability to write and read cache partitions
 in O_DIRECT mode.
@@ -10,7 +10,7 @@ Direct I/O in which case the data is read and written directly from/to the disk 
 
 Direct I/O plugin in Ignite is used for the checkpointing process where the dirty pages in RAM are written to the disk.
 
-Importing Cloud Module In Maven Project
+Importing Direct I/O Pluging In Maven Project
 -------------------------------------
 
 If you are using Maven to manage dependencies of your project, you can add Direct IO Module
@@ -34,6 +34,8 @@ interested in):
     ...
 </project>
 
+Importing Direct I/O Pluging In Gradle Project
+-------------------------------------
 For gradle you can add compile dependency, where igniteVersion is actual Ignite version:
 
 compile group: 'org.apache.ignite', name: 'ignite-direct-io', version: igniteVersion
