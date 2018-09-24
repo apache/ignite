@@ -28,6 +28,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -187,7 +188,16 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     /** {@inheritDoc} */
     @SuppressWarnings("TooBroadScope")
     @Override public void onKernalStop(boolean cancel) {
-        lock.writeLock();
+        while(true) {
+            try {
+                if (lock.tryWriteLock(1, TimeUnit.SECONDS))
+                    break;
+                else
+                    Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                U.warn(log, e);
+            }
+        }
 
         try {
             stopping = true;
