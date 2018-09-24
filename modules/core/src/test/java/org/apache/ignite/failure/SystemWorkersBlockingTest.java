@@ -17,26 +17,19 @@
 
 package org.apache.ignite.failure;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Tests system critical workers termination.
+ * Tests the handling of long blocking operations in system-critical workers.
  */
-public class SystemWorkersTerminationTest extends GridCommonAbstractTest {
+public class SystemWorkersBlockingTest extends GridCommonAbstractTest {
     /** Handler latch. */
     private static volatile CountDownLatch hndLatch;
 
@@ -47,16 +40,13 @@ public class SystemWorkersTerminationTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setFailureHandler(new TestFailureHandler());
+        cfg.setFailureHandler(new AbstractFailureHandler() {
+            @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
+                hndLatch.countDown();
 
-        DataRegionConfiguration drCfg = new DataRegionConfiguration();
-        drCfg.setPersistenceEnabled(true);
-
-        DataStorageConfiguration dsCfg = new DataStorageConfiguration();
-        dsCfg.setDefaultDataRegionConfiguration(drCfg);
-        dsCfg.setWalCompactionEnabled(true);
-
-        cfg.setDataStorageConfiguration(dsCfg);
+                return false;
+            }
+        });
 
         cfg.setFailureDetectionTimeout(FAILURE_DETECTION_TIMEOUT);
 
@@ -67,7 +57,7 @@ public class SystemWorkersTerminationTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        deleteWorkFiles();
+        hndLatch = new CountDownLatch(1);
 
         startGrid(0);
     }
@@ -77,56 +67,17 @@ public class SystemWorkersTerminationTest extends GridCommonAbstractTest {
         super.afterTest();
 
         stopAllGrids();
-
-        deleteWorkFiles();
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testTermination() throws Exception {
-        Ignite ignite = ignite(0);
-
-        ignite.cluster().active(true);
-
-        WorkersRegistry registry = ((IgniteKernal)ignite).context().workersRegistry();
-
-        Collection<String> threadNames = new ArrayList<>(registry.names());
-
-        int cnt = 0;
-
-        for (String threadName : threadNames) {
-            log.info("Worker termination: " + threadName);
-
-            hndLatch = new CountDownLatch(1);
-
-            GridWorker w = registry.worker(threadName);
-
-            Thread t = w.runner();
-
-            t.interrupt();
-
-            assertTrue(hndLatch.await(3, TimeUnit.SECONDS));
-
-            log.info("Worker is terminated: " + threadName);
-
-            cnt++;
-        }
-
-        assertEquals(threadNames.size(), cnt);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testSyntheticWorkerTermination() throws Exception {
-        hndLatch = new CountDownLatch(1);
-
+    public void testBlockingWorker() throws Exception {
         IgniteEx ignite = grid(0);
 
         GridWorker worker = new GridWorker(ignite.name(), "test-worker", log) {
             @Override protected void body() throws InterruptedException {
-                Thread.sleep(ignite.configuration().getFailureDetectionTimeout() / 2);
+                Thread.sleep(Long.MAX_VALUE);
             }
         };
 
@@ -137,29 +88,13 @@ public class SystemWorkersTerminationTest extends GridCommonAbstractTest {
 
         ignite.context().workersRegistry().register(worker);
 
-        worker.runner().join();
-
         assertTrue(hndLatch.await(ignite.configuration().getFailureDetectionTimeout() * 2, TimeUnit.MILLISECONDS));
-    }
 
-    /**
-     * @throws Exception If failed.
-     */
-    private void deleteWorkFiles() throws Exception {
-        cleanPersistenceDir();
+        Thread runner = worker.runner();
 
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "snapshot", false));
-    }
+        runner.interrupt();
+        runner.join(1000);
 
-    /**
-     * Test failure handler.
-     */
-    private class TestFailureHandler extends AbstractFailureHandler {
-        /** {@inheritDoc} */
-        @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
-            hndLatch.countDown();
-
-            return false;
-        }
+        assertFalse(runner.isAlive());
     }
 }
