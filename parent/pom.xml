@@ -1000,6 +1000,8 @@
                         <configuration>
                             <compilerArgs>
                                 <arg>--add-exports</arg>
+                                <arg>java.base/jdk.internal.loader=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
                                 <arg>java.base/jdk.internal.misc=ALL-UNNAMED</arg>
                                 <arg>--add-exports</arg>
                                 <arg>java.base/sun.nio.ch=ALL-UNNAMED</arg>
