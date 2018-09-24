@@ -20,10 +20,13 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.ExceptionAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -32,9 +35,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A response to {@link GridNearTxQueryEnlistRequest}.
+ * A response to {@link GridNearTxEnlistRequest}.
  */
-public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements ExceptionAware {
+public class GridNearTxEnlistResponse extends GridCacheIdMessage implements ExceptionAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -52,51 +55,73 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
     private int miniId;
 
     /** Result. */
-    private long res;
-
-    /** Remove mapping flag. */
-    private boolean removeMapping;
+    private GridCacheReturn res;
 
     /** */
     private GridCacheVersion lockVer;
 
+    /** */
+    private GridCacheVersion dhtVer;
+
+    /** */
+    private IgniteUuid dhtFutId;
+
+    /** */
+    private GridLongList updCntrs;
+
     /**
      * Default constructor.
      */
-    public GridNearTxQueryEnlistResponse() {
+    public GridNearTxEnlistResponse() {
         // No-op.
     }
 
     /**
+     * Constructor for normal result.
+     *
+     * @param cacheId Cache id.
+     * @param futId Future id.
+     * @param miniId Mini future id.
+     * @param lockVer Lock version.
+     * @param res Result.
+     * @param dhtVer Dht version.
+     * @param dhtFutId Dht future id.
+     * @param updCntrs Update counters.
+     */
+    public GridNearTxEnlistResponse(int cacheId,
+        IgniteUuid futId,
+        int miniId,
+        GridCacheVersion lockVer,
+        GridCacheReturn res,
+        GridCacheVersion dhtVer,
+        IgniteUuid dhtFutId,
+        GridLongList updCntrs) {
+        this.cacheId = cacheId;
+        this.futId = futId;
+        this.miniId = miniId;
+        this.lockVer = lockVer;
+        this.res = res;
+        this.dhtVer = dhtVer;
+        this.dhtFutId = dhtFutId;
+        this.updCntrs = updCntrs;
+    }
+
+    /**
+     * Constructor for error result.
+     *
      * @param cacheId Cache id.
      * @param futId Future id.
      * @param miniId Mini future id.
      * @param lockVer Lock version.
      * @param err Error.
      */
-    public GridNearTxQueryEnlistResponse(int cacheId, IgniteUuid futId, int miniId, GridCacheVersion lockVer, Throwable err) {
+    public GridNearTxEnlistResponse(int cacheId, IgniteUuid futId, int miniId, GridCacheVersion lockVer,
+        Throwable err) {
         this.cacheId = cacheId;
         this.futId = futId;
         this.miniId = miniId;
         this.lockVer = lockVer;
         this.err = err;
-    }
-
-    /**
-     * @param cacheId Cache id.
-     * @param futId Future id.
-     * @param miniId Mini future id.
-     * @param lockVer Lock version.
-     * @param res Result.
-     * @param removeMapping Remove mapping flag.
-     */
-    public GridNearTxQueryEnlistResponse(int cacheId, IgniteUuid futId, int miniId, GridCacheVersion lockVer, long res, boolean removeMapping) {
-        this.cacheId = cacheId;
-        this.futId = futId;
-        this.miniId = miniId;
-        this.lockVer = lockVer;
-        this.res = res;
-        this.removeMapping = removeMapping;
     }
 
     /**
@@ -123,15 +148,8 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
     /**
      * @return Result.
      */
-    public long result() {
+    public GridCacheReturn result() {
         return res;
-    }
-
-    /**
-     * @return Remove mapping flag.
-     */
-    public boolean removeMapping() {
-        return removeMapping;
     }
 
     /** {@inheritDoc} */
@@ -144,9 +162,30 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
         return false;
     }
 
+    /**
+     * @return Dht version.
+     */
+    public GridCacheVersion dhtVersion() {
+        return dhtVer;
+    }
+
+    /**
+     * @return Dht future id.
+     */
+    public IgniteUuid dhtFutureId() {
+        return dhtFutId;
+    }
+
+    /**
+     * @return Update counters.
+     */
+    public GridLongList updateCounters() {
+        return updCntrs;
+    }
+
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 9;
+        return 11;
     }
 
     /** {@inheritDoc} */
@@ -165,37 +204,49 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeByteArray("errBytes", errBytes))
+                if (!writer.writeIgniteUuid("dhtFutId", dhtFutId))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeMessage("dhtVer", dhtVer))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeMessage("lockVer", lockVer))
+                if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeInt("miniId", miniId))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeBoolean("removeMapping", removeMapping))
+                if (!writer.writeMessage("lockVer", lockVer))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeLong("res", res))
+                if (!writer.writeInt("miniId", miniId))
+                    return false;
+
+                writer.incrementState();
+
+            case 9:
+                if (!writer.writeMessage("res", res))
+                    return false;
+
+                writer.incrementState();
+
+            case 10:
+                if (!writer.writeMessage("updCntrs", updCntrs))
                     return false;
 
                 writer.incrementState();
@@ -217,7 +268,7 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
 
         switch (reader.state()) {
             case 3:
-                errBytes = reader.readByteArray("errBytes");
+                dhtFutId = reader.readIgniteUuid("dhtFutId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -225,7 +276,7 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
                 reader.incrementState();
 
             case 4:
-                futId = reader.readIgniteUuid("futId");
+                dhtVer = reader.readMessage("dhtVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -233,7 +284,7 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
                 reader.incrementState();
 
             case 5:
-                lockVer = reader.readMessage("lockVer");
+                errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -241,7 +292,7 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
                 reader.incrementState();
 
             case 6:
-                miniId = reader.readInt("miniId");
+                futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -249,7 +300,7 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
                 reader.incrementState();
 
             case 7:
-                removeMapping = reader.readBoolean("removeMapping");
+                lockVer = reader.readMessage("lockVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -257,7 +308,23 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
                 reader.incrementState();
 
             case 8:
-                res = reader.readLong("res");
+                miniId = reader.readInt("miniId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 9:
+                res = reader.readMessage("res");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 10:
+                updCntrs = reader.readMessage("updCntrs");
 
                 if (!reader.isLastRead())
                     return false;
@@ -266,33 +333,42 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
 
         }
 
-        return reader.afterMessageRead(GridNearTxQueryEnlistResponse.class);
+        return reader.afterMessageRead(GridNearTxEnlistResponse.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 152;
+        return 160;
     }
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
         if (err != null && errBytes == null)
             errBytes = U.marshal(ctx.marshaller(), err);
+
+        if (res != null)
+            res.prepareMarshal(cctx);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
         if (errBytes != null)
             err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-    }
 
+        if (res != null)
+            res.finishUnmarshal(cctx, ldr);
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearTxQueryEnlistResponse.class, this);
+        return S.toString(GridNearTxEnlistResponse.class, this);
     }
 }
