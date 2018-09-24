@@ -23,6 +23,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath
 import org.apache.ignite.spark.AbstractDataFrameSpec.{DEFAULT_CACHE, EMPLOYEE_CACHE_NAME, TEST_CONFIG_FILE, enclose}
+import org.apache.spark.sql.catalyst.catalog.SessionCatalog
 import org.apache.spark.sql.ignite.IgniteSparkSession
 import org.apache.spark.sql.types.{LongType, StringType}
 import org.junit.runner.RunWith
@@ -39,12 +40,30 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
         it("Should observe all available SQL tables") {
             val tables = igniteSession.catalog.listTables.collect()
 
-            tables.length should equal(6)
+            tables.length should equal(3)
 
-            // Each table is accessible both with and without schema; tables which were created via CREATE TABLE
-            // expressions reside in the PUBLIC schema whereas cache-created tables reside in their own schema.
-            tables.map(_.name).sorted should equal(
-                Array("CITY", "EMPLOYEE", "PERSON", "PUBLIC.CITY", "PUBLIC.PERSON", "cache3.EMPLOYEE"))
+            tables.map(_.name).sorted should equal(Array("CITY", "EMPLOYEE", "PERSON"))
+        }
+
+        it("Should use the database context when providing tables")
+        {
+            igniteSession.catalog.setCurrentDatabase("PUBLIC")
+
+            val tables = igniteSession.catalog.listTables().collect()
+
+            tables.map(_.name).sorted should equal(Array("CITY", "PERSON"))
+        }
+
+        it("Should provide table names given the PUBLIC schema") {
+            val tables = igniteSession.catalog.listTables("PUBLIC").collect()
+
+            tables.map(_.name).sorted should equal(Array("CITY", "PERSON"))
+        }
+
+        it("Should provide table names given a custom schema") {
+            val tables = igniteSession.catalog.listTables("employeeSchema").collect()
+
+            tables.map(_.name).sorted should equal(Array("EMPLOYEE"))
         }
 
         it("Should provide correct schema for SQL table") {
@@ -56,6 +75,12 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
                 Array(
                     ("ID", LongType.catalogString, false),
                     ("NAME", StringType.catalogString, true)))
+        }
+
+        it("Should provide the list of all schemas") {
+            val schemas = igniteSession.catalog.listDatabases().collect()
+
+            schemas.map(_.name).sorted should equal(Array("cache3", "employeeschema", "public"))
         }
 
         it("Should provide ability to query SQL table without explicit registration") {
@@ -130,17 +155,21 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
             )
         }
 
-        it("Should allow schema specification in the table name for default schema") {
-            val res = igniteSession.sql("SELECT id, name FROM `public.city`").rdd
+        it("Should allow schema specification in the table name for public schema") {
+            val res = igniteSession.sql("SELECT id, name FROM public.city").rdd
 
             res.count should equal(4)
         }
 
-        it("Should allow schema specification in the table name for non-default schema") {
-            val res = igniteSession.sql("SELECT id, name, salary FROM `cache3.employee`").rdd
+        it("Should allow schema specification in the table name for non-public schema") {
+            val res = igniteSession.sql("SELECT id, name, salary FROM cache3.employee").rdd
 
             res.count should equal(3)
         }
+    }
+
+    before {
+        igniteSession.catalog.setCurrentDatabase(SessionCatalog.DEFAULT_DATABASE)
     }
 
     override protected def beforeAll(): Unit = {
@@ -151,6 +180,8 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
         createCityTable(client, DEFAULT_CACHE)
 
         createEmployeeCache(client, EMPLOYEE_CACHE_NAME)
+
+        createEmployeeCache(client, "myEmployeeCache", Some("employeeSchema"))
 
         val configProvider = enclose(null) (_ ⇒ () ⇒ {
             val cfg = IgnitionEx.loadConfiguration(TEST_CONFIG_FILE).get1()
