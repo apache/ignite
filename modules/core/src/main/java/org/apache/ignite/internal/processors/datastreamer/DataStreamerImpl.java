@@ -725,7 +725,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 keys.add(new KeyCacheObjectWrapper(e.getKey()));
         }
 
-        load0(entries, fut, keys, 0, null);
+        load0(entries, fut, keys, 0, null, null);
     }
 
     /** {@inheritDoc} */
@@ -799,15 +799,17 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * @param activeKeys Active keys.
      * @param remaps Remaps count.
      * @param remapNode Node for remap. In case update with {@code allowOverride() == false} fails on one node,
-     * we don't need to send update request to all affinity nodes again.
+     * we don't need to send update request to all affinity nodes again, if topology version does not changed.
+     * @param remapTopVer Topology version.
      */
     private void load0(
         Collection<? extends DataStreamerEntry> entries,
         final GridFutureAdapter<Object> resFut,
         @Nullable final Collection<KeyCacheObjectWrapper> activeKeys,
         final int remaps,
-        ClusterNode remapNode
-    ) {
+        ClusterNode remapNode,
+        AffinityTopologyVersion remapTopVer
+        ) {
         try {
             assert entries != null;
 
@@ -879,7 +881,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         if (key.partition() == -1)
                             key.partition(cctx.affinity().partition(key, false));
 
-                        if (!allowOverwrite() && remapNode != null)
+                        if (!allowOverwrite() && remapNode != null && F.eq(topVer, remapTopVer))
                             nodes = Collections.singletonList(remapNode);
                         else
                             nodes = nodes(key, topVer, cctx);
@@ -971,7 +973,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                                                     if (cancelled)
                                                         closedException();
 
-                                                    load0(entriesForNode, resFut, activeKeys, remaps + 1, node);
+                                                    load0(entriesForNode, resFut, activeKeys, remaps + 1, node, topVer);
                                                 }
                                                 catch (Throwable ex) {
                                                     resFut.onDone(
