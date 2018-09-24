@@ -28,9 +28,13 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * p(C_k,y) = p(C_k)*p(y_1,C_k) *...*p(y_n,C_k) / p(y)}. Return the number of the most possible class.
  */
 public class GaussianNaiveBayesModel implements Model<Vector, Integer>, Exportable<GaussianNaiveBayesModel>, Serializable {
-
+    /** */
+    private static final long serialVersionUID = -127386523291350345L;
+    /** Means of features for all classes */
     private final double[][] means;
+    /** Variances of features for all classes */
     private final double[][] variances;
+    /** Prior probabilities of each class */
     private final Vector classProbabilities;
 
     /**
@@ -73,18 +77,22 @@ public class GaussianNaiveBayesModel implements Model<Vector, Integer>, Exportab
         return max;
     }
 
+    /** */
     public double[][] getMeans() {
         return means;
     }
 
+    /** */
     public double[][] getVariances() {
         return variances;
     }
 
+    /** */
     public Vector getClassProbabilities() {
         return classProbabilities;
     }
 
+    /** Gauus distribution */
     private double gauss(double x, double mean, double variance) {
         return Math.exp((-1. * (x - mean) * (x - mean)) / (2. * variance)) / Math.sqrt(2. * Math.PI * variance);
     }
