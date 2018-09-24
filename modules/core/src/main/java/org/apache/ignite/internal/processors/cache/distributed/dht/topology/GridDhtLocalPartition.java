@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
+package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
 import java.util.Iterator;
 import java.util.List;
@@ -46,6 +46,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -66,11 +68,11 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELET
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_UNLOADED;
 import static org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.LOST;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 
 /**
  * Key partition.
@@ -179,7 +181,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param id Partition ID.
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    GridDhtLocalPartition(GridCacheSharedContext ctx,
+    public GridDhtLocalPartition(GridCacheSharedContext ctx,
         CacheGroupContext grp,
         int id) {
         super(ENTRY_FACTORY);
@@ -335,7 +337,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * @return Create time.
      */
-    long createTime() {
+    public long createTime() {
         return createTime;
     }
 
@@ -372,7 +374,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * @param entry Entry to remove.
      */
-    void onRemoved(GridDhtCacheEntry entry) {
+    public void onRemoved(GridDhtCacheEntry entry) {
         assert entry.obsolete() : entry;
 
         // Make sure to remove exactly this entry.
@@ -593,7 +595,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * @return {@code True} if transitioned to OWNING state.
      */
-    boolean own() {
+    public boolean own() {
         while (true) {
             long state = this.state.get();
 
@@ -631,7 +633,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * @return {@code True} if partition state changed.
      */
-    boolean markLost() {
+    public boolean markLost() {
         while (true) {
             long state = this.state.get();
 
@@ -738,7 +740,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * Continues delayed clearing of partition if possible.
      * Clearing may be delayed because of existing reservations.
      */
-    void tryContinueClearing() {
+    public void tryContinueClearing() {
         clearAsync0(true);
     }
 
@@ -940,7 +942,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * On partition unlock callback.
      * Tries to continue delayed partition clearing.
      */
-    void onUnlock() {
+    public void onUnlock() {
         tryContinueClearing();
     }
 
@@ -969,7 +971,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param topVer Topology version for current operation.
      * @return Next update index.
      */
-    long nextUpdateCounter(int cacheId, AffinityTopologyVersion topVer, boolean primary, @Nullable Long primaryCntr) {
+    public long nextUpdateCounter(int cacheId, AffinityTopologyVersion topVer, boolean primary, @Nullable Long primaryCntr) {
         long nextCntr = store.nextUpdateCounter();
 
         if (grp.sharedGroup())
@@ -1294,7 +1296,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * @param cacheId Cache ID.
      */
-    void onCacheStopped(int cacheId) {
+    public void onCacheStopped(int cacheId) {
         assert grp.sharedGroup() : grp.cacheOrGroupName();
 
         for (Iterator<RemovedEntryHolder> it = rmvQueue.iterator(); it.hasNext();) {
