@@ -1010,7 +1010,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return Cache atomicity mode.
      */
     public CacheAtomicityMode getAtomicityMode() {
-        return atomicityMode;
+        return atomicityMode == CacheAtomicityMode.TRANSACTIONAL
+            ? CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT
+            : atomicityMode;
     }
 
     /**
