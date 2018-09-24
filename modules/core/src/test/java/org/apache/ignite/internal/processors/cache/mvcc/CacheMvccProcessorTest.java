@@ -17,13 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
@@ -97,5 +106,58 @@ public class CacheMvccProcessorTest extends CacheMvccAbstractTest {
         assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 4, MvccUtils.MVCC_OP_COUNTER_NA)));
         assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 5, MvccUtils.MVCC_OP_COUNTER_NA)));
         assertEquals(TxState.PREPARED, mvccProcessor.state(new MvccVersionImpl(1, 6, MvccUtils.MVCC_OP_COUNTER_NA)));
+    }
+
+    /**
+     * @throws Exception If fails.
+     */
+    public void testMvccTracker() throws Exception {
+        testSpi = true;
+        disableScheduledVacuum = true;
+
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 0, DFLT_PARTITION_COUNT);
+
+        startGrids(2);
+
+        awaitPartitionMapExchange();
+
+        IgniteEx node1 = grid(1);
+        final IgniteCache<Object, Object> cache = node1.cache(DEFAULT_CACHE_NAME);
+
+        final Integer key = primaryKey(cache);
+
+        TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)grid(0).context().config().getCommunicationSpi();
+        spi.blockMessages(MvccSnapshotResponse.class, grid(1).name());
+
+        IgniteTransactions txs1 = grid(1).transactions();
+
+        IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                cache.putAsync(key, 1);
+            }
+        });
+
+        assertTrue("Failed to wait MvccSnapshotResponse message",
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return spi.hasBlockedMessages();
+                }
+            }, 3_000));
+
+        fut.cancel();
+
+        spi.stopBlock();
+
+        assertNull(cache.get(1));
+
+        try (Transaction tx = txs1.txStart()) {
+            tx.timeout(2000);
+
+            cache.put(key, 2);
+
+            tx.commit();
+        }
+
+        assertEquals(2, cache.get(key));
     }
 }
