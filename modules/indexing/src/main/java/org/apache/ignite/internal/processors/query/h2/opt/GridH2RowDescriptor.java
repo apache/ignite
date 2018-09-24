@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.h2.message.DbException;
 import org.h2.result.SearchRow;
+import org.h2.util.DateTimeUtils;
 import org.h2.util.LocalDateTimeUtils;
 import org.h2.value.DataType;
 import org.h2.value.Value;
@@ -236,7 +237,8 @@ public class GridH2RowDescriptor {
 
             case Value.TIMESTAMP:
                 if (obj instanceof java.util.Date && !(obj instanceof Timestamp))
-                    obj = new Timestamp(((java.util.Date)obj).getTime());
+                    return ValueDate.fromDateValue(DateTimeUtils.dateValueFromDate(
+                        java.util.Date.class.cast(obj).getTime()));
 
                 if (LocalDateTimeUtils.isLocalDateTime(obj.getClass()))
                     return LocalDateTimeUtils.localDateTimeToValue(obj);
