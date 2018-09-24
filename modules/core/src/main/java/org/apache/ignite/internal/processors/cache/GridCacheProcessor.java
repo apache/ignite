@@ -687,7 +687,6 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     }
 
     /**
-     *
      * @throws IgniteCheckedException If failed.
      */
     private void startCachesOnStart() throws IgniteCheckedException {
