@@ -47,7 +47,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /** */
 public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
     /** Predicate classname. */
-    private static final String PREDICATE_CLASSNAME = "org.apache.ignite.tests.p2p.AlwaysTrueTestPredicate";
+    private static final String PREDICATE_CLASSNAME = "org.apache.ignite.tests.p2p.CacheDeploymentAlwaysTruePredicate";
+
+    /** */
+    private static final String SECOND_CLASSNAME_FROM_P2P_MODULE = "org.apache.ignite.lang.IgniteBiPredicate.CacheDeploymentBinaryEntryProcessor";
 
     /** */
     private static final String TEST_PREDICATE_RESOURCE_NAME = PREDICATE_CLASSNAME.substring(PREDICATE_CLASSNAME.lastIndexOf('.') + 1) + ".class";
@@ -108,7 +111,12 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
      * @throws Exception if test failed.
      */
     public void testAfterClientDisconnect() throws Exception {
-        Class predCls = (new GridTestExternalClassLoader(new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))})).loadClass(PREDICATE_CLASSNAME);
+        ClassLoader extClsLdr = new GridTestExternalClassLoader(new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))});
+
+        assertFalse(classFound(getClass().getClassLoader(), PREDICATE_CLASSNAME));
+        assertFalse(classFound(getClass().getClassLoader(), SECOND_CLASSNAME_FROM_P2P_MODULE));
+
+        Class predCls = extClsLdr.loadClass(PREDICATE_CLASSNAME);
 
         startGrid(0);
 
@@ -168,6 +176,21 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
             (ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>>)f.get(null);
 
         return map.values().stream().flatMap(x -> x.keySet().stream()).collect(Collectors.toSet());
+    }
+
+    /**
+     * @param clsLdr classloader.
+     * @param name classname.
+     * @return true if class loaded by classloader, false if class not found.
+     */
+    private boolean classFound(ClassLoader clsLdr, String name) {
+        try {
+            clsLdr.loadClass(name);
+            return true;
+        }
+        catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 
     /** */

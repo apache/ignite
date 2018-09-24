@@ -22,8 +22,9 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  *
  */
 public class CacheDeploymentAlwaysTruePredicate implements IgniteBiPredicate<Object, Object> {
-    /** */
-    @Override public boolean apply(Object o, Object o2) {
-        return true;
-    }
+    // Loading any class from this package.
+    { new CacheDeploymentBinaryEntryProcessor(); }
+
+    /** {@inheritDoc} */
+    @Override public boolean apply(Object o, Object o2) { return true; }
 }
