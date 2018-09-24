@@ -36,7 +36,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
  *
  * In addition to what it allows to track all enqueued tasks completion.
  */
-public class IgniteTrackingThreadPoolExecutor extends ThreadPoolExecutor {
+public class IgniteTrackingThreadPoolExecutor extends IgniteThreadPoolExecutor {
     /** */
     private final LongAdder pendingTaskCnt = new LongAdder();
 
@@ -49,94 +49,23 @@ public class IgniteTrackingThreadPoolExecutor extends ThreadPoolExecutor {
     /** */
     private Queue<Throwable> exceptions = new ConcurrentLinkedQueue<>();
 
-    /**
-     * Creates a new service with the given initial parameters.
-     *
-     * @param threadNamePrefix Will be added at the beginning of all created threads.
-     * @param igniteInstanceName Must be the name of the grid.
-     * @param corePoolSize The number of threads to keep in the pool, even if they are idle.
-     * @param maxPoolSize The maximum number of threads to allow in the pool.
-     * @param keepAliveTime When the number of threads is greater than the core, this is the maximum time
-     *      that excess idle threads will wait for new tasks before terminating.
-     * @param workQ The queue to use for holding tasks before they are executed. This queue will hold only
-     *      runnable tasks submitted by the {@link #execute(Runnable)} method.
-     */
-    public IgniteTrackingThreadPoolExecutor(
-        String threadNamePrefix,
-        String igniteInstanceName,
-        int corePoolSize,
-        int maxPoolSize,
-        long keepAliveTime,
-        BlockingQueue<Runnable> workQ) {
-        this(threadNamePrefix,
-            igniteInstanceName,
-            corePoolSize,
-            maxPoolSize,
-            keepAliveTime,
-            workQ,
-            GridIoPolicy.UNDEFINED,
-            null);
+    /** {@inheritDoc} */
+    public IgniteTrackingThreadPoolExecutor(String threadNamePrefix, String igniteInstanceName, int corePoolSize,
+        int maxPoolSize, long keepAliveTime, BlockingQueue<Runnable> workQ) {
+        super(threadNamePrefix, igniteInstanceName, corePoolSize, maxPoolSize, keepAliveTime, workQ);
     }
 
-    /**
-     * Creates a new service with the given initial parameters.
-     *
-     * @param threadNamePrefix Will be added at the beginning of all created threads.
-     * @param igniteInstanceName Must be the name of the grid.
-     * @param corePoolSize The number of threads to keep in the pool, even if they are idle.
-     * @param maxPoolSize The maximum number of threads to allow in the pool.
-     * @param keepAliveTime When the number of threads is greater than the core, this is the maximum time
-     *      that excess idle threads will wait for new tasks before terminating.
-     * @param workQ The queue to use for holding tasks before they are executed. This queue will hold only
-     *      runnable tasks submitted by the {@link #execute(Runnable)} method.
-     * @param plc {@link GridIoPolicy} for thread pool.
-     * @param eHnd Uncaught exception handler for thread pool.
-     */
-    public IgniteTrackingThreadPoolExecutor(
-        String threadNamePrefix,
-        String igniteInstanceName,
-        int corePoolSize,
-        int maxPoolSize,
-        long keepAliveTime,
-        BlockingQueue<Runnable> workQ,
-        byte plc,
+    /** {@inheritDoc} */
+    public IgniteTrackingThreadPoolExecutor(String threadNamePrefix, String igniteInstanceName, int corePoolSize,
+        int maxPoolSize, long keepAliveTime, BlockingQueue<Runnable> workQ, byte plc,
         UncaughtExceptionHandler eHnd) {
-        super(
-            corePoolSize,
-            maxPoolSize,
-            keepAliveTime,
-            TimeUnit.MILLISECONDS,
-            workQ,
-            new IgniteThreadFactory(igniteInstanceName, threadNamePrefix, plc, eHnd)
-        );
+        super(threadNamePrefix, igniteInstanceName, corePoolSize, maxPoolSize, keepAliveTime, workQ, plc, eHnd);
     }
 
-    /**
-     * Creates a new service with the given initial parameters.
-     *
-     * @param corePoolSize The number of threads to keep in the pool, even if they are idle.
-     * @param maxPoolSize The maximum number of threads to allow in the pool.
-     * @param keepAliveTime When the number of threads is greater than the core, this is the maximum time
-     *      that excess idle threads will wait for new tasks before terminating.
-     * @param workQ The queue to use for holding tasks before they are executed. This queue will hold only the
-     *      runnable tasks submitted by the {@link #execute(Runnable)} method.
-     * @param threadFactory Thread factory.
-     */
-    public IgniteTrackingThreadPoolExecutor(
-        int corePoolSize,
-        int maxPoolSize,
-        long keepAliveTime,
-        BlockingQueue<Runnable> workQ,
-        ThreadFactory threadFactory) {
-        super(
-            corePoolSize,
-            maxPoolSize,
-            keepAliveTime,
-            TimeUnit.MILLISECONDS,
-            workQ,
-            threadFactory,
-            new AbortPolicy()
-        );
+    /** {@inheritDoc} */
+    public IgniteTrackingThreadPoolExecutor(int corePoolSize, int maxPoolSize, long keepAliveTime,
+        BlockingQueue<Runnable> workQ, ThreadFactory threadFactory) {
+        super(corePoolSize, maxPoolSize, keepAliveTime, workQ, threadFactory);
     }
 
     /** {@inheritDoc} */

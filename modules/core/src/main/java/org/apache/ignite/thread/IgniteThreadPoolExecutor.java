@@ -118,8 +118,4 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
             new AbortPolicy()
         );
     }
-
-    @Override protected void afterExecute(Runnable r, Throwable t) {
-        super.afterExecute(r, t);
-    }
 }
