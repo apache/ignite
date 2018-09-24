@@ -30,6 +30,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.net.ServerSocket;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -687,6 +688,23 @@ public final class GridTestUtils {
         discoPorts.put(cls, portRet);
 
         return portRet;
+    }
+
+    /**
+     * @return Free communication port number on localhost.
+     * @throws IOException If unable to find a free port.
+     */
+    public static int getFreeCommPort() throws IOException {
+        for (int port = default_comm_port; port < max_comm_port; port++) {
+            try (ServerSocket sock = new ServerSocket(port)) {
+                return sock.getLocalPort();
+            }
+            catch (IOException ignored) {
+                // No-op.
+            }
+        }
+
+        throw new IOException("Unable to find a free communication port.");
     }
 
     /**
