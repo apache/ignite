@@ -806,6 +806,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointReadLock();
 
         try {
+            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
+                lsnr.beforeMemoryRestore(this);
+
+            cctx.pageStore().initializeForMetastorage();
+
             CheckpointStatus status = readCheckpointStatus();
 
             // Memory should be recovered at startup.

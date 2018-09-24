@@ -222,7 +222,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 for (Path path : files)
                     U.delete(path);
 
-                idxCacheStores.entrySet().removeIf(e -> CU.cacheId(META_STORAGE_NAME) != e.getKey());
+                idxCacheStores.entrySet().removeIf(e -> MetaStorage.METASTORAGE_CACHE_ID != e.getKey());
             }
         }
         catch (IOException e) {
@@ -257,6 +257,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
 
         stop0(true);
+
+        idxCacheStores.clear();
     }
 
     /** {@inheritDoc} */
