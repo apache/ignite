@@ -101,22 +101,20 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
 
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testSelectForUpdateLocal() throws Exception {
         doTestSelectForUpdateLocal("Person", false);
     }
 
     /**
-     *
      * @throws Exception If failed.
      */
-    public void testSelectForUpdateOutsideTx() throws Exception {
+    public void testSelectForUpdateOutsideTxDistributed() throws Exception {
         doTestSelectForUpdateDistributed("Person", true);
     }
 
     /**
-     *
      * @throws Exception If failed.
      */
     public void testSelectForUpdateOutsideTxLocal() throws Exception {
@@ -261,6 +259,8 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
             checkLocks("Person", keys, true);
 
             tx.rollback();
+
+            checkLocks("Person", keys, false);
         }
     }
 

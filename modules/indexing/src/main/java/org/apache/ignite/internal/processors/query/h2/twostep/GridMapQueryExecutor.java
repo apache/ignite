@@ -925,7 +925,9 @@ public class GridMapQueryExecutor {
 
                         h2.bindParameters(stmt, params0);
 
-                        rs = h2.executeSqlQueryWithTimer(stmt, conn, sql, params0, timeout, qr.queryCancel(qryIdx));
+                        int opTimeout = IgniteH2Indexing.operationTimeout(timeout, tx);
+
+                        rs = h2.executeSqlQueryWithTimer(stmt, conn, sql, params0, opTimeout, qr.queryCancel(qryIdx));
 
                         if (inTx) {
                             ResultSetEnlistFuture enlistFut = ResultSetEnlistFuture.future(
@@ -937,7 +939,7 @@ public class GridMapQueryExecutor {
                                 txDetails.miniId(),
                                 parts,
                                 tx,
-                                timeout,
+                                opTimeout,
                                 mainCctx,
                                 rs
                             );
