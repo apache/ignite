@@ -1513,6 +1513,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 List<IgniteInternalFuture<Boolean>> futList = new ArrayList<>();
 
+                log.info("Manager started");
+
                 for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
                     futList.add(cctx.kernalContext().closure().callLocalSafe(new Callable<Boolean>() {
                         @Override public Boolean call() throws Exception {
@@ -1551,6 +1553,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         e.printStackTrace();
                     }
                 }
+
+                log.info("Manager finished");
 
                 if (!cctx.kernalContext().clientNode() && updated)
                     refreshPartitions();

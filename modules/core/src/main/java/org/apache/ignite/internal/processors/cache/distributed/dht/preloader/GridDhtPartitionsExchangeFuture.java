@@ -3591,6 +3591,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         List<IgniteInternalFuture<?>> futList = new ArrayList<>();
 
+        log.info("Future started;");
+
         for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
             futList.add(cctx.kernalContext().closure().runLocalSafe(new Runnable() {
                 @Override public void run() {
@@ -3651,6 +3653,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 e.printStackTrace();
             }
         }
+
+        log.info("Future finished;");
+
     }
 
     /**
