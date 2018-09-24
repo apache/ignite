@@ -7675,6 +7675,8 @@ public abstract class IgniteUtils {
                 return ((URLClassLoader)urlClsLdrField.get(clsLdr)).getURLs();
             }
             catch (IllegalAccessException e) {
+                e.printStackTrace(System.err);
+                
                 return EMPTY_URL_ARR;
             }
         }
