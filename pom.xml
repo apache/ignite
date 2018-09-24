@@ -61,6 +61,7 @@
         <module>modules/spring</module>
         <module>modules/spring-data</module>
         <module>modules/spring-data-2.0</module>
+        <module>modules/springsession</module>
         <module>modules/web</module>
         <module>modules/aop</module>
         <module>modules/urideploy</module>
