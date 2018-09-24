@@ -648,7 +648,7 @@ public class FilePageStore implements PageStore {
                 fileIO.force();
         }
         catch (IOException e) {
-            throw new StorageException("Failed to fsync partition file [file=" + cfgFile.getAbsolutePath() + "]", e);
+            throw new StorageException("Failed to fsync partition file [file=" + cfgFile.getAbsolutePath() + ']', e);
         }
         finally {
             lock.writeLock().unlock();

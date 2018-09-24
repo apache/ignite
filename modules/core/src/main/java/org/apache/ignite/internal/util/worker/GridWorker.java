@@ -53,6 +53,9 @@ public abstract class GridWorker implements Runnable {
     /** Actual thread runner. */
     private volatile Thread runner;
 
+    /** Timestamp to be updated by this worker periodically to indicate it's up and running. */
+    private volatile long heartbeatTs;
+
     /** */
     private final Object mux = new Object();
 
@@ -66,14 +69,19 @@ public abstract class GridWorker implements Runnable {
      * @param log Grid logger to be used.
      * @param lsnr Listener for life-cycle events.
      */
-    protected GridWorker(String igniteInstanceName, String name, IgniteLogger log, @Nullable GridWorkerListener lsnr) {
+    protected GridWorker(
+        String igniteInstanceName,
+        String name,
+        IgniteLogger log,
+        @Nullable GridWorkerListener lsnr
+    ) {
         assert name != null;
         assert log != null;
 
         this.igniteInstanceName = igniteInstanceName;
         this.name = name;
-        this.lsnr = lsnr;
         this.log = log;
+        this.lsnr = lsnr;
     }
 
     /**
@@ -94,6 +102,8 @@ public abstract class GridWorker implements Runnable {
         // Runner thread must be recorded first as other operations
         // may depend on it being present.
         runner = Thread.currentThread();
+
+        updateHeartbeat();
 
         if (log.isDebugEnabled())
             log.debug("Grid runnable started: " + name);
@@ -253,6 +263,38 @@ public abstract class GridWorker implements Runnable {
      */
     public boolean isDone() {
         return finished;
+    }
+
+    /** */
+    public long heartbeatTs() {
+        return heartbeatTs;
+    }
+
+    /** */
+    public void updateHeartbeat() {
+        heartbeatTs = U.currentTimeMillis();
+    }
+
+    /**
+     * Protects the worker from timeout penalties if subsequent instructions in the calling thread does not update
+     * heartbeat timestamp timely, e.g. due to blocking operations, up to the nearest {@link #blockingSectionEnd()}
+     * call. Nested calls are not supported.
+     */
+    public void blockingSectionBegin() {
+        heartbeatTs = Long.MAX_VALUE;
+    }
+
+    /**
+     * Closes the protection section previously opened by {@link #blockingSectionBegin()}.
+     */
+    public void blockingSectionEnd() {
+        updateHeartbeat();
+    }
+
+    /** Can be called from {@link #runner()} thread to perform idleness handling. */
+    protected void onIdle() {
+        if (lsnr != null)
+            lsnr.onIdle(this);
     }
 
     /** {@inheritDoc} */

@@ -1699,6 +1699,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override protected void body() {
+            blockingSectionBegin();
+
             try {
                 allocateRemainingFiles();
             }
@@ -1714,13 +1716,24 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 return;
             }
+            finally {
+                blockingSectionEnd();
+            }
 
             Throwable err = null;
 
             try {
                 synchronized (this) {
-                    while (curAbsWalIdx == -1 && !stopped)
-                        wait();
+                    while (curAbsWalIdx == -1 && !stopped) {
+                        blockingSectionBegin();
+
+                        try {
+                            wait();
+                        }
+                        finally {
+                            blockingSectionEnd();
+                        }
+                    }
 
                     // If the archive directory is empty, we can be sure that there were no WAL segments archived.
                     // This is ensured by the check in truncate() which will leave at least one file there
@@ -1734,8 +1747,16 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         assert lastAbsArchivedIdx <= curAbsWalIdx : "lastArchived=" + lastAbsArchivedIdx +
                             ", current=" + curAbsWalIdx;
 
-                        while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !stopped)
-                            wait();
+                        while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !stopped) {
+                            blockingSectionBegin();
+
+                            try {
+                                wait();
+                            }
+                            finally {
+                                blockingSectionEnd();
+                            }
+                        }
 
                         toArchive = lastAbsArchivedIdx + 1;
                     }
@@ -1743,11 +1764,28 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (stopped)
                         break;
 
-                    final SegmentArchiveResult res = archiveSegment(toArchive);
+                    SegmentArchiveResult res;
+
+                    blockingSectionBegin();
+
+                    try {
+                        res = archiveSegment(toArchive);
+                    }
+                    finally {
+                        blockingSectionEnd();
+                    }
 
                     synchronized (this) {
-                        while (locked.containsKey(toArchive) && !stopped)
-                            wait();
+                        while (locked.containsKey(toArchive) && !stopped) {
+                            blockingSectionBegin();
+
+                            try {
+                                wait();
+                            }
+                            finally {
+                                blockingSectionEnd();
+                            }
+                        }
 
                         // Then increase counter to allow rollover on clean working file
                         changeLastArchivedIndexAndNotifyWaiters(toArchive);
@@ -1762,6 +1800,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                                 res.getDstArchiveFile())
                         );
                     }
+
+                    onIdle();
                 }
             }
             catch (InterruptedException t) {
@@ -2263,7 +2303,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     long segmentToDecompress = -1L;
 
                     try {
-                        segmentToDecompress = segmentsQueue.take();
+                        blockingSectionBegin();
+
+                        try {
+                            segmentToDecompress = segmentsQueue.take();
+                        }
+                        finally {
+                            blockingSectionEnd();
+                        }
 
                         if (isCancelled())
                             break;
@@ -2279,7 +2326,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             zis.getNextEntry();
 
                             while (io.writeFully(arr, 0, zis.read(arr)) > 0)
-                                ;
+                                updateHeartbeat();
                         }
 
                         try {
@@ -2292,6 +2339,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             if (!unzipTmp.delete())
                                 U.error(log, "Can't delete temporary unzipped segment [tmp=" + unzipTmp + "]");
                         }
+
+                        updateHeartbeat();
 
                         synchronized (this) {
                             decompressionFutures.remove(segmentToDecompress).onDone();
@@ -3320,11 +3369,23 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override protected void body() {
+            Throwable err = null;
+
             try {
                 while (!isCancelled()) {
+                    onIdle();
+
                     while (waiters.isEmpty()) {
-                        if (!isCancelled())
-                            LockSupport.park();
+                        if (!isCancelled()) {
+                            blockingSectionBegin();
+
+                            try {
+                                LockSupport.park();
+                            }
+                            finally {
+                                blockingSectionEnd();
+                            }
+                        }
                         else {
                             unparkWaiters(Long.MAX_VALUE);
 
@@ -3338,6 +3399,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         if (val > Long.MIN_VALUE)
                             pos = val;
                     }
+
+                    updateHeartbeat();
 
                     if (pos == null)
                         continue;
@@ -3363,6 +3426,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         unparkWaiters(pos);
                     }
 
+                    updateHeartbeat();
+
                     List<SegmentedRingByteBuffer.ReadSegment> segs = currentHandle().buf.poll(pos);
 
                     if (segs == null) {
@@ -3373,6 +3438,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     for (int i = 0; i < segs.size(); i++) {
                         SegmentedRingByteBuffer.ReadSegment seg = segs.get(i);
+
+                        updateHeartbeat();
 
                         try {
                             writeBuffer(seg.position(), seg.buffer());
