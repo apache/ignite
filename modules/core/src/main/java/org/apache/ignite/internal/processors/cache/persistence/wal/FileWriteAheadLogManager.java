@@ -563,7 +563,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             String segmentName = FileDescriptor.fileName(i);
 
             File file = new File(walArchiveDir, segmentName);
-            File fileZip = new File(walArchiveDir, segmentName + '.'+compressorFactory.filenameExtension());
+            File fileZip = new File(walArchiveDir, segmentName + '.'+dsCfg.getWalCompactionFactory().filenameExtension());
 
             if (file.exists())
                 res.add(file);
@@ -934,7 +934,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             dsCfg,
             new RecordSerializerFactoryImpl(cctx),
             ioFactory,
-            compressorFactory,
+            dsCfg.getWalCompactionFactory(),
             archiver,
             decompressor,
             log,
@@ -978,7 +978,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private boolean hasIndex(long absIdx) {
         String segmentName = FileDescriptor.fileName(absIdx);
 
-        String zipSegmentName = FileDescriptor.fileName(absIdx) + '.'+compressorFactory.filenameExtension();
+        String zipSegmentName = FileDescriptor.fileName(absIdx) + '.'+dsCfg.getWalCompactionFactory().filenameExtension();
 
         boolean inArchive = new File(walArchiveDir, segmentName).exists() ||
             new File(walArchiveDir, zipSegmentName).exists();
@@ -2070,9 +2070,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     deleteObsoleteRawSegments();
 
                     File tmpZip = new File(walArchiveDir, FileDescriptor.fileName(segIdx)
-                            + '.'+compressorFactory.filenameExtension() + FilePageStoreManager.TMP_SUFFIX);
+                            + '.'+dsCfg.getWalCompactionFactory().filenameExtension() + FilePageStoreManager.TMP_SUFFIX);
 
-                    File zip = new File(walArchiveDir, FileDescriptor.fileName(segIdx) + '.'+compressorFactory.filenameExtension());
+                    File zip = new File(walArchiveDir,
+                        FileDescriptor.fileName(segIdx) + '.'+dsCfg.getWalCompactionFactory().filenameExtension());
 
                     File raw = new File(walArchiveDir, FileDescriptor.fileName(segIdx));
 
@@ -2128,7 +2129,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 segmentSerializerVer = readSegmentHeader(new SegmentIO(nextSegment, fileIO), segmentFileInputFactory).getSerializerVersion();
             }
 
-            try (OutputStream zos = compressorFactory.compress(new FileOutputStream(zip))) {
+            try (OutputStream zos = dsCfg.getWalCompactionFactory().compress(new FileOutputStream(zip))) {
 
                 ByteBuffer buf = ByteBuffer.allocate(HEADER_RECORD_SIZE);
                 buf.order(ByteOrder.nativeOrder());
@@ -2149,7 +2150,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 };
 
                 try (SingleSegmentLogicalRecordsIterator iter = new SingleSegmentLogicalRecordsIterator(
-                        log, cctx, ioFactory, compressorFactory, BUF_SIZE, nextSegment, walArchiveDir, appendToZipC)) {
+                        log, cctx, ioFactory, dsCfg.getWalCompactionFactory(), BUF_SIZE, nextSegment, walArchiveDir, appendToZipC)) {
 
                     while (iter.hasNextX())
                         iter.nextX();
@@ -2256,12 +2257,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             break;
 
                         File zip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress)
-                            + '.'+compressorFactory.filenameExtension());
+                            + '.'+dsCfg.getWalCompactionFactory().filenameExtension());
                         File unzipTmp = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress)
                             + FilePageStoreManager.TMP_SUFFIX);
                         File unzip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress));
 
-                        try (InputStream zis = compressorFactory.decompress(new BufferedInputStream(new FileInputStream(zip)));
+                        try (InputStream zis = dsCfg.getWalCompactionFactory().decompress(new BufferedInputStream(new FileInputStream(zip)));
                              FileIO io = ioFactory.create(unzipTmp)) {
 
                             while (io.writeFully(arr, 0, zis.read(arr)) > 0)
