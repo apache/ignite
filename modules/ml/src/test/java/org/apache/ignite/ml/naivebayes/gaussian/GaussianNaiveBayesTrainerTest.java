@@ -60,10 +60,9 @@ public class GaussianNaiveBayesTrainerTest {
             (k, v) -> v[2]
         );
 
-        Assert.assertEquals(model.getClassProbabilities().get(0), 3./data.size(), PRECISION);
-        Assert.assertEquals(model.getClassProbabilities().get(1), 2./data.size(), PRECISION);
+        Assert.assertEquals(model.getClassProbabilities().get(0), 3. / data.size(), PRECISION);
+        Assert.assertEquals(model.getClassProbabilities().get(1), 2. / data.size(), PRECISION);
     }
-
 
     @Test
     public void fit_returnsCorrectMeans() {
@@ -74,6 +73,18 @@ public class GaussianNaiveBayesTrainerTest {
             (k, v) -> v[2]
         );
 
-        Assert.assertArrayEquals(model.getMeans()[0], new double[]{2.0, 2./3.}, PRECISION);
+        Assert.assertArrayEquals(model.getMeans()[0], new double[] {2.0, 2. / 3.}, PRECISION);
+    }
+
+    @Test
+    public void fit_returnsCorrectVariances() {
+        GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer();
+        GaussianNaiveBayesModel model = trainer.fit(
+            new LocalDatasetBuilder<>(singleLabeldata, 2),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
+            (k, v) -> v[2]
+        );
+
+        Assert.assertArrayEquals(model.getVariances()[0], new double[] {13., 2.333333333333333}, PRECISION);
     }
 }
