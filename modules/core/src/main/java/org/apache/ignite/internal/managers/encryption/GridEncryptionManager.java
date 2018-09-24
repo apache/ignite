@@ -231,37 +231,23 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
-        ctx.discovery().localJoinFuture().listen(f -> {
-            if (notCoordinator())
-                return;
-
-            //We can't store keys before node join to cluster(on statically configured cache registration).
-            //Because, keys should be received from cluster.
-            //Otherwise, we would generate different keys on each started node.
-            //So, after starting, coordinator saves locally newly generated encryption keys.
-            //And sends that keys to every joining node.
-            synchronized (metaStorageMux) {
-                //Keys read from meta storage.
-                HashMap<Integer, byte[]> knownEncKeys = knownEncryptionKeys();
-
-                //Generated(not saved!) keys for a new caches.
-                //Configured statically in config, but doesn't stored on the disk.
-                HashMap<Integer, byte[]> newEncKeys =
-                    newEncryptionKeys(knownEncKeys == null ? Collections.EMPTY_SET : knownEncKeys.keySet());
-
-                if (newEncKeys == null)
-                    return;
-
-                //We can store keys to the disk, because we are on a coordinator.
-                for (Map.Entry<Integer, byte[]> entry : newEncKeys.entrySet()) {
-                    groupKey(entry.getKey(), entry.getValue());
-
-                    U.quietAndInfo(log, "Added encryption key on local join [grpId=" + entry.getKey() + "]");
-                }
-            }
-        });
+        // No-op.
     }
 
+    /** {@inheritDoc} */
+    @Override protected void onKernalStop0(boolean cancel) {
+        synchronized (genEcnKeyMux) {
+            stopped = true;
+
+            if (ioLsnr != null)
+                ctx.io().removeMessageListener(TOPIC_GEN_ENC_KEY, ioLsnr);
+
+            if (discoLsnr != null)
+                ctx.event().removeDiscoveryEventListener(discoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
+
+            cancelFutures("Kernal stopped.");
+        }
+    }
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
@@ -285,18 +271,36 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void onKernalStop0(boolean cancel) {
-        synchronized (genEcnKeyMux) {
-            stopped = true;
+    /**
+     * Callback for local join.
+     */
+    public void onLocalJoin() {
+        if (notCoordinator())
+            return;
 
-            if (ioLsnr != null)
-                ctx.io().removeMessageListener(TOPIC_GEN_ENC_KEY, ioLsnr);
+        //We can't store keys before node join to cluster(on statically configured cache registration).
+        //Because, keys should be received from cluster.
+        //Otherwise, we would generate different keys on each started node.
+        //So, after starting, coordinator saves locally newly generated encryption keys.
+        //And sends that keys to every joining node.
+        synchronized (metaStorageMux) {
+            //Keys read from meta storage.
+            HashMap<Integer, byte[]> knownEncKeys = knownEncryptionKeys();
 
-            if (discoLsnr != null)
-                ctx.event().removeDiscoveryEventListener(discoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
+            //Generated(not saved!) keys for a new caches.
+            //Configured statically in config, but doesn't stored on the disk.
+            HashMap<Integer, byte[]> newEncKeys =
+                newEncryptionKeys(knownEncKeys == null ? Collections.EMPTY_SET : knownEncKeys.keySet());
 
-            cancelFutures("Kernal stopped.");
+            if (newEncKeys == null)
+                return;
+
+            //We can store keys to the disk, because we are on a coordinator.
+            for (Map.Entry<Integer, byte[]> entry : newEncKeys.entrySet()) {
+                groupKey(entry.getKey(), entry.getValue());
+
+                U.quietAndInfo(log, "Added encryption key on local join [grpId=" + entry.getKey() + "]");
+            }
         }
     }
 
