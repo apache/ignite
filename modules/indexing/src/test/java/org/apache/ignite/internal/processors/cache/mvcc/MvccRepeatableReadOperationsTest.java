@@ -116,6 +116,13 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
         }
     }
 
+    /** {@inheritDoc} */
+    @Override protected void checkContains(TestCache<Integer, MvccTestAccount> cache, boolean expected,
+        Set<Integer> keys) {
+        for (Integer key : keys)
+            assertEquals(expected, cache.cache.containsKey(key));
+    }
+
     /**
      * Check getAndPut/getAndRemove operations consistency.
      *

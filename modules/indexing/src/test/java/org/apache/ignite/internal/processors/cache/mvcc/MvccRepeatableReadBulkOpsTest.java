@@ -211,6 +211,9 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
                     updateEntries(cache2, updateMap, writeMode);
                     removeEntries(cache2, keysForRemove, writeMode);
 
+                    checkContains(cache2, true, updateMap.keySet());
+                    checkContains(cache2, false, keysForRemove);
+
                     assertEquals(updateMap, cache2.cache.getAll(allKeys));
 
                     tx.commit();
@@ -227,10 +230,14 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
                 try (Transaction tx = txs1.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
                     assertEquals(initialMap, getEntries(cache1, allKeys, readModeBefore));
 
+                    checkContains(cache1, true, allKeys);
+
                     updateStart.countDown();
                     updateFinish.await();
 
                     assertEquals(initialMap, getEntries(cache1, allKeys, readModeAfter));
+
+                    checkContains(cache1, true,allKeys);
 
                     tx.commit();
                 }
@@ -419,5 +426,16 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
             default:
                 fail();
         }
+    }
+
+    /**
+     * Check cache contains entries.
+     *
+     * @param cache Cache.
+     * @param expected Expected result.
+     * @param keys Keys to check.
+     */
+    protected void checkContains(TestCache<Integer, MvccTestAccount> cache, boolean expected, Set<Integer> keys) {
+        assertEquals(expected, cache.cache.containsKeys(keys));
     }
 }

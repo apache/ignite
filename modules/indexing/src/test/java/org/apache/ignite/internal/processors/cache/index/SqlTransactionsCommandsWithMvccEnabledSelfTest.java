@@ -268,14 +268,6 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCacheOperationsFromSqlTransaction() {
-        checkCacheOperationThrows("containsKey", 1);
-
-        checkCacheOperationThrows("containsKeyAsync", 1);
-
-        checkCacheOperationThrows("containsKeys", new HashSet<>(Arrays.asList(1, 2)));
-
-        checkCacheOperationThrows("containsKeysAsync", new HashSet<>(Arrays.asList(1, 2)));
-
         checkCacheOperationThrows("invoke", 1, ENTRY_PROC, X.EMPTY_OBJECT_ARRAY);
 
         checkCacheOperationThrows("invoke", 1, CACHE_ENTRY_PROC, X.EMPTY_OBJECT_ARRAY);

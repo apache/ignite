@@ -191,10 +191,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         GridNearTxLocal tx = ctx.mvccEnabled() ? MvccUtils.tx(ctx.kernalContext()) : ctx.tm().threadLocalTx(ctx);
 
-        // TODO: IGNITE-7955: Fix non-transactional operations.
-        if (skipVals)
-            MvccUtils.verifyMvccOperationSupport(ctx, "containsKey/containsKeys");
-
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         final boolean recovery = opCtx != null && opCtx.recovery();
@@ -310,10 +306,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             validateCacheKeys(keys);
 
         GridNearTxLocal tx = (ctx.mvccEnabled()) ? MvccUtils.tx(ctx.kernalContext()) : ctx.tm().threadLocalTx(ctx);
-
-        // TODO: IGNITE-7955: Fix non-transactional operations.
-        if (skipVals)
-            MvccUtils.verifyMvccOperationSupport(ctx, "containsKey/containsKeys");
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 

@@ -147,11 +147,15 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
                         assertNull(val);
 
+                        assertFalse(cache.containsKey(key));
+
                         cache.put(key, -1);
 
                         val = (Integer)checkAndGet(true, cache, key, GET, SCAN);
 
                         assertEquals(Integer.valueOf(-1), val);
+
+                        assertTrue(cache.containsKey(key));
 
                         cache.put(key, key);
 
