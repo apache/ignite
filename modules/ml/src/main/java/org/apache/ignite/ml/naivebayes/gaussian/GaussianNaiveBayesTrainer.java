@@ -18,8 +18,11 @@
 package org.apache.ignite.ml.naivebayes.gaussian;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.ml.dataset.Dataset;
@@ -66,33 +69,38 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
         )) {
 
             MeanHelper mean = computeMeans(dataset);
-            int labelCount = mean.featureCount.keySet().size();
-            int featureCount = mean.featureSum.values().stream().findFirst().get().length;
-            double[][] means = new double[labelCount][featureCount];
-            double[] classProbabilities = new double[labelCount];
-            long rowsSize = mean.featureCount.values().stream().mapToInt(i -> i).sum();
 
+            List<?> sortedFeatures = new ArrayList<>(mean.featureCount.keySet());
+            sortedFeatures.sort((Comparator.comparing(o -> ((Double)o))));
+
+            int labelCount =sortedFeatures.size();
+            int featureCount = mean.featureSum.values().stream().findFirst().get().length;
+
+            double[][] means = new double[labelCount][featureCount];
+            double[][] variances = new double[labelCount][featureCount];
+            double[] classProbabilities = new double[labelCount];
+
+            long datasetSize = mean.featureCount.values().stream().mapToInt(i -> i).sum();
             Map<Object, double[]> meansHolder = new HashMap<>();
 
             int lbl = 0;
-            for (Object label : mean.featureCount.keySet()) {
-
+            for (Object label : sortedFeatures) {
                 int count = mean.featureCount.get(label);
                 double[] tmp = mean.featureSum.get(label);
 
                 for (int i = 0; i < featureCount; i++) {
                     means[lbl][i] = tmp[i] / count;
                 }
+
                 meansHolder.put(label, means[lbl]);
-                classProbabilities[lbl] = (double)count / rowsSize;
+                classProbabilities[lbl] = (double)count / datasetSize;
                 ++lbl;
             }
 
             VarianceHelper variance = computeVariance(dataset, meansHolder);
 
-            double[][] variances = new double[featureCount][labelCount];
-            for (Object label : mean.featureCount.keySet()) {
-
+            lbl = 0;
+            for (Object label : sortedFeatures) {
                 int count = mean.featureCount.get(label);
                 double[] tmp = variance.featureDiff.get(label);
 
@@ -111,8 +119,8 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
 
     }
 
-    private VarianceHelper computeVariance(
-        Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset, Map<Object, double[]> meansHolder) {
+    private VarianceHelper computeVariance(Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset,
+        Map<Object, double[]> meansHolder) {
         return dataset.compute(
             data -> {
                 VarianceHelper res = new VarianceHelper(meansHolder);
@@ -147,8 +155,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
             });
     }
 
-    private MeanHelper computeMeans(
-        Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset) {
+    private MeanHelper computeMeans(Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset) {
         return dataset.compute(
             data -> {
                 MeanHelper res = new MeanHelper();
@@ -175,7 +182,6 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                         toMeans[j] += features.get(j);
                     }
                 }
-
                 return res;
             }, (a, b) -> {
                 if (a == null)
