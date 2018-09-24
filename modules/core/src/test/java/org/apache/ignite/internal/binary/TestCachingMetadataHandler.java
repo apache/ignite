@@ -30,7 +30,7 @@ public class TestCachingMetadataHandler implements BinaryMetadataHandler {
     private final ConcurrentHashMap<Integer, BinaryType> metas = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
-    @Override public void addMeta(int typeId, BinaryType meta) throws BinaryObjectException {
+    @Override public void addMeta(int typeId, BinaryType meta, boolean failIfUnregistered) throws BinaryObjectException {
         BinaryType otherType = metas.put(typeId, meta);
 
         if (otherType != null)

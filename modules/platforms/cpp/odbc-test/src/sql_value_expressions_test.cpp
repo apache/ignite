@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_CASE(TestCase)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int32_t>(
+    SqlTestSuiteFixture::CheckSingleResult<SQLINTEGER>(
         "SELECT "
             "CASE i32Field WHEN 82 "
                 "THEN (i32Field / 2) "
@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE(TestCase)
             "END "
         "FROM TestType", in.i32Field / 2);
 
-    CheckSingleResult<int32_t>(
+    SqlTestSuiteFixture::CheckSingleResult<SQLINTEGER>(
         "SELECT "
             "CASE i32Field WHEN 22 "
                 "THEN (i32Field / 2) "
@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(TestCast)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int32_t>("SELECT CAST(strField AS INT) + i32Field FROM TestType", 
+    CheckSingleResult<SQLINTEGER>("SELECT CAST(strField AS INT) + i32Field FROM TestType", 
         common::LexicalCast<int32_t>(in.strField) + in.i32Field);
 
     CheckSingleResult<std::string>("SELECT CAST(i32Field AS VARCHAR) || strField FROM TestType",

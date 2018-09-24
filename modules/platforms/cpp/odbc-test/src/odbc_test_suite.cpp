@@ -211,9 +211,7 @@ namespace ignite
             SQLCHAR insertReq[] = "INSERT INTO TestType(_key, strField) VALUES(?, ?)";
             SQLCHAR mergeReq[] = "MERGE INTO TestType(_key, strField) VALUES(?, ?)";
 
-            SQLRETURN ret;
-
-            ret = SQLPrepare(stmt, merge ? mergeReq : insertReq, SQL_NTS);
+            SQLRETURN ret = SQLPrepare(stmt, merge ? mergeReq : insertReq, SQL_NTS);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
@@ -339,7 +337,7 @@ namespace ignite
                 timestampFields[i].hour = timeFields[i].hour;
                 timestampFields[i].minute = timeFields[i].minute;
                 timestampFields[i].second = timeFields[i].second;
-                timestampFields[i].fraction = std::abs(seed * 914873) % 1000000000;
+                timestampFields[i].fraction = static_cast<uint64_t>(std::abs(seed * 914873)) % 1000000000;
 
                 for (int j = 0; j < 42; ++j)
                     i8ArrayFields[i * 42 + j] = seed * 42 + j;

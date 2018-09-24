@@ -230,7 +230,7 @@ public class MLPTest {
         Vector weightsVec = mlp.weights(1).getRow(0);
         Tracer.showAscii(weightsVec);
 
-        Vector trueGrad = partialDer.apply(ytt, weightsVec, inputs.getCol(0));
+        Vector trueGrad = partialDer.andThen(x -> x).apply(ytt, weightsVec, inputs.getCol(0));
 
         Tracer.showAscii(trueGrad);
         Tracer.showAscii(grad);

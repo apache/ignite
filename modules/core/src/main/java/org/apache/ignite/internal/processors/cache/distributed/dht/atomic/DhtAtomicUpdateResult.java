@@ -45,6 +45,12 @@ class DhtAtomicUpdateResult {
     private IgniteCacheExpiryPolicy expiry;
 
     /**
+     * If batch update was interrupted in the middle, it should be continued from processedEntriesCount to avoid
+     * extra update closure invocation.
+     */
+    private int processedEntriesCount;
+
+    /**
      *
      */
     DhtAtomicUpdateResult() {
@@ -97,8 +103,17 @@ class DhtAtomicUpdateResult {
     /**
      * @return Deleted entries.
      */
-    Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted() {
+    public Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted() {
         return deleted;
+    }
+
+    /**
+     * Sets deleted entries.
+     *
+     * @param deleted deleted entries.
+     */
+    void deleted(Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted) {
+        this.deleted = deleted;
     }
 
     /**
@@ -127,5 +142,21 @@ class DhtAtomicUpdateResult {
      */
     void dhtFuture(@Nullable GridDhtAtomicAbstractUpdateFuture dhtFut) {
         this.dhtFut = dhtFut;
+    }
+
+    /**
+     * Sets processed entries count.
+     * @param idx processed entries count.
+     */
+    public void processedEntriesCount(int idx) {
+        processedEntriesCount = idx;
+    }
+
+    /**
+     * Returns processed entries count.
+     * @return processed entries count.
+     */
+    public int processedEntriesCount() {
+        return processedEntriesCount;
     }
 }

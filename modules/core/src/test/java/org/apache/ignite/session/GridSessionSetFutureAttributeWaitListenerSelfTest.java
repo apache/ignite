@@ -117,7 +117,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
 
                 assert (Integer)res == SPLIT_COUNT : "Invalid result [i=" + i + ", fut=" + fut + ']';
 
-                assert lsnr.getAttributes().size() != 0 : "No attributes found.";
+                assert !lsnr.getAttributes().isEmpty() : "No attributes found.";
             }
             finally {
                 // We must wait for the jobs to be sure that they have completed
@@ -156,7 +156,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
 
             for (int i = 1; i <= SPLIT_COUNT; i++) {
                 jobs.add(new ComputeJobAdapter(i) {
-                    @SuppressWarnings({"UnconditionalWait"})
+                    @Override @SuppressWarnings({"UnconditionalWait"})
                     public Serializable execute() {
                         assert taskSes != null;
 

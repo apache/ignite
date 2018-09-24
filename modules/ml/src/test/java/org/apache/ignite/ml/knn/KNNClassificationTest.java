@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
@@ -54,6 +55,12 @@ public class KNNClassificationTest {
             res.add(new Integer[] {part});
 
         return res;
+    }
+
+    /** */
+    @Test(expected = IllegalStateException.class)
+    public void testNullDataset() {
+        new KNNClassificationModel(null).apply(null);
     }
 
     /** */
@@ -166,5 +173,44 @@ public class KNNClassificationTest {
 
         Vector vector = new DenseVector(new double[] {-1.01, -1.01});
         assertEquals(knnMdl.apply(vector), 1.0);
+    }
+
+    /** */
+    @Test
+    public void testUpdate() {
+        Map<Integer, double[]> data = new HashMap<>();
+        data.put(0, new double[] {10.0, 10.0, 1.0});
+        data.put(1, new double[] {10.0, 20.0, 1.0});
+        data.put(2, new double[] {-1, -1, 1.0});
+        data.put(3, new double[] {-2, -2, 2.0});
+        data.put(4, new double[] {-1.0, -2.0, 2.0});
+        data.put(5, new double[] {-2.0, -1.0, 2.0});
+
+        KNNClassificationTrainer trainer = new KNNClassificationTrainer();
+
+        KNNClassificationModel originalMdl = (KNNClassificationModel)trainer.fit(
+            data,
+            parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
+            (k, v) -> v[2]
+        ).withK(3)
+            .withDistanceMeasure(new EuclideanDistance())
+            .withStrategy(NNStrategy.WEIGHTED);
+
+        KNNClassificationModel updatedOnSameDataset = trainer.update(originalMdl,
+            data, parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
+            (k, v) -> v[2]
+        );
+
+        KNNClassificationModel updatedOnEmptyDataset = trainer.update(originalMdl,
+            new HashMap<Integer, double[]>(), parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
+            (k, v) -> v[2]
+        );
+
+        Vector vector = new DenseVector(new double[] {-1.01, -1.01});
+        assertEquals(originalMdl.apply(vector), updatedOnSameDataset.apply(vector));
+        assertEquals(originalMdl.apply(vector), updatedOnEmptyDataset.apply(vector));
     }
 }

@@ -16,7 +16,7 @@
  */
 import _ from 'lodash';
 
-export default ['IgniteFormUtils', ['$window', 'IgniteFocus', '$rootScope', ($window, Focus, $rootScope) => {
+export default ['IgniteFormUtils', ['$window', 'IgniteFocus', '$rootScope', function($window, Focus, $rootScope) {
     function ensureActivePanel(ui, pnl, focusId) {
         if (ui && ui.loadPanel) {
             const collapses = $('[bs-collapse-target]');
@@ -426,14 +426,6 @@ export default ['IgniteFormUtils', ['$window', 'IgniteFocus', '$rootScope', ($wi
         },
         ensureActivePanel(panels, id, focusId) {
             ensureActivePanel(panels, id, focusId);
-        },
-        confirmUnsavedChanges(dirty, selectFunc) {
-            if (dirty) {
-                if ($window.confirm('You have unsaved changes.\n\nAre you sure you want to discard them?'))
-                    selectFunc();
-            }
-            else
-                selectFunc();
         },
         saveBtnTipText(dirty, objectName) {
             if (dirty)

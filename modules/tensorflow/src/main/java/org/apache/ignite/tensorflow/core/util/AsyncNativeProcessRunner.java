@@ -17,6 +17,7 @@
 
 package org.apache.ignite.tensorflow.core.util;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import org.apache.ignite.Ignite;
@@ -68,23 +69,21 @@ public abstract class AsyncNativeProcessRunner {
         NativeProcessRunner procRunner = doBefore();
 
         fut = executor.submit(() -> {
-            while (!Thread.currentThread().isInterrupted()) {
-                try {
-                    log.debug("Starting native process");
-                    procRunner.startAndWait();
-                    log.debug("Native process completed");
-                    break;
-                }
-                catch (InterruptedException e) {
-                    log.debug("Native process interrupted");
-                    break;
-                }
-                catch (Exception e) {
-                    log.error("Native process failed", e);
-                }
+            try {
+                log.debug("Starting native process");
+                procRunner.startAndWait();
+                log.debug("Native process completed");
             }
-
-            doAfter();
+            catch (InterruptedException e) {
+                log.debug("Native process interrupted");
+            }
+            catch (Exception e) {
+                log.error("Native process failed", e);
+                throw e;
+            }
+            finally {
+                doAfter();
+            }
         });
     }
 
@@ -103,5 +102,24 @@ public abstract class AsyncNativeProcessRunner {
      */
     public boolean isCompleted() {
         return fut != null && fut.isDone();
+    }
+
+    /**
+     * Returns an exception that happened during execution or {@code null} if there is no exception.
+     *
+     * @return Exception that happened during execution or {@code null} if there is no exception.
+     */
+    public Exception getException() {
+        if (!fut.isDone())
+            return null;
+
+        try {
+            fut.get();
+        }
+        catch (InterruptedException | ExecutionException e) {
+            return e;
+        }
+
+        return null;
     }
 }

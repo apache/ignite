@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -466,12 +467,17 @@ public class ZookeeperDiscoveryImpl {
         if (rtState.joined) {
             assert rtState.evtsData != null;
 
-            lsnr.onDiscovery(EVT_CLIENT_NODE_DISCONNECTED,
-                rtState.evtsData.topVer,
-                locNode,
-                rtState.top.topologySnapshot(),
-                Collections.<Long, Collection<ClusterNode>>emptyMap(),
-                null);
+            try {
+                lsnr.onDiscovery(EVT_CLIENT_NODE_DISCONNECTED,
+                    rtState.evtsData.topVer,
+                    locNode,
+                    rtState.top.topologySnapshot(),
+                    Collections.emptyMap(),
+                    null).get();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to wait for discovery listener notification", e);
+            }
         }
 
         try {
@@ -532,14 +538,19 @@ public class ZookeeperDiscoveryImpl {
         List<ClusterNode> nodes = rtState.top.topologySnapshot();
 
         if (nodes.isEmpty())
-            nodes = Collections.singletonList((ClusterNode)locNode);
+            nodes = Collections.singletonList(locNode);
 
-        lsnr.onDiscovery(EVT_NODE_SEGMENTED,
-            rtState.evtsData != null ? rtState.evtsData.topVer : 1L,
-            locNode,
-            nodes,
-            Collections.<Long, Collection<ClusterNode>>emptyMap(),
-            null);
+        try {
+            lsnr.onDiscovery(EVT_NODE_SEGMENTED,
+                rtState.evtsData != null ? rtState.evtsData.topVer : 1L,
+                locNode,
+                nodes,
+                Collections.emptyMap(),
+                null).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to wait for discovery listener notification", e);
+        }
     }
 
     /**
@@ -1333,7 +1344,9 @@ public class ZookeeperDiscoveryImpl {
             }
         }
 
-        assert !aliveClients.isEmpty();
+        // This situation may appear while reconnection and this callback can be skipped.
+        if(!aliveClients.containsKey(locInternalOrder))
+            return;
 
         Map.Entry<Long, String> oldest = aliveClients.firstEntry();
 
@@ -2239,12 +2252,19 @@ public class ZookeeperDiscoveryImpl {
 
         final List<ClusterNode> topSnapshot = Collections.singletonList((ClusterNode)locNode);
 
-        lsnr.onDiscovery(EVT_NODE_JOINED,
-            1L,
-            locNode,
-            topSnapshot,
-            Collections.<Long, Collection<ClusterNode>>emptyMap(),
-            null);
+        try {
+            lsnr.onDiscovery(EVT_NODE_JOINED,
+                1L,
+                locNode,
+                topSnapshot,
+                Collections.emptyMap(),
+                null).get();
+        }
+        catch (IgniteCheckedException e) {
+            joinFut.onDone(e);
+
+            throw new IgniteException("Failed to wait for discovery listener notification", e);
+        }
 
         // Reset events (this is also notification for clients left from previous cluster).
         rtState.zkClient.setData(zkPaths.evtsPath, marshalZip(rtState.evtsData), -1);
@@ -2263,33 +2283,27 @@ public class ZookeeperDiscoveryImpl {
 
         ZookeeperClient client = rtState.zkClient;
 
-        // TODO ZK: use multi, better batching + max-size safe + NoNodeException safe.
-        List<String> evtChildren = rtState.zkClient.getChildren(zkPaths.evtsPath);
+        List<String> batch = new LinkedList<>();
 
-        for (String evtPath : evtChildren) {
-            String evtDir = zkPaths.evtsPath + "/" + evtPath;
+        List<String> evtChildren = client.getChildrenPaths(zkPaths.evtsPath);
 
-            removeChildren(evtDir);
-        }
+        for (String evtPath : evtChildren)
+            batch.addAll(client.getChildrenPaths(evtPath));
 
-        client.deleteAll(zkPaths.evtsPath, evtChildren, -1);
+        batch.addAll(evtChildren);
 
-        client.deleteAll(zkPaths.customEvtsDir,
-            client.getChildren(zkPaths.customEvtsDir),
-            -1);
+        batch.addAll(client.getChildrenPaths(zkPaths.customEvtsDir));
 
-        rtState.zkClient.deleteAll(zkPaths.customEvtsPartsDir,
-            rtState.zkClient.getChildren(zkPaths.customEvtsPartsDir),
-            -1);
+        batch.addAll(client.getChildrenPaths(zkPaths.customEvtsPartsDir));
 
-        rtState.zkClient.deleteAll(zkPaths.customEvtsAcksDir,
-            rtState.zkClient.getChildren(zkPaths.customEvtsAcksDir),
-            -1);
+        batch.addAll(client.getChildrenPaths(zkPaths.customEvtsAcksDir));
+
+        client.deleteAll(batch, -1);
 
         if (startInternalOrder > 0) {
-            for (String alive : rtState.zkClient.getChildren(zkPaths.aliveNodesDir)) {
+            for (String alive : client.getChildren(zkPaths.aliveNodesDir)) {
                 if (ZkIgnitePaths.aliveInternalId(alive) < startInternalOrder)
-                    rtState.zkClient.deleteIfExists(zkPaths.aliveNodesDir + "/" + alive, -1);
+                    client.deleteIfExists(zkPaths.aliveNodesDir + "/" + alive, -1);
             }
         }
 
@@ -2299,14 +2313,6 @@ public class ZookeeperDiscoveryImpl {
             if (log.isInfoEnabled())
                 log.info("Previous cluster data cleanup time: " + time);
         }
-    }
-
-    /**
-     * @param path Path.
-     * @throws Exception If failed.
-     */
-    private void removeChildren(String path) throws Exception {
-        rtState.zkClient.deleteAll(path, rtState.zkClient.getChildren(path), -1);
     }
 
     /**
@@ -2953,16 +2959,16 @@ public class ZookeeperDiscoveryImpl {
                 joinedEvtData.topVer,
                 locNode,
                 topSnapshot,
-                Collections.<Long, Collection<ClusterNode>>emptyMap(),
-                null);
+                Collections.emptyMap(),
+                null).get();
 
             if (rtState.prevJoined) {
                 lsnr.onDiscovery(EVT_CLIENT_NODE_RECONNECTED,
                     joinedEvtData.topVer,
                     locNode,
                     topSnapshot,
-                    Collections.<Long, Collection<ClusterNode>>emptyMap(),
-                    null);
+                    Collections.emptyMap(),
+                    null).get();
 
                 U.quietAndWarn(log, "Client node was reconnected after it was already considered failed [locId=" + locNode.id() + ']');
             }
@@ -3413,13 +3419,23 @@ public class ZookeeperDiscoveryImpl {
 
         final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
-        lsnr.onDiscovery(
+        IgniteInternalFuture fut = lsnr.onDiscovery(
             DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
             evtData.topologyVersion(),
             sndNode,
             topSnapshot,
-            Collections.<Long, Collection<ClusterNode>>emptyMap(),
-            msg);
+            Collections.emptyMap(),
+            msg
+        );
+
+        if (msg != null && msg.isMutable()) {
+            try {
+                fut.get();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to wait for discovery listener notification", e);
+            }
+        }
     }
 
     /**
@@ -3437,12 +3453,17 @@ public class ZookeeperDiscoveryImpl {
 
         final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
-        lsnr.onDiscovery(EVT_NODE_JOINED,
-            joinedEvtData.topVer,
-            joinedNode,
-            topSnapshot,
-            Collections.<Long, Collection<ClusterNode>>emptyMap(),
-            null);
+        try {
+            lsnr.onDiscovery(EVT_NODE_JOINED,
+                joinedEvtData.topVer,
+                joinedNode,
+                topSnapshot,
+                Collections.emptyMap(),
+                null).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to wait for discovery listener notification", e);
+        }
     }
 
     /**
@@ -3468,12 +3489,17 @@ public class ZookeeperDiscoveryImpl {
 
         final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
-        lsnr.onDiscovery(EVT_NODE_FAILED,
-            topVer,
-            failedNode,
-            topSnapshot,
-            Collections.<Long, Collection<ClusterNode>>emptyMap(),
-            null);
+        try {
+            lsnr.onDiscovery(EVT_NODE_FAILED,
+                topVer,
+                failedNode,
+                topSnapshot,
+                Collections.emptyMap(),
+                null).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to wait for discovery listener notification", e);
+        }
 
         stats.onNodeFailed();
     }

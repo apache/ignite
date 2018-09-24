@@ -30,6 +30,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.net.ServerSocket;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -115,6 +116,9 @@ public final class GridTestUtils {
     public static final long DFLT_BUSYWAIT_SLEEP_INTERVAL = 200;
 
     /** */
+    public static final long DFLT_TEST_TIMEOUT = 5 * 60 * 1000;
+
+    /** */
     static final String ALPHABETH = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890_";
 
     /**
@@ -156,9 +160,10 @@ public final class GridTestUtils {
         }
 
         /** {@inheritDoc} */
-        @Override public void onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot, @Nullable Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage spiCustomMsg) {
+        @Override public IgniteInternalFuture onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot, @Nullable Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage spiCustomMsg) {
             hook.handleDiscoveryMessage(spiCustomMsg);
-            delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+
+            return delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
         }
 
         /** {@inheritDoc} */
@@ -401,6 +406,24 @@ public final class GridTestUtils {
         }
 
         throw new AssertionError("Exception has not been thrown.");
+    }
+
+    /**
+     * Checks whether callable throws exception, which is itself of a specified
+     * class, or has a cause of the specified class.
+     *
+     * @param runnable Runnable.
+     * @param cls Expected class.
+     * @return Thrown throwable.
+     */
+    @Nullable public static Throwable assertThrowsWithCause(Runnable runnable, Class<? extends Throwable> cls) {
+        return assertThrowsWithCause(new Callable<Integer>() {
+            @Override public Integer call() throws Exception {
+                runnable.run();
+
+                return 0;
+            }
+        }, cls);
     }
 
     /**
@@ -665,6 +688,23 @@ public final class GridTestUtils {
         discoPorts.put(cls, portRet);
 
         return portRet;
+    }
+
+    /**
+     * @return Free communication port number on localhost.
+     * @throws IOException If unable to find a free port.
+     */
+    public static int getFreeCommPort() throws IOException {
+        for (int port = default_comm_port; port < max_comm_port; port++) {
+            try (ServerSocket sock = new ServerSocket(port)) {
+                return sock.getLocalPort();
+            }
+            catch (IOException ignored) {
+                // No-op.
+            }
+        }
+
+        throw new IOException("Unable to find a free communication port.");
     }
 
     /**
@@ -1665,7 +1705,7 @@ public final class GridTestUtils {
     public static SSLContext sslContext() throws GeneralSecurityException, IOException {
         SSLContext ctx = SSLContext.getInstance("TLS");
 
-        char[] storePass = GridTestProperties.getProperty("ssl.keystore.password").toCharArray();
+        char[] storePass = keyStorePassword().toCharArray();
 
         KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance("SunX509");
 
@@ -1692,7 +1732,7 @@ public final class GridTestUtils {
 
         factory.setKeyStoreFilePath(
             U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path")).getAbsolutePath());
-        factory.setKeyStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
+        factory.setKeyStorePassword(keyStorePassword().toCharArray());
 
         factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
 
@@ -1710,7 +1750,7 @@ public final class GridTestUtils {
 
         factory.setKeyStoreFilePath(
             U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path")).getAbsolutePath());
-        factory.setKeyStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
+        factory.setKeyStorePassword(keyStorePassword().toCharArray());
 
         factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
 
@@ -1727,14 +1767,21 @@ public final class GridTestUtils {
     public static Factory<SSLContext> sslTrustedFactory(String keyStore, String trustStore) {
         SslContextFactory factory = new SslContextFactory();
 
-        factory.setKeyStoreFilePath(U.resolveIgnitePath(GridTestProperties.getProperty(
-            "ssl.keystore." + keyStore + ".path")).getAbsolutePath());
-        factory.setKeyStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
-        factory.setTrustStoreFilePath(U.resolveIgnitePath(GridTestProperties.getProperty(
-            "ssl.keystore." + trustStore + ".path")).getAbsolutePath());
-        factory.setTrustStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
+        factory.setKeyStoreFilePath(keyStorePath(keyStore));
+        factory.setKeyStorePassword(keyStorePassword().toCharArray());
+        factory.setTrustStoreFilePath(keyStorePath(trustStore));
+        factory.setTrustStorePassword(keyStorePassword().toCharArray());
 
         return factory;
+    }
+
+    public static String keyStorePassword() {
+        return GridTestProperties.getProperty("ssl.keystore.password");
+    }
+
+    @NotNull public static String keyStorePath(String keyStore) {
+        return U.resolveIgnitePath(GridTestProperties.getProperty(
+            "ssl.keystore." + keyStore + ".path")).getAbsolutePath();
     }
 
     /**

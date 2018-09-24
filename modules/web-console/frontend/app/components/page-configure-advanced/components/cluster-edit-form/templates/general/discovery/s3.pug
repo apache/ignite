@@ -24,15 +24,32 @@ mixin discovery-s3(modelAt = '$ctrl.clonedCluster')
 
     .pc-form-grid-row&attributes(attributes=attributes)
         .pc-form-grid-col-30
-            +text('Bucket name:', `${model}.bucketName`, `'${discoveryKind}BucketName'`, required, 'Input bucket name', 'Bucket name for IP finder')
+            +form-field__text({
+                label: 'Bucket name:',
+                model: `${model}.bucketName`,
+                name: `'${discoveryKind}BucketName'`,
+                required: required,
+                placeholder: 'Input bucket name',
+                tip: 'Bucket name for IP finder'
+            })
         .pc-form-grid-col-30
             .pc-form-grid__text-only-item(style='font-style: italic;color: #424242;')
                 | AWS credentials will be generated as stub
         .pc-form-grid-col-40(ng-if-start=`$ctrl.available("2.4.0")`)
-            +text('Bucket endpoint:', `${model}.bucketEndpoint`, `'${discoveryKind}BucketEndpoint'`, false, 'Input bucket endpoint',
-            'Bucket endpoint for IP finder<br/> \
-            For information about possible endpoint names visit <a href="http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region">docs.aws.amazon.com</a>')
+            +form-field__text({
+                label: 'Bucket endpoint:',
+                model: `${model}.bucketEndpoint`,
+                name: `'${discoveryKind}BucketEndpoint'`,
+                placeholder: 'Input bucket endpoint',
+                tip: 'Bucket endpoint for IP finder<br/> \
+                      For information about possible endpoint names visit <a href="http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region">docs.aws.amazon.com</a>'
+            })
         .pc-form-grid-col-20(ng-if-end)
-            +text('SSE algorithm:', `${model}.SSEAlgorithm`, `'${discoveryKind}SSEAlgorithm'`, false, 'Input SSE algorithm',
-            'Server-side encryption algorithm for Amazon S3-managed encryption keys<br/> \
-            For information about possible S3-managed encryption keys visit <a href="http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingServerSideEncryption.html">docs.aws.amazon.com</a>')
+            +form-field__text({
+                label: 'SSE algorithm:',
+                model: `${model}.SSEAlgorithm`,
+                name: `'${discoveryKind}SSEAlgorithm'`,
+                placeholder: 'Input SSE algorithm',
+                tip: 'Server-side encryption algorithm for Amazon S3-managed encryption keys<br/> \
+                      For information about possible S3-managed encryption keys visit <a href="http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingServerSideEncryption.html">docs.aws.amazon.com</a>'
+            })
