@@ -17,19 +17,22 @@
 package org.apache.ignite.p2p;
 
 import java.lang.reflect.Field;
+import java.net.URL;
 import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -37,22 +40,23 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestExternalClassLoader;
+import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /** */
 public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
+    /** Predicate classname. */
+    private static final String PREDICATE_CLASSNAME = "org.apache.ignite.tests.p2p.AlwaysTrueTestPredicate";
+
     /** */
-    private static final String TEST_PREDICATE_RESOURCE_NAME = TestPredicate.class.getSimpleName() + ".class";
+    private static final String TEST_PREDICATE_RESOURCE_NAME = PREDICATE_CLASSNAME.substring(PREDICATE_CLASSNAME.lastIndexOf('.') + 1) + ".class";
+
     /** Cache name. */
     private static final String CACHE_NAME = "test-cache";
 
     /** Client instance name. */
     private static final String CLIENT_INSTANCE_NAME = "client";
-
-    /** {@inheritDoc} */
-    @Override protected boolean isMultiJvm() {
-        return true;
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -74,13 +78,7 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
                 )
         );
 
-        cfg.setPeerClassLoadingLocalClassPathExclude(TestPredicate.class.getName());
-
         cfg.setCommunicationSpi(new MessageCountingCommunicationSpi());
-
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration());
-
-        cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
 
         if (igniteInstanceName.equals(CLIENT_INSTANCE_NAME))
             cfg.setClientMode(true);
@@ -89,22 +87,12 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void checkConfiguration(IgniteConfiguration cfg) {
-        // No op.
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean isRemoteJvm(String igniteInstanceName) {
-        return super.isRemoteJvm(igniteInstanceName) && !igniteInstanceName.equals(CLIENT_INSTANCE_NAME);
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
         stopAllGrids();
 
-        cleanPersistenceDir();
+        MessageCountingCommunicationSpi.resetDeploymentRequestCounter();
     }
 
     /** {@inheritDoc} */
@@ -112,8 +100,6 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
         super.afterTest();
 
         stopAllGrids();
-
-        cleanPersistenceDir();
     }
 
     /**
@@ -122,15 +108,11 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
      * @throws Exception if test failed.
      */
     public void testAfterClientDisconnect() throws Exception {
-        // Starting server node on remote JVM and client node on local JVM.
-        startGrids(2);
+        Class predCls = (new GridTestExternalClassLoader(new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))})).loadClass(PREDICATE_CLASSNAME);
+
+        startGrid(0);
 
         Ignite client = startGrid(CLIENT_INSTANCE_NAME);
-
-        stopGrid(0);
-
-        while (client.cluster().topologyVersion() != 4)
-            U.sleep(10L);
 
         client.cluster().active(true);
 
@@ -140,33 +122,52 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
 
         cache.put(1, "foo");
 
-        int gridDeploymentRequests = client
-            .compute(client.cluster().forRemotes())
-            .call(MessageCountingCommunicationSpi::deploymentRequestCount);
+        invokeScanQueryAndStopClient(client, predCls);
 
-        assertEquals("Invalid number of sent grid deployment requests", 0, gridDeploymentRequests);
-
-        cache.query(new ScanQuery<>(new TestPredicate())).getAll();
-
-        gridDeploymentRequests = client
-            .compute(client.cluster().forRemotes())
-            .call(MessageCountingCommunicationSpi::deploymentRequestCount);
-
-        assertEquals("Invalid number of sent grid deployment requests", 1, gridDeploymentRequests);
-
-        stopGrid(CLIENT_INSTANCE_NAME);
+        MessageCountingCommunicationSpi.resetDeploymentRequestCounter();
 
         client = startGrid(CLIENT_INSTANCE_NAME);
 
-        cache = client.getOrCreateCache(CACHE_NAME);
+        invokeScanQueryAndStopClient(client, predCls);
+    }
 
-        cache.query(new ScanQuery<>(new TestPredicate())).getAll();
+    /**
+     * @param client ignite instance.
+     * @param predCls loaded predicate class.
+     * @throws Exception if failed.
+     */
+    private void invokeScanQueryAndStopClient(Ignite client, Class predCls) throws Exception {
+        IgniteCache<Integer, String> cache = client.getOrCreateCache(CACHE_NAME);
 
-        gridDeploymentRequests = client
-            .compute(client.cluster().forRemotes())
-            .call(MessageCountingCommunicationSpi::deploymentRequestCount);
+        assertEquals("Invalid number of sent grid deployment requests", 0, MessageCountingCommunicationSpi.deploymentRequestCount());
 
-        assertEquals("Invalid number of sent grid deployment requests", 2, gridDeploymentRequests);
+        assertFalse(PREDICATE_CLASSNAME + " mustn't be cached! ", igniteUtilsCachedClasses().contains(PREDICATE_CLASSNAME));
+
+        cache.query(new ScanQuery<>((IgniteBiPredicate<Integer, String>)predCls.newInstance())).getAll();
+
+        // first request is GridDeployment.java 716 and second is GridDeployment.java 501
+        assertEquals("Invalid number of sent grid deployment requests", 2, MessageCountingCommunicationSpi.deploymentRequestCount());
+
+        assertTrue(PREDICATE_CLASSNAME + " must be cached! ", igniteUtilsCachedClasses().contains(PREDICATE_CLASSNAME));
+
+        client.close();
+
+        assertFalse(PREDICATE_CLASSNAME + " mustn't be cached! ", igniteUtilsCachedClasses().contains(PREDICATE_CLASSNAME));
+    }
+
+    /**
+     * @return All class names cached in IgniteUtils.classCache field
+     * @throws Exception if something wrong.
+     */
+    private Set<String> igniteUtilsCachedClasses() throws Exception {
+        Field f = IgniteUtils.class.getDeclaredField("classCache");
+
+        f.setAccessible(true);
+
+        ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>> map =
+            (ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>>)f.get(null);
+
+        return map.values().stream().flatMap(x -> x.keySet().stream()).collect(Collectors.toSet());
     }
 
     /** */
@@ -193,6 +194,13 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
         }
 
         /**
+         * Reset request counter.
+         */
+        public static void resetDeploymentRequestCounter() {
+            reqCnt.set(0);
+        }
+
+        /**
          * Checks if it is a p2p deployment request message with test predicate resource.
          *
          * @param msg Message to check.
@@ -215,14 +223,6 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
                 throw new RuntimeException(e);
             }
             return false;
-        }
-    }
-
-    /** */
-    private static class TestPredicate implements IgniteBiPredicate<Integer, String> {
-        /** {@inheritDoc} */
-        @Override public boolean apply(Integer integer, String s) {
-            return true;
         }
     }
 

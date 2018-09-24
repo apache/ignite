@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.events.DeploymentEvent;
@@ -1290,7 +1291,11 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
                 ctx.cache().onUndeployed(ldr);
 
-                U.clearClassFromClassCache(ctx.cache().context().deploy().globalLoader(), sampleClassName());
+                // Clear static class cache.
+                Stream.of(sampleClassName(),deployedClassMap().keySet().stream())
+                    .distinct()
+                    .map(Object::toString)
+                    .forEach(x->U.clearClassFromClassCache(ctx.cache().context().deploy().globalLoader(), x));
 
                 // Clear optimized marshaller's cache.
                 if (ctx.config().getMarshaller() instanceof AbstractMarshaller)
