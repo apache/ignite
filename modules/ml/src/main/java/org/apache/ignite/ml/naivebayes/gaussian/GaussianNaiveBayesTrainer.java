@@ -19,6 +19,8 @@ package org.apache.ignite.ml.naivebayes.gaussian;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -63,59 +65,44 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
             partDataBuilder
         )) {
 
-            Stat statistic = dataset.compute(
-                data -> {
-                    Stat stat = new Stat();
-                    for (int i = 0; i < data.rowSize(); i++) {
-                        LabeledVector row = data.getRow(i);
-                        Vector features = row.features();
-                        Object label = row.label();
-
-                        double[] toMeans;
-
-                        if (!stat.featureSum.containsKey(label)) {
-                            toMeans = new double[features.size()];
-                            Arrays.fill(toMeans, 0.);
-                            stat.featureSum.put(label, toMeans);
-                        }
-
-                        if (!stat.featureCount.containsKey(label)) {
-                            stat.featureCount.put(label, 0);
-                        }
-                        stat.featureCount.put(label, stat.featureCount.get(label)+1);
-
-                        toMeans = stat.featureSum.get(label);
-                        for (int j = 0; j < features.size(); j++) {
-                            toMeans[j] += features.get(j);
-                        }
-                    }
-
-                    return stat;
-                }, (a, b) -> {
-                    if (a == null)
-                        return b == null ? new Stat() : b;
-                    if (b == null)
-                        return a;
-                    return a.merge(b);
-                });
-            int labelCount = statistic.featureCount.keySet().size();
-            int featureCount = statistic.featureSum.values().stream().findFirst().get().length;
+            MeanHelper mean = computeMeans(dataset);
+            int labelCount = mean.featureCount.keySet().size();
+            int featureCount = mean.featureSum.values().stream().findFirst().get().length;
             double[][] means = new double[labelCount][featureCount];
             double[] classProbabilities = new double[labelCount];
-            long rowsSize = statistic.featureCount.values().stream().mapToInt(i -> i).sum();
+            long rowsSize = mean.featureCount.values().stream().mapToInt(i -> i).sum();
+
+            Map<Object, double[]> meansHolder = new HashMap<>();
 
             int lbl = 0;
-            for (Object label : statistic.featureCount.keySet()) {
-                int count = statistic.featureCount.get(label);
-                double[] tmp = statistic.featureSum.get(label);
-                for (int i = 0; i <featureCount; i++) {
+            for (Object label : mean.featureCount.keySet()) {
+
+                int count = mean.featureCount.get(label);
+                double[] tmp = mean.featureSum.get(label);
+
+                for (int i = 0; i < featureCount; i++) {
                     means[lbl][i] = tmp[i] / count;
                 }
+                meansHolder.put(label, means[lbl]);
                 classProbabilities[lbl] = (double)count / rowsSize;
                 ++lbl;
             }
 
-            return new GaussianNaiveBayesModel(means, null, new DenseVector(classProbabilities));
+            VarianceHelper variance = computeVariance(dataset, meansHolder);
+
+            double[][] variances = new double[featureCount][labelCount];
+            for (Object label : mean.featureCount.keySet()) {
+
+                int count = mean.featureCount.get(label);
+                double[] tmp = variance.featureDiff.get(label);
+
+                for (int i = 0; i < featureCount; i++) {
+                    variances[lbl][i] = tmp[i] / (count - 1);
+                }
+                ++lbl;
+            }
+
+            return new GaussianNaiveBayesModel(means, variances, new DenseVector(classProbabilities));
         }
         catch (Exception e) {
             throw new
@@ -124,14 +111,89 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
 
     }
 
-    public static class Stat implements Serializable {
+    private VarianceHelper computeVariance(
+        Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset, Map<Object, double[]> meansHolder) {
+        return dataset.compute(
+            data -> {
+                VarianceHelper res = new VarianceHelper(meansHolder);
+                for (int i = 0; i < data.rowSize(); i++) {
+                    LabeledVector row = data.getRow(i);
+                    Vector features = row.features();
+                    Object label = row.label();
+
+                    double[] m = res.meansHolder.get(label);
+
+                    double[] toVars;
+
+                    if (!res.featureDiff.containsKey(label)) {
+                        toVars = new double[features.size()];
+                        Arrays.fill(toVars, 0.);
+                        res.featureDiff.put(label, toVars);
+                    }
+
+                    toVars = res.featureDiff.get(label);
+                    for (int j = 0; j < features.size(); j++) {
+                        toVars[j] += (m[j] - features.get(j)) * (m[j] - features.get(j));
+                    }
+                }
+
+                return res;
+            }, (a, b) -> {
+                if (a == null)
+                    return b == null ? new VarianceHelper(meansHolder) : b;
+                if (b == null)
+                    return a;
+                return a.merge(b);
+            });
+    }
+
+    private MeanHelper computeMeans(
+        Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset) {
+        return dataset.compute(
+            data -> {
+                MeanHelper res = new MeanHelper();
+                for (int i = 0; i < data.rowSize(); i++) {
+                    LabeledVector row = data.getRow(i);
+                    Vector features = row.features();
+                    Object label = row.label();
+
+                    double[] toMeans;
+
+                    if (!res.featureSum.containsKey(label)) {
+                        toMeans = new double[features.size()];
+                        Arrays.fill(toMeans, 0.);
+                        res.featureSum.put(label, toMeans);
+                    }
+
+                    if (!res.featureCount.containsKey(label)) {
+                        res.featureCount.put(label, 0);
+                    }
+                    res.featureCount.put(label, res.featureCount.get(label) + 1);
+
+                    toMeans = res.featureSum.get(label);
+                    for (int j = 0; j < features.size(); j++) {
+                        toMeans[j] += features.get(j);
+                    }
+                }
+
+                return res;
+            }, (a, b) -> {
+                if (a == null)
+                    return b == null ? new MeanHelper() : b;
+                if (b == null)
+                    return a;
+                return a.merge(b);
+            });
+    }
+
+    public static class MeanHelper implements Serializable {
         /** Serial version uid. */
         private static final long serialVersionUID = 1L;
         ConcurrentHashMap<Object, double[]> featureSum = new ConcurrentHashMap<>();
         ConcurrentHashMap<Object, Integer> featureCount = new ConcurrentHashMap<>();
 
         /** Merge current */
-        Stat merge(Stat other) {
+        MeanHelper merge(MeanHelper other) {
             this.featureSum = MapUtil.mergeMaps(featureSum, other.featureSum, this::sum, ConcurrentHashMap::new);
             this.featureCount = MapUtil.mergeMaps(featureCount, other.featureCount, (i1, i2) -> i1 + i2, ConcurrentHashMap::new);
             return this;
@@ -143,9 +205,29 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
             }
             return arr1;
         }
+    }
 
-        public void coutStat() {
+    public static class VarianceHelper implements Serializable {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 1L;
+        final Map<Object, double[]> meansHolder;
+        ConcurrentHashMap<Object, double[]> featureDiff = new ConcurrentHashMap<>();
 
+        public VarianceHelper(Map<Object, double[]> meansHolder) {
+            this.meansHolder = meansHolder;
+        }
+
+        /** Merge current */
+        VarianceHelper merge(VarianceHelper other) {
+            featureDiff = MapUtil.mergeMaps(featureDiff, other.featureDiff, this::sum, ConcurrentHashMap::new);
+            return this;
+        }
+
+        private double[] sum(double[] arr1, double[] arr2) {
+            for (int i = 0; i < arr1.length; i++) {
+                arr1[i] += arr2[i];
+            }
+            return arr1;
         }
     }
 }
