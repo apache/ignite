@@ -191,8 +191,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             if(!cacheWorkDir.exists())
                 return;
 
-            idxCacheStores.remove(CU.cacheId(cacheConfiguration.getGroupName()));
-
             try (DirectoryStream<Path> files = newDirectoryStream(cacheWorkDir.toPath(),
                 new DirectoryStream.Filter<Path>() {
                     @Override public boolean accept(Path entry) throws IOException {
@@ -221,8 +219,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             )) {
                 for (Path path : files)
                     U.delete(path);
-
-                idxCacheStores.entrySet().removeIf(e -> MetaStorage.METASTORAGE_CACHE_ID != e.getKey());
             }
         }
         catch (IOException e) {
