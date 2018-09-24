@@ -39,7 +39,7 @@ import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuil
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
- * Trainer of the naive Bayes classification model.
+ * Trainer for the naive Bayes classification model.
  */
 public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<GaussianNaiveBayesModel> {
 
