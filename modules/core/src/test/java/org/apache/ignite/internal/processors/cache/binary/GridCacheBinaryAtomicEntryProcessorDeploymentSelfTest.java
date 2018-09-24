@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAtomicEntryProcessor
 public class GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest
     extends GridCacheAtomicEntryProcessorDeploymentSelfTest {
     /** {@inheritDoc} */
-    protected IgniteCache getCache() {
+    @Override protected IgniteCache getCache() {
         return grid(1).cache(DEFAULT_CACHE_NAME).withKeepBinary();
     }
 

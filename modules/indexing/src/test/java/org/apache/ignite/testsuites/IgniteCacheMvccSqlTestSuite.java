@@ -38,6 +38,8 @@ import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccReplicatedSqlTx
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccScanQueryWithConcurrentJdbcTransactionTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSizeTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSizeWithConcurrentJdbcTransactionTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSqlConfigurationValidationTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSqlLockTimeoutTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccStreamingInsertTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildWithMvccEnabledSelfTest;
 
@@ -52,9 +54,11 @@ public class IgniteCacheMvccSqlTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("IgniteCache SQL MVCC Test Suite");
 
         // Simple tests.
+        suite.addTestSuite(CacheMvccSqlConfigurationValidationTest.class);
         suite.addTestSuite(CacheMvccDmlSimpleTest.class);
         suite.addTestSuite(SqlTransactionsCommandsWithMvccEnabledSelfTest.class);
         suite.addTestSuite(CacheMvccSizeTest.class);
+        suite.addTestSuite(CacheMvccSqlLockTimeoutTest.class);
 
         suite.addTestSuite(GridIndexRebuildWithMvccEnabledSelfTest.class);
 

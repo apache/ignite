@@ -29,7 +29,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.GridLogThrottle;
+import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.stream.StreamTransformer;
 import org.jetbrains.annotations.Nullable;
 
@@ -135,6 +137,15 @@ public final class IgniteSystemProperties {
      * doesn't start on client node. If set {@code true} than rest processor will be started on client node.
      */
     public static final String IGNITE_REST_START_ON_CLIENT = "IGNITE_REST_START_ON_CLIENT";
+
+    /**
+     * This property changes output format of {@link GridRestCommand#CACHE_GET_ALL} from {k: v, ...}
+     * to [{"key": k, "value": v}, ...] to allow non-string keys output.
+     *
+     * @deprecated Should be made default in Apache Ignite 3.0.
+     */
+    @Deprecated
+    public static final String IGNITE_REST_GETALL_AS_ARRAY = "IGNITE_REST_GETALL_AS_ARRAY";
 
     /**
      * This property defines the maximum number of attempts to remap near get to the same
@@ -495,6 +506,10 @@ public final class IgniteSystemProperties {
     /** Maximum number of discovery message history used to support client reconnect. */
     public static final String IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE =
         "IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE";
+
+    /** Time interval that indicates that client reconnect throttle must be reset to zero. 2 minutes by default. */
+    public static final String CLIENT_THROTTLE_RECONNECT_RESET_TIMEOUT_INTERVAL =
+        "CLIENT_THROTTLE_RECONNECT_RESET_TIMEOUT_INTERVAL";
 
     /** Number of cache operation retries in case of topology exceptions. */
     public static final String IGNITE_CACHE_RETRIES_COUNT = "IGNITE_CACHE_RETRIES_COUNT";
@@ -946,7 +961,7 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_DUMP_THREADS_ON_FAILURE = "IGNITE_DUMP_THREADS_ON_FAILURE";
 
-    /**
+   /**
      * Throttling timeout in millis which avoid excessive PendingTree access on unwind if there is nothing to clean yet.
      *
      * Default is 500 ms.

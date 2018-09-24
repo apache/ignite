@@ -84,6 +84,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.query.CacheQueryObjectValueContext;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -128,6 +129,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.query.h2.sys.SqlSystemTableEngine;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewBaselineNodes;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeAttributes;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeMetrics;
@@ -136,7 +138,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecut
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
@@ -209,7 +210,8 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VER_FIELD_NAME;
-import static org.apache.ignite.internal.processors.query.h2.PreparedStatementEx.INVOLVED_CACHES;
+import static org.apache.ignite.internal.processors.query.h2.PreparedStatementEx.MVCC_CACHE_ID;
+import static org.apache.ignite.internal.processors.query.h2.PreparedStatementEx.MVCC_STATE;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.distributedJoinMode;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.LOCAL;
@@ -1061,7 +1063,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param filter Cache name and key filter.
      * @param enforceJoinOrder Enforce join order of tables in the query.
      * @param startTx Start transaction flag.
-     * @param timeout Query timeout in milliseconds.
+     * @param qryTimeout Query timeout in milliseconds.
      * @param cancel Query cancel.
      * @param mvccTracker Query tracker.
      * @return Query result.
@@ -1070,10 +1072,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     GridQueryFieldsResult queryLocalSqlFields(final String schemaName, String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder,
-        boolean startTx, int timeout, final GridQueryCancel cancel,
+        boolean startTx, int qryTimeout, final GridQueryCancel cancel,
         MvccQueryTracker mvccTracker) throws IgniteCheckedException {
 
-        GridNearTxLocal tx = null; boolean mvccEnabled = mvccEnabled(kernalContext());
+        GridNearTxLocal tx = null;
+
+        boolean mvccEnabled = mvccEnabled(kernalContext());
 
         assert mvccEnabled || mvccTracker == null;
 
@@ -1096,7 +1100,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     fldsQry.setArgs(params.toArray());
 
                 fldsQry.setEnforceJoinOrder(enforceJoinOrder);
-                fldsQry.setTimeout(timeout, TimeUnit.MILLISECONDS);
+                fldsQry.setTimeout(qryTimeout, TimeUnit.MILLISECONDS);
 
                 return dmlProc.updateSqlFieldsLocal(schemaName, conn, p, fldsQry, filter, cancel);
             }
@@ -1116,6 +1120,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             GridNearTxSelectForUpdateFuture sfuFut = null;
 
+            int opTimeout = qryTimeout;
+
             if (mvccEnabled) {
                 if (mvccTracker == null)
                     mvccTracker = mvccTracker(stmt, startTx);
@@ -1123,11 +1129,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (mvccTracker != null) {
                     ctx.mvccSnapshot(mvccTracker.snapshot());
 
-                    if ((tx = checkActive(tx(this.ctx))) != null) {
-                        int tm1 = (int)tx.remainingTime(), tm2 = timeout;
+                    tx = checkActive(tx(this.ctx));
 
-                        timeout = tm1 > 0 && tm2 > 0 ? Math.min(tm1, tm2) : Math.max(tm1, tm2);
-                    }
+                    opTimeout = operationTimeout(opTimeout, tx);
                 }
 
                 if (forUpdate) {
@@ -1152,7 +1156,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             throw new IgniteSQLException("Failed to lock topology for SELECT FOR UPDATE query.", e);
                         }
 
-                        sfuFut = new GridNearTxSelectForUpdateFuture(cctx, tx, timeout);
+                        sfuFut = new GridNearTxSelectForUpdateFuture(cctx, tx, opTimeout);
 
                         sfuFut.initLocal();
                     }
@@ -1179,7 +1183,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             GridNearTxSelectForUpdateFuture sfuFut0 = sfuFut;
             PreparedStatement stmt0 = stmt;
             String qry0 = qry;
-            int timeout0 = timeout;
+            int timeout0 = opTimeout;
 
             return new GridQueryFieldsResultAdapter(meta, null) {
                 @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
@@ -1263,6 +1267,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             throw e;
         }
+    }
+
+    /**
+     * @param qryTimeout Query timeout in milliseconds.
+     * @param tx Transaction.
+     * @return Timeout for operation in milliseconds based on query and tx timeouts.
+     */
+    public static int operationTimeout(int qryTimeout, IgniteTxAdapter tx) {
+        if (tx != null) {
+            int tm1 = (int)tx.remainingTime(), tm2 = qryTimeout;
+
+            return tm1 > 0 && tm2 > 0 ? Math.min(tm1, tm2) : Math.max(tm1, tm2);
+        }
+
+        return qryTimeout;
     }
 
     /** {@inheritDoc} */
@@ -1649,53 +1668,90 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return MVCC query tracker or {@code null} if MVCC is disabled for involved caches.
      */
     private MvccQueryTracker mvccTracker(PreparedStatement stmt, boolean startTx) throws IgniteCheckedException {
-        List<GridCacheContext> caches;
+        boolean mvccEnabled;
+
+        GridCacheContext mvccCacheCtx = null;
+
         try {
             if (stmt.isWrapperFor(PreparedStatementEx.class)) {
                 PreparedStatementEx stmtEx = stmt.unwrap(PreparedStatementEx.class);
 
-                caches = stmtEx.meta(INVOLVED_CACHES);
+                Boolean mvccState = stmtEx.meta(MVCC_STATE);
 
-                if (caches == null)
-                    stmtEx.putMeta(INVOLVED_CACHES, caches = parseInvolvedCaches(stmt));
+                mvccEnabled = mvccState != null ? mvccState : checkMvcc(stmt);
+
+                if (mvccEnabled) {
+                    Integer cacheId = stmtEx.meta(MVCC_CACHE_ID);
+
+                    assert cacheId != null;
+
+                    mvccCacheCtx = ctx.cache().context().cacheContext(cacheId);
+
+                    assert mvccCacheCtx != null;
+                }
             }
             else
-                caches = parseInvolvedCaches(stmt);
-        } catch (SQLException e) {
+                mvccEnabled = checkMvcc(stmt);
+        }
+        catch (SQLException e) {
             throw new IgniteSQLException(e);
         }
 
-        GridCacheContext firstCctx = null;
-        boolean mvccEnabled = false;
+        assert !mvccEnabled || mvccCacheCtx != null;
 
-        for (GridCacheContext cctx : caches) {
-            if (firstCctx == null) {
-                firstCctx = cctx;
-                mvccEnabled = firstCctx.mvccEnabled();
-            }
-            else if (mvccEnabled != cctx.mvccEnabled())
-                throw new IllegalStateException("Using caches with different mvcc settings in same query is forbidden.");
-        }
-
-        return mvccEnabled ? MvccUtils.mvccTracker(firstCctx, startTx) : null;
+        return mvccEnabled ? MvccUtils.mvccTracker(mvccCacheCtx, startTx) : null;
     }
 
-    /** */
-    private static List<GridCacheContext> parseInvolvedCaches(PreparedStatement stmt) {
+    /**
+     * Checks if statement uses MVCC caches. If it does, additional metadata is added to statement.
+     *
+     * @param stmt Statement to check.
+     * @return {@code True} if there MVCC cache involved in statement.
+     * @throws SQLException If parser failed.
+     */
+    private static Boolean checkMvcc(PreparedStatement stmt) throws SQLException {
         GridSqlQueryParser parser = new GridSqlQueryParser(false);
 
         parser.parse(GridSqlQueryParser.prepared(stmt));
 
-        List<GridCacheContext> involvedCaches = new ArrayList<>();
+        Boolean mvccEnabled = null;
+        Integer mvccCacheId = null;
+        GridCacheContext ctx0 = null;
 
         for (Object o : parser.objectsMap().values()) {
             if (o instanceof GridSqlAlias)
                 o = GridSqlAlias.unwrap((GridSqlAst) o);
-            if (o instanceof GridSqlTable && ((GridSqlTable) o).dataTable() != null)
-                involvedCaches.add(((GridSqlTable) o).dataTable().cache());
+            if (o instanceof GridSqlTable && ((GridSqlTable) o).dataTable() != null) {
+                GridCacheContext cctx = ((GridSqlTable) o).dataTable().cache();
+
+                if (mvccEnabled == null) {
+                    mvccEnabled = cctx.mvccEnabled();
+                    mvccCacheId = cctx.cacheId();
+                    ctx0 = cctx;
+                }
+                else if (mvccEnabled != cctx.mvccEnabled())
+                    MvccUtils.throwAtomicityModesMismatchException(ctx0, cctx);
+            }
         }
 
-        return involvedCaches;
+        if (mvccEnabled == null)
+            return false;
+
+        // Remember mvccEnabled flag to avoid further additional parsing if statement obtained from the statement cache.
+        if (stmt.isWrapperFor(PreparedStatementEx.class)) {
+            PreparedStatementEx stmtEx = stmt.unwrap(PreparedStatementEx.class);
+
+            if (mvccEnabled) {
+                assert mvccCacheId != null;
+
+                stmtEx.putMeta(MVCC_CACHE_ID, mvccCacheId);
+                stmtEx.putMeta(MVCC_STATE, Boolean.TRUE);
+            }
+            else
+                stmtEx.putMeta(MVCC_STATE, Boolean.FALSE);
+        }
+
+        return mvccEnabled;
     }
 
     /**
@@ -1704,7 +1760,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param keepCacheObj Flag to keep cache object.
      * @param enforceJoinOrder Enforce join order of tables.
      * @param startTx Start transaction flag.
-     * @param timeoutMillis Query timeout.
+     * @param qryTimeout Query timeout.
      * @param cancel Cancel object.
      * @param params Query parameters.
      * @param parts Partitions.
@@ -1718,7 +1774,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final boolean keepCacheObj,
         final boolean enforceJoinOrder,
         boolean startTx,
-        final int timeoutMillis,
+        final int qryTimeout,
         final GridQueryCancel cancel,
         final Object[] params,
         final int[] parts,
@@ -1730,13 +1786,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             final MvccQueryTracker tracker = mvccTracker == null && qry.mvccEnabled() ?
                 MvccUtils.mvccTracker(ctx.cache().context().cacheContext(qry.cacheIds().get(0)), startTx) : mvccTracker;
 
+            GridNearTxLocal tx = tx(ctx);
+
             if (qry.forUpdate())
-                qry.forUpdate(checkActive(tx(ctx)) != null);
+                qry.forUpdate(checkActive(tx) != null);
+
+            int opTimeout = operationTimeout(qryTimeout, tx);
 
             return new Iterable<List<?>>() {
                 @SuppressWarnings("NullableProblems")
                 @Override public Iterator<List<?>> iterator() {
-                    return rdcQryExec.query(schemaName, qry, keepCacheObj, enforceJoinOrder, timeoutMillis,
+                    return rdcQryExec.query(schemaName, qry, keepCacheObj, enforceJoinOrder, opTimeout,
                         cancel, params, parts, lazy, tracker);
                 }
             };
@@ -2596,6 +2656,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridCacheSharedContext sharedCtx = ctx.cache().context();
 
         int expectedParallelism = 0;
+        GridCacheContext cctx0 = null;
 
         boolean mvccEnabled = false;
 
@@ -2606,11 +2667,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             assert cctx != null;
 
-            if (i == 0)
+            if (i == 0) {
                 mvccEnabled = cctx.mvccEnabled();
+                cctx0 = cctx;
+            }
             else if (cctx.mvccEnabled() != mvccEnabled)
-                throw new IllegalStateException("Using caches with different mvcc settings in same query is " +
-                    "forbidden.");
+                MvccUtils.throwAtomicityModesMismatchException(cctx0, cctx);
 
             if (!cctx.isPartitioned())
                 continue;

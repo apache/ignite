@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -99,14 +99,6 @@ public class MvccUtils {
      *
      */
     private MvccUtils(){
-    }
-
-    /**
-     * @param ctx Kernal context.
-     * @return Newly created Mvcc processor.
-     */
-    public static MvccProcessor createProcessor(GridKernalContext ctx) {
-        return mvccEnabled(ctx) ? new MvccProcessorImpl(ctx) : new NoOpMvccProcessor(ctx);
     }
 
     /**
@@ -693,8 +685,7 @@ public class MvccUtils {
      */
     private static GridNearTxLocal txStart(GridKernalContext ctx, @Nullable GridCacheContext cctx, long timeout) {
         if (timeout == 0) {
-            TransactionConfiguration tcfg = cctx != null ?
-                CU.transactionConfiguration(cctx, ctx.config()) : null;
+            TransactionConfiguration tcfg = CU.transactionConfiguration(cctx, ctx.config());
 
             if (tcfg != null)
                 timeout = tcfg.getDefaultTxTimeout();
@@ -720,10 +711,10 @@ public class MvccUtils {
 
     /**
      * @param ctx Grid kernal context.
-     * @return Whether MVCC is enabled or not on {@link IgniteConfiguration}.
+     * @return Whether MVCC is enabled or not.
      */
     public static boolean mvccEnabled(GridKernalContext ctx) {
-        return ctx.config().isMvccEnabled();
+        return ctx.coordinators().mvccEnabled();
     }
 
     /**
@@ -792,6 +783,19 @@ public class MvccUtils {
         }
 
         return snapshot;
+    }
+
+    /**
+     * Throws atomicity modes compatibility validation exception.
+     *
+     * @param ctx1 Cache context.
+     * @param ctx2 Another cache context.
+     */
+    public static void throwAtomicityModesMismatchException(GridCacheContext ctx1, GridCacheContext ctx2) {
+        throw new IgniteException("Caches with transactional_snapshot atomicity mode cannot participate in the same" +
+            " transaction with caches having another atomicity mode. [cacheName=" + ctx1.name() +
+            ", cacheMode=" + ctx1.config().getAtomicityMode() +
+            ", anotherCacheName=" + ctx2.name() + " anotherCacheMode=" + ctx2.config().getAtomicityMode() + ']');
     }
 
     /** */

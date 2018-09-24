@@ -34,8 +34,7 @@ public class GridUriDeploymentMultiScannersErrorThrottlingTest extends GridUriDe
     public void testThrottling() throws Exception {
         LT.throttleTimeout(11000);
 
-        // Sleep for 1 min.
-        Thread.sleep(60 * 1000);
+        Thread.sleep(15 * 1000);
     }
 
     /**

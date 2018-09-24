@@ -19,6 +19,20 @@ include /app/helpers/jade/mixins
 -var model = `${modelAt}.discovery.ZooKeeper.retryPolicy.UntilElapsed`
 
 .pc-form-grid-col-30(ng-if-start=`${modelRetryPolicyKind} === 'UntilElapsed'`)
-    +number('Total time:', `${model}.maxElapsedTimeMs`, '"ueMaxElapsedTimeMs"', 'true', '60000', '0', 'Total time in ms for execution of retry attempt')
+    +form-field__number({
+        label: 'Total time:',
+        model: `${model}.maxElapsedTimeMs`,
+        name: '"ueMaxElapsedTimeMs"',
+        placeholder: '60000',
+        min: '0',
+        tip: 'Total time in ms for execution of retry attempt'
+    })
 .pc-form-grid-col-30(ng-if-end)
-    +number('Interval:', `${model}.sleepMsBetweenRetries`, '"ueSleepMsBetweenRetries"', 'true', '1000', '0', 'Time in ms between retry attempts')
+    +form-field__number({
+        label: 'Interval:',
+        model: `${model}.sleepMsBetweenRetries`,
+        name: '"ueSleepMsBetweenRetries"',
+        placeholder: '1000',
+        min: '0',
+        tip: 'Time in ms between retry attempts'
+    })

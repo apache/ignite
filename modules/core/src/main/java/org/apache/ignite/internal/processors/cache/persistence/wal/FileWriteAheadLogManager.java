@@ -95,6 +95,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
@@ -111,6 +112,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -1697,6 +1699,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override protected void body() {
+            blockingSectionBegin();
+
             try {
                 allocateRemainingFiles();
             }
@@ -1712,13 +1716,24 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 return;
             }
+            finally {
+                blockingSectionEnd();
+            }
 
             Throwable err = null;
 
             try {
                 synchronized (this) {
-                    while (curAbsWalIdx == -1 && !stopped)
-                        wait();
+                    while (curAbsWalIdx == -1 && !stopped) {
+                        blockingSectionBegin();
+
+                        try {
+                            wait();
+                        }
+                        finally {
+                            blockingSectionEnd();
+                        }
+                    }
 
                     // If the archive directory is empty, we can be sure that there were no WAL segments archived.
                     // This is ensured by the check in truncate() which will leave at least one file there
@@ -1732,8 +1747,16 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         assert lastAbsArchivedIdx <= curAbsWalIdx : "lastArchived=" + lastAbsArchivedIdx +
                             ", current=" + curAbsWalIdx;
 
-                        while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !stopped)
-                            wait();
+                        while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !stopped) {
+                            blockingSectionBegin();
+
+                            try {
+                                wait();
+                            }
+                            finally {
+                                blockingSectionEnd();
+                            }
+                        }
 
                         toArchive = lastAbsArchivedIdx + 1;
                     }
@@ -1741,11 +1764,28 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (stopped)
                         break;
 
-                    final SegmentArchiveResult res = archiveSegment(toArchive);
+                    SegmentArchiveResult res;
+
+                    blockingSectionBegin();
+
+                    try {
+                        res = archiveSegment(toArchive);
+                    }
+                    finally {
+                        blockingSectionEnd();
+                    }
 
                     synchronized (this) {
-                        while (locked.containsKey(toArchive) && !stopped)
-                            wait();
+                        while (locked.containsKey(toArchive) && !stopped) {
+                            blockingSectionBegin();
+
+                            try {
+                                wait();
+                            }
+                            finally {
+                                blockingSectionEnd();
+                            }
+                        }
 
                         // Then increase counter to allow rollover on clean working file
                         changeLastArchivedIndexAndNotifyWaiters(toArchive);
@@ -1760,6 +1800,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                                 res.getDstArchiveFile())
                         );
                     }
+
+                    onIdle();
                 }
             }
             catch (InterruptedException t) {
@@ -2261,7 +2303,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     long segmentToDecompress = -1L;
 
                     try {
-                        segmentToDecompress = segmentsQueue.take();
+                        blockingSectionBegin();
+
+                        try {
+                            segmentToDecompress = segmentsQueue.take();
+                        }
+                        finally {
+                            blockingSectionEnd();
+                        }
 
                         if (isCancelled())
                             break;
@@ -2277,7 +2326,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             zis.getNextEntry();
 
                             while (io.writeFully(arr, 0, zis.read(arr)) > 0)
-                                ;
+                                updateHeartbeat();
                         }
 
                         try {
@@ -2290,6 +2339,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             if (!unzipTmp.delete())
                                 U.error(log, "Can't delete temporary unzipped segment [tmp=" + unzipTmp + "]");
                         }
+
+                        updateHeartbeat();
 
                         synchronized (this) {
                             decompressionFutures.remove(segmentToDecompress).onDone();
@@ -3202,6 +3253,50 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             return nextHandle;
         }
 
+        /** {@inheritDoc} */
+        @Override protected IgniteCheckedException handleRecordException(
+            @NotNull Exception e,
+            @Nullable FileWALPointer ptr) {
+
+            if (e instanceof IgniteCheckedException)
+                if (X.hasCause(e, IgniteDataIntegrityViolationException.class))
+                    // This means that there is no explicit last sengment, so we iterate unil the very end.
+                    if (end == null) {
+                        long nextWalSegmentIdx = curWalSegmIdx + 1;
+
+                        // Check that we should not look this segment up in archive directory.
+                        // Basically the same check as in "advanceSegment" method.
+                        if (archiver != null)
+                            if (!canReadArchiveOrReserveWork(nextWalSegmentIdx))
+                                try {
+                                    long workIdx = nextWalSegmentIdx % dsCfg.getWalSegments();
+
+                                    FileDescriptor fd = new FileDescriptor(
+                                        new File(walWorkDir, FileDescriptor.fileName(workIdx)),
+                                        nextWalSegmentIdx
+                                    );
+
+                                    try {
+                                        ReadFileHandle nextHandle = initReadHandle(fd, null);
+
+                                        // "nextHandle == null" is true only if current segment is the last one in the
+                                        // whole history. Only in such case we ignore crc validation error and just stop
+                                        // as if we reached the end of the WAL.
+                                        if (nextHandle == null)
+                                            return null;
+                                    }
+                                    catch (IgniteCheckedException | FileNotFoundException initReadHandleException) {
+                                        e.addSuppressed(initReadHandleException);
+                                    }
+                                }
+                                finally {
+                                    releaseWorkSegment(nextWalSegmentIdx);
+                                }
+                    }
+
+            return super.handleRecordException(e, ptr);
+        }
+
         /**
          * @param absIdx Absolute index to check.
          * @return <ul><li> {@code True} if we can safely read the archive,  </li> <li>{@code false} if the segment has
@@ -3274,11 +3369,23 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override protected void body() {
+            Throwable err = null;
+
             try {
                 while (!isCancelled()) {
+                    onIdle();
+
                     while (waiters.isEmpty()) {
-                        if (!isCancelled())
-                            LockSupport.park();
+                        if (!isCancelled()) {
+                            blockingSectionBegin();
+
+                            try {
+                                LockSupport.park();
+                            }
+                            finally {
+                                blockingSectionEnd();
+                            }
+                        }
                         else {
                             unparkWaiters(Long.MAX_VALUE);
 
@@ -3292,6 +3399,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         if (val > Long.MIN_VALUE)
                             pos = val;
                     }
+
+                    updateHeartbeat();
 
                     if (pos == null)
                         continue;
@@ -3317,6 +3426,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         unparkWaiters(pos);
                     }
 
+                    updateHeartbeat();
+
                     List<SegmentedRingByteBuffer.ReadSegment> segs = currentHandle().buf.poll(pos);
 
                     if (segs == null) {
@@ -3327,6 +3438,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     for (int i = 0; i < segs.size(); i++) {
                         SegmentedRingByteBuffer.ReadSegment seg = segs.get(i);
+
+                        updateHeartbeat();
 
                         try {
                             writeBuffer(seg.position(), seg.buffer());

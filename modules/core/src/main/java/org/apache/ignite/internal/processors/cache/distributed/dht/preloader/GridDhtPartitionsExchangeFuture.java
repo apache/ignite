@@ -345,6 +345,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         this.exchActions = exchActions;
         this.affChangeMsg = affChangeMsg;
         this.validator = new GridDhtPartitionsStateValidator(cctx);
+        if (exchActions != null && exchActions.deactivate())
+            this.clusterIsActive = false;
 
         log = cctx.logger(getClass());
         exchLog = cctx.logger(EXCHANGE_LOG);
@@ -1472,7 +1474,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             try {
                 while (true) {
                     try {
-                        releaseLatch.await(waitTimeout, TimeUnit.MILLISECONDS);
+                        cctx.exchange().exchangerBlockingSectionBegin();
+
+                        try {
+                            releaseLatch.await(waitTimeout, TimeUnit.MILLISECONDS);
+                        }
+                        finally {
+                            cctx.exchange().exchangerBlockingSectionEnd();
+                        }
 
                         if (log.isInfoEnabled())
                             log.info("Finished waiting for partitions release latch: " + releaseLatch);
