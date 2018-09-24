@@ -99,7 +99,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
      * @throws Exception If failed.
      */
     public void testPutAllAsyncFailover() throws Exception {
-        putAllAsyncFailover(3, 10);
+        putAllAsyncFailover(4, 10);
     }
 
     /**
