@@ -71,7 +71,7 @@ public class GridInternalTaskUnusedWalSegmentsTest extends GridCommonAbstractTes
         cfg.setDataStorageConfiguration(dbCfg);
 
         dbCfg.setWalSegmentSize(1024 * 1024)
-                .setWalHistorySize(Integer.MAX_VALUE)
+                .setMaxWalArchiveSize(Long.MAX_VALUE)
                 .setWalSegments(10)
                 .setWalMode(WALMode.LOG_ONLY)
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
@@ -83,11 +83,15 @@ public class GridInternalTaskUnusedWalSegmentsTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        stopAllGrids();
+
         cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
         cleanPersistenceDir();
     }
 
@@ -96,61 +100,63 @@ public class GridInternalTaskUnusedWalSegmentsTest extends GridCommonAbstractTes
      *
      * @throws Exception if failed.
      */
+    @SuppressWarnings("unchecked")
     public void testCorrectnessOfDeletionTaskSegments() throws Exception {
-        try {
-            IgniteEx ig0 = (IgniteEx)startGrids(4);
+        IgniteEx ig0 = (IgniteEx)startGrids(4);
 
-            ig0.cluster().active(true);
+        ig0.cluster().active(true);
 
-            try (IgniteDataStreamer streamer = ig0.dataStreamer(DEFAULT_CACHE_NAME)) {
-                for (int k = 0; k < 10_000; k++)
-                    streamer.addData(k, new byte[1024]);
-            }
-
-            forceCheckpoint();
-
-            try (IgniteDataStreamer streamer = ig0.dataStreamer(DEFAULT_CACHE_NAME)) {
-                for (int k = 0; k < 1_000; k++)
-                    streamer.addData(k, new byte[1024]);
-            }
-
-            forceCheckpoint();
-
-            VisorWalTaskResult printRes = ig0.compute().execute(VisorWalTask.class,
-                    new VisorTaskArgument<>(ig0.cluster().node().id(),
-                            new VisorWalTaskArg(VisorWalTaskOperation.PRINT_UNUSED_WAL_SEGMENTS), false));
-
-            assertEquals("Check that print task finished without exceptions", printRes.results().size(), 4);
-
-            List<File> walArchives = new ArrayList<>();
-
-            for (Collection<String> pathsPerNode : printRes.results().values()) {
-                for (String path : pathsPerNode)
-                    walArchives.add(Paths.get(path).toFile());
-            }
-
-            VisorWalTaskResult delRes = ig0.compute().execute(VisorWalTask.class,
-                    new VisorTaskArgument<>(ig0.cluster().node().id(),
-                            new VisorWalTaskArg(VisorWalTaskOperation.DELETE_UNUSED_WAL_SEGMENTS), false));
-
-            assertEquals("Check that delete task finished with no exceptions", delRes.results().size(), 4);
-
-            List<File> walDeletedArchives = new ArrayList<>();
-
-            for (Collection<String> pathsPerNode : delRes.results().values()) {
-                for (String path : pathsPerNode)
-                    walDeletedArchives.add(Paths.get(path).toFile());
-            }
-
-            for (File f : walDeletedArchives)
-                assertTrue("Checking existing of deleted WAL archived segments: " + f.getAbsolutePath(), !f.exists());
-
-            for (File f : walArchives)
-                assertTrue("Checking existing of WAL archived segments from print task after delete: " + f.getAbsolutePath(),
-                        !f.exists());
+        try (IgniteDataStreamer streamer = ig0.dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int k = 0; k < 10_000; k++)
+                streamer.addData(k, new byte[1024]);
         }
-        finally {
-            stopAllGrids();
+
+        forceCheckpoint();
+
+        try (IgniteDataStreamer streamer = ig0.dataStreamer(DEFAULT_CACHE_NAME)) {
+            streamer.allowOverwrite(true);
+
+            for (int k = 0; k < 1_000; k++)
+                streamer.addData(k, new byte[1024]);
         }
+
+        forceCheckpoint();
+
+        VisorWalTaskResult printRes = ig0.compute().execute(VisorWalTask.class,
+                new VisorTaskArgument<>(ig0.cluster().node().id(),
+                        new VisorWalTaskArg(VisorWalTaskOperation.PRINT_UNUSED_WAL_SEGMENTS), false));
+
+        assertEquals("Check that print task finished without exceptions", printRes.results().size(), 4);
+
+        List<File> walArchives = new ArrayList<>();
+
+        for (Collection<String> pathsPerNode : printRes.results().values()) {
+            for (String path : pathsPerNode)
+                walArchives.add(Paths.get(path).toFile());
+        }
+
+        VisorWalTaskResult delRes = ig0.compute().execute(VisorWalTask.class,
+                new VisorTaskArgument<>(ig0.cluster().node().id(),
+                        new VisorWalTaskArg(VisorWalTaskOperation.DELETE_UNUSED_WAL_SEGMENTS), false));
+
+        assertEquals("Check that delete task finished with no exceptions", delRes.results().size(), 4);
+
+        assertTrue("Check that number of unused WAL segments greater than 0", !walArchives.isEmpty());
+
+        List<File> walDeletedArchives = new ArrayList<>();
+
+        for (Collection<String> pathsPerNode : delRes.results().values()) {
+            for (String path : pathsPerNode)
+                walDeletedArchives.add(Paths.get(path).toFile());
+        }
+
+        assertTrue("Check that number of deleted WAL segments greater than 0", !walDeletedArchives.isEmpty());
+
+        for (File f : walDeletedArchives)
+            assertTrue("Checking existing of deleted WAL archived segments: " + f.getAbsolutePath(), !f.exists());
+
+        for (File f : walArchives)
+            assertTrue("Checking existing of WAL archived segments from print task after delete: " + f.getAbsolutePath(),
+                    !f.exists());
     }
 }
