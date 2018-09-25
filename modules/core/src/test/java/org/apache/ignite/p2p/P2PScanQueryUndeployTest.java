@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -47,13 +48,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /** */
 public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
     /** Predicate classname. */
-    private static final String PREDICATE_CLASSNAME = "org.apache.ignite.tests.p2p.CacheDeploymentAlwaysTruePredicate";
+    private static final String PREDICATE_CLASSNAME = "org.apache.ignite.tests.p2p.AlwaysTruePredicate";
 
     /** */
-    private static final String SECOND_CLASSNAME_FROM_P2P_MODULE = "org.apache.ignite.lang.IgniteBiPredicate.CacheDeploymentBinaryEntryProcessor";
-
-    /** */
-    private static final String TEST_PREDICATE_RESOURCE_NAME = PREDICATE_CLASSNAME.substring(PREDICATE_CLASSNAME.lastIndexOf('.') + 1) + ".class";
+    private static final String TEST_PREDICATE_RESOURCE_NAME = U.classNameToResourceName(PREDICATE_CLASSNAME);
 
     /** Cache name. */
     private static final String CACHE_NAME = "test-cache";
@@ -114,7 +112,6 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
         ClassLoader extClsLdr = new GridTestExternalClassLoader(new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))});
 
         assertFalse(classFound(getClass().getClassLoader(), PREDICATE_CLASSNAME));
-        assertFalse(classFound(getClass().getClassLoader(), SECOND_CLASSNAME_FROM_P2P_MODULE));
 
         Class predCls = extClsLdr.loadClass(PREDICATE_CLASSNAME);
 
@@ -239,7 +236,7 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
 
                     f.setAccessible(true);
 
-                    return ((String)f.get(req)).endsWith(TEST_PREDICATE_RESOURCE_NAME);
+                    return ((String)f.get(req)).equals(TEST_PREDICATE_RESOURCE_NAME);
                 }
             }
             catch (Exception e) {

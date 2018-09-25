@@ -18,12 +18,9 @@ package org.apache.ignite.tests.p2p;
 
 import org.apache.ignite.lang.IgniteBiPredicate;
 
-/**
- *
- */
-public class CacheDeploymentAlwaysTruePredicate implements IgniteBiPredicate<Object, Object> {
+public class AlwaysTruePredicate implements IgniteBiPredicate<Object, Object> {
     /** */
-    @Override public boolean apply(Object o, Object o2) {
-        return true;
+    @Override public boolean apply(Object k, Object v) {
+        return new CacheDeploymentAlwaysTruePredicate().apply(k,v);
     }
 }
