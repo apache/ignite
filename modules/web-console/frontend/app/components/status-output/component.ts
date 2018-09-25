@@ -15,8 +15,17 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+import {Status} from './controller';
+import templateUrl from './template.tpl.pug';
 import './style.scss';
 
-export default angular
-    .module('ignite-console.ignite-status', []);
+const component:ng.IComponentOptions = {
+    templateUrl,
+    bindings: {
+        options: '<',
+        value: '<'
+    },
+    controller: Status
+};
+
+export {component};

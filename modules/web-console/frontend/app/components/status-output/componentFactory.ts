@@ -15,13 +15,16 @@
  * limitations under the License.
  */
 
-@import "../../../public/stylesheets/variables";
+import {StatusOptions} from './types';
+import {Status} from './controller';
+import {component} from './component';
 
-// Statuses coloring
-.ignite-status__active {
-  color: $ignite-status-active !important;
-}
-
-.ignite-status__inactive {
-  color: $ignite-status-inactive;
-}
+export const componentFactory = (options: StatusOptions) => ({
+    ...component,
+    bindings: {
+        value: '<'
+    },
+    controller: class extends Status {
+        options = options
+    }
+});
