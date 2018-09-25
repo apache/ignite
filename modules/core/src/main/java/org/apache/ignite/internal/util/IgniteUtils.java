@@ -555,7 +555,7 @@ public abstract class IgniteUtils {
     private static Class clsURLClassPath;
 
     /** JDK9: URLClassPath#getURLs. */
-    private static Method mthdURLClassPathgetUrls;
+    private static Method mthdURLClassPathGetUrls;
 
     /*
      * Initializes enterprise check.
@@ -812,11 +812,11 @@ public abstract class IgniteUtils {
 
         try {
             clsURLClassPath = Class.forName("jdk.internal.loader.URLClassPath");
-            mthdURLClassPathgetUrls = clsURLClassPath.getMethod("getURLs");
+            mthdURLClassPathGetUrls = clsURLClassPath.getMethod("getURLs");
         }
         catch (ClassNotFoundException | NoSuchMethodException e) {
             clsURLClassPath = null;
-            mthdURLClassPathgetUrls = null;
+            mthdURLClassPathGetUrls = null;
         }
     }
 
@@ -7700,7 +7700,7 @@ public abstract class IgniteUtils {
                         if (ucp instanceof URLClassLoader)
                             return ((URLClassLoader)ucp).getURLs();
                         else if (clsURLClassPath!= null && clsURLClassPath.isInstance(ucp))
-                            return (URL[])mthdURLClassPathgetUrls.invoke(ucp);
+                            return (URL[])mthdURLClassPathGetUrls.invoke(ucp);
                         else
                             throw new RuntimeException("Unknown classloader: " + clsLdr.getClass());
                     }
