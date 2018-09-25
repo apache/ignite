@@ -2151,8 +2151,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 assert mvccSnapshot != null;
                 assert res != null;
 
-                if (res > 0)
+                if (res > 0) {
+                    if (mvccSnapshot.operationCounter() == ~MvccUtils.MVCC_OP_COUNTER_MASK) {
+                        throw new IgniteCheckedException("The maximum limit of the number of statements allowed in" +
+                            " one transaction is reached. [max=" + mvccSnapshot.operationCounter() + ']');
+                    }
+
                     mvccSnapshot.incrementOperationCounter();
+                }
 
                 return res;
             }

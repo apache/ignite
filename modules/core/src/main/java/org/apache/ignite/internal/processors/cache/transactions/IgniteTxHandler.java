@@ -1129,6 +1129,9 @@ public class IgniteTxHandler {
             nearTx = !F.isEmpty(req.nearWrites()) ? startNearRemoteTx(ctx.deploy().globalLoader(), nodeId, req) : null;
             dhtTx = startRemoteTx(nodeId, req, res);
 
+            if (dhtTx != null && req.updateCounters() != null) // Remember update counters on prepare state.
+                dhtTx.txCounters(true).updateCounters(req.updateCounters());
+
             // Set evicted keys from near transaction.
             if (nearTx != null)
                 res.nearEvicted(nearTx.evicted());
@@ -1372,9 +1375,14 @@ public class IgniteTxHandler {
 
             return;
         }
-        else if (log.isDebugEnabled())
-            log.debug("Received finish request for transaction [senderNodeId=" + nodeId + ", req=" + req +
-                ", tx=" + tx + ']');
+        else {
+            if (req.updateCounters() != null)
+                tx.txCounters(true).updateCounters(req.updateCounters());
+
+            if (log.isDebugEnabled())
+                log.debug("Received finish request for transaction [senderNodeId=" + nodeId + ", req=" + req +
+                    ", tx=" + tx + ']');
+        }
 
         req.txState(tx.txState());
 
@@ -1390,8 +1398,6 @@ public class IgniteTxHandler {
 
                 tx.setPartitionUpdateCounters(
                     req.partUpdateCounters() != null ? req.partUpdateCounters().array() : null);
-
-                tx.txCounters(true).updateCounters(req.updateCounters());
 
                 tx.commitRemoteTx();
             }
