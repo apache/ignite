@@ -756,6 +756,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         return false;
     }
 
+    /**
+     * @param state State.
+     * @return {@code True} if partition has no reservations and empty.
+     */
     private boolean freeAndEmpty(long state) {
         return isEmpty() && getSize(state) == 0 && getReservations(state) == 0;
     }

@@ -809,6 +809,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     ) throws IgniteCheckedException {
         assert !cctx.localNode().isClient();
 
+        long time = System.currentTimeMillis();
+
         checkpointReadLock();
 
         try {
@@ -869,6 +871,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
         finally {
             checkpointReadUnlock();
+
+            if (log.isInfoEnabled())
+                log.info("Binary recovery performed in " + (System.currentTimeMillis() - time) + " ms.");
         }
     }
 
@@ -1302,6 +1307,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         boolean restored = false;
 
+        long time = System.currentTimeMillis();
+
         // In case of cluster activation or local join restore, restore whole manager state.
         if (clusterInTransitionStateToActive || (joinEvt && locNode && isSrvNode)) {
             restoreState();
@@ -1331,6 +1338,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
             }
         }
+
+        if (log.isInfoEnabled())
+            log.info("Logical recovery performed in " + (System.currentTimeMillis() - time) + " ms.");
 
         return restored;
     }
@@ -1585,12 +1595,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @throws IgniteCheckedException If first checkpoint has failed.
      */
     @Override public void onStateRestored() throws IgniteCheckedException {
+        long time = System.currentTimeMillis();
+
         new IgniteThread(cctx.igniteInstanceName(), "db-checkpoint-thread", checkpointer).start();
 
         CheckpointProgressSnapshot chp = checkpointer.wakeupForCheckpoint(0, "node started");
 
         if (chp != null)
             chp.cpBeginFut.get();
+
+        if (log.isInfoEnabled())
+            log.info("Checkpointer initilialzation performed in " + (System.currentTimeMillis() - time) + " ms.");
     }
 
     /** {@inheritDoc} */

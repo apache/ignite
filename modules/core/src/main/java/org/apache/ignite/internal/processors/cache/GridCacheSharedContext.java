@@ -266,8 +266,13 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     public void activate() throws IgniteCheckedException {
+        long time = System.currentTimeMillis();
+
         for (IgniteChangeGlobalStateSupport mgr : stateAwareMgrs)
             mgr.onActivate(kernalCtx);
+
+        if (msgLog.isInfoEnabled())
+            msgLog.info("Components activation performed in " + (System.currentTimeMillis() - time) + " ms.");
     }
 
     /**

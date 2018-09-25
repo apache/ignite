@@ -1857,6 +1857,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         LocalJoinCachesContext locJoinCtx,
         AffinityTopologyVersion exchTopVer
     ) throws IgniteCheckedException {
+        long time = System.currentTimeMillis();
+
         if (locJoinCtx != null) {
             sharedCtx.affinity().initCachesOnLocalJoin(
                 locJoinCtx.cacheGroupDescriptors(), locJoinCtx.cacheDescriptors());
@@ -1872,6 +1874,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     false);
             }
         }
+
+        if (log.isInfoEnabled())
+            log.info("Starting caches on local join performed in " + (System.currentTimeMillis() - time) + " ms.");
     }
 
     /**
