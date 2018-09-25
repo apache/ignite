@@ -74,10 +74,10 @@ public class ObjectHistogramTest {
 
     /**
      * @param hist History.
-     * @param expectedBuckets Expected buckets.
-     * @param expectedCounters Expected counters.
+     * @param expBuckets Expected buckets.
+     * @param expCounters Expected counters.
      */
-    private void testBuckets(ObjectHistogram<Double> hist, int[] expectedBuckets, int[] expectedCounters) {
+    private void testBuckets(ObjectHistogram<Double> hist, int[] expBuckets, int[] expCounters) {
         int size = hist.buckets().size();
         int[] buckets = new int[size];
         int[] counters = new int[size];
@@ -87,8 +87,8 @@ public class ObjectHistogramTest {
             buckets[ptr++] = bucket;
         }
 
-        assertArrayEquals(expectedBuckets, buckets);
-        assertArrayEquals(expectedCounters, counters);
+        assertArrayEquals(expBuckets, buckets);
+        assertArrayEquals(expCounters, counters);
     }
 
     /**
@@ -96,12 +96,12 @@ public class ObjectHistogramTest {
      */
     @Test
     public void testAdd() {
-        double value = 100.;
-        hist1.addElement(value);
-        Optional<Double> counter = hist1.getValue(computeBucket(value));
+        double val = 100.0;
+        hist1.addElement(val);
+        Optional<Double> cntr = hist1.getValue(computeBucket(val));
 
-        assertTrue(counter.isPresent());
-        assertEquals(1, counter.get().intValue());
+        assertTrue(cntr.isPresent());
+        assertEquals(1, cntr.get().intValue());
     }
 
     /**
@@ -109,8 +109,8 @@ public class ObjectHistogramTest {
      */
     @Test
     public void testAddHist() {
-        ObjectHistogram<Double> result = hist1.plus(hist2);
-        testBuckets(result, new int[] {0, 1, 2, 3, 4, 5, 6}, new int[] {10, 8, 2, 1, 1, 2, 1});
+        ObjectHistogram<Double> res = hist1.plus(hist2);
+        testBuckets(res, new int[] {0, 1, 2, 3, 4, 5, 6}, new int[] {10, 8, 2, 1, 1, 2, 1});
     }
 
     /**
@@ -133,18 +133,19 @@ public class ObjectHistogramTest {
         assertArrayEquals(new double[] {4., 7., 9., 10., 11., 12.}, sums, 0.01);
     }
 
+    /** */
     @Test
     public void testOfSum() {
         IgniteFunction<Double, Integer> bucketMap = x -> (int) (Math.ceil(x * 100) % 100);
-        IgniteFunction<Double, Double> counterMap = x -> Math.pow(x, 2);
+        IgniteFunction<Double, Double> cntrMap = x -> Math.pow(x, 2);
 
-        ObjectHistogram<Double> forAllHistogram = new ObjectHistogram<>(bucketMap, counterMap);
+        ObjectHistogram<Double> forAllHistogram = new ObjectHistogram<>(bucketMap, cntrMap);
         Random rnd = new Random();
         List<ObjectHistogram<Double>> partitions = new ArrayList<>();
         int cntOfPartitions = rnd.nextInt(100);
         int sizeOfDataset = rnd.nextInt(10000);
         for(int i = 0; i < cntOfPartitions; i++)
-            partitions.add(new ObjectHistogram<>(bucketMap, counterMap));
+            partitions.add(new ObjectHistogram<>(bucketMap, cntrMap));
 
         for(int i = 0; i < sizeOfDataset; i++) {
             double objVal = rnd.nextDouble();
@@ -152,7 +153,7 @@ public class ObjectHistogramTest {
             partitions.get(rnd.nextInt(partitions.size())).addElement(objVal);
         }
 
-        Optional<ObjectHistogram<Double>> leftSum = partitions.stream().reduce((x,y) -> x.plus(y));
+        Optional<ObjectHistogram<Double>> leftSum = partitions.stream().reduce(ObjectHistogram::plus);
         Optional<ObjectHistogram<Double>> rightSum = partitions.stream().reduce((x,y) -> y.plus(x));
         assertTrue(leftSum.isPresent());
         assertTrue(rightSum.isPresent());
@@ -162,9 +163,9 @@ public class ObjectHistogramTest {
     }
 
     /**
-     * @param value Value.
+     * @param val Value.
      */
-    private int computeBucket(Double value) {
-        return (int)Math.rint(value);
+    private int computeBucket(Double val) {
+        return (int)Math.rint(val);
     }
 }

@@ -41,7 +41,7 @@ public class LearningEnvironmentTest {
         RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(
             IntStream.range(0, 0).mapToObj(
                 x -> new FeatureMeta("", 0, false)).collect(Collectors.toList())
-        ).withCountOfTrees(101)
+        ).withAmountOfTrees(101)
             .withFeaturesCountSelectionStrgy(FeaturesCountSelectionStrategies.ONE_THIRD)
             .withMaxDepth(4)
             .withMinImpurityDelta(0.)

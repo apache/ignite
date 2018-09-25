@@ -28,7 +28,7 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class TrainerTest {
     /** Number of parts to be tested. */
-    private static final int[] partsToBeTested = new int[]{1, 2, 3, 4, 5, 7, 100};
+    private static final int[] partsToBeTested = new int[] {1, 2, 3, 4, 13};
 
     /** Parameters. */
     @Parameterized.Parameters(name = "Data divided on {0} partitions, training with batch size {1}")
@@ -36,7 +36,7 @@ public class TrainerTest {
         List<Integer[]> res = new ArrayList<>();
 
         for (int part : partsToBeTested)
-            res.add(new Integer[]{part});
+            res.add(new Integer[] {part});
 
         return res;
     }

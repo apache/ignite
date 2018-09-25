@@ -73,7 +73,7 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     private static final double BUCKET_SIZE_FACTOR = (1 / 10.0);
 
     /** Count of trees. */
-    private int cntOfTrees = 1;
+    private int amountOfTrees = 1;
 
     /** Subsample size. */
     private double subSampleSize = 1.0;
@@ -115,7 +115,7 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
         List<TreeRoot> models = null;
         try (Dataset<EmptyContext, BootstrappedDatasetPartition> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
-            new BootstrappedDatasetBuilder<>(featureExtractor, lbExtractor, cntOfTrees, subSampleSize))) {
+            new BootstrappedDatasetBuilder<>(featureExtractor, lbExtractor, amountOfTrees, subSampleSize))) {
 
             if(!init(dataset))
                 return buildComposition(Collections.emptyList());
@@ -138,8 +138,8 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
      * @param cntOfTrees Count of trees.
      * @return an instance of current object with valid type in according to inheritance.
      */
-    public T withCountOfTrees(int cntOfTrees) {
-        this.cntOfTrees = cntOfTrees;
+    public T withAmountOfTrees(int amountOfTrees) {
+        this.amountOfTrees = amountOfTrees;
         return instance();
     }
 
@@ -348,7 +348,7 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
      */
     private Queue<TreeNode> createRootsQueue() {
         Queue<TreeNode> roots = new LinkedList<>();
-        for (int i = 0; i < cntOfTrees; i++)
+        for (int i = 0; i < amountOfTrees; i++)
             roots.add(new TreeNode(1, i));
         return roots;
     }

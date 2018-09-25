@@ -32,15 +32,15 @@ import org.apache.ignite.ml.tree.impurity.util.StepFunction;
  */
 public abstract class ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> implements Serializable {
     /** Use index structure instead of using sorting while learning. */
-    protected final boolean useIndex;
+    protected final boolean useIdx;
 
     /**
      * Constructs an instance of ImpurityMeasureCalculator.
      *
-     * @param useIndex Use index.
+     * @param useIdx Use index.
      */
-    public ImpurityMeasureCalculator(boolean useIndex) {
-        this.useIndex = useIndex;
+    public ImpurityMeasureCalculator(boolean useIdx) {
+        this.useIdx = useIdx;
     }
 
     /**
@@ -61,7 +61,7 @@ public abstract class ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> im
      * @return Columns count in current dataset.
      */
     protected int columnsCount(DecisionTreeData data, TreeDataIndex idx) {
-        return useIndex ? idx.columnsCount() : data.getFeatures()[0].length;
+        return useIdx ? idx.columnsCount() : data.getFeatures()[0].length;
     }
 
     /**
@@ -72,7 +72,7 @@ public abstract class ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> im
      * @return rows count in current dataset
      */
     protected int rowsCount(DecisionTreeData data, TreeDataIndex idx) {
-        return useIndex ? idx.rowsCount() : data.getFeatures().length;
+        return useIdx ? idx.rowsCount() : data.getFeatures().length;
     }
 
     /**
@@ -85,7 +85,7 @@ public abstract class ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> im
      * @return label value in according to kth order statistic
      */
     protected double getLabelValue(DecisionTreeData data, TreeDataIndex idx, int featureId, int k) {
-        return useIndex ? idx.labelInSortedOrder(k, featureId) : data.getLabels()[k];
+        return useIdx ? idx.labelInSortedOrder(k, featureId) : data.getLabels()[k];
     }
 
     /**
@@ -98,10 +98,10 @@ public abstract class ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> im
      * @return feature value in according to kth order statistic.
      */
     protected double getFeatureValue(DecisionTreeData data, TreeDataIndex idx, int featureId, int k) {
-        return useIndex ? idx.featureInSortedOrder(k, featureId) : data.getFeatures()[k][featureId];
+        return useIdx ? idx.featureInSortedOrder(k, featureId) : data.getFeatures()[k][featureId];
     }
 
     protected Vector getFeatureValues(DecisionTreeData data, TreeDataIndex idx, int featureId, int k) {
-        return VectorUtils.of(useIndex ? idx.featuresInSortedOrder(k, featureId) : data.getFeatures()[k]);
+        return VectorUtils.of(useIdx ? idx.featuresInSortedOrder(k, featureId) : data.getFeatures()[k]);
     }
 }

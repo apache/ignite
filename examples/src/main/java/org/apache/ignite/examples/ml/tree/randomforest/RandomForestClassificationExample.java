@@ -70,7 +70,7 @@ public class RandomForestClassificationExample {
                 RandomForestClassifierTrainer classifier = new RandomForestClassifierTrainer(
                     IntStream.range(0, data[0].length - 1).mapToObj(
                         x -> new FeatureMeta("", idx.getAndIncrement(), false)).collect(Collectors.toList())
-                ).withCountOfTrees(101)
+                ).withAmountOfTrees(101)
                     .withFeaturesCountSelectionStrgy(FeaturesCountSelectionStrategies.ONE_THIRD)
                     .withMaxDepth(4)
                     .withMinImpurityDelta(0.)
