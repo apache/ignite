@@ -35,8 +35,8 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Base class for a soft-margin SVM linear classification trainer based on the communication-efficient distributed dual
- * coordinate ascent algorithm (CoCoA) with hinge-loss function. <p> This trainer takes input as Labeled Dataset with -1
- * and +1 labels for two classes and makes binary classification. </p> The paper about this algorithm could be found
+ * coordinate ascent algorithm (CoCoA) with hinge-loss function. <p> This trainer takes input as Labeled Dataset with 0
+ * and 1 labels for two classes and makes binary classification. </p> The paper about this algorithm could be found
  * here https://arxiv.org/abs/1409.1458.
  */
 public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrainer<SVMLinearBinaryClassificationModel> {
@@ -73,9 +73,17 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
 
         assert datasetBuilder != null;
 
+        IgniteBiFunction<K, V, Double> patchedLbExtractor = (k, v) ->  {
+            final Double lb = lbExtractor.apply(k, v);
+            if (lb == 0.0)
+                return -1.0;
+            else
+                return lb;
+        };
+
         PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
             featureExtractor,
-            lbExtractor
+            patchedLbExtractor
         );
 
         Vector weights;
@@ -95,9 +103,8 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
 
                 final int weightVectorSizeWithIntercept = cols + 1;
                 weights = initializeWeightsWithZeros(weightVectorSizeWithIntercept);
-            } else {
+            } else
                 weights = getStateVector(mdl);
-            }
 
             for (int i = 0; i < this.getAmountOfIterations(); i++) {
                 Vector deltaWeights = calculateUpdates(weights, dataset);
@@ -126,13 +133,13 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
         Vector weights = mdl.weights();
 
         int stateVectorSize = weights.size() + 1;
-        Vector result = weights.isDense() ?
+        Vector res = weights.isDense() ?
             new DenseVector(stateVectorSize) :
             new SparseVector(stateVectorSize, StorageConstants.RANDOM_ACCESS_MODE);
 
-        result.set(0, intercept);
-        weights.nonZeroes().forEach(ith -> result.set(ith.index(), ith.get()));
-        return result;
+        res.set(0, intercept);
+        weights.nonZeroes().forEach(ith -> res.set(ith.index(), ith.get()));
+        return res;
     }
 
     /** */

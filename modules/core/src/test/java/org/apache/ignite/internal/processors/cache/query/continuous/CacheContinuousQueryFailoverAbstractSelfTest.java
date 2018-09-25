@@ -1466,7 +1466,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         assertTrue("Backup queue is not cleared: " + backupQueue(ignite(0)), backupQueue(ignite(0)).size() < BACKUP_ACK_THRESHOLD);
 
-        if (backupQueue(ignite(0)).size() != 0) {
+        if (!backupQueue(ignite(0)).isEmpty()) {
             for (Object o : backupQueue(ignite(0))) {
                 CacheContinuousQueryEntry e = (CacheContinuousQueryEntry)o;
 

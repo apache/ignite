@@ -103,11 +103,6 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected long nextMvccPartitionCounter() {
-        return locPart.nextMvccUpdateCounter();
-    }
-
-    /** {@inheritDoc} */
     @Override public int memorySize() throws IgniteCheckedException {
         int rdrsOverhead;
 

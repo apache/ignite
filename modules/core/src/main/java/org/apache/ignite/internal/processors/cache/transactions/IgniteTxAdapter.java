@@ -2033,9 +2033,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /**
-     * Make counters accumulated during transaction visible outside of transaciton.
+     * Makes cache sizes changes accumulated during transaction visible outside of transaction.
      */
-    protected void applyTxCounters() {
+    protected void applyTxSizes() {
         TxCounters txCntrs = txCounters(false);
 
         if (txCntrs == null)

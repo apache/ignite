@@ -30,6 +30,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.net.ServerSocket;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -690,6 +691,23 @@ public final class GridTestUtils {
     }
 
     /**
+     * @return Free communication port number on localhost.
+     * @throws IOException If unable to find a free port.
+     */
+    public static int getFreeCommPort() throws IOException {
+        for (int port = default_comm_port; port < max_comm_port; port++) {
+            try (ServerSocket sock = new ServerSocket(port)) {
+                return sock.getLocalPort();
+            }
+            catch (IOException ignored) {
+                // No-op.
+            }
+        }
+
+        throw new IOException("Unable to find a free communication port.");
+    }
+
+    /**
      * Every invocation of this method will never return a
      * repeating multicast group for a different test case.
      *
@@ -1295,25 +1313,7 @@ public final class GridTestUtils {
         assert fieldName != null;
 
         try {
-            // Resolve inner field.
-            Field field = cls.getDeclaredField(fieldName);
-
-            synchronized (field) {
-                // Backup accessible field state.
-                boolean accessible = field.isAccessible();
-
-                try {
-                    if (!accessible)
-                        field.setAccessible(true);
-
-                    obj = field.get(obj);
-                }
-                finally {
-                    // Recover accessible field state.
-                    if (!accessible)
-                        field.setAccessible(false);
-                }
-            }
+            obj = findField(cls, obj, fieldName);
 
             return (T)obj;
         }
@@ -1343,25 +1343,7 @@ public final class GridTestUtils {
                 Class<?> cls = obj instanceof Class ? (Class)obj : obj.getClass();
 
                 try {
-                    // Resolve inner field.
-                    Field field = cls.getDeclaredField(fieldName);
-
-                    synchronized (field) {
-                        // Backup accessible field state.
-                        boolean accessible = field.isAccessible();
-
-                        try {
-                            if (!accessible)
-                                field.setAccessible(true);
-
-                            obj = field.get(obj);
-                        }
-                        finally {
-                            // Recover accessible field state.
-                            if (!accessible)
-                                field.setAccessible(false);
-                        }
-                    }
+                    obj = findField(cls, obj, fieldName);
                 }
                 catch (NoSuchFieldException e) {
                     // Resolve inner class, if not an inner field.
@@ -1380,6 +1362,74 @@ public final class GridTestUtils {
         catch (IllegalAccessException e) {
             throw new IgniteException("Failed to get object field [obj=" + obj +
                 ", fieldNames=" + Arrays.toString(fieldNames) + ']', e);
+        }
+    }
+
+    /**
+     * Get object field value via reflection(including superclass).
+     *
+     * @param obj Object or class to get field value from.
+     * @param fieldNames Field names to get value for: obj->field1->field2->...->fieldN.
+     * @param <T> Expected field class.
+     * @return Field value.
+     * @throws IgniteException In case of error.
+     */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    public static <T> T getFieldValueHierarchy(Object obj, String... fieldNames) throws IgniteException {
+        assert obj != null;
+        assert fieldNames != null;
+        assert fieldNames.length >= 1;
+
+        try {
+            for (String fieldName : fieldNames) {
+                Class<?> cls = obj instanceof Class ? (Class)obj : obj.getClass();
+
+                while (cls != null) {
+                    try {
+                        obj = findField(cls, obj, fieldName);
+
+                        break;
+                    }
+                    catch (NoSuchFieldException e) {
+                        cls = cls.getSuperclass();
+                    }
+                }
+            }
+
+            return (T)obj;
+        }
+        catch (IllegalAccessException e) {
+            throw new IgniteException("Failed to get object field [obj=" + obj +
+                ", fieldNames=" + Arrays.toString(fieldNames) + ']', e);
+        }
+    }
+
+    /**
+     * @param cls Class for searching.
+     * @param obj Target object.
+     * @param fieldName Field name for search.
+     * @return Field from object if it was found.
+     */
+    private static Object findField(Class<?> cls, Object obj,
+        String fieldName) throws NoSuchFieldException, IllegalAccessException {
+        // Resolve inner field.
+        Field field = cls.getDeclaredField(fieldName);
+
+        synchronized (field) {
+            // Backup accessible field state.
+            boolean accessible = field.isAccessible();
+
+            try {
+                if (!accessible)
+                    field.setAccessible(true);
+
+                return field.get(obj);
+            }
+            finally {
+                // Recover accessible field state.
+                if (!accessible)
+                    field.setAccessible(false);
+            }
         }
     }
 

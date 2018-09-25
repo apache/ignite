@@ -1798,7 +1798,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         if (nodesCnt == -1) {
             nodes = G.allGrids();
 
-            assertTrue(nodes.size() > 0);
+            assertTrue(!nodes.isEmpty());
         }
         else {
             nodes = new ArrayList<>(nodesCnt);
