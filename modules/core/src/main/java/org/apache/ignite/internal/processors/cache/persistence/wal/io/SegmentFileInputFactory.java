@@ -15,33 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.file;
+package org.apache.ignite.internal.processors.cache.persistence.wal.io;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
-import java.nio.file.OpenOption;
+import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
 
 /**
- * {@link FileIO} factory definition.
+ * Factory to provide I/O interfaces for read primitives with files.
  */
-public interface FileIOFactory extends Serializable {
+public interface SegmentFileInputFactory {
     /**
-     * Creates I/O interface for file with default I/O mode.
-     *
-     * @param file File.
-     * @return File I/O interface.
-     * @throws IOException If I/O interface creation was failed.
+     * @param segmentIO FileIO of segment for reading.
+     * @param buf ByteBuffer wrapper for dynamically expand buffer size.
+     * @return Instance of {@link FileInput}.
+     * @throws IOException If have some trouble with I/O.
      */
-    public FileIO create(File file) throws IOException;
-
-    /**
-     * Creates I/O interface for file with specified mode.
-     *
-     * @param file File
-     * @param modes Open modes.
-     * @return File I/O interface.
-     * @throws IOException If I/O interface creation was failed.
-     */
-    public FileIO create(File file, OpenOption... modes) throws IOException;
+    FileInput createFileInput(SegmentIO segmentIO, ByteBufferExpander buf) throws IOException;
 }

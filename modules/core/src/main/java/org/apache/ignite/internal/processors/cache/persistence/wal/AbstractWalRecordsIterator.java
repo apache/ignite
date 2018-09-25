@@ -30,7 +30,9 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentFileInputFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.SegmentHeader;
@@ -87,24 +89,29 @@ public abstract class AbstractWalRecordsIterator
     /** Utility buffer for reading records */
     private final ByteBufferExpander buf;
 
+    /** Factory to provide I/O interfaces for read primitives with files. */
+    private final SegmentFileInputFactory segmentFileInputFactory;
+
     /**
      * @param log Logger.
      * @param sharedCtx Shared context.
      * @param serializerFactory Serializer of current version to read headers.
      * @param ioFactory ioFactory for file IO access.
      * @param initialReadBufferSize buffer for reading records size.
+     * @param segmentFileInputFactory Factory to provide I/O interfaces for read primitives with files.
      */
     protected AbstractWalRecordsIterator(
         @NotNull final IgniteLogger log,
         @NotNull final GridCacheSharedContext sharedCtx,
         @NotNull final RecordSerializerFactory serializerFactory,
         @NotNull final FileIOFactory ioFactory,
-        final int initialReadBufferSize
-    ) {
+        final int initialReadBufferSize,
+        SegmentFileInputFactory segmentFileInputFactory) {
         this.log = log;
         this.sharedCtx = sharedCtx;
         this.serializerFactory = serializerFactory;
         this.ioFactory = ioFactory;
+        this.segmentFileInputFactory = segmentFileInputFactory;
 
         buf = new ByteBufferExpander(initialReadBufferSize, ByteOrder.nativeOrder());
     }
@@ -134,11 +141,8 @@ public abstract class AbstractWalRecordsIterator
     }
 
     /**
-     * Switches records iterator to the next record.
-     * <ul>
-     * <li>{@link #curRec} will be updated.</li>
-     * <li> If end of segment reached, switch to new segment is called. {@link #currWalSegment} will be updated.</li>
-     * </ul>
+     * Switches records iterator to the next record. <ul> <li>{@link #curRec} will be updated.</li> <li> If end of
+     * segment reached, switch to new segment is called. {@link #currWalSegment} will be updated.</li> </ul>
      *
      * {@code advance()} runs a step ahead {@link #next()}
      *
@@ -303,16 +307,16 @@ public abstract class AbstractWalRecordsIterator
     protected AbstractReadFileHandle initReadHandle(
         @NotNull final AbstractFileDescriptor desc,
         @Nullable final FileWALPointer start,
-        @NotNull final FileIO fileIO,
+        @NotNull final SegmentIO fileIO,
         @NotNull final SegmentHeader segmentHeader
     ) throws IgniteCheckedException {
         try {
-            final boolean isCompacted = segmentHeader.isCompacted();
+            boolean isCompacted = segmentHeader.isCompacted();
 
             if (isCompacted)
                 serializerFactory.skipPositionCheck(true);
 
-            FileInput in = new FileInput(fileIO, buf);
+            FileInput in = segmentFileInputFactory.createFileInput(fileIO, buf);
 
             if (start != null && desc.idx() == start.index()) {
                 if (isCompacted) {
@@ -329,7 +333,7 @@ public abstract class AbstractWalRecordsIterator
 
             int serVer = segmentHeader.getSerializerVersion();
 
-            return createReadFileHandle(fileIO, desc.idx(), serializerFactory.createSerializer(serVer), in);
+            return createReadFileHandle(fileIO, serializerFactory.createSerializer(serVer), in);
         }
         catch (SegmentEofException | EOFException ignore) {
             try {
@@ -368,15 +372,15 @@ public abstract class AbstractWalRecordsIterator
         @NotNull final AbstractFileDescriptor desc,
         @Nullable final FileWALPointer start
     ) throws IgniteCheckedException, FileNotFoundException {
-        FileIO fileIO = null;
+        SegmentIO fileIO = null;
 
         try {
-            fileIO = desc.isCompressed() ? new UnzipFileIO(desc.file()) : ioFactory.create(desc.file());
+            fileIO = desc.toIO(ioFactory);
 
             SegmentHeader segmentHeader;
 
             try {
-                segmentHeader = readSegmentHeader(fileIO, curWalSegmIdx);
+                segmentHeader = readSegmentHeader(fileIO, segmentFileInputFactory);
             }
             catch (SegmentEofException | EOFException ignore) {
                 try {
@@ -411,8 +415,7 @@ public abstract class AbstractWalRecordsIterator
 
     /** */
     protected abstract AbstractReadFileHandle createReadFileHandle(
-        FileIO fileIO,
-        long idx,
+        SegmentIO fileIO,
         RecordSerializer ser,
         FileInput in
     );
@@ -460,7 +463,9 @@ public abstract class AbstractWalRecordsIterator
         /** */
         RecordSerializer ser();
 
-        /** */
+        /**
+         *
+         */
         boolean workDir();
     }
 
@@ -474,5 +479,14 @@ public abstract class AbstractWalRecordsIterator
 
         /** */
         long idx();
+
+        /**
+         * Make fileIo by this description.
+         *
+         * @param fileIOFactory Factory for fileIo creation.
+         * @return One of implementation of {@link FileIO}.
+         * @throws IOException if creation of fileIo was not success.
+         */
+        SegmentIO toIO(FileIOFactory fileIOFactory) throws IOException;
     }
 }

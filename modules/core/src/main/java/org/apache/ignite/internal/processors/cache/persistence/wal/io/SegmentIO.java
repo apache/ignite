@@ -15,33 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.file;
+package org.apache.ignite.internal.processors.cache.persistence.wal.io;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
-import java.nio.file.OpenOption;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 
 /**
- * {@link FileIO} factory definition.
+ * Implementation of {@link FileIO} specified for WAL segment file.
  */
-public interface FileIOFactory extends Serializable {
-    /**
-     * Creates I/O interface for file with default I/O mode.
-     *
-     * @param file File.
-     * @return File I/O interface.
-     * @throws IOException If I/O interface creation was failed.
-     */
-    public FileIO create(File file) throws IOException;
+public class SegmentIO extends FileIODecorator {
+    /** Segment id. */
+    private final long segmentId;
 
     /**
-     * Creates I/O interface for file with specified mode.
-     *
-     * @param file File
-     * @param modes Open modes.
-     * @return File I/O interface.
-     * @throws IOException If I/O interface creation was failed.
+     * @param id Segment id.
+     * @param delegate File I/O delegate
      */
-    public FileIO create(File file, OpenOption... modes) throws IOException;
+    public SegmentIO(long id, FileIO delegate) {
+        super(delegate);
+        segmentId = id;
+    }
+
+    /**
+     * @return Segment id.
+     */
+    public long getSegmentId() {
+        return segmentId;
+    }
 }
