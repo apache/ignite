@@ -984,7 +984,7 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_PAGE_TRACK_LOG_ENABLE = "IGNITE_PAGE_TRACK_LOG_ENABLE";
 
     /**
-     * System property to set timer granularity of logging IO statistics {@see IGNITE_PAGE_TRACK_LOG_ENABLE}.
+     * System property to set timer granularity of logging IO statistics (see IGNITE_PAGE_TRACK_LOG_ENABLE).
      */
     public static final String IGNITE_PAGE_TRACK_LOG_TIMEOUT = "IGNITE_PAGE_TRACK_LOG_TIMEOUT";
 
