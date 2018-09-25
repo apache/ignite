@@ -818,7 +818,6 @@ public abstract class IgniteUtils {
             clsURLClassPath = null;
             mthdURLClassPathgetUrls = null;
         }
-
     }
 
     /**
