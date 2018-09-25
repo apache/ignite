@@ -1082,14 +1082,23 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param nodes Nodes.
      * @param msgTopVer Topology version. Will be added to full message.
      */
-    private void sendAllPartitions(Collection<ClusterNode> nodes,
-        AffinityTopologyVersion msgTopVer) {
+    private void sendAllPartitions(
+        Collection<ClusterNode> nodes,
+        AffinityTopologyVersion msgTopVer
+    ) {
+        long time = System.currentTimeMillis();
+
         GridDhtPartitionsFullMessage m = createPartitionsFullMessage(true, false, null, null, null, null);
 
         m.topologyVersion(msgTopVer);
 
-        if (log.isDebugEnabled())
-            log.debug("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", msg=" + m + ']');
+        if (log.isInfoEnabled())
+            log.info("Full Message creating for " + msgTopVer + " performed in " + (System.currentTimeMillis() - time) + " ms.");
+
+        if (log.isTraceEnabled())
+            log.trace("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", msg=" + m + ']');
+
+        time = System.currentTimeMillis();
 
         for (ClusterNode node : nodes) {
             try {
@@ -1106,6 +1115,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 U.warn(log, "Failed to send partitions full message [node=" + node + ", err=" + e + ']');
             }
         }
+
+        if (log.isInfoEnabled())
+            log.info("Sending Full Message for " + msgTopVer + " performed in " + (System.currentTimeMillis() - time) + " ms.");
     }
 
     /**

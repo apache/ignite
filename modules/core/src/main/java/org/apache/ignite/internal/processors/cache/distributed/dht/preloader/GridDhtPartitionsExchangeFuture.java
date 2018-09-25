@@ -1678,6 +1678,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             .map(singleMessage -> fullMsg.copy().joinedNodeAffinity(affinityForJoinedNodes))
             .orElse(null);
 
+        long time = System.currentTimeMillis();
+
         // Prepare and send full messages for given nodes.
         nodes.stream()
             .map(node -> {
@@ -1730,6 +1732,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     U.error(log, "Failed to send partitions [node=" + node + ']', e);
                 }
             });
+
+        if (log.isInfoEnabled())
+            log.info("Sending Full Message performed in " + (System.currentTimeMillis() - time) + " ms.");
     }
 
     /**
@@ -3255,8 +3260,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         try {
             cctx.io().send(node, fullMsg, SYSTEM_POOL);
 
-            if (log.isDebugEnabled()) {
-                log.debug("Full message was sent to node: " +
+            if (log.isTraceEnabled()) {
+                log.trace("Full message was sent to node: " +
                     node +
                     ", fullMsg: " + fullMsg
                 );
