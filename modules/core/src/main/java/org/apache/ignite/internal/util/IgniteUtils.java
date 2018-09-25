@@ -552,10 +552,10 @@ public abstract class IgniteUtils {
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DEV_ONLY_LOGGING_DISABLED);
 
     /** JDK9: jdk.internal.loader.URLClassPath. */
-    private static Class clsURLClassPath = getURLClassPathClass();
+    private static Class clsURLClassPath;
 
     /** JDK9: URLClassPath#getURLs. */
-    private static Method mthdURLClassPathgetUrls = getURLClassPathGetUrlsMethod();
+    private static Method mthdURLClassPathgetUrls;
 
     /*
      * Initializes enterprise check.
@@ -809,6 +809,16 @@ public abstract class IgniteUtils {
             else if ("toString".equals(mtd.getName()))
                 toStringMtd = mtd;
         }
+
+        try {
+            clsURLClassPath = Class.forName("jdk.internal.loader.URLClassPath");
+            mthdURLClassPathgetUrls = clsURLClassPath.getMethod("getURLs");
+        }
+        catch (ClassNotFoundException | NoSuchMethodException e) {
+            clsURLClassPath = null;
+            mthdURLClassPathgetUrls = null;
+        }
+
     }
 
     /**
@@ -7730,29 +7740,6 @@ public abstract class IgniteUtils {
             return cls == null ? null : cls.getDeclaredField("ucp");
         }
         catch (NoSuchFieldException e) {
-            return null;
-        }
-    }
-
-    /** */
-    @Nullable private static Class getURLClassPathClass() {
-        try {
-            return Class.forName("jdk.internal.loader.URLClassPath");
-        }
-        catch (ClassNotFoundException e) {
-            return null;
-        }
-    }
-
-    /** */
-    @Nullable private static Method getURLClassPathGetUrlsMethod() {
-        try {
-            if (clsURLClassPath != null)
-                return clsURLClassPath.getMethod("getURLs");
-            else
-                return null;
-        }
-        catch (NoSuchMethodException e) {
             return null;
         }
     }
