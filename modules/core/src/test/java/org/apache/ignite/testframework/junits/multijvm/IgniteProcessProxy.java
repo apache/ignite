@@ -266,6 +266,22 @@ public class IgniteProcessProxy implements IgniteEx {
                 filteredJvmArgs.add(arg);
         }
 
+        filteredJvmArgs.add("-XX:+IgnoreUnrecognizedVMOptions");
+        filteredJvmArgs.add("--add-opens");
+        filteredJvmArgs.add("java.base/jdk.internal.loader=ALL-UNNAMED");
+        filteredJvmArgs.add("--add-exports");
+        filteredJvmArgs.add("java.base/jdk.internal.misc=ALL-UNNAMED");
+        filteredJvmArgs.add("--add-exports");
+        filteredJvmArgs.add("java.base/sun.nio.ch=ALL-UNNAMED");
+        filteredJvmArgs.add("--add-exports");
+        filteredJvmArgs.add("java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED");
+        filteredJvmArgs.add("--add-exports");
+        filteredJvmArgs.add("jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED");
+        filteredJvmArgs.add("--add-exports");
+        filteredJvmArgs.add("java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED");
+        filteredJvmArgs.add("--add-modules");
+        filteredJvmArgs.add("java.xml.bind");
+
         return filteredJvmArgs;
     }
 
