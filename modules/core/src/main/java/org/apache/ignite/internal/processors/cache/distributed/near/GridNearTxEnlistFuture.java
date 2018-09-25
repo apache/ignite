@@ -319,10 +319,9 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
      * @param rows Rows.
      * @param dhtVer Dht version assigned at primary node.
      * @param dhtFutId Dht future id assigned at primary node.
-     * @param updCntrs Update counters.
      */
     private void processBatchLocalBackupKeys(UUID primaryId, List<Object> rows, GridCacheVersion dhtVer,
-        IgniteUuid dhtFutId, GridLongList updCntrs) {
+        IgniteUuid dhtFutId) {
         assert dhtVer != null;
         assert dhtFutId != null;
 
@@ -378,7 +377,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
                 }
             }
 
-            dhtTx.mvccEnlistBatch(cctx, it.operation(), keys, vals, mvccSnapshot.withoutActiveTransactions(), updCntrs);
+            dhtTx.mvccEnlistBatch(cctx, it.operation(), keys, vals, mvccSnapshot.withoutActiveTransactions());
         }
         catch (IgniteCheckedException e) {
             onDone(e);
@@ -390,6 +389,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
     }
 
     /**
+     *
      * @param node Node.
      * @param batch Batch.
      * @param first First mapping flag.
@@ -415,8 +415,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
      * @param batchFut Mini-future for the batch.
      * @param clientFirst {@code true} if originating node is client and it is a first request to any data node.
      */
-    private void sendBatch(int batchId, UUID nodeId, Batch batchFut,
-        boolean clientFirst) throws IgniteCheckedException {
+    private void sendBatch(int batchId, UUID nodeId, Batch batchFut, boolean clientFirst) throws IgniteCheckedException {
         assert batchFut != null;
 
         GridNearTxEnlistRequest req = new GridNearTxEnlistRequest(cctx.cacheId(),
@@ -521,8 +520,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             Batch batch = batches.get(nodeId);
 
             if (batch != null && !F.isEmpty(batch.localBackupRows()) && res.dhtFutureId() != null)
-                processBatchLocalBackupKeys(nodeId, batch.localBackupRows(), res.dhtVersion(), res.dhtFutureId(),
-                    res.updateCounters());
+                processBatchLocalBackupKeys(nodeId, batch.localBackupRows(), res.dhtVersion(), res.dhtFutureId());
             else
                 sendNextBatches(nodeId);
         }
