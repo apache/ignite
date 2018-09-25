@@ -2050,6 +2050,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             synchronized (this) {
                 stopped = true;
 
+                for (FileCompressorWorker worker: workers)
+                    worker.cancel();
+
                 notifyAll();
             }
 
