@@ -16,6 +16,8 @@
  */
 
 import {component} from './component';
+export {componentFactory} from './componentFactory';
+export {StatusOptions, StatusLevel} from './types';
 
 export default angular
     .module('ignite-console.components.status-output', [])

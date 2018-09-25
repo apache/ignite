@@ -15,8 +15,7 @@
  * limitations under the License.
  */
 
-import {componentFactory} from 'app/components/status-output/componentFactory';
-import {StatusLevel} from 'app/components/status-output/types';
+import {componentFactory, StatusLevel} from 'app/components/status-output';
 
 export default componentFactory([
     {
