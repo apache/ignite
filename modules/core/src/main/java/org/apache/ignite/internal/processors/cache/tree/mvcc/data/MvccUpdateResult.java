@@ -40,4 +40,14 @@ public interface MvccUpdateResult {
      * @return Collection of row created or affected by the current tx.
      */
     public List<MvccLinkAwareSearchRow> history();
+
+    /**
+     * @return {@code True} if this key was inserted in the cache with this row in the same transaction.
+     */
+    public boolean isKeyAbsentBefore();
+
+    /**
+     * @return Flag whether tx has overridden it's own update.
+     */
+    public boolean isOwnValueOverridden();
 }
