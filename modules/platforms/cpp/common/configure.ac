@@ -42,6 +42,7 @@ LT_INIT
 
 # Checks for libraries.
 AC_CHECK_LIB([pthread], [pthread_mutex_lock])
+AC_CHECK_DECLS([CLOCK_MONOTONIC], [], [], [[#include <time.h>]])
 
 # Checks for header files.
 

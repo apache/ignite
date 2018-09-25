@@ -451,8 +451,10 @@ namespace ignite
                     int err = pthread_condattr_init(&attr);
                     assert(!err);
 
+                    #ifdef HAVE_DECL_CLOCK_MONOTONIC
                     err = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
                     assert(!err);
+                    #endif
 
                     err = pthread_cond_init(&cond, &attr);
                     assert(!err);
@@ -542,8 +544,10 @@ namespace ignite
                     int err = pthread_condattr_init(&attr);
                     assert(!err);
 
+                    #ifdef HAVE_DECL_CLOCK_MONOTONIC
                     err = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
                     assert(!err);
+                    #endif
 
                     err = pthread_cond_init(&cond, &attr);
                     assert(!err);
