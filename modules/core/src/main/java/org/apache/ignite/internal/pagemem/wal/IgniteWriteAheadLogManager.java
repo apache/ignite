@@ -115,7 +115,7 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      *
      * @param ptr Pointer for which it is safe to compact the log.
      */
-    public void allowCompressionUntil(WALPointer ptr);
+    public void notchLastCheckpointPtr(WALPointer ptr);
 
     /**
      * @return Total number of segments in the WAL archive.
