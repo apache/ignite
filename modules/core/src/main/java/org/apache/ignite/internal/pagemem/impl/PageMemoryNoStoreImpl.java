@@ -203,7 +203,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         rwLock = new OffheapReadWriteLock(lockConcLvl);
 
-        ioStatMgr = ctx.kernalContext().ioStats();
+        ioStatMgr = ctx != null ? ctx.kernalContext().ioStats() : new GridIoStatManager(log);
     }
 
     /** {@inheritDoc} */
