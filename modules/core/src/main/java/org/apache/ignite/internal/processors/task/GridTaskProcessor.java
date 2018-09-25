@@ -190,12 +190,14 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     @Override public void onKernalStop(boolean cancel) {
         while(true) {
             try {
-                if (lock.tryWriteLock(1, TimeUnit.SECONDS))
+                if (lock.tryWriteLock(1, TimeUnit.SECONDS)) {
                     break;
-                else
+                } else {
+                    U.warn(log, "Await on lock while node stopping");
                     Thread.sleep(1000);
+                }
             } catch (InterruptedException e) {
-                U.warn(log, e);
+                U.warn(log, "Await for lock on node stop was interrupted");
             }
         }
 
