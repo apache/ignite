@@ -685,8 +685,7 @@ public class MvccUtils {
      */
     private static GridNearTxLocal txStart(GridKernalContext ctx, @Nullable GridCacheContext cctx, long timeout) {
         if (timeout == 0) {
-            TransactionConfiguration tcfg = cctx != null ?
-                CU.transactionConfiguration(cctx, ctx.config()) : null;
+            TransactionConfiguration tcfg = CU.transactionConfiguration(cctx, ctx.config());
 
             if (tcfg != null)
                 timeout = tcfg.getDefaultTxTimeout();
