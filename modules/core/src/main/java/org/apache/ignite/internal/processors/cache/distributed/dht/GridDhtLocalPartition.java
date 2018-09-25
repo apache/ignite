@@ -969,24 +969,17 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @return Current update index.
+     * @return Current update counter.
      */
     public long updateCounter() {
         return store.updateCounter();
     }
 
     /**
-     * @return Current mvcc update counter value.
+     * @param val Update counter value.
      */
-    public long mvccUpdateCounter() {
-        return store.mvccUpdateCounter();
-    }
-
-    /**
-     * @return Next mvcc update counter.
-     */
-    public long nextMvccUpdateCounter() {
-        return store.nextMvccUpdateCounter();
+    public void updateCounter(long val) {
+        store.updateCounter(val);
     }
 
     /**
@@ -997,17 +990,30 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @param val Update index value.
-     */
-    public void updateCounter(long val) {
-        store.updateCounter(val);
-    }
-
-    /**
-     * @param val Initial update index value.
+     * @param val Initial update counter value.
      */
     public void initialUpdateCounter(long val) {
         store.updateInitialCounter(val);
+    }
+
+    /**
+     * Updates MVCC cache update counter on primary node.
+     *
+     * @param delta Value to be added to update counter.
+     * @return Update counter value before update.
+     */
+    public long getAndIncrementUpdateCounter(long delta) {
+        return store.getAndIncrementUpdateCounter(delta);
+    }
+
+    /**
+     * Updates MVCC cache update counter on backup node.
+     *
+     * @param start Start position
+     * @param delta Delta.
+     */
+    public void updateCounter(long start, long delta) {
+         store.updateCounter(start, delta);
     }
 
     /**
