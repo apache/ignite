@@ -192,6 +192,6 @@ public class SqlSystemViewCaches extends SqlAbstractLocalSystemView {
 
     /** {@inheritDoc} */
     @Override public long getRowCount() {
-        return ctx.cache().caches().size();
+        return ctx.cache().cacheDescriptors().size();
     }
 }
