@@ -978,6 +978,16 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_EVICTION_PERMITS = "IGNITE_EVICTION_PERMITS";
 
     /**
+     * System property to enable Gathering IO statistics.
+     */
+    public static final String IGNITE_PAGE_TRACK_LOG_ENABLE = "IGNITE_PAGE_TRACK_LOG_ENABLE";
+
+    /**
+     * System property to set timer granularity of logging IO statistics {@see IGNITE_PAGE_TRACK_LOG_ENABLE}.
+     */
+    public static final String IGNITE_PAGE_TRACK_LOG_TIMEOUT = "IGNITE_PAGE_TRACK_LOG_TIMEOUT";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

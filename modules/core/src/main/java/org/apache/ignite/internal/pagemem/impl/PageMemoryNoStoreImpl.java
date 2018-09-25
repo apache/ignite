@@ -38,6 +38,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.stat.GridIoStatManager;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
@@ -163,6 +164,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /** Shared context. */
     private final GridCacheSharedContext<?, ?> ctx;
 
+    /** IO statistic manager. */
+    private final GridIoStatManager ioStatMgr;
+
     /**
      * @param log Logger.
      * @param directMemoryProvider Memory allocator to use.
@@ -198,6 +202,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         totalPages = (int)(dataRegionCfg.getMaxSize() / sysPageSize);
 
         rwLock = new OffheapReadWriteLock(lockConcLvl);
+
+        ioStatMgr = ctx.kernalContext().ioStats();
     }
 
     /** {@inheritDoc} */
@@ -257,6 +263,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer pageBuffer(long pageAddr) {
+        ioStatMgr.trackLogicalRead(pageAddr);
+
         return wrapPointer(pageAddr, pageSize());
     }
 
@@ -282,11 +290,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
                 relPtr = allocSeg.allocateFreePage(flags);
 
                 if (relPtr != INVALID_REL_PTR) {
-                    if (relPtr != INVALID_REL_PTR) {
-                        absPtr = allocSeg.absolute(PageIdUtils.pageIndex(relPtr));
+                    absPtr = allocSeg.absolute(PageIdUtils.pageIndex(relPtr));
 
-                        break;
-                    }
+                    break;
                 }
                 else
                     allocSeg = addSegment(seg0);
@@ -320,6 +326,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         // TODO pass an argument to decide whether the page should be cleaned.
         GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, sysPageSize - PAGE_OVERHEAD, (byte)0);
+
+        ioStatMgr.trackLogicalRead(absPtr + PAGE_OVERHEAD);
 
         return pageId;
     }
@@ -444,7 +452,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         Segment seg = segment(pageIdx);
 
-        return seg.acquirePage(pageIdx);
+        long absPtr = seg.acquirePage(pageIdx);
+
+        ioStatMgr.trackLogicalRead(absPtr + PAGE_OVERHEAD);
+
+        return absPtr;
     }
 
     /** {@inheritDoc} */

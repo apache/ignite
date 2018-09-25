@@ -75,7 +75,7 @@ public interface PageMemoryEx extends PageMemory {
 
     /**
      * @see #acquirePage(int, long)
-     * Will not read page from file if it is not present in memory
+     * Will read page from file if it is not present in memory
      *
      * @param grpId Cache group ID.
      * @param pageId Page id.
