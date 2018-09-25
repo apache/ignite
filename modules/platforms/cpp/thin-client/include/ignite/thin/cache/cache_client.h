@@ -134,6 +134,47 @@ namespace ignite
                     return value;
                 }
 
+                
+                /**
+                 * Retrieves values mapped to the specified keys from cache.
+                 * If some value is not present in cache, then it will be looked up from swap storage. If
+                 * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
+                 * will be loaded from persistent store.
+                 * This method is transactional and will enlist the entry into ongoing transaction if there is one.
+                 *
+                 * This method should only be used on the valid instance.
+                 *
+                 * @param keys Keys.
+                 * @param res Map of key-value pairs.
+                 */
+                template<typename Set, typename Map>
+                void GetAll(const Set& keys, Map& res)
+                {
+                    return GetAll(keys.begin(), keys.end(), std::back_inserter(res, res.end()));
+                }
+
+                /**
+                 * Retrieves values mapped to the specified keys from cache.
+                 * If some value is not present in cache, then it will be looked up from swap storage. If
+                 * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
+                 * will be loaded from persistent store.
+                 * This method is transactional and will enlist the entry into ongoing transaction if there is one.
+                 *
+                 * This method should only be used on the valid instance.
+                 *
+                 * @param begin Iterator pointing to the beggining of the key sequence.
+                 * @param end Iterator pointing to the end of the key sequence.
+                 * @param dst Output iterator. Should dereference to std::pair or CacheEntry.
+                 */
+                template<typename InIter, typename OutIter>
+                void GetAll(InIter begin, InIter end, OutIter dst)
+                {
+                    impl::thin::WritableSequenceImpl<InIter> wrSeq(begin, end);
+                    impl::thin::ReadableSequenceImpl<OutIter> rdSeq(dst);
+
+                    proxy.GetAll(wrSeq, rdSeq);
+                }
+
                 /**
                  * Check if the cache contains a value for the specified key.
                  *
