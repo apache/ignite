@@ -34,9 +34,6 @@ import org.apache.ignite.lang.IgniteUuid;
  * produces by complex DML queries with reduce step.
  */
 public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstractEnlistFuture implements UpdateSourceIterator<Object> {
-    /** */
-    private static final long serialVersionUID = -4933550335145438798L;
-
     /** Enlist operation. */
     private EnlistOperation op;
 

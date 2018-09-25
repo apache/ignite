@@ -24,9 +24,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
  *
  */
 public abstract class GridNearTxQueryAbstractEnlistFuture extends GridNearTxAbstractEnlistFuture<Long> {
-    /** */
-    private static final long serialVersionUID = -6069985059301497282L;
-
     /**
      * @param cctx Cache context.
      * @param tx Transaction.

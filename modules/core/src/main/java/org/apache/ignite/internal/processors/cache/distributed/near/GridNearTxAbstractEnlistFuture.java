@@ -55,9 +55,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoundIdentityFuture<T> implements
     GridCacheVersionedFuture<T> {
-    /** */
-    private static final long serialVersionUID = -6069985059301497282L;
-
     /** Done field updater. */
     private static final AtomicIntegerFieldUpdater<GridNearTxAbstractEnlistFuture> DONE_UPD =
         AtomicIntegerFieldUpdater.newUpdater(GridNearTxAbstractEnlistFuture.class, "done");

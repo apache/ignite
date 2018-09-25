@@ -807,8 +807,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 enlisted.put(cacheKey, cacheVal);
             }
 
-            /*TODO: IGNITE-7764: all data is known and can be resorted b\w per-node-batches before sending.
-                Let's use trivial implementation just for now and review updateAsunc call. */
             return updateAsync(cacheCtx, new UpdateSourceIterator<IgniteBiTuple<KeyCacheObject, CacheObject>>() {
 
                 private Iterator<Map.Entry<KeyCacheObject, CacheObject>> it = enlisted.entrySet().iterator();
@@ -2099,6 +2097,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             final CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
             final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+
+            /* TODO: IGNITE-9688: 'sequential' is always true here which can slowdown bulk operations,
+             but possibly we can safely optimize this. */
 
             GridNearTxEnlistFuture fut = new GridNearTxEnlistFuture(cacheCtx, this,
                 timeout, it, 0, sequential, filter, retval);

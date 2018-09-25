@@ -64,9 +64,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * A future tracking requests for remote nodes transaction enlisting and locking produces by cache API operations.
  */
 public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridCacheReturn> {
-    /** */
-    private static final long serialVersionUID = 4339957209840477447L;
-
     /** Default batch size. */
     public static final int DFLT_BATCH_SIZE = 1024;
 

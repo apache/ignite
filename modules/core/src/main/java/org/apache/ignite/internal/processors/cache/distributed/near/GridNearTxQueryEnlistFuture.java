@@ -44,8 +44,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.NearTx
  */
 @SuppressWarnings("ForLoopReplaceableByForEach")
 public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFuture {
-    /** */
-    private static final long serialVersionUID = -2155104765461405820L;
     /** Involved cache ids. */
     private final int[] cacheIds;
 

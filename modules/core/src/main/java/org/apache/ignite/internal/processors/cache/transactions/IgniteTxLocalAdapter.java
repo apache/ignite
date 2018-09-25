@@ -1699,8 +1699,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             if (mvccSnapshot == null)
                 mvccSnapshot = ver;
 
-            //TODO: IGNITE-7764: Check if next condition is sufficient and remove this comment after review.
-            // This fix hanging failover test: MvccTransactionsTest.testPutAllGetAll_ClientServer_Backups1_Restart_Scan
             if(dht())
                 cctx.coordinators().registerLocalTransaction(mvccSnapshot.coordinatorVersion(), mvccSnapshot.counter());
 
