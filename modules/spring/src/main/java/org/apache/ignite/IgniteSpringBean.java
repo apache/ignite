@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
@@ -606,6 +607,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
         checkIgnite();
 
         return g.active();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> activeAsync() {
+        checkIgnite();
+
+        return g.activeAsync();
     }
 
     /** {@inheritDoc} */
