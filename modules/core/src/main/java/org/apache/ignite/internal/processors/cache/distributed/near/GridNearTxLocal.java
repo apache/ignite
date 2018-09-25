@@ -2188,10 +2188,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             return new GridFinishedFuture(e);
         }
 
-        // TODO: IGNITE-7955: Fix non-transactional operations.
-        if (skipVals)
-            MvccUtils.verifyMvccOperationSupport(cacheCtx, "containsKey/containsKeys");
-
         if (cacheCtx.mvccEnabled() && !isOperationAllowed(true))
             return txTypeMismatchFinishFuture();
 
