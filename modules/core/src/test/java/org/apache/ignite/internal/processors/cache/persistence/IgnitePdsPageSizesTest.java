@@ -58,6 +58,8 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
                 .setAffinity(new RendezvousAffinityFunction(false, 32))
         );
 
+        cfg.setFailureDetectionTimeout(20_000);
+
         return cfg;
     }
 
