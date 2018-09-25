@@ -131,11 +131,11 @@ public class QueryBinaryProperty implements GridQueryProperty {
 
             if (isKeyProp0 == 0) {
                 // Key is allowed to be a non-binary object here.
-                // We check key before value consistently with ClassProperty.
-                if (key instanceof BinaryObject && ((BinaryObject)key).hasField(propName))
-                    isKeyProp = isKeyProp0 = 1;
-                else if (val instanceof BinaryObject && ((BinaryObject)val).hasField(propName))
+                // We check value before key consistently with ClassProperty.
+                if (val instanceof BinaryObject && ((BinaryObject)val).hasField(propName))
                     isKeyProp = isKeyProp0 = -1;
+                else if (key instanceof BinaryObject && ((BinaryObject)key).hasField(propName))
+                    isKeyProp = isKeyProp0 = 1;
                 else {
                     if (!warned) {
                         U.warn(log, "Neither key nor value have property \"" + propName + "\" " +

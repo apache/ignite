@@ -21,15 +21,19 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheKeyConfiguration;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -47,21 +51,63 @@ public class AffinityKeyNameAndValueFieldNameConflictTest extends GridCommonAbst
     /** */
     private BiFunction<Integer, String, ?> keyProducer;
 
+    /** */
+    private boolean qryEntityCfg;
+
+    /** */
+    private boolean keyFieldSpecified;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheKeyConfiguration keyCfg = new CacheKeyConfiguration(keyCls);
-
-        cfg.setCacheKeyConfiguration(keyCfg);
-
         CacheConfiguration ccfg = new CacheConfiguration(PERSON_CACHE);
 
-        ccfg.setIndexedTypes(keyCls, Person.class);
+        if (qryEntityCfg) {
+            CacheKeyConfiguration keyCfg = new CacheKeyConfiguration(keyCls.getName(), "name");
+            cfg.setCacheKeyConfiguration(keyCfg);
+
+            QueryEntity entity = new QueryEntity();
+            entity.setKeyType(keyCls.getName());
+            entity.setValueType(Person.class.getName());
+            if (keyFieldSpecified)
+                entity.setKeyFields(Stream.of("name").collect(Collectors.toSet()));
+
+            entity.addQueryField("id", Integer.class.getName(), null);
+            entity.addQueryField("name", String.class.getName(), null);
+
+            ccfg.setQueryEntities(F.asList(entity));
+        } else {
+            CacheKeyConfiguration keyCfg = new CacheKeyConfiguration(keyCls);
+            cfg.setCacheKeyConfiguration(keyCfg);
+
+            ccfg.setIndexedTypes(keyCls, Person.class);
+        }
 
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryEntityConfig() throws Exception {
+        qryEntityCfg = true;
+        keyCls = PersonKey1.class;
+        keyProducer = PersonKey1::new;
+        checkQuery();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryEntityConfigKeySpecified() throws Exception {
+        qryEntityCfg = true;
+        keyFieldSpecified = true;
+        keyCls = PersonKey1.class;
+        keyProducer = PersonKey1::new;
+        checkQuery();
     }
 
     /**
@@ -89,6 +135,9 @@ public class AffinityKeyNameAndValueFieldNameConflictTest extends GridCommonAbst
         }, CacheException.class, "Property with name 'name' already exists.");
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     private void checkQuery() throws Exception {
         startGrid(2);
 
@@ -100,7 +149,7 @@ public class AffinityKeyNameAndValueFieldNameConflictTest extends GridCommonAbst
 
         SqlFieldsQuery query = new SqlFieldsQuery("select * from \"" + PERSON_CACHE + "\"." + Person.class.getSimpleName() + " it where it.name=?");
 
-        List<List<?>> result = personCache.query(query.setArgs("p1")).getAll();
+        List<List<?>> result = personCache.query(query.setArgs(keyFieldSpecified ? "o1" : "p1")).getAll();
 
         assertEquals(result.size(), 1);
 
