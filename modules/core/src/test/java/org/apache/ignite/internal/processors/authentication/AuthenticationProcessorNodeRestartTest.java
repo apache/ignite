@@ -206,8 +206,7 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
             }
             catch (IgniteCheckedException e) {
                 // Skip exception if server down.
-                if (!e.getMessage().contains("Failed to send message (node may have left the grid or "
-                    + "TCP connection cannot be established due to firewall issues)")) {
+                if (!serverDownMessage(e.getMessage())) {
                     e.printStackTrace();
                     fail("Unexpected exception: " + e.getMessage());
                 }
@@ -219,6 +218,15 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
         }, testUsersCnt, "user-op");
 
         restartFut.get();
+    }
+
+    /**
+     * Exception messages from {@code org.apache.ignite.internal.managers.communication.GridIoManager#send}.
+     */
+    private boolean serverDownMessage(String text) {
+        return text.contains("Failed to send message (node may have left the grid or "
+            + "TCP connection cannot be established due to firewall issues)")
+            || text.contains("Failed to send message, node left");
     }
 
     /**
