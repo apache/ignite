@@ -37,8 +37,13 @@ namespace ignite
     namespace jni
     {
         const char* JAVA_HOME = "JAVA_HOME";
+        #if __APPLE__ && __MACH__
+        const char* JAVA_DLL1 = "/jre/lib/server/libjvm.dylib";
+        const char* JAVA_DLL2 = "/lib/server/libjvm.dylib";
+        #else
         const char* JAVA_DLL1 = "/jre/lib/amd64/server/libjvm.so";
         const char* JAVA_DLL2 = "/lib/server/libjvm.so";
+        #endif
 
         const char* IGNITE_HOME = "IGNITE_HOME";
 
