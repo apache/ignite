@@ -947,6 +947,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             tx.activeCachesDeploymentEnabled(),
             !waitRemoteTxs && (tx.needReturnValue() && tx.implicit()),
             waitRemoteTxs,
+            null,
             null);
 
         finishReq.checkCommitted(true);

@@ -387,12 +387,11 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @param keys Keys.
      * @param vals Values.
      * @param snapshot Mvcc snapshot.
-     * @param updCntrs Update counters.
      * @throws IgniteCheckedException If failed.
      */
     public void mvccEnlistBatch(GridCacheContext ctx, EnlistOperation op, List<KeyCacheObject> keys,
-        List<Message> vals, MvccSnapshot snapshot, GridLongList updCntrs) throws IgniteCheckedException {
-        assert keys != null && updCntrs != null && keys.size() == updCntrs.size();
+        List<Message> vals, MvccSnapshot snapshot) throws IgniteCheckedException {
+        assert keys != null && (vals == null || vals.size() == keys.size());
 
         WALPointer ptr = null;
 
@@ -438,7 +437,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                         this,
                                         ctx.localNodeId(),
                                         topologyVersion(),
-                                        updCntrs.get(i),
                                         snapshot,
                                         false);
 
@@ -453,7 +451,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                         val,
                                         0,
                                         topologyVersion(),
-                                        updCntrs.get(i),
                                         snapshot,
                                         op.cacheOperation(),
                                         false,
@@ -471,7 +468,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                             updRes = entry.mvccUpdateRowsWithPreloadInfo(this,
                                 ctx.localNodeId(),
                                 topologyVersion(),
-                                updCntrs.get(i),
                                 entries.infos(),
                                 op.cacheOperation(),
                                 snapshot);

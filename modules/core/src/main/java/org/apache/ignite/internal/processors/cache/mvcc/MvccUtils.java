@@ -44,8 +44,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.MVCC_HINTS_BIT_OFF;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.MVCC_HINTS_MASK;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TRANSACTION_COMPLETED;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -55,26 +53,50 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public class MvccUtils {
     /** */
+    public static final int MVCC_KEY_ABSENT_BEFORE_OFF = 29;
+
+    /** */
+    public static final int MVCC_KEY_ABSENT_BEFORE_MASK = 0b0001 << MVCC_KEY_ABSENT_BEFORE_OFF;
+
+    /** */
+    public static final int MVCC_HINTS_BIT_OFF = MVCC_KEY_ABSENT_BEFORE_OFF + 1;
+
+    /** */
+    public static final int MVCC_HINTS_MASK = 0b0011 << MVCC_HINTS_BIT_OFF;
+
+    /** Mask for all masked high bits in operation counter field. */
+    public static final int MVCC_OP_COUNTER_MASK = 0b0111 << MVCC_KEY_ABSENT_BEFORE_OFF;
+
+    /** */
     public static final long MVCC_CRD_COUNTER_NA = 0L;
+
     /** */
     public static final long MVCC_CRD_START_CNTR = 1L;
+
     /** */
     public static final long MVCC_COUNTER_NA = 0L;
+
     /** */
     public static final long MVCC_INITIAL_CNTR = 1L;
+
     /** */
     public static final long MVCC_START_CNTR = 3L;
+
     /** */
     public static final int MVCC_OP_COUNTER_NA = 0;
+
     /** */
     public static final int MVCC_START_OP_CNTR = 1;
+
     /** */
     public static final int MVCC_READ_OP_CNTR = ~MVCC_HINTS_MASK;
 
     /** */
     public static final int MVCC_INVISIBLE = 0;
+
     /** */
     public static final int MVCC_VISIBLE_REMOVED = 1;
+
     /** */
     public static final int MVCC_VISIBLE = 2;
 
@@ -559,13 +581,13 @@ public class MvccUtils {
 
                 long mvccCrd = dataIo.mvccCoordinator(pageAddr, offset);
                 long mvccCntr = dataIo.mvccCounter(pageAddr, offset);
-                int mvccOpCntr = dataIo.mvccOperationCounter(pageAddr, offset);
+                int mvccOpCntr = dataIo.mvccOperationCounter(pageAddr, offset) & ~MVCC_KEY_ABSENT_BEFORE_MASK;
 
                 assert mvccVersionIsValid(mvccCrd, mvccCntr, mvccOpCntr) : mvccVersion(mvccCrd, mvccCntr, mvccOpCntr);
 
                 long newMvccCrd = dataIo.newMvccCoordinator(pageAddr, offset);
                 long newMvccCntr = dataIo.newMvccCounter(pageAddr, offset);
-                int newMvccOpCntr = dataIo.newMvccOperationCounter(pageAddr, offset);
+                int newMvccOpCntr = dataIo.newMvccOperationCounter(pageAddr, offset) & ~MVCC_KEY_ABSENT_BEFORE_MASK;
 
                 assert newMvccCrd == MVCC_CRD_COUNTER_NA || mvccVersionIsValid(newMvccCrd, newMvccCntr, newMvccOpCntr)
                     : mvccVersion(newMvccCrd, newMvccCntr, newMvccOpCntr);

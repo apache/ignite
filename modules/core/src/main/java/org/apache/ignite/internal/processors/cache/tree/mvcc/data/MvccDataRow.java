@@ -33,10 +33,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_BIT_OFF;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_KEY_ABSENT_BEFORE_MASK;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_KEY_ABSENT_BEFORE_OFF;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_MASK;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.MVCC_HINTS_BIT_OFF;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.MVCC_HINTS_MASK;
 
 /**
  *
@@ -73,6 +75,9 @@ public class MvccDataRow extends DataRow {
     /** New mvcc tx state. */
     @GridToStringInclude
     protected byte newMvccTxState;
+
+    /** Flag, whether this key was absent in cache before this transaction. */
+    protected boolean keyAbsentBefore;
 
     /**
      * @param link Link.
@@ -153,8 +158,9 @@ public class MvccDataRow extends DataRow {
 
         int withHint = PageUtils.getInt(addr, off + 16);
 
-        mvccOpCntr = withHint & ~MVCC_HINTS_MASK;
+        mvccOpCntr = withHint & ~MVCC_OP_COUNTER_MASK;
         mvccTxState = (byte)(withHint >>> MVCC_HINTS_BIT_OFF);
+        keyAbsentBefore = ((withHint & MVCC_KEY_ABSENT_BEFORE_MASK) >>> MVCC_KEY_ABSENT_BEFORE_OFF) == 1;
 
         assert MvccUtils.mvccVersionIsValid(mvccCrd, mvccCntr, mvccOpCntr);
 
@@ -164,8 +170,11 @@ public class MvccDataRow extends DataRow {
 
         withHint = PageUtils.getInt(addr, off + 36);
 
-        newMvccOpCntr = withHint & ~MVCC_HINTS_MASK;
+        newMvccOpCntr = withHint & ~MVCC_OP_COUNTER_MASK;
         newMvccTxState = (byte)(withHint >>> MVCC_HINTS_BIT_OFF);
+
+        if (newMvccCrd != MVCC_CRD_COUNTER_NA)
+            keyAbsentBefore = ((withHint & MVCC_KEY_ABSENT_BEFORE_MASK) >>> MVCC_KEY_ABSENT_BEFORE_OFF) == 1;
 
         assert newMvccCrd == MVCC_CRD_COUNTER_NA || MvccUtils.mvccVersionIsValid(newMvccCrd, newMvccCntr, newMvccOpCntr);
 
@@ -244,6 +253,11 @@ public class MvccDataRow extends DataRow {
      */
     public void newMvccTxState(byte newMvccTxState) {
         this.newMvccTxState = newMvccTxState;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isKeyAbsentBefore() {
+        return keyAbsentBefore;
     }
 
     /** {@inheritDoc} */

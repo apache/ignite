@@ -286,7 +286,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
 
                 return null;
             }
-        }, IgniteCheckedException.class, "Failed to start processor");
+        }, IgniteCheckedException.class, "Cannot start cache. Statically configured atomicity mode differs from");
     }
 
     /**
@@ -332,7 +332,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
 
                 return null;
             }
-        }, IgniteCheckedException.class, "Failed to start processor");
+        }, IgniteCheckedException.class, "Cannot start cache. Statically configured atomicity mode");
     }
 
     /**

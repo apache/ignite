@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -88,7 +87,6 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
      * @param batchId Batch id.
      * @param keys Keys.
      * @param vals Values.
-     * @param updCntrs Update counters.
      */
     GridDhtTxQueryFirstEnlistRequest(int cacheId,
         IgniteUuid dhtFutId,
@@ -103,9 +101,8 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
         EnlistOperation op,
         int batchId,
         List<KeyCacheObject> keys,
-        List<Message> vals,
-        GridLongList updCntrs) {
-        super(cacheId, dhtFutId, lockVer, op, batchId, snapshot.operationCounter(), keys, vals, updCntrs);
+        List<Message> vals) {
+        super(cacheId, dhtFutId, lockVer, op, batchId, snapshot.operationCounter(), keys, vals);
         this.cacheId = cacheId;
         this.subjId = subjId;
         this.topVer = topVer;
@@ -211,55 +208,55 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
         }
 
         switch (writer.state()) {
-            case 11:
+            case 10:
                 if (!writer.writeLong("cleanupVer", cleanupVer))
                     return false;
 
                 writer.incrementState();
 
-            case 12:
+            case 11:
                 if (!writer.writeLong("cntr", cntr))
                     return false;
 
                 writer.incrementState();
 
-            case 13:
+            case 12:
                 if (!writer.writeLong("crdVer", crdVer))
                     return false;
 
                 writer.incrementState();
 
-            case 14:
+            case 13:
                 if (!writer.writeUuid("nearNodeId", nearNodeId))
                     return false;
 
                 writer.incrementState();
 
-            case 15:
+            case 14:
                 if (!writer.writeMessage("nearXidVer", nearXidVer))
                     return false;
 
                 writer.incrementState();
 
-            case 16:
+            case 15:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
-            case 17:
+            case 16:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 18:
+            case 17:
                 if (!writer.writeLong("timeout", timeout))
                     return false;
 
                 writer.incrementState();
 
-            case 19:
+            case 18:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
@@ -281,7 +278,7 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
             return false;
 
         switch (reader.state()) {
-            case 11:
+            case 10:
                 cleanupVer = reader.readLong("cleanupVer");
 
                 if (!reader.isLastRead())
@@ -289,7 +286,7 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
 
                 reader.incrementState();
 
-            case 12:
+            case 11:
                 cntr = reader.readLong("cntr");
 
                 if (!reader.isLastRead())
@@ -297,7 +294,7 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
 
                 reader.incrementState();
 
-            case 13:
+            case 12:
                 crdVer = reader.readLong("crdVer");
 
                 if (!reader.isLastRead())
@@ -305,7 +302,7 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
 
                 reader.incrementState();
 
-            case 14:
+            case 13:
                 nearNodeId = reader.readUuid("nearNodeId");
 
                 if (!reader.isLastRead())
@@ -313,7 +310,7 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
 
                 reader.incrementState();
 
-            case 15:
+            case 14:
                 nearXidVer = reader.readMessage("nearXidVer");
 
                 if (!reader.isLastRead())
@@ -321,7 +318,7 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
 
                 reader.incrementState();
 
-            case 16:
+            case 15:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
@@ -329,7 +326,7 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
 
                 reader.incrementState();
 
-            case 17:
+            case 16:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -337,7 +334,7 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
 
                 reader.incrementState();
 
-            case 18:
+            case 17:
                 timeout = reader.readLong("timeout");
 
                 if (!reader.isLastRead())
@@ -345,7 +342,7 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
 
                 reader.incrementState();
 
-            case 19:
+            case 18:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -360,7 +357,7 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 20;
+        return 19;
     }
 
     /** {@inheritDoc} */
