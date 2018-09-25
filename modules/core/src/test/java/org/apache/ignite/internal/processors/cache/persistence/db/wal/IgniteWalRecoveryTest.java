@@ -30,6 +30,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
@@ -74,6 +75,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.PAX;
@@ -113,6 +115,9 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
     /** */
     private int walSegmentSize;
+
+    /** */
+    private int walSegments = 10;
 
     /** Log only. */
     private boolean logOnly;
@@ -158,6 +163,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         if (walSegmentSize != 0)
             dbCfg.setWalSegmentSize(walSegmentSize);
+
+        dbCfg.setWalSegments(walSegments);
 
         cfg.setDataStorageConfiguration(dbCfg);
 
@@ -448,7 +455,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
                 Arrays.fill(data, (byte)i);
 
-                final byte[] loaded = (byte[]) cache.get(i);
+                final byte[] loaded = (byte[])cache.get(i);
 
                 Assert.assertArrayEquals(data, loaded);
 
@@ -906,7 +913,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 sharedCtx0.database().checkpointReadLock();
 
                 try {
-                    storage0.putData(String.valueOf(i), new byte[]{(byte)(i % 256), 2, 3});
+                    storage0.putData(String.valueOf(i), new byte[] {(byte)(i % 256), 2, 3});
                 }
                 finally {
                     sharedCtx0.database().checkpointReadUnlock();
@@ -966,7 +973,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             for (int i = 0; i < cnt; i++) {
                 byte[] b1 = new byte[arraySize];
                 for (int k = 0; k < arraySize; k++) {
-                    b1[k] = (byte) (k % 100);
+                    b1[k] = (byte)(k % 100);
                 }
 
                 sharedCtx.database().checkpointReadLock();
@@ -984,7 +991,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 assertEquals(arraySize, d2.length);
 
                 for (int k = 0; k < arraySize; k++) {
-                    assertEquals((byte) (k % 100), d2[k]);
+                    assertEquals((byte)(k % 100), d2[k]);
                 }
             }
 
@@ -1015,7 +1022,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 sharedCtx0.database().checkpointReadLock();
 
                 try {
-                    storage.putData(String.valueOf(i), new byte[]{1, 2, 3});
+                    storage.putData(String.valueOf(i), new byte[] {1, 2, 3});
                 }
                 finally {
                     sharedCtx0.database().checkpointReadUnlock();
@@ -1068,7 +1075,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 sharedCtx0.database().checkpointReadLock();
 
                 try {
-                    storage.putData(String.valueOf(i), new byte[]{1, 2, 3});
+                    storage.putData(String.valueOf(i), new byte[] {1, 2, 3});
                 }
                 finally {
                     sharedCtx0.database().checkpointReadUnlock();
@@ -1079,7 +1086,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 sharedCtx0.database().checkpointReadLock();
 
                 try {
-                    storage.putData(String.valueOf(i), new byte[]{2, 2, 3, 4});
+                    storage.putData(String.valueOf(i), new byte[] {2, 2, 3, 4});
                 }
                 finally {
                     sharedCtx0.database().checkpointReadUnlock();
@@ -1120,7 +1127,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 sharedCtx0.database().checkpointReadLock();
 
                 try {
-                    storage.putData(String.valueOf(i), new byte[]{1, 2, 3});
+                    storage.putData(String.valueOf(i), new byte[] {1, 2, 3});
                 }
                 finally {
                     sharedCtx0.database().checkpointReadUnlock();
@@ -1149,6 +1156,74 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 byte[] value = storage.getData(String.valueOf(i));
                 assert value != null;
             }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testAbsentDeadlock_Iterator_RollOver_Archivation() throws Exception {
+        try {
+            walSegments = 2;
+
+            walSegmentSize = 512 * 1024;
+
+            IgniteEx ignite0 = (IgniteEx)startGrid("node0");
+
+            ignite0.active(true);
+
+            IgniteCache<Object, Object> cache0 = ignite0.cache(cacheName);
+
+            for (int i = 0; i < 100; i++)
+                cache0.put(i, new IndexedObject(i));
+
+            GridCacheSharedContext<Object, Object> sharedCtx = ignite0.context().cache().context();
+
+            GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)sharedCtx.database();
+
+            db.waitForCheckpoint("test");
+            db.enableCheckpoints(false).get();
+
+            // Log something to know where to start.
+            WALPointer ptr = sharedCtx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
+
+            info("Replay marker: " + ptr);
+
+            for (int i = 100; i < 200; i++)
+                cache0.put(i, new IndexedObject(i));
+
+            CountDownLatch insertFinished = new CountDownLatch(1);
+            GridTestUtils.runAsync(
+                () -> {
+                    try (WALIterator it = sharedCtx.wal().replay(ptr)) {
+                        if (it.hasNext()) {
+                            it.next();
+
+                            insertFinished.await();
+                        }
+                    }
+
+                    return null;
+                }
+            );
+
+            IgniteInternalFuture<Object> future = GridTestUtils.runAsync(
+                () -> {
+                    for (int i = 0; i < 10000; i++)
+                        cache0.put(i, new IndexedObject(i));
+
+                    return null;
+                }
+            );
+
+            future.get();
+
+            insertFinished.countDown();
+
+            ignite0.close();
         }
         finally {
             stopAllGrids();
@@ -1303,12 +1378,12 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             final String cacheName = "transactional";
 
             CacheConfiguration<Object, Object> cacheConfiguration = new CacheConfiguration<>(cacheName)
-                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                    .setAffinity(new RendezvousAffinityFunction(false, 32))
-                    .setCacheMode(CacheMode.PARTITIONED)
-                    .setRebalanceMode(CacheRebalanceMode.SYNC)
-                    .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-                    .setBackups(2);
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                .setAffinity(new RendezvousAffinityFunction(false, 32))
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setRebalanceMode(CacheRebalanceMode.SYNC)
+                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+                .setBackups(2);
 
             ignite.createCache(cacheConfiguration);
 
@@ -1322,7 +1397,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             for (int t = 1; t <= transactions; t++) {
                 Transaction tx = ignite.transactions().txStart(
-                        TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
+                    TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
 
                 Map<Object, Object> changesInTransaction = new HashMap<>();
 
@@ -1385,12 +1460,12 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             final String cacheName = "transactional";
 
             CacheConfiguration<Object, Object> cacheConfiguration = new CacheConfiguration<>(cacheName)
-                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                    .setAffinity(new RendezvousAffinityFunction(false, 32))
-                    .setCacheMode(CacheMode.PARTITIONED)
-                    .setRebalanceMode(CacheRebalanceMode.SYNC)
-                    .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-                    .setBackups(0);
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                .setAffinity(new RendezvousAffinityFunction(false, 32))
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setRebalanceMode(CacheRebalanceMode.SYNC)
+                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+                .setBackups(0);
 
             ignite.createCache(cacheConfiguration);
 
@@ -1413,7 +1488,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             for (int t = 1; t <= transactions; t++) {
                 Transaction tx = ignite.transactions().txStart(
-                        TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
+                    TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
 
                 for (int op = 0; op < operationsPerTransaction; op++) {
                     int key = random.nextInt(1000) + 1;
@@ -1448,7 +1523,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                     WALRecord rec = tup.get2();
 
                     if (rec instanceof TxRecord) {
-                        TxRecord txRecord = (TxRecord) rec;
+                        TxRecord txRecord = (TxRecord)rec;
                         GridCacheVersion txId = txRecord.nearXidVersion();
 
                         switch (txRecord.state()) {
@@ -1471,8 +1546,9 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                             default:
                                 throw new IllegalStateException("Unknown Tx state of record " + txRecord);
                         }
-                    } else if (rec instanceof DataRecord) {
-                        DataRecord dataRecord = (DataRecord) rec;
+                    }
+                    else if (rec instanceof DataRecord) {
+                        DataRecord dataRecord = (DataRecord)rec;
 
                         for (DataEntry entry : dataRecord.writeEntries()) {
                             GridCacheVersion txId = entry.nearXidVersion();
@@ -1515,16 +1591,18 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             // Create pseudo-random array.
             for (int i = 0; i < payload.length; i++)
                 if (i % index == 0)
-                    payload[i] = (byte) index;
+                    payload[i] = (byte)index;
         }
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            BigObject bigObject = (BigObject) o;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+            BigObject bigObject = (BigObject)o;
             return index == bigObject.index &&
-                    Arrays.equals(payload, bigObject.payload);
+                Arrays.equals(payload, bigObject.payload);
         }
 
         @Override
@@ -1849,7 +1927,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             return true;
         }
     }
-
 
     /**
      *
