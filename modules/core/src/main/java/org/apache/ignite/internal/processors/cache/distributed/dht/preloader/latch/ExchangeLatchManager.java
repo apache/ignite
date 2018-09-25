@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader.la
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -44,12 +45,12 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 
 /**
@@ -58,6 +59,12 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 public class ExchangeLatchManager {
     /** Version since latch management is available. */
     private static final IgniteProductVersion VERSION_SINCE = IgniteProductVersion.fromString("2.5.0");
+
+    /**
+     * Exchange latch V2 protocol introduces following optimization:
+     * Joining nodes are explicitly excluded from possible latch participants.
+     */
+    public static final IgniteProductVersion PROTOCOL_V2_VERSION_SINCE = IgniteProductVersion.fromString("2.7.0");
 
     /** Logger. */
     private final IgniteLogger log;
@@ -88,6 +95,10 @@ public class ExchangeLatchManager {
     @GridToStringInclude
     private final ConcurrentMap<CompletableLatchUid, ClientLatch> clientLatches = new ConcurrentHashMap<>();
 
+    /** Map (topology version -> joined node on this version). This map is needed to exclude joined nodes from latch participants. */
+    @GridToStringExclude
+    private final ConcurrentMap<AffinityTopologyVersion, ClusterNode> joinedNodes = new ConcurrentHashMap<>();
+
     /** Lock. */
     private final ReentrantLock lock = new ReentrantLock();
 
@@ -102,7 +113,7 @@ public class ExchangeLatchManager {
         this.discovery = ctx.discovery();
         this.io = ctx.io();
 
-        if (!ctx.clientNode()) {
+        if (!ctx.clientNode() && !ctx.isDaemon()) {
             ctx.io().addMessageListener(GridTopic.TOPIC_EXCHANGE, (nodeId, msg, plc) -> {
                 if (msg instanceof LatchAckMessage)
                     processAck(nodeId, (LatchAckMessage) msg);
@@ -119,8 +130,16 @@ public class ExchangeLatchManager {
                 assert e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED : this;
 
                 // Do not process from discovery thread.
-                ctx.closure().runLocalSafe(() -> processNodeLeft(e.eventNode()));
+                // TODO: Should use queue to guarantee the order of processing left nodes.
+                ctx.closure().runLocalSafe(() -> processNodeLeft(cache.version(), e.eventNode()));
             }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+
+            ctx.event().addDiscoveryEventListener((e, cache) -> {
+                assert e != null;
+                assert e.type() == EVT_NODE_JOINED;
+
+                joinedNodes.put(cache.version(), e.eventNode());
+            }, EVT_NODE_JOINED);
         }
     }
 
@@ -247,10 +266,30 @@ public class ExchangeLatchManager {
     private Collection<ClusterNode> getLatchParticipants(AffinityTopologyVersion topVer) {
         Collection<ClusterNode> aliveNodes = aliveNodesForTopologyVer(topVer);
 
-        return aliveNodes
+        List<ClusterNode> participantNodes = aliveNodes
                 .stream()
                 .filter(node -> node.version().compareTo(VERSION_SINCE) >= 0)
                 .collect(Collectors.toList());
+
+        if (canSkipJoiningNodes(topVer))
+            return excludeJoinedNodes(participantNodes, topVer);
+
+        return participantNodes;
+    }
+
+    /**
+     * Excludes a node that was joined on given {@code topVer} from participant nodes.
+     *
+     * @param participantNodes Participant nodes.
+     * @param topVer Topology version.
+     */
+    private List<ClusterNode> excludeJoinedNodes(List<ClusterNode> participantNodes, AffinityTopologyVersion topVer) {
+        ClusterNode joinedNode = joinedNodes.get(topVer);
+
+        if (joinedNode != null)
+            participantNodes.remove(joinedNode);
+
+        return participantNodes;
     }
 
     /**
@@ -260,12 +299,33 @@ public class ExchangeLatchManager {
     @Nullable private ClusterNode getLatchCoordinator(AffinityTopologyVersion topVer) {
         Collection<ClusterNode> aliveNodes = aliveNodesForTopologyVer(topVer);
 
-        return aliveNodes
+        List<ClusterNode> applicableNodes = aliveNodes
             .stream()
             .filter(node -> node.version().compareTo(VERSION_SINCE) >= 0)
             .sorted(Comparator.comparing(ClusterNode::order))
-            .findFirst()
-            .orElse(null);
+            .collect(Collectors.toList());
+
+        if (applicableNodes.isEmpty())
+            return null;
+
+        if (canSkipJoiningNodes(topVer))
+            applicableNodes = excludeJoinedNodes(applicableNodes, topVer);
+
+        return applicableNodes.get(0);
+    }
+
+    /**
+     * Checks that latch manager can use V2 protocol and skip joining nodes from latch participants.
+     *
+     * @param topVer Topology version.
+     */
+    public boolean canSkipJoiningNodes(AffinityTopologyVersion topVer) {
+        Collection<ClusterNode> applicableNodes = topVer.equals(AffinityTopologyVersion.NONE)
+            ? discovery.aliveServerNodes()
+            : discovery.topology(topVer.topologyVersion());
+
+        return applicableNodes.stream()
+            .allMatch(node -> node.version().compareTo(PROTOCOL_V2_VERSION_SINCE) >= 0);
     }
 
     /**
@@ -282,7 +342,7 @@ public class ExchangeLatchManager {
         lock.lock();
 
         try {
-            ClusterNode coordinator = getLatchCoordinator(AffinityTopologyVersion.NONE);
+            ClusterNode coordinator = getLatchCoordinator(message.topVer());
 
             if (coordinator == null)
                 return;
@@ -313,11 +373,8 @@ public class ExchangeLatchManager {
                     if (latch.hasParticipant(from) && !latch.hasAck(from))
                         latch.ack(from);
                 }
-                else {
-                    pendingAcks.computeIfAbsent(latchUid, (id) -> new GridConcurrentHashSet<>());
-
-                    pendingAcks.get(latchUid).add(from);
-                }
+                else
+                    pendingAcks.computeIfAbsent(latchUid, id -> new GridConcurrentHashSet<>()).add(from);
             }
         }
         finally {
@@ -339,7 +396,6 @@ public class ExchangeLatchManager {
         latchesToRestore.addAll(clientLatches.keySet());
 
         for (CompletableLatchUid latchUid : latchesToRestore) {
-            String id = latchUid.id;
             AffinityTopologyVersion topVer = latchUid.topVer;
             Collection<ClusterNode> participants = getLatchParticipants(topVer);
 
@@ -359,7 +415,7 @@ public class ExchangeLatchManager {
      *
      * @param left Left node.
      */
-    private void processNodeLeft(ClusterNode left) {
+    private void processNodeLeft(AffinityTopologyVersion topVer, ClusterNode left) {
         assert this.crd != null : "Coordinator is not initialized";
 
         lock.lock();
@@ -368,10 +424,16 @@ public class ExchangeLatchManager {
             if (log.isDebugEnabled())
                 log.debug("Process node left " + left.id());
 
-            ClusterNode coordinator = getLatchCoordinator(AffinityTopologyVersion.NONE);
+            ClusterNode coordinator = getLatchCoordinator(topVer);
 
             if (coordinator == null)
                 return;
+
+            // Removed node from joined nodes map.
+            joinedNodes.entrySet().stream()
+                .filter(e -> e.getValue().equals(left))
+                .map(e -> e.getKey()) // Map to topology version when node has joined.
+                .forEach(joinedNodes::remove);
 
             // Clear pending acks.
             for (Map.Entry<CompletableLatchUid, Set<UUID>> ackEntry : pendingAcks.entrySet())
@@ -389,9 +451,9 @@ public class ExchangeLatchManager {
                         /* If new coordinator is not able to take control on the latch,
                            it means that all other latch participants are left from topology
                            and there is no reason to track such latch. */
-                        AffinityTopologyVersion topVer = latchEntry.getKey().topVer;
+                        AffinityTopologyVersion latchTopVer = latchEntry.getKey().topVer;
 
-                        assert getLatchParticipants(topVer).isEmpty();
+                        assert getLatchParticipants(latchTopVer).isEmpty();
 
                         latch.complete(new IgniteCheckedException("All latch participants are left from topology."));
                         clientLatches.remove(latchEntry.getKey());
