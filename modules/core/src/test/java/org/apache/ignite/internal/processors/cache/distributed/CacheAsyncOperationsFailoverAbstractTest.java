@@ -20,9 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
@@ -99,59 +97,59 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
      * @throws Exception If failed.
      */
     public void testPutAllAsyncFailover() throws Exception {
-        putAllAsyncFailover(4, 10);
+        putAllAsyncFailover(5, 10);
     }
 
     /**
      * @throws Exception If failed.
      */
-//    public void testPutAllAsyncFailoverManyThreads() throws Exception {
-//        putAllAsyncFailover(ignite(0).configuration().getSystemThreadPoolSize() * 2, 3);
-//    }
+    public void testPutAllAsyncFailoverManyThreads() throws Exception {
+        putAllAsyncFailover(ignite(0).configuration().getSystemThreadPoolSize() * 2, 3);
+    }
 
     /**
      * @throws Exception If failed.
      */
-//    public void testAsyncFailover() throws Exception {
-//        IgniteCache<TestKey, TestValue> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
-//
-//        int ops = cache.getConfiguration(CacheConfiguration.class).getMaxConcurrentAsyncOperations();
-//
-//        log.info("Max concurrent async operations: " + ops);
-//
-//        assertTrue(ops > 0);
-//
-//        // Start/stop one node.
-//        for (int i = 0; i < 2; i++) {
-//            log.info("Iteration: " + i);
-//
-//            startGrid(NODE_CNT);
-//
-//            List<IgniteFuture<?>> futs = startAsyncOperations(ops, cache);
-//
-//            stopGrid(NODE_CNT);
-//
-//            for (IgniteFuture<?> fut : futs)
-//                fut.get();
-//
-//            log.info("Iteration done: " + i);
-//        }
-//
-//        // Start all nodes except one.
-//        try {
-//            List<IgniteFuture<?>> futs = startAsyncOperations(ops, cache);
-//
-//            for (int i = 1; i < NODE_CNT; i++)
-//                stopGrid(i);
-//
-//            for (IgniteFuture<?> fut : futs)
-//                fut.get();
-//        }
-//        finally {
-//            for (int i = 1; i < NODE_CNT; i++)
-//                startGrid(i);
-//        }
-//    }
+    public void testAsyncFailover() throws Exception {
+        IgniteCache<TestKey, TestValue> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
+
+        int ops = cache.getConfiguration(CacheConfiguration.class).getMaxConcurrentAsyncOperations();
+
+        log.info("Max concurrent async operations: " + ops);
+
+        assertTrue(ops > 0);
+
+        // Start/stop one node.
+        for (int i = 0; i < 2; i++) {
+            log.info("Iteration: " + i);
+
+            startGrid(NODE_CNT);
+
+            List<IgniteFuture<?>> futs = startAsyncOperations(ops, cache);
+
+            stopGrid(NODE_CNT);
+
+            for (IgniteFuture<?> fut : futs)
+                fut.get();
+
+            log.info("Iteration done: " + i);
+        }
+
+        // Start all nodes except one.
+        try {
+            List<IgniteFuture<?>> futs = startAsyncOperations(ops, cache);
+
+            for (int i = 1; i < NODE_CNT; i++)
+                stopGrid(i);
+
+            for (IgniteFuture<?> fut : futs)
+                fut.get();
+        }
+        finally {
+            for (int i = 1; i < NODE_CNT; i++)
+                startGrid(i);
+        }
+    }
 
     /**
      * @param ops Number of operations.
@@ -246,7 +244,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
                         List<IgniteFuture<?>> futs = new ArrayList<>(opsPerThread);
 
                         for (int i = 0; i < opsPerThread; i++) {
-                            Map<TestKey, TestValue> map = new HashMap<>(50);
+                            TreeMap<TestKey, TestValue> map = new TreeMap<>();
 
                             int keys = rnd.nextInt(1, 50);
 
