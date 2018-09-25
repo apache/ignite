@@ -537,17 +537,53 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
             .setDataRegionName("dr2")
         );
 
-        List<List<?>> resAll = execSql("SELECT NAME, IS_USER, GROUP_ID, GROUP_NAME, CACHE_MODE, ATOMICITY_MODE, " +
-            "DATA_REGION_NAME FROM IGNITE.CACHES");
+        List<List<?>> resAll = execSql("SELECT NAME, CACHE_TYPE, GROUP_ID, GROUP_NAME, IS_CREATED_BY_SQL, " +
+                "CACHE_MODE, ATOMICITY_MODE, IS_ONHEAP_CACHE_ENABLED, IS_COPY_ON_READ, IS_LOAD_PREVIOUS_VALUE, " +
+                "IS_READ_FROM_BACKUP, PARTITION_LOSS_POLICY, NODE_FILTER, TOPOLOGY_VALIDATOR, IS_EAGER_TTL, " +
+                "WRITE_SYNCHRONIZATION_MODE, IS_INVALIDATE, IS_EVENTS_DISABLED, IS_STATISTICS_ENABLED, " +
+                "IS_MANAGEMENT_ENABLED, BACKUPS, AFFINITY, AFFINITY_MAPPER, " +
+                "REBALANCE_MODE, REBALANCE_BATCH_SIZE, REBALANCE_TIMEOUT, REBALANCE_DELAY, REBALANCE_THROTTLE, " +
+                "REBALANCE_BATCHES_PREFETCH_COUNT, REBALANCE_ORDER, " +
+                "EVICTION_FILTER, EVICTION_POLICY_FACTORY, " +
+                "IS_NEAR_CACHE_ENABLED, NEAR_CACHE_EVICTION_POLICY_FACTORY, NEAR_CACHE_START_SIZE, " +
+                "DEFAULT_LOCK_TIMEOUT, CACHE_INTERCEPTOR, CACHE_STORE_FACTORY, " +
+                "IS_STORE_KEEP_BINARY, IS_READ_THROUGH, IS_WRITE_THROUGH, " +
+                "IS_WRITE_BEHIND_ENABLED, WRITE_BEHIND_COALESCING, WRITE_BEHIND_FLUSH_SIZE, " +
+                "WRITE_BEHIND_FLUSH_FREQUENCY, WRITE_BEHIND_FLUSH_THREAD_COUNT, WRITE_BEHIND_FLUSH_BATCH_SIZE, " +
+                "MAX_CONCURRENT_ASYNC_OPERATIONS, CACHE_LOADER_FACTORY, CACHE_WRITER_FACTORY, EXPIRY_POLICY_FACTORY, " +
+                "IS_SQL_ESCAPE_ALL, SQL_SCHEMA, SQL_INDEX_MAX_INLINE_SIZE, IS_SQL_ONHEAP_CACHE_ENABLED, " +
+                "SQL_ONHEAP_CACHE_MAX_SIZE, QUERY_DETAILS_METRICS_SIZE, QUERY_PARALLELISM, MAX_QUERY_ITERATORS_COUNT, " +
+                "DATA_REGION_NAME FROM IGNITE.CACHES");
 
-        assertColumnTypes(resAll.get(0), String.class, Boolean.class, Integer.class, String.class, String.class,
-            String.class, String.class);
+        assertColumnTypes(resAll.get(0),
+            String.class, String.class, Integer.class, String.class, Boolean.class,
+            String.class, String.class, Boolean.class, Boolean.class, Boolean.class,
+            Boolean.class, String.class, String.class, String.class, Boolean.class,
+            String.class, Boolean.class, Boolean.class, Boolean.class,
+            Boolean.class, Integer.class, String.class, String.class,
+            String.class, Integer.class, Long.class, Long.class, Long.class, // Rebalance.
+            Long.class, Integer.class,
+            String.class, String.class, // Eviction.
+            Boolean.class, String.class, Integer.class, // Near cache.
+            Long.class, String.class, String.class,
+            Boolean.class, Boolean.class, Boolean.class,
+            Boolean.class, Boolean.class, Integer.class, // Write-behind.
+            Long.class, Integer.class, Integer.class,
+            Integer.class, String.class, String.class, String.class,
+            Boolean.class, String.class, Integer.class, Boolean.class, // SQL.
+            Integer.class, Integer.class, Integer.class, Integer.class,
+            String.class);
+
+        execSql("CREATE TABLE cache_sql (ID INT PRIMARY KEY, VAL VARCHAR) WITH \"cache_name=cache_sql\"");
+
+        assertEquals("cache_sql", execSql("SELECT NAME FROM IGNITE.CACHES WHERE IS_CREATED_BY_SQL = true")
+            .get(0).get(0));
 
         assertEquals("cache_tx_part", execSql("SELECT NAME FROM IGNITE.CACHES WHERE CACHE_MODE = 'PARTITIONED' " +
-                "AND ATOMICITY_MODE = 'TRANSACTIONAL' AND NAME like 'cache%'").get(0).get(0));
+                "AND ATOMICITY_MODE = 'TRANSACTIONAL' AND NAME like 'cache%' AND IS_CREATED_BY_SQL = false").get(0).get(0));
 
         assertEquals("cache_atomic_repl", execSql("SELECT NAME FROM IGNITE.CACHES WHERE CACHE_MODE = 'REPLICATED' " +
-            "AND ATOMICITY_MODE = 'ATOMIC' AND NAME like 'cache%'").get(0).get(0));
+            "AND ATOMICITY_MODE = 'ATOMIC' AND NAME like 'cache%' AND IS_CREATED_BY_SQL = false").get(0).get(0));
 
         assertEquals(2L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE GROUP_NAME = 'part_grp'").get(0).get(0));
 
@@ -558,6 +594,9 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
             .get(0).get(0));
 
         assertEquals("PARTITIONED", execSql("SELECT CACHE_MODE FROM IGNITE.CACHES WHERE NAME = 'cache_atomic_part'")
+            .get(0).get(0));
+
+        assertEquals("USER", execSql("SELECT CACHE_TYPE FROM IGNITE.CACHES WHERE NAME = 'cache_sql'")
             .get(0).get(0));
 
         assertEquals(0L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE NAME = 'no_such_cache'").get(0).get(0));
