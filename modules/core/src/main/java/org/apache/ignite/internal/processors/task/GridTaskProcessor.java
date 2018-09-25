@@ -70,6 +70,7 @@ import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -193,11 +194,11 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                 if (lock.tryWriteLock(1, TimeUnit.SECONDS)) {
                     break;
                 } else {
-                    U.warn(log, "Await on lock while node stopping");
+                    LT.warn(log, "Await on lock while node stopping");
                     Thread.sleep(1000);
                 }
             } catch (InterruptedException e) {
-                U.warn(log, "Await for lock on node stop was interrupted");
+                LT.warn(log, "Await for lock on node stop was interrupted");
             }
         }
 
