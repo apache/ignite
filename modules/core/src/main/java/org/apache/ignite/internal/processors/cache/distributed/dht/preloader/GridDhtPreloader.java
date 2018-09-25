@@ -228,7 +228,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         if (!grp.rebalanceEnabled())
             return new GridDhtPreloaderAssignments(exchId, top.readyTopologyVersion());
 
-        int partCnt = grp.affinity().partitions();
+        int partitions = grp.affinity().partitions();
 
         AffinityTopologyVersion topVer = top.readyTopologyVersion();
 
@@ -243,7 +243,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         CachePartitionFullCountersMap countersMap = grp.topology().fullUpdateCounters();
 
-        for (int p = 0; p < partCnt; p++) {
+        for (int p = 0; p < partitions; p++) {
             if (ctx.exchange().hasPendingExchange()) {
                 if (log.isDebugEnabled())
                     log.debug("Skipping assignments creation, exchange worker has pending assignments: " +
@@ -307,7 +307,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         );
                     }
 
-                    msg.partitions().addHistorical(p, part.initialUpdateCounter(), countersMap.updateCounter(p), partCnt);
+                    msg.partitions().addHistorical(p, part.initialUpdateCounter(), countersMap.updateCounter(p), partitions);
                 }
                 else {
                     List<ClusterNode> picked = remoteOwners(p, topVer);
