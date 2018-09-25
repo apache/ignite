@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -28,12 +29,17 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -103,6 +109,14 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testRepeatableReadIsolationInvoke() throws Exception {
+        checkOperations(ReadMode.INVOKE, ReadMode.INVOKE, WriteMode.INVOKE, true);
+        checkOperations(ReadMode.INVOKE, ReadMode.INVOKE, WriteMode.INVOKE, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testRepeatableReadIsolationSqlPut() throws Exception {
         checkOperations(SQL, SQL, PUT, true);
         checkOperations(SQL, SQL, PUT, false);
@@ -111,9 +125,25 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testRepeatableReadIsolationSqlInvoke() throws Exception {
+        checkOperations(SQL, SQL, WriteMode.INVOKE, true);
+        checkOperations(SQL, SQL, WriteMode.INVOKE, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testRepeatableReadIsolationSqlDml() throws Exception {
         checkOperations(SQL, SQL, DML, true);
         checkOperations(SQL, SQL, DML, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRepeatableReadIsolationInvokeDml() throws Exception {
+        checkOperations(ReadMode.INVOKE, ReadMode.INVOKE, DML, true);
+        checkOperations(ReadMode.INVOKE, ReadMode.INVOKE, DML, false);
     }
 
     /**
@@ -138,6 +168,8 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
     public void testRepeatableReadIsolationMixedPut2() throws Exception {
         checkOperations(GET, SQL, PUT, false);
         checkOperations(GET, SQL, PUT, true);
+        checkOperations(GET, SQL, WriteMode.INVOKE, false);
+        checkOperations(GET, SQL, WriteMode.INVOKE, true);
     }
 
     /**
@@ -162,15 +194,17 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
     public void testOperationConsistency() throws Exception {
         checkOperationsConsistency(PUT, false);
         checkOperationsConsistency(DML, false);
+        checkOperationsConsistency(WriteMode.INVOKE, false);
         checkOperationsConsistency(PUT, true);
         checkOperationsConsistency(DML, true);
+        checkOperationsConsistency(WriteMode.INVOKE, true);
     }
 
     /**
      * Checks SQL and CacheAPI operation isolation consistency.
      *
      * @param readModeBefore read mode used before value updated.
-     * @param readModeBefore read mode used after value updated.
+     * @param readModeAfter read mode used after value updated.
      * @param writeMode write mode used for update.
      * @throws Exception If failed.
      */
@@ -207,19 +241,19 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
                 updateStart.await();
 
                 try (Transaction tx = txs2.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+                    tx.timeout(TX_TIMEOUT);
 
                     updateEntries(cache2, updateMap, writeMode);
                     removeEntries(cache2, keysForRemove, writeMode);
-
-                    checkContains(cache2, true, updateMap.keySet());
-                    checkContains(cache2, false, keysForRemove);
 
                     assertEquals(updateMap, cache2.cache.getAll(allKeys));
 
                     tx.commit();
                 }
+                finally {
+                    updateFinish.countDown();
+                }
 
-                updateFinish.countDown();
 
                 return null;
             }
@@ -230,14 +264,10 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
                 try (Transaction tx = txs1.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
                     assertEquals(initialMap, getEntries(cache1, allKeys, readModeBefore));
 
-                    checkContains(cache1, true, allKeys);
-
                     updateStart.countDown();
                     updateFinish.await();
 
                     assertEquals(initialMap, getEntries(cache1, allKeys, readModeAfter));
-
-                    checkContains(cache1, true,allKeys);
 
                     tx.commit();
                 }
@@ -365,6 +395,18 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
                 return cache.cache.getAll(keys);
             case SQL:
                 return getAllSql(cache);
+            case INVOKE: {
+                Map<Integer, MvccTestAccount> res = new HashMap<>();
+
+                CacheEntryProcessor<Integer, MvccTestAccount, MvccTestAccount> ep = new GetEntryProcessor<>();
+
+                Map<Integer, EntryProcessorResult<MvccTestAccount>> invokeRes = cache.cache.invokeAll(keys, ep);
+
+                for (Map.Entry<Integer, EntryProcessorResult<MvccTestAccount>> e : invokeRes.entrySet())
+                    res.put(e.getKey(), e.getValue().get());
+
+                return res;
+            }
             default:
                 fail();
         }
@@ -392,6 +434,19 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
             case DML: {
                 for (Map.Entry<Integer, MvccTestAccount> e : entries.entrySet())
                     mergeSql(cache, e.getKey(), e.getValue().val, e.getValue().updateCnt);
+
+                break;
+            }
+            case INVOKE: {
+                CacheEntryProcessor<Integer, MvccTestAccount, MvccTestAccount> ep =
+                    new GetAndPutEntryProcessor<Integer, MvccTestAccount>(){
+                    /** {@inheritDoc} */
+                    @Override MvccTestAccount newValForKey(Integer key) {
+                        return entries.get(key);
+                    }
+                };
+
+                cache.cache.invokeAll(entries.keySet(), ep);
 
                 break;
             }
@@ -423,6 +478,13 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
 
                 break;
             }
+            case INVOKE: {
+                CacheEntryProcessor<Integer, MvccTestAccount, MvccTestAccount> ep = new RemoveEntryProcessor<>();
+
+                cache.cache.invokeAll(keys, ep);
+
+                break;
+            }
             default:
                 fail();
         }
@@ -437,5 +499,53 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
      */
     protected void checkContains(TestCache<Integer, MvccTestAccount> cache, boolean expected, Set<Integer> keys) {
         assertEquals(expected, cache.cache.containsKeys(keys));
+    }
+
+    /**
+     * Applies get operation.
+     */
+    static class GetEntryProcessor<K, V> implements CacheEntryProcessor<K, V, V> {
+        /** {@inheritDoc} */
+        @Override public V process(MutableEntry<K, V> entry,
+            Object... arguments) throws EntryProcessorException {
+            return entry.getValue();
+        }
+    }
+
+    /**
+     * Applies remove operation.
+     */
+    static class RemoveEntryProcessor<K, V, R> implements CacheEntryProcessor<K, V, R> {
+        /** {@inheritDoc} */
+        @Override public R process(MutableEntry<K, V> entry,
+            Object... arguments) throws EntryProcessorException {
+            entry.remove();
+
+            return null;
+        }
+    }
+
+    /**
+     * Applies get and put operation.
+     */
+    static class GetAndPutEntryProcessor<K, V> implements CacheEntryProcessor<K, V, V> {
+        /** {@inheritDoc} */
+        @Override public V process(MutableEntry<K, V> entry,
+            Object... args) throws EntryProcessorException {
+            V newVal = !F.isEmpty(args) ? (V)args[0] : newValForKey(entry.getKey());
+
+            V oldVal = entry.getValue();
+            entry.setValue(newVal);
+
+            return oldVal;
+        }
+
+        /**
+         * @param key Key.
+         * @return New value.
+         */
+        V newValForKey(K key){
+            throw new UnsupportedOperationException();
+        }
     }
 }

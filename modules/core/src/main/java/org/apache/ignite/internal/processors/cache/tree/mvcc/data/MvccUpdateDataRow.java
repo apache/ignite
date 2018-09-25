@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -138,6 +139,9 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     @GridToStringExclude
     private CacheEntryPredicate filter;
 
+    /** */
+    private CacheInvokeResult invokeRes;
+
     /**
      * @param cctx Cache context.
      * @param key Key.
@@ -207,7 +211,8 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     @Override public int visit(BPlusTree<CacheSearchRow, CacheDataRow> tree,
         BPlusIO<CacheSearchRow> io,
         long pageAddr,
-        int idx, IgniteWriteAheadLogManager wal)
+        int idx,
+        IgniteWriteAheadLogManager wal)
         throws IgniteCheckedException {
         unsetFlags(DIRTY);
 
@@ -554,6 +559,23 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     /** {@inheritDoc} */
     @Override public boolean isOwnValueOverridden() {
         return isFlagsSet(OWN_VALUE_OVERRIDDEN);
+    }
+
+    /** */
+    public void value(CacheObject val0) {
+        val = val0;
+    }
+
+    /** */
+    public void invokeResult(CacheInvokeResult invokeRes) {
+        this.invokeRes = invokeRes;
+    }
+
+    /**
+     * @return Invoke result.
+     */
+    @Override public CacheInvokeResult invokeResult(){
+        return invokeRes;
     }
 
     /** */

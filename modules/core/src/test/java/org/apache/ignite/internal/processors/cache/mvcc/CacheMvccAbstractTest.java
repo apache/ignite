@@ -2172,7 +2172,10 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         SQL,
 
         /** */
-        SQL_SUM
+        SQL_SUM,
+
+        /** */
+        INVOKE
     }
 
     /**
@@ -2183,7 +2186,10 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         DML,
 
         /** */
-        PUT
+        PUT,
+
+        /** */
+        INVOKE
     }
 
     /**

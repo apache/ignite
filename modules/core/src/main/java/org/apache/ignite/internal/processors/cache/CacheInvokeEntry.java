@@ -118,6 +118,15 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
     }
 
     /**
+     * Entry processor operation.
+     *
+     * @return Operation.
+     */
+    public Operation op() {
+        return op;
+    }
+
+    /**
      * @return Return origin value, before modification.
      */
     public V oldVal() {
@@ -160,7 +169,7 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
     /**
      *
      */
-    private static enum Operation {
+    public static enum Operation {
         /** */
         NONE,
 
