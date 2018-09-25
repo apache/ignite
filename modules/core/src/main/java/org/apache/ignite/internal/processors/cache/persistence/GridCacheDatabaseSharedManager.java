@@ -78,6 +78,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
@@ -157,7 +158,7 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 import org.apache.ignite.thread.IgniteThread;
-import org.apache.ignite.thread.IgniteTrackingThreadPoolExecutor;
+import org.apache.ignite.thread.IgniteTaskTrackingThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
@@ -288,7 +289,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private boolean stopping;
 
     /** Checkpoint runner thread pool. If null tasks are to be run in single thread */
-    @Nullable private IgniteTrackingThreadPoolExecutor asyncRunner;
+    @Nullable private IgniteTaskTrackingThreadPoolExecutor asyncRunner;
 
     /** Thread local with buffers for the checkpoint threads. Each buffer represent one page for durable memory. */
     private ThreadLocal<ByteBuffer> threadBuf;
@@ -725,13 +726,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private void initDataBase() {
         if (persistenceCfg.getCheckpointThreads() > 1)
-            asyncRunner = new IgniteTrackingThreadPoolExecutor(
+            asyncRunner = new IgniteTaskTrackingThreadPoolExecutor(
                 CHECKPOINT_RUNNER_THREAD_PREFIX,
                 cctx.igniteInstanceName(),
                 persistenceCfg.getCheckpointThreads(),
                 persistenceCfg.getCheckpointThreads(),
                 30_000, // A value is ignored if corePoolSize equals to maxPoolSize
-                new LinkedBlockingQueue<Runnable>()
+                new LinkedBlockingQueue<Runnable>(),
+                GridIoPolicy.UNDEFINED,
+                cctx.kernalContext().uncaughtExceptionHandler()
             );
     }
 

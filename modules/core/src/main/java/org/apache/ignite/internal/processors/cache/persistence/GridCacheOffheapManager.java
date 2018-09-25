@@ -224,8 +224,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         boolean needSnapshot = ctx != null && ctx.nextSnapshot() && ctx.needToSnapshot(grp.cacheOrGroupName());
 
-        boolean wasSaveToMeta = false;
-
         if (rowStore0 != null) {
             CacheFreeListImpl freeList = (CacheFreeListImpl)rowStore0.freeList();
 

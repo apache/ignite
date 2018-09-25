@@ -17,30 +17,33 @@
 
 package org.apache.ignite.util;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import junit.framework.TestCase;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.thread.IgniteTrackingThreadPoolExecutor;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.thread.IgniteTaskTrackingThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Tests for tracking thread pool executor.
  */
-public class IgniteTrackingThreadPoolExecutorTest extends TestCase {
+public class IgniteTaskTrackingThreadPoolExecutorTest extends TestCase {
     /** */
-    private IgniteTrackingThreadPoolExecutor executor;
+    private IgniteTaskTrackingThreadPoolExecutor executor;
 
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
         int procs = Runtime.getRuntime().availableProcessors();
 
-        executor = new IgniteTrackingThreadPoolExecutor("test", "default",
-            procs * 2, procs * 2, 30_000, new LinkedBlockingQueue<>());
+        executor = new IgniteTaskTrackingThreadPoolExecutor("test", "default",
+            procs * 2, procs * 2, 30_000, new LinkedBlockingQueue<>(), GridIoPolicy.UNDEFINED, (t, e) -> {
+                // No-op.
+            });
     }
 
     /** {@inheritDoc} */
@@ -52,21 +55,29 @@ public class IgniteTrackingThreadPoolExecutorTest extends TestCase {
 
     /** */
     public void testSimple() throws IgniteCheckedException {
-        doTest();
+        doTest(null);
     }
 
     /** */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testWithException() throws IgniteCheckedException {
+        int fail = 5555;
+
         try {
-            doTest(100, 2345, 5555, 90000);
+            doTest(fail);
 
             fail();
         }
-        catch (IgniteCheckedException e) {
-            e.printStackTrace();
+        catch (Throwable t) {
+            TestException cause = (TestException)X.getCause(t);
 
-            assertEquals(4, e.getSuppressed().length);
+            assertEquals(fail, cause.idx);
         }
+
+        AtomicReference<Throwable> err = U.field(executor, "err");
+        err.set(null);
+
+        executor.awaitDone();
     }
 
     /** */
@@ -80,7 +91,7 @@ public class IgniteTrackingThreadPoolExecutorTest extends TestCase {
         for (int i = 0; i < iters; i++) {
             long t1 = System.nanoTime();
 
-            doTest();
+            doTest(null);
 
             if (i >= warmUp)
                 avg += System.nanoTime() - t1;
@@ -92,23 +103,18 @@ public class IgniteTrackingThreadPoolExecutorTest extends TestCase {
     }
 
     /** */
-    private void doTest(@Nullable int... fails) throws IgniteCheckedException {
-        if (fails != null)
-            Arrays.sort(fails);
-
+    private void doTest(@Nullable Integer fail) throws IgniteCheckedException {
         LongAdder cnt = new LongAdder();
 
         int exp = 100_000;
 
         for (int i = 0; i < exp; i++) {
             final int finalI = i;
-            executor.execute(new Runnable() {
-                @Override public void run() {
-                    if (fails != null && Arrays.binarySearch(fails, finalI) >= 0)
-                        throw new IgniteException("Failed to add: " + finalI);
-                    else
-                        cnt.add(1);
-                }
+            executor.execute(() -> {
+                if (fail != null && fail == finalI)
+                    throw new TestException(finalI);
+                else
+                    cnt.add(1);
             });
         }
 
@@ -117,5 +123,18 @@ public class IgniteTrackingThreadPoolExecutorTest extends TestCase {
         executor.awaitDone();
 
         assertEquals("Counter is not as expected", exp, cnt.sum());
+    }
+
+    /** */
+    private static class TestException extends RuntimeException {
+        /** */
+        final int idx;
+
+        /**
+         * @param idx Index.
+         */
+        public TestException(int idx) {
+            this.idx = idx;
+        }
     }
 }

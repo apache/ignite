@@ -44,7 +44,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.thread.GridThreadPoolExecutorServiceSelfTest;
 import org.apache.ignite.thread.GridThreadTest;
 import org.apache.ignite.thread.IgniteThreadPoolSizeTest;
-import org.apache.ignite.thread.IgniteTrackingThreadPoolExecutor;
 import org.apache.ignite.util.GridConcurrentLinkedDequeMultiThreadedTest;
 import org.apache.ignite.util.GridIntListSelfTest;
 import org.apache.ignite.util.GridLogThrottleTest;
@@ -58,7 +57,7 @@ import org.apache.ignite.util.GridSpinReadWriteLockSelfTest;
 import org.apache.ignite.util.GridStringBuilderFactorySelfTest;
 import org.apache.ignite.util.GridTopologyHeapSizeSelfTest;
 import org.apache.ignite.util.GridTransientTest;
-import org.apache.ignite.util.IgniteTrackingThreadPoolExecutorTest;
+import org.apache.ignite.util.IgniteTaskTrackingThreadPoolExecutorTest;
 import org.apache.ignite.util.mbeans.GridMBeanDisableSelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanExoticNamesSelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanSelfTest;
@@ -143,7 +142,7 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(CommandHandlerParsingTest.class);
 
         // Thread pool.
-        suite.addTestSuite(IgniteTrackingThreadPoolExecutorTest.class);
+        suite.addTestSuite(IgniteTaskTrackingThreadPoolExecutorTest.class);
 
         return suite;
     }
