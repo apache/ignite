@@ -155,4 +155,24 @@ public class TestTransaction implements Transaction {
     @Override public void resume() throws IgniteException {
         // No-op.
     }
+
+    /** {@inheritDoc} */
+    @Override public void savepoint(String name) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void savepoint(String name, boolean overwrite) throws IllegalArgumentException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void rollbackToSavepoint(String name) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void releaseSavepoint(String name) {
+        // No-op.
+    }
 }

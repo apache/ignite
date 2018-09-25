@@ -3459,6 +3459,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         unlockAll(Collections.singletonList(key));
     }
 
+    /**
+     * Unlock keys during rollback to savepoint.
+     *
+     * @param ver Version.
+     * @param keys Keys to unlock.
+     */
+    public void unlockAllForSavepoint(GridCacheVersion ver, List<KeyCacheObject> keys) throws IgniteCheckedException {
+        throw new UnsupportedOperationException();
+    }
+
     /** {@inheritDoc} */
     @Override public boolean isLocked(K key) {
         A.notNull(key, "key");

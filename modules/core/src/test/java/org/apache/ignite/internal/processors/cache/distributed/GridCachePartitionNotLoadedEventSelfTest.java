@@ -42,6 +42,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.util.TestTcpCommunicationSpi;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 
+import static java.util.Collections.singletonList;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -237,7 +238,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
 
         grid(1).events().localListen(lsnr, EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST);
 
-        TestTcpCommunicationSpi.skipMsgType(ignite(0), GridDhtPartitionsFullMessage.class);
+        TestTcpCommunicationSpi.skipMsgs(ignite(0), singletonList(GridDhtPartitionsFullMessage.class));
 
         IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {

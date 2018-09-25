@@ -65,6 +65,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -105,8 +106,10 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
@@ -2007,6 +2010,29 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 log.info("Waiting for tx: " + tx);
 
             assertTrue("Expecting no active transactions: node=" + ig.localNode().id(), txs.isEmpty());
+        }
+    }
+
+    /**
+     * Will not send banned messages.
+     */
+    public static class BanningCommunicationSpi extends TcpCommunicationSpi {
+        /** */
+        protected volatile Collection<Class> bannedClasses = Collections.emptyList();
+
+        /**
+         * @param bannedClasses Banned classes.
+         */
+        public void bannedClasses(Collection<Class> bannedClasses) {
+            this.bannedClasses = bannedClasses;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
+            GridIoMessage ioMsg = (GridIoMessage)msg;
+
+            if (!bannedClasses.contains(ioMsg.message().getClass()))
+                super.sendMessage(node, msg, ackC);
         }
     }
 }

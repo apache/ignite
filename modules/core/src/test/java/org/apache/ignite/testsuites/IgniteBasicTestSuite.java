@@ -57,6 +57,10 @@ import org.apache.ignite.internal.processors.cache.SetTxTimeoutOnPartitionMapExc
 import org.apache.ignite.internal.processors.cache.distributed.IgniteRejectConnectOnNodeStopTest;
 import org.apache.ignite.internal.processors.cache.transactions.AtomicOperationsInTxTest;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionIntegrityWithSystemWorkerDeathTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxSavepointsAtomicCacheTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxSavepointsSelfTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxSavepointsTransactionalCacheFailoverTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxSavepointsTransactionalCacheTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorRemoteTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorSelfTest;
 import org.apache.ignite.internal.processors.closure.GridClosureSerializationTest;
@@ -216,6 +220,11 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(AtomicOperationsInTxTest.class);
 
         suite.addTestSuite(CacheRebalanceConfigValidationTest.class);
+
+        suite.addTestSuite(TxSavepointsSelfTest.class);
+        suite.addTestSuite(TxSavepointsAtomicCacheTest.class);
+        suite.addTestSuite(TxSavepointsTransactionalCacheFailoverTest.class);
+        suite.addTestSuite(TxSavepointsTransactionalCacheTest.class);
 
         return suite;
     }

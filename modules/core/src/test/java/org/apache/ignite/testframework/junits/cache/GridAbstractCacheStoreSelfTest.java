@@ -597,5 +597,25 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         @Override public IgniteFuture<Void> rollbackAsync() throws IgniteException {
             return null;
         }
+
+        /** {@inheritDoc} */
+        @Override public void savepoint(String name) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void savepoint(String name, boolean overwrite) throws IllegalArgumentException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void rollbackToSavepoint(String name) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void releaseSavepoint(String name) {
+            // No-op.
+        }
     }
 }

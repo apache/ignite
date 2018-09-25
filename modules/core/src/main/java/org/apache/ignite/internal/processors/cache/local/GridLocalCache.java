@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.local;
 
 import java.io.Externalizable;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CachePeekMode;
@@ -183,6 +184,22 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
                 entry.releaseLocal();
 
                 entry.touch(topVer);
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unlockAllForSavepoint(GridCacheVersion ver, List<KeyCacheObject> keys)
+        throws IgniteCheckedException {
+        AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
+
+        for (KeyCacheObject key : keys) {
+            GridLocalCacheEntry entry = peekExx(key);
+
+            if (entry != null && ctx.isAll(entry, CU.empty0())) {
+                entry.releaseLocal();
+
+                ctx.evicts().touch(entry, topVer);
             }
         }
     }

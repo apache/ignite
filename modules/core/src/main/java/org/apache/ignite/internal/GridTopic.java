@@ -133,7 +133,10 @@ public enum GridTopic {
     TOPIC_EXCHANGE,
 
     /** */
-    TOPIC_CACHE_COORDINATOR;
+    TOPIC_CACHE_COORDINATOR,
+
+    /** */
+    TOPIC_TX_ROLLBACK_TO_SAVEPOINT;
 
     /** Enum values. */
     private static final GridTopic[] VALS = values();

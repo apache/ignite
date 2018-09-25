@@ -181,6 +181,11 @@ public class MessageCodeGenerator {
 //        gen.generateAndWrite(GridNearLockResponse.class);
 //        gen.generateAndWrite(GridDhtLockRequest.class);
 //        gen.generateAndWrite(GridDhtLockResponse.class);
+//        gen.generateAndWrite(GridDistributedUnlockRequest.class);
+//        gen.generateAndWrite(GridRollbackToSavepointRequest.class);
+//        gen.generateAndWrite(GridRollbackToSavepointResponse.class);
+//        gen.generateAndWrite(GridDhtUnlockRequest.class);
+//        gen.generateAndWrite(GridNearUnlockRequest.class);
 //
 //        gen.generateAndWrite(GridDistributedTxPrepareRequest.class);
 //        gen.generateAndWrite(GridDistributedTxPrepareResponse.class);

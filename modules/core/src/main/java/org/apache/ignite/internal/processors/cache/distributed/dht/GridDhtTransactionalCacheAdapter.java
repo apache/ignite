@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheLockTimeoutException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
+import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
@@ -86,6 +87,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -1600,8 +1602,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param nodeId Node ID.
      * @param req Request.
      */
-    @SuppressWarnings({"RedundantTypeArguments"})
-    private void clearLocks(UUID nodeId, GridDistributedUnlockRequest req) {
+    private void clearLocks(UUID nodeId, GridDhtUnlockRequest req) {
         assert nodeId != null;
 
         List<KeyCacheObject> keys = req.keys();
@@ -1627,7 +1628,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         // Note that we don't reorder completed versions here,
                         // as there is no point to reorder relative to the version
                         // we are about to remove.
-                        if (entry.removeLock(req.version())) {
+                        if (entry.removeLock(req.version(), !req.isForSavepoint())) {
                             if (log.isDebugEnabled())
                                 log.debug("Removed lock [lockId=" + req.version() + ", key=" + key + ']');
                         }
@@ -1655,12 +1656,16 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param nodeId Sender ID.
      * @param req Request.
      */
-    @SuppressWarnings({"RedundantTypeArguments", "TypeMayBeWeakened"})
     private void processNearUnlockRequest(UUID nodeId, GridNearUnlockRequest req) {
         assert ctx.affinityNode();
         assert nodeId != null;
 
-        removeLocks(nodeId, req.version(), req.keys(), true);
+        removeLocks(nodeId, req.version(), req.keys(), true, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unlockAllForSavepoint(GridCacheVersion ver, List<KeyCacheObject> keys) {
+        removeLocks(ctx.localNodeId(), ver, keys, true, true);
     }
 
     /**
@@ -1741,6 +1746,22 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param unmap Flag for un-mapping version.
      */
     public void removeLocks(UUID nodeId, GridCacheVersion ver, Iterable<KeyCacheObject> keys, boolean unmap) {
+        removeLocks(nodeId, ver, keys, unmap, false);
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param ver Version.
+     * @param keys Keys.
+     * @param unmap Flag for un-mapping version.
+     */
+    public void removeLocks(
+        UUID nodeId,
+        GridCacheVersion ver,
+        Iterable<KeyCacheObject> keys,
+        boolean unmap,
+        boolean forSavepoint
+    ) {
         assert nodeId != null;
         assert ver != null;
 
@@ -1750,7 +1771,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         // Remove mapped versions.
         GridCacheVersion dhtVer = unmap ? ctx.mvcc().unmapVersion(ver) : ver;
 
-        ctx.mvcc().addRemoved(ctx, ver);
+        if (!forSavepoint)
+            ctx.mvcc().addRemoved(ctx, ver);
 
         Map<ClusterNode, List<KeyCacheObject>> dhtMap = new HashMap<>();
         Map<ClusterNode, List<KeyCacheObject>> nearMap = new HashMap<>();
@@ -1782,7 +1804,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 log.debug("Failed to locate lock candidate based on dht or near versions [nodeId=" +
                                     nodeId + ", ver=" + ver + ", unmap=" + unmap + ", keys=" + keys + ']');
 
-                            entry.removeLock(ver);
+                            entry.removeLock(ver, !forSavepoint);
 
                             if (created) {
                                 if (obsoleteVer == null)
@@ -1811,7 +1833,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     // Note that we don't reorder completed versions here,
                     // as there is no point to reorder relative to the version
                     // we are about to remove.
-                    if (entry.removeLock(dhtVer)) {
+                    if (entry.removeLock(dhtVer, !forSavepoint)) {
                         // Map to backups and near readers.
                         map(nodeId, topVer, entry, readers, dhtMap, nearMap);
 
@@ -1851,6 +1873,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 ctx.deploymentEnabled());
 
             req.version(dhtVer);
+
+            if (forSavepoint)
+                req.forSavepoint();
 
             try {
                 for (KeyCacheObject key : keyBytes)
