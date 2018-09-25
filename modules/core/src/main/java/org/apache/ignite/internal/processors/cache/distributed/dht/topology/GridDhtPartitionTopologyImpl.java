@@ -634,8 +634,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (node2part == null) {
                 node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq);
 
-                if (log.isTraceEnabled()) {
-                    log.trace("Created brand new full topology map on oldest node [" +
+                if (log.isDebugEnabled()) {
+                    log.debug("Created brand new full topology map on oldest node [" +
                         "grp=" + grp.cacheOrGroupName() + ", exchId=" + exchFut.exchangeId() +
                         ", fullMap=" + fullMapString() + ']');
                 }
@@ -647,8 +647,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     node2part,
                     false);
 
-                if (log.isTraceEnabled()) {
-                    log.trace("Created new full topology map on oldest node [" +
+                if (log.isDebugEnabled()) {
+                    log.debug("Created new full topology map on oldest node [" +
                         "grp=" +  grp.cacheOrGroupName() + ", exchId=" + exchFut.exchangeId() +
                         ", fullMap=" + node2part + ']');
                 }
@@ -660,8 +660,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     node2part,
                     false);
 
-                if (log.isTraceEnabled()) {
-                    log.trace("Copied old map into new map on oldest node (previous oldest node left) [" +
+                if (log.isDebugEnabled()) {
+                    log.debug("Copied old map into new map on oldest node (previous oldest node left) [" +
                         "grp=" + grp.cacheOrGroupName() + ", exchId=" + exchFut.exchangeId() +
                         ", fullMap=" + fullMapString() + ']');
                 }
@@ -1599,8 +1599,13 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         + ", exchVer=" + exchangeVer + ", states=" + dumpPartitionStates() + ']');
                 }
 
-                if (changed)
+                if (changed) {
+                    if (log.isDebugEnabled())
+                        log.debug("Partitions have been scheduled to resend [reason=" +
+                            "Full map update [grp" + grp.cacheOrGroupName() + "]");
+
                     ctx.exchange().scheduleResendPartitions();
+                }
 
                 return changed;
             } finally {
@@ -1858,8 +1863,13 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (log.isDebugEnabled())
                     log.debug("Partition map after single update [grp=" + grp.cacheOrGroupName() + ", map=" + fullMapString() + ']');
 
-                if (changed && exchId == null)
+                if (changed && exchId == null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Partitions have been scheduled to resend [reason=" +
+                            "Single map update [grp" + grp.cacheOrGroupName() + "]");
+
                     ctx.exchange().scheduleResendPartitions();
+                }
 
                 return changed;
             }
@@ -2390,6 +2400,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                         try {
                             this.updateSeq.incrementAndGet();
+
+                            if (log.isDebugEnabled())
+                                log.debug("Partitions have been scheduled to resend [reason=" +
+                                    "Evictions are done [grp" + grp.cacheOrGroupName() + "]");
 
                             ctx.exchange().scheduleResendPartitions();
                         }

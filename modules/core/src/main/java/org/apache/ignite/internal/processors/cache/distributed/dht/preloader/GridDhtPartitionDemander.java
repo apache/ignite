@@ -1215,6 +1215,10 @@ public class GridDhtPartitionDemander {
                 if (log.isInfoEnabled())
                     log.info("Completed rebalance future: " + this);
 
+                if (log.isDebugEnabled())
+                    log.debug("Partitions have been scheduled to resend [reason=" +
+                        "Rebalance is done [grp=" + grp.cacheOrGroupName() + "]");
+
                 ctx.exchange().scheduleResendPartitions();
 
                 Collection<Integer> m = new HashSet<>();

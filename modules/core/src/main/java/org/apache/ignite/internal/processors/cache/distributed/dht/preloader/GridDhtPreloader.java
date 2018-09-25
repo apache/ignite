@@ -475,8 +475,13 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_UNLOADED))
                 grp.addUnloadEvent(part.id());
 
-            if (updateSeq)
+            if (updateSeq) {
+                if (log.isDebugEnabled())
+                    log.debug("Partitions have been scheduled to resend [reason=" +
+                        "Eviction [grp" + grp.cacheOrGroupName() + " " + part.id() + "]");
+
                 ctx.exchange().scheduleResendPartitions();
+            }
         }
         finally {
             leaveBusy();
