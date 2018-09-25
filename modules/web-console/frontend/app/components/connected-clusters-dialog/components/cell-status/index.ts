@@ -15,32 +15,18 @@
  * limitations under the License.
  */
 
-connected-clusters-cell-status {
-    $color-active: #417505;
-    $color-not-active: #ee2b27;
+import {componentFactory} from 'app/components/status-output/componentFactory';
+import {StatusLevel} from 'app/components/status-output/types';
 
-    display: block;
-
-    div {
-        display: flex;
-
-        &:before {
-            content: '●';
-
-            position: relative;
-            height: 16px;
-            margin-right: 10px;
-            
-            font-size: 24px;
-            line-height: 19px;
-        }
+export default componentFactory([
+    {
+        level: StatusLevel.GREEN,
+        value: true,
+        label: 'Active'
+    },
+    {
+        level: StatusLevel.RED,
+        value: false,
+        label: 'Not Active'
     }
-
-    .#{&}-active {
-        color: $color-active;
-    }
-
-    .#{&}-not-active {
-        color: $color-not-active;
-    }
-}
+]);
