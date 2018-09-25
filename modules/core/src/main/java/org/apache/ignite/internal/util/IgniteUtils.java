@@ -155,7 +155,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-import jdk.internal.loader.URLClassPath;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -551,6 +550,12 @@ public abstract class IgniteUtils {
     /** Dev only logging disabled. */
     private static boolean devOnlyLogDisabled =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DEV_ONLY_LOGGING_DISABLED);
+
+    /** JDK9: jdk.internal.loader.URLClassPath. */
+    private static Class clsURLClassPath = getURLClassPathClass();
+
+    /** JDK9: URLClassPath#getURLs. */
+    private static Method mthdURLClassPathgetUrls = getURLClassPathGetUrlsMethod();
 
     /*
      * Initializes enterprise check.
@@ -7685,8 +7690,8 @@ public abstract class IgniteUtils {
 
                         if (ucp instanceof URLClassLoader)
                             return ((URLClassLoader)ucp).getURLs();
-                        else if (ucp instanceof URLClassPath)
-                            return ((URLClassPath)ucp).getURLs();
+                        else if (clsURLClassPath!= null && clsURLClassPath.isInstance(ucp))
+                            return (URL[])mthdURLClassPathgetUrls.invoke(ucp);
                         else
                             throw new RuntimeException("Unknown classloader: " + clsLdr.getClass());
                     }
@@ -7697,7 +7702,7 @@ public abstract class IgniteUtils {
                     }
                 }
             }
-            catch (IllegalAccessException e) {
+            catch (InvocationTargetException | IllegalAccessException e) {
                 e.printStackTrace(System.err);
                 
                 return EMPTY_URL_ARR;
@@ -7725,6 +7730,29 @@ public abstract class IgniteUtils {
             return cls == null ? null : cls.getDeclaredField("ucp");
         }
         catch (NoSuchFieldException e) {
+            return null;
+        }
+    }
+
+    /** */
+    @Nullable private static Class getURLClassPathClass() {
+        try {
+            return Class.forName("jdk.internal.loader.URLClassPath");
+        }
+        catch (ClassNotFoundException e) {
+            return null;
+        }
+    }
+
+    /** */
+    @Nullable private static Method getURLClassPathGetUrlsMethod() {
+        try {
+            if (clsURLClassPath != null)
+                return clsURLClassPath.getMethod("getURLs");
+            else
+                return null;
+        }
+        catch (NoSuchMethodException e) {
             return null;
         }
     }
