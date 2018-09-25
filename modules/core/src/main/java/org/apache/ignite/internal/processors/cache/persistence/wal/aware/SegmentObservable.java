@@ -15,33 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.file;
+package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
-import java.nio.file.OpenOption;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 
 /**
- * {@link FileIO} factory definition.
+ * Implementation of observer-observable pattern. For handling specific changes of segment.
  */
-public interface FileIOFactory extends Serializable {
-    /**
-     * Creates I/O interface for file with default I/O mode.
-     *
-     * @param file File.
-     * @return File I/O interface.
-     * @throws IOException If I/O interface creation was failed.
-     */
-    public FileIO create(File file) throws IOException;
+public abstract class SegmentObservable {
+    /** Observers for handle changes of archived index. */
+    private final List<Consumer<Long>> observers = new ArrayList<>();
 
     /**
-     * Creates I/O interface for file with specified mode.
-     *
-     * @param file File
-     * @param modes Open modes.
-     * @return File I/O interface.
-     * @throws IOException If I/O interface creation was failed.
+     * @param observer Observer for notification about segment's changes.
      */
-    public FileIO create(File file, OpenOption... modes) throws IOException;
+    synchronized void addObserver(Consumer<Long> observer) {
+        observers.add(observer);
+    }
+
+    /**
+     * Notify observers about changes.
+     *
+     * @param segmentId Segment which was been changed.
+     */
+    synchronized void notifyObservers(long segmentId) {
+        observers.forEach(observer -> observer.accept(segmentId));
+    }
 }
