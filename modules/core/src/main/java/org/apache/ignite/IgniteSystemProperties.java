@@ -979,6 +979,16 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_EVICTION_PERMITS = "IGNITE_EVICTION_PERMITS";
 
     /**
+     * Timeout between ZooKeeper client retries, default 2s.
+     */
+    public static final String IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT = "IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT";
+
+    /**
+     * Number of attempts to reconnect to ZooKeeper.
+     */
+    public static final String IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT = "IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
