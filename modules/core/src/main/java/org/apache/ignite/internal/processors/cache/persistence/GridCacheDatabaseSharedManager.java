@@ -109,9 +109,9 @@ import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
@@ -1991,19 +1991,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         initAndStartRegions(cctx.kernalContext().config().getDataStorageConfiguration());
 
         // Only presistence caches to start.
-        Collection<DynamicCacheDescriptor> cacheDescs = cctx.cache().cacheDescriptors().values().stream()
-            .filter(desc -> CU.isPersistentCache(desc.cacheConfiguration(),
-                cctx.gridConfig().getDataStorageConfiguration()))
-            .collect(Collectors.toList());
+        for (DynamicCacheDescriptor desc : cctx.cache().cacheDescriptors().values()) {
+            if (CU.isPersistentCache(desc.cacheConfiguration(), cctx.gridConfig().getDataStorageConfiguration()))
+                storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
+        }
 
-        for (DynamicCacheDescriptor desc : cacheDescs)
-            storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
-
-        Set<Integer> cacheGrps = cacheDescs.stream()
-            .map(desc -> desc.groupDescriptor().groupId())
-            .collect(Collectors.toSet());
-
-        WALPointer restoredPtr = restoreBinaryMemory(cacheGrps);
+        WALPointer restoredPtr = restoreBinaryMemory(cctx.cache().cacheGroupDescriptors().keySet());
 
         if (restoredPtr != null)
             U.log(log, "Binary memory state restored at node startup [restoredPtr=" + restoredPtr + ']');
