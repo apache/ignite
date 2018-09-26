@@ -35,6 +35,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.AffinityNodeHashResolver;
@@ -51,6 +52,8 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OLD_PARTITION_RESOLVER;
 
 /**
  * Affinity function for partitioned cache based on Highest Random Weight algorithm.
@@ -234,7 +237,8 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
         this.parts = parts;
 
-        mask = (parts & (parts - 1)) == 0 ? parts - 1 : -1;
+        mask = (parts & (parts - 1)) == 0 && !IgniteSystemProperties.getBoolean(IGNITE_OLD_PARTITION_RESOLVER)
+            ? parts - 1 : -1;
     }
 
     /**

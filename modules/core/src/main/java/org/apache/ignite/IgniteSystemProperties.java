@@ -607,6 +607,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION = "IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION";
 
     /**
+     * Property disable changes introduced by IGNITE-4828. The change changes the way RendezvousAffinityFunction calculates
+     * partitions for key, as result, all versions with IGNITE-4828 incompatible with all older versions without IGNITE-4828.
+     * This property disable IGNITE-4828 and allow to use new and old nodes simultaneously.
+     */
+    public static final String IGNITE_OLD_PARTITION_RESOLVER = "IGNITE_OLD_PARTITION_RESOLVER";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
