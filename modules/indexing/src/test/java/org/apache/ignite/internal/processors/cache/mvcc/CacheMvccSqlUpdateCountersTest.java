@@ -31,7 +31,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -535,7 +535,6 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
         for (Ignite node : G.allGrids()) {
             if (!node.configuration().isClientMode()) {
                 IgniteCacheProxy cache = (IgniteCacheProxy)node.cache(cacheName);
-
 
                 GridDhtLocalPartition part = cache.context().topology().localPartition(p);
 

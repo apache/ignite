@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedTtlCleanupMana
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
 import org.apache.ignite.internal.processors.cache.WalStateManager;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
-import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionsEvictManager;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.dr.GridOsCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheNoopJtaManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;

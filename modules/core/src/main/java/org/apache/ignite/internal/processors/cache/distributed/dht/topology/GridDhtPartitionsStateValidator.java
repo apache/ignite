@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
+package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -70,9 +70,11 @@ public class GridDhtPartitionsStateValidator {
      * @throws IgniteCheckedException If validation failed. Exception message contains
      * full information about all partitions which update counters or cache sizes are not consistent.
      */
-    public void validatePartitionCountersAndSizes(GridDhtPartitionsExchangeFuture fut,
-                                                  GridDhtPartitionTopology top,
-                                                  Map<UUID, GridDhtPartitionsSingleMessage> messages) throws IgniteCheckedException {
+    public void validatePartitionCountersAndSizes(
+        GridDhtPartitionsExchangeFuture fut,
+        GridDhtPartitionTopology top,
+        Map<UUID, GridDhtPartitionsSingleMessage> messages
+    ) throws IgniteCheckedException {
         final Set<UUID> ignoringNodes = new HashSet<>();
 
         // Ignore just joined nodes.
@@ -152,10 +154,11 @@ public class GridDhtPartitionsStateValidator {
      * @return Invalid partitions map with following structure: (partId, (nodeId, updateCounter)).
      * If map is empty validation is successful.
      */
-     Map<Integer, Map<UUID, Long>> validatePartitionsUpdateCounters(
+     public Map<Integer, Map<UUID, Long>> validatePartitionsUpdateCounters(
             GridDhtPartitionTopology top,
             Map<UUID, GridDhtPartitionsSingleMessage> messages,
-            Set<UUID> ignoringNodes) {
+            Set<UUID> ignoringNodes
+     ) {
         Map<Integer, Map<UUID, Long>> invalidPartitions = new HashMap<>();
 
         Map<Integer, T2<UUID, Long>> updateCountersAndNodesByPartitions = new HashMap<>();
@@ -206,10 +209,11 @@ public class GridDhtPartitionsStateValidator {
      * @return Invalid partitions map with following structure: (partId, (nodeId, cacheSize)).
      * If map is empty validation is successful.
      */
-     Map<Integer, Map<UUID, Long>> validatePartitionsSizes(
+     public Map<Integer, Map<UUID, Long>> validatePartitionsSizes(
             GridDhtPartitionTopology top,
             Map<UUID, GridDhtPartitionsSingleMessage> messages,
-            Set<UUID> ignoringNodes) {
+            Set<UUID> ignoringNodes
+     ) {
         Map<Integer, Map<UUID, Long>> invalidPartitions = new HashMap<>();
 
         Map<Integer, T2<UUID, Long>> sizesAndNodesByPartitions = new HashMap<>();
