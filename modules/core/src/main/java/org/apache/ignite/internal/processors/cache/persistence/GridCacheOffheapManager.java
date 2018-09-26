@@ -880,6 +880,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** Flag indicates that partition belongs to current {@link #next} is finished and no longer needs to rebalance. */
         private boolean reachedPartitionEnd;
 
+        /** Flag indicates that update counters for requested partitions have been reached and done.
+         *  It means that no further iteration is needed. */
+        private boolean doneAllPartitions;
+
         /**
          * @param grp Cache context.
          * @param walIt WAL iterator.
@@ -953,6 +957,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 doneParts.add(next.partitionId());
 
                 reachedPartitionEnd = false;
+
+                if (doneParts.size() == partMap.size())
+                    doneAllPartitions = true;
             }
 
             advance();
@@ -1010,6 +1017,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          */
         private void advance() {
             next = null;
+
+            if (doneAllPartitions)
+                return;
 
             while (true) {
                 if (entryIt != null) {
@@ -1170,6 +1180,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public byte newMvccTxState() {
             return 0; // TODO IGNITE-7384
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isKeyAbsentBefore() {
+            return false;
         }
     }
 
@@ -1553,6 +1568,19 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
+        @Override public void updateSize(int cacheId, long delta) {
+            try {
+                CacheDataStore delegate0 = init0(false);
+
+                if (delegate0 != null)
+                    delegate0.updateSize(cacheId, delta);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
         @Override public long updateCounter() {
             try {
                 CacheDataStore delegate0 = init0(true);
@@ -1565,23 +1593,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public long nextMvccUpdateCounter() {
+        @Override public long getAndIncrementUpdateCounter(long delta) {
             try {
                 CacheDataStore delegate0 = init0(true);
 
-                return delegate0 == null ? 0 : delegate0.nextMvccUpdateCounter();
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public long mvccUpdateCounter() {
-            try {
-                CacheDataStore delegate0 = init0(true);
-
-                return delegate0 == null ? 0 : delegate0.mvccUpdateCounter();
+                return delegate0 == null ? 0 : delegate0.getAndIncrementUpdateCounter(delta);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -1600,6 +1616,19 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                 if (delegate0 != null)
                     delegate0.updateCounter(val);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void updateCounter(long start, long delta) {
+            try {
+                CacheDataStore delegate0 = init0(false);
+
+                if (delegate0 != null)
+                    delegate0.updateCounter(start, delta);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

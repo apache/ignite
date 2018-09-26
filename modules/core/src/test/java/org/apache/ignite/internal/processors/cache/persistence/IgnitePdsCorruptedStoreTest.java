@@ -32,8 +32,8 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.AbstractFailureHandler;
 import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -418,7 +418,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     /**
      * Dummy failure handler
      */
-    public static class DummyFailureHandler implements FailureHandler {
+    public static class DummyFailureHandler extends AbstractFailureHandler {
         /** Failure. */
         private volatile boolean failure = false;
 
@@ -440,7 +440,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+        @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
             failure = true;
             error = failureCtx.error();
 

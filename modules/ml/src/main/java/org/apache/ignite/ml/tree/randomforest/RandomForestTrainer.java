@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -72,10 +73,10 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     private static final double BUCKET_SIZE_FACTOR = (1 / 10.0);
 
     /** Count of trees. */
-    private int cntOfTrees = 1;
+    private int amountOfTrees = 1;
 
     /** Subsample size. */
-    private double subsampleSize = 1.0;
+    private double subSampleSize = 1.0;
 
     /** Max depth. */
     private int maxDepth = 5;
@@ -87,10 +88,10 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     private List<FeatureMeta> meta;
 
     /** Features per tree. */
-    private int featuresPerTree;
+    private int featuresPerTree = 5;
 
     /** Seed. */
-    private long seed = System.currentTimeMillis();
+    private long seed = 1234L;
 
     /** Random generator. */
     private Random random = new Random(seed);
@@ -114,9 +115,10 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
         List<TreeRoot> models = null;
         try (Dataset<EmptyContext, BootstrappedDatasetPartition> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
-            new BootstrappedDatasetBuilder<>(featureExtractor, lbExtractor, cntOfTrees, subsampleSize))) {
+            new BootstrappedDatasetBuilder<>(featureExtractor, lbExtractor, amountOfTrees, subSampleSize))) {
 
-            init(dataset);
+            if(!init(dataset))
+                return buildComposition(Collections.emptyList());
             models = fit(dataset);
         }
         catch (Exception e) {
@@ -136,17 +138,17 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
      * @param cntOfTrees Count of trees.
      * @return an instance of current object with valid type in according to inheritance.
      */
-    public T withCountOfTrees(int cntOfTrees) {
-        this.cntOfTrees = cntOfTrees;
+    public T withAmountOfTrees(int amountOfTrees) {
+        this.amountOfTrees = amountOfTrees;
         return instance();
     }
 
     /**
-     * @param subsampleSize Subsample size.
+     * @param subSampleSize Subsample size.
      * @return an instance of current object with valid type in according to inheritance.
      */
-    public T withSubsampleSize(double subsampleSize) {
-        this.subsampleSize = subsampleSize;
+    public T withSubSampleSize(double subSampleSize) {
+        this.subSampleSize = subSampleSize;
         return instance();
     }
 
@@ -202,7 +204,8 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
      *
      * @param dataset Dataset.
      */
-    protected void init(Dataset<EmptyContext, BootstrappedDatasetPartition> dataset) {
+    protected boolean init(Dataset<EmptyContext, BootstrappedDatasetPartition> dataset) {
+        return true;
     }
 
     /**
@@ -215,6 +218,8 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
         Queue<TreeNode> treesQueue = createRootsQueue();
         ArrayList<TreeRoot> roots = initTrees(treesQueue);
         Map<Integer, BucketMeta> histMeta = computeHistogramMeta(meta, dataset);
+        if(histMeta.isEmpty())
+            return Collections.emptyList();
 
         ImpurityHistogramsComputer<S> histogramsComputer = createImpurityHistogramsComputer();
         while (!treesQueue.isEmpty()) {
@@ -230,6 +235,23 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
 
         createLeafStatisticsAggregator().setValuesForLeaves(roots, dataset);
         return roots;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(ModelsComposition mdl) {
+        ModelsComposition fakeComposition = buildComposition(Collections.emptyList());
+        return mdl.getPredictionsAggregator().getClass() == fakeComposition.getPredictionsAggregator().getClass();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected <K, V> ModelsComposition updateModel(ModelsComposition mdl, DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        ArrayList<Model<Vector, Double>> oldModels = new ArrayList<>(mdl.getModels());
+        ModelsComposition newModels = fit(datasetBuilder, featureExtractor, lbExtractor);
+        oldModels.addAll(newModels.getModels());
+
+        return new ModelsComposition(oldModels, mdl.getPredictionsAggregator());
     }
 
     /**
@@ -302,6 +324,8 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
 
         List<NormalDistributionStatistics> stats = new NormalDistributionStatisticsComputer()
             .computeStatistics(meta, dataset);
+        if(stats == null)
+            return Collections.emptyMap();
 
         Map<Integer, BucketMeta> bucketsMeta = new HashMap<>();
         for (int i = 0; i < stats.size(); i++) {
@@ -324,7 +348,7 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
      */
     private Queue<TreeNode> createRootsQueue() {
         Queue<TreeNode> roots = new LinkedList<>();
-        for (int i = 0; i < cntOfTrees; i++)
+        for (int i = 0; i < amountOfTrees; i++)
             roots.add(new TreeNode(1, i));
         return roots;
     }

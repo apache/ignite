@@ -31,28 +31,86 @@ panel-collapsible(
     panel-content.pca-form-row(ng-if=`$ctrl.available(["2.1.0", "2.3.0"]) && ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-60
-                +checkbox('Enabled', connectionEnabled, '"SqlConnectorEnabled"', 'Flag indicating whether to configure SQL connector configuration')
+                +form-field__checkbox({
+                    label: 'Enabled',
+                    model: connectionEnabled,
+                    name: '"SqlConnectorEnabled"',
+                    tip: 'Flag indicating whether to configure SQL connector configuration'
+                })
             .pc-form-grid-col-60
-                +text-enabled('Host:', `${connectionModel}.host`, '"SqlConnectorHost"', connectionEnabled, 'false', 'localhost')
+                +form-field__text({
+                    label: 'Host:',
+                    model: `${connectionModel}.host`,
+                    name: '"SqlConnectorHost"',
+                    disabled: `!(${connectionEnabled})`,
+                    placeholder: 'localhost'
+                })
             .pc-form-grid-col-30
-                +number('Port:', `${connectionModel}.port`, '"SqlConnectorPort"', connectionEnabled, '10800', '1025')
+                +form-field__number({
+                    label: 'Port:',
+                    model: `${connectionModel}.port`,
+                    name: '"SqlConnectorPort"',
+                    disabled: `!(${connectionEnabled})`,
+                    placeholder: '10800',
+                    min: '1025'
+                })
             .pc-form-grid-col-30
-                +number('Port range:', `${connectionModel}.portRange`, '"SqlConnectorPortRange"', connectionEnabled, '100', '0')
+                +form-field__number({
+                    label: 'Port range:',
+                    model: `${connectionModel}.portRange`,
+                    name: '"SqlConnectorPortRange"',
+                    disabled: `!(${connectionEnabled})`,
+                    placeholder: '100',
+                    min: '0'
+                })
             .pc-form-grid-col-30
-                +number('Socket send buffer size:', `${connectionModel}.socketSendBufferSize`, '"SqlConnectorSocketSendBufferSize"', connectionEnabled, '0', '0',
-                    'Socket send buffer size.<br/>\
-                    When set to <b>0</b>, operation system default will be used')
+                +form-field__number({
+                    label: 'Socket send buffer size:',
+                    model: `${connectionModel}.socketSendBufferSize`,
+                    name: '"SqlConnectorSocketSendBufferSize"',
+                    disabled: `!(${connectionEnabled})`,
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Socket send buffer size.<br/>\
+                          When set to <b>0</b>, operation system default will be used'
+                })
             .pc-form-grid-col-30
-                +number('Socket receive buffer size:', `${connectionModel}.socketReceiveBufferSize`, '"SqlConnectorSocketReceiveBufferSize"', connectionEnabled, '0', '0',
-                    'Socket receive buffer size.<br/>\
-                    When set to <b>0</b>, operation system default will be used')
+                +form-field__number({
+                    label: 'Socket receive buffer size:',
+                    model: `${connectionModel}.socketReceiveBufferSize`,
+                    name: '"SqlConnectorSocketReceiveBufferSize"',
+                    disabled: `!(${connectionEnabled})`,
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Socket receive buffer size.<br/>\
+                         When set to <b>0</b>, operation system default will be used'
+                })
             .pc-form-grid-col-30
-                +number('Max connection cursors:', `${connectionModel}.maxOpenCursorsPerConnection`, '"SqlConnectorMaxOpenCursorsPerConnection"', connectionEnabled, '128', '0',
-                    'Max number of opened cursors per connection')
+                +form-field__number({
+                    label: 'Max connection cursors:',
+                    model: `${connectionModel}.maxOpenCursorsPerConnection`,
+                    name: '"SqlConnectorMaxOpenCursorsPerConnection"',
+                    disabled: `!(${connectionEnabled})`,
+                    placeholder: '128',
+                    min: '0',
+                    tip: 'Max number of opened cursors per connection'
+                })
             .pc-form-grid-col-30
-                +number('Pool size:', `${connectionModel}.threadPoolSize`, '"SqlConnectorThreadPoolSize"', connectionEnabled, 'max(8, availableProcessors)', '1',
-                    'Size of thread pool that is in charge of processing SQL requests')
+                +form-field__number({
+                    label: 'Pool size:',
+                    model: `${connectionModel}.threadPoolSize`,
+                    name: '"SqlConnectorThreadPoolSize"',
+                    disabled: `!(${connectionEnabled})`,
+                    placeholder: 'max(8, availableProcessors)',
+                    min: '1',
+                    tip: 'Size of thread pool that is in charge of processing SQL requests'
+                })
             .pc-form-grid-col-60
-                +checkbox-enabled('TCP_NODELAY option', `${connectionModel}.tcpNoDelay`, '"SqlConnectorTcpNoDelay"', connectionEnabled)
+                +form-field__checkbox({
+                    label: 'TCP_NODELAY option',
+                    model: `${connectionModel}.tcpNoDelay`,
+                    name: '"SqlConnectorTcpNoDelay"',
+                    disabled: `!${connectionEnabled}`
+                })
         .pca-form-column-6
             +preview-xml-java(model, 'clusterQuery')

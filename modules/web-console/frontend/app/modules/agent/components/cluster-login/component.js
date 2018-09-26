@@ -19,7 +19,6 @@ import template from './template.pug';
 import {ClusterSecrets} from '../../types/ClusterSecrets';
 
 export const component = {
-    name: 'clusterLogin',
     bindings: {
         secrets: '=',
         onLogin: '&',

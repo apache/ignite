@@ -94,7 +94,7 @@ public class GridDhtPartitionsStateValidator {
                 ignoringNodes.add(id);
         }
 
-        if (!MvccUtils.mvccEnabled(cctx.kernalContext())) { // TODO: Remove "if" clause in IGNITE-8149.
+        if (!MvccUtils.mvccEnabled(cctx.kernalContext())) { // TODO: Remove "if" clause in IGNITE-9451.
             // Validate cache sizes.
             result = validatePartitionsSizes(top, messages, ignoringNodes);
 
