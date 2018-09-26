@@ -17,9 +17,49 @@
 
 package org.apache.ignite.ml.naivebayes.gaussian;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
+import org.junit.Assert;
+import org.junit.Test;
+
 /**
- * Complex tests for naive Bayes algorithm.
+ * Complex tests for naive Bayes algorithm with different datasets.
  */
 public class GaussianNaiveBayesTest {
+    /** Precision in test checks. */
+    private static final double PRECISION = 1e-2;
+
+    /**
+     * An example data set from wikipedia article about Naive Bayes https://en.wikipedia.org/wiki/Naive_Bayes_classifier#Sex_classification
+     */
+    @Test
+    public void wikipediaSexClassificationDataset() {
+        Map<Integer, double[]> data = new HashMap<>();
+        double male = 0.;
+        double female = 1.;
+        data.put(0, new double[] {male, 6, 180, 12});
+        data.put(2, new double[] {male, 5.92, 190, 11});
+        data.put(3, new double[] {male, 5.58, 170, 12});
+        data.put(4, new double[] {male, 5.92, 165, 10});
+        data.put(5, new double[] {female, 5, 100, 6});
+        data.put(6, new double[] {female, 5.5, 150, 8});
+        data.put(7, new double[] {female, 5.42, 130, 7});
+        data.put(8, new double[] {female, 5.75, 150, 9});
+        GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer();
+        GaussianNaiveBayesModel model = trainer.fit(
+            new LocalDatasetBuilder<>(data, 2),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+            (k, v) -> v[0]
+        );
+        Vector observation = new DenseVector(new double[] {6, 130, 8});
+
+        Assert.assertEquals(Integer.valueOf(1), model.apply(observation));
+    }
+
 
 }
