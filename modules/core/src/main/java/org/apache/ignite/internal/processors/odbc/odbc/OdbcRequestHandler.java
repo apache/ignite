@@ -332,19 +332,23 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             Collection<OdbcColumnMeta> fieldsMeta;
 
-            if (!results.hasUnfetchedRows()) {
-                results.closeAll();
+            OdbcResultSet set = results.currentResultSet();
 
+            if (set == null)
                 fieldsMeta = new ArrayList<>();
-            } else {
-                qryResults.put(qryId, results);
-
+            else {
                 fieldsMeta = results.currentResultSet().fieldsMeta();
 
-                for (OdbcColumnMeta meta : fieldsMeta) {
-                    log.warning("Meta - " + meta.columnName + ", " + meta.precision + ", " + meta.scale);
+                if (log.isDebugEnabled()) {
+                    for (OdbcColumnMeta meta : fieldsMeta)
+                        log.debug("Meta - " + meta.toString());
                 }
             }
+
+            if (!results.hasUnfetchedRows())
+                results.closeAll();
+            else
+                qryResults.put(qryId, results);
 
             OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, fieldsMeta, results.rowsAffected());
 
@@ -388,10 +392,10 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             List<FieldsQueryCursor<List<?>>> qryCurs =
                 ctx.query().querySqlFields(qry, true, true);
 
-            List<Long> rowsAffected = new ArrayList<>(req.arguments().length);
+            long[] rowsAffected = new long[req.arguments().length];
 
-            for (FieldsQueryCursor<List<?>> qryCur : qryCurs)
-                rowsAffected.add(OdbcUtils.rowsAffected(qryCur));
+            for (int i = 0; i < qryCurs.size(); ++i)
+                rowsAffected[i] = OdbcUtils.rowsAffected(qryCurs.get(i));
 
             OdbcQueryExecuteBatchResult res = new OdbcQueryExecuteBatchResult(rowsAffected);
 
@@ -741,14 +745,13 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     private OdbcResponse exceptionToBatchResult(Exception e) {
         int code;
         String msg;
-        List<Long> rowsAffected = new ArrayList<>();
+        long[] rowsAffected = null;
 
         if (e instanceof IgniteSQLException) {
             BatchUpdateException batchCause = X.cause(e, BatchUpdateException.class);
 
             if (batchCause != null) {
-                for (long cnt : batchCause.getLargeUpdateCounts())
-                    rowsAffected.add(cnt);
+                rowsAffected = batchCause.getLargeUpdateCounts();
 
                 msg = batchCause.getMessage();
 
@@ -765,6 +768,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             code = IgniteQueryErrorCode.UNKNOWN;
         }
+
+        if (rowsAffected == null)
+            rowsAffected = new long[0];
 
         OdbcQueryExecuteBatchResult res = new OdbcQueryExecuteBatchResult(rowsAffected, -1, code, msg);
 
