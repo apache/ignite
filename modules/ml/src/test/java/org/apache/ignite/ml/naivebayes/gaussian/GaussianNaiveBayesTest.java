@@ -61,5 +61,29 @@ public class GaussianNaiveBayesTest {
         Assert.assertEquals(Integer.valueOf(1), model.apply(observation));
     }
 
+    /**
+     * Dataset from Gaussaian NB example in the scilit learn docu,mentation http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.GaussianNB.html
+     */
+    @Test
+    public void scikitLearnExample() {
+        Map<Integer, double[]> data = new HashMap<>();
+        double one = 1.;
+        double two = 2.;
+        data.put(0, new double[] {one, -1, 1});
+        data.put(2, new double[] {one, -2, -1});
+        data.put(3, new double[] {one, -3, -2});
+        data.put(4, new double[] {two, 1, 1});
+        data.put(5, new double[] {two, 2, 1});
+        data.put(6, new double[] {two, 3, 2});
+        GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer();
+        GaussianNaiveBayesModel model = trainer.fit(
+            new LocalDatasetBuilder<>(data, 2),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+            (k, v) -> v[0]
+        );
+        Vector observation = new DenseVector(new double[] {-0.8, -1});
+
+        Assert.assertEquals(0, model.apply(observation), PRECISION);
+    }
 
 }
