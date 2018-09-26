@@ -16,7 +16,11 @@
  */
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
+import java.util.Comparator;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -30,6 +34,23 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTest {
     /** Number records in cache. */
     private static final int NUMBER_RECORDS = 30;
+
+    /** Nodes count. */
+    private static final int NODES_COUNT = 4;
+
+    /** */
+    private static final ActivateNodeFinder FIRST_NODE = nodes -> nodes.stream().limit(1).findAny().get();
+
+    /** */
+    private static final ActivateNodeFinder LAST_NODE = nodes -> nodes.stream().skip(nodes.size() - 1).findAny().get();
+
+    /** */
+    private static final ActivateNodeFinder COORDINATOR_NODE =
+        nodes -> nodes.stream().min(Comparator.comparingLong(ClusterNode::order)).get();
+
+    /** */
+    private static final ActivateNodeFinder NON_COORDINATOR_NODE =
+        nodes -> nodes.stream().max(Comparator.comparingLong(ClusterNode::order)).get();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -79,8 +100,7 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
 
         IgniteCache<Long, Long> cache0 = ignite0.getOrCreateCache(cacheCfg);
 
-        for (int i = 0; i < NUMBER_RECORDS; i++)
-            cache0.put(1L << i, 1L << i);
+        populateData(cache0);
 
         ignite1 = startGrid(1);
 
@@ -107,13 +127,11 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
 
         IgniteCache<Long, Long> cache0 = ignite0.getOrCreateCache(cacheCfg);
 
-        for (int i = 0; i < NUMBER_RECORDS; i++)
-            cache0.put(1L << i, 1L << i);
+        populateData(cache0);
 
         IgniteCache<Long, Long> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
-        for (int i = 0; i < NUMBER_RECORDS; i++)
-            assertTrue(cache1.containsKey(1L << i));
+        checkDataPresent(cache1);
 
         stopGrid(1);
 
@@ -123,5 +141,109 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
         startGrid(1);
 
         awaitPartitionMapExchange();
+    }
+
+    public void testFullRestartAfterCacheDestroyActivateFromCoordinator() throws Exception {
+        fullRestartClusterAfterCacheDestoroy(NODES_COUNT, COORDINATOR_NODE);
+    }
+
+    public void testFullRestartAfterCacheDestroyActivateFromNonCoordinator() throws Exception {
+        fullRestartClusterAfterCacheDestoroy(NODES_COUNT, NON_COORDINATOR_NODE);
+    }
+
+    public void testFullRestartAfterCacheDestroyActivateFromFirstNode() throws Exception {
+        fullRestartClusterAfterCacheDestoroy(NODES_COUNT, FIRST_NODE);
+    }
+
+    public void testFullRestartAfterCacheDestroyActivateFromLastNode() throws Exception {
+        fullRestartClusterAfterCacheDestoroy(NODES_COUNT, LAST_NODE);
+    }
+
+    public void testFullRestartAfterCacheCreateActivateFromCoordinator() throws Exception {
+        fullRestartClusterAfterCacheCreate(NODES_COUNT, COORDINATOR_NODE);
+    }
+
+    public void testFullRestartAfterCacheCreateActivateFromNonCoordinator() throws Exception {
+        fullRestartClusterAfterCacheCreate(NODES_COUNT, NON_COORDINATOR_NODE);
+    }
+
+    public void testFullRestartAfterCacheCreateActivateFromFirstNode() throws Exception {
+        fullRestartClusterAfterCacheCreate(NODES_COUNT, FIRST_NODE);
+    }
+
+    public void testFullRestartAfterCacheCreateActivateFromLastNode() throws Exception {
+        fullRestartClusterAfterCacheCreate(NODES_COUNT, LAST_NODE);
+    }
+
+    private void fullRestartClusterAfterCacheCreate(int nodesCnt, ActivateNodeFinder finder) throws Exception {
+        assert nodesCnt > 1;
+
+        Ignite ignite0 = startGrids(nodesCnt);
+
+        ignite0.cluster().active(true);
+
+        stopSecondHalfNodes();
+
+        CacheConfiguration<Long, Long> cacheCfg = new CacheConfiguration<Long, Long>(DEFAULT_CACHE_NAME).setBackups((nodesCnt + 1) / 2);
+
+        IgniteCache<Long, Long> cache0 = ignite0.getOrCreateCache(cacheCfg);
+
+        populateData(cache0);
+
+        stopAllGrids();
+
+        startGrids(nodesCnt);
+
+        ClusterNode nodeActivator = finder.getActivateNode(grid(0).cluster().nodes());
+
+        grid(nodeActivator).cluster().active(true);
+
+        IgniteCache<Long, Long> cache = grid(nodeActivator).cache(DEFAULT_CACHE_NAME);
+
+        checkDataPresent(cache);
+    }
+
+    private void fullRestartClusterAfterCacheDestoroy(int nodesCnt, ActivateNodeFinder finder) throws Exception {
+        assert nodesCnt > 1;
+
+        Ignite ignite0 = startGrids(nodesCnt);
+
+        ignite0.cluster().active(true);
+
+        CacheConfiguration<Long, Long> cacheCfg = new CacheConfiguration<Long, Long>(DEFAULT_CACHE_NAME).setBackups(0);
+
+        IgniteCache<Long, Long> cache0 = ignite0.getOrCreateCache(cacheCfg);
+
+        populateData(cache0);
+
+        stopSecondHalfNodes();
+
+        cache0.destroy();
+
+        stopAllGrids();
+
+        startGrids(nodesCnt);
+
+        grid(finder.getActivateNode(grid(0).cluster().nodes())).cluster().active(true);
+    }
+
+    private void stopSecondHalfNodes() {
+        Collection<ClusterNode> nodes = grid().cluster().nodes();
+
+        nodes.stream().skip(nodes.size() / 2).forEach(n -> grid(n).close());
+    }
+
+    private void populateData(IgniteCache<Long, Long> cache) {
+        for (int i = 0; i < NUMBER_RECORDS; i++)
+            cache.put(1L << i, 1L << i);
+    }
+
+    private void checkDataPresent(IgniteCache<Long, Long> cache) {
+        for (int i = 0; i < NUMBER_RECORDS; i++)
+            assertTrue(cache.containsKey(1L << i));
+    }
+
+    private interface ActivateNodeFinder {
+        ClusterNode getActivateNode(Collection<ClusterNode> nodes);
     }
 }
