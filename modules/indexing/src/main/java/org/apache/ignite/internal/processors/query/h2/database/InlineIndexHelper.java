@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -26,6 +27,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
@@ -96,6 +98,9 @@ public class InlineIndexHelper {
     private final String tblName;
 
     /** */
+    private final String colName;
+
+    /** */
     private final int type;
 
     /** */
@@ -118,16 +123,18 @@ public class InlineIndexHelper {
 
     /**
      * @param tblName Table name.
+     * @param colName Column name.
      * @param type Index type (see {@link Value}).
      * @param colIdx Index column index.
      * @param sortType Column sort type (see {@link IndexColumn#sortType}).
      * @param compareMode Compare mode.
      * @param ctx Kernal context.
      */
-    public InlineIndexHelper(String tblName, int type, int colIdx, int sortType,
+    public InlineIndexHelper(String tblName, String colName, int type, int colIdx, int sortType,
         CompareMode compareMode, GridKernalContext ctx) {
 
         this.tblName = tblName;
+        this.colName = colName;
         this.type = type;
         this.colIdx = colIdx;
         this.sortType = sortType;
@@ -1106,10 +1113,14 @@ public class InlineIndexHelper {
 
         InlineIndexHelper idx = null;
 
+        List<String> colNames = new ArrayList<>();
+
         for (InlineIndexHelper index : inlineIdxs) {
             idx = index;
 
             fullSize += index.inlineSizeOf(row.getValue(index.columnIndex()));
+
+            colNames.add(index.colName);
         }
 
         if (idx != null && fullSize > maxPayloadSize) {
@@ -1120,7 +1131,7 @@ public class InlineIndexHelper {
             int prevSize = currMaxSize.getAndUpdate(prev -> Math.max(prev, newSize));
 
             if (newSize > prevSize)
-                idx.warnNotFitIndex(newSize);
+                idx.warnNotFitIndex(newSize, colNames);
         }
     }
 
@@ -1128,9 +1139,12 @@ public class InlineIndexHelper {
      * Log recomendation to increase inline index size.
      *
      * @param recomendedSize recommended size for inline index.
+     * @param colNames Names of columns related to index.
      */
-    private void warnNotFitIndex(int recomendedSize) {
-        String warn = "Inline index size is not enough to keep all indexed column for " + tblName +
+    private void warnNotFitIndex(int recomendedSize, List<String> colNames) {
+        String cols = colNames.stream().collect(Collectors.joining(", ", "(", ")"));
+
+        String warn = "Inline index size is not enough to keep all indexed column for " + tblName + cols +
             ". It can lead to performance degradation." +
             " To increase inline Index size for primary and affinity columns need to set ENV property " +
             IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE +

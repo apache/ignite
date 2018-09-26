@@ -172,6 +172,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             InlineIndexHelper idx = new InlineIndexHelper(
                 table.getName(),
+                col.columnName,
                 col.column.getType(),
                 col.column.getColumnId(),
                 col.sortType,
