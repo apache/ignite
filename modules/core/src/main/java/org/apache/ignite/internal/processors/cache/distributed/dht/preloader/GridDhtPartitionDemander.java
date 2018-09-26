@@ -1159,8 +1159,8 @@ public class GridDhtPartitionDemander {
                 }
             }
             catch (IgniteCheckedException ignored) {
-                if (log.isTraceEnabled())
-                    log.trace("Failed to send failover context cleanup request to node " + nodeId);
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send failover context cleanup request to node " + nodeId);
             }
         }
 
