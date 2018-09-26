@@ -41,6 +41,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreaded;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -505,14 +506,33 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
     /**
      * @throws Exception If failed.
      */
-    public void testQueryReducerDeadlockInsert() throws Exception {
+    public void testQueryReducerDeadlockInsertWithTxTimeout() throws Exception {
+        checkQueryReducerDeadlockInsert(TimeoutMode.TX);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryReducerDeadlockInsertWithStmtTimeout() throws Exception {
+        checkQueryReducerDeadlockInsert(TimeoutMode.STMT);
+    }
+
+    /** */
+    private enum TimeoutMode {
+        /** */
+        TX,
+        /** */
+        STMT
+    }
+
+    /** */
+    public void checkQueryReducerDeadlockInsert(TimeoutMode timeoutMode) throws Exception {
         ccfgs = new CacheConfiguration[] {
             cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
                 .setName("int")
                 .setIndexedTypes(Integer.class, Integer.class),
             cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
-                .setIndexedTypes(Integer.class,
-                CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class),
+                .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class),
         };
 
         startGridsMultiThreaded(2);
@@ -544,7 +564,8 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
 
                 try {
                     try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        tx.timeout(TIMEOUT);
+                        if (timeoutMode == TimeoutMode.TX)
+                            tx.timeout(TIMEOUT);
 
                         String sqlText = "INSERT INTO MvccTestSqlIndexValue (_key, idxVal1) " +
                             "SELECT DISTINCT _key, _val FROM \"int\".Integer ORDER BY _key";
@@ -554,6 +575,9 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
 
                         SqlFieldsQuery qry = new SqlFieldsQuery((id % 2) == 0 ? sqlAsc : sqlDesc);
 
+                        if (timeoutMode == TimeoutMode.STMT)
+                            qry.setTimeout(TIMEOUT, TimeUnit.MILLISECONDS);
+
                         IgniteCache<Object, Object> cache0 = node.cache(DEFAULT_CACHE_NAME);
 
                         cache0.query(qry).getAll();
@@ -561,6 +585,9 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
                         barrier.await();
 
                         qry = new SqlFieldsQuery((id % 2) == 0 ? sqlDesc : sqlAsc);
+
+                        if (timeoutMode == TimeoutMode.STMT)
+                            qry.setTimeout(TIMEOUT, TimeUnit.MILLISECONDS);
 
                         cache0.query(qry).getAll();
 
@@ -577,8 +604,9 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
 
         assertNotNull(ex0);
 
-        if (!X.hasCause(ex0, IgniteTxTimeoutCheckedException.class))
+        assertThrowsWithCause(() -> {
             throw ex0;
+        }, IgniteTxTimeoutCheckedException.class);
     }
 
     /**

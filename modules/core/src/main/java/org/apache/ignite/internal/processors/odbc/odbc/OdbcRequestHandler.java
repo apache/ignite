@@ -374,18 +374,23 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             Collection<OdbcColumnMeta> fieldsMeta;
 
-            if (!results.hasUnfetchedRows()) {
-                results.closeAll();
+            OdbcResultSet set = results.currentResultSet();
 
+            if (set == null)
                 fieldsMeta = new ArrayList<>();
-            } else {
-                qryResults.put(qryId, results);
-
+            else {
                 fieldsMeta = results.currentResultSet().fieldsMeta();
 
-                for (OdbcColumnMeta meta : fieldsMeta)
-                    log.warning("Meta - " + meta.columnName + ", " + meta.precision + ", " + meta.scale);
+                if (log.isDebugEnabled()) {
+                    for (OdbcColumnMeta meta : fieldsMeta)
+                        log.debug("Meta - " + meta.toString());
+                }
             }
+
+            if (!results.hasUnfetchedRows())
+                results.closeAll();
+            else
+                qryResults.put(qryId, results);
 
             OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, fieldsMeta, results.rowsAffected());
 
@@ -429,10 +434,10 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             List<FieldsQueryCursor<List<?>>> qryCurs =
                 ctx.query().querySqlFields(null, qry, cliCtx, true, true);
 
-            List<Long> rowsAffected = new ArrayList<>(req.arguments().length);
+            long[] rowsAffected = new long[req.arguments().length];
 
-            for (FieldsQueryCursor<List<?>> qryCur : qryCurs)
-                rowsAffected.add(OdbcUtils.rowsAffected(qryCur));
+            for (int i = 0; i < qryCurs.size(); ++i)
+                rowsAffected[i] = OdbcUtils.rowsAffected(qryCurs.get(i));
 
             OdbcQueryExecuteBatchResult res = new OdbcQueryExecuteBatchResult(rowsAffected);
 
@@ -884,7 +889,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
         extractBatchError(e, rowsAffected, err);
 
-        OdbcQueryExecuteBatchResult res = new OdbcQueryExecuteBatchResult(rowsAffected, -1, err.get1(), err.get2());
+        OdbcQueryExecuteBatchResult res = new OdbcQueryExecuteBatchResult(
+            U.toLongArray(rowsAffected), -1, err.get1(), err.get2());
 
         return new OdbcResponse(res);
     }
