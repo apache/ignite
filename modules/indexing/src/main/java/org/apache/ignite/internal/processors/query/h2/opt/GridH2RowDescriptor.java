@@ -223,13 +223,13 @@ public class GridH2RowDescriptor {
                 UUID uuid = (UUID)obj;
                 return ValueUuid.get(uuid.getMostSignificantBits(), uuid.getLeastSignificantBits());
             case Value.DATE:
-                if (LocalDateTimeUtils.isLocalDate(obj.getClass()))
+                if (LocalDateTimeUtils.LOCAL_DATE == obj.getClass())
                     return LocalDateTimeUtils.localDateToDateValue(obj);
 
                 return ValueDate.get((Date)obj);
 
             case Value.TIME:
-                if (LocalDateTimeUtils.isLocalTime(obj.getClass()))
+                if (LocalDateTimeUtils.LOCAL_TIME == obj.getClass())
                     return LocalDateTimeUtils.localTimeToTimeValue(obj);
 
                 return ValueTime.get((Time)obj);
@@ -238,7 +238,7 @@ public class GridH2RowDescriptor {
                 if (obj instanceof java.util.Date && !(obj instanceof Timestamp))
                     obj = new Timestamp(((java.util.Date)obj).getTime());
 
-                if (LocalDateTimeUtils.isLocalDateTime(obj.getClass()))
+                if (LocalDateTimeUtils.LOCAL_DATE_TIME == obj.getClass())
                     return LocalDateTimeUtils.localDateTimeToValue(obj);
 
                 return ValueTimestamp.get((Timestamp)obj);
