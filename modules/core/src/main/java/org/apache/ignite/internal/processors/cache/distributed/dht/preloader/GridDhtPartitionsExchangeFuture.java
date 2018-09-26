@@ -834,7 +834,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.wal().cleanupWalDirectories();
 
             // Rare case when localNode joined to baseline topology with different consistentId.
-            cctx.database().restoreBinaryMemory();
+            cctx.database().restoreBinaryMemory(Collections.emptySet());
         }
 
         cctx.activate();

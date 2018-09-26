@@ -521,8 +521,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         startGrids(2);
 
-        awaitPartitionMapExchange();
-
         // Preprare Ignite instance configuration with additional Discovery checks.
         final String ig2Name = getTestIgniteInstanceName(2);
 

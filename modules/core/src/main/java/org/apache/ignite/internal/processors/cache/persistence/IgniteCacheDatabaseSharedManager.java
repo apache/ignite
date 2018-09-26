@@ -650,10 +650,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @param cacheGrps Cache groups to restore.
      * @return Last seen WAL pointer during binary memory recovery.
      * @throws IgniteCheckedException If failed.
      */
-    public WALPointer restoreBinaryMemory() throws IgniteCheckedException {
+    public WALPointer restoreBinaryMemory(Set<Integer> cacheGrps) throws IgniteCheckedException {
         return null;
     }
 

@@ -633,7 +633,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             checkpointReadLock();
 
             try {
-                restoreMemory(status, true, storePageMem);
+                restoreMemory(status, true, storePageMem, Collections.emptySet());
 
                 metaStorage = new MetaStorage(cctx, regCfg, memMetrics, true);
 
@@ -849,7 +849,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public WALPointer restoreBinaryMemory() throws IgniteCheckedException {
+    @Override public WALPointer restoreBinaryMemory(Set<Integer> cacheGrps) throws IgniteCheckedException {
         assert !cctx.kernalContext().clientNode();
 
         checkpointReadLock();
@@ -866,7 +866,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             // This method should return a pointer to the last valid record in the WAL.
             WALPointer restore = restoreMemory(status,
                 false,
-                (PageMemoryEx)dataRegionMap.get(METASTORE_DATA_REGION_NAME).pageMemory());
+                (PageMemoryEx)dataRegionMap.get(METASTORE_DATA_REGION_NAME).pageMemory(),
+                cacheGrps);
 
             if (restore == null && !status.endPtr.equals(CheckpointStatus.NULL_PTR)) {
                 throw new StorageException("Restore wal pointer = " + restore + ", while status.endPtr = " +
@@ -1973,12 +1974,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         initAndStartRegions(cctx.kernalContext().config().getDataStorageConfiguration());
 
         // Only presistence caches to start.
-        for (DynamicCacheDescriptor desc : cctx.cache().cacheDescriptors().values()) {
-            if (CU.isPersistentCache(desc.cacheConfiguration(), cctx.gridConfig().getDataStorageConfiguration()))
-                storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
-        }
+        Collection<DynamicCacheDescriptor> cacheDescs = cctx.cache().cacheDescriptors().values().stream()
+            .filter(desc -> CU.isPersistentCache(desc.cacheConfiguration(),
+                cctx.gridConfig().getDataStorageConfiguration()))
+            .collect(Collectors.toList());
 
-        WALPointer restoredPtr = restoreBinaryMemory();
+        for (DynamicCacheDescriptor desc : cacheDescs)
+                storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
+
+        Set<Integer> cacheGrps = cacheDescs.stream()
+            .map(desc -> desc.groupDescriptor().groupId())
+            .collect(Collectors.toSet());
+
+        WALPointer restoredPtr = restoreBinaryMemory(cacheGrps);
 
         if (restoredPtr != null)
             U.log(log, "Binary memory state restored at node startup [restoredPtr=" + restoredPtr + ']');
@@ -1988,13 +1996,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param status Checkpoint status.
      * @param metastoreOnly If {@code True} restores Metastorage only.
      * @param storePageMem Metastore page memory.
+     * @param cacheGrps Cache groups to restore.
      * @throws IgniteCheckedException If failed.
      * @throws StorageException In case I/O error occurred during operations with storage.
      */
     @Nullable private WALPointer restoreMemory(
         CheckpointStatus status,
         boolean metastoreOnly,
-        PageMemoryEx storePageMem
+        PageMemoryEx storePageMem,
+        Set<Integer> cacheGrps
     ) throws IgniteCheckedException {
         assert !metastoreOnly || storePageMem != null;
 
@@ -2019,8 +2029,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         RestoreBinaryState restoreBinaryState = new RestoreBinaryState(status, lastArchivedSegment, log);
 
-        Collection<Integer> ignoreGrps = metastoreOnly ? Collections.emptySet() :
-            F.concat(false, initiallyGlobalWalDisabledGrps, initiallyLocalWalDisabledGrps);
+        Collection<Integer> restoreGrps = metastoreOnly ? Collections.emptyList() :
+            cacheGrps.stream()
+                .filter(g -> !initiallyGlobalWalDisabledGrps.contains(g) || !initiallyLocalWalDisabledGrps.contains(g))
+                .collect(Collectors.toList());
 
         int applied = 0;
 
@@ -2043,7 +2055,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             if (metastoreOnly && grpId != METASTORAGE_CACHE_ID)
                                 continue;
 
-                            if (!ignoreGrps.contains(grpId)) {
+                            if (restoreGrps.contains(grpId)) {
                                 long pageId = pageRec.fullPageId().pageId();
 
                                 PageMemoryEx pageMem = grpId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(grpId);
@@ -2079,7 +2091,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             if (metastoreOnly && grpId != METASTORAGE_CACHE_ID)
                                 continue;
 
-                            if (ignoreGrps.contains(grpId))
+                            if (!restoreGrps.contains(grpId))
                                 continue;
 
                             int partId = metaStateRecord.partitionId();
@@ -2103,7 +2115,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             if (metastoreOnly && grpId != METASTORAGE_CACHE_ID)
                                 continue;
 
-                            if (ignoreGrps.contains(grpId))
+                            if (!restoreGrps.contains(grpId))
                                 continue;
 
                             PageMemoryEx pageMem = grpId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(grpId);
@@ -2124,7 +2136,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             if (metastoreOnly && grpId != METASTORAGE_CACHE_ID)
                                 continue;
 
-                            if (!ignoreGrps.contains(grpId)) {
+                            if (restoreGrps.contains(grpId)) {
                                 long pageId = r.pageId();
 
                                 PageMemoryEx pageMem = grpId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(grpId);
