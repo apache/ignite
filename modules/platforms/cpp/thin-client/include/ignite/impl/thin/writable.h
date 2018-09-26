@@ -91,6 +91,57 @@ namespace ignite
                 /** Value. */
                 const ValueType& value;
             };
+
+            /**
+             * Implementation of the Writable class for a sequence.
+             */
+            template<typename I>
+            class WritableSequenceImpl : public Writable
+            {
+            public:
+                /** Iterator type. */
+                typedef I IteratorType;
+
+                /**
+                 * Constructor.
+                 *
+                 * @param begin Begin of the sequence.
+                 * @param end Sequence end.
+                 */
+                WritableSequenceImpl(IteratorType begin, IteratorType end) :
+                    begin(begin),
+                    end(end)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~WritableSequenceImpl()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write sequence using writer.
+                 *
+                 * @param writer Writer to use.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer) const
+                {
+                    writer.WriteCollection(ignite::binary::CollectionType::HASH_SET);
+                    for (IteratorType it = begin; it != end; ++it)
+                        writer.WriteObject(*it);
+                }
+
+            private:
+                /** Sequence begin. */
+                IteratorType begin;
+
+                /** Sequence end. */
+                IteratorType end;
+            };
         }
     }
 }
