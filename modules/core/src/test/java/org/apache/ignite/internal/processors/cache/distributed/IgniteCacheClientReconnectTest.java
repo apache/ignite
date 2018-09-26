@@ -17,14 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -34,12 +28,17 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -161,35 +160,8 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed
      */
-    public void testClientInForceServerModeStopsOnExchangeHistoryExhaustion() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, "1");
-
-        try {
-            startGrids(SRV_CNT);
-
-            client = true;
-
-            forceServerMode = true;
-
-            int clientNodes = 10;
-
-            try {
-                startGridsMultiThreaded(SRV_CNT, clientNodes);
-            }
-            catch (IgniteCheckedException e) {
-                //Ignored: it is expected to get exception here
-            }
-
-            awaitPartitionMapExchange();
-
-            int topSize = G.allGrids().size();
-
-            assertTrue("Actual size: " + topSize, topSize < SRV_CNT + clientNodes);
-
-        }
-        finally {
-            System.clearProperty(IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE);
-        }
+    public void testClientInForceServerModeStopsOnExchangeHistoryExhaustion() {
+        fail("https://ggsystems.atlassian.net/browse/IGN-12070");
     }
 
     /**
