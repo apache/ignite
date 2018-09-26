@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
+
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -32,6 +35,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
+
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
@@ -43,6 +47,7 @@ import javax.cache.integration.CompletionListener;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
@@ -74,9 +79,9 @@ import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryAdapter;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -348,10 +353,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public Lock lockAll(final Collection<? extends K> keys) {
-        //TODO IGNITE-7764
-        MvccUtils.verifyMvccOperationSupport(ctx, "Lock");
-
-        return new CacheLockImpl<>(ctx.gate(), delegate, ctx.operationContextPerCall(), keys);
+        return new CacheLockImpl<>(ctx.gate(), delegate, new CacheOperationContext(), keys);
     }
 
     /** {@inheritDoc} */
@@ -379,8 +381,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         IgniteBiPredicate<K, V> p = scanQry.getFilter();
 
-        final CacheQuery<R> qry = ctx.queries().createScanQuery(
-            p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal());
+        final CacheQuery<R> qry = ctx.queries().createScanQuery(p, transformer, scanQry.getPartition(), isKeepBinary);
 
         if (scanQry.getPageSize() > 0)
             qry.pageSize(scanQry.getPageSize());
@@ -417,9 +418,13 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         if (filter instanceof TextQuery) {
             TextQuery p = (TextQuery)filter;
-
-            qry = ctx.queries().createFullTextQuery(p.getType(), p.getText(), isKeepBinary);
-
+            //modify@byron
+            //-qry = ctx.queries().createFullTextQuery(p.getType(), p.getText(), isKeepBinary);
+            qry = ctx.queries().createFullTextQuery(p.getType(), p.getText(), ((TextQuery) filter).getFilter(), isKeepBinary);            
+            if (p.getPageSize() > 0)
+                qry.pageSize(p.getPageSize());
+            
+            //end@
             if (grp != null)
                 qry.projection(grp);
 
@@ -1450,7 +1455,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             @Override public T applyx(IgniteInternalFuture<EntryProcessorResult<T>> fut1)
                 throws IgniteCheckedException {
                 try {
-                    return fut1.get().get();
+                    EntryProcessorResult<T> res = fut1.get();
+
+                    return res != null ? res.get() : null;
                 }
                 catch (RuntimeException e) {
                     throw new GridClosureException(e);
@@ -1714,11 +1721,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         throw new UnsupportedOperationException();
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteCache<K, V> withAllowAtomicOpsInTx() {
-        throw new UnsupportedOperationException();
-    }
-
     /**
      * Method converts exception to IgniteCacheRestartingException in case of cache restarting
      * or to CacheException in other cases.
@@ -1799,16 +1801,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /** {@inheritDoc} */
-    @Override public void clearStatistics() {
-        try {
-            ctx.kernalContext().cache().clearStatistics(Collections.singleton(getName()));
-        }
-        catch (IgniteCheckedException e) {
-            throw cacheException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(ctx);
 
@@ -1824,7 +1816,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> rebalance() {
+    @Override public IgniteFuture<?> rebalance() {
         return new IgniteFutureImpl<>(ctx.preloader().forceRebalance());
     }
 
