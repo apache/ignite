@@ -52,6 +52,7 @@ public class ZookeeperClient implements Watcher {
     private static final int MAX_RETRY_COUNT =
         IgniteSystemProperties.getInteger("IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT", 10);
 
+    /** */
     private static final boolean PINGER_ENABLED =
         IgniteSystemProperties.getBoolean("IGNITE_ZOOKEEPER_DISCOVERY_PINGER_ENABLED", false);
 
