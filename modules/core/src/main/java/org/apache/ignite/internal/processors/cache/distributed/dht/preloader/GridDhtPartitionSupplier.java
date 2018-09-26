@@ -592,7 +592,7 @@ class GridDhtPartitionSupplier {
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return S.toString(SupplyContext.class, this);
         }
     }

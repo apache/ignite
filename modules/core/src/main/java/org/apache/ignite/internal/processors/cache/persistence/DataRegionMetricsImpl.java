@@ -172,7 +172,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
         long totalAllocated = getPageSize() * totalAllocatedPages.longValue();
 
-        return (float) (totalAllocated - freeSpace) / totalAllocated;
+        return totalAllocated != 0 ?
+            (float) (totalAllocated - freeSpace) / totalAllocated
+            : 0f;
     }
 
     /** {@inheritDoc} */

@@ -88,7 +88,7 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
         Ignite g1 = grid(1);
         Ignite g2 = grid(2);
 
-        assert caches(g1).size() == 0;
+        assert caches(g1).isEmpty();
         assert F.first(caches(g2)).getCacheMode() == PARTITIONED;
 
         awaitPartitionMapExchange();

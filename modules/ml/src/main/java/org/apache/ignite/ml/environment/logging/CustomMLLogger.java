@@ -27,29 +27,29 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  */
 public class CustomMLLogger implements MLLogger {
     /** Ignite logger instance. */
-    private final IgniteLogger logger;
+    private final IgniteLogger log;
 
     /**
      * Creates an instance of CustomMLLogger.
      *
-     * @param logger Basic Logger.
+     * @param log Basic Logger.
      */
-    private CustomMLLogger(IgniteLogger logger) {
-        this.logger = logger;
+    private CustomMLLogger(IgniteLogger log) {
+        this.log = log;
     }
 
     /**
      * Returns factory for OnIgniteLogger instantiating.
      *
-     * @param rootLogger Root logger.
+     * @param rootLog Root logger.
      */
-    public static Factory factory(IgniteLogger rootLogger) {
-        return new Factory(rootLogger);
+    public static Factory factory(IgniteLogger rootLog) {
+        return new Factory(rootLog);
     }
 
     /** {@inheritDoc} */
     @Override public Vector log(Vector vector) {
-        Tracer.showAscii(vector, logger);
+        Tracer.showAscii(vector, log);
         return vector;
     }
 
@@ -73,10 +73,10 @@ public class CustomMLLogger implements MLLogger {
     private void log(VerboseLevel verboseLevel, String line) {
         switch (verboseLevel) {
             case LOW:
-                logger.info(line);
+                log.info(line);
                 break;
             case HIGH:
-                logger.debug(line);
+                log.debug(line);
                 break;
         }
     }
@@ -86,20 +86,20 @@ public class CustomMLLogger implements MLLogger {
      */
     private static class Factory implements MLLogger.Factory {
         /** Root logger. */
-        private IgniteLogger rootLogger;
+        private IgniteLogger rootLog;
 
         /**
          * Creates an instance of factory.
          *
-         * @param rootLogger Root logger.
+         * @param rootLog Root logger.
          */
-        public Factory(IgniteLogger rootLogger) {
-            this.rootLogger = rootLogger;
+        public Factory(IgniteLogger rootLog) {
+            this.rootLog = rootLog;
         }
 
         /** {@inheritDoc} */
         @Override public <T> MLLogger create(Class<T> targetCls) {
-            return new CustomMLLogger(rootLogger.getLogger(targetCls));
+            return new CustomMLLogger(rootLog.getLogger(targetCls));
         }
     }
 }
