@@ -854,6 +854,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override public WALPointer restoreBinaryMemory(Set<Integer> cacheGrps) throws IgniteCheckedException {
         assert !cctx.kernalContext().clientNode();
 
+        long time = System.currentTimeMillis();
+
         checkpointReadLock();
 
         try {
