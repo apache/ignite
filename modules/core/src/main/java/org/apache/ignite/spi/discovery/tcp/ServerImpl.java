@@ -101,6 +101,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
@@ -109,6 +110,7 @@ import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
@@ -3768,8 +3770,17 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 err = spi.getSpiContext().validateNode(node);
 
-                if (err == null)
-                    err = spi.getSpiContext().validateNode(node, msg.gridDiscoveryData().unmarshalJoiningNodeData(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()), false, log));
+                if (err == null) {
+                    Marshaller marshaller = spi.marshaller();
+
+                    DiscoveryDataBag bag = msg
+                        .gridDiscoveryData()
+                        .unmarshalJoiningNodeData(marshaller, U.resolveClassLoader(spi.ignite().configuration()), false, log);
+
+                    err = spi.getSpiContext().validateNode(node, bag);
+
+                    msg.gridDiscoveryData().marshalJoiningNodeData(bag,marshaller,log);
+                }
 
                 if (err != null) {
                     final IgniteNodeValidationResult err0 = err;
@@ -7238,19 +7249,17 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * Initial state is {@link RingMessageSendState#STARTING_POINT}.<br>
-     * States could be switched:<br>
-     * {@link RingMessageSendState#STARTING_POINT} => {@link RingMessageSendState#FORWARD_PASS} when next node failed.<br>
-     * {@link RingMessageSendState#FORWARD_PASS} => {@link RingMessageSendState#FORWARD_PASS} when new next node failed.<br>
-     * {@link RingMessageSendState#FORWARD_PASS} => {@link RingMessageSendState#BACKWARD_PASS} when new next node has
-     * connection to it's previous node and forces local node to try it again.<br>
-     * {@link RingMessageSendState#BACKWARD_PASS} => {@link RingMessageSendState#BACKWARD_PASS} when previously tried node
-     * has connection to it's previous and forces local node to try it again.<br>
-     * {@link RingMessageSendState#BACKWARD_PASS} => {@link RingMessageSendState#STARTING_POINT} when local node came back
-     * to initial next node and no topology changes should be performed.<br>
-     * {@link RingMessageSendState#BACKWARD_PASS} => {@link RingMessageSendState#FAILED} when recovery timeout is over and
-     * all new next nodes have connections to their previous nodes. That means local node has connectivity
-     * issue and should be stopped.<br>
+     * Initial state is {@link RingMessageSendState#STARTING_POINT}.<br> States could be switched:<br> {@link
+     * RingMessageSendState#STARTING_POINT} => {@link RingMessageSendState#FORWARD_PASS} when next node failed.<br>
+     * {@link RingMessageSendState#FORWARD_PASS} => {@link RingMessageSendState#FORWARD_PASS} when new next node
+     * failed.<br> {@link RingMessageSendState#FORWARD_PASS} => {@link RingMessageSendState#BACKWARD_PASS} when new next
+     * node has connection to it's previous node and forces local node to try it again.<br> {@link
+     * RingMessageSendState#BACKWARD_PASS} => {@link RingMessageSendState#BACKWARD_PASS} when previously tried node has
+     * connection to it's previous and forces local node to try it again.<br> {@link RingMessageSendState#BACKWARD_PASS}
+     * => {@link RingMessageSendState#STARTING_POINT} when local node came back to initial next node and no topology
+     * changes should be performed.<br> {@link RingMessageSendState#BACKWARD_PASS} => {@link
+     * RingMessageSendState#FAILED} when recovery timeout is over and all new next nodes have connections to their
+     * previous nodes. That means local node has connectivity issue and should be stopped.<br>
      */
     private class CrossRingMessageSendState {
         /** */

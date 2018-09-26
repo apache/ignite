@@ -2577,7 +2577,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             StringBuilder errorMessage = new StringBuilder();
 
-            for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : nodeData.caches().values()) {
+            Set<String> cachesForRemove = new HashSet<>(nodeData.caches().size());
+
+            for (Map.Entry<String, CacheInfo> e : nodeData.caches().entrySet()) {
+                CacheInfo cacheInfo = e.getValue();
                 try {
                     byte[] secCtxBytes = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
 
@@ -2597,8 +2600,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 DynamicCacheDescriptor localDesc = cacheDescriptor(cacheInfo.cacheData().config().getName());
 
-                if (localDesc == null)
+                if (localDesc == null) {
+                    cachesForRemove.add(e.getKey());
+
                     continue;
+                }
 
                 QuerySchemaPatch schemaPatch = localDesc.makeSchemaPatch(cacheInfo.cacheData().queryEntities());
 
@@ -2619,6 +2625,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 return new IgniteNodeValidationResult(node.id(), msg, msg);
             }
+
+            for(String cacheName : cachesForRemove)
+                nodeData.caches().remove(cacheName);
         }
 
         return null;

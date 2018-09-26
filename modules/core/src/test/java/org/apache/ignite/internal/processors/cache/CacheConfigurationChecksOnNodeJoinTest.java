@@ -61,6 +61,31 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
         cleanPersistenceDir();
     }
 
+    public void testStartNodeAfterCacheStarted() throws Exception{
+        IgniteEx ignite0 = startGrid(0);
+        IgniteEx ignite1 = startGrid(1);
+
+        ignite1.cluster().active(true);
+
+        stopGrid(1);
+
+        CacheConfiguration<Long, Long> cacheCfg = new CacheConfiguration<Long, Long>(DEFAULT_CACHE_NAME).setBackups(1);
+
+        IgniteCache<Long, Long> cache0 = ignite0.getOrCreateCache(cacheCfg);
+
+        for (int i = 0; i < NUMBER_RECORDS; i++)
+            cache0.put(1L << i, 1L << i);
+
+        ignite1 = startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        IgniteCache<Long, Long> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
+
+         for (int i = 0; i < NUMBER_RECORDS; i++)
+            assertTrue(cache1.containsKey(1L << i));
+    }
+
     public void testStartNodeAfterCacheDestroy() throws Exception {
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
