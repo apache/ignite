@@ -1338,7 +1338,7 @@ public class GridSqlQuerySplitter {
                 prntModel.add(model);
             }
 
-            if (((GridSqlUnion)child).unionType() != SelectUnion.UNION_ALL)
+            if (((GridSqlUnion)child).unionType() != SelectUnion.UnionType.UNION_ALL)
                 model.unionAll = false;
 
             buildQueryModel(model, child, LEFT_CHILD, null);
