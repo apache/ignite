@@ -55,8 +55,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteHistoricalIterator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -94,9 +94,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 
 /**
  * Used when persistence enabled.
@@ -1181,6 +1181,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         @Override public byte newMvccTxState() {
             return 0; // TODO IGNITE-7384
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean isKeyAbsentBefore() {
+            return false;
+        }
     }
 
     /**
@@ -1588,23 +1593,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public long nextMvccUpdateCounter() {
+        @Override public long getAndIncrementUpdateCounter(long delta) {
             try {
                 CacheDataStore delegate0 = init0(true);
 
-                return delegate0 == null ? 0 : delegate0.nextMvccUpdateCounter();
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public long mvccUpdateCounter() {
-            try {
-                CacheDataStore delegate0 = init0(true);
-
-                return delegate0 == null ? 0 : delegate0.mvccUpdateCounter();
+                return delegate0 == null ? 0 : delegate0.getAndIncrementUpdateCounter(delta);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -1623,6 +1616,19 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                 if (delegate0 != null)
                     delegate0.updateCounter(val);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void updateCounter(long start, long delta) {
+            try {
+                CacheDataStore delegate0 = init0(false);
+
+                if (delegate0 != null)
+                    delegate0.updateCounter(start, delta);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

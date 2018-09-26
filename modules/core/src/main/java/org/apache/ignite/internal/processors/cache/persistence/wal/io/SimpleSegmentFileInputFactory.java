@@ -15,37 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
+package org.apache.ignite.internal.processors.cache.persistence.wal.io;
+
+import java.io.IOException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
 
 /**
- * Exception thrown whenever entry is created for invalid partition.
+ * Simple implementation of {@link SegmentFileInputFactory}.
  */
-public class GridDhtInvalidPartitionException extends RuntimeException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Partition. */
-    private final int part;
-
-    /**
-     * @param part Partition.
-     * @param msg Message.
-     */
-    public GridDhtInvalidPartitionException(int part, String msg) {
-        super(msg);
-
-        this.part = part;
-    }
-
-    /**
-     * @return Partition.
-     */
-    public int partition() {
-        return part;
-    }
+public class SimpleSegmentFileInputFactory implements SegmentFileInputFactory {
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return getClass() + " [part=" + part + ", msg=" + getMessage() + ']';
+    @Override public FileInput createFileInput(SegmentIO segmentIO,
+        ByteBufferExpander buf) throws IOException {
+        return new SimpleFileInput(segmentIO, buf);
     }
 }

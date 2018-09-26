@@ -42,8 +42,8 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccMarkUpdat
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateNewTxStateHintRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateTxStateHintRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteHistoricalIterator;
@@ -106,10 +106,12 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.INITIAL_VERSION;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_BIT_OFF;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_MASK;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compare;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compareNewVersion;
@@ -119,8 +121,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.state;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.unexpectedStateException;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager.EMPTY_CURSOR;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.MVCC_HINTS_BIT_OFF;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.MVCC_HINTS_MASK;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.NOOP;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.PUT;
 
@@ -1401,23 +1401,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         private final CacheDataTree dataTree;
 
         /** Update counter. */
-        protected final AtomicLong cntr = new AtomicLong();
-
-        /**
-         * Mvcc update counter. This counter is used for an mvcc-style entries updates where this counter is
-         * incremented on each entry write (which happens before commit), but main update counter is updated
-         * on commit phase only.
-         */
-        protected final AtomicLong mvccUpdCntr = new AtomicLong();
+        protected final PartitionUpdateCounter pCntr = new PartitionUpdateCounter(log);
 
         /** Partition size. */
         private final AtomicLong storageSize = new AtomicLong();
 
         /** */
         private final ConcurrentMap<Integer, AtomicLong> cacheSizes = new ConcurrentHashMap<>();
-
-        /** Initial update counter. */
-        protected long initCntr;
 
         /** Mvcc remove handler. */
         private final PageHandler<MvccVersion, Boolean> mvccUpdateMarker = new MvccMarkUpdatedHandler();
@@ -1514,35 +1504,37 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public long nextUpdateCounter() {
-            return cntr.incrementAndGet();
+            return pCntr.next();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long initialUpdateCounter() {
+            return pCntr.initial();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void updateInitialCounter(long cntr) {
+            pCntr.updateInitial(cntr);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getAndIncrementUpdateCounter(long delta) {
+            return pCntr.getAndAdd(delta);
         }
 
         /** {@inheritDoc} */
         @Override public long updateCounter() {
-            return cntr.get();
+            return pCntr.get();
         }
 
         /** {@inheritDoc} */
         @Override public void updateCounter(long val) {
-            while (true) {
-                long val0 = cntr.get();
-
-                if (val0 >= val)
-                    break;
-
-                if (cntr.compareAndSet(val0, val))
-                    break;
-            }
+            pCntr.update(val);
         }
 
         /** {@inheritDoc} */
-        @Override public long nextMvccUpdateCounter() {
-            return mvccUpdCntr.incrementAndGet();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long mvccUpdateCounter() {
-            return mvccUpdCntr.get();
+        @Override public void updateCounter(long start, long delta) {
+            pCntr.update(start, delta);
         }
 
         /** {@inheritDoc} */
@@ -2771,29 +2763,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public long initialUpdateCounter() {
-            return initCntr;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void updateInitialCounter(long cntr) {
-            if (updateCounter() < cntr)
-                updateCounter(cntr);
-
-            initCntr = cntr;
-        }
-
-        /** {@inheritDoc} */
         @Override public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner) {
             rowStore().setRowCacheCleaner(rowCacheCleaner);
         }
 
         /** {@inheritDoc} */
         @Override public void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes) {
-            initCntr = updCntr;
-            storageSize.set(size);
+            pCntr.init(updCntr);
 
-            cntr.set(updCntr);
+            storageSize.set(size);
 
             if (cacheSizes != null) {
                 for (Map.Entry<Integer, Long> e : cacheSizes.entrySet())
@@ -3143,13 +3121,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             long crd = iox.mvccCoordinator(pageAddr, offset);
             long cntr = iox.mvccCounter(pageAddr, offset);
             int opCntrAndHint = iox.mvccOperationCounter(pageAddr, offset);
-            int opCntr = opCntrAndHint & ~MVCC_HINTS_MASK;
+            int opCntr = opCntrAndHint & ~MVCC_OP_COUNTER_MASK;
             byte txState = (byte)(opCntrAndHint >>> MVCC_HINTS_BIT_OFF);
 
             long newCrd = iox.newMvccCoordinator(pageAddr, offset);
             long newCntr = iox.newMvccCounter(pageAddr, offset);
             int newOpCntrAndHint = iox.newMvccOperationCounter(pageAddr, offset);
-            int newOpCntr = newOpCntrAndHint & ~MVCC_HINTS_MASK;
+            int newOpCntr = newOpCntrAndHint & ~MVCC_OP_COUNTER_MASK;
             byte newTxState = (byte)(newOpCntrAndHint >>> MVCC_HINTS_BIT_OFF);
 
             assert crd == newRow.mvccCoordinatorVersion();

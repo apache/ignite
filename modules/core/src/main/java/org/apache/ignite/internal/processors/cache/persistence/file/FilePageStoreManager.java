@@ -18,22 +18,16 @@
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -543,19 +537,26 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         return new File(cacheWorkDir, String.format(PART_FILE_TEMPLATE, partId));
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean checkAndInitCacheWorkDir(CacheConfiguration cacheCfg) throws IgniteCheckedException {
+        return checkAndInitCacheWorkDir(cacheWorkDir(cacheCfg));
+    }
+
     /**
      * @param cacheWorkDir Cache work directory.
      */
     private boolean checkAndInitCacheWorkDir(File cacheWorkDir) throws IgniteCheckedException {
         boolean dirExisted = false;
 
-        if (!cacheWorkDir.exists()) {
-            boolean res = cacheWorkDir.mkdirs();
-
-            if (!res)
+        if (!Files.exists(cacheWorkDir.toPath())) {
+            try {
+                Files.createDirectory(cacheWorkDir.toPath());
+            }
+            catch (IOException e) {
                 throw new IgniteCheckedException("Failed to initialize cache working directory " +
                     "(failed to create, make sure the work folder has correct permissions): " +
-                    cacheWorkDir.getAbsolutePath());
+                    cacheWorkDir.getAbsolutePath(), e);
+            }
         }
         else {
             if (cacheWorkDir.isFile())

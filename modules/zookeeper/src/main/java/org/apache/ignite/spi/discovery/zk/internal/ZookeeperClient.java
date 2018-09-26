@@ -40,17 +40,18 @@ import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT;
+
 /**
  * Zookeeper Client.
  */
 public class ZookeeperClient implements Watcher {
     /** */
-    private static final long RETRY_TIMEOUT =
-        IgniteSystemProperties.getLong("IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT", 2000);
+    private static final int DFLT_RETRY_TIMEOUT = 2000;
 
     /** */
-    private static final int MAX_RETRY_COUNT =
-        IgniteSystemProperties.getInteger("IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT", 10);
+    private static final int DFLT_MAX_RETRY_COUNT = 10;
 
     /** */
     private final AtomicInteger retryCount = new AtomicInteger();
@@ -866,13 +867,16 @@ public class ZookeeperClient implements Watcher {
                 }
 
                 if (err == null) {
+                    long retryTimeout = IgniteSystemProperties.getLong(IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT,
+                        DFLT_RETRY_TIMEOUT);
+
                     U.warn(log, "ZooKeeper operation failed, will retry [err=" + e +
-                        ", retryTimeout=" + RETRY_TIMEOUT +
+                        ", retryTimeout=" + retryTimeout +
                         ", connLossTimeout=" + connLossTimeout +
                         ", path=" + ((KeeperException)e).getPath() +
                         ", remainingWaitTime=" + remainingTime + ']');
 
-                    stateMux.wait(RETRY_TIMEOUT);
+                    stateMux.wait(retryTimeout);
 
                     if (closing)
                         throw new ZookeeperClientFailedException("ZooKeeper client is closed.");
@@ -906,7 +910,10 @@ public class ZookeeperClient implements Watcher {
             code == KeeperException.Code.OPERATIONTIMEOUT.intValue();
 
         if (retryByErrorCode) {
-            if (MAX_RETRY_COUNT <= 0 || retryCount.incrementAndGet() < MAX_RETRY_COUNT)
+            int maxRetryCount = IgniteSystemProperties.getInteger(IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT,
+                DFLT_MAX_RETRY_COUNT);
+
+            if (maxRetryCount <= 0 || retryCount.incrementAndGet() < maxRetryCount)
                 return true;
             else
                 return false;

@@ -87,11 +87,11 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
     /**
      * Sets useIndex parameter and returns trainer instance.
      *
-     * @param useIndex Use index.
+     * @param useIdx Use index.
      * @return Decision tree trainer.
      */
-    public DecisionTreeClassificationTrainer withUseIndex(boolean useIndex) {
-        this.usingIdx = useIndex;
+    public DecisionTreeClassificationTrainer withUseIndex(boolean useIdx) {
+        this.usingIdx = useIdx;
         return this;
     }
 
