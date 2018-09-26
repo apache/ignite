@@ -267,10 +267,10 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
 
                     rs.next();
 
-                    rs.getLong(1);
+                    rs.getInt(1);
                 }
             }
-        }, "0700B", "Cannot convert to long");
+        }, "0700B", "Cannot convert to int");
     }
 
     /**
