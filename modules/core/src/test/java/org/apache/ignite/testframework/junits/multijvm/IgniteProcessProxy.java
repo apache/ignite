@@ -262,25 +262,11 @@ public class IgniteProcessProxy implements IgniteEx {
         for (String arg : U.jvmArgs()) {
             if (arg.startsWith("-Xmx") || arg.startsWith("-Xms") ||
                 arg.startsWith("-cp") || arg.startsWith("-classpath") ||
-                (marsh != null && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)))
+                (marsh != null && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)) ||
+                arg.startsWith("--add-opens") || arg.startsWith("--add-exports") || arg.startsWith("--add-modules") ||
+                arg.startsWith("--patch-module") || arg.startsWith("--add-reads"))
                 filteredJvmArgs.add(arg);
         }
-
-        filteredJvmArgs.add("-XX:+IgnoreUnrecognizedVMOptions");
-        filteredJvmArgs.add("--add-opens");
-        filteredJvmArgs.add("java.base/jdk.internal.loader=ALL-UNNAMED");
-        filteredJvmArgs.add("--add-exports");
-        filteredJvmArgs.add("java.base/jdk.internal.misc=ALL-UNNAMED");
-        filteredJvmArgs.add("--add-exports");
-        filteredJvmArgs.add("java.base/sun.nio.ch=ALL-UNNAMED");
-        filteredJvmArgs.add("--add-exports");
-        filteredJvmArgs.add("java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED");
-        filteredJvmArgs.add("--add-exports");
-        filteredJvmArgs.add("jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED");
-        filteredJvmArgs.add("--add-exports");
-        filteredJvmArgs.add("java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED");
-        filteredJvmArgs.add("--add-modules");
-        filteredJvmArgs.add("java.xml.bind");
 
         return filteredJvmArgs;
     }
