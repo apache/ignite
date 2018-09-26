@@ -669,60 +669,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         return store.pages();
     }
 
-    /** {@inheritDoc} */
-    public Map<String, StoredCacheData> readCacheConfigurations() throws IgniteCheckedException {
-        if (cctx.kernalContext().clientNode())
-            return Collections.emptyMap();
-
-        File[] files = storeWorkDir.listFiles();
-
-        if (files == null)
-            return Collections.emptyMap();
-
-        Map<String, StoredCacheData> ccfgs = new HashMap<>();
-
-        Arrays.sort(files);
-
-        for (File file : files) {
-            if (file.isDirectory()) {
-                File[] tmpFiles = file.listFiles(new FilenameFilter() {
-                    @Override public boolean accept(File dir, String name) {
-                        return name.endsWith(CACHE_DATA_TMP_FILENAME);
-                    }
-                });
-
-                if (tmpFiles != null) {
-                    for (File tmpFile: tmpFiles) {
-                        if (!tmpFile.delete())
-                            log.warning("Failed to delete temporary cache config file" +
-                                    "(make sure Ignite process has enough rights):" + file.getName());
-                    }
-                }
-
-                if (file.getName().startsWith(CACHE_DIR_PREFIX)) {
-                    File conf = new File(file, CACHE_DATA_FILENAME);
-
-                    if (conf.exists() && conf.length() > 0) {
-                        StoredCacheData cacheData = readCacheData(conf);
-
-                        String cacheName = cacheData.config().getName();
-
-                        if (!ccfgs.containsKey(cacheName))
-                            ccfgs.put(cacheName, cacheData);
-                        else {
-                            U.warn(log, "Cache with name=" + cacheName + " is already registered, skipping config file "
-                                    + file.getName());
-                        }
-                    }
-                }
-                else if (file.getName().startsWith(CACHE_GRP_DIR_PREFIX))
-                    readCacheGroupCaches(file, ccfgs);
-            }
-        }
-
-        return ccfgs;
-    }
-
     /**
      * @param grpDir Group directory.
      * @param ccfgs Cache configurations.
