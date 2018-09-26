@@ -1470,7 +1470,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Read stored caches configurations from metastorage.
+     * Read stored caches configurations from metastore.
      *
      * @return readed caches configurations.
      * @throws IgniteCheckedException if read failed.
