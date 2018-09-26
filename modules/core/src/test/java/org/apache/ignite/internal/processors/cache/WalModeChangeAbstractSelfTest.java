@@ -279,30 +279,38 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
      * @throws Exception If failed.
      */
     public void testDisablingProhibition() throws Exception {
-        IgniteEx ignite = grid(0);
+        forAllNodes(new IgniteInClosureX<Ignite>() {
+            @Override public void applyx(Ignite ig) throws IgniteCheckedException {
+                assert ig instanceof IgniteEx;
 
-        WalStateManager stateMgr = ignite.context().cache().context().walState();
+                IgniteEx ignite = (IgniteEx)ig;
 
-        assertFalse(stateMgr.prohibitWALDisabling());
+                createCache(ignite, cacheConfig(CACHE_NAME, PARTITIONED, TRANSACTIONAL));
 
-        stateMgr.prohibitWALDisabling(true);
-        assertTrue(stateMgr.prohibitWALDisabling());
+                WalStateManager stateMgr = ignite.context().cache().context().walState();
 
-        try {
-            walDisable(ignite, CACHE_NAME);
+                assertFalse(stateMgr.prohibitWALDisabling());
 
-            fail();
-        }
-        catch (IgniteException e) {
-            // No-op.
-        }
+                stateMgr.prohibitWALDisabling(true);
+                assertTrue(stateMgr.prohibitWALDisabling());
 
-        stateMgr.prohibitWALDisabling(false);
-        assertFalse(stateMgr.prohibitWALDisabling());
+                try {
+                    walDisable(ignite, CACHE_NAME);
 
-        createCache(ignite, cacheConfig(CACHE_NAME, PARTITIONED, TRANSACTIONAL));
+                    fail();
+                }
+                catch (Exception e) {
+                    // No-op.
+                }
 
-        assertWalDisable(ignite, CACHE_NAME, true);
-        assertWalEnable(ignite, CACHE_NAME, true);
+                stateMgr.prohibitWALDisabling(false);
+                assertFalse(stateMgr.prohibitWALDisabling());
+
+                createCache(ignite, cacheConfig(CACHE_NAME, PARTITIONED, TRANSACTIONAL));
+
+                assertWalDisable(ignite, CACHE_NAME, true);
+                assertWalEnable(ignite, CACHE_NAME, true);
+            }
+        });
     }
 }
