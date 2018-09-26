@@ -20,6 +20,8 @@ package org.apache.ignite.ml.naivebayes.gaussian;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.TestUtils;
+import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Assert;
@@ -28,7 +30,7 @@ import org.junit.Test;
 /**
  * Tests for {@link GaussianNaiveBayesTrainer}.
  */
-public class GaussianNaiveBayesTrainerTest {
+public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
 
@@ -49,6 +51,26 @@ public class GaussianNaiveBayesTrainerTest {
         singleLabeldata.put(0, new double[] {1.0, -1.0, LABEL_1});
         singleLabeldata.put(1, new double[] {-1.0, 2.0, LABEL_1});
         singleLabeldata.put(2, new double[] {6.0, 1.0, LABEL_1});
+    }
+
+    @Test
+    public void fit_LinearlySeparableData_retunsCorrectModel() {
+        Map<Integer, double[]> cacheMock = new HashMap<>();
+
+        for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
+            cacheMock.put(i, twoLinearlySeparableClasses[i]);
+
+        GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer();
+
+        GaussianNaiveBayesModel mdl = trainer.fit(
+            cacheMock,
+            parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+            (k, v) -> v[0]
+        );
+
+        TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(100, 10)), PRECISION);
+        TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(10, 100)), PRECISION);
     }
 
     @Test
