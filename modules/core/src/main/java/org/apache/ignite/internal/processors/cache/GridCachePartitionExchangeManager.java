@@ -882,7 +882,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         while (true) {
             GridDhtTopologyFuture cur = lastFinishedFut.get();
 
-            if (cur == null || fut.topologyVersion().compareTo(cur.topologyVersion()) > 0) {
+            AffinityTopologyVersion topVer = fut.topologyVersion();
+
+            if (cur == null || (topVer != null && topVer.compareTo(cur.topologyVersion()) > 0)) {
                 if (lastFinishedFut.compareAndSet(cur, fut))
                     break;
             }
