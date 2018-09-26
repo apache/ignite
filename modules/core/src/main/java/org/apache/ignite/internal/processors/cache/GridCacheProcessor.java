@@ -2628,32 +2628,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             for (String cacheName : cachesForRemove)
                 nodeData.caches().remove(cacheName);
-
-            addMissingCaches(nodeData);
         }
 
         return null;
-    }
-
-    /**
-     * Add missing caches to joining node.
-     *
-     * @param nodeData From joining node.
-     */
-    private void addMissingCaches(CacheJoinNodeDiscoveryData nodeData) {
-        for (Map.Entry<String, DynamicCacheDescriptor> e : cachesInfo.registeredCaches().entrySet()) {
-            if (!nodeData.caches().containsKey(e.getKey()) && e.getValue().cacheType() == CacheType.USER) {
-                DynamicCacheDescriptor d = e.getValue();
-
-                StoredCacheData cacheData = new StoredCacheData(d.cacheConfiguration());
-
-                cacheData.sql(d.sql());
-
-                CacheInfo cacheInfo = new CacheInfo(cacheData, CacheType.USER, d.sql(), 0, d.staticallyConfigured());
-
-                nodeData.caches().put(cacheData.config().getName(), cacheInfo);
-            }
-        }
     }
 
     /**
