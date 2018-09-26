@@ -400,7 +400,7 @@ public class GridCacheSharedContext<K, V> {
         kernalCtx.query().onCacheReconnect();
 
         if (!active)
-            affinity().removeAllCacheInfo();
+            affinity().clearGroupHoldersAndRegistry();
 
         exchMgr.onKernalStart(active, true);
     }
