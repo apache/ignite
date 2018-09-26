@@ -345,8 +345,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         else
             file = new File(cacheWorkDir, CACHE_DATA_FILENAME);
 
-        if (overwrite || !file.exists() || file.length() == 0) {
-            try {
+        Path filePath = file.toPath();
+
+        try {
+            if (overwrite || !Files.exists(filePath) || Files.size(filePath) == 0) {
                 File tmp = new File(file.getParent(), file.getName() + TMP_SUFFIX);
 
                 tmp.createNewFile();
@@ -361,9 +363,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
                 Files.move(tmp.toPath(), file.toPath());
             }
-            catch (IOException ex) {
-                throw new IgniteCheckedException("Failed to persist cache configuration: " + cacheData.config().getName(), ex);
-            }
+        }
+        catch (IOException ex) {
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
+
+            throw new IgniteCheckedException("Failed to persist cache configuration: " + cacheData.config().getName(), ex);
         }
     }
 
@@ -579,19 +583,26 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         return new File(cacheWorkDir, String.format(PART_FILE_TEMPLATE, partId));
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean checkAndInitCacheWorkDir(CacheConfiguration cacheCfg) throws IgniteCheckedException {
+        return checkAndInitCacheWorkDir(cacheWorkDir(cacheCfg));
+    }
+
     /**
      * @param cacheWorkDir Cache work directory.
      */
     private boolean checkAndInitCacheWorkDir(File cacheWorkDir) throws IgniteCheckedException {
         boolean dirExisted = false;
 
-        if (!cacheWorkDir.exists()) {
-            boolean res = cacheWorkDir.mkdirs();
-
-            if (!res)
+        if (!Files.exists(cacheWorkDir.toPath())) {
+            try {
+                Files.createDirectory(cacheWorkDir.toPath());
+            }
+            catch (IOException e) {
                 throw new IgniteCheckedException("Failed to initialize cache working directory " +
                     "(failed to create, make sure the work folder has correct permissions): " +
-                    cacheWorkDir.getAbsolutePath());
+                    cacheWorkDir.getAbsolutePath(), e);
+            }
         }
         else {
             if (cacheWorkDir.isFile())

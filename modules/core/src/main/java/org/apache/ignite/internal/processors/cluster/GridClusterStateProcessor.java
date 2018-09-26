@@ -1105,7 +1105,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                     cacheProc.stopCaches(true);
 
-                    sharedCtx.affinity().removeAllCacheInfo();
+                    sharedCtx.affinity().clearGroupHoldersAndRegistry();
 
                     if (!ctx.clientNode())
                         sharedCtx.deactivate();

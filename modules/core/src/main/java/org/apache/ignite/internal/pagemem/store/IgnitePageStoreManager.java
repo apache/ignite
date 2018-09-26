@@ -246,4 +246,14 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * Cleanup persistent space for all caches.
      */
     public void cleanupPersistentSpace() throws IgniteCheckedException;
+
+    /**
+     * Creates and initializes cache work directory retrieved from {@code cacheCfg}.
+     *
+     * @param cacheCfg Cache configuration.
+     * @return {@code True} if work directory already exists.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean checkAndInitCacheWorkDir(CacheConfiguration cacheCfg) throws IgniteCheckedException;
 }

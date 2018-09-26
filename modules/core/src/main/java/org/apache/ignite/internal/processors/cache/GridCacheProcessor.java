@@ -1872,29 +1872,32 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     }
 
     /**
+     * @param exchTopVer Local join exchange future version.
      * @param locJoinCtx Local join cache context.
-     * @param exchTopVer Current exchange version.
      * @throws IgniteCheckedException If failed.
      */
-    public void startCachesOnLocalJoin(
-        LocalJoinCachesContext locJoinCtx,
-        AffinityTopologyVersion exchTopVer
+    public IgniteInternalFuture<?> startCachesOnLocalJoin(
+        AffinityTopologyVersion exchTopVer,
+        LocalJoinCachesContext locJoinCtx
     ) throws IgniteCheckedException {
-        if (locJoinCtx != null) {
-            sharedCtx.affinity().initCachesOnLocalJoin(
-                locJoinCtx.cacheGroupDescriptors(), locJoinCtx.cacheDescriptors());
+        if (locJoinCtx == null)
+            return new GridFinishedFuture<>();
 
-            for (T2<DynamicCacheDescriptor, NearCacheConfiguration> t : locJoinCtx.caches()) {
-                DynamicCacheDescriptor desc = t.get1();
+        IgniteInternalFuture<?> res = sharedCtx.affinity().initCachesOnLocalJoin(
+            locJoinCtx.cacheGroupDescriptors(), locJoinCtx.cacheDescriptors());
 
-                prepareCacheStart(
-                    desc.cacheConfiguration(),
-                    desc,
-                    t.get2(),
-                    exchTopVer,
-                    false);
-            }
+        for (T2<DynamicCacheDescriptor, NearCacheConfiguration> t : locJoinCtx.caches()) {
+            DynamicCacheDescriptor desc = t.get1();
+
+            prepareCacheStart(
+                desc.cacheConfiguration(),
+                desc,
+                t.get2(),
+                exchTopVer,
+                false);
         }
+
+        return res;
     }
 
     /**
