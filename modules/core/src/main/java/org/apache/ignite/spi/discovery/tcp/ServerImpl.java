@@ -7249,17 +7249,19 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * Initial state is {@link RingMessageSendState#STARTING_POINT}.<br> States could be switched:<br> {@link
-     * RingMessageSendState#STARTING_POINT} => {@link RingMessageSendState#FORWARD_PASS} when next node failed.<br>
-     * {@link RingMessageSendState#FORWARD_PASS} => {@link RingMessageSendState#FORWARD_PASS} when new next node
-     * failed.<br> {@link RingMessageSendState#FORWARD_PASS} => {@link RingMessageSendState#BACKWARD_PASS} when new next
-     * node has connection to it's previous node and forces local node to try it again.<br> {@link
-     * RingMessageSendState#BACKWARD_PASS} => {@link RingMessageSendState#BACKWARD_PASS} when previously tried node has
-     * connection to it's previous and forces local node to try it again.<br> {@link RingMessageSendState#BACKWARD_PASS}
-     * => {@link RingMessageSendState#STARTING_POINT} when local node came back to initial next node and no topology
-     * changes should be performed.<br> {@link RingMessageSendState#BACKWARD_PASS} => {@link
-     * RingMessageSendState#FAILED} when recovery timeout is over and all new next nodes have connections to their
-     * previous nodes. That means local node has connectivity issue and should be stopped.<br>
+     * Initial state is {@link RingMessageSendState#STARTING_POINT}.<br>
+     * States could be switched:<br>
+     * {@link RingMessageSendState#STARTING_POINT} => {@link RingMessageSendState#FORWARD_PASS} when next node failed.<br>
+     * {@link RingMessageSendState#FORWARD_PASS} => {@link RingMessageSendState#FORWARD_PASS} when new next node failed.<br>
+     * {@link RingMessageSendState#FORWARD_PASS} => {@link RingMessageSendState#BACKWARD_PASS} when new next node has
+     * connection to it's previous node and forces local node to try it again.<br>
+     * {@link RingMessageSendState#BACKWARD_PASS} => {@link RingMessageSendState#BACKWARD_PASS} when previously tried node
+     * has connection to it's previous and forces local node to try it again.<br>
+     * {@link RingMessageSendState#BACKWARD_PASS} => {@link RingMessageSendState#STARTING_POINT} when local node came back
+     * to initial next node and no topology changes should be performed.<br>
+     * {@link RingMessageSendState#BACKWARD_PASS} => {@link RingMessageSendState#FAILED} when recovery timeout is over and
+     * all new next nodes have connections to their previous nodes. That means local node has connectivity
+     * issue and should be stopped.<br>
      */
     private class CrossRingMessageSendState {
         /** */
