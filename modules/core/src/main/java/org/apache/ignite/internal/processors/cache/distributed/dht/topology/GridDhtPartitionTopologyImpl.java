@@ -770,7 +770,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                             ", part=" + locPart + ']');
                                     }
                                 }
-                                elseif (log.isDebugEnabled())
+                                else if (log.isDebugEnabled())
                                         log.debug("Will not own partition (there are owners to rebalance from) " +
                                             "[grp=" + grp.cacheOrGroupName() +
                                             ", p=" + p + ", owners = " + owners + ']');
