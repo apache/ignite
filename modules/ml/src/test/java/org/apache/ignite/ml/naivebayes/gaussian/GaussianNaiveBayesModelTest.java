@@ -37,7 +37,7 @@ public class GaussianNaiveBayesModelTest {
             {3.5033E-2, 1.2292E2, 9.1667E-1},
             {9.7225E-2, 5.5833E2, 1.6667},
         };
-        Vector probabilities = new DenseVector(new double[] {.5, .5});
+        double[] probabilities = new double[] {.5, .5};
         GaussianNaiveBayesModel mdl = new GaussianNaiveBayesModel(means, variances, probabilities);
         Vector observation = new DenseVector(new double[] {6, 130, 8});
 

@@ -35,7 +35,7 @@ public class GaussianNaiveBayesModel implements Model<Vector, Integer>, Exportab
     /** Variances of features for all classes */
     private final double[][] variances;
     /** Prior probabilities of each class */
-    private final Vector classProbabilities;
+    private final double[] classProbabilities;
 
     /**
      * @param means means of features for all classes
@@ -43,7 +43,7 @@ public class GaussianNaiveBayesModel implements Model<Vector, Integer>, Exportab
      * @param classProbabilities probabilities for all classes
      */
     public GaussianNaiveBayesModel(double[][] means, double[][] variances,
-        Vector classProbabilities) {
+        double[] classProbabilities) {
         this.means = means;
         this.variances = variances;
         this.classProbabilities = classProbabilities;
@@ -56,11 +56,11 @@ public class GaussianNaiveBayesModel implements Model<Vector, Integer>, Exportab
 
     /** Returns a number of class to which the input belongs. */
     @Override public Integer apply(Vector vector) {
-        int k = classProbabilities.size();
+        int k = classProbabilities.length;
         double[] probabilites = new double[k];
 
         for (int i = 0; i < k; i++) {
-            double p = classProbabilities.get(i);
+            double p = classProbabilities[i];
             for (int j = 0; j < vector.size(); j++) {
                 double x = vector.get(j);
                 double g = gauss(x, means[i][j], variances[i][j]);
@@ -88,7 +88,7 @@ public class GaussianNaiveBayesModel implements Model<Vector, Integer>, Exportab
     }
 
     /** */
-    public Vector getClassProbabilities() {
+    public double[] getClassProbabilities() {
         return classProbabilities;
     }
 

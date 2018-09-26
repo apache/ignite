@@ -30,7 +30,6 @@ import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.util.MapUtil;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
@@ -41,6 +40,9 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
  * Trainer for the naive Bayes classification model.
  */
 public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<GaussianNaiveBayesModel> {
+
+    private double[] priorProbabilities;
+    private boolean equiprobableClasses;
 
     /**
      * Trains model based on the specified data.
@@ -118,13 +120,21 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                 ++lbl;
             }
 
-            return new GaussianNaiveBayesModel(means, variances, new DenseVector(classProbabilities));
+            return new GaussianNaiveBayesModel(means, variances, classProbabilities);
         }
         catch (Exception e) {
             throw new
                 RuntimeException(e);
         }
 
+    }
+
+    public void withEquiprobableClasses() {
+        equiprobableClasses = true;
+    }
+
+    public void setPriorProbabilities(double[] priorProbabilities) {
+        this.priorProbabilities = priorProbabilities;
     }
 
     /**
@@ -137,7 +147,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                 for (int i = 0; i < data.rowSize(); i++) {
                     LabeledVector row = data.getRow(i);
                     Vector features = row.features();
-                    Double label = (Double) row.label();
+                    Double label = (Double)row.label();
 
                     double[] toMeans;
 
