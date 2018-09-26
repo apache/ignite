@@ -37,7 +37,7 @@ public abstract class AbstractNativeBenchmark extends IgniteAbstractBenchmark {
     protected static final String CACHE_NAME = "SQL_PUBLIC_" + QueryFactory.UPLOAD_TABLE_NAME;
 
     /** Facade for creating sql queries. */
-    private QueryFactory queries;
+    protected QueryFactory queries;
 
     /**
      * Sets up benchmark: performs warmup on one cache and creates another for {@link #test(Map)} method.
