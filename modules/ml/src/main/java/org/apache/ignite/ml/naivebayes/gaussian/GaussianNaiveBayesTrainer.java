@@ -20,7 +20,6 @@ package org.apache.ignite.ml.naivebayes.gaussian;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -79,8 +78,8 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
         )) {
             MeanHelper mean = computeMeans(dataset);
 
-            List<?> sortedFeatures = new ArrayList<>(mean.featureCount.keySet());
-            sortedFeatures.sort((Comparator.comparing(o -> ((Double)o))));
+            List<Double> sortedFeatures = new ArrayList<>(mean.featureCount.keySet());
+            sortedFeatures.sort(Double::compareTo);
 
             int labelCount = sortedFeatures.size();
             int featureCount = mean.featureSum.get(sortedFeatures.get(0)).length;
@@ -90,10 +89,10 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
             double[] classProbabilities = new double[labelCount];
 
             long datasetSize = mean.featureCount.values().stream().mapToInt(i -> i).sum();
-            Map<Object, double[]> meansHolder = new HashMap<>();
+            Map<Double, double[]> meansHolder = new HashMap<>();
 
             int lbl = 0;
-            for (Object label : sortedFeatures) {
+            for (Double label : sortedFeatures) {
                 int count = mean.featureCount.get(label);
                 double[] tmp = mean.featureSum.get(label);
 
@@ -109,7 +108,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
             VarianceHelper variance = computeVariance(dataset, meansHolder);
 
             lbl = 0;
-            for (Object label : sortedFeatures) {
+            for (Double label : sortedFeatures) {
                 int count = mean.featureCount.get(label);
                 double[] tmp = variance.featureDiff.get(label);
 
@@ -138,7 +137,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                 for (int i = 0; i < data.rowSize(); i++) {
                     LabeledVector row = data.getRow(i);
                     Vector features = row.features();
-                    Object label = row.label();
+                    Double label = (Double) row.label();
 
                     double[] toMeans;
 
@@ -174,14 +173,14 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
      * @param meansHolder means of all featured for all labels.
      */
     private VarianceHelper computeVariance(Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset,
-        Map<Object, double[]> meansHolder) {
+        Map<Double, double[]> meansHolder) {
         return dataset.compute(
             data -> {
                 VarianceHelper res = new VarianceHelper(meansHolder);
                 for (int i = 0; i < data.rowSize(); i++) {
                     LabeledVector row = data.getRow(i);
                     Vector features = row.features();
-                    Object label = row.label();
+                    Double label = (Double)row.label();
 
                     double[] m = res.meansHolder.get(label);
 
@@ -214,9 +213,9 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
         /** Serial version uid. */
         private static final long serialVersionUID = 1L;
         /** Sum of all values for all features for each label */
-        ConcurrentHashMap<Object, double[]> featureSum = new ConcurrentHashMap<>();
+        ConcurrentHashMap<Double, double[]> featureSum = new ConcurrentHashMap<>();
         /** Rows count for each label */
-        ConcurrentHashMap<Object, Integer> featureCount = new ConcurrentHashMap<>();
+        ConcurrentHashMap<Double, Integer> featureCount = new ConcurrentHashMap<>();
 
         /** Merge current */
         MeanHelper merge(MeanHelper other) {
@@ -238,14 +237,14 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
         /** Serial version uid. */
         private static final long serialVersionUID = 1L;
         /** Means of each feature for each label */
-        final Map<Object, double[]> meansHolder;
+        final Map<Double, double[]> meansHolder;
         /** Sum of a squared diff if a feature value and the mean. */
-        ConcurrentHashMap<Object, double[]> featureDiff = new ConcurrentHashMap<>();
+        ConcurrentHashMap<Double, double[]> featureDiff = new ConcurrentHashMap<>();
 
         /**
          * @param meansHolder means of all featured for all labels.
          */
-        public VarianceHelper(Map<Object, double[]> meansHolder) {
+        public VarianceHelper(Map<Double, double[]> meansHolder) {
             this.meansHolder = meansHolder;
         }
 
