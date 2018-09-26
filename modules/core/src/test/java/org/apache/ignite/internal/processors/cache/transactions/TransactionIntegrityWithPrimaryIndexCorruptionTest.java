@@ -256,27 +256,27 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
     }
 
     /**
-     * Throws a test {@link RuntimeException} during tx commit from {@link BPlusTree} and checks after that data is
-     * consistent.
+     * Test transfer amount with extended error recording.
      *
      * @param colocatedAccount Colocated account.
-     * @param failOnPrimary Fail on primary.
-     * @param supplier Supplier.
+     * @param failOnPrimary {@code True} if fail on primary, else on backup.
+     * @param supplier Fail reason supplier.
+     * @throws Exception If failover predicate execution is failed.
      */
     private void doTestTransferAmount0(boolean colocatedAccount, boolean failOnPrimary, Supplier<Throwable> supplier) throws Exception {
-        ErrorTracker t = new ErrorTracker();
+        ErrorTracker errTracker = new ErrorTracker();
 
         doTestTransferAmount(
             new IndexCorruptionFailoverScenario(
                 (hnd, tree) -> hnd instanceof BPlusTree.Search,
-                failoverPredicate(failOnPrimary, supplier, t)),
+                failoverPredicate(failOnPrimary, supplier, errTracker)),
             colocatedAccount
         );
 
-        for (Throwable throwable : t.errors())
+        for (Throwable throwable : errTracker.errors())
             log.error("Recorded error", throwable);
 
-        if (!t.errors().isEmpty())
+        if (!errTracker.errors().isEmpty())
             fail("Test run has error");
     }
 
