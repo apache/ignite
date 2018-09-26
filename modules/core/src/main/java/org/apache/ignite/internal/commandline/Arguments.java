@@ -77,6 +77,33 @@ public class Arguments {
     /** Ping interval for grid client. See {@link GridClientConfiguration#pingInterval}.*/
     private long pingInterval;
 
+    /** */
+    private boolean sslEnable;
+
+    /** */
+    private String sslProtocol;
+
+    /** */
+    private String sslAlgorithm;
+
+    /** */
+    private String sslKeyStorePath;
+
+    /** */
+    private String sslKeyStoreType;
+
+    /** */
+    private char sslKeyStorePassword[];
+
+    /** */
+    private String sslTrustStorePath;
+
+    /** */
+    private String sslTrustStoreType;
+
+    /** */
+    private char sslTrustStorePassword[];
+
     /**
      * @param cmd Command.
      * @param host Host.
@@ -95,7 +122,10 @@ public class Arguments {
      */
     public Arguments(Command cmd, String host, String port, String user, String pwd, String baselineAct,
                      String baselineArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs, String walAct, String walArgs,
-                     Long pingTimeout, Long pingInterval, boolean autoConfirmation) {
+                     Long pingTimeout, Long pingInterval, boolean autoConfirmation,
+                     boolean sslEnable, String sslProtocol, String sslAlgorithm,
+                     String sslKeyStorePath, String sslKeyStoreType, char sslKeyStorePassword[],
+                     String sslTrustStorePath, String sslTrustStoreType, char sslTrustStorePassword[]) {
         this.cmd = cmd;
         this.host = host;
         this.port = port;
@@ -110,6 +140,15 @@ public class Arguments {
         this.pingTimeout = pingTimeout;
         this.pingInterval = pingInterval;
         this.autoConfirmation = autoConfirmation;
+        this.sslEnable = sslEnable;
+        this.sslProtocol = sslProtocol;
+        this.sslAlgorithm = sslAlgorithm;
+        this.sslKeyStorePath = sslKeyStorePath;
+        this.sslKeyStoreType = sslKeyStoreType;
+        this.sslKeyStorePassword = sslKeyStorePassword;
+        this.sslTrustStorePath = sslTrustStorePath;
+        this.sslTrustStoreType = sslTrustStoreType;
+        this.sslTrustStorePassword = sslTrustStorePassword;
     }
 
     /**
@@ -212,5 +251,50 @@ public class Arguments {
      */
     public boolean autoConfirmation() {
         return autoConfirmation;
+    }
+
+    /** */
+    public boolean isSslEnable() {
+        return sslEnable;
+    }
+
+    /** */
+    public String getSslProtocol() {
+        return sslProtocol;
+    }
+
+    /** */
+    public String getSslAlgorithm() {
+        return sslAlgorithm;
+    }
+
+    /** */
+    public String getSslKeyStorePath() {
+        return sslKeyStorePath;
+    }
+
+    /** */
+    public String getSslKeyStoreType() {
+        return sslKeyStoreType;
+    }
+
+    /** */
+    public char[] getSslKeyStorePassword() {
+        return sslKeyStorePassword;
+    }
+
+    /** */
+    public String getSslTrustStorePath() {
+        return sslTrustStorePath;
+    }
+
+    /** */
+    public String getSslTrustStoreType() {
+        return sslTrustStoreType;
+    }
+
+    /** */
+    public char[] getSslTrustStorePassword() {
+        return sslTrustStorePassword;
     }
 }
