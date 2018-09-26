@@ -2577,7 +2577,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             StringBuilder errorMessage = new StringBuilder();
 
-            Set<String> cachesForRemove = new HashSet<>(nodeData.caches().size());
+            Set<String> cachesForRmv = new HashSet<>(nodeData.caches().size());
 
             for (Map.Entry<String, CacheInfo> e : nodeData.caches().entrySet()) {
                 CacheInfo cacheInfo = e.getValue();
@@ -2601,7 +2601,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 DynamicCacheDescriptor localDesc = cacheDescriptor(cacheInfo.cacheData().config().getName());
 
                 if (localDesc == null) {
-                    cachesForRemove.add(e.getKey());
+                    cachesForRmv.add(e.getKey());
 
                     continue;
                 }
@@ -2626,7 +2626,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 return new IgniteNodeValidationResult(node.id(), msg, msg);
             }
 
-            for (String cacheName : cachesForRemove)
+            for (String cacheName : cachesForRmv)
                 nodeData.caches().remove(cacheName);
         }
 
