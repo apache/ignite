@@ -1469,14 +1469,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         return readStoredCacheConfigFut.get();
     }
 
+    /**
+     * Read stored caches configurations from metastorage.
+     *
+     * @return readed caches configurations.
+     * @throws IgniteCheckedException if read failed.
+     */
     private Map<String, StoredCacheData> readStoredCacheConfiguration0() throws IgniteCheckedException {
         Map<String, StoredCacheData> storedCaches = new HashMap<>();
 
-        Map<String, StoredCacheData> readCacheData = (Map<String, StoredCacheData>)metaStorage.readForPredicate(new IgnitePredicate<String>() {
-            @Override public boolean apply(String key) {
-                return key != null && key.startsWith(STORE_CACHE_PREFIX);
-            }
-        });
+        Map<String, StoredCacheData> readCacheData = (Map<String, StoredCacheData>)metaStorage.readForPredicate(
+            (IgnitePredicate<String>)key -> key != null && key.startsWith(STORE_CACHE_PREFIX)
+        );
 
         for (StoredCacheData cacheData : readCacheData.values())
             storedCaches.put(cacheData.config().getName(), cacheData);
@@ -1516,6 +1520,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
+    /**
+     * Creates metastore key for cache configuration.
+     *
+     * @param cacheConfig cache configuration.
+     * @return metastore key.
+     */
     private String getCacheConfigMetastoreKey(CacheConfiguration<?, ?> cacheConfig) {
         String cacheName = cacheConfig.getName();
         String cacheGroupName = cacheConfig.getGroupName() != null ?
@@ -2431,8 +2441,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Initializes not empty partitions and restores their state from page memory or WAL. Partition states presented in
-     * page memory may be overriden by states restored from WAL {@code partStates}.
+     * Initializes not empty partitions and restores their state from page memory or WAL.
+     * Partition states presented in page memory may be overriden by states restored from WAL {@code partStates}.
      *
      * @param partStates Partition states restored from WAL.
      * @param onlyForGroups If not {@code null} restore states only for specified cache groups.
@@ -2711,8 +2721,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Prepares checkpoint entry containing WAL pointer to checkpoint record. Writes into given {@code ptrBuf} WAL
-     * pointer content.
+     * Prepares checkpoint entry containing WAL pointer to checkpoint record.
+     * Writes into given {@code ptrBuf} WAL pointer content.
      *
      * @param entryBuf Buffer to fill
      * @param cpTs Checkpoint timestamp.
