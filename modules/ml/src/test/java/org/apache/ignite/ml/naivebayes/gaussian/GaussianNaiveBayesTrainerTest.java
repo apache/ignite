@@ -82,8 +82,8 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
             (k, v) -> v[2]
         );
 
-        Assert.assertEquals(model.getClassProbabilities().get(0), 3. / data.size(), PRECISION);
-        Assert.assertEquals(model.getClassProbabilities().get(1), 2. / data.size(), PRECISION);
+        Assert.assertEquals(model.getClassProbabilities()[0], 3. / data.size(), PRECISION);
+        Assert.assertEquals(model.getClassProbabilities()[1], 2. / data.size(), PRECISION);
     }
 
     @Test
