@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 
 /**
  * An {@link ExecutorService} that executes submitted tasks using pooled grid threads.
@@ -44,20 +45,54 @@ public class IgniteTaskTrackingThreadPoolExecutor extends IgniteThreadPoolExecut
     /** */
     private volatile AtomicReference<Throwable> err = new AtomicReference<>();
 
-    /** {@inheritDoc} */
+    /**
+     * Creates a new service with the given initial parameters.
+     *
+     * @param threadNamePrefix Will be added at the beginning of all created threads.
+     * @param igniteInstanceName Must be the name of the grid.
+     * @param corePoolSize The number of threads to keep in the pool, even if they are idle.
+     * @param maxPoolSize The maximum number of threads to allow in the pool.
+     * @param keepAliveTime When the number of threads is greater than the core, this is the maximum time
+     *      that excess idle threads will wait for new tasks before terminating.
+     * @param workQ The queue to use for holding tasks before they are executed. This queue will hold only
+     *      runnable tasks submitted by the {@link #execute(Runnable)} method.
+     */
     public IgniteTaskTrackingThreadPoolExecutor(String threadNamePrefix, String igniteInstanceName, int corePoolSize,
         int maxPoolSize, long keepAliveTime, BlockingQueue<Runnable> workQ) {
         super(threadNamePrefix, igniteInstanceName, corePoolSize, maxPoolSize, keepAliveTime, workQ);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Creates a new service with the given initial parameters.
+     *
+     * @param threadNamePrefix Will be added at the beginning of all created threads.
+     * @param igniteInstanceName Must be the name of the grid.
+     * @param corePoolSize The number of threads to keep in the pool, even if they are idle.
+     * @param maxPoolSize The maximum number of threads to allow in the pool.
+     * @param keepAliveTime When the number of threads is greater than the core, this is the maximum time
+     *      that excess idle threads will wait for new tasks before terminating.
+     * @param workQ The queue to use for holding tasks before they are executed. This queue will hold only
+     *      runnable tasks submitted by the {@link #execute(Runnable)} method.
+     * @param plc {@link GridIoPolicy} for thread pool.
+     * @param eHnd Uncaught exception handler for thread pool.
+     */
     public IgniteTaskTrackingThreadPoolExecutor(String threadNamePrefix, String igniteInstanceName, int corePoolSize,
         int maxPoolSize, long keepAliveTime, BlockingQueue<Runnable> workQ, byte plc,
         UncaughtExceptionHandler eHnd) {
         super(threadNamePrefix, igniteInstanceName, corePoolSize, maxPoolSize, keepAliveTime, workQ, plc, eHnd);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Creates a new service with the given initial parameters.
+     *
+     * @param corePoolSize The number of threads to keep in the pool, even if they are idle.
+     * @param maxPoolSize The maximum number of threads to allow in the pool.
+     * @param keepAliveTime When the number of threads is greater than the core, this is the maximum time
+     *      that excess idle threads will wait for new tasks before terminating.
+     * @param workQ The queue to use for holding tasks before they are executed. This queue will hold only the
+     *      runnable tasks submitted by the {@link #execute(Runnable)} method.
+     * @param threadFactory Thread factory.
+     */
     public IgniteTaskTrackingThreadPoolExecutor(int corePoolSize, int maxPoolSize, long keepAliveTime,
         BlockingQueue<Runnable> workQ, ThreadFactory threadFactory) {
         super(corePoolSize, maxPoolSize, keepAliveTime, workQ, threadFactory);
@@ -92,6 +127,7 @@ public class IgniteTaskTrackingThreadPoolExecutor extends IgniteThreadPoolExecut
     }
 
     /**
+     * Check error status.
      *
      * @return {@code True} if any task execution resulted in error.
      */
@@ -101,6 +137,7 @@ public class IgniteTaskTrackingThreadPoolExecutor extends IgniteThreadPoolExecut
     }
 
     /**
+     * Check done status.
      *
      * @return {@code True} when all enqueued task are completed.
      */
