@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPartitionPreloadTest;
 
 /**
  *
@@ -31,6 +32,8 @@ public class IgnitePdsTestSuite4 extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite 4");
 
         suite.addTestSuite(IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse.class);
+
+        suite.addTestSuite(IgnitePdsPartitionPreloadTest.class);
 
         return suite;
     }
