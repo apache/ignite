@@ -46,7 +46,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -1178,18 +1177,30 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         // To correctly rebalance when persistence is enabled, it is necessary to reserve history within exchange.
         partHistReserved = cctx.database().reserveHistoryForExchange();
 
-        boolean distributed = true;
+        // Skipping wait on local join is available when all cluster nodes have the same protocol.
+        boolean skipWaitOnLocalJoin = cctx.exchange().latch().canSkipJoiningNodes(initialVersion())
+            && localJoinExchange();
 
-        // Do not perform distributed partition release in case of cluster activation.
-        if (activateCluster())
-            distributed = false;
+        // Skip partition release if node has locally joined (it doesn't have any updates to be finished).
+        if (!skipWaitOnLocalJoin) {
+            boolean distributed = true;
 
-        // On first phase we wait for finishing all local tx updates, atomic updates and lock releases on all nodes.
-        waitPartitionRelease(distributed, true);
+            // Do not perform distributed partition release in case of cluster activation.
+            if (activateCluster())
+                distributed = false;
 
-        // Second phase is needed to wait for finishing all tx updates from primary to backup nodes remaining after first phase.
-        if (distributed)
-            waitPartitionRelease(false, false);
+            // On first phase we wait for finishing all local tx updates, atomic updates and lock releases on all nodes.
+            waitPartitionRelease(distributed, true);
+
+            // Second phase is needed to wait for finishing all tx updates from primary to backup nodes remaining after first phase.
+            if (distributed)
+                waitPartitionRelease(false, false);
+        }
+        else {
+            if (log.isInfoEnabled())
+                log.info("Skipped waiting for partitions release future (local node is joining) " +
+                    "[topVer=" + initialVersion() + "]");
+        }
 
         boolean topChanged = firstDiscoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT || affChangeMsg != null;
 
@@ -1375,9 +1386,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             String futInfo = RELEASE_FUTURE_DUMP_THRESHOLD > 0 && waitTime > RELEASE_FUTURE_DUMP_THRESHOLD ?
                 partReleaseFut.toString() : "NA";
 
+            String mode = distributed ? "DISTRIBUTED" : "LOCAL";
+
             if (log.isInfoEnabled())
                 log.info("Finished waiting for partition release future [topVer=" + exchangeId().topologyVersion() +
-                    ", waitTime=" + (waitEnd - waitStart) + "ms, futInfo=" + futInfo + "]");
+                    ", waitTime=" + (waitEnd - waitStart) + "ms, futInfo=" + futInfo + ", mode=" + mode + "]");
         }
 
         IgniteInternalFuture<?> locksFut = cctx.mvcc().finishLocks(exchId.topologyVersion());
@@ -1418,33 +1431,38 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
-        if (releaseLatch == null)
+        if (releaseLatch == null) {
+            assert !distributed : "Partitions release latch must be initialized in distributed mode.";
+
             return;
+        }
 
         releaseLatch.countDown();
 
-        if (!localJoinExchange()) {
-            try {
-                while (true) {
-                    try {
-                        releaseLatch.await(waitTimeout, TimeUnit.MILLISECONDS);
+        // For compatibility with old version where joining nodes are not waiting for latch.
+        if (!cctx.exchange().latch().canSkipJoiningNodes(initialVersion()))
+            return;
 
-                        if (log.isInfoEnabled())
-                            log.info("Finished waiting for partitions release latch: " + releaseLatch);
+        try {
+            while (true) {
+                try {
+                    releaseLatch.await(waitTimeout, TimeUnit.MILLISECONDS);
 
-                        break;
-                    }
-                    catch (IgniteFutureTimeoutCheckedException ignored) {
-                        U.warn(log, "Unable to await partitions release latch within timeout: " + releaseLatch);
+                    if (log.isInfoEnabled())
+                        log.info("Finished waiting for partitions release latch: " + releaseLatch);
 
-                        // Try to resend ack.
-                        releaseLatch.countDown();
-                    }
+                    break;
+                }
+                catch (IgniteFutureTimeoutCheckedException ignored) {
+                    U.warn(log, "Unable to await partitions release latch within timeout: " + releaseLatch);
+
+                    // Try to resend ack.
+                    releaseLatch.countDown();
                 }
             }
-            catch (IgniteCheckedException e) {
-                U.warn(log, "Stop waiting for partitions release latch: " + e.getMessage());
-            }
+        }
+        catch (IgniteCheckedException e) {
+            U.warn(log, "Stop waiting for partitions release latch: " + e.getMessage());
         }
     }
 
