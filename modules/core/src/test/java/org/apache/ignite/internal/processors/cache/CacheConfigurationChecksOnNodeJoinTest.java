@@ -16,9 +16,7 @@
  */
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -33,6 +31,7 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
     /** Number records in cache. */
     private static final int NUMBER_RECORDS = 30;
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -45,6 +44,7 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
         return cfg;
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -53,6 +53,7 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
         cleanPersistenceDir();
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
@@ -61,7 +62,12 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
         cleanPersistenceDir();
     }
 
-    public void testStartNodeAfterCacheStarted() throws Exception{
+    /**
+     * Checks, that lost node will get cache configuration updates (one cache was started) on startup.
+     *
+     * @throws Exception if failed.
+     */
+    public void testStartNodeAfterCacheStarted() throws Exception {
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
 
@@ -82,10 +88,15 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
 
         IgniteCache<Long, Long> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
-         for (int i = 0; i < NUMBER_RECORDS; i++)
+        for (int i = 0; i < NUMBER_RECORDS; i++)
             assertTrue(cache1.containsKey(1L << i));
     }
 
+    /**
+     * Checks, that lost node will get cache configuration updates (one cache was destroyed) on startup.
+     *
+     * @throws Exception if failed.
+     */
     public void testStartNodeAfterCacheDestroy() throws Exception {
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
