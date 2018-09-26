@@ -17,26 +17,6 @@
 
 package org.apache.ignite;
 
-import java.io.Serializable;
-import java.sql.Timestamp;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import javax.cache.Cache;
-import javax.cache.CacheException;
-import javax.cache.configuration.Configuration;
-import javax.cache.event.CacheEntryRemovedListener;
-import javax.cache.expiry.ExpiryPolicy;
-import javax.cache.integration.CacheLoader;
-import javax.cache.integration.CacheWriter;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
@@ -69,6 +49,27 @@ import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.Nullable;
+
+import javax.cache.Cache;
+import javax.cache.CacheException;
+import javax.cache.configuration.Configuration;
+import javax.cache.event.CacheEntryRemovedListener;
+import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.integration.CacheLoader;
+import javax.cache.integration.CacheWriter;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
+import java.io.Serializable;
+import java.sql.Timestamp;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 
 /**
  * Main entry point for all <b>Data Grid APIs.</b> You can get a named cache by calling {@link Ignite#cache(String)}
@@ -1504,7 +1505,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     /**
      * Gets a collection of lost partition IDs.
      *
-     * @return Lost paritions.
+     * @return Lost partitions.
      */
     public Collection<Integer> lostPartitions();
 
@@ -1514,4 +1515,51 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param enabled Statistics enabled flag.
      */
     public void enableStatistics(boolean enabled);
+
+    /**
+     * Efficiently preloads cache primary partition into page memory.
+     * <p>
+     * This is useful for fast iteration over cache partition data if persistence is enabled and the data is "cold".
+     * <p>
+     * Preload will reduce available amount of page memory for subsequent operations and may lead to earlier page
+     * replacement.
+     * <p>
+     * This method is irrelevant for in-memory caches. Calling this method on an in-memory cache will result in
+     * exception.
+     *
+     * @param partition Partition.
+     */
+    public void preloadPartition(int partition);
+
+    /**
+     * Efficiently preloads cache partition into page memory.
+     * <p>
+     * This is useful for fast iteration over cache partition data if persistence is enabled and the data is "cold".
+     * <p>
+     * Preload will reduce available amount of page memory for subsequent operations and may lead to earlier page
+     * replacement.
+     * <p>
+     * This method is irrelevant for in-memory caches. Calling this method on an in-memory cache will result in
+     * exception.
+     *
+     * @param partition Partition.
+     * @return A future representing pending completion of the partition preloading.
+     */
+    public IgniteFuture<Void> preloadPartitionAsync(int partition);
+
+    /**
+     * Efficiently preloads cache partition into page memory if it exists on the local node.
+     * <p>
+     * This is useful for fast iteration over cache partition data if persistence is enabled and the data is "cold".
+     * <p>
+     * Preload will reduce available amount of page memory for subsequent operations and may lead to earlier page
+     * replacement.
+     * <p>
+     * This method is irrelevant for in-memory caches. Calling this method on an in-memory cache will result in
+     * exception.
+     *
+     * @param partition Partition.
+     * @return {@code True} if partition was preloaded, {@code false} if it doesn't belong to local node.
+     */
+    public boolean localPreloadPartition(int partition);
 }
