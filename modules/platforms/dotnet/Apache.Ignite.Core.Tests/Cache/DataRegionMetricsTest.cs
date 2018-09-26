@@ -104,7 +104,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(0, metrics.EvictionRate);
             Assert.AreEqual(0, metrics.LargeEntriesPagesPercentage);
             Assert.AreEqual(0, metrics.PageFillFactor);
-            Assert.AreEqual(0, metrics.TotalAllocatedPages);
         }
 
         /// <summary>
