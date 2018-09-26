@@ -38,7 +38,6 @@ import java.util.Arrays;
 import java.util.GregorianCalendar;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -151,7 +150,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         o.floatVal = 1.0f;
         o.doubleVal = 1.0d;
         o.bigVal = new BigDecimal(1);
-        o.strVal = "1.0";
+        o.strVal = "1";
         o.arrVal = new byte[] {1};
         o.dateVal = new Date(1, 1, 1);
         o.timeVal = new Time(1, 1, 1);
@@ -548,27 +547,27 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
         while (rs.next()) {
             if (cnt == 0) {
-                assert "1.0".equals(rs.getString("strVal"));
+                assert "1".equals(rs.getString("strVal"));
 
-                assert rs.getBoolean(7);
-                assert rs.getByte(7) == 1;
-                assert rs.getShort(7) == 1;
-                assert rs.getInt(7) == 1;
-                assert rs.getLong(7) == 1;
-                assert rs.getDouble(7) == 1.0;
-                assert rs.getFloat(7) == 1.0f;
-                assert rs.getBigDecimal(7).equals(new BigDecimal(1));
-                assert rs.getString(7).equals("1.0");
+                assert rs.getBoolean(10);
+                assert rs.getByte(10) == 1;
+                assert rs.getShort(10) == 1;
+                assert rs.getInt(10) == 1;
+                assert rs.getLong(10) == 1;
+                assert rs.getDouble(10) == 1.0;
+                assert rs.getFloat(10) == 1.0f;
+                assert rs.getBigDecimal(10).equals(new BigDecimal("1"));
+                assert rs.getString(10).equals("1");
 
-                assert rs.getObject(7, Boolean.class);
-                assert rs.getObject(7, Byte.class) == 1;
-                assert rs.getObject(7, Short.class) == 1;
-                assert rs.getObject(7, Integer.class) == 1;
-                assert rs.getObject(7, Long.class) == 1;
-                assert rs.getObject(7, Float.class) == 1.f;
-                assert rs.getObject(7, Double.class) == 1;
-                assert rs.getObject(7, BigDecimal.class).equals(new BigDecimal(1));
-                assert rs.getObject(7, String.class).equals("1.0");
+                assert rs.getObject(10, Boolean.class);
+                assert rs.getObject(10, Byte.class) == 1;
+                assert rs.getObject(10, Short.class) == 1;
+                assert rs.getObject(10, Integer.class) == 1;
+                assert rs.getObject(10, Long.class) == 1;
+                assert rs.getObject(10, Float.class) == 1.f;
+                assert rs.getObject(10, Double.class) == 1;
+                assert rs.getObject(10, BigDecimal.class).equals(new BigDecimal(1));
+                assert rs.getObject(10, String.class).equals("1");
             }
 
             cnt++;
