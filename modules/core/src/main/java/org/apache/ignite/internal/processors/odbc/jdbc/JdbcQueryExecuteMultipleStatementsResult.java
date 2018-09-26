@@ -85,7 +85,7 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         super.writeBinary(writer, ver);
 
-        if (results != null && results.size() > 0) {
+        if (results != null && !results.isEmpty()) {
             writer.writeInt(results.size());
 
             for (JdbcResultInfo r : results)

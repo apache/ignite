@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.modal.modal--ignite.center(role='dialog')
+.modal.modal--ignite.theme--ignite.center(role='dialog')
     .modal-dialog
         .modal-content
             #errors-container.modal-header.header
@@ -25,25 +25,29 @@
                     | {{title}}
             .modal-body
                 div(ng-bind-html='message')
+
                 div(ng-hide='hasAgents')
-                    p &nbsp;
-                    div
-                        h4
-                            i.fa.fa-download.fa-cursor-default
-                            | &nbsp;How To Start Demo
-                        ul
-                            li
-                                a(ng-href='{{downloadAgentHref}}' target='_self') #[b Download]
-                                | &nbsp; and unzip ignite-web-agent archive
-                            li #[b Run] shell file ignite-web-agent.{sh|bat}
-                div(ng-show='hasAgents')
+                    h4
+                        i.fa.fa-download.fa-cursor-default
+                        | &nbsp;How To Start Demo
+                    ul
+                        li
+                            a(ng-href='{{downloadAgentHref}}' target='_self') #[b Download]
+                            | &nbsp; and unzip ignite-web-agent archive
+                        li #[b Run] shell file ignite-web-agent.{sh|bat}
+
+                div(ng-hide='!hasAgents')
                     h4
                         i.fa.fa-star-o.fa-cursor-default
                         | &nbsp;Start Demo
                     ul
                         li Web Agent is already started
                         li Close dialog and try Web Console
+
             .modal-footer
-                div
-                    a.btn-ignite.btn-ignite--link-success(ng-hide='hasAgents' ng-href='{{downloadAgentHref}}' target='_self') Download agent
-                    button.btn-ignite.btn-ignite--success(ng-class='hasAgents ? "btn-primary" : "btn-default"' ng-click='close()') Close
+                .ng-animate-disabled(ng-if='!hasAgents')
+                    button.btn-ignite.btn-ignite--link-success(ng-click='close()') Close
+                    a.btn-ignite.btn-ignite--success(ng-href='{{downloadAgentHref}}' target='_self') Download agent
+
+                .ng-animate-disabled(ng-if='hasAgents')
+                    button.btn-ignite.btn-ignite--success(ng-click='close()') Close

@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
@@ -31,14 +38,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-
-import javax.cache.CacheException;
-import java.sql.Connection;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.connect;
@@ -73,10 +72,10 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
 
         try (Connection c = connect(grid(0))) {
             execute(c, "create table person (id int primary key, firstName varchar, lastName varchar) " +
-                "with \"atomicity=transactional,cache_name=Person\"");
+                "with \"atomicity=transactional_snapshot,cache_name=Person\"");
 
             execute(c, "create table person_seg (id int primary key, firstName varchar, lastName varchar) " +
-                "with \"atomicity=transactional,cache_name=PersonSeg,template=segmented\"");
+                "with \"atomicity=transactional_snapshot,cache_name=PersonSeg,template=segmented\"");
 
             try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.PESSIMISTIC,
                 TransactionIsolation.REPEATABLE_READ)) {
@@ -102,22 +101,20 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
 
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testSelectForUpdateLocal() throws Exception {
         doTestSelectForUpdateLocal("Person", false);
     }
 
     /**
-     *
      * @throws Exception If failed.
      */
-    public void testSelectForUpdateOutsideTx() throws Exception {
+    public void testSelectForUpdateOutsideTxDistributed() throws Exception {
         doTestSelectForUpdateDistributed("Person", true);
     }
 
     /**
-     *
      * @throws Exception If failed.
      */
     public void testSelectForUpdateOutsideTxLocal() throws Exception {
@@ -262,6 +259,8 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
             checkLocks("Person", keys, true);
 
             tx.rollback();
+
+            checkLocks("Person", keys, false);
         }
     }
 

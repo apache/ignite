@@ -1319,7 +1319,7 @@ public abstract class IgniteUtils {
 
         final Set<Long> deadlockedThreadsIds = getDeadlockedThreadIds(mxBean);
 
-        if (deadlockedThreadsIds.size() == 0)
+        if (deadlockedThreadsIds.isEmpty())
             warn(log, "No deadlocked threads detected.");
         else
             warn(log, "Deadlocked threads detected (see thread dump below) " +
@@ -1344,6 +1344,22 @@ public abstract class IgniteUtils {
         }
 
         sb.a(NL);
+
+        warn(log, sb.toString());
+    }
+
+    /**
+     * Dumps stack trace of the thread to the given log at warning level.
+     *
+     * @param t Thread to be dumped.
+     * @param log Logger.
+     */
+    public static void dumpThread(Thread t, @Nullable IgniteLogger log) {
+        ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
+
+        GridStringBuilder sb = new GridStringBuilder();
+
+        printThreadInfo(mxBean.getThreadInfo(t.getId()), sb, Collections.emptySet());
 
         warn(log, sb.toString());
     }

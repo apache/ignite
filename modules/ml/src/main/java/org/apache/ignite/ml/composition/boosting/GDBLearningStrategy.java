@@ -57,7 +57,7 @@ public class GDBLearningStrategy {
     protected IgniteSupplier<DatasetTrainer<? extends Model<Vector, Double>, Double>> baseMdlTrainerBuilder;
 
     /** Mean label value. */
-    protected double meanLabelValue;
+    protected double meanLbVal;
 
     /** Sample size. */
     protected long sampleSize;
@@ -111,7 +111,7 @@ public class GDBLearningStrategy {
         for (int i = 0; i < cntOfIterations; i++) {
             double[] weights = Arrays.copyOf(compositionWeights, models.size());
 
-            WeightedPredictionsAggregator aggregator = new WeightedPredictionsAggregator(weights, meanLabelValue);
+            WeightedPredictionsAggregator aggregator = new WeightedPredictionsAggregator(weights, meanLbVal);
             ModelsComposition currComposition = new ModelsComposition(models, aggregator);
             if (convCheck.isConverged(datasetBuilder, currComposition))
                 break;
@@ -142,13 +142,13 @@ public class GDBLearningStrategy {
         if(mdlToUpdate != null) {
             models.addAll(mdlToUpdate.getModels());
             WeightedPredictionsAggregator aggregator = (WeightedPredictionsAggregator) mdlToUpdate.getPredictionsAggregator();
-            meanLabelValue = aggregator.getBias();
+            meanLbVal = aggregator.getBias();
             compositionWeights = new double[models.size() + cntOfIterations];
             for(int i = 0; i < models.size(); i++)
                 compositionWeights[i] = aggregator.getWeights()[i];
-        } else {
-            compositionWeights = new double[cntOfIterations];
         }
+        else
+            compositionWeights = new double[cntOfIterations];
 
         Arrays.fill(compositionWeights, models.size(), compositionWeights.length, defaultGradStepSize);
         return models;
@@ -208,10 +208,10 @@ public class GDBLearningStrategy {
     /**
      * Sets mean label value.
      *
-     * @param meanLabelValue Mean label value.
+     * @param meanLbVal Mean label value.
      */
-    public GDBLearningStrategy withMeanLabelValue(double meanLabelValue) {
-        this.meanLabelValue = meanLabelValue;
+    public GDBLearningStrategy withMeanLabelValue(double meanLbVal) {
+        this.meanLbVal = meanLbVal;
         return this;
     }
 
@@ -262,6 +262,6 @@ public class GDBLearningStrategy {
 
     /** */
     public double getMeanValue() {
-        return meanLabelValue;
+        return meanLbVal;
     }
 }
