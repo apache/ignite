@@ -2032,7 +2032,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         // Always perform recovery at least meta storage cache.
         Set<Integer> restoreGrps = new HashSet<>(Collections.singletonList(METASTORAGE_CACHE_ID));
 
-        if (!F.isEmpty(cacheGrps)) {
+        if (!metastoreOnly && !F.isEmpty(cacheGrps)) {
             restoreGrps.addAll(cacheGrps.stream()
                 .filter(g -> !initiallyGlobalWalDisabledGrps.contains(g) || !initiallyLocalWalDisabledGrps.contains(g))
                 .collect(Collectors.toList()));
