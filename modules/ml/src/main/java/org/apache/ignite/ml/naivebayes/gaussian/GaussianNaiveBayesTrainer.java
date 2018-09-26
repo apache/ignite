@@ -119,7 +119,16 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                 }
                 ++lbl;
             }
-
+            if(equiprobableClasses){
+                int k = classProbabilities.length;
+                for (int i = 0; i < k; i++) {
+                    classProbabilities[i] = 1./k;
+                }
+            }
+            if (priorProbabilities != null){
+                assert  classProbabilities.length == priorProbabilities.length;
+                classProbabilities = priorProbabilities;
+            }
             return new GaussianNaiveBayesModel(means, variances, classProbabilities);
         }
         catch (Exception e) {
@@ -129,12 +138,15 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
 
     }
 
+    /** Sets equal probability for all classes */
     public void withEquiprobableClasses() {
         equiprobableClasses = true;
+        priorProbabilities = null;
     }
-
+    /** Sets prior probabilities */
     public void setPriorProbabilities(double[] priorProbabilities) {
-        this.priorProbabilities = priorProbabilities;
+        equiprobableClasses = false;
+        this.priorProbabilities = priorProbabilities.clone();
     }
 
     /**
