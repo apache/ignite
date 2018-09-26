@@ -687,8 +687,9 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
-    /** {@inheritDoc} */
-    @Override public void preloadPartitions(int... partIds) {
+    /** {@inheritDoc}
+     * @param partId*/
+    @Override public void preloadPartition(int partId) {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 

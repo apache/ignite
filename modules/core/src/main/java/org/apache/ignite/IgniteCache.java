@@ -1533,7 +1533,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public void clearStatistics();
 
     /**
-     * @param partIds Partition ids.
+     * @param partId Partition ids.
      */
-    public void preloadPartitions(int... partIds);
+    public void preloadPartition(int partId);
 }

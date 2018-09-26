@@ -88,7 +88,6 @@ import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImp
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -141,6 +140,7 @@ import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
+import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -1265,7 +1265,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Future.
      */
     private IgniteInternalFuture<?> executePreloadTask(int partId) throws IgniteCheckedException {
-        return ctx.closures().affinityRun(Collections.singleton(name()), partId, new PartitionPreloadJob(), null, null);
+        ClusterGroup grp = ctx.grid().cluster().forDataNodes(ctx.name());
+
+        return ctx.closures().affinityRun(Collections.singleton(name()), partId, new PartitionPreloadJob(), grp.nodes(), null);
     }
 
     /**
@@ -6711,8 +6713,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         @IgniteInstanceResource
         private IgniteEx ignite;
 
-        @Override public void run() {
+        @LoggerResource
+        private IgniteLogger log;
 
+        @Override public void run() {
+            log.info("ZZZZZZZZZZZZZZZZZZ");
         }
     }
 

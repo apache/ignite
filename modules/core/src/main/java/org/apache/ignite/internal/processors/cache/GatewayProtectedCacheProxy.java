@@ -1495,11 +1495,11 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public void preloadPartitions(int partId) {
+    @Override public void preloadPartition(int partId) {
         CacheOperationGate opGate = onEnter();
 
         try {
-            delegate.preloadPartitions(partId);
+            delegate.preloadPartition(partId);
         }
         finally {
             onLeave(opGate);
