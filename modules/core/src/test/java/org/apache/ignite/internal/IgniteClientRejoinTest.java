@@ -36,6 +36,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.AbstractFailureHandler;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.TestFailureHandler;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -215,11 +217,13 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
                     String nodeName = "client" + idx;
 
                     IgniteConfiguration cfg = getConfiguration(nodeName)
-                        .setFailureHandler((ignite, failureCtx) -> {
-                            // This should _not_ fire when exchange-worker terminates before reconnect.
-                            Runtime.getRuntime().halt(Ignition.KILL_EXIT_CODE);
+                        .setFailureHandler(new AbstractFailureHandler() {
+                            @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
+                                // This should _not_ fire when exchange-worker terminates before reconnect.
+                                Runtime.getRuntime().halt(Ignition.KILL_EXIT_CODE);
 
-                            return false;
+                                return false;
+                            }
                         });
 
                     return startGrid(nodeName, optimize(cfg), null);

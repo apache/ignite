@@ -89,7 +89,6 @@ import LegacyUtils from './services/LegacyUtils.service';
 import Messages from './services/Messages.service';
 import ErrorParser from './services/ErrorParser.service';
 import ModelNormalizer from './services/ModelNormalizer.service.js';
-import UnsavedChangesGuard from './services/UnsavedChangesGuard.service';
 import Caches from './services/Caches';
 import {CSV} from './services/CSV';
 import {$exceptionHandler} from './services/exceptionHandler.js';
@@ -302,7 +301,6 @@ export default angular.module('ignite-console', [
 .service(...LegacyTable)
 .service(...FormUtils)
 .service(...LegacyUtils)
-.service(...UnsavedChangesGuard)
 .service('IgniteActivitiesUserDialog', IgniteActivitiesUserDialog)
 .service('Caches', Caches)
 .service('CSV', CSV)

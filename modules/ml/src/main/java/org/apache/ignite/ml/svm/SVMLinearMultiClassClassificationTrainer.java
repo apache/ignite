@@ -96,12 +96,13 @@ public class SVMLinearMultiClassClassificationTrainer
                     return 0.0;
             };
 
-            SVMLinearBinaryClassificationModel model;
+            SVMLinearBinaryClassificationModel updatedMdl;
+
             if (mdl == null)
-                model = learnNewModel(trainer, datasetBuilder, featureExtractor, lbTransformer);
+                updatedMdl = learnNewModel(trainer, datasetBuilder, featureExtractor, lbTransformer);
             else
-                model = updateModel(mdl, clsLb, trainer, datasetBuilder, featureExtractor, lbTransformer);
-            multiClsMdl.add(clsLb, model);
+                updatedMdl = updateModel(mdl, clsLb, trainer, datasetBuilder, featureExtractor, lbTransformer);
+            multiClsMdl.add(clsLb, updatedMdl);
         });
 
         return multiClsMdl;

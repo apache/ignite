@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE(CacheClientCreateCacheNonexisting)
 {
     IgniteClientConfiguration cfg;
 
-    cfg.SetEndPoints("127.0.0.1:11110"); 
+    cfg.SetEndPoints("127.0.0.1:11110");
 
     IgniteClient client = IgniteClient::Start(cfg);
 
@@ -190,10 +190,10 @@ BOOST_AUTO_TEST_CASE(CacheClientDestroyCacheExisting)
 {
     IgniteClientConfiguration cfg;
 
-    cfg.SetEndPoints("127.0.0.1:11110"); 
+    cfg.SetEndPoints("127.0.0.1:11110");
 
     IgniteClient client = IgniteClient::Start(cfg);
-    
+
     client.DestroyCache("local");
 }
 
@@ -201,10 +201,10 @@ BOOST_AUTO_TEST_CASE(CacheClientDestroyCacheNonexisting)
 {
     IgniteClientConfiguration cfg;
 
-    cfg.SetEndPoints("127.0.0.1:11110"); 
+    cfg.SetEndPoints("127.0.0.1:11110");
 
     IgniteClient client = IgniteClient::Start(cfg);
-    
+
     BOOST_REQUIRE_THROW(client.DestroyCache("unknown"), ignite::IgniteError);
 }
 
@@ -224,7 +224,7 @@ BOOST_AUTO_TEST_CASE(CacheClientGetCacheNames)
 
     IgniteClientConfiguration cfg;
 
-    cfg.SetEndPoints("127.0.0.1:11110"); 
+    cfg.SetEndPoints("127.0.0.1:11110");
 
     IgniteClient client = IgniteClient::Start(cfg);
 
@@ -331,7 +331,7 @@ BOOST_AUTO_TEST_CASE(CacheClientContainsBasicKey)
     BOOST_CHECK(!cache.ContainsKey(key));
 
     cache.Put(key, valIn);
-    
+
     BOOST_CHECK(cache.ContainsKey(key));
 }
 
@@ -342,7 +342,7 @@ BOOST_AUTO_TEST_CASE(CacheClientContainsComplexKey)
     cfg.SetEndPoints("127.0.0.1:11110");
 
     IgniteClient client = IgniteClient::Start(cfg);
-    
+
     cache::CacheClient<ignite::ComplexType, int32_t> cache = client.GetCache<ignite::ComplexType, int32_t>("local");
 
     ignite::ComplexType key;
@@ -357,7 +357,7 @@ BOOST_AUTO_TEST_CASE(CacheClientContainsComplexKey)
     BOOST_CHECK(!cache.ContainsKey(key));
 
     cache.Put(key, valIn);
-    
+
     BOOST_CHECK(cache.ContainsKey(key));
 }
 
