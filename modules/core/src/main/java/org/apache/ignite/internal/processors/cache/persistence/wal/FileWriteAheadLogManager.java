@@ -136,6 +136,7 @@ import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SEGMENT_SYNC_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
@@ -258,6 +259,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     private static final double THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE =
         IgniteSystemProperties.getDouble(IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, 0.5);
+
+    /**
+     * Number of WAL compressor worker threads.
+     */
+    private final int WAL_COMPRESSOR_WORKER_THREAD_CNT =
+            IgniteSystemProperties.getInteger(IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT, 4);
 
     /** */
     private final boolean alwaysWriteFullPages;
@@ -1950,7 +1957,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (alreadyCompressed.length > 0)
                 segmentAware.lastCompressedIdx(alreadyCompressed[alreadyCompressed.length - 1].idx());
 
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < WAL_COMPRESSOR_WORKER_THREAD_CNT; i++) {
                 FileCompressorWorker worker = new FileCompressorWorker(i, log);
 
                 worker.start();
@@ -1970,7 +1977,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * Pessimistically tries to reserve segment for compression in order to avoid concurrent truncation.
          * Waits if there's no segment to archive right now.
          */
-        private long tryReserveNextSegmentOrWait() throws InterruptedException {
+        private long tryReserveNextSegmentOrWait() throws IgniteInterruptedCheckedException{
             long segmentToCompress = segmentAware.waitNextSegmentToCompress();
 
             boolean reserved = reserve(new FileWALPointer(segmentToCompress, 0, 0));
@@ -1998,7 +2005,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         }
                     }
                 }
-                catch (InterruptedException ignore) {
+                catch (IgniteInterruptedCheckedException ignore) {
                     Thread.currentThread().interrupt();
                 }
             }

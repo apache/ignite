@@ -127,6 +127,7 @@ import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
@@ -206,6 +207,12 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      */
     private static final double THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE =
         IgniteSystemProperties.getDouble(IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, 0.5);
+
+    /**
+     * Number of WAL compressor worker threads.
+     */
+    private final int WAL_COMPRESSOR_WORKER_THREAD_CNT =
+            IgniteSystemProperties.getInteger(IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT, 4);
 
     /** */
     private final boolean alwaysWriteFullPages;
@@ -1901,7 +1908,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             if (alreadyCompressed.length > 0)
                 lastCompressedIdx = alreadyCompressed[alreadyCompressed.length - 1].idx();
 
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < WAL_COMPRESSOR_WORKER_THREAD_CNT; i++) {
                 FileCompressorWorker worker = new FileCompressorWorker(i, log);
 
                 worker.start();
@@ -2089,11 +2096,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 thread.start();
             }
 
-            /**
-             * {@inheritDoc}
-             */
-            @Override
-            protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            /** {@inheritDoc} */
+            @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
                 while (!isCancelled()) {
                     Long segIdx = segmentsToArchive.poll();
 
