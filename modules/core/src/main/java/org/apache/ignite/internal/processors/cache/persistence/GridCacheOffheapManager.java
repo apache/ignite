@@ -36,6 +36,7 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageSupport;
+import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -824,8 +825,31 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         return size;
     }
 
-    @Override public void preloadPartitions(int... partIds) {
-        // TODO implement.
+    /** {@inheritDoc} */
+    @Override public void preloadPartition(int partId) throws IgniteCheckedException {
+        IgnitePageStoreManager mgr = grp.shared().pageStore();
+
+        assert mgr != null : "Manager is null";
+
+        int pages = mgr.pages(grp.groupId(), partId);
+
+        PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
+
+        long pageId = pageMem.partitionMetaPageId(grp.groupId(), partId);
+
+        assert PageIdUtils.pageIndex(pageId) == 0 : "Invalid partition meta page index";
+
+        long page = 0;
+
+        for (int idx = 0; idx < pages; idx++) {
+            try {
+                page = pageMem.acquirePage(grp.groupId(), PageIdUtils.changePageIndex(pageId, idx));
+            }
+            finally {
+                if (page > 0)
+                    pageMem.releasePage(grp.groupId(), pageId, page);
+            }
+        }
     }
 
     /**

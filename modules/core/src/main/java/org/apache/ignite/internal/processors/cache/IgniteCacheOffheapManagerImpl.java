@@ -334,8 +334,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void preloadPartitions(int... partIds) {
+    /** {@inheritDoc}
+     * @param partId*/
+    @Override public void preloadPartition(int partId) throws IgniteCheckedException {
         // No-op.
     }
 

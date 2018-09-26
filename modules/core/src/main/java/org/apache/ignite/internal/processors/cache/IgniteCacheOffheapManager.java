@@ -573,9 +573,9 @@ public interface IgniteCacheOffheapManager {
     public long totalPartitionEntriesCount(int part);
 
     /**
-     * @param partIds Partition ids.
+     * @param partId Partition ids.
      */
-    void preloadPartitions(int... partIds);
+    public void preloadPartition(int partId) throws IgniteCheckedException;
 
     /**
      *

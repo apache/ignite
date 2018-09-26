@@ -88,6 +88,7 @@ import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImp
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -1267,7 +1268,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     private IgniteInternalFuture<?> executePreloadTask(int partId) throws IgniteCheckedException {
         ClusterGroup grp = ctx.grid().cluster().forDataNodes(ctx.name());
 
-        return ctx.closures().affinityRun(Collections.singleton(name()), partId, new PartitionPreloadJob(), grp.nodes(), null);
+        return ctx.closures().affinityCall(Collections.singleton(name()), partId,
+            new PartitionPreloadJob(ctx.name(), partId), grp.nodes(), null);
     }
 
     /**
@@ -6706,7 +6708,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * Clear task.
      */
     @GridInternal
-    private static class PartitionPreloadJob implements Runnable {
+    private static class PartitionPreloadJob implements Callable<IgniteCheckedException> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -6716,8 +6718,38 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         @LoggerResource
         private IgniteLogger log;
 
-        @Override public void run() {
-            log.info("ZZZZZZZZZZZZZZZZZZ");
+        /** */
+        private String cacheName;
+
+        /** */
+        private int partId;
+
+        /**
+         * @param cacheName Cache name.
+         * @param partId Partition id.
+         */
+        public PartitionPreloadJob(String cacheName, int partId) {
+            this.cacheName = cacheName;
+            this.partId = partId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteCheckedException call() {
+            // TODO check cache exists.
+            GridDhtCacheAdapter<Object, Object> dht = ignite.context().cache().internalCache(cacheName).context().dht();
+
+            GridDhtLocalPartition part = dht.topology().localPartition(partId);
+
+            if (part != null) {
+                try {
+                    part.preload();
+                }
+                catch (IgniteCheckedException e) {
+                    return e;
+                }
+            }
+
+            return null;
         }
     }
 

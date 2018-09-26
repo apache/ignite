@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
+import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -45,8 +48,16 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     private static final int GRIDS_CNT = 2;
 
     /** */
+    public static final String CACHE_1 = "cache1";
+
+    /** */
+    public static final String CACHE_2 = "cache2";
+
+    /** */
     private static final String CLIENT_GRID_NAME = "client";
 
+    /** */
+    public static final int PRELOAD_PARTITION_ID = 1;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -56,7 +67,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setMaxSize(50L * 1024 * 1024).setPersistenceEnabled(true))
+                new DataRegionConfiguration().setMaxSize(150L * 1024 * 1024).setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY)
             .setPageSize(1024)
             .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
@@ -81,27 +92,68 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         cleanPersistenceDir();
+
+        startGridsMultiThreaded(GRIDS_CNT);
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        cleanPersistenceDir();
+
+        Ignite crd = startGridsMultiThreaded(GRIDS_CNT);
+
+        int partId = PRELOAD_PARTITION_ID;
+        int cnt = 0;
+        int i = 0;
+
+        // Load test data only once for all tests to speedup things.
+        try (IgniteDataStreamer<Integer, byte[]> streamer = crd.dataStreamer(CACHE_1)) {
+            while(cnt < ENTRY_CNT) {
+                if (crd.affinity(CACHE_1).partition(i) == partId) {
+                    streamer.addData(i, new byte[1024 * 2 / 3]);
+
+                    cnt++;
+                }
+
+                i++;
+            }
+        }
+
+        for (i = 0; i < ENTRY_CNT; i++)
+            crd.cache(CACHE_2).put(i, new byte[1024 * 2 / 3]);
+
+        forceCheckpoint();
+
+        stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
 
         stopAllGrids();
 
         cleanPersistenceDir();
     }
 
+    /** */
     public void testPreloadPartition() throws Exception {
-        Ignite crd = startGridsMultiThreaded(GRIDS_CNT);
+        try {
+            startGridsMultiThreaded(GRIDS_CNT);
 
-        Ignite client = startGrid(CLIENT_GRID_NAME);
+            Ignite testNode = startGrid("client");
 
-        try (IgniteDataStreamer<Integer, byte[]> streamer = crd.dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (int i = 0; i < ENTRY_CNT; i++)
-                streamer.addData(i, new byte[1024 * 2 / 3]);
+            doTestPreloadPartition(testNode);
         }
+        finally {
+            stopAllGrids();
+        }
+    }
 
-        client.cache(DEFAULT_CACHE_NAME).preloadPartition(0);
+    /** */
+    private void doTestPreloadPartition(Ignite testNode) throws Exception {
+        testNode.cache(DEFAULT_CACHE_NAME).preloadPartition(PRELOAD_PARTITION_ID);
     }
 }
