@@ -106,6 +106,8 @@ public abstract class AbstractH2ExtrasLeafIO extends BPlusLeafIO<GridH2SearchRow
 
         assert inlineIdxs != null : "no inline index helpers";
 
+        InlineIndexHelper.checkInlineSizeFit(inlineIdxs, row, payloadSize);
+
         int fieldOff = 0;
 
         for (int i = 0; i < inlineIdxs.size(); i++) {
