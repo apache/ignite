@@ -68,9 +68,9 @@ public class BootstrappedVector extends LabeledVector<Vector, Double> {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + Arrays.hashCode(counters);
-        return result;
+        int res = super.hashCode();
+        res = 31 * res + Arrays.hashCode(counters);
+        return res;
     }
 
     /** {@inheritDoc} */
