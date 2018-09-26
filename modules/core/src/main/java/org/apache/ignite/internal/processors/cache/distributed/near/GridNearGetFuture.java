@@ -942,7 +942,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 AffinityTopologyVersion updTopVer =
                     new AffinityTopologyVersion(Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
 
-                cctx.affinity().affinityReadyFuture(updTopVer).listen(
+                cctx.shared().exchange().affinityReadyFuture(updTopVer).listen(
                     new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                             try {
@@ -1005,7 +1005,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 }
 
                 // Need to wait for next topology version to remap.
-                IgniteInternalFuture<AffinityTopologyVersion> topFut = cctx.affinity().affinityReadyFuture(rmtTopVer);
+                IgniteInternalFuture<AffinityTopologyVersion> topFut = cctx.shared().exchange().affinityReadyFuture(rmtTopVer);
 
                 topFut.listen(new CIX1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                     @Override public void applyx(

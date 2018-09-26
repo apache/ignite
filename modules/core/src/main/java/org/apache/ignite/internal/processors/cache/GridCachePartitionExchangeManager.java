@@ -101,6 +101,7 @@ import org.apache.ignite.internal.util.GridListSet;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -895,23 +896,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return Future or {@code null} is future is already completed.
      */
     @Nullable public IgniteInternalFuture<AffinityTopologyVersion> affinityReadyFuture(AffinityTopologyVersion ver) {
-        GridDhtPartitionsExchangeFuture lastInitializedFut0 = lastInitializedFut;
-
-        if (lastInitializedFut0 != null && lastInitializedFut0.initialVersion().compareTo(ver) == 0) {
-            if (log.isDebugEnabled())
-                log.debug("Return lastInitializedFut for topology ready future " +
-                    "[ver=" + ver + ", fut=" + lastInitializedFut0 + ']');
-
-            return lastInitializedFut0;
-        }
-
         AffinityTopologyVersion topVer = exchFuts.readyTopVer();
 
         if (topVer.compareTo(ver) >= 0) {
             if (log.isDebugEnabled())
                 log.debug("Return finished future for topology ready future [ver=" + ver + ", topVer=" + topVer + ']');
 
-            return null;
+            return new GridFinishedFuture<>();
         }
 
         GridFutureAdapter<AffinityTopologyVersion> fut = F.addIfAbsent(readyFuts, ver,

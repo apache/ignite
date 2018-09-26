@@ -710,6 +710,7 @@ public class GridAffinityAssignmentCache {
                     ", topVer=" + topVer +
                     ", head=" + head.get().topologyVersion() +
                     ", history=" + affCache.keySet() +
+                    ", nodeId=" + ctx.localNodeId() +
                     ']');
             }
         }
