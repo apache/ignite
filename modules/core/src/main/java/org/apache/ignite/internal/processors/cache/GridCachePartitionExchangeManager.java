@@ -2656,7 +2656,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 crd = newCrd = !srvNodes.isEmpty() && srvNodes.get(0).isLocal();
                             }
 
-                            exchFut.init(newCrd);
+                            try {
+                                blockingSectionBegin();
+
+                                exchFut.init(newCrd);
+                            }
+                            finally {
+                                blockingSectionEnd();
+                            }
 
                             int dumpCnt = 0;
 
