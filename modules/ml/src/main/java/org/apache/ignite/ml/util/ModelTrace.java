@@ -68,10 +68,10 @@ public class ModelTrace {
      * Add field.
      *
      * @param name Name.
-     * @param value Value.
+     * @param val Value.
      */
-    public ModelTrace addField(String name, String value) {
-        mdlFields.add(new IgniteBiTuple<>(name, value));
+    public ModelTrace addField(String name, String val) {
+        mdlFields.add(new IgniteBiTuple<>(name, val));
         return this;
     }
 

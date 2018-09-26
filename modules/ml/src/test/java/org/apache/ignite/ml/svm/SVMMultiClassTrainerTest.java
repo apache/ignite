@@ -70,7 +70,7 @@ public class SVMMultiClassTrainerTest extends TrainerTest {
             .withAmountOfIterations(100)
             .withSeed(1234L);
 
-        SVMLinearMultiClassClassificationModel originalModel = trainer.fit(
+        SVMLinearMultiClassClassificationModel originalMdl = trainer.fit(
             cacheMock,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
@@ -78,7 +78,7 @@ public class SVMMultiClassTrainerTest extends TrainerTest {
         );
 
         SVMLinearMultiClassClassificationModel updatedOnSameDS = trainer.update(
-            originalModel,
+            originalMdl,
             cacheMock,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
@@ -86,7 +86,7 @@ public class SVMMultiClassTrainerTest extends TrainerTest {
         );
 
         SVMLinearMultiClassClassificationModel updatedOnEmptyDS = trainer.update(
-            originalModel,
+            originalMdl,
             new HashMap<Integer, double[]>(),
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
@@ -94,7 +94,7 @@ public class SVMMultiClassTrainerTest extends TrainerTest {
         );
 
         Vector v = VectorUtils.of(100, 10);
-        TestUtils.assertEquals(originalModel.apply(v), updatedOnSameDS.apply(v), PRECISION);
-        TestUtils.assertEquals(originalModel.apply(v), updatedOnEmptyDS.apply(v), PRECISION);
+        TestUtils.assertEquals(originalMdl.apply(v), updatedOnSameDS.apply(v), PRECISION);
+        TestUtils.assertEquals(originalMdl.apply(v), updatedOnEmptyDS.apply(v), PRECISION);
     }
 }

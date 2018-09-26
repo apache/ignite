@@ -47,6 +47,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -616,7 +617,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     break;
 
                 case SET:
-                    iter = setIterator(qry);
+                    iter = sharedCacheSetIterator(qry);
 
                     break;
 
@@ -748,49 +749,29 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param qry Query.
      * @return Cache set items iterator.
      */
-    private GridCloseableIterator<IgniteBiTuple<K, V>> setIterator(GridCacheQueryAdapter<?> qry) {
+    private GridCloseableIterator<IgniteBiTuple<K, V>> sharedCacheSetIterator(
+        GridCacheQueryAdapter<?> qry) throws IgniteCheckedException {
         final GridSetQueryPredicate filter = (GridSetQueryPredicate)qry.scanFilter();
-
-        filter.init(cctx);
 
         IgniteUuid id = filter.setId();
 
-        Collection<SetItemKey> data = cctx.dataStructures().setData(id);
-
-        if (data == null)
-            data = Collections.emptyList();
-
-        final GridIterator<IgniteBiTuple<K, V>> it = F.iterator(
-            data,
-            new C1<SetItemKey, IgniteBiTuple<K, V>>() {
-                @Override public IgniteBiTuple<K, V> apply(SetItemKey e) {
-                    return new IgniteBiTuple<>((K)e.item(), (V)Boolean.TRUE);
+        GridCacheQueryAdapter<CacheEntry<K, ?>> qry0 = new GridCacheQueryAdapter<>(cctx,
+            SCAN,
+            new IgniteBiPredicate<Object, Object>() {
+                @Override public boolean apply(Object k, Object v) {
+                    return k instanceof SetItemKey && id.equals(((SetItemKey)k).setId());
                 }
             },
-            true,
-            new P1<SetItemKey>() {
-                @Override public boolean apply(SetItemKey e) {
-                    return filter.apply(e, null);
+            new IgniteClosure<Map.Entry, Object>() {
+                @Override public Object apply(Map.Entry entry) {
+                    return new IgniteBiTuple<K, V>((K)((SetItemKey)entry.getKey()).item(), (V)Boolean.TRUE);
                 }
-            });
+            },
+            qry.partition(),
+            false,
+            true);
 
-        return new GridCloseableIteratorAdapter<IgniteBiTuple<K, V>>() {
-            @Override protected boolean onHasNext() {
-                return it.hasNext();
-            }
-
-            @Override protected IgniteBiTuple<K, V> onNext() {
-                return it.next();
-            }
-
-            @Override protected void onRemove() {
-                it.remove();
-            }
-
-            @Override protected void onClose() {
-                // No-op.
-            }
-        };
+        return scanQueryLocal(qry0, false);
     }
 
     /**

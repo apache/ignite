@@ -48,6 +48,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.Ignite;
@@ -60,6 +61,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
@@ -79,6 +81,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
@@ -147,6 +150,12 @@ class ClientImpl extends TcpDiscoveryImpl {
     /** */
     private static final Object SPI_RECONNECT = "SPI_RECONNECT";
 
+    /** */
+    private static final long CLIENT_THROTTLE_RECONNECT_RESET_TIMEOUT = IgniteSystemProperties.getLong(
+        IgniteSystemProperties.CLIENT_THROTTLE_RECONNECT_RESET_TIMEOUT_INTERVAL,
+        2 * 60_000
+    );
+
     /** Remote nodes. */
     private final ConcurrentMap<UUID, TcpDiscoveryNode> rmtNodes = new ConcurrentHashMap<>();
 
@@ -187,7 +196,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     private final Timer timer = new Timer("TcpDiscoverySpi.timer");
 
     /** */
-    protected MessageWorker msgWorker;
+    private MessageWorker msgWorker;
 
     /** Force fail message for local node. */
     private TcpDiscoveryNodeFailedMessage forceFailMsg;
@@ -530,14 +539,20 @@ class ClientImpl extends TcpDiscoveryImpl {
      * @param prevAddr If reconnect is in progress, then previous address of the router the client was connected to
      *      and {@code null} otherwise.
      * @param timeout Timeout.
+     * @param beforeEachSleep code to be run before each sleep span.
+     * @param afterEachSleep code to be run before each sleep span.
      * @return Opened socket or {@code null} if timeout.
      * @throws InterruptedException If interrupted.
      * @throws IgniteSpiException If failed.
      * @see TcpDiscoverySpi#joinTimeout
      */
     @SuppressWarnings("BusyWait")
-    @Nullable private T2<SocketStream, Boolean> joinTopology(InetSocketAddress prevAddr, long timeout)
-        throws IgniteSpiException, InterruptedException {
+    @Nullable private T2<SocketStream, Boolean> joinTopology(
+        InetSocketAddress prevAddr,
+        long timeout,
+        @Nullable Runnable beforeEachSleep,
+        @Nullable Runnable afterEachSleep
+    ) throws IgniteSpiException, InterruptedException {
         List<InetSocketAddress> addrs = null;
 
         long startTime = U.currentTimeMillis();
@@ -564,7 +579,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                             "Will retry every " + spi.getReconnectDelay() + " ms. " +
                             "Change 'reconnectDelay' to configure the frequency of retries.", true);
 
-                    Thread.sleep(spi.getReconnectDelay());
+                    sleepEx(spi.getReconnectDelay(), beforeEachSleep, afterEachSleep);
                 }
             }
 
@@ -630,15 +645,29 @@ class ClientImpl extends TcpDiscoveryImpl {
                 if (log.isDebugEnabled())
                     log.debug("Will wait before retry join.");
 
-                Thread.sleep(spi.getReconnectDelay());
+                sleepEx(spi.getReconnectDelay(), beforeEachSleep, afterEachSleep);
             }
             else if (addrs.isEmpty()) {
                 LT.warn(log, "Failed to connect to any address from IP finder (will retry to join topology " +
                     "every " + spi.getReconnectDelay() + " ms; change 'reconnectDelay' to configure the frequency " +
                     "of retries): " + toOrderedList(addrs0), true);
 
-                Thread.sleep(spi.getReconnectDelay());
+                sleepEx(spi.getReconnectDelay(), beforeEachSleep, afterEachSleep);
             }
+        }
+    }
+
+    /** */
+    private static void sleepEx(long millis, Runnable before, Runnable after) throws InterruptedException {
+        if (before != null)
+            before.run();
+
+        try {
+            Thread.sleep(millis);
+        }
+        finally {
+            if (after != null)
+                after.run();
         }
     }
 
@@ -1477,7 +1506,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             try {
                 while (true) {
-                    T2<SocketStream, Boolean> joinRes = joinTopology(prevAddr, timeout);
+                    T2<SocketStream, Boolean> joinRes = joinTopology(prevAddr, timeout, null, null);
 
                     if (joinRes == null) {
                         if (join) {
@@ -1615,6 +1644,12 @@ class ClientImpl extends TcpDiscoveryImpl {
         /** */
         private boolean nodeAdded;
 
+        /** */
+        private long lastReconnectTimestamp = -1;
+
+        /** */
+        private long currentReconnectDelay = -1;
+
         /**
          * @param log Logger.
          */
@@ -1627,13 +1662,26 @@ class ClientImpl extends TcpDiscoveryImpl {
         @Override protected void body() throws InterruptedException {
             state = STARTING;
 
+            updateHeartbeat();
+
             spi.stats.onJoinStarted();
 
             try {
                 tryJoin();
 
                 while (true) {
-                    Object msg = queue.take();
+                    onIdle();
+
+                    Object msg;
+
+                    blockingSectionBegin();
+
+                    try {
+                        msg = queue.take();
+                    }
+                    finally {
+                        blockingSectionEnd();
+                    }
 
                     if (msg == JOIN_TIMEOUT) {
                         if (state == STARTING) {
@@ -1696,6 +1744,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                                 ", locNode=" + locNode+ ']');
 
                             locNode.onClientDisconnected(newId);
+
+                            throttleClientReconnect();
 
                             tryJoin();
                         }
@@ -1886,6 +1936,36 @@ class ClientImpl extends TcpDiscoveryImpl {
         }
 
         /**
+         * Wait random delay before trying to reconnect. Delay will grow exponentially every time client is forced to
+         * reconnect, but only if all these reconnections happened in small period of time (2 minutes). Maximum delay
+         * could be configured with {@link IgniteSpiAdapter#clientFailureDetectionTimeout()}, default value is
+         * {@link IgniteConfiguration#DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT}.
+         *
+         * @throws InterruptedException If thread is interrupted.
+         */
+        private void throttleClientReconnect() throws InterruptedException {
+            if (U.currentTimeMillis() - lastReconnectTimestamp > CLIENT_THROTTLE_RECONNECT_RESET_TIMEOUT)
+                currentReconnectDelay = 0; // Skip pause on first reconnect.
+            else if (currentReconnectDelay == 0)
+                currentReconnectDelay = 200;
+            else {
+                long maxDelay = spi.failureDetectionTimeoutEnabled()
+                    ? spi.clientFailureDetectionTimeout()
+                    : IgniteConfiguration.DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT;
+
+                currentReconnectDelay = Math.min(maxDelay, (int)(currentReconnectDelay * 1.5));
+            }
+
+            if (currentReconnectDelay != 0) {
+                ThreadLocalRandom random = ThreadLocalRandom.current();
+
+                Thread.sleep(random.nextLong(currentReconnectDelay / 2, currentReconnectDelay));
+            }
+
+            lastReconnectTimestamp = U.currentTimeMillis();
+        }
+
+        /**
          *
          */
         private void onDisconnected() {
@@ -1922,7 +2002,17 @@ class ClientImpl extends TcpDiscoveryImpl {
             T2<SocketStream, Boolean> joinRes;
 
             try {
-                joinRes = joinTopology(null, spi.joinTimeout);
+                joinRes = joinTopology(null, spi.joinTimeout,
+                    new Runnable() {
+                        @Override public void run() {
+                            blockingSectionBegin();
+                        }
+                    },
+                    new Runnable() {
+                        @Override public void run() {
+                            blockingSectionEnd();
+                        }
+                    });
             }
             catch (IgniteSpiException e) {
                 joinError(e);

@@ -45,4 +45,14 @@ public interface MvccUpdateResult {
      * @return Old value of updated entry.
      */
     public CacheObject oldValue();
+
+    /**
+     * @return {@code True} if this key was inserted in the cache with this row in the same transaction.
+     */
+    public boolean isKeyAbsentBefore();
+
+    /**
+     * @return Flag whether tx has overridden it's own update.
+     */
+    public boolean isOwnValueOverridden();
 }
