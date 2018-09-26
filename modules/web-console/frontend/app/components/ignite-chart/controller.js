@@ -71,12 +71,19 @@ export class IgniteChartController {
     }
 
     $onDestroy() {
-        if (this.chart) this.chart.destroy();
+        if (this.chart)
+            this.chart.destroy();
+
         this.$element = this.ctx = this.chart = null;
     }
 
     $onInit() {
         this.chartColors = _.get(this.chartOptions, 'chartColors', this.IgniteChartColors);
+    }
+
+    _refresh() {
+        this.onRefresh();
+        this.rerenderChart();
     }
 
     /**
@@ -89,6 +96,7 @@ export class IgniteChartController {
         // TODO: Investigate other signaling for resetting component state.
         if (changes.chartDataPoint && _.isNil(changes.chartDataPoint.currentValue)) {
             this.clearDatasets();
+
             return;
         }
 
@@ -101,8 +109,8 @@ export class IgniteChartController {
 
             this.newPoints.splice(0, this.newPoints.length, ...changes.chartHistory.currentValue);
 
-            this.onRefresh();
-            this.rerenderChart();
+            this._refresh();
+
             return;
         }
 
@@ -112,6 +120,8 @@ export class IgniteChartController {
 
             this.newPoints.push(this.chartDataPoint);
             this.localHistory.push(this.chartDataPoint);
+
+            this._refresh();
         }
     }
 
@@ -321,8 +331,13 @@ export class IgniteChartController {
     addDataset(datasetName) {
         if (this.findDatasetIndex(datasetName) >= 0)
             throw new Error(`Dataset with name ${datasetName} is already in chart`);
-        else
-            this.config.data.datasets.push({ label: datasetName, data: [], hidden: true });
+        else {
+            const datasetIsHidden = _.isNil(this.config.datasetLegendMapping[datasetName].hidden)
+                ? false
+                : this.config.datasetLegendMapping[datasetName].hidden;
+
+            this.config.data.datasets.push({ label: datasetName, data: [], hidden: datasetIsHidden });
+        }
     }
 
     findDatasetIndex(searchedDatasetLabel) {
@@ -331,8 +346,7 @@ export class IgniteChartController {
 
     changeXRange(range) {
         if (this.chart) {
-            const deltaInMilliSeconds = range.value * 60 * 1000;
-            this.chart.config.options.plugins.streaming.duration = deltaInMilliSeconds;
+            this.chart.config.options.plugins.streaming.duration = range.value * 60 * 1000;
 
             this.clearDatasets();
             this.newPoints.splice(0, this.newPoints.length, ...this.localHistory);
@@ -349,6 +363,7 @@ export class IgniteChartController {
     }
 
     rerenderChart() {
-        this.chart.update();
+        if (this.chart)
+            this.chart.update();
     }
 }
