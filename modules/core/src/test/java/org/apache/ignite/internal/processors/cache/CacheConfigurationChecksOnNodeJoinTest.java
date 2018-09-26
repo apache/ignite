@@ -18,6 +18,10 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
@@ -178,15 +182,15 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
     private void fullRestartClusterAfterCacheCreate(int nodesCnt, ActivateNodeFinder finder) throws Exception {
         assert nodesCnt > 1;
 
-        Ignite ignite0 = startGrids(nodesCnt);
+        Map<ClusterNode, Ignite> nodes = start(nodesCnt);
 
-        ignite0.cluster().active(true);
+        grid(0).cluster().active(true);
 
-        stopSecondHalfNodes();
+        stopSecondHalfNodes(nodes);
 
         CacheConfiguration<Long, Long> cacheCfg = new CacheConfiguration<Long, Long>(DEFAULT_CACHE_NAME).setBackups((nodesCnt + 1) / 2);
 
-        IgniteCache<Long, Long> cache0 = ignite0.getOrCreateCache(cacheCfg);
+        IgniteCache<Long, Long> cache0 = grid(0).getOrCreateCache(cacheCfg);
 
         populateData(cache0);
 
@@ -206,17 +210,17 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
     private void fullRestartClusterAfterCacheDestoroy(int nodesCnt, ActivateNodeFinder finder) throws Exception {
         assert nodesCnt > 1;
 
-        Ignite ignite0 = startGrids(nodesCnt);
+        Map<ClusterNode, Ignite> nodes = start(nodesCnt);
 
-        ignite0.cluster().active(true);
+        grid(0).cluster().active(true);
 
         CacheConfiguration<Long, Long> cacheCfg = new CacheConfiguration<Long, Long>(DEFAULT_CACHE_NAME).setBackups(0);
 
-        IgniteCache<Long, Long> cache0 = ignite0.getOrCreateCache(cacheCfg);
+        IgniteCache<Long, Long> cache0 = grid(0).getOrCreateCache(cacheCfg);
 
         populateData(cache0);
 
-        stopSecondHalfNodes();
+        stopSecondHalfNodes(nodes);
 
         cache0.destroy();
 
@@ -227,10 +231,13 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
         grid(finder.getActivateNode(grid(0).cluster().nodes())).cluster().active(true);
     }
 
-    private void stopSecondHalfNodes() {
-        Collection<ClusterNode> nodes = grid().cluster().nodes();
+    private void stopSecondHalfNodes(Map<ClusterNode, Ignite> nodesMap) {
+        Collection<ClusterNode> nodes = grid(0).cluster().nodes();
 
-        nodes.stream().skip(nodes.size() / 2).forEach(n -> grid(n).close());
+        List<ClusterNode> nodesForStop = nodes.stream().skip(nodes.size() / 2).collect(Collectors.toList());
+
+        for (ClusterNode node : nodesForStop)
+            nodesMap.get(node).close();
     }
 
     private void populateData(IgniteCache<Long, Long> cache) {
@@ -243,7 +250,22 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
             assertTrue(cache.containsKey(1L << i));
     }
 
+    private Map<ClusterNode, Ignite> start(int cnt) throws Exception {
+        assert cnt > 0;
+
+        Map<ClusterNode, Ignite> map = new HashMap<>(cnt);
+
+        for (int i = 0; i < cnt; i++) {
+            IgniteEx ignite = startGrid(i);
+
+            map.put(ignite.localNode(), ignite);
+        }
+
+        return map;
+    }
+
     private interface ActivateNodeFinder {
         ClusterNode getActivateNode(Collection<ClusterNode> nodes);
     }
+
 }
