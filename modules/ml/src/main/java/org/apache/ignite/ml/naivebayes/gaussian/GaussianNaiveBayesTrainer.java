@@ -138,17 +138,25 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
 
     }
 
-    /** Sets equal probability for all classes */
-    public void withEquiprobableClasses() {
+    /** Sets equal probability for all classes. */
+    public GaussianNaiveBayesTrainer withEquiprobableClasses() {
+        resetSettings();
         equiprobableClasses = true;
-        priorProbabilities = null;
+        return this;
     }
-    /** Sets prior probabilities */
-    public void setPriorProbabilities(double[] priorProbabilities) {
-        equiprobableClasses = false;
+    /** Sets prior probabilities. */
+    public GaussianNaiveBayesTrainer setPriorProbabilities(double[] priorProbabilities) {
+        resetSettings();
         this.priorProbabilities = priorProbabilities.clone();
+        return this;
     }
 
+    /** Sets default settings. */
+    public GaussianNaiveBayesTrainer resetSettings() {
+        equiprobableClasses = false;
+        priorProbabilities = null;
+        return this;
+    }
     /**
      * Calculates sums of all values of a particular feature and amount of rows for all labels
      */
