@@ -75,7 +75,8 @@ public abstract class AbstractNativeBenchmark extends IgniteAbstractBenchmark {
 
         executeNativeSql(queries.createTable());
 
-        executeNativeSql(queries.createIndex(args.upload.indexesCount()));
+        for (int idx = 1; idx <= args.upload.indexesCount(); idx++)
+            executeNativeSql(queries.createIndex(idx));
     }
 
     /** {@inheritDoc} */
