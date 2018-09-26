@@ -334,6 +334,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Decompressor. */
     private volatile FileDecompressor decompressor;
 
+    /**
+     * Position of the last seen WAL pointer can be stored in-memory only and should survive
+     * activate\deactivate node events. Used for resumming logging from the last WAL pointer.
+     * Can be assigned only by {@link FileWriteHandle#position()}.
+     */
+    private volatile  WALPointer walTail;
+
     /** */
     private final ThreadLocal<WALPointer> lastWALPtr = new ThreadLocal<>();
 
@@ -631,8 +638,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
         if (log.isDebugEnabled())
-            log.debug("Activated file write ahead log manager [nodeId=" + cctx.localNodeId() +
-                " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
+            log.debug("Activated file write ahead log manager [nodeId=" + cctx.localNodeId() + ']');
 
         start0();
 
@@ -654,10 +660,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
         if (log.isDebugEnabled())
-            log.debug("DeActivate file write ahead log [nodeId=" + cctx.localNodeId() +
-                " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
+            log.debug("DeActivate file write ahead log [nodeId=" + cctx.localNodeId() + ']');
 
         stop0(true);
+
+        walTail = currHnd.position();
 
         currHnd = null;
     }
@@ -673,9 +680,18 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
+    @Override public void resumeLogging() throws IgniteCheckedException {
+        assert walTail != null;
+
+        resumeLogging(walTail);
+    }
+
+    /** {@inheritDoc} */
     @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
         assert currHnd == null;
         assert lastPtr == null || lastPtr instanceof FileWALPointer;
+        assert (isArchiverEnabled() && archiver != null) || (!isArchiverEnabled() && archiver == null) :
+            "Trying to restore FileWriteHandle on deactivated write ahead log manager";
 
         FileWALPointer filePtr = (FileWALPointer)lastPtr;
 

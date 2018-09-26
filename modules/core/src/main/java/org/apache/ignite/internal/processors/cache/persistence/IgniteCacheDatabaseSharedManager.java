@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
@@ -44,7 +45,6 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -93,6 +93,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** */
     private volatile boolean dataRegionsInitialized;
+
+    /** */
+    private volatile boolean dataRegionsStarted;
 
     /** */
     protected Map<String, DataRegionMetrics> memMetricsMap;
@@ -640,11 +643,18 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param cachesToStart Started caches.
+     * @throws IgniteCheckedException If fails.
+     */
+    public void onDoneRestoreBinaryMemory() throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /**
+     * @return Last seen WAL pointer during binary memory recovery.
      * @throws IgniteCheckedException If failed.
      */
-    public void readCheckpointAndRestoreMemory(List<DynamicCacheDescriptor> cachesToStart) throws IgniteCheckedException {
-        // No-op.
+    public WALPointer restoreBinaryMemory() throws IgniteCheckedException {
+        return null;
     }
 
     /**
@@ -755,7 +765,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * No-op for non-persistent storage.
+     * Clean checkpoint directory {@link GridCacheDatabaseSharedManager#cpDir}. The operation
+     * is necessary when local node joined to baseline topology with different consistentId.
      */
     public void cleanupCheckpointDirectory() throws IgniteCheckedException {
         // No-op.
@@ -807,6 +818,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public boolean beforeExchange(GridDhtPartitionsExchangeFuture discoEvt) throws IgniteCheckedException {
         return false;
+    }
+
+    /**
+     * Perform memory restore before {@link GridDiscoveryManager} start.
+     */
+    public void startMemoryRestore() throws IgniteCheckedException {
+        // No-op.
     }
 
     /**
@@ -1083,20 +1101,31 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (cctx.kernalContext().clientNode() && cctx.kernalContext().config().getDataStorageConfiguration() == null)
             return;
 
-        DataStorageConfiguration memCfg = cctx.kernalContext().config().getDataStorageConfiguration();
-
-        assert memCfg != null;
-
-        initDataRegions(memCfg);
-
-        registerMetricsMBeans();
-
-        startMemoryPolicies();
-
-        initPageMemoryDataStructures(memCfg);
+        initAndStartRegions(cctx.kernalContext().config().getDataStorageConfiguration());
 
         for (DatabaseLifecycleListener lsnr : getDatabaseListeners(kctx)) {
             lsnr.afterInitialise(this);
+        }
+    }
+
+    /**
+     * Initialize and start CacheDatabaseSharedManager data regions.
+     *
+     * @param cfg Regions configuration.
+     */
+    protected void initAndStartRegions(DataStorageConfiguration cfg) throws IgniteCheckedException {
+        assert cfg != null;
+
+        if (!dataRegionsStarted) {
+            initDataRegions(cfg);
+
+            registerMetricsMBeans();
+
+            startMemoryPolicies();
+
+            initPageMemoryDataStructures(cfg);
+
+            dataRegionsStarted = true;
         }
     }
 
@@ -1121,6 +1150,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             dataRegionsInitialized = false;
         }
+
+        dataRegionsStarted = false;
     }
 
     /**
