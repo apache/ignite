@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -241,6 +242,25 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
 
             awaitPartitionMapExchange();
         }
+    }
+
+    public void testStart1000CacheGroups() throws Exception {
+        CacheConfiguration ccfgs[] = new CacheConfiguration[200];
+        for (int i = 0; i < 200; i++) {
+            CacheConfiguration ccfg = new CacheConfiguration("cache-" + i)
+                .setBackups(2)
+                .setAffinity(new RendezvousAffinityFunction(false, 256));
+
+            ccfgs[i] = ccfg;
+        }
+
+        IgniteEx crd = (IgniteEx) startGrids(4);
+
+        crd.getOrCreateCaches(Arrays.asList(ccfgs));
+
+        startGrid(4);
+
+        int k = 2;
     }
 
     /**
