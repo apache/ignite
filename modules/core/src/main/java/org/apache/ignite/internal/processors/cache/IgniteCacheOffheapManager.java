@@ -573,6 +573,11 @@ public interface IgniteCacheOffheapManager {
     public long totalPartitionEntriesCount(int part);
 
     /**
+     * @param partIds Partition ids.
+     */
+    void preloadPartitions(int... partIds);
+
+    /**
      *
      */
     interface OffheapInvokeClosure extends IgniteTree.InvokeClosure<CacheDataRow> {

@@ -88,6 +88,7 @@ import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImp
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -1257,6 +1258,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
         else
             return new GridFinishedFuture<>();
+    }
+
+    /**
+     * @param partId Partition id.
+     * @return Future.
+     */
+    private IgniteInternalFuture<?> executePreloadTask(int partId) throws IgniteCheckedException {
+        return ctx.closures().affinityRun(Collections.singleton(name()), partId, new PartitionPreloadJob(), null, null);
     }
 
     /**
@@ -4953,6 +4962,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return new CacheEntryImpl<>((K)key0, (V)val0, entry.version());
     }
 
+    /** {@inheritDoc} */
+    @Override public void preloadPartition(int partId) throws IgniteCheckedException {
+        executePreloadTask(partId).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> preloadPartitionAsync(int partId) throws IgniteCheckedException {
+        return executePreloadTask(partId);
+    }
+
     /**
      *
      */
@@ -6678,6 +6697,22 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** {@inheritDoc} */
         @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteException {
             return null;
+        }
+    }
+
+    /**
+     * Clear task.
+     */
+    @GridInternal
+    private static class PartitionPreloadJob implements Runnable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        @IgniteInstanceResource
+        private IgniteEx ignite;
+
+        @Override public void run() {
+
         }
     }
 

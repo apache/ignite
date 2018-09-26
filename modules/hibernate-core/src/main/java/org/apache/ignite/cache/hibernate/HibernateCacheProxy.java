@@ -37,7 +37,6 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -645,6 +644,16 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     /** {@inheritDoc} */
     @Override public Collection<Integer> lostPartitions() {
         return delegate.lostPartitions();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void preloadPartition(int partId) throws IgniteCheckedException {
+        delegate.preloadPartition(partId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> preloadPartitionAsync(int partId) throws IgniteCheckedException {
+        return delegate.preloadPartitionAsync(partId);
     }
 
     /** {@inheritDoc} */

@@ -824,6 +824,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         return size;
     }
 
+    @Override public void preloadPartitions(int... partIds) {
+        // TODO implement.
+    }
+
     /**
      * Calculates free space of all partition data stores - number of bytes available for use in allocated pages.
      *

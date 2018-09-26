@@ -334,6 +334,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void preloadPartitions(int... partIds) {
+        // No-op.
+    }
+
     /**
      * @param p Partition.
      * @return Partition data.

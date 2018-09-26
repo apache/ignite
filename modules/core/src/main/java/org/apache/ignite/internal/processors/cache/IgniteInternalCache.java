@@ -1818,4 +1818,17 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return A collection of lost partitions if a cache is in recovery state.
      */
     public Collection<Integer> lostPartitions();
+
+    /**
+     * Preload cache partition.
+     * @param partId Partition id.
+     */
+    public void preloadPartition(int partId) throws IgniteCheckedException;
+
+    /**
+     * Preload cache partition.
+     * @param partId Partition id.
+     * @return Future to be completed whenever preloading completes.
+     */
+    public IgniteInternalFuture<?> preloadPartitionAsync(int partId) throws IgniteCheckedException;
 }

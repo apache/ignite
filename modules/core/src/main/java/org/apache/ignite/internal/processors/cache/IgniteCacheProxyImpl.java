@@ -1808,6 +1808,18 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         }
     }
 
+    /** {@inheritDoc}
+     * @param partIds Partition ids.
+     */
+    @Override public void preloadPartitions(int... partIds) {
+        try {
+            delegate.preloadPartition(partIds);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(ctx);

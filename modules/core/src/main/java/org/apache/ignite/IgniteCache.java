@@ -1531,4 +1531,9 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Clear cluster statistics for this cache.
      */
     public void clearStatistics();
+
+    /**
+     * @param partIds Partition ids.
+     */
+    public void preloadPartitions(int... partIds);
 }

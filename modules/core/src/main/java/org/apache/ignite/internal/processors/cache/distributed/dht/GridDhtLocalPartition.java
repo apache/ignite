@@ -1349,6 +1349,13 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
+     * Preload a partition.
+     */
+    public void preload() {
+        // TODO.
+    }
+
+    /**
      * Removed entry holder.
      */
     private static class RemovedEntryHolder {
