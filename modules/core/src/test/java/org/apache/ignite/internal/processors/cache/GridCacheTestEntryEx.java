@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.UUID;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictableEntry;
@@ -482,9 +483,9 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
     /** {@inheritDoc} */
     @Override public GridCacheUpdateTxResult mvccSet(@Nullable IgniteInternalTx tx, UUID affNodeId, CacheObject val,
-        long ttl0, AffinityTopologyVersion topVer, MvccSnapshot mvccVer,
-        GridCacheOperation op, boolean needHistory,
-        boolean noCreate) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        EntryProcessor entryProc, Object[] invokeArgs, long ttl0, AffinityTopologyVersion topVer, MvccSnapshot mvccVer,
+        GridCacheOperation op, boolean needHistory, boolean noCreate, CacheEntryPredicate filter, boolean retVal)
+        throws IgniteCheckedException, GridCacheEntryRemovedException {
         rawPut(val, ttl);
 
         return new GridCacheUpdateTxResult(true);
@@ -492,7 +493,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
     /** {@inheritDoc} */
     @Override public GridCacheUpdateTxResult mvccRemove(@Nullable IgniteInternalTx tx, UUID affNodeId,
-        AffinityTopologyVersion topVer, MvccSnapshot mvccVer, boolean needHistory)
+        AffinityTopologyVersion topVer, MvccSnapshot mvccVer, boolean needHistory,
+        CacheEntryPredicate filter, boolean retVal)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         obsoleteVer = ver;
 

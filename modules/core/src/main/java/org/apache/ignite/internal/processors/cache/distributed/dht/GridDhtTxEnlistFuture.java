@@ -21,26 +21,39 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheReturn;
+import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Future processing transaction enlisting and locking of entries
- * produces by complex DML queries with reduce step.
+ * Future processing transaction enlisting and locking of entries produces by cache API operations.
  */
-public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstractEnlistFuture implements UpdateSourceIterator<Object> {
+public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<GridCacheReturn> implements UpdateSourceIterator<Object> {
     /** Enlist operation. */
     private EnlistOperation op;
 
     /** Source iterator. */
     private Iterator<Object> it;
 
+    /** Future result. */
+    private GridCacheReturn res;
+
+    /** Need result flag. If {@code True} previous value should be returned as well. */
+    private boolean needRes;
+
     /**
+     * Constructor.
+     *
      * @param nearNodeId Near node ID.
      * @param nearLockVer Near lock version.
      * @param mvccSnapshot Mvcc snapshot.
@@ -52,8 +65,10 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstr
      * @param cctx Cache context.
      * @param rows Collection of rows.
      * @param op Operation.
+     * @param filter Filter.
+     * @param needRes Return previous value flag.
      */
-    public GridDhtTxQueryResultsEnlistFuture(UUID nearNodeId,
+    public GridDhtTxEnlistFuture(UUID nearNodeId,
         GridCacheVersion nearLockVer,
         MvccSnapshot mvccSnapshot,
         long threadId,
@@ -63,7 +78,9 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstr
         long timeout,
         GridCacheContext<?, ?> cctx,
         Collection<Object> rows,
-        EnlistOperation op) {
+        EnlistOperation op,
+        @Nullable CacheEntryPredicate filter,
+        boolean needRes) {
         super(nearNodeId,
             nearLockVer,
             mvccSnapshot,
@@ -73,11 +90,15 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstr
             null,
             tx,
             timeout,
-            cctx);
+            cctx,
+            filter);
 
         this.op = op;
+        this.needRes = needRes;
 
         it = rows.iterator();
+
+        res = new GridCacheReturn(cctx.localNodeId().equals(nearNodeId), false);
 
         skipNearNodeUpdates = true;
     }
@@ -88,22 +109,54 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstr
     }
 
     /** {@inheritDoc} */
+    @Override @Nullable protected GridCacheReturn result0() {
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onEntryProcessed(KeyCacheObject key, GridCacheUpdateTxResult txRes) {
+        assert txRes.invokeResult() == null || needRes;
+
+        res.success(txRes.success());
+
+        if(txRes.invokeResult() != null)
+            res.invokeResult(true);
+
+        if (needRes && txRes.success()) {
+            CacheInvokeResult invokeRes = txRes.invokeResult();
+
+            if (invokeRes != null) {
+                //TODO: IGNITE-9540: check if keepBinary flag usage is correct.
+                if(invokeRes.result() != null || invokeRes.error() != null)
+                    res.addEntryProcessResult(cctx, key, null, invokeRes.result(), invokeRes.error(), cctx.keepBinary());
+            }
+            else
+                res.set(cctx, txRes.prevValue(), txRes.success(), true);
+        }
+    }
+
+    /** {@inheritDoc} */
+    public boolean needResult() {
+        return needRes;
+    }
+
+    /** {@inheritDoc} */
     @Override public EnlistOperation operation() {
         return op;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasNextX() {
+    public boolean hasNextX() {
         return it.hasNext();
     }
 
     /** {@inheritDoc} */
-    @Override public Object nextX() {
+    public Object nextX() {
         return it.next();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtTxQueryResultsEnlistFuture.class, this);
+        return S.toString(GridDhtTxEnlistFuture.class, this);
     }
 }

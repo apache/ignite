@@ -27,6 +27,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.failure.FailureContext;
@@ -48,6 +49,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateNextSna
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -1769,13 +1771,17 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             GridCacheVersion ver,
             long expireTime,
             MvccSnapshot mvccVer,
+            CacheEntryPredicate filter,
+            EntryProcessor entryProc,
+            Object[] invokeArgs,
             boolean primary,
             boolean needHistory,
-            boolean noCreate) throws IgniteCheckedException {
+            boolean noCreate,
+            boolean retVal) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            return delegate.mvccUpdate(
-                cctx, key, val, ver, expireTime, mvccVer, primary, needHistory, noCreate);
+            return delegate.mvccUpdate(cctx, key, val, ver, expireTime, mvccVer, filter, entryProc, invokeArgs, primary,
+                needHistory, noCreate, retVal);
         }
 
         /** {@inheritDoc} */
@@ -1783,11 +1789,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             GridCacheContext cctx,
             KeyCacheObject key,
             MvccSnapshot mvccVer,
+            CacheEntryPredicate filter,
             boolean primary,
-            boolean needHistory) throws IgniteCheckedException {
+            boolean needHistory,
+            boolean retVal) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            return delegate.mvccRemove(cctx, key, mvccVer, primary, needHistory);
+            return delegate.mvccRemove(cctx, key, mvccVer, filter, primary, needHistory, retVal);
         }
 
         /** {@inheritDoc} */
