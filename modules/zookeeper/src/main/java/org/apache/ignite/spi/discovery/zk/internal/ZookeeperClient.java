@@ -53,6 +53,9 @@ public class ZookeeperClient implements Watcher {
     /** */
     private static final int DFLT_MAX_RETRY_COUNT = 10;
 
+    private static final boolean PINGER_ENABLED =
+        IgniteSystemProperties.getBoolean("IGNITE_ZOOKEEPER_DISCOVERY_PINGER_ENABLED", false);
+
     /** */
     private final AtomicInteger retryCount = new AtomicInteger();
 
@@ -165,6 +168,13 @@ public class ZookeeperClient implements Watcher {
         synchronized (stateMux) {
             return state == ConnectionState.Connected;
         }
+    }
+
+    /**
+     * @return {@code True} if pinger is enabled
+     */
+    boolean pingerEnabled() {
+        return PINGER_ENABLED;
     }
 
     /** */
@@ -813,11 +823,12 @@ public class ZookeeperClient implements Watcher {
      *
      */
     public void close() {
-        ZkPinger pinger0 = pinger;
+        if (PINGER_ENABLED) {
+            ZkPinger pinger0 = pinger;
 
-        if (pinger0 != null)
-            pinger0.stop();
-
+            if (pinger0 != null)
+                pinger0.stop();
+        }
         closeClient();
     }
 
@@ -956,7 +967,8 @@ public class ZookeeperClient implements Watcher {
      * @param pinger Pinger.
      */
     void attachPinger(ZkPinger pinger) {
-        this.pinger = pinger;
+        if (PINGER_ENABLED)
+            this.pinger = pinger;
     }
 
 

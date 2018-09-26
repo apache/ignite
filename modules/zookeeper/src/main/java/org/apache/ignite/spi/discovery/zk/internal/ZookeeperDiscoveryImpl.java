@@ -789,7 +789,7 @@ public class ZookeeperDiscoveryImpl {
             startJoin(rtState, prevState, joinDataBytes);
 
             try {
-                if (!locNode.isClient() && !locNode.isDaemon()) {
+                if (rtState.zkClient.pingerEnabled() && !locNode.isClient() && !locNode.isDaemon()) {
                     ZkPinger pinger = new ZkPinger(log, rtState.zkClient.zk(), zkPaths);
 
                     rtState.zkClient.attachPinger(pinger);
