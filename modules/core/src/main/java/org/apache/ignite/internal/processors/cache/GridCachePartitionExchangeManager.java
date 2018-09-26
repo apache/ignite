@@ -346,6 +346,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             return;
                         }
                     }
+                    else if (exchangeInProgress()) {
+                        if (log.isInfoEnabled())
+                            log.info("Ignore single message without exchange id (there is exchange in progress) [nodeId=" + node.id() + "]");
+
+                        return;
+                    }
 
                     if (!crdInitFut.isDone() && !msg.restoreState()) {
                         GridDhtPartitionExchangeId exchId = msg.exchangeId();
@@ -372,6 +378,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.io().addCacheHandler(0, GridDhtPartitionsFullMessage.class,
             new MessageHandler<GridDhtPartitionsFullMessage>() {
                 @Override public void onMessage(ClusterNode node, GridDhtPartitionsFullMessage msg) {
+                    if (msg.exchangeId() == null) {
+                        GridDhtPartitionsExchangeFuture currentExchange = lastTopologyFuture();
+
+                        if (currentExchange != null && currentExchange.addOrMergeDelayedFullMessage(node, msg)) {
+                            if (log.isInfoEnabled())
+                                log.info("Delay process full message without exchange id (there is exchange in progress) [nodeId=" + node.id() + "]");
+
+                            return;
+                        }
+                    }
+
                     processFullPartitionUpdate(node, msg);
                 }
             });
@@ -1499,7 +1516,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param node Sender cluster node.
      * @param msg Message.
      */
-    private void processFullPartitionUpdate(ClusterNode node, GridDhtPartitionsFullMessage msg) {
+    public void processFullPartitionUpdate(ClusterNode node, GridDhtPartitionsFullMessage msg) {
         if (!enterBusy())
             return;
 
@@ -2248,6 +2265,31 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         exchWorker.blockingSectionEnd();
     }
+
+    /**
+     * @return {@code True} If there is any exchange future in progress.
+     */
+    private boolean exchangeInProgress() {
+        if (exchWorker.hasPendingServerExchange())
+            return true;
+
+        GridDhtPartitionsExchangeFuture current = lastTopologyFuture();
+
+        if (current == null)
+            return false;
+
+        GridDhtTopologyFuture finished = lastFinishedFut.get();
+
+        if (finished == null || finished.result().compareTo(current.initialVersion()) < 0) {
+            ClusterNode triggeredBy = current.firstEvent().eventNode();
+
+            if (current.partitionChangesInProgress() && !triggeredBy.isClient())
+                return true;
+       }
+
+        return false;
+    }
+
     /**
      * Exchange future thread. All exchanges happen only by one thread and next
      * exchange will not start until previous one completes.
