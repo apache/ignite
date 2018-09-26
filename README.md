@@ -22,7 +22,7 @@ You can find the full Apache Ignite documentation here: [Full documentation][doc
 
 <p align="center">
     <a href="https://ignite.apache.org/whatisignite.html">
-        <img src="https://ignite.apache.org/images/ignite_architecture.png" width="600px"/>
+        <img src="https://ignite.apache.org/images/ignite_architecture.png" width="400px"/>
     </a>
 </p>
 
