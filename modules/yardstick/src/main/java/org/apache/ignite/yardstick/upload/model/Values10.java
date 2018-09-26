@@ -21,47 +21,37 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
 /**
- * Describes data model. Matches data model, defined in {@link QueryFactory#createTable()}
+ * Describes value_type for data model, defined in {@link QueryFactory#createTable()}.
  */
 public class Values10 {
     /** */
-    @QuerySqlField
     final String val1;
 
     /** */
-    @QuerySqlField
     final long val2;
 
     /** */
-    @QuerySqlField
     final String val3;
 
     /** */
-    @QuerySqlField
     final long val4;
 
     /** */
-    @QuerySqlField
     final String val5;
 
     /** */
-    @QuerySqlField
     final long val6;
 
     /** */
-    @QuerySqlField
     final String val7;
 
     /** */
-    @QuerySqlField
     final long val8;
 
     /** */
-    @QuerySqlField
     final String val9;
 
     /** */
-    @QuerySqlField
     final long val10;
 
     /** Creates new object with randomly initialized fields */

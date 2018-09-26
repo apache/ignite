@@ -29,6 +29,9 @@ import org.jetbrains.annotations.Nullable;
  * prepared statement.
  */
 public class QueryFactory {
+    /** Name of the table upload data to. */
+    public static final String UPLOAD_TABLE_NAME = "TEST_UPLOAD";
+
     /** Query to drop table if it exists. */
     public static final String DROP_TABLE_IF_EXISTS = "DROP TABLE IF EXISTS test_upload;";
 
@@ -76,10 +79,12 @@ public class QueryFactory {
 
         create.append(')');
 
-        if (tabAtomicMode != null)
-            create.append(" WITH \"ATOMICITY=").append(tabAtomicMode.name()).append('\"');
+        StringBuilder withClause = new StringBuilder("key_type=Long, value_type=Values10");
 
-        create.append(';');
+        if (tabAtomicMode != null)
+            withClause.append(", ATOMICITY=").append(tabAtomicMode.name());
+
+        create.append(" WITH \"").append(withClause).append("\";");
 
         return create.toString();
     }

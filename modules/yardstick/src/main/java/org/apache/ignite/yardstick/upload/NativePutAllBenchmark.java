@@ -29,11 +29,10 @@ public class NativePutAllBenchmark extends AbstractNativeBenchmark {
     /**
      * Uploads randomly generated data using simple put.
      *
-     * @param cacheName - name of the cache.
      * @param insertsCnt - how many entries should be uploaded.
      */
-    @Override protected void upload(String cacheName, long insertsCnt) {
-        IgniteCache<Object, Object> c = ignite().cache(cacheName);
+    @Override protected void upload(long insertsCnt) {
+        IgniteCache<Object, Object> c = ignite().cache(CACHE_NAME);
 
         long batchSize = args.upload.jdbcBatchSize();
         Map<Long, Values10> batch = new HashMap<>((int)batchSize);
