@@ -2029,10 +2029,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         RestoreBinaryState restoreBinaryState = new RestoreBinaryState(status, lastArchivedSegment, log);
 
-        Collection<Integer> restoreGrps = metastoreOnly ? Collections.emptyList() :
-            cacheGrps.stream()
+        // Always perform recovery at least meta storage cache.
+        Set<Integer> restoreGrps = new HashSet<>(Collections.singletonList(METASTORAGE_CACHE_ID));
+
+        if (!F.isEmpty(cacheGrps)) {
+            restoreGrps.addAll(cacheGrps.stream()
                 .filter(g -> !initiallyGlobalWalDisabledGrps.contains(g) || !initiallyLocalWalDisabledGrps.contains(g))
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
+        }
 
         int applied = 0;
 
@@ -2051,9 +2055,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             // Here we do not require tag check because we may be applying memory changes after
                             // several repetitive restarts and the same pages may have changed several times.
                             int grpId = pageRec.fullPageId().groupId();
-
-                            if (metastoreOnly && grpId != METASTORAGE_CACHE_ID)
-                                continue;
 
                             if (restoreGrps.contains(grpId)) {
                                 long pageId = pageRec.fullPageId().pageId();
@@ -2088,9 +2089,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         {
                             int grpId = metaStateRecord.groupId();
 
-                            if (metastoreOnly && grpId != METASTORAGE_CACHE_ID)
-                                continue;
-
                             if (!restoreGrps.contains(grpId))
                                 continue;
 
@@ -2112,9 +2110,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         {
                             int grpId = destroyRecord.groupId();
 
-                            if (metastoreOnly && grpId != METASTORAGE_CACHE_ID)
-                                continue;
-
                             if (!restoreGrps.contains(grpId))
                                 continue;
 
@@ -2132,9 +2127,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             PageDeltaRecord r = (PageDeltaRecord)rec;
 
                             int grpId = r.groupId();
-
-                            if (metastoreOnly && grpId != METASTORAGE_CACHE_ID)
-                                continue;
 
                             if (restoreGrps.contains(grpId)) {
                                 long pageId = r.pageId();
