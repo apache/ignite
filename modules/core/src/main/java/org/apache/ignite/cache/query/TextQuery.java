@@ -18,10 +18,13 @@
 package org.apache.ignite.cache.query;
 
 import javax.cache.Cache;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Query for Lucene based fulltext search.
@@ -37,6 +40,21 @@ public final class TextQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
     /** SQL clause. */
     private String txt;
+    
+    /** */
+    private IgniteBiPredicate<K, V> filter;
+
+   
+    /**
+     * Create scan query with filter.
+     *
+     * @param filter Filter. If {@code null} then all entries will be returned.
+     */
+    public TextQuery(Class<?> type, String txt,@Nullable IgniteBiPredicate<K, V> filter) {
+        this(type, txt);
+        setFitler(filter);
+    }
+
 
     /**
      * Constructs query for the given search string.
@@ -67,6 +85,16 @@ public final class TextQuery<K, V> extends Query<Cache.Entry<K, V>> {
      */
     public String getType() {
         return type;
+    }
+    
+
+    /**
+     * Gets filter for query.
+     *
+     * @return Type.
+     */
+    public IgniteBiPredicate<K, V> getFilter() {
+        return filter;
     }
 
     /**
@@ -124,6 +152,17 @@ public final class TextQuery<K, V> extends Query<Cache.Entry<K, V>> {
         return (TextQuery<K, V>)super.setLocal(loc);
     }
 
+    /**
+     * Sets text search filter cloure.
+     *
+     * @param txt Text search string.
+     * @return {@code this} For chaining.
+     */
+    public TextQuery<K, V> setFitler(IgniteBiPredicate<K, V> filter) {
+        this.filter = filter;
+        return this;
+    }
+    
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TextQuery.class, this);
