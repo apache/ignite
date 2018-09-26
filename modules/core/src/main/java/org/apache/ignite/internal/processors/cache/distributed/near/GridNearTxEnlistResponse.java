@@ -18,7 +18,11 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
@@ -30,6 +34,7 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -66,8 +71,9 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
     /** */
     private IgniteUuid dhtFutId;
 
-    /** */
-    private GridLongList updCntrs;
+    /** New DHT nodes involved into transaction. */
+    @GridDirectCollection(UUID.class)
+    private Collection<UUID> newDhtNodes;
 
     /**
      * Default constructor.
@@ -86,7 +92,7 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
      * @param res Result.
      * @param dhtVer Dht version.
      * @param dhtFutId Dht future id.
-     * @param updCntrs Update counters.
+     * @param newDhtNodes New DHT nodes involved into transaction.
      */
     public GridNearTxEnlistResponse(int cacheId,
         IgniteUuid futId,
@@ -95,7 +101,7 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
         GridCacheReturn res,
         GridCacheVersion dhtVer,
         IgniteUuid dhtFutId,
-        GridLongList updCntrs) {
+        Set<UUID> newDhtNodes) {
         this.cacheId = cacheId;
         this.futId = futId;
         this.miniId = miniId;
@@ -103,7 +109,7 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
         this.res = res;
         this.dhtVer = dhtVer;
         this.dhtFutId = dhtFutId;
-        this.updCntrs = updCntrs;
+        this.newDhtNodes = newDhtNodes;
     }
 
     /**
@@ -176,13 +182,6 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
         return dhtFutId;
     }
 
-    /**
-     * @return Update counters.
-     */
-    public GridLongList updateCounters() {
-        return updCntrs;
-    }
-
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 11;
@@ -240,13 +239,13 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeMessage("res", res))
+                if (!writer.writeCollection("newDhtNodes", newDhtNodes, MessageCollectionItemType.UUID))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeMessage("updCntrs", updCntrs))
+                if (!writer.writeMessage("res", res))
                     return false;
 
                 writer.incrementState();
@@ -316,7 +315,7 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
                 reader.incrementState();
 
             case 9:
-                res = reader.readMessage("res");
+                newDhtNodes = reader.readCollection("newDhtNodes", MessageCollectionItemType.UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -324,7 +323,7 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
                 reader.incrementState();
 
             case 10:
-                updCntrs = reader.readMessage("updCntrs");
+                res = reader.readMessage("res");
 
                 if (!reader.isLastRead())
                     return false;
