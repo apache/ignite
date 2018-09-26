@@ -795,9 +795,19 @@ public class GridReduceQueryExecutor {
 
                 final long qryReqId0 = qryReqId;
 
-                cancel.set(new Runnable() {
+                cancel.set(new GridQueryCancel.Cancellable() {
                     @Override public void run() {
                         send(finalNodes, new GridQueryCancelRequest(qryReqId0), null, false);
+                    }
+
+                    @Override public String buildExceptionMessage(){
+                        return String.format(
+                            "The query was cancelled while executing [query=%s, localNodeId=%s, reason=%s, timeout=%s ms]",
+                            qry.originalSql(),
+                            ctx.localNodeId(),
+                            timeoutMillis > 0 ? "Statement with timeout was cancelled" : "Cancelled by client",
+                            timeoutMillis
+                        );
                     }
                 });
 
@@ -953,14 +963,6 @@ public class GridReduceQueryExecutor {
                 if (e instanceof IgniteCheckedException) {
                     Throwable disconnectedErr =
                         ((IgniteCheckedException)e).getCause(IgniteClientDisconnectedException.class);
-
-                    if (QueryCancelledException.class.isAssignableFrom(e.getClass()))
-                        cause = new QueryCancelledException(String.format(
-                            "The query was cancelled while executing [query=%s, localNodeId=%s, reason=%s]",
-                            qry.originalSql(),
-                            ctx.localNodeId(),
-                            "Cancelled by client"
-                        ));
 
                     if (disconnectedErr != null)
                         cause = disconnectedErr;
@@ -1141,11 +1143,21 @@ public class GridReduceQueryExecutor {
 
             final Collection<ClusterNode> finalNodes = nodes;
 
-            cancel.set(new Runnable() {
+            cancel.set(new GridQueryCancel.Cancellable() {
                 @Override public void run() {
                     r.future().onCancelled();
 
                     send(finalNodes, new GridQueryCancelRequest(reqId), null, false);
+                }
+
+                @Override public String buildExceptionMessage(){
+                    return String.format(
+                        "The query was cancelled [query=%s, localNodeId=%s, reason=%s, timeout=%s ms]",
+                        selectQry,
+                        ctx.localNodeId(),
+                        timeoutMillis > 0 ? "Query with timeout was cancelled" : "Cancelled by client",
+                        timeoutMillis
+                    );
                 }
             });
 

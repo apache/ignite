@@ -1391,7 +1391,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (cancel != null) {
             try {
-                cancel.set(new Runnable() {
+                cancel.set(new GridQueryCancel.Cancellable() {
                     @Override public void run() {
                         if (lazyWorker != null) {
                             lazyWorker.submit(new Runnable() {
@@ -1403,15 +1403,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         else
                             cancelStatement(stmt);
                     }
+
+                    @Override public String buildExceptionMessage(){
+                        return String.format(
+                            "The query was cancelled before executing [query=%s, localNodeId=%s, reason=%s, timeout=%s ms]",
+                            stmt,
+                            nodeId,
+                            timeoutMillis > 0 ? "Statement with timeout was cancelled" : "Cancelled by client",
+                            timeoutMillis
+                        );
+                    }
                 });
             }catch(QueryCancelledException e){
-                throw new CacheException(new QueryCancelledException(String.format(
-                    "The query was cancelled before executing [query=%s, localNodeId=%s, reason=%s, timeout=%s ms]",
-                    stmt,
-                    ctx.localNodeId(),
-                    timeoutMillis > 0 ? "Statement with timeout was cancelled" : "Cancelled by client",
-                    timeoutMillis
-                )));
+                throw new CacheException(e);
             }
         }
 
