@@ -45,6 +45,9 @@ public class MarshallerUtils {
     /** Job sender node version. */
     private static final ThreadLocal<IgniteProductVersion> JOB_SND_NODE_VER = new ThreadLocal<>();
 
+    /** Job sender node version. */
+    private static final ThreadLocal<IgniteProductVersion> JOB_RCV_NODE_VER = new ThreadLocal<>();
+
     /**
      * Set node name to marshaller context if possible.
      *
@@ -93,6 +96,24 @@ public class MarshallerUtils {
      */
     public static IgniteProductVersion jobSenderVersion() {
         return JOB_SND_NODE_VER.get();
+    }
+
+    /**
+     * Sets thread local job receiver node version.
+     *
+     * @param ver Thread local job receiver node version.
+     */
+    public static void jobReceiverVersion(IgniteProductVersion ver) {
+        JOB_RCV_NODE_VER.set(ver);
+    }
+
+    /**
+     * Returns thread local job receiver node version.
+     *
+     * @return Thread local job receiver node version.
+     */
+    public static IgniteProductVersion jobReceiverVersion() {
+        return JOB_RCV_NODE_VER.get();
     }
 
     /**
@@ -199,5 +220,4 @@ public class MarshallerUtils {
                 "[path=" + fileName + ']', e);
         }
     }
-
 }
