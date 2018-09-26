@@ -300,7 +300,7 @@ public class CachesRegistry {
         return cctx.kernalContext().closure().runLocalSafe(() -> {
             try {
                 for (StoredCacheData data : cacheConfigsToPersist)
-                    cctx.pageStore().storeCacheData(data, false);
+                    cctx.database().storeCacheConfiguration(data, false);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Error while saving cache configurations on disk", e);
