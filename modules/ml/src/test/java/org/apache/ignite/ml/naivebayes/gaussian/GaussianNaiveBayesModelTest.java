@@ -41,7 +41,7 @@ public class GaussianNaiveBayesModelTest {
         GaussianNaiveBayesModel mdl = new GaussianNaiveBayesModel(means, variances, probabilities);
         Vector observation = new DenseVector(new double[] {6, 130, 8});
 
-        Assert.assertEquals(Integer.valueOf(0), mdl.apply(observation));
+        Assert.assertEquals(Integer.valueOf(1), mdl.apply(observation));
     }
 
 }
