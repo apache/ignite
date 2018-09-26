@@ -1980,7 +1980,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             .collect(Collectors.toList());
 
         for (DynamicCacheDescriptor desc : cacheDescs)
-                storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
+            storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
 
         Set<Integer> cacheGrps = cacheDescs.stream()
             .map(desc -> desc.groupDescriptor().groupId())
