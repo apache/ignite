@@ -797,4 +797,25 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         return S.toString(GridDhtPartitionsFullMessage.class, this, "partCnt", parts != null ? parts.size() : 0,
             "super", super.toString());
     }
+
+    /**
+     * Merges (replaces with newer) partitions map from given {@code other} full message.
+     *
+     * @param other Other full message.
+     */
+    public void merge(GridDhtPartitionsFullMessage other) {
+        assert other.exchangeId() == null && exchangeId() == null :
+            "Both current and merge full message must have exchangeId == null"
+             + other.exchangeId() + "," + exchangeId();
+
+        for (Map.Entry<Integer, GridDhtPartitionFullMap> groupAndMap : other.partitions().entrySet()) {
+            int grpId = groupAndMap.getKey();
+            GridDhtPartitionFullMap updMap = groupAndMap.getValue();
+
+            GridDhtPartitionFullMap currMap = partitions().get(grpId);
+
+            if (currMap == null || updMap.compareTo(currMap) >= 0)
+                partitions().put(grpId, updMap);
+        }
+    }
 }
