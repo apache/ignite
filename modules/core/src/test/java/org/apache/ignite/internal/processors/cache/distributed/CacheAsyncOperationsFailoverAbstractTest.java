@@ -214,12 +214,19 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
             @Override public Object call() throws Exception {
                 Thread.currentThread().setName("restart-thread");
 
-                while (!finished.get()) {
-                    U.sleep(500);
+                try {
+                    while (!finished.get()) {
+                        U.sleep(500);
 
-                    stopGrid(NODE_CNT);
+                        stopGrid(NODE_CNT);
 
-                    startGrid(NODE_CNT);
+                        startGrid(NODE_CNT);
+                    }
+                }
+                catch (Exception e) {
+                    log.error("Restart", e);
+
+                    throw e;
                 }
                 return null;
             }
@@ -238,52 +245,62 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
 
                     long lastInfo = 0;
 
-                    while ((time = System.currentTimeMillis()) < endTime) {
-                        if (time - lastInfo > 5000)
-                            log.info("Starting operations [iter=" + iter + ']');
+                    try {
+                        while ((time = System.currentTimeMillis()) < endTime) {
+                            if (time - lastInfo > 5000)
+                                log.info("Starting operations [iter=" + iter + ']');
 
-                        List<IgniteFuture<?>> futs = new ArrayList<>(opsPerThread);
+                            List<IgniteFuture<?>> futs = new ArrayList<>(opsPerThread);
 
-                        for (int i = 0; i < opsPerThread; i++) {
-                            TreeMap<TestKey, TestValue> map = new TreeMap<>();
+                            for (int i = 0; i < opsPerThread; i++) {
+                                TreeMap<TestKey, TestValue> map = new TreeMap<>();
 
-                            int keys = rnd.nextInt(1, 50);
+                                int keys = rnd.nextInt(1, 50);
 
-                            for (int k = 0; k < keys; k++)
-                                map.put(new TestKey(rnd.nextInt(10_000)), new TestValue(iter));
+                                for (int k = 0; k < keys; k++)
+                                    map.put(new TestKey(rnd.nextInt(10_000)), new TestValue(iter));
 
-                            IgniteFuture<?> fut = cache.putAllAsync(map);
+                                IgniteFuture<?> fut = cache.putAllAsync(map);
 
-                            assertNotNull(fut);
+                                assertNotNull(fut);
 
-                            futs.add(fut);
+                                futs.add(fut);
+                            }
+
+                            if (time - lastInfo > 5000) {
+                                log.info("Waiting for futures [iter=" + iter + ']');
+
+                                lastInfo = time;
+                            }
+
+                            for (IgniteFuture<?> fut : futs)
+                                fut.get();
+
+                            iter++;
                         }
+                    }
+                    catch (Throwable e) {
+                        log.error("Put", e);
 
-                        if (time - lastInfo > 5000) {
-                            log.info("Waiting for futures [iter=" + iter + ']');
-
-                            lastInfo = time;
-                        }
-
-                        for (IgniteFuture<?> fut : futs)
-                            fut.get();
-
-                        iter++;
+                        throw e;
                     }
 
                     return null;
                 }
             }, threads, "update-thread");
 
-            finished.set(true);
-
-            restartFut.get();
         }
         finally {
             finished.set(true);
+
+            try {
+                restartFut.get();
+            }
+            finally {
+                stopGrid();
+            }
         }
-        
-        stopGrid();
+
     }
 
     /**
