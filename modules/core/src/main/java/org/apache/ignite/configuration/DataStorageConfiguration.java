@@ -18,6 +18,7 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import java.util.zip.Deflater;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -152,6 +153,9 @@ public class DataStorageConfiguration implements Serializable {
     /** Default wal compaction enabled. */
     public static final boolean DFLT_WAL_COMPACTION_ENABLED = false;
 
+    /** Default wal compaction level. */
+    public static final int DFLT_WAL_COMPACTION_LEVEL = Deflater.BEST_SPEED;
+
     /** Size of a memory chunk reserved for system cache initially. */
     private long sysRegionInitSize = DFLT_SYS_CACHE_INIT_SIZE;
 
@@ -257,6 +261,15 @@ public class DataStorageConfiguration implements Serializable {
      * Compressed WAL archive gets automatically decompressed on demand.
      */
     private boolean walCompactionEnabled = DFLT_WAL_COMPACTION_ENABLED;
+
+    /**
+     * ZIP level to WAL compaction.
+     *
+     * @see java.util.zip.ZipOutputStream#setLevel(int)
+     * @see java.util.zip.Deflater#BEST_SPEED
+     * @see java.util.zip.Deflater#BEST_COMPRESSION
+     */
+    private int walCompactionLevel = DFLT_WAL_COMPACTION_LEVEL;
 
     /**
      * Initial size of a data region reserved for system cache.
@@ -388,6 +401,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Overrides configuration of default data region which is created automatically.
+     *
      * @param dfltDataRegConf Default data region configuration.
      */
     public DataStorageConfiguration setDefaultDataRegionConfiguration(DataRegionConfiguration dfltDataRegConf) {
@@ -907,6 +921,20 @@ public class DataStorageConfiguration implements Serializable {
         this.walCompactionEnabled = walCompactionEnabled;
 
         return this;
+    }
+
+    /**
+     * @return ZIP level to WAL compaction.
+     */
+    public int getWalCompactionLevel() {
+        return walCompactionLevel;
+    }
+
+    /**
+     * @param walCompactionLevel New ZIP level to WAL compaction.
+     */
+    public void setWalCompactionLevel(int walCompactionLevel) {
+        this.walCompactionLevel = walCompactionLevel;
     }
 
     /** {@inheritDoc} */

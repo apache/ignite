@@ -35,7 +35,8 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         private static readonly string[] MissingProperties =
         {
             // IGNITE-7305
-            "WalBufferSize"
+            "WalBufferSize",
+            "WalCompactionLevel" // IGNITE-9599
         };
 
         /// <summary>

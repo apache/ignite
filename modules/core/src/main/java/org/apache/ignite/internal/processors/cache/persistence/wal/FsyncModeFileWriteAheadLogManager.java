@@ -1751,16 +1751,12 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         /** All segments prior to this (inclusive) can be compressed. */
         private volatile long minUncompressedIdxToKeep = -1L;
 
-        /**
-         *
-         */
+        /** */
         FileCompressor() {
             super("wal-file-compressor%" + cctx.igniteInstanceName());
         }
 
-        /**
-         *
-         */
+        /** */
         private void init() {
             File[] toDel = walArchiveDir.listFiles(WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER);
 
@@ -1923,6 +1919,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             }
 
             try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip)))) {
+                zos.setLevel(dsCfg.getWalCompactionLevel());
                 zos.putNextEntry(new ZipEntry(""));
 
                 zos.write(prepareSerializerVersionBuffer(nextSegment, segmentSerializerVer, true).array());
