@@ -3262,7 +3262,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     GridDhtPartitionTopology top = grpCtx != null
                         ? grpCtx.topology()
-                        : cctx.exchange().clientTopology(grpCtx.groupId(), events().discoveryCache());
+                        : cctx.exchange().clientTopology(groupDescriptor.groupId(), events().discoveryCache());
 
                     // Do not validate read or write through caches or caches with disabled rebalance
                     // or ExpiryPolicy is set or validation is disabled.
