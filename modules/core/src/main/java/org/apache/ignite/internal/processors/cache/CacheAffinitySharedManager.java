@@ -1465,7 +1465,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         final AffinityTopologyVersion resTopVer) {
         final Set<Integer> affReq = fut.context().groupsAffinityRequestOnJoin();
 
-        final Map<Long, ClusterNode> nodesByOrder = new HashMap<>();
+        final Map<Long, ClusterNode> nodesByOrder = new ConcurrentHashMap<>();
 
         final Map<Integer, CacheGroupAffinityMessage> receivedAff = msg.joinedNodeAffinity();
 
