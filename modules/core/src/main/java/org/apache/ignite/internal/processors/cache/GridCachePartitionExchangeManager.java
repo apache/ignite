@@ -884,7 +884,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             AffinityTopologyVersion topVer = fut.topologyVersion();
 
-            if (cur == null || (topVer != null && topVer.compareTo(cur.topologyVersion()) > 0)) {
+            if (topVer != null && (cur == null || topVer.compareTo(cur.topologyVersion()) > 0)) {
                 if (lastFinishedFut.compareAndSet(cur, fut)) {
                     exchFuts.readyTopVer(topVer);
 
