@@ -3285,6 +3285,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     }
             });
         }
+        catch (IgniteInterruptedCheckedException ie) {
+            Thread.currentThread().interrupt();
+        }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to validate partitions state", e);
         }
@@ -3315,6 +3318,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     else
                         assignPartitionStates(top);
                 });
+        }
+        catch (IgniteInterruptedCheckedException ie) {
+            Thread.currentThread().interrupt();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to assign partition states", e);
