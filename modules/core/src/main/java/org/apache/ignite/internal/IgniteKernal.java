@@ -767,6 +767,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param customExecSvcs Custom named executors.
      * @param errHnd Error handler to use for notification about startup problems.
      * @param workerRegistry Worker registry.
+     * @param hnd Default uncaught exception handler used by thread pools.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings({"CatchGenericClass", "unchecked"})
@@ -789,7 +790,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ExecutorService schemaExecSvc,
         @Nullable final Map<String, ? extends ExecutorService> customExecSvcs,
         GridAbsClosure errHnd,
-        WorkersRegistry workerRegistry
+        WorkersRegistry workerRegistry,
+        Thread.UncaughtExceptionHandler hnd
     )
         throws IgniteCheckedException {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getIgniteInstanceName()));
@@ -906,7 +908,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 customExecSvcs,
                 plugins,
                 classNameFilter(),
-                workerRegistry
+                workerRegistry,
+                hnd
             );
 
             cfg.getMarshaller().setContext(ctx.marshallerContext());
