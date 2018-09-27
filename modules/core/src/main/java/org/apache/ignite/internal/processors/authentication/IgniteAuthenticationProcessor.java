@@ -102,7 +102,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private final Object mux = new Object();
 
     /** Active operations. Collects to send on joining node. */
-    private Map<IgniteUuid, UserManagementOperation> activeOps =  Collections.synchronizedMap(new LinkedHashMap<>());
+    private final Map<IgniteUuid, UserManagementOperation> activeOps = Collections.synchronizedMap(new LinkedHashMap<>());
 
     /** User map. */
     private ConcurrentMap<String, User> users;
@@ -139,7 +139,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private DiscoveryEventListener discoLsnr;
 
     /** Node activate future. */
-    private GridFutureAdapter<Void> activateFut = new GridFutureAdapter<>();
+    private final GridFutureAdapter<Void> activateFut = new GridFutureAdapter<>();
 
     /** Validate error. */
     private String validateErr;
