@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -42,6 +43,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
@@ -97,60 +99,60 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
     /**
      * @throws Exception If failed.
      */
-    public void testPutAllAsyncFailover() throws Exception {
-        putAllAsyncFailover(5, 10);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutAllAsyncFailoverManyThreads() throws Exception {
-        putAllAsyncFailover(ignite(0).configuration().getSystemThreadPoolSize() * 2, 3);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-//    public void testAsyncFailover() throws Exception {
-//        IgniteCache<TestKey, TestValue> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
-//
-//        int ops = cache.getConfiguration(CacheConfiguration.class).getMaxConcurrentAsyncOperations();
-//
-//        log.info("Max concurrent async operations: " + ops);
-//
-//        assertTrue(ops > 0);
-//
-//        // Start/stop one node.
-//        for (int i = 0; i < 2; i++) {
-//            log.info("Iteration: " + i);
-//
-//            startGrid(NODE_CNT);
-//
-//            List<IgniteFuture<?>> futs = startAsyncOperations(ops, cache);
-//
-//            stopGrid(NODE_CNT);
-//
-//            for (IgniteFuture<?> fut : futs)
-//                fut.get();
-//
-//            log.info("Iteration done: " + i);
-//        }
-//
-//        // Start all nodes except one.
-//        try {
-//            List<IgniteFuture<?>> futs = startAsyncOperations(ops, cache);
-//
-//            for (int i = 1; i < NODE_CNT; i++)
-//                stopGrid(i);
-//
-//            for (IgniteFuture<?> fut : futs)
-//                fut.get();
-//        }
-//        finally {
-//            for (int i = 1; i < NODE_CNT; i++)
-//                startGrid(i);
-//        }
+//    public void testPutAllAsyncFailover() throws Exception {
+//        putAllAsyncFailover(5, 10);
 //    }
+
+    /**
+     * @throws Exception If failed.
+     */
+//    public void testPutAllAsyncFailoverManyThreads() throws Exception {
+//        putAllAsyncFailover(ignite(0).configuration().getSystemThreadPoolSize() * 2, 3);
+//    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAsyncFailover() throws Exception {
+        IgniteCache<TestKey, TestValue> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
+
+        int ops = cache.getConfiguration(CacheConfiguration.class).getMaxConcurrentAsyncOperations();
+
+        log.info("Max concurrent async operations: " + ops);
+
+        assertTrue(ops > 0);
+
+        // Start/stop one node.
+        for (int i = 0; i < 2; i++) {
+            log.info("Iteration: " + i);
+
+            startGrid(NODE_CNT);
+
+            List<IgniteFuture<?>> futs = startAsyncOperations(ops, cache);
+
+            stopGrid(NODE_CNT);
+
+            for (IgniteFuture<?> fut : futs)
+                fut.get();
+
+            log.info("Iteration done: " + i);
+        }
+
+        // Start all nodes except one.
+        try {
+            List<IgniteFuture<?>> futs = startAsyncOperations(ops, cache);
+
+            for (int i = 1; i < NODE_CNT; i++)
+                stopGrid(i);
+
+            for (IgniteFuture<?> fut : futs)
+                fut.get();
+        }
+        finally {
+            for (int i = 1; i < NODE_CNT; i++)
+                startGrid(i);
+        }
+    }
 
     /**
      * @param ops Number of operations.
