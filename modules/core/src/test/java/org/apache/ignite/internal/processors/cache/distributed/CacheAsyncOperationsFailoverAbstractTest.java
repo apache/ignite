@@ -214,11 +214,8 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
                 Thread.currentThread().setName("restart-thread");
 
                 while (!finished.get()) {
-                    boolean error = true;
                     try {
                         startGrid(NODE_CNT);
-
-                        error = false;
 
                         U.sleep(500);
                     }
@@ -226,13 +223,12 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
                         log.error("Start", t);
                     }
                     finally {
-                        if (!error)
-                            try {
-                                stopGrid(NODE_CNT);
-                            }
-                            catch (Throwable t) {
-                                log.error("Stop", t);
-                            }
+                        try {
+                            stopGrid(NODE_CNT);
+                        }
+                        catch (Throwable t) {
+                            log.error("Stop", t);
+                        }
                     }
                 }
 
