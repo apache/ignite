@@ -17,11 +17,10 @@
 
 package org.apache.ignite.ml.knn;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.knn.regression.KNNRegressionModel;
@@ -32,34 +31,13 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import static junit.framework.TestCase.assertEquals;
 
 /**
  * Tests for {@link KNNRegressionTrainer}.
  */
-@RunWith(Parameterized.class)
-public class KNNRegressionTest {
-    /** Number of parts to be tested. */
-    private static final int[] partsToBeTested = new int[] {1, 2, 3, 4, 5, 7, 100};
-
-    /** Number of partitions. */
-    @Parameterized.Parameter
-    public int parts;
-
-    /** Parameters. */
-    @Parameterized.Parameters(name = "Data divided on {0} partitions, training with batch size {1}")
-    public static Iterable<Integer[]> data() {
-        List<Integer[]> res = new ArrayList<>();
-
-        for (int part : partsToBeTested)
-            res.add(new Integer[] {part});
-
-        return res;
-    }
-
+public class KNNRegressionTest extends TrainerTest {
     /** */
     @Test
     public void testSimpleRegressionWithOneNeighbour() {

@@ -31,6 +31,7 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.GridLogThrottle;
+import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.stream.StreamTransformer;
 import org.jetbrains.annotations.Nullable;
 
@@ -965,7 +966,7 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_DUMP_THREADS_ON_FAILURE = "IGNITE_DUMP_THREADS_ON_FAILURE";
 
-    /**
+   /**
      * Throttling timeout in millis which avoid excessive PendingTree access on unwind if there is nothing to clean yet.
      *
      * Default is 500 ms.
@@ -981,6 +982,16 @@ public final class IgniteSystemProperties {
      * Number of concurrent operation for evict partitions.
      */
     public static final String IGNITE_EVICTION_PERMITS = "IGNITE_EVICTION_PERMITS";
+
+    /**
+     * Timeout between ZooKeeper client retries, default 2s.
+     */
+    public static final String IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT = "IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT";
+
+    /**
+     * Number of attempts to reconnect to ZooKeeper.
+     */
+    public static final String IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT = "IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT";
 
     /**
      * Enforces singleton.

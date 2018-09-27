@@ -241,7 +241,10 @@ public class GridNioServer<T> {
     /** */
     private final IgniteRunnable balancer;
 
-    /** */
+    /**
+     * Interval in milliseconds between consequtive {@link GridWorkerListener#onIdle(GridWorker)} calls
+     * in server workers.
+     */
     private final boolean readWriteSelectorsAssign;
 
     /**
@@ -1785,11 +1788,15 @@ public class GridNioServer<T> {
                 boolean reset = false;
 
                 while (!closed) {
+                    updateHeartbeat();
+
                     try {
                         if (reset)
                             createSelector();
 
                         bodyInternal();
+
+                        onIdle();
                     }
                     catch (IgniteCheckedException e) {
                         if (!Thread.currentThread().isInterrupted()) {
@@ -1924,7 +1931,11 @@ public class GridNioServer<T> {
                 while (!closed && selector.isOpen()) {
                     SessionChangeRequest req0;
 
+                    updateHeartbeat();
+
                     while ((req0 = changeReqs.poll()) != null) {
+                        updateHeartbeat();
+
                         switch (req0.operation()) {
                             case CONNECT: {
                                 NioOperationFuture fut = (NioOperationFuture)req0;
@@ -2100,6 +2111,8 @@ public class GridNioServer<T> {
 
                         if (res > 0) {
                             // Walk through the ready keys collection and process network events.
+                            updateHeartbeat();
+
                             if (selectedKeys == null)
                                 processSelectedKeys(selector.selectedKeys());
                             else
@@ -2128,6 +2141,8 @@ public class GridNioServer<T> {
                     try {
                         if (!changeReqs.isEmpty())
                             continue;
+
+                        updateHeartbeat();
 
                         // Wake up every 2 seconds to check if closed.
                         if (selector.select(2000) > 0) {
@@ -2891,7 +2906,6 @@ public class GridNioServer<T> {
                     lsnr.onFailure(CRITICAL_ERROR, err);
                 else if (err != null)
                     lsnr.onFailure(SYSTEM_WORKER_TERMINATION, err);
-
             }
         }
 
@@ -2903,13 +2917,19 @@ public class GridNioServer<T> {
         private void accept() throws IgniteCheckedException {
             try {
                 while (!closed && selector.isOpen() && !Thread.currentThread().isInterrupted()) {
+                    updateHeartbeat();
+
                     // Wake up every 2 seconds to check if closed.
                     if (selector.select(2000) > 0)
                         // Walk through the ready keys collection and process date requests.
                         processSelectedKeys(selector.selectedKeys());
+                    else
+                        updateHeartbeat();
 
                     if (balancer != null)
                         balancer.run();
+
+                    onIdle();
                 }
             }
             // Ignore this exception as thread interruption is equal to 'close' call.

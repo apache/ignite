@@ -59,7 +59,7 @@ import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryCntr;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryId;
@@ -114,10 +114,11 @@ import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker.MVCC_TRACKER_ID_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_BIT_OFF;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_INITIAL_CNTR;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_READ_OP_CNTR;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_START_CNTR;
@@ -1084,7 +1085,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             }
 
             if (workers == null) {
-                U.warn(log, "Attempting to stop inactive vacuum.");
+                if (log.isInfoEnabled())
+                    log.info("Attempting to stop inactive vacuum.");
 
                 return;
             }
@@ -2223,9 +2225,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             return compare(row, snapshot.coordinatorVersion(), snapshot.cleanupVersion()) <= 0
                 && hasNewVersion(row) && MvccUtils.compareNewVersion(row, snapshot.coordinatorVersion(), snapshot.cleanupVersion()) <= 0
                 && MvccUtils.state(cctx, row.newMvccCoordinatorVersion(), row.newMvccCounter(),
-                row.newMvccOperationCounter() | (row.newMvccTxState() << PageIO.MVCC_HINTS_BIT_OFF)) == TxState.COMMITTED
+                row.newMvccOperationCounter() | (row.newMvccTxState() << MVCC_HINTS_BIT_OFF)) == TxState.COMMITTED
                 || MvccUtils.state(cctx, row.mvccCoordinatorVersion(), row.mvccCounter(),
-                row.mvccOperationCounter() | (row.mvccTxState() << PageIO.MVCC_HINTS_BIT_OFF)) == TxState.ABORTED;
+                row.mvccOperationCounter() | (row.mvccTxState() << MVCC_HINTS_BIT_OFF)) == TxState.ABORTED;
         }
 
         /** */

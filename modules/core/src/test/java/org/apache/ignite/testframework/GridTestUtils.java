@@ -84,7 +84,7 @@ import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -1313,25 +1313,7 @@ public final class GridTestUtils {
         assert fieldName != null;
 
         try {
-            // Resolve inner field.
-            Field field = cls.getDeclaredField(fieldName);
-
-            synchronized (field) {
-                // Backup accessible field state.
-                boolean accessible = field.isAccessible();
-
-                try {
-                    if (!accessible)
-                        field.setAccessible(true);
-
-                    obj = field.get(obj);
-                }
-                finally {
-                    // Recover accessible field state.
-                    if (!accessible)
-                        field.setAccessible(false);
-                }
-            }
+            obj = findField(cls, obj, fieldName);
 
             return (T)obj;
         }
@@ -1361,25 +1343,7 @@ public final class GridTestUtils {
                 Class<?> cls = obj instanceof Class ? (Class)obj : obj.getClass();
 
                 try {
-                    // Resolve inner field.
-                    Field field = cls.getDeclaredField(fieldName);
-
-                    synchronized (field) {
-                        // Backup accessible field state.
-                        boolean accessible = field.isAccessible();
-
-                        try {
-                            if (!accessible)
-                                field.setAccessible(true);
-
-                            obj = field.get(obj);
-                        }
-                        finally {
-                            // Recover accessible field state.
-                            if (!accessible)
-                                field.setAccessible(false);
-                        }
-                    }
+                    obj = findField(cls, obj, fieldName);
                 }
                 catch (NoSuchFieldException e) {
                     // Resolve inner class, if not an inner field.
@@ -1398,6 +1362,74 @@ public final class GridTestUtils {
         catch (IllegalAccessException e) {
             throw new IgniteException("Failed to get object field [obj=" + obj +
                 ", fieldNames=" + Arrays.toString(fieldNames) + ']', e);
+        }
+    }
+
+    /**
+     * Get object field value via reflection(including superclass).
+     *
+     * @param obj Object or class to get field value from.
+     * @param fieldNames Field names to get value for: obj->field1->field2->...->fieldN.
+     * @param <T> Expected field class.
+     * @return Field value.
+     * @throws IgniteException In case of error.
+     */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    public static <T> T getFieldValueHierarchy(Object obj, String... fieldNames) throws IgniteException {
+        assert obj != null;
+        assert fieldNames != null;
+        assert fieldNames.length >= 1;
+
+        try {
+            for (String fieldName : fieldNames) {
+                Class<?> cls = obj instanceof Class ? (Class)obj : obj.getClass();
+
+                while (cls != null) {
+                    try {
+                        obj = findField(cls, obj, fieldName);
+
+                        break;
+                    }
+                    catch (NoSuchFieldException e) {
+                        cls = cls.getSuperclass();
+                    }
+                }
+            }
+
+            return (T)obj;
+        }
+        catch (IllegalAccessException e) {
+            throw new IgniteException("Failed to get object field [obj=" + obj +
+                ", fieldNames=" + Arrays.toString(fieldNames) + ']', e);
+        }
+    }
+
+    /**
+     * @param cls Class for searching.
+     * @param obj Target object.
+     * @param fieldName Field name for search.
+     * @return Field from object if it was found.
+     */
+    private static Object findField(Class<?> cls, Object obj,
+        String fieldName) throws NoSuchFieldException, IllegalAccessException {
+        // Resolve inner field.
+        Field field = cls.getDeclaredField(fieldName);
+
+        synchronized (field) {
+            // Backup accessible field state.
+            boolean accessible = field.isAccessible();
+
+            try {
+                if (!accessible)
+                    field.setAccessible(true);
+
+                return field.get(obj);
+            }
+            finally {
+                // Recover accessible field state.
+                if (!accessible)
+                    field.setAccessible(false);
+            }
         }
     }
 
