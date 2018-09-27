@@ -52,6 +52,8 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
     /** */
     private static final long TEST_TIME = 60_000;
 
+    private String instanceName;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -97,7 +99,14 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
      * @throws Exception If failed.
      */
     public void testPutAllAsyncFailover() throws Exception {
-        putAllAsyncFailover(5, 10);
+        instanceName = "putAllAsyncFailover";
+
+        try {
+            putAllAsyncFailover(5, 10);
+        }
+        finally {
+            instanceName = null;
+        }
     }
 
     /**
@@ -105,6 +114,12 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
      */
     public void testPutAllAsyncFailoverManyThreads() throws Exception {
         putAllAsyncFailover(ignite(0).configuration().getSystemThreadPoolSize() * 2, 3);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public String getTestIgniteInstanceName() {
+        return instanceName == null ? super.getTestIgniteInstanceName() : instanceName;
     }
 
     /**
