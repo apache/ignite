@@ -1598,6 +1598,7 @@ namespace Apache.Ignite.Core
         /// <para/>
         /// By default schema names are case-insensitive. Use quotes to enforce case sensitivity.
         /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<string> SqlSchemas { get; set; }
     }
 }

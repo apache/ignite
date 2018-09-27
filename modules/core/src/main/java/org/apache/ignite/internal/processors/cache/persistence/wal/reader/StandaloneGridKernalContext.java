@@ -648,6 +648,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
+    @Override public Thread.UncaughtExceptionHandler uncaughtExceptionHandler() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public PdsFoldersResolver pdsFolderResolver() {
         return new PdsFoldersResolver() {
             /** {@inheritDoc} */

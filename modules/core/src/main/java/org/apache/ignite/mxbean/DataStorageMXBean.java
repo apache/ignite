@@ -15,12 +15,25 @@
  * limitations under the License.
  */
 
-export interface ISiginData {
-    email: string,
-    password: string
-}
+package org.apache.ignite.mxbean;
 
-export interface ISigninFormController extends ng.IFormController {
-    email: ng.INgModelController,
-    password: ng.INgModelController
+import org.apache.ignite.configuration.DataStorageConfiguration;
+
+/**
+ * An MX bean allowing to monitor and tune persistence.
+ */
+public interface DataStorageMXBean {
+    @MXBeanDescription("ZIP compression level to WAL compaction.")
+    int getWalCompactionLevel();
+
+    /**
+     * Sets ZIP compression level to WAL compaction.
+     * {@link DataStorageConfiguration#setWalCompactionLevel(int)} configuration property.
+     *
+     * @param walCompactionLevel ZIP compression level.
+     */
+    @MXBeanDescription("Sets ZIP compression level to WAL compaction.")
+    @MXBeanParametersNames("walCompactionLevel")
+    @MXBeanParametersDescriptions("ZIP compression level.")
+    void setWalCompactionLevel(int walCompactionLevel);
 }

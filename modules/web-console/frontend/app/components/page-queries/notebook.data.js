@@ -80,6 +80,11 @@ const DEMO_NOTEBOOK = {
 export default class NotebookData {
     static $inject = ['$rootScope', '$http', '$q'];
 
+    /**
+     * @param {ng.IRootScopeService} $root 
+     * @param {ng.IHttpService} $http 
+     * @param {ng.IQService} $q    
+     */
     constructor($root, $http, $q) {
         this.demo = $root.IgniteDemoMode;
 

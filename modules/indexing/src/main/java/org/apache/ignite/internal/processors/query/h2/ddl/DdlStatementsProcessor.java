@@ -778,9 +778,6 @@ public class DdlStatementsProcessor {
                 if (!handleUuidAsByte)
                     return UUID.class.getName();
 
-            case Value.DATE:
-                return java.util.Date.class.getName();
-
             default:
                 return DataType.getTypeClassName(type);
         }
