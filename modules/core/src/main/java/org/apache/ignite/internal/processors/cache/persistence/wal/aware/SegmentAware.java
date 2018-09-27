@@ -124,6 +124,20 @@ public class SegmentAware {
     }
 
     /**
+     * @param idx Minimum raw segment index that should be preserved from deletion.
+     */
+    public void keepUncompressedIdxFrom(long idx) {
+        segmentCompressStorage.keepUncompressedIdxFrom(idx);
+    }
+
+    /**
+     * @return  Minimum raw segment index that should be preserved from deletion.
+     */
+    public long keepUncompressedIdxFrom() {
+        return segmentCompressStorage.keepUncompressedIdxFrom();
+    }
+
+    /**
      * Update current WAL index.
      *
      * @param curAbsWalIdx New current WAL index.

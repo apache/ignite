@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import java.util.ArrayDeque;
+import java.util.Queue;
 
 /**
  * Storage of actual information about current index of compressed segments.
@@ -25,10 +27,21 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 public class SegmentCompressStorage {
     /** Flag of interrupt waiting on this object. */
     private volatile boolean interrupted;
+
     /** Manages last archived index, emulates archivation in no-archiver mode. */
     private final SegmentArchivedStorage segmentArchivedStorage;
+
     /** Last successfully compressed segment. */
     private volatile long lastCompressedIdx = -1L;
+
+    /** Last enqueued to compress segment. */
+    private long lastEnqueuedToCompressIdx = -1L;
+
+    /** Segments to compress queue. */
+    private final Queue<Long> segmentsToCompress = new ArrayDeque<>();
+
+    /** Min uncompressed index to keep. */
+    private volatile long minUncompressedIdxToKeep = -1L;
 
     /**
      * @param segmentArchivedStorage Storage of last archived segment.
@@ -71,13 +84,8 @@ public class SegmentCompressStorage {
      * there's no segment to archive right now.
      */
     synchronized long nextSegmentToCompressOrWait() throws IgniteInterruptedCheckedException {
-        long segmentToCompress = lastCompressedIdx + 1;
-
         try {
-            while (
-                segmentToCompress > segmentArchivedStorage.lastArchivedAbsoluteIndex()
-                    && !interrupted
-                )
+            while (segmentsToCompress.peek() == null && !interrupted)
                 wait();
         }
         catch (InterruptedException e) {
@@ -86,7 +94,9 @@ public class SegmentCompressStorage {
 
         checkInterrupted();
 
-        return segmentToCompress;
+        Long idx =  segmentsToCompress.poll();
+
+        return idx == null ? -1L : idx;
     }
 
     /**
@@ -110,7 +120,26 @@ public class SegmentCompressStorage {
      * Callback for waking up compressor when new segment is archived.
      */
     private synchronized void onSegmentArchived(long lastAbsArchivedIdx) {
+        if (lastAbsArchivedIdx > lastEnqueuedToCompressIdx) {
+            segmentsToCompress.add(lastAbsArchivedIdx);
+
+            lastEnqueuedToCompressIdx = lastAbsArchivedIdx;
+        }
+
         notifyAll();
     }
 
+    /**
+     * @param idx Minimum raw segment index that should be preserved from deletion.
+     */
+    void keepUncompressedIdxFrom(long idx) {
+        minUncompressedIdxToKeep = idx;
+    }
+
+    /**
+     * @return  Minimum raw segment index that should be preserved from deletion.
+     */
+    long keepUncompressedIdxFrom() {
+        return minUncompressedIdxToKeep;
+    }
 }
