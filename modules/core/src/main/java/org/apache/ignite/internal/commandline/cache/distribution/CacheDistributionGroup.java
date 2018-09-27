@@ -30,14 +30,29 @@ public class CacheDistributionGroup extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Group identifier. */
     private int groupId;
 
-    /** */
+    /** Group name. */
     private String groupName;
 
-    /** */
+    /** List of partitions. */
     private List<CacheDistributionPartition> partitions;
+
+    /** Default constructor. */
+    public CacheDistributionGroup() {
+    }
+
+    /**
+     * @param groupId Group identifier.
+     * @param groupName Group name.
+     * @param partitions List of partitions.
+     */
+    public CacheDistributionGroup(int groupId, String groupName, List<CacheDistributionPartition> partitions) {
+        this.groupId = groupId;
+        this.groupName = groupName;
+        this.partitions = partitions;
+    }
 
     /** */
     public int getGroupId() {

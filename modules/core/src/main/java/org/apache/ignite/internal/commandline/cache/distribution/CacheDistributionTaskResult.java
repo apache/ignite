@@ -245,6 +245,7 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
             return result;
         }
 
+        /** */
         public void print(PrintStream out) {
             out.print(groupId);
             out.print(',');
@@ -309,9 +310,7 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
 
                     rows.add(row);
                 }
-
             }
-
         }
 
         rows.sort(null);
@@ -321,6 +320,7 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
         if (!rows.isEmpty() && rows.get(0).userAttributes!=null){
             for (String userAttribute:rows.get(0).userAttributes.keySet()){
                 userAttributesName.append(',');
+
                 if (userAttribute!=null)
                     userAttributesName.append(userAttribute);
             }
@@ -334,11 +334,9 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
                 out.println("[next group: id=" + row.groupId + ", name=" + row.groupName + ']');
 
                 oldGroupId = row.getGroupId();
-
             }
 
             row.print(out);
-
         }
     }
 }

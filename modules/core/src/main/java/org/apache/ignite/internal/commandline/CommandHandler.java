@@ -54,9 +54,9 @@ import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTask;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskArg;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskResult;
-import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTaskResult;
 import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTask;
 import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTaskArg;
+import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTaskResult;
 import org.apache.ignite.internal.processors.cache.verify.CacheInfo;
 import org.apache.ignite.internal.processors.cache.verify.ContentionInfo;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
@@ -807,7 +807,6 @@ public class CommandHandler {
      * @param cacheArgs Cache args.
      */
     private void cacheDistribution(GridClient client, CacheArguments cacheArgs) throws GridClientException {
-
         CacheDistributionTaskArg taskArg = new CacheDistributionTaskArg(cacheArgs.caches());
 
         UUID nodeId = cacheArgs.nodeId() == null ? BROADCAST_UUID : cacheArgs.nodeId();
@@ -1631,10 +1630,8 @@ public class CommandHandler {
 
                         cacheArgs.setUserAttributes(userAttributes);
 
-                        if (hasNextCacheArg())
-                            nextArg = nextArg("");
-                        else
-                            nextArg = null;
+                        nextArg = (hasNextCacheArg()) ? nextArg("") : null;
+
                     }
 
                     if (nextArg!=null)

@@ -46,9 +46,11 @@ public class CacheDistributionTaskArg extends VisorDataTransferObject {
 
     /**
      * @param caches Caches.
+     * @param userAttributes Add user attribute in result.
      */
-    public CacheDistributionTaskArg(Set<String> caches) {
+    public CacheDistributionTaskArg(Set<String> caches, Set<String> userAttributes) {
         this.caches = caches;
+        this.userAttributes = userAttributes;
     }
 
     /**

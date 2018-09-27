@@ -68,6 +68,7 @@ public class CacheDistributionTask extends VisorMultiNodeTask<CacheDistributionT
         return new CacheDistributionJob(arg, debug);
     }
 
+    /** Job for node. */
     private static class CacheDistributionJob extends VisorJob<CacheDistributionTaskArg, CacheDistributionNode> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -148,26 +149,17 @@ public class CacheDistributionTask extends VisorMultiNodeTask<CacheDistributionT
 
                         int p = part.id();
                         partition.setPartition(p);
-
                         partition.setPrimary(assignment.primaryPartitions(node.id()).contains(p));
-
                         partition.setState(part.state());
-
                         partition.setUpdateCounter(part.updateCounter());
-
                         partition.setSize(desc == null ? part.dataStore().fullSize() : part.dataStore().cacheSize(id));
-
                     }
-
                 }
-
                 return info;
-
             }
             catch (Exception e) {
                 throw new IgniteException(e);
             }
-
         }
 
         /** {@inheritDoc} */

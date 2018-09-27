@@ -32,17 +32,36 @@ public class CacheDistributionNode extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Node identifier. */
     private UUID nodeId;
 
-    /** */
+    /** Network addresses. */
     private String addresses;
 
     /** User attribute in result. */
     private Map<String, String> userAttributes;
 
-    /** */
+    /** Information about groups. */
     private List<CacheDistributionGroup> groups;
+
+    /** Default constructor. */
+    public CacheDistributionNode() {
+    }
+
+    /**
+     * @param nodeId Node identifier.
+     * @param addresses Network addresses.
+     * @param userAttributes Map node user attribute.
+     * @param groups Information about groups.
+     */
+    public CacheDistributionNode(UUID nodeId, String addresses,
+        Map<String, String> userAttributes,
+        List<CacheDistributionGroup> groups) {
+        this.nodeId = nodeId;
+        this.addresses = addresses;
+        this.userAttributes = userAttributes;
+        this.groups = groups;
+    }
 
     /** */
     public UUID getNodeId() {

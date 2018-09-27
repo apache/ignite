@@ -31,7 +31,7 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Reset status of lost partitions.
  */
 public class CacheResetLostPartitionsTask extends VisorOneNodeTask<CacheResetLostPartitionsTaskArg, CacheResetLostPartitionsTaskResult> {
     /** */
@@ -42,6 +42,7 @@ public class CacheResetLostPartitionsTask extends VisorOneNodeTask<CacheResetLos
         return new CacheResetLostPartitionsJob(arg, debug);
     }
 
+    /** Job for node. */
     private static class CacheResetLostPartitionsJob extends VisorJob<CacheResetLostPartitionsTaskArg, CacheResetLostPartitionsTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;

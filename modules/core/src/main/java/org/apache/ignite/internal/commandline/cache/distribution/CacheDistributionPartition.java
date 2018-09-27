@@ -30,20 +30,40 @@ public class CacheDistributionPartition extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Partition identifier. */
     private int partition;
 
-    /** */
+    /** Flag primary or backup partition. */
     private boolean primary;
 
-    /** */
+    /** Partition status. */
     private GridDhtPartitionState state;
 
-    /** */
+    /** Partition update counters. */
     private long updateCounter;
 
-    /** */
+    /** Number of entries in partition. */
     private long size;
+
+    /** Default constructor. */
+    public CacheDistributionPartition() {
+    }
+
+    /**
+     * @param partition Partition identifier.
+     * @param primary Flag primary or backup partition.
+     * @param state Partition status.
+     * @param updateCounter Partition update counters.
+     * @param size Number of entries in partition.
+     */
+    public CacheDistributionPartition(int partition, boolean primary,
+        GridDhtPartitionState state, long updateCounter, long size) {
+        this.partition = partition;
+        this.primary = primary;
+        this.state = state;
+        this.updateCounter = updateCounter;
+        this.size = size;
+    }
 
     /** */
     public int getPartition() {
