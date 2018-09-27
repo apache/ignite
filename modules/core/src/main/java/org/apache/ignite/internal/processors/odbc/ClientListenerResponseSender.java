@@ -15,17 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc.jdbc;
-
-import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+package org.apache.ignite.internal.processors.odbc;
 
 /**
- * JDBC response result sender.
+ * Client listener response result sender.
  */
-public interface JdbcResponseSender {
+public interface ClientListenerResponseSender {
     /**
      * Send response to the client. Used for asynchronous result send.
-     * @param resp JDBC response.
+     * @param resp Client listener response.
      */
     public void send(ClientListenerResponse resp);
 }

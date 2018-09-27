@@ -286,7 +286,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
         switch (clientType) {
             case ODBC_CLIENT:
-                return new OdbcConnectionContext(ctx, busyLock, connId, maxCursors);
+                return new OdbcConnectionContext(ctx, ses, busyLock, connId, maxCursors);
 
             case JDBC_CLIENT:
                 return new JdbcConnectionContext(ctx, ses, busyLock, connId, maxCursors);

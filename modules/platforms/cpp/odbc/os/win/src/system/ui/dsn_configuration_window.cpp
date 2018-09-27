@@ -160,17 +160,17 @@ namespace ignite
 
                     const ProtocolVersion::VersionSet& supported = ProtocolVersion::GetSupported();
 
-                    ProtocolVersion version = ProtocolVersion::GetCurrent();
-                    ProtocolVersion::VersionSet::const_iterator it;
-                    for (it = supported.begin(); it != supported.end(); ++it)
+                    ProtocolVersion version = config.GetProtocolVersion();
+
+                    if (!version.IsSupported())
+                        version = ProtocolVersion::GetCurrent();
+
+                    for (ProtocolVersion::VersionSet::const_iterator it = supported.begin(); it != supported.end(); ++it)
                     {
                         protocolVersionComboBox->AddString(it->ToString());
 
-                        if (*it == config.GetProtocolVersion())
-                        {
+                        if (*it == version)
                             protocolVersionComboBox->SetSelection(id);
-                            version = *it;
-                        }
 
                         ++id;
                     }
@@ -296,7 +296,10 @@ namespace ignite
 
                     int checkBoxSize = (sizeX - 3 * INTERVAL) / 2;
 
-                    const ProtocolVersion version = config.GetProtocolVersion();
+                    ProtocolVersion version = config.GetProtocolVersion();
+
+                    if (!version.IsSupported())
+                        version = ProtocolVersion::GetCurrent();
 
                     int rowPos = posY + 2 * INTERVAL;
 

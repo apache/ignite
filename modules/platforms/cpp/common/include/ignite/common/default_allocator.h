@@ -18,13 +18,9 @@
 #define _IGNITE_COMMON_DEFAULT_ALLOCATOR
 
 #include <stdint.h>
-#include <cstring>
 #include <cassert>
 
-#include <utility>
-
 #include <ignite/common/common.h>
-#include <ignite/common/fixed_size_array.h>
 
 namespace ignite
 {
@@ -86,8 +82,6 @@ namespace ignite
             {
                 p->~ValueType();
             }
-
-        private:
         };
     }
 }
