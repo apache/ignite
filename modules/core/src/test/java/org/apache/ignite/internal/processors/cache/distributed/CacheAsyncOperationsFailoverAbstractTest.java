@@ -141,19 +141,25 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
         }
 
         // Start all nodes except one.
+        List<Integer> stopped = new ArrayList<>(NODE_CNT);
         try {
             List<IgniteFuture<?>> futs = startAsyncOperations(ops, cache);
 
-            for (int i = 1; i < NODE_CNT; i++)
+            for (int i = 1; i < NODE_CNT; i++) {
                 stopGrid(i);
+
+                stopped.add(i);
+            }
 
             for (IgniteFuture<?> fut : futs)
                 fut.get();
         }
         finally {
-            for (int i = 1; i < NODE_CNT; i++)
+            for (int i : stopped)
                 startGrid(i);
         }
+
+        U.sleep(500);
     }
 
     /**
