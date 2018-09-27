@@ -50,9 +50,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWra
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -852,38 +852,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                 cctx.tm().commitTx(this);
 
                 state(COMMITTED);
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void applyTxCounters() {
-        super.applyTxCounters();
-
-        TxCounters txCntrs = txCounters(false);
-
-        if (txCntrs == null)
-            return;
-
-        Map<Integer, PartitionUpdateCounters> updCntrs = txCntrs.updateCounters();
-
-        for (Map.Entry<Integer, PartitionUpdateCounters> entry : updCntrs.entrySet()) {
-            int cacheId = entry.getKey();
-
-            GridDhtPartitionTopology top = cctx.cacheContext(cacheId).topology();
-
-            Map<Integer, Long> cacheUpdCntrs = entry.getValue().updateCounters();
-
-            assert cacheUpdCntrs != null;
-
-            for (Map.Entry<Integer, Long> e : cacheUpdCntrs.entrySet()) {
-                long updCntr = e.getValue();
-
-                GridDhtLocalPartition dhtPart = top.localPartition(e.getKey());
-
-                assert dhtPart != null && updCntr > 0;
-
-                dhtPart.updateCounter(updCntr);
             }
         }
     }
