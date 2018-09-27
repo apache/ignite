@@ -1909,12 +1909,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         cctx.kernalContext().authentication().onActivate();
 
-        if (exchActions != null && err == null)
-            exchActions.completeRequestFutures(cctx, null);
-
-        if (stateChangeExchange() && err == null)
-            cctx.kernalContext().state().onStateChangeExchangeDone(exchActions.stateChangeRequest());
-
         Map<T2<Integer, Integer>, Long> localReserved = partHistSuppliers.getReservations(cctx.localNodeId());
 
         if (localReserved != null) {
@@ -1948,6 +1942,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             cctx.exchange().lastFinishedFuture(this);
 
             cctx.exchange().onExchangeDone(res, initialVersion(), err0);
+
+            if (exchActions != null && err0 == null)
+                exchActions.completeRequestFutures(cctx, null);
+
+            if (stateChangeExchange() && err0 == null)
+                cctx.kernalContext().state().onStateChangeExchangeDone(exchActions.stateChangeRequest());
         });
 
         if (super.onDone(res, err)) {
