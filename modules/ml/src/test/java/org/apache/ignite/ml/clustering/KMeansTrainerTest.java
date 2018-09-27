@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
+import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -36,7 +37,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Tests for {@link KMeansTrainer}.
  */
-public class KMeansTrainerTest {
+public class KMeansTrainerTest extends TrainerTest {
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
 
@@ -59,7 +60,7 @@ public class KMeansTrainerTest {
     public void findOneClusters() {
         KMeansTrainer trainer = createAndCheckTrainer();
         KMeansModel knnMdl = trainer.withAmountOfClusters(1).fit(
-            new LocalDatasetBuilder<>(data, 2),
+            new LocalDatasetBuilder<>(data, parts),
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         );
@@ -77,19 +78,19 @@ public class KMeansTrainerTest {
     public void testUpdateMdl() {
         KMeansTrainer trainer = createAndCheckTrainer();
         KMeansModel originalMdl = trainer.withAmountOfClusters(1).fit(
-            new LocalDatasetBuilder<>(data, 2),
+            new LocalDatasetBuilder<>(data, parts),
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         );
         KMeansModel updatedMdlOnSameDataset = trainer.update(
             originalMdl,
-            new LocalDatasetBuilder<>(data, 2),
+            new LocalDatasetBuilder<>(data, parts),
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         );
         KMeansModel updatedMdlOnEmptyDataset = trainer.update(
             originalMdl,
-            new LocalDatasetBuilder<>(new HashMap<Integer, double[]>(), 2),
+            new LocalDatasetBuilder<>(new HashMap<Integer, double[]>(), parts),
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         );

@@ -17,15 +17,13 @@
 
 package org.apache.ignite.ml.preprocessing.encoding;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownCategorialFeatureValue;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertArrayEquals;
@@ -33,26 +31,7 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Tests for {@link EncoderTrainer}.
  */
-@RunWith(Parameterized.class)
-public class EncoderTrainerTest {
-    /** Parameters. */
-    @Parameterized.Parameters(name = "Data divided on {0} partitions")
-    public static Iterable<Integer[]> data() {
-        return Arrays.asList(
-            new Integer[]{1},
-            new Integer[]{2},
-            new Integer[]{3},
-            new Integer[]{5},
-            new Integer[]{7},
-            new Integer[]{100},
-            new Integer[]{1000}
-        );
-    }
-
-    /** Number of partitions. */
-    @Parameterized.Parameter
-    public int parts;
-
+public class EncoderTrainerTest extends TrainerTest {
     /** Tests {@code fit()} method. */
     @Test
     public void testFitOnStringCategorialFeatures() {
@@ -68,8 +47,8 @@ public class EncoderTrainerTest {
 
         EncoderTrainer<Integer, String[]> strEncoderTrainer = new EncoderTrainer<Integer, String[]>()
             .withEncoderType(EncoderType.STRING_ENCODER)
-            .encodeFeature(0)
-            .encodeFeature(1);
+            .withEncodedFeature(0)
+            .withEncodedFeature(1);
 
         EncoderPreprocessor<Integer, String[]> preprocessor = strEncoderTrainer.fit(
             datasetBuilder,
@@ -94,8 +73,8 @@ public class EncoderTrainerTest {
 
         EncoderTrainer<Integer, Object[]> strEncoderTrainer = new EncoderTrainer<Integer, Object[]>()
             .withEncoderType(EncoderType.ONE_HOT_ENCODER)
-            .encodeFeature(0)
-            .encodeFeature(1);
+            .withEncodedFeature(0)
+            .withEncodedFeature(1);
 
         EncoderPreprocessor<Integer, Object[]> preprocessor = strEncoderTrainer.fit(
             datasetBuilder,
@@ -120,8 +99,8 @@ public class EncoderTrainerTest {
 
         EncoderTrainer<Integer, Object[]> strEncoderTrainer = new EncoderTrainer<Integer, Object[]>()
             .withEncoderType(EncoderType.STRING_ENCODER)
-            .encodeFeature(0)
-            .encodeFeature(1);
+            .withEncodedFeature(0)
+            .withEncodedFeature(1);
 
         EncoderPreprocessor<Integer, Object[]> preprocessor = strEncoderTrainer.fit(
             datasetBuilder,
