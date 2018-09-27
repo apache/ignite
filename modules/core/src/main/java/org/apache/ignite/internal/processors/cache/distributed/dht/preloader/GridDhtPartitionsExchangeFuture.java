@@ -1893,6 +1893,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
 
+                cctx.exchange().onExchangeDone(res, initialVersion(), f.error());
+
                 cctx.kernalContext().authentication().onActivate();
 
                 if (exchActions != null && err == null)
@@ -1927,8 +1929,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     cctx.walState().changeLocalStatesOnExchangeDone(res);
                 }
-
-                cctx.exchange().onExchangeDone(res, initialVersion(), f.error());
             }
             catch (Throwable h) {
                 if (err != null)
