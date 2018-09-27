@@ -42,17 +42,17 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
     /** Nodes count. */
     private static final int NODES_COUNT = 4;
 
-    /** */
+    /** Find's first node in cluster. */
     private static final ActivateNodeFinder FIRST_NODE = nodes -> nodes.stream().limit(1).findAny().get();
 
-    /** */
+    /** Find's last node in cluster. */
     private static final ActivateNodeFinder LAST_NODE = nodes -> nodes.stream().skip(nodes.size() - 1).findAny().get();
 
-    /** */
+    /** Find's node with min order. */
     private static final ActivateNodeFinder COORDINATOR_NODE =
         nodes -> nodes.stream().min(Comparator.comparingLong(ClusterNode::order)).get();
 
-    /** */
+    /** Fins's node with max order. */
     private static final ActivateNodeFinder NON_COORDINATOR_NODE =
         nodes -> nodes.stream().max(Comparator.comparingLong(ClusterNode::order)).get();
 
@@ -93,27 +93,7 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
      * @throws Exception if failed.
      */
     public void testStartNodeAfterCacheStarted() throws Exception {
-        IgniteEx ignite0 = startGrid(0);
-        IgniteEx ignite1 = startGrid(1);
-
-        ignite1.cluster().active(true);
-
-        stopGrid(1);
-
-        CacheConfiguration<Long, Long> cacheCfg = new CacheConfiguration<Long, Long>(DEFAULT_CACHE_NAME).setBackups(1);
-
-        IgniteCache<Long, Long> cache0 = ignite0.getOrCreateCache(cacheCfg);
-
-        populateData(cache0);
-
-        ignite1 = startGrid(1);
-
-        awaitPartitionMapExchange();
-
-        IgniteCache<Long, Long> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
-
-        for (int i = 0; i < NUMBER_RECORDS; i++)
-            assertTrue(cache1.containsKey(1L << i));
+        restoreClusterAfterCacheCreate(NODES_COUNT,false,LAST_NODE);
     }
 
     /**
@@ -122,64 +102,46 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
      * @throws Exception if failed.
      */
     public void testStartNodeAfterCacheDestroy() throws Exception {
-        IgniteEx ignite0 = startGrid(0);
-        IgniteEx ignite1 = startGrid(1);
-
-        CacheConfiguration<Long, Long> cacheCfg = new CacheConfiguration<Long, Long>(DEFAULT_CACHE_NAME).setBackups(0);
-
-        ignite1.cluster().active(true);
-
-        IgniteCache<Long, Long> cache0 = ignite0.getOrCreateCache(cacheCfg);
-
-        populateData(cache0);
-
-        IgniteCache<Long, Long> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
-
-        checkDataPresent(cache1);
-
-        stopGrid(1);
-
-        cache0.destroy();
-
-        // Starting grid with stored DEFAULT_CACHE_NAME configuration after DEFAULT_CACHE_NAME cache was destroyed.
-        startGrid(1);
-
-        awaitPartitionMapExchange();
+        restoreClusterAfterCacheDestroy(NODES_COUNT, false, LAST_NODE);
     }
 
     public void testFullRestartAfterCacheDestroyActivateFromCoordinator() throws Exception {
-        fullRestartClusterAfterCacheDestoroy(NODES_COUNT, COORDINATOR_NODE);
+        restoreClusterAfterCacheDestroy(NODES_COUNT, true, COORDINATOR_NODE);
     }
 
     public void testFullRestartAfterCacheDestroyActivateFromNonCoordinator() throws Exception {
-        fullRestartClusterAfterCacheDestoroy(NODES_COUNT, NON_COORDINATOR_NODE);
+        restoreClusterAfterCacheDestroy(NODES_COUNT, true, NON_COORDINATOR_NODE);
     }
 
     public void testFullRestartAfterCacheDestroyActivateFromFirstNode() throws Exception {
-        fullRestartClusterAfterCacheDestoroy(NODES_COUNT, FIRST_NODE);
+        restoreClusterAfterCacheDestroy(NODES_COUNT, true, FIRST_NODE);
     }
 
     public void testFullRestartAfterCacheDestroyActivateFromLastNode() throws Exception {
-        fullRestartClusterAfterCacheDestoroy(NODES_COUNT, LAST_NODE);
+        restoreClusterAfterCacheDestroy(NODES_COUNT, true, LAST_NODE);
     }
 
     public void testFullRestartAfterCacheCreateActivateFromCoordinator() throws Exception {
-        fullRestartClusterAfterCacheCreate(NODES_COUNT, COORDINATOR_NODE);
+        restoreClusterAfterCacheCreate(NODES_COUNT, true, COORDINATOR_NODE);
     }
 
     public void testFullRestartAfterCacheCreateActivateFromNonCoordinator() throws Exception {
-        fullRestartClusterAfterCacheCreate(NODES_COUNT, NON_COORDINATOR_NODE);
+        restoreClusterAfterCacheCreate(NODES_COUNT, true, NON_COORDINATOR_NODE);
     }
 
     public void testFullRestartAfterCacheCreateActivateFromFirstNode() throws Exception {
-        fullRestartClusterAfterCacheCreate(NODES_COUNT, FIRST_NODE);
+        restoreClusterAfterCacheCreate(NODES_COUNT, true, FIRST_NODE);
     }
 
     public void testFullRestartAfterCacheCreateActivateFromLastNode() throws Exception {
-        fullRestartClusterAfterCacheCreate(NODES_COUNT, LAST_NODE);
+        restoreClusterAfterCacheCreate(NODES_COUNT, true, LAST_NODE);
     }
 
-    private void fullRestartClusterAfterCacheCreate(int nodesCnt, ActivateNodeFinder finder) throws Exception {
+    private void restoreClusterAfterCacheCreate(
+        int nodesCnt,
+        boolean fullStop,
+        ActivateNodeFinder finder
+    ) throws Exception {
         assert nodesCnt > 1;
 
         Map<ClusterNode, Ignite> nodes = start(nodesCnt);
@@ -188,27 +150,43 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
 
         stopSecondHalfNodes(nodes);
 
-        CacheConfiguration<Long, Long> cacheCfg = new CacheConfiguration<Long, Long>(DEFAULT_CACHE_NAME).setBackups((nodesCnt + 1) / 2);
+        CacheConfiguration<Long, Long> cacheCfg =
+            new CacheConfiguration<Long, Long>(DEFAULT_CACHE_NAME).setBackups((nodesCnt + 1) / 2);
 
         IgniteCache<Long, Long> cache0 = grid(0).getOrCreateCache(cacheCfg);
 
         populateData(cache0);
 
-        stopAllGrids();
+        ClusterNode nodeActivator;
 
-        startGrids(nodesCnt);
+        if (fullStop) {
+            stopAllGrids();
 
-        ClusterNode nodeActivator = finder.getActivateNode(grid(0).cluster().nodes());
+            startGrids(nodesCnt);
 
-        grid(nodeActivator).cluster().active(true);
+            nodeActivator = finder.getActivateNode(grid(0).cluster().nodes());
+
+            grid(nodeActivator).cluster().active(true);
+        }
+        else {
+            startSecondHalfNodes(nodesCnt);
+
+            nodeActivator = finder.getActivateNode(grid(0).cluster().nodes());
+        }
+
+        awaitPartitionMapExchange();
 
         IgniteCache<Long, Long> cache = grid(nodeActivator).cache(DEFAULT_CACHE_NAME);
 
         checkDataPresent(cache);
     }
 
-    private void fullRestartClusterAfterCacheDestoroy(int nodesCnt, ActivateNodeFinder finder) throws Exception {
-        assert nodesCnt > 1;
+    private void restoreClusterAfterCacheDestroy(
+        int nodesCnt,
+        boolean fullStop,
+        ActivateNodeFinder finder
+    ) throws Exception {
+        assert nodesCnt >= 2;
 
         Map<ClusterNode, Ignite> nodes = start(nodesCnt);
 
@@ -224,11 +202,22 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
 
         cache0.destroy();
 
-        stopAllGrids();
+        if (fullStop) {
+            stopAllGrids();
 
-        startGrids(nodesCnt);
+            startGrids(nodesCnt);
 
-        grid(finder.getActivateNode(grid(0).cluster().nodes())).cluster().active(true);
+            grid(finder.getActivateNode(grid(0).cluster().nodes())).cluster().active(true);
+        }
+        else
+            startSecondHalfNodes(nodesCnt);
+
+        awaitPartitionMapExchange();
+    }
+
+    private void startSecondHalfNodes(int clusterSize) throws Exception {
+        for (int i = clusterSize / 2; i < clusterSize; i++)
+            startGrids(i);
     }
 
     private void stopSecondHalfNodes(Map<ClusterNode, Ignite> nodesMap) {
@@ -267,5 +256,4 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
     private interface ActivateNodeFinder {
         ClusterNode getActivateNode(Collection<ClusterNode> nodes);
     }
-
 }
