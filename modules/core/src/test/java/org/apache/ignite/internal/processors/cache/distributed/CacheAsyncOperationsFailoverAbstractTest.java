@@ -128,6 +128,8 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
 
             startGrid(NODE_CNT);
 
+            U.sleep(500);
+
             List<IgniteFuture<?>> futs = startAsyncOperations(ops, cache);
 
             stopGrid(NODE_CNT);
