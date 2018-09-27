@@ -189,9 +189,8 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
      * @return The executor service for stripe idx or null if out of range
      */
     public ExecutorService stripe(int idx) {
-        if ( idx >= execs.length ) {
+        if ( idx >= execs.length )
            return null;
-        }
         return execs[idx];
     }
 }
