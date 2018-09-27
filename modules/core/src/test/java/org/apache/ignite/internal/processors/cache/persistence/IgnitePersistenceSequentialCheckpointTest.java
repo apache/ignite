@@ -29,10 +29,8 @@ public class IgnitePersistenceSequentialCheckpointTest extends IgnitePersistentS
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setWalMode(WALMode.LOG_ONLY)
-            .setCheckpointThreads(4)
-            .setCheckpointWriteOrder(CheckpointWriteOrder.SEQUENTIAL));
+        DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
+        dsCfg.setCheckpointThreads(4).setCheckpointWriteOrder(CheckpointWriteOrder.SEQUENTIAL);
 
         return cfg;
     }

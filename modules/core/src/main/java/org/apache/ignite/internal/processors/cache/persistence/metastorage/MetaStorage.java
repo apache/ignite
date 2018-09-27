@@ -22,8 +22,10 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -415,9 +417,32 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
     /** {@inheritDoc} */
     @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
-        freeList.saveMetadata();
+        Executor executor = ctx.executor();
 
-        saveStoreMetadata();
+        if (executor == null) {
+            freeList.saveMetadata();
+
+            saveStoreMetadata();
+        }
+        else {
+            executor.execute(() -> {
+                try {
+                    freeList.saveMetadata();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            });
+
+            executor.execute(() -> {
+                try {
+                    saveStoreMetadata();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            });
+        }
     }
 
     /**

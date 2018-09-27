@@ -57,6 +57,7 @@ import org.apache.ignite.util.GridSpinReadWriteLockSelfTest;
 import org.apache.ignite.util.GridStringBuilderFactorySelfTest;
 import org.apache.ignite.util.GridTopologyHeapSizeSelfTest;
 import org.apache.ignite.util.GridTransientTest;
+import org.apache.ignite.util.IgniteTaskTrackingThreadPoolExecutorTest;
 import org.apache.ignite.util.mbeans.GridMBeanDisableSelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanExoticNamesSelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanSelfTest;
@@ -139,6 +140,9 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
 
         // control.sh
         suite.addTestSuite(CommandHandlerParsingTest.class);
+
+        // Thread pool.
+        suite.addTestSuite(IgniteTaskTrackingThreadPoolExecutorTest.class);
 
         return suite;
     }
