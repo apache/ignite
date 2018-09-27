@@ -53,6 +53,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Query;
 import org.h2.command.dml.SelectUnion;
+import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -2342,6 +2343,29 @@ public class GridSqlQuerySplitter {
                 return null;
             }
 
+            case IN: {
+                if (op.size() == 0) //Key expected
+                    return null;
+                else if (op.size() == 1) //Empty selection
+                    return null;
+                else if (!GridSqlColumn.class.isAssignableFrom(op.child().getClass())
+                    && !GridH2Table.class.isAssignableFrom(
+                        (GridSqlColumn.class.cast(op.child()).column().getTable().getClass())))
+                    return null;
+                else {
+                    List<CacheQueryPartitionInfo> res = new ArrayList<>(op.size() - 1);
+                    for (int i = 1; i < op.size(); i++) {
+                        CacheQueryPartitionInfo cur = getCacheQueryPartitionInfo(
+                            GridSqlColumn.class.cast(op.child()).column(), op.child(i), ctx);
+
+                        if (cur != null)
+                            res.add(cur);
+                    }
+
+                    return res.size() > 0 ? res.toArray(new CacheQueryPartitionInfo[res.size()]) : null;
+                }
+            }
+
             default:
                 return null;
         }
@@ -2368,33 +2392,41 @@ public class GridSqlQuerySplitter {
         if (!(right instanceof GridSqlConst) && !(right instanceof GridSqlParameter))
             return null;
 
-        GridSqlColumn column = (GridSqlColumn)left;
+        return getCacheQueryPartitionInfo(GridSqlColumn.class.cast(left).column(), right, ctx);
+    }
 
-        if (!(column.column().getTable() instanceof GridH2Table))
-            return null;
+    /**
+     * Extracts the partition if possible
+     * @param col H2 column
+     * @param cnstOrPar Constant or parameter element
+     * @param ctx Kernal Context.
+     * @return partition info, or {@code null} if none identified
+     * @throws IgniteCheckedException
+     */
+    @Nullable private static CacheQueryPartitionInfo getCacheQueryPartitionInfo(Column col, GridSqlElement cnstOrPar,
+        GridKernalContext ctx) throws IgniteCheckedException {
+        assert col!=null && col.getTable()!=null && GridH2Table.class.isAssignableFrom(col.getTable().getClass());
 
-        GridH2Table tbl = (GridH2Table) column.column().getTable();
+        GridH2Table tbl = (GridH2Table)col.getTable();
 
         GridH2RowDescriptor desc = tbl.rowDescriptor();
 
         IndexColumn affKeyCol = tbl.getAffinityKeyColumn();
 
-        int colId = column.column().getColumnId();
+        int colId = col.getColumnId();
 
         if ((affKeyCol == null || colId != affKeyCol.column.getColumnId()) && !desc.isKeyColumn(colId))
             return null;
 
-        if (right instanceof GridSqlConst) {
-            GridSqlConst constant = (GridSqlConst)right;
-
+        if (GridSqlConst.class.isAssignableFrom(cnstOrPar.getClass())) {
             return new CacheQueryPartitionInfo(ctx.affinity().partition(tbl.cacheName(),
-                constant.value().getObject()), null, null, -1, -1);
+                GridSqlConst.class.cast(cnstOrPar).value().getObject()), null, null, -1, -1);
         }
-
-        GridSqlParameter param = (GridSqlParameter) right;
-
-        return new CacheQueryPartitionInfo(-1, tbl.cacheName(), tbl.getName(),
-            column.column().getType(), param.index());
+        else if (GridSqlParameter.class.isAssignableFrom(cnstOrPar.getClass())) {
+            return new CacheQueryPartitionInfo(-1, tbl.cacheName(), tbl.getName(),
+                col.getType(), GridSqlParameter.class.cast(cnstOrPar).index());
+        }
+        return null;
     }
 
     /**

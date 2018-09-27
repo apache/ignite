@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.query.IgniteCacheGroupsSqlSegmented
 import org.apache.ignite.internal.processors.query.h2.twostep.CacheQueryMemoryLeakTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.DisappearedCacheCauseRetryMessageSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.DisappearedCacheWasNotFoundMessageSelfTest;
+import org.apache.ignite.internal.processors.query.h2.twostep.InOperationExtractPartitionSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.NonCollocatedRetryMessageSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.RetryCauseMessageSelfTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.TableViewSubquerySelfTest;
@@ -119,6 +120,8 @@ public class IgniteCacheQuerySelfTestSuite2 extends TestSuite {
         suite.addTestSuite(RetryCauseMessageSelfTest.class);
         suite.addTestSuite(DisappearedCacheCauseRetryMessageSelfTest.class);
         suite.addTestSuite(DisappearedCacheWasNotFoundMessageSelfTest.class);
+
+        suite.addTestSuite(InOperationExtractPartitionSelfTest.class);
 
         suite.addTestSuite(TableViewSubquerySelfTest.class);
 
