@@ -137,6 +137,7 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
@@ -208,11 +209,13 @@ import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoader;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.GridTuple;
+import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -10538,6 +10541,50 @@ public abstract class IgniteUtils {
             sb.append(U.hexLong(buf.getLong(i)));
 
         return sb.toString();
+    }
+
+    /**
+     * @param executorSvc Service for parallel execution.
+     * @param srcDatas List of data for parallelization.
+     * @param consumer Logic for execution of on each item of data.
+     * @param <T> Type of data.
+     * @throws IgniteCheckedException if parallel execution was failed.
+     */
+    public static <T> void doInParallel(ExecutorService executorSvc, Collection<T> srcDatas,
+                                        IgniteThrowableConsumer<T> consumer) throws IgniteCheckedException, IgniteInterruptedCheckedException {
+
+        List<T2<T, Future<Object>>> consumerFutures = srcDatas.stream()
+            .map(item -> new T2<>(
+                item,
+                executorSvc.submit(() -> {
+                    consumer.accept(item);
+
+                    return null;
+                })))
+            .collect(Collectors.toList());
+
+        for (T2<T, Future<Object>> future : consumerFutures) {
+            try {
+                future.get2().get();
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+
+                throw new IgniteInterruptedCheckedException(e);
+            }
+            catch (ExecutionException e) {
+                if (e.getCause() instanceof IgniteCheckedException)
+                    throw (IgniteCheckedException)e.getCause();
+
+                if (e.getCause() instanceof RuntimeException)
+                    throw (RuntimeException)e.getCause();
+
+                if (e.getCause() instanceof Error)
+                    throw (Error)e.getCause();
+
+                throw new IgniteCheckedException(e.getCause());
+            }
+        }
     }
 
     /**
