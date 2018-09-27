@@ -17,12 +17,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -31,6 +27,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
+
+import static java.util.Comparator.comparingInt;
+import static java.util.Comparator.comparingLong;
 
 /**
  *
@@ -42,19 +42,24 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
     /** Nodes count. */
     private static final int NODES_COUNT = 4;
 
+    /** Cluster node to number. */
+    private static final Map<ClusterNode, Integer> nodeToNumber = new HashMap<>();
+
     /** Find's first node in cluster. */
-    private static final ActivateNodeFinder FIRST_NODE = nodes -> nodes.stream().limit(1).findAny().get();
+    private static final ActivateNodeFinder FIRST_NODE = nodes ->
+        nodeToNumber.entrySet().stream().min(comparingInt(Map.Entry::getValue)).get().getKey();
 
     /** Find's last node in cluster. */
-    private static final ActivateNodeFinder LAST_NODE = nodes -> nodes.stream().skip(nodes.size() - 1).findAny().get();
+    private static final ActivateNodeFinder LAST_NODE = nodes ->
+        nodeToNumber.entrySet().stream().max(comparingInt(Map.Entry::getValue)).get().getKey();
 
     /** Find's node with min order. */
     private static final ActivateNodeFinder COORDINATOR_NODE =
-        nodes -> nodes.stream().min(Comparator.comparingLong(ClusterNode::order)).get();
+        nodes -> nodes.stream().min(comparingLong(ClusterNode::order)).get();
 
     /** Fins's node with max order. */
     private static final ActivateNodeFinder NON_COORDINATOR_NODE =
-        nodes -> nodes.stream().max(Comparator.comparingLong(ClusterNode::order)).get();
+        nodes -> nodes.stream().max(comparingLong(ClusterNode::order)).get();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -76,6 +81,8 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        nodeToNumber.clear();
     }
 
     /** {@inheritDoc} */
@@ -85,6 +92,8 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        nodeToNumber.clear();
     }
 
     /**
@@ -93,7 +102,7 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
      * @throws Exception if failed.
      */
     public void testStartNodeAfterCacheStarted() throws Exception {
-        restoreClusterAfterCacheCreate(NODES_COUNT,false,LAST_NODE);
+        restoreClusterAfterCacheCreate(NODES_COUNT, false, LAST_NODE);
     }
 
     /**
@@ -159,6 +168,8 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
 
         ClusterNode nodeActivator;
 
+        log.error("IGNITE-8717 stage!");
+
         if (fullStop) {
             stopAllGrids();
 
@@ -202,6 +213,8 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
 
         cache0.destroy();
 
+        log.error("IGNITE-8717 stage!");
+
         if (fullStop) {
             stopAllGrids();
 
@@ -223,8 +236,13 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
     private void stopSecondHalfNodes() {
         Collection<ClusterNode> nodes = grid(0).cluster().nodes();
 
-        for(int i=nodes.size()/2;i<nodes.size();i++)
-            grid(getTestIgniteInstanceName(i)).close();
+        for (int i = nodes.size() / 2; i < nodes.size(); i++) {
+            IgniteEx igniteEx = grid(getTestIgniteInstanceName(i));
+
+            nodeToNumber.remove(igniteEx.localNode());
+
+            igniteEx.close();
+        }
     }
 
     private void populateData(IgniteCache<Long, Long> cache) {
@@ -235,6 +253,22 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
     private void checkDataPresent(IgniteCache<Long, Long> cache) {
         for (int i = 0; i < NUMBER_RECORDS; i++)
             assertTrue(cache.containsKey(1L << i));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteEx startGrid(int idx) throws Exception {
+        IgniteEx igniteEx = super.startGrid(idx);
+
+        nodeToNumber.put(igniteEx.localNode(), idx);
+
+        return igniteEx;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void stopGrid(@Nullable String igniteInstanceName, boolean cancel, boolean awaitTop) {
+        nodeToNumber.remove(grid(igniteInstanceName).localNode());
+
+        super.stopGrid(igniteInstanceName, cancel, awaitTop);
     }
 
     private interface ActivateNodeFinder {
