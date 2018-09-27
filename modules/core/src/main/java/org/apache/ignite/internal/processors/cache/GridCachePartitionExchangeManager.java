@@ -885,8 +885,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             AffinityTopologyVersion topVer = fut.topologyVersion();
 
             if (cur == null || (topVer != null && topVer.compareTo(cur.topologyVersion()) > 0)) {
-                if (lastFinishedFut.compareAndSet(cur, fut))
+                if (lastFinishedFut.compareAndSet(cur, fut)) {
+                    exchFuts.readyTopVer(topVer);
+
                     break;
+                }
             }
             else
                 break;
@@ -1433,7 +1436,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             log.debug("Exchange done [topVer=" + topVer + ", err=" + err + ']');
 
         if (err == null) {
-            exchFuts.readyTopVer(topVer);
+            //exchFuts.readyTopVer(topVer);
 
             for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
                 if (entry.getKey().compareTo(topVer) <= 0) {

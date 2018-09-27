@@ -1809,7 +1809,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable AffinityTopologyVersion res, @Nullable Throwable err) {
+    @Override public boolean onDone(@Nullable AffinityTopologyVersion res, final  @Nullable Throwable err) {
         if (isDone() || !done.compareAndSet(false, true))
             return false;
 
@@ -1887,45 +1887,45 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             cctx.coordinators().onExchangeDone(exchCtx.newMvccCoordinator(), exchCtx.events().discoveryCache(),
                 exchCtx.activeQueries());
 
-        cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
-
-        cctx.kernalContext().authentication().onActivate();
-
-        if (exchActions != null && err == null)
-            exchActions.completeRequestFutures(cctx, null);
-
-        if (stateChangeExchange() && err == null)
-            cctx.kernalContext().state().onStateChangeExchangeDone(exchActions.stateChangeRequest());
-
-        Map<T2<Integer, Integer>, Long> localReserved = partHistSuppliers.getReservations(cctx.localNodeId());
-
-        if (localReserved != null) {
-            for (Map.Entry<T2<Integer, Integer>, Long> e : localReserved.entrySet()) {
-                boolean success = cctx.database().reserveHistoryForPreloading(
-                    e.getKey().get1(), e.getKey().get2(), e.getValue());
-
-                if (!success) {
-                    // TODO: how to handle?
-                    err = new IgniteCheckedException("Could not reserve history");
-                }
-            }
-        }
-
-        cctx.database().releaseHistoryForExchange();
-
-        cctx.database().rebuildIndexesIfNeeded(this);
-
-        if (err == null) {
-            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                if (!grp.isLocal())
-                    grp.topology().onExchangeDone(this, grp.affinity().readyAffinity(res), false);
-            }
-
-            cctx.walState().changeLocalStatesOnExchangeDone(res);
-        }
-
         listen(f -> {
             cctx.exchange().lastFinishedFuture(this);
+
+            cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
+
+            cctx.kernalContext().authentication().onActivate();
+
+            if (exchActions != null && err == null)
+                exchActions.completeRequestFutures(cctx, null);
+
+            if (stateChangeExchange() && err == null)
+                cctx.kernalContext().state().onStateChangeExchangeDone(exchActions.stateChangeRequest());
+
+            Map<T2<Integer, Integer>, Long> localReserved = partHistSuppliers.getReservations(cctx.localNodeId());
+
+            if (localReserved != null) {
+                for (Map.Entry<T2<Integer, Integer>, Long> e : localReserved.entrySet()) {
+                    boolean success = cctx.database().reserveHistoryForPreloading(
+                        e.getKey().get1(), e.getKey().get2(), e.getValue());
+
+                    if (!success) {
+                        // TODO: how to handle?
+                        //err = new IgniteCheckedException("Could not reserve history");
+                    }
+                }
+            }
+
+            cctx.database().releaseHistoryForExchange();
+
+            cctx.database().rebuildIndexesIfNeeded(this);
+
+            if (err == null) {
+                for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+                    if (!grp.isLocal())
+                        grp.topology().onExchangeDone(this, grp.affinity().readyAffinity(res), false);
+                }
+
+                cctx.walState().changeLocalStatesOnExchangeDone(res);
+            }
 
             cctx.exchange().onExchangeDone(res, initialVersion(), f.error());
         });
