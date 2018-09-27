@@ -27,6 +27,7 @@ You can find Apache Ignite documentation here:
 
 fulltext search sql
 ======================
+
 CREATE ALIAS IF NOT EXISTS FTL_INIT FOR "org.apache.ignite.cache.FullTextLucene.init";
 SELECT FTL_INIT();
 
@@ -37,7 +38,9 @@ SELECT e.name,e.street FROM FTL_SEARCH('CacheClientBinaryQueryExampleEmployees',
 
 TextQuery with filter
 =========================
+
  see examples/org.apache.ignite.examples.datagrid.CacheQueryExample.java
+ https://github.com/apache/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/datagrid/CacheQueryExample.java
  
  IgniteBiPredicate<AffinityKey, Person> filter = new IgniteBiPredicate<AffinityKey, Person>() {
             @Override public boolean apply(AffinityKey key, Person person) {
