@@ -15,17 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc.jdbc;
+package org.apache.ignite.mxbean;
 
-import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 
 /**
- * JDBC response result sender.
+ * An MX bean allowing to monitor and tune persistence.
  */
-public interface JdbcResponseSender {
+public interface DataStorageMXBean {
+    @MXBeanDescription("ZIP compression level to WAL compaction.")
+    int getWalCompactionLevel();
+
     /**
-     * Send response to the client. Used for asynchronous result send.
-     * @param resp JDBC response.
+     * Sets ZIP compression level to WAL compaction.
+     * {@link DataStorageConfiguration#setWalCompactionLevel(int)} configuration property.
+     *
+     * @param walCompactionLevel ZIP compression level.
      */
-    public void send(ClientListenerResponse resp);
+    @MXBeanDescription("Sets ZIP compression level to WAL compaction.")
+    @MXBeanParametersNames("walCompactionLevel")
+    @MXBeanParametersDescriptions("ZIP compression level.")
+    void setWalCompactionLevel(int walCompactionLevel);
 }
