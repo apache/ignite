@@ -16,7 +16,7 @@
  */
 
 import './style.scss';
-import controller from './controller.js';
+import controller from './controller';
 
 export default {
     template: `

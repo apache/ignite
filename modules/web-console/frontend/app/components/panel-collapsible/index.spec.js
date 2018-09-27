@@ -19,7 +19,7 @@ import 'mocha';
 import {assert} from 'chai';
 import angular from 'angular';
 import {spy} from 'sinon';
-import componentModule from './index.js';
+import componentModule from './index';
 
 suite('panel-collapsible', () => {
     const ICON_COLLAPSE = 'collapse';
