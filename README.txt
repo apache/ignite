@@ -24,3 +24,12 @@ For information on how to get started with Apache Ignite please visit:
 You can find Apache Ignite documentation here:
 
     http://apacheignite.readme.io/docs
+
+fulltext search sql
+-------------------
+CREATE ALIAS IF NOT EXISTS FTL_INIT FOR "org.apache.ignite.cache.FullTextLucene.init";
+SELECT FTL_INIT();
+
+SELECT * FROM FTL_SEARCH('CacheClientBinaryQueryExampleEmployees','EMPLOYEE','TX', 0, 0);
+
+SELECT e.name,e.street FROM FTL_SEARCH('CacheClientBinaryQueryExampleEmployees','EMPLOYEE','TX', 0, 0) f ,"CacheClientBinaryQueryExampleEmployees".EMPLOYEE e where f._key=e._key
