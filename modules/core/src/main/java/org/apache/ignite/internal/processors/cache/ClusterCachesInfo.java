@@ -85,6 +85,8 @@ class ClusterCachesInfo {
     /** */
     private final GridKernalContext ctx;
 
+    private final ConcurrentMap<Integer, CacheGroupDescriptor> missingCacheGroups = new ConcurrentHashMap<>();
+
     /** Dynamic caches. */
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredCaches = new ConcurrentHashMap<>();
 
@@ -1236,6 +1238,11 @@ class ClusterCachesInfo {
                 grpData.config().getNodeFilter(),
                 grpData.config().getCacheMode());
         }
+
+        for (Integer locCacheGroupId : locCacheGrps.keySet()) {
+            if (!cachesData.cacheGroups().containsKey(locCacheGroupId))
+                missingCacheGroups.put(locCacheGroupId, locCacheGrps.get(locCacheGroupId));
+        }
     }
 
     /**
@@ -1244,6 +1251,7 @@ class ClusterCachesInfo {
     private void cleanCachesAndGroups() {
         registeredCaches.clear();
         registeredCacheGrps.clear();
+        missingCacheGroups.clear();
         ctx.discovery().cleanCachesAndGroups();
     }
 
@@ -1953,6 +1961,10 @@ class ClusterCachesInfo {
         return registeredCacheGrps;
     }
 
+    ConcurrentMap<Integer, CacheGroupDescriptor> missingCacheGroups() {
+        return missingCacheGroups;
+    }
+
     /**
      * Returns registered cache descriptors ordered by {@code comparator}
      * @param comparator Comparator (DIRECT, REVERSE or custom) to order cache descriptors.
@@ -1978,6 +1990,7 @@ class ClusterCachesInfo {
         registeredCacheGrps.clear();
         registeredCaches.clear();
         registeredTemplates.clear();
+        missingCacheGroups.clear();
 
         clientReconnectReqs = null;
     }

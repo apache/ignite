@@ -4082,6 +4082,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         return cachesInfo.registeredCacheGroups();
     }
 
+    public Map<Integer, CacheGroupDescriptor> missingCacheGroupDescriptors() { return cachesInfo.missingCacheGroups(); }
+
     /**
      * @param cacheId Cache ID.
      * @return Cache descriptor.

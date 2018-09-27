@@ -839,6 +839,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME)
             );
 
+            Map<Integer, CacheGroupDescriptor> missingCacheGroups = cctx.cache().missingCacheGroupDescriptors();
+
+            missingCacheGroups.values().forEach(d->initiallyLocalWalDisabledGrps.add(d.groupId()));
+
             WALPointer restore = restoreMemory(status);
 
             if (restore == null && !status.endPtr.equals(CheckpointStatus.NULL_PTR)) {
