@@ -22,7 +22,7 @@ import java.util.Map;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
@@ -638,19 +638,25 @@ public interface IgniteCacheOffheapManager {
         void updateCounter(long val);
 
         /**
+         * Updates counters from start value by delta value.
+         *
+         * @param start Start.
+         * @param delta Delta
+         */
+        void updateCounter(long start, long delta);
+
+        /**
          * @return Next update counter.
          */
         public long nextUpdateCounter();
 
         /**
-         * @return Next mvcc update counter.
+         * Returns current value and updates counter by delta.
+         *
+         * @param delta Delta.
+         * @return Current value.
          */
-        long nextMvccUpdateCounter();
-
-        /**
-         * @return Current mvcc update counter value.
-         */
-        long mvccUpdateCounter();
+        public long getAndIncrementUpdateCounter(long delta);
 
         /**
          * @return Initial update counter.

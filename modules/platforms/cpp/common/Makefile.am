@@ -46,9 +46,9 @@ libignite_common_la_SOURCES = \
 	os/linux/src/common/platform_utils.cpp \
 	os/linux/src/common/dynamic_load_os.cpp \
 	src/common/big_integer.cpp \
+	src/common/bits.cpp \
 	src/common/concurrent.cpp \
 	src/common/decimal.cpp \
-	src/common/bits.cpp \
 	src/common/utils.cpp \
 	src/date.cpp \
 	src/ignite_error.cpp \

@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+
 export default class InputDialogController {
     static $inject = ['deferred', 'ui'];
 

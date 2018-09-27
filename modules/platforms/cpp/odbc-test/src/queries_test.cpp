@@ -69,7 +69,7 @@ struct QueriesTestSuiteFixture : odbc::OdbcTestSuite
         cache1(0),
         cache2(0)
     {
-        grid = StartTestNode("queries-test.xml", "NodeMain");
+        grid = StartPlatformNode("queries-test.xml", "NodeMain");
 
         cache1 = grid.GetCache<int64_t, TestType>("cache");
         cache2 = grid.GetCache<int64_t, ComplexType>("cache2");
@@ -224,7 +224,7 @@ struct QueriesTestSuiteFixture : odbc::OdbcTestSuite
 
     static Ignite StartAdditionalNode(const char* name)
     {
-        return StartTestNode("queries-test.xml", name);
+        return StartPlatformNode("queries-test.xml", name);
     }
 
     /** Node started during the test. */
@@ -2075,6 +2075,50 @@ BOOST_AUTO_TEST_CASE(TestManyCursors)
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         ret = SQLFreeStmt(stmt, SQL_CLOSE);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(TestManyCursors2)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLRETURN ret = SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    for (int32_t i = 0; i < 1000; ++i)
+    {
+        ret = SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        SQLCHAR req[] = "SELECT 1";
+
+        ret = SQLExecDirect(stmt, req, SQL_NTS);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        int32_t res = 0;
+        SQLLEN resLen = 0;
+        ret = SQLBindCol(stmt, 1, SQL_INTEGER, &res, 0, &resLen);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        ret = SQLFetch(stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_REQUIRE_EQUAL(res, 1);
+
+        ret = SQLFreeHandle(SQL_HANDLE_STMT, stmt);
 
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));

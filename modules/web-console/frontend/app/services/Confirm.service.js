@@ -56,8 +56,15 @@ export class Confirm {
     }
 }
 
-// Confirm popup service.
-export default ['IgniteConfirm', ['$rootScope', '$q', '$modal', '$animate', function($root, $q, $modal, $animate) {
+/**
+ * Confirm popup service.
+ * @deprecated Use Confirm instead
+ * @param {ng.IRootScopeService} $root
+ * @param {ng.IQService} $q
+ * @param {mgcrea.ngStrap.modal.IModalService} $modal
+ * @param {ng.animate.IAnimateService} $animate
+ */
+export default function IgniteConfirm($root, $q, $modal, $animate) {
     const scope = $root.$new();
 
     const modal = $modal({templateUrl, scope, show: false, backdrop: true});
@@ -106,4 +113,6 @@ export default ['IgniteConfirm', ['$rootScope', '$q', '$modal', '$animate', func
     };
 
     return modal;
-}]];
+}
+
+IgniteConfirm.$inject = ['$rootScope', '$q', '$modal', '$animate'];
