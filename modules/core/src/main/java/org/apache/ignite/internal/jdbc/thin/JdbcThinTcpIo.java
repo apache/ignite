@@ -371,14 +371,14 @@ public class JdbcThinTcpIo {
                     + ", url=" + connProps.getUrl() + ']', SqlStateCode.CONNECTION_REJECTED);
             }
 
-            if (VER_2_4_0.equals(srvProtocolVer) || VER_2_3_0.equals(srvProtocolVer) ||
-                VER_2_1_5.equals(srvProtocolVer))
-                handshake(srvProtocolVer);
-            else if (VER_2_1_0.equals(srvProtocolVer))
+            if (VER_2_4_0.equals(srvProtoVer0) || VER_2_3_0.equals(srvProtoVer0) ||
+                VER_2_1_5.equals(srvProtoVer0))
+                handshake(srvProtoVer0);
+            else if (VER_2_1_0.equals(srvProtoVer0))
                 handshake_2_1_0();
             else {
                 throw new SQLException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
-                    ", remoteNodeProtocolVer=" + srvProtocolVer + ", err=" + err + ']',
+                    ", remoteNodeProtocolVer=" + srvProtoVer0 + ", err=" + err + ']',
                     SqlStateCode.CONNECTION_REJECTED);
             }
         }
