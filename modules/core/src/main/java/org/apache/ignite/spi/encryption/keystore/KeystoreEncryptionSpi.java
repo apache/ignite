@@ -130,7 +130,27 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
     /** Ignite */
     @IgniteInstanceResource
     protected Ignite ignite;
-    
+
+    /** */
+    private ThreadLocal<Cipher> aesWithPadding = ThreadLocal.withInitial(() -> {
+        try {
+            return Cipher.getInstance(AES_WITH_PADDING);
+        }
+        catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
+            throw new IgniteException(e);
+        }
+    });
+
+    /** */
+    private ThreadLocal<Cipher> aesWithoutPadding = ThreadLocal.withInitial(() -> {
+        try {
+            return Cipher.getInstance(AES_WITHOUT_PADDING);
+        }
+        catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
+            throw new IgniteException(e);
+        }
+    });
+
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         assertParameter(!F.isEmpty(keyStorePath), "KeyStorePath shouldn't be empty");
@@ -188,12 +208,12 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
 
     /** {@inheritDoc} */
     @Override public void encrypt(ByteBuffer data, Serializable key, ByteBuffer res) {
-        doEncryption(data, AES_WITH_PADDING, key, res);
+        doEncryption(data, aesWithPadding.get(), key, res);
     }
 
     /** {@inheritDoc} */
     @Override public void encryptNoPadding(ByteBuffer data, Serializable key, ByteBuffer res) {
-        doEncryption(data, AES_WITHOUT_PADDING, key, res);
+        doEncryption(data, aesWithoutPadding.get(), key, res);
     }
 
     /** {@inheritDoc} */
@@ -205,14 +225,14 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
         try {
             SecretKeySpec keySpec = new SecretKeySpec(((KeystoreEncryptionKey)key).key().getEncoded(), CIPHER_ALGO);
 
-            Cipher cipher = Cipher.getInstance(AES_WITH_PADDING);
+            Cipher cipher = aesWithPadding.get();
 
             cipher.init(DECRYPT_MODE, keySpec, new IvParameterSpec(data, 0, cipher.getBlockSize()));
 
             return cipher.doFinal(data, cipher.getBlockSize(), data.length - cipher.getBlockSize());
         }
-        catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException | InvalidKeyException |
-            NoSuchPaddingException | IllegalBlockSizeException | BadPaddingException e) {
+        catch (InvalidAlgorithmParameterException | InvalidKeyException | IllegalBlockSizeException |
+            BadPaddingException e) {
             throw new IgniteSpiException(e);
         }
     }
@@ -226,7 +246,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
         try {
             SecretKeySpec keySpec = new SecretKeySpec(((KeystoreEncryptionKey)key).key().getEncoded(), CIPHER_ALGO);
 
-            Cipher cipher = Cipher.getInstance(AES_WITHOUT_PADDING);
+            Cipher cipher = aesWithoutPadding.get();
 
             byte[] iv = new byte[cipher.getBlockSize()];
 
@@ -236,19 +256,18 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
 
             cipher.doFinal(data, res);
         }
-        catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException | InvalidKeyException |
-            NoSuchPaddingException | IllegalBlockSizeException | ShortBufferException | BadPaddingException e) {
+        catch (InvalidAlgorithmParameterException | InvalidKeyException | IllegalBlockSizeException |
+            ShortBufferException | BadPaddingException e) {
             throw new IgniteSpiException(e);
         }
     }
 
     /**
      * @param data Plain data.
-     * @param algo Encryption algorithm.
+     * @param cipher Cipher.
      * @param key Encryption key.
-     * @return Encrypted data.
      */
-    private void doEncryption(ByteBuffer data, String algo, Serializable key, ByteBuffer res) {
+    private void doEncryption(ByteBuffer data, Cipher cipher, Serializable key, ByteBuffer res) {
         assert key instanceof KeystoreEncryptionKey;
         //assert start >= 0 && length + start <= data.length;
 
@@ -256,8 +275,6 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
 
         try {
             SecretKeySpec keySpec = new SecretKeySpec(((KeystoreEncryptionKey)key).key().getEncoded(), CIPHER_ALGO);
-
-            Cipher cipher = Cipher.getInstance(algo);
 
             byte[] iv = initVector(cipher);
 
@@ -267,8 +284,8 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
 
             cipher.doFinal(data, res);
         }
-        catch (ShortBufferException | InvalidAlgorithmParameterException | NoSuchAlgorithmException | InvalidKeyException |
-            NoSuchPaddingException | IllegalBlockSizeException | BadPaddingException e) {
+        catch (ShortBufferException | InvalidAlgorithmParameterException | InvalidKeyException |
+            IllegalBlockSizeException | BadPaddingException e) {
             throw new IgniteSpiException(e);
         }
     }
