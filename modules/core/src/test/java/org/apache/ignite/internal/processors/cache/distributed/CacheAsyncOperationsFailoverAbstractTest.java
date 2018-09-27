@@ -53,8 +53,6 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
     /** */
     private static final long TEST_TIME = 60_000;
 
-    private String instanceName;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -100,14 +98,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
      * @throws Exception If failed.
      */
     public void testPutAllAsyncFailover() throws Exception {
-        instanceName = "putAllAsyncFailover";
-
-        try {
-            putAllAsyncFailover(5, 10);
-        }
-        finally {
-            instanceName = null;
-        }
+        putAllAsyncFailover(5, 10);
     }
 
     /**
@@ -115,12 +106,6 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
      */
     public void testPutAllAsyncFailoverManyThreads() throws Exception {
         putAllAsyncFailover(ignite(0).configuration().getSystemThreadPoolSize() * 2, 3);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override public String getTestIgniteInstanceName() {
-        return instanceName == null ? super.getTestIgniteInstanceName() : instanceName;
     }
 
     /**
@@ -224,30 +209,33 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
 
         final long endTime = System.currentTimeMillis() + TEST_TIME;
 
-        startGrid(NODE_CNT);
-
         IgniteInternalFuture<Object> restartFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 Thread.currentThread().setName("restart-thread");
 
-                try {
-                    while (!finished.get()) {
-                        U.sleep(500);
-
-                        stopGrid(NODE_CNT);
-
+                while (!finished.get()) {
+                    boolean error = true;
+                    try {
                         startGrid(NODE_CNT);
+
+                        error = false;
+
+                        U.sleep(500);
+                    }
+                    catch (Throwable t) {
+                        log.error("Start", t);
+
+                        if (!error)
+                            stopGrid(NODE_CNT);
                     }
                 }
-                catch (Exception e) {
-                    log.error("Restart", e);
-                }
+
                 return null;
             }
         });
 
         try {
-            final IgniteCache<TestKey, TestValue> cache = ignite(NODE_CNT).cache(DEFAULT_CACHE_NAME);
+            final IgniteCache<TestKey, TestValue> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -304,19 +292,12 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
                     return null;
                 }
             }, threads, "update-thread");
-
         }
         finally {
             finished.set(true);
 
-            try {
-                restartFut.get();
-            }
-            finally {
-                stopGrid();
-            }
+            restartFut.get();
         }
-
     }
 
     /**
