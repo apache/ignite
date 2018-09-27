@@ -111,46 +111,46 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
     /**
      * @throws Exception If failed.
      */
-    public void testAsyncFailover() throws Exception {
-        IgniteCache<TestKey, TestValue> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
-
-        int ops = cache.getConfiguration(CacheConfiguration.class).getMaxConcurrentAsyncOperations();
-
-        log.info("Max concurrent async operations: " + ops);
-
-        assertTrue(ops > 0);
-
-        // Start/stop one node.
-        for (int i = 0; i < 2; i++) {
-            log.info("Iteration: " + i);
-
-            startGrid(NODE_CNT);
-
-            List<IgniteFuture<?>> futs = startAsyncOperations(ops, cache);
-
-            stopGrid(NODE_CNT);
-
-            for (IgniteFuture<?> fut : futs)
-                fut.get();
-
-            log.info("Iteration done: " + i);
-        }
-
-        // Start all nodes except one.
-        try {
-            List<IgniteFuture<?>> futs = startAsyncOperations(ops, cache);
-
-            for (int i = 1; i < NODE_CNT; i++)
-                stopGrid(i);
-
-            for (IgniteFuture<?> fut : futs)
-                fut.get();
-        }
-        finally {
-            for (int i = 1; i < NODE_CNT; i++)
-                startGrid(i);
-        }
-    }
+//    public void testAsyncFailover() throws Exception {
+//        IgniteCache<TestKey, TestValue> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
+//
+//        int ops = cache.getConfiguration(CacheConfiguration.class).getMaxConcurrentAsyncOperations();
+//
+//        log.info("Max concurrent async operations: " + ops);
+//
+//        assertTrue(ops > 0);
+//
+//        // Start/stop one node.
+//        for (int i = 0; i < 2; i++) {
+//            log.info("Iteration: " + i);
+//
+//            startGrid(NODE_CNT);
+//
+//            List<IgniteFuture<?>> futs = startAsyncOperations(ops, cache);
+//
+//            stopGrid(NODE_CNT);
+//
+//            for (IgniteFuture<?> fut : futs)
+//                fut.get();
+//
+//            log.info("Iteration done: " + i);
+//        }
+//
+//        // Start all nodes except one.
+//        try {
+//            List<IgniteFuture<?>> futs = startAsyncOperations(ops, cache);
+//
+//            for (int i = 1; i < NODE_CNT; i++)
+//                stopGrid(i);
+//
+//            for (IgniteFuture<?> fut : futs)
+//                fut.get();
+//        }
+//        finally {
+//            for (int i = 1; i < NODE_CNT; i++)
+//                startGrid(i);
+//        }
+//    }
 
     /**
      * @param ops Number of operations.
