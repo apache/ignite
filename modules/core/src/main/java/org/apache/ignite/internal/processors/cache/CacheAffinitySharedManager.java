@@ -2035,29 +2035,28 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     /**
      * @param fut Current exchange future.
      * @param crd Coordinator flag.
-     * @throws IgniteCheckedException If failed.
      * @return Rabalance info.
      */
-    @Nullable private WaitRebalanceInfo initAffinityOnNodeJoin(final GridDhtPartitionsExchangeFuture fut, boolean crd)
-        throws IgniteCheckedException {
+    @Nullable private WaitRebalanceInfo initAffinityOnNodeJoin(final GridDhtPartitionsExchangeFuture fut, boolean crd) {
         final ExchangeDiscoveryEvents evts = fut.context().events();
 
-        final Map<Object, List<List<ClusterNode>>> affCache = new HashMap<>();
+        final Map<Object, List<List<ClusterNode>>> affCache = new ConcurrentHashMap<>();
 
         if (!crd) {
-            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                if (grp.isLocal())
-                    continue;
+            forAllCacheGroups(false, new IgniteInClosureX<GridAffinityAssignmentCache>() {
+                @Override public void applyx(GridAffinityAssignmentCache grpAffCache) throws IgniteCheckedException {
+                    CacheGroupContext grp = cctx.cache().cacheGroup(grpAffCache.groupId());
 
-                boolean latePrimary = grp.rebalanceEnabled();
+                    assert grp != null;
 
-                initAffinityOnNodeJoin(evts,
-                    evts.nodeJoined(grp.receivedFrom()),
-                    grp.affinity(),
-                    null,
-                    latePrimary,
-                    affCache);
-            }
+                    initAffinityOnNodeJoin(evts,
+                        evts.nodeJoined(grp.receivedFrom()),
+                        grp.affinity(),
+                        null,
+                        grp.rebalanceEnabled(),
+                        affCache);
+                }
+            });
 
             return null;
         }
@@ -2099,6 +2098,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
     }
 
+    /**
+     * @param aff Affinity assignment.
+     */
     private Map<UUID, GridDhtPartitionMap> affinityFullMap(AffinityAssignment aff) {
         Map<UUID, GridDhtPartitionMap> map = new HashMap<>();
 
@@ -2697,13 +2699,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         private final AffinityTopologyVersion topVer;
 
         /** */
-        private Map<Integer, Map<Integer, UUID>> waitGrps;
+        private final Map<Integer, Map<Integer, UUID>> waitGrps = new ConcurrentHashMap<>();
 
         /** */
-        private Map<Integer, Map<Integer, List<ClusterNode>>> assignments;
+        private final Map<Integer, Map<Integer, List<ClusterNode>>> assignments = new ConcurrentHashMap<>();
 
         /** */
-        private Map<Integer, IgniteUuid> deploymentIds;
+        private final Map<Integer, IgniteUuid> deploymentIds = new ConcurrentHashMap<>();
 
         /**
          * @param topVer Topology version.
@@ -2716,14 +2718,15 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          * @return {@code True} if there are partitions waiting for rebalancing.
          */
         boolean empty() {
-            if (waitGrps != null) {
-                assert !waitGrps.isEmpty();
+            boolean isEmpty = waitGrps.isEmpty();
+
+            if (!isEmpty) {
                 assert waitGrps.size() == assignments.size();
 
                 return false;
             }
 
-            return true;
+            return isEmpty;
         }
 
         /**
@@ -2735,28 +2738,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         void add(Integer grpId, Integer part, UUID waitNode, List<ClusterNode> assignment) {
             assert !F.isEmpty(assignment) : assignment;
 
-            if (waitGrps == null) {
-                waitGrps = new HashMap<>();
-                assignments = new HashMap<>();
-                deploymentIds = new HashMap<>();
-            }
+            deploymentIds.putIfAbsent(grpId, cachesRegistry.group(grpId).deploymentId());
 
-            Map<Integer, UUID> cacheWaitParts = waitGrps.get(grpId);
+            waitGrps.computeIfAbsent(grpId, k -> new HashMap<>()).put(part, waitNode);
 
-            if (cacheWaitParts == null) {
-                waitGrps.put(grpId, cacheWaitParts = new HashMap<>());
-
-                deploymentIds.put(grpId, cachesRegistry.group(grpId).deploymentId());
-            }
-
-            cacheWaitParts.put(part, waitNode);
-
-            Map<Integer, List<ClusterNode>> cacheAssignment = assignments.get(grpId);
-
-            if (cacheAssignment == null)
-                assignments.put(grpId, cacheAssignment = new HashMap<>());
-
-            cacheAssignment.put(part, assignment);
+            assignments.computeIfAbsent(grpId, k -> new HashMap<>()).put(part, assignment);
         }
 
         /** {@inheritDoc} */
