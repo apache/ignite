@@ -2044,8 +2044,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         if (!metastoreOnly && !F.isEmpty(cacheGrps)) {
             restoreGrps.addAll(cacheGrps.stream()
-                .filter(g -> !initiallyGlobalWalDisabledGrps.contains(g) || !initiallyLocalWalDisabledGrps.contains(g))
-                .collect(Collectors.toList()));
+                .filter(g -> !initiallyGlobalWalDisabledGrps.contains(g) && !initiallyLocalWalDisabledGrps.contains(g))
+                .collect(Collectors.toSet()));
         }
 
         int applied = 0;
