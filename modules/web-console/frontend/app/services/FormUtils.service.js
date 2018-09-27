@@ -16,7 +16,12 @@
  */
 import _ from 'lodash';
 
-export default ['IgniteFormUtils', ['$window', 'IgniteFocus', '$rootScope', function($window, Focus, $rootScope) {
+/**
+ * @param {ng.IWindowService} $window
+ * @param {ReturnType<typeof import('./Focus.service').default>} Focus
+ * @param {ng.IRootScopeService} $rootScope
+ */
+export default function service($window, Focus, $rootScope) {
     function ensureActivePanel(ui, pnl, focusId) {
         if (ui && ui.loadPanel) {
             const collapses = $('[bs-collapse-target]');
@@ -55,12 +60,13 @@ export default ['IgniteFormUtils', ['$window', 'IgniteFocus', '$rootScope', func
         }
     }
 
+    /** @type {CanvasRenderingContext2D} */
     let context = null;
 
     /**
      * Calculate width of specified text in body's font.
      *
-     * @param text Text to calculate width.
+     * @param {string} text Text to calculate width.
      * @returns {Number} Width of text in pixels.
      */
     function measureText(text) {
@@ -453,4 +459,6 @@ export default ['IgniteFormUtils', ['$window', 'IgniteFocus', '$rootScope', func
         },
         triggerValidation
     };
-}]];
+}
+
+service.$inject = ['$window', 'IgniteFocus', '$rootScope'];

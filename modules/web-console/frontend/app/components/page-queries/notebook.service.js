@@ -19,10 +19,10 @@ export default class Notebook {
     static $inject = ['$state', 'IgniteConfirm', 'IgniteMessages', 'IgniteNotebookData'];
 
     /**
-     * @param $state
-     * @param confirmModal
-     * @param Messages
-     * @param {NotebookData} NotebookData
+     * @param {import('@uirouter/angularjs').StateService} $state
+     * @param {ReturnType<typeof import('app/services/Confirm.service').default>} confirmModal
+     * @param {ReturnType<typeof import('app/services/Messages.service').default>} Messages
+     * @param {import('./notebook.data').default} NotebookData
      */
     constructor($state, confirmModal, Messages, NotebookData) {
         this.$state = $state;

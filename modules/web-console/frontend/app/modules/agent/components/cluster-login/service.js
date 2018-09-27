@@ -17,20 +17,23 @@
 
 import _ from 'lodash';
 
-import {ClusterSecrets} from '../../types/ClusterSecrets';
 import {CancellationError} from 'app/errors/CancellationError';
 
 export default class ClusterLoginService {
     static $inject = ['$modal', '$q'];
 
+    /**
+     * @param {mgcrea.ngStrap.modal.IModalService} $modal
+     * @param {ng.IQService} $q
+     */
     constructor($modal, $q) {
         this.$modal = $modal;
         this.$q = $q;
     }
 
     /**
-     * @param {ClusterSecrets} baseSecrets
-     * @return {ng.IDifferend<ClusterSecrets>}
+     * @param {import('../../types/ClusterSecrets').ClusterSecrets} baseSecrets
+     * @returns {ng.IPromise<import('../../types/ClusterSecrets').ClusterSecrets>}
      */
     askCredentials(baseSecrets) {
         const deferred = this.$q.defer();

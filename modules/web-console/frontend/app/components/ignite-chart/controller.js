@@ -53,7 +53,7 @@ export class IgniteChartController {
 
     /**
      * @param {JQLite} $element
-     * @param {ng.IScope} $scope
+     * @param {Array<string>} IgniteChartColors
      * @param {ng.IFilterService} $filter
      */
     constructor($element, IgniteChartColors, $filter) {

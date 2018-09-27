@@ -142,7 +142,7 @@ export default class AgentManager {
 
     pool = new SimpleWorkerPool('decompressor', Worker, 4);
 
-    /** @type {Set<ng.IDifferend>} */
+    /** @type {Set<ng.IPromise<unknown>>} */
     promises = new Set();
 
     socket = null;
@@ -159,8 +159,25 @@ export default class AgentManager {
         }
     }
 
+    /**
+     * @param {ng.IRootScopeService} $root
+     * @param {ng.IQService} $q
+     * @param {import('@uirouter/angularjs').TransitionService} $transitions
+     * @param {unknown} socketFactory
+     * @param {import('./AgentModal.service').default} agentModal
+     * @param {import('app/components/user-notifications/service').default} UserNotifications
+     * @param {import('app/services/Version.service').default} Version
+     * @param {import('./components/cluster-login/service').default} ClusterLoginSrv
+     */
     constructor($root, $q, $transitions, socketFactory, agentModal, UserNotifications, Version, ClusterLoginSrv) {
-        Object.assign(this, {$root, $q, $transitions, socketFactory, agentModal, UserNotifications, Version, ClusterLoginSrv});
+        this.$root = $root;
+        this.$q = $q;
+        this.$transitions = $transitions;
+        this.socketFactory = socketFactory;
+        this.agentModal = agentModal;
+        this.UserNotifications = UserNotifications;
+        this.Version = Version;
+        this.ClusterLoginSrv = ClusterLoginSrv;
 
         let prevCluster;
 

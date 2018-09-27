@@ -28,6 +28,7 @@
   ],
   "dependencies": {
     "@babel/plugin-transform-parameters": "7.0.0",
+    "@types/angular-translate": "2.16.0",
     "@uirouter/angularjs": "1.0.20",
     "@uirouter/core": "5.0.19",
     "@uirouter/rx": "0.4.1",

@@ -30,7 +30,11 @@ export default class AuthService {
     /**
      * @param {ng.IHttpService} $http
      * @param {ng.IRootScopeService} $root
+     * @param {import('@uirouter/angularjs').StateService} $state
      * @param {ng.IWindowService} $window
+     * @param {ReturnType<typeof import('app/services/Messages.service').default>} Messages
+     * @param {ReturnType<typeof import('app/modules/getting-started/GettingStarted.provider').service>} gettingStarted
+     * @param {ReturnType<typeof import('./User.service').default>} User
      */
     constructor($http, $root, $state, $window, Messages, gettingStarted, User) {
         this.$http = $http;
