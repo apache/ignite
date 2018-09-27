@@ -135,7 +135,7 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     protected abstract T instance();
 
     /**
-     * @param cntOfTrees Count of trees.
+     * @param amountOfTrees Count of trees.
      * @return an instance of current object with valid type in according to inheritance.
      */
     public T withAmountOfTrees(int amountOfTrees) {
