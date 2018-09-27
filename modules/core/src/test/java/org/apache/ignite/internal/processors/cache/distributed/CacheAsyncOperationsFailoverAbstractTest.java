@@ -27,6 +27,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -240,8 +241,6 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
                 }
                 catch (Exception e) {
                     log.error("Restart", e);
-
-                    throw e;
                 }
                 return null;
             }
@@ -293,6 +292,8 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
 
                             iter++;
                         }
+                    }
+                    catch (IgniteException ex) {
                     }
                     catch (Throwable e) {
                         log.error("Put", e);
