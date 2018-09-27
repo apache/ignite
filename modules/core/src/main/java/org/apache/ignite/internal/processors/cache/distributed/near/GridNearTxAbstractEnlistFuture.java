@@ -298,8 +298,6 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
             throw new IgniteCheckedException("Future is done.");
     }
 
-
-
     /**
      */
     private void mapOnTopology() {
