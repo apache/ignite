@@ -56,8 +56,19 @@ public class Person implements Serializable {
 
     /** Custom cache key to guarantee that person is always collocated with its organization. */
     private transient AffinityKey<Long> key;
+    
+    @QuerySqlField(index = true)
+    public String[] perms;
 
-    /**
+    public String[] getPerms() {
+		return perms;
+	}
+
+	public void setPerms(String... perms) {
+		this.perms = perms;
+	}
+
+	/**
      * Default constructor.
      */
     public Person() {

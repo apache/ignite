@@ -154,20 +154,54 @@ public class CacheQueryExample {
      * Example for TEXT queries using LUCENE-based indexing of people's resumes.
      */
     private static void textQuery() {
-        IgniteCache<Long, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
+        IgniteCache<AffinityKey, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
+        
+        IgniteBiPredicate<AffinityKey, Person> filter = new IgniteBiPredicate<AffinityKey, Person>() {
+            @Override public boolean apply(AffinityKey key, Person person) {
+                return person.salary > 1000;
+            }
+        };        
 
         //  Query for all people with "Master Degree" in their resumes.
         QueryCursor<Cache.Entry<Long, Person>> masters =
-            cache.query(new TextQuery<Long, Person>(Person.class, "Master"));
+            cache.query(new TextQuery<Long, Person>(Person.class, "Master")); 
 
         // Query for all people with "Bachelor Degree" in their resumes.
-        QueryCursor<Cache.Entry<Long, Person>> bachelors =
-            cache.query(new TextQuery<Long, Person>(Person.class, "Bachelor"));
+        QueryCursor<Cache.Entry<AffinityKey, Person>> bachelors =
+            cache.query(new TextQuery<AffinityKey, Person>(Person.class, "Bachelor", filter));
+        
 
         print("Following people have 'Master Degree' in their resumes: ", masters.getAll());
         print("Following people have 'Bachelor Degree' in their resumes: ", bachelors.getAll());
     }
 
+
+    /**
+     * Example for TEXT queries using LUCENE-based indexing of people's resumes.
+     */
+    private static void textBinaryQuery() {
+        IgniteCache<BinaryObject, BinaryObject> cache = Ignition.ignite().cache(PERSON_CACHE).withKeepBinary();
+        
+        IgniteBiPredicate<BinaryObject, BinaryObject> filter = new IgniteBiPredicate<BinaryObject, BinaryObject>() {
+            @Override public boolean apply(BinaryObject key, BinaryObject person) {
+                return person.<Double>field("salary") > 1000;
+            }
+        };        
+
+        //  Query for all people with "Master Degree" in their resumes.
+        QueryCursor<Cache.Entry<BinaryObject, BinaryObject>> masters =
+            cache.query(new TextQuery<BinaryObject, BinaryObject>(Person.class, "Master"));
+        
+       
+
+        // Query for all people with "Bachelor Degree" in their resumes.
+        QueryCursor<Cache.Entry<BinaryObject, BinaryObject>> bachelors =
+            cache.query(new TextQuery<BinaryObject, BinaryObject>(Person.class, "Bachelor", filter));
+        
+
+        print("Following people have lastName:Smith AND 'Master Degree' in their resumes: ", masters.getAll());
+        print("Following people have 'Bachelor Degree' in their resumes: ", bachelors.getAll());
+    }
 
     /**
      * Populate cache with test data.
@@ -193,8 +227,13 @@ public class CacheQueryExample {
         // People.
         Person p1 = new Person(org1, "John", "Doe", 2000, "John Doe has Master Degree.");
         Person p2 = new Person(org1, "Jane", "Doe", 1000, "Jane Doe has Bachelor Degree.");
-        Person p3 = new Person(org2, "John", "Smith", 1000, "John Smith has Bachelor Degree.");
-        Person p4 = new Person(org2, "Jane", "Smith", 2000, "Jane Smith has Master Degree.");
+        Person p3 = new Person(org2, "John", "Smith", 1100, "John Smith has Bachelor Degree.");
+        Person p4 = new Person(org2, "Jane", "Smith", 2200, "Jane Smith has Master Degree.");
+        
+        p1.setPerms("admin","power");
+        p2.setPerms("user","power");
+        p3.setPerms("power","user");
+        p4.setPerms("ann");
 
         // Note that in this example we use custom affinity key for Person objects
         // to ensure that all persons are collocated with their organizations.

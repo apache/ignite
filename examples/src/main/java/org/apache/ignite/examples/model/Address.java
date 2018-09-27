@@ -33,17 +33,21 @@ import org.apache.ignite.binary.BinaryWriter;
  * binary objects.
  */
 public class Address implements Binarylizable {
+	private static final AtomicInteger ID_GEN = new AtomicInteger();
     /** Street. */
     private String street;
 
     /** ZIP code. */
     private int zip;
+    
+    /** id code. */
+    private int id;
 
     /**
      * Required for binary deserialization.
      */
     public Address() {
-        // No-op.
+        // No-op.    	
     }
 
     /**
@@ -53,18 +57,21 @@ public class Address implements Binarylizable {
     public Address(String street, int zip) {
         this.street = street;
         this.zip = zip;
+        this.id = ID_GEN.incrementAndGet();
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
         writer.writeString("street", street);
         writer.writeInt("zip", zip);
+        writer.writeInt("id", id);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
         street = reader.readString("street");
         zip = reader.readInt("zip");
+        id = reader.readInt("id");
     }
 
     /** {@inheritDoc} */
