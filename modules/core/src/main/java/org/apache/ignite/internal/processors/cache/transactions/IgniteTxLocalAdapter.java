@@ -994,8 +994,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 cctx.mvccCaching().onTxFinished(this, state() == COMMITTING && err == null);
 
-                //notifyDrManager(state() == COMMITTING && err == null);
-
                 cctx.tm().resetContext();
             }
         }
@@ -1130,8 +1128,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         TransactionState state = state();
 
         cctx.mvccCaching().onTxFinished(this, false);
-
-        //notifyDrManager(false);
 
         if (state != ROLLING_BACK && state != ROLLED_BACK) {
             setRollbackOnly();

@@ -102,12 +102,13 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
 
         final IgniteCache cache = node.createCache(
             cacheConfiguration(cacheMode(), FULL_SYNC, 1, 2)
+                .setCacheMode(CacheMode.REPLICATED)
                 .setIndexedTypes(Integer.class, Integer.class));
 
         ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
         final Map<Integer, List<Integer>> map = new HashMap<>();
-        final CountDownLatch latch = new CountDownLatch(6);
+        final CountDownLatch latch = new CountDownLatch(5);
 
         qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
             @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
@@ -132,8 +133,6 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
         try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {
 
             try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                tx.timeout(TX_TIMEOUT);
-
                 String dml = "INSERT INTO Integer (_key, _val) values (1,1),(2,2)";
 
                 cache.query(new SqlFieldsQuery(dml)).getAll();
@@ -142,8 +141,6 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
             }
 
             try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                tx.timeout(TX_TIMEOUT);
-
                 String dml1 = "MERGE INTO Integer (_key, _val) values (3,3)";
 
                 cache.query(new SqlFieldsQuery(dml1)).getAll();
@@ -160,8 +157,6 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
             }
 
             try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                tx.timeout(TX_TIMEOUT);
-
                 String dml = "INSERT INTO Integer (_key, _val) values (4,4),(5,5)";
 
                 cache.query(new SqlFieldsQuery(dml)).getAll();

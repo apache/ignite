@@ -94,6 +94,9 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     /** Whether tx has overridden it's own update. */
     private static final int OWN_VALUE_OVERRIDDEN = DELETED << 1;
 
+    /** Whether need to remember old value. */
+    private static final int NEED_OLD = OWN_VALUE_OVERRIDDEN << 1;
+
     /** */
     @GridToStringExclude
     private final GridCacheContext cctx;
@@ -123,7 +126,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     private long resCntr;
 
     /** */
-    private List<MvccLinkAwareSearchRow> historyRows;
+    private List<MvccLinkAwareSearchRow> histRows;
 
     /**
      * @param cctx Cache context.
@@ -136,8 +139,9 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
      * @param newVer Update version.
      * @param primary Primary node flag.
      * @param lockOnly Whether no actual update should be done and the only thing to do is to acquire lock.
-     * @param needHistory Whether to collect rows created or affected by the current tx.
+     * @param needHist Whether to collect rows created or affected by the current tx.
      * @param fastUpdate Fast update visit mode.
+     * @param needOldVal {@code True} if need old value.
      */
     public MvccUpdateDataRow(
         GridCacheContext cctx,
@@ -150,8 +154,9 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
         MvccVersion newVer,
         boolean primary,
         boolean lockOnly,
-        boolean needHistory,
-        boolean fastUpdate) {
+        boolean needHist,
+        boolean fastUpdate,
+        boolean needOldVal) {
         super(key,
             val,
             ver,
@@ -175,11 +180,14 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
         if (primary && (lockOnly || val == null))
             flags |= CAN_WRITE | REMOVE_OR_LOCK;
 
-        if (needHistory)
+        if (needHist)
             flags |= NEED_HISTORY;
 
         if (fastUpdate)
             flags |= FAST_UPDATE;
+
+        if (needOldVal)
+            flags |= NEED_OLD;
 
         setFlags(flags);
     }
@@ -211,8 +219,8 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
             }
         }
 
-        // TODO Don ot read old value when no DR or CQ enabled.
-        MvccDataRow row = (MvccDataRow)tree.getRow(io, pageAddr, idx, RowData.NO_KEY);
+        MvccDataRow row = (MvccDataRow)tree.getRow(io, pageAddr, idx,
+            isFlagsSet(NEED_OLD | FIRST) ? RowData.NO_KEY : RowData.LINK_WITH_HEADER);
 
         // Check whether the row was updated by current transaction.
         // In this case the row is already locked by current transaction and visible to it.
@@ -407,10 +415,10 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                 && (row == oldRow
                     || (rowCrd == mvccCrd && rowCntr == mvccCntr)
                     || (rowNewCrd == mvccCrd && rowNewCntr == mvccCntr))) {
-                if (historyRows == null)
-                    historyRows = new ArrayList<>();
+                if (histRows == null)
+                    histRows = new ArrayList<>();
 
-                historyRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowOpCntr & ~MVCC_OP_COUNTER_MASK, rowLink));
+                histRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowOpCntr & ~MVCC_OP_COUNTER_MASK, rowLink));
             }
 
             if (cleanupVer > MVCC_OP_COUNTER_NA // Do not clean if cleanup version is not assigned.
@@ -476,10 +484,10 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
     /** {@inheritDoc} */
     @Override public List<MvccLinkAwareSearchRow> history() {
-        if (isFlagsSet(NEED_HISTORY) && historyRows == null)
-            historyRows = new ArrayList<>();
+        if (isFlagsSet(NEED_HISTORY) && histRows == null)
+            histRows = new ArrayList<>();
 
-        return historyRows;
+        return histRows;
     }
 
     /** {@inheritDoc} */

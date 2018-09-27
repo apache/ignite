@@ -514,7 +514,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         MvccSnapshot mvccSnapshot,
         boolean primary,
         boolean needHistory,
-        boolean noCreate) throws IgniteCheckedException {
+        boolean noCreate,
+        boolean needOldVal) throws IgniteCheckedException {
         if (entry.detached() || entry.isNear())
             return null;
 
@@ -528,7 +529,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             mvccSnapshot,
             primary,
             needHistory,
-            noCreate);
+            noCreate,
+            needOldVal);
     }
 
     /** {@inheritDoc} */
@@ -536,7 +538,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         GridCacheMapEntry entry,
         MvccSnapshot mvccSnapshot,
         boolean primary,
-        boolean needHistory) throws IgniteCheckedException {
+        boolean needHistory,
+        boolean needOldVal) throws IgniteCheckedException {
         if (entry.detached() || entry.isNear())
             return null;
 
@@ -546,7 +549,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             entry.key(),
             mvccSnapshot,
             primary,
-            needHistory);
+            needHistory,
+            needOldVal);
     }
 
     /** {@inheritDoc} */
@@ -1850,7 +1854,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             MvccSnapshot mvccSnapshot,
             boolean primary,
             boolean needHistory,
-            boolean noCreate) throws IgniteCheckedException {
+            boolean noCreate,
+            boolean needOldVal) throws IgniteCheckedException {
             assert mvccSnapshot != null;
             assert primary || !needHistory;
 
@@ -1879,7 +1884,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     false,
                     needHistory,
                     // we follow fast update visit flow here if row cannot be created by current operation
-                    noCreate);
+                    noCreate,
+                    needOldVal);
 
                 assert cctx.shared().database().checkpointLockIsHeldByThread();
 
@@ -1962,7 +1968,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             KeyCacheObject key,
             MvccSnapshot mvccSnapshot,
             boolean primary,
-            boolean needHistory) throws IgniteCheckedException {
+            boolean needHistory,
+            boolean needOldVal) throws IgniteCheckedException {
             assert mvccSnapshot != null;
             assert primary || mvccSnapshot.activeTransactions().size() == 0 : mvccSnapshot;
             assert primary || !needHistory;
@@ -1990,7 +1997,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     primary,
                     false,
                     needHistory,
-                    true);
+                    true,
+                    needOldVal);
 
                 assert cctx.shared().database().checkpointLockIsHeldByThread();
 
@@ -2053,6 +2061,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     null,
                     true,
                     true,
+                    false,
                     false,
                     false);
 

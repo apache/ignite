@@ -842,8 +842,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                         cctx.mvccCaching().onTxFinished(this, state() == COMMITTING && err == null);
 
-                        //notifyDrManager(state() == COMMITTING && err == null);
-
                         if (wrapper != null)
                             wrapper.initialize(ret);
                     }
@@ -936,8 +934,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     @Override public final void rollbackRemoteTx() {
         try {
             cctx.mvccCaching().onTxFinished(this, false);
-
-            //notifyDrManager(false);
 
             // Note that we don't evict near entries here -
             // they will be deleted by their corresponding transactions.

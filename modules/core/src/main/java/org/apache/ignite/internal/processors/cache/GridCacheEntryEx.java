@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFilter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -350,8 +351,10 @@ public interface GridCacheEntryEx {
      * @param topVer Topology version.
      * @param mvccVer Mvcc version.
      * @param op Cache operation.
-     * @param needHistory Whether to collect rows created or affected by the current tx.
+     * @param needHist Whether to collect rows created or affected by the current tx.
      * @param noCreate Entry should not be created when enabled, e.g. SQL INSERT.
+     * @param futId Enlist future id.
+     * @param batchNum Batch number.
      * @return Tuple containing success flag and old value. If success is {@code false},
      *      then value is {@code null}.
      * @throws IgniteCheckedException If storing value failed.
@@ -365,15 +368,19 @@ public interface GridCacheEntryEx {
         AffinityTopologyVersion topVer,
         MvccSnapshot mvccVer,
         GridCacheOperation op,
-        boolean needHistory,
-        boolean noCreate) throws IgniteCheckedException, GridCacheEntryRemovedException;
+        boolean needHist,
+        boolean noCreate,
+        IgniteUuid futId,
+        int batchNum) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * @param tx Cache transaction.
      * @param affNodeId Partitioned node iD.
      * @param topVer Topology version.
      * @param mvccVer Mvcc version.
-     * @param needHistory Whether to collect rows created or affected by the current tx.
+     * @param needHist Whether to collect rows created or affected by the current tx.
+     * @param futId Enlist future id.
+     * @param batchNum Batch number.
      * @return Tuple containing success flag and old value. If success is {@code false},
      *      then value is {@code null}.
      * @throws IgniteCheckedException If storing value failed.
@@ -384,7 +391,9 @@ public interface GridCacheEntryEx {
         UUID affNodeId,
         AffinityTopologyVersion topVer,
         MvccSnapshot mvccVer,
-        boolean needHistory) throws IgniteCheckedException, GridCacheEntryRemovedException;
+        boolean needHist,
+        IgniteUuid futId,
+        int batchNum) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * @param tx Transaction adapter.
@@ -1153,8 +1162,12 @@ public interface GridCacheEntryEx {
      * @param tx Transaction.
      * @param affNodeId Affinity node id.
      * @param topVer Topology version.
+     * @param entries Entries.
      * @param op Cache operation.
-     * @param mvccVer Mvcc version.  @return Update result.
+     * @param mvccVer Mvcc version.
+     * @param futId Future id.
+     * @param batchNum Batch number.
+     * @return Update result.
      * @throws IgniteCheckedException, If failed.
      * @throws GridCacheEntryRemovedException, If entry has been removed.
      */
@@ -1164,7 +1177,9 @@ public interface GridCacheEntryEx {
         AffinityTopologyVersion topVer,
         List<GridCacheEntryInfo> entries,
         GridCacheOperation op,
-        MvccSnapshot mvccVer)
+        MvccSnapshot mvccVer,
+        IgniteUuid futId,
+        int batchNum)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**

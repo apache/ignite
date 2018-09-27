@@ -16,7 +16,12 @@
  */
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,14 +32,17 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxKey;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryListener;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedHashMap;
 
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_BACKUP;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
@@ -48,13 +56,10 @@ public class MvccTransactionEnlistCachingManager extends GridCacheSharedManagerA
     private static final int TX_SIZE_THRESHOLD = 20_000;
 
     /** Cached enlist values*/
-    private final Map<GridCacheVersion, Map<KeyCacheObject, MvccTxEnlistEntry>> enlistCache = new ConcurrentHashMap<>();
+    private final Map<GridCacheVersion, EnlistBuffer> enlistCache = new ConcurrentHashMap<>();
 
     /** Counters map. Used for OOM prevention caused by the big transactions. */
     private final Map<TxKey, AtomicInteger> cntrs = new ConcurrentHashMap<>();
-
-    // TODO Remove.
-    private AtomicLong fakeUpdCntr = new AtomicLong();
 
     /**
      * Adds enlisted tx entry to cache.
@@ -69,6 +74,8 @@ public class MvccTransactionEnlistCachingManager extends GridCacheSharedManagerA
      * @param mvccVer Mvcc version.
      * @param cacheId Cache id.
      * @param tx Transaction.
+     * @param futId Dht future id.
+     * @param batchNum Batch number (for batches reordering prevention).
      * @throws IgniteCheckedException If failed.
      */
     public void addEnlisted(KeyCacheObject key,
@@ -81,7 +88,9 @@ public class MvccTransactionEnlistCachingManager extends GridCacheSharedManagerA
         AffinityTopologyVersion topVer,
         MvccVersion mvccVer,
         int cacheId,
-        IgniteInternalTx tx) throws IgniteCheckedException {
+        IgniteInternalTx tx,
+        IgniteUuid futId,
+        int batchNum) throws IgniteCheckedException {
         assert key != null;
         assert mvccVer != null;
         assert tx != null;
@@ -101,11 +110,9 @@ public class MvccTransactionEnlistCachingManager extends GridCacheSharedManagerA
 
         MvccTxEnlistEntry e = new MvccTxEnlistEntry(key, val, ttl, expireTime, ver, oldVal, primary, topVer, mvccVer, cacheId);
 
-        Map<KeyCacheObject, MvccTxEnlistEntry> cached = enlistCache.computeIfAbsent(ver,
-            v -> new ConcurrentLinkedHashMap<>());
+        EnlistBuffer cached = enlistCache.computeIfAbsent(ver, v -> new EnlistBuffer());
 
-        // TODO REORDERING!!!!
-        cached.put(key, e);
+        cached.add(primary ? null : futId, primary ? -1 : batchNum, key, e);
     }
 
     /**
@@ -119,10 +126,38 @@ public class MvccTransactionEnlistCachingManager extends GridCacheSharedManagerA
 
         cntrs.remove(new TxKey(tx.mvccSnapshot().coordinatorVersion(), tx.mvccSnapshot().counter()));
 
-        Map<KeyCacheObject, MvccTxEnlistEntry> cached = enlistCache.remove(tx.xidVersion());
+        EnlistBuffer buf = enlistCache.remove(tx.xidVersion());
+
+        if (buf == null)
+            return;
+
+        Map<KeyCacheObject, MvccTxEnlistEntry> cached = buf.getCached();
 
         if (F.isEmpty(cached) || !commit)
             return;
+
+        TxCounters txCntrs = tx.txCounters(false);
+
+        assert txCntrs != null;
+
+        Collection<PartitionUpdateCountersMessage> cntrsColl =  txCntrs.updateCounters();
+
+        assert  !F.isEmpty(cntrsColl);
+
+        // cacheId -> partId -> initCntr -> cntr + delta.
+        Map<Integer, Map<Integer, T2<AtomicLong, Long>>> cntrsMap = new HashMap<>();
+
+        for (PartitionUpdateCountersMessage msg : cntrsColl) {
+            for (int i = 0; i < msg.size(); i++) {
+                Map<Integer, T2<AtomicLong, Long>> cntrPerPart =
+                    cntrsMap.computeIfAbsent(msg.cacheId(), k -> new HashMap<>());
+
+                T2 prev = cntrPerPart.put(msg.partition(i),
+                    new T2<>(new AtomicLong(msg.initialCounter(i)), msg.initialCounter(i) + msg.updatesCount(i)));
+
+                assert prev == null;
+            }
+        }
 
         // Feed CQ & DR with entries.
         for (Map.Entry<KeyCacheObject, MvccTxEnlistEntry> entry : cached.entrySet()) {
@@ -130,9 +165,19 @@ public class MvccTransactionEnlistCachingManager extends GridCacheSharedManagerA
 
             assert e.key().partition() != -1;
 
+            Map<Integer, T2<AtomicLong, Long>> cntrPerCache = cntrsMap.get(e.cacheId());
+
             GridCacheContext ctx0 = cctx.cacheContext(e.cacheId());
 
-            assert ctx0 != null;
+            assert ctx0 != null && cntrPerCache != null;
+
+            T2<AtomicLong, Long> cntr = cntrPerCache.get(e.key().partition());
+
+            long resCntr = cntr.getKey().incrementAndGet();
+
+            assert resCntr <= cntr.getValue();
+
+            e.updateCounter(resCntr);
 
             // DR
             if (ctx0.isDrEnabled()) {
@@ -165,7 +210,7 @@ public class MvccTransactionEnlistCachingManager extends GridCacheSharedManagerA
                                 e.key().partition(),
                                 tx.local(),
                                 false,
-                                fakeUpdCntr.incrementAndGet(),
+                                e.updateCounter(),
                                 null,
                                 e.topologyVersion());
                         }
@@ -201,5 +246,85 @@ public class MvccTransactionEnlistCachingManager extends GridCacheSharedManagerA
 
         return ctx0.continuousQueries().notifyContinuousQueries(tx) ?
             ctx0.continuousQueries().updateListeners(internal, false) : null;
+    }
+
+    /**
+     * Buffer for collecting enlisted entries. The main goal of this buffer is to fix reordering of dht enlist requests
+     * on backups.
+     */
+    private static class EnlistBuffer {
+        /** Last DHT future id. */
+        private IgniteUuid lastFutId;
+
+        /** Main buffer for entries. */
+        private Map<KeyCacheObject, MvccTxEnlistEntry> cached = new LinkedHashMap<>();
+
+        /** Pending entries. */
+        private SortedMap<Integer, Map<KeyCacheObject, MvccTxEnlistEntry>> pending;
+
+        /**
+         * Adds entry to caching buffer.
+         *
+         * @param futId Future id.
+         * @param batchNum Batch number.
+         * @param key Key.
+         * @param e Entry.
+         */
+        synchronized void add(IgniteUuid futId, int batchNum, KeyCacheObject key, MvccTxEnlistEntry e) {
+            if (batchNum >= 0) {
+                /*
+                 * Assume that batches within one future may be reordered. But batches between futures cannot be
+                 * reordered. This means that if batches from the new DHT future has arrived, all batches from the
+                 * previous one has already been collected.
+                 */
+                if (lastFutId != null && !lastFutId.equals(futId)) { // Request from new DHT future arrived.
+                    lastFutId = futId;
+
+                    // Flush pending for previous future.
+                    flushPending();
+                }
+
+                if (pending == null)
+                    pending = new TreeMap<>() ;
+
+                MvccTxEnlistEntry prev = pending.computeIfAbsent(batchNum, k -> new LinkedHashMap<>()).put(key, e);
+
+                if (prev != null && prev.oldValue() != null)
+                    e.oldValue(prev.oldValue());
+            }
+            else { // batchNum == 0 means no reordering (e.g. this is a primary node).
+                assert batchNum == -1;
+
+                MvccTxEnlistEntry prev = cached.put(key, e);
+
+                if (prev != null && prev.oldValue() != null)
+                    e.oldValue(prev.oldValue());
+            }
+        }
+
+        /**
+         * @return Cached entries map.
+         */
+        synchronized Map<KeyCacheObject, MvccTxEnlistEntry> getCached() {
+            flushPending();
+
+            return cached;
+        }
+
+        /**
+         * Flush pending updates to cached map.
+         */
+        private void flushPending() {
+            if (F.isEmpty(pending))
+                return;
+
+            for (Map.Entry<Integer, Map<KeyCacheObject, MvccTxEnlistEntry>> entry : pending.entrySet()) {
+                Map<KeyCacheObject, MvccTxEnlistEntry> vals = entry.getValue();
+
+                cached.putAll(vals);
+            }
+
+            pending.clear();
+        }
     }
 }

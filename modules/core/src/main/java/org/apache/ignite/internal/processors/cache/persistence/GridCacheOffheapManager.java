@@ -1771,11 +1771,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             MvccSnapshot mvccVer,
             boolean primary,
             boolean needHistory,
-            boolean noCreate) throws IgniteCheckedException {
+            boolean noCreate,
+            boolean needOldVal) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
             return delegate.mvccUpdate(
-                cctx, key, val, ver, expireTime, mvccVer, primary, needHistory, noCreate);
+                cctx, key, val, ver, expireTime, mvccVer, primary, needHistory, noCreate, needOldVal);
         }
 
         /** {@inheritDoc} */
@@ -1784,10 +1785,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             KeyCacheObject key,
             MvccSnapshot mvccVer,
             boolean primary,
-            boolean needHistory) throws IgniteCheckedException {
+            boolean needHistory,
+            boolean needOldVal) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            return delegate.mvccRemove(cctx, key, mvccVer, primary, needHistory);
+            return delegate.mvccRemove(cctx, key, mvccVer, primary, needHistory, needOldVal);
         }
 
         /** {@inheritDoc} */

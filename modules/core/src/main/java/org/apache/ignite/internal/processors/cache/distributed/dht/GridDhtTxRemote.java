@@ -47,7 +47,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteSt
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -390,7 +389,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void mvccEnlistBatch(GridCacheContext ctx, EnlistOperation op, List<KeyCacheObject> keys,
-        List<Message> vals, MvccSnapshot snapshot) throws IgniteCheckedException {
+        List<Message> vals, MvccSnapshot snapshot, IgniteUuid futId, int batchNum) throws IgniteCheckedException {
         assert keys != null && (vals == null || vals.size() == keys.size());
 
         WALPointer ptr = null;
@@ -438,7 +437,9 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                         ctx.localNodeId(),
                                         topologyVersion(),
                                         snapshot,
-                                        false);
+                                        false,
+                                        futId,
+                                        batchNum);
 
                                     break;
 
@@ -454,7 +455,9 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                         snapshot,
                                         op.cacheOperation(),
                                         false,
-                                        false);
+                                        false,
+                                        futId,
+                                        batchNum);
 
                                     break;
 
@@ -470,7 +473,9 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                 topologyVersion(),
                                 entries.infos(),
                                 op.cacheOperation(),
-                                snapshot);
+                                snapshot,
+                                futId,
+                                batchNum);
                         }
 
                         break;

@@ -388,7 +388,9 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                                         cctx.localNodeId(),
                                         topVer,
                                         mvccSnapshot,
-                                        isMoving(key.partition()));
+                                        isMoving(key.partition()),
+                                        null,
+                                        -1);
 
                                     break;
 
@@ -404,7 +406,9 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                                         mvccSnapshot,
                                         op.cacheOperation(),
                                         isMoving(key.partition()),
-                                        op.noCreate());
+                                        op.noCreate(),
+                                        null,
+                                        -1);
 
                                     break;
 

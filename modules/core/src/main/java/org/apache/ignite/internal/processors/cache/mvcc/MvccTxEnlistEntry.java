@@ -58,6 +58,9 @@ public class MvccTxEnlistEntry {
     /** */
     private long expireTime;
 
+    /** */
+    private long updCntr;
+
     /**
      * @param key Key.
      * @param val New value.
@@ -145,6 +148,13 @@ public class MvccTxEnlistEntry {
     }
 
     /**
+     * @param oldVal Old value.
+     */
+    public void oldValue(CacheObject oldVal) {
+        this.oldVal = oldVal;
+    }
+
+    /**
      * @return {@code True} if this entry is created on a primary node.
      */
     public boolean isPrimary() {
@@ -170,6 +180,20 @@ public class MvccTxEnlistEntry {
      */
     public int cacheId() {
         return cacheId;
+    }
+
+    /**
+     * @return Update counter.
+     */
+    public long updateCounter() {
+        return updCntr;
+    }
+
+    /**
+     * @param updCntr Update counter.
+     */
+    public void updateCounter(long updCntr) {
+        this.updCntr = updCntr;
     }
 
     /** {@inheritDoc} */
