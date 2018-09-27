@@ -39,18 +39,18 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Job results. */
-    private List<CacheDistributionNode> nodeResultList;
+    private List<CacheDistributionNode> nodeResList;
 
     /** Exceptions. */
     private Map<UUID, Exception> exceptions;
 
     /**
-     * @param nodeResultList Cluster infos.
+     * @param nodeResList Cluster infos.
      * @param exceptions Exceptions.
      */
-    public CacheDistributionTaskResult(List<CacheDistributionNode> nodeResultList,
+    public CacheDistributionTaskResult(List<CacheDistributionNode> nodeResList,
         Map<UUID, Exception> exceptions) {
-        this.nodeResultList = nodeResultList;
+        this.nodeResList = nodeResList;
         this.exceptions = exceptions;
     }
 
@@ -64,7 +64,7 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
      * @return Job results.
      */
     public Collection<CacheDistributionNode> jobResults() {
-        return nodeResultList;
+        return nodeResList;
     }
 
     /**
@@ -76,14 +76,14 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, nodeResultList);
+        U.writeCollection(out, nodeResList);
         U.writeMap(out, exceptions);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in
     ) throws IOException, ClassNotFoundException {
-        nodeResultList = U.readList(in);
+        nodeResList = U.readList(in);
         exceptions = U.readMap(in);
     }
 
@@ -92,15 +92,75 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
         return S.toString(CacheDistributionTaskResult.class, this);
     }
 
+    /**
+     * Print collect information on the distribution of partitions.
+     *
+     * @param out Print stream.
+     */
+    public void print(PrintStream out) {
+        if (nodeResList.isEmpty())
+            return;
+
+        List<Row> rows = new ArrayList<>();
+
+        for (CacheDistributionNode node : nodeResList) {
+            for (CacheDistributionGroup group : node.getGroups()) {
+                for (CacheDistributionPartition partition : group.getPartitions()) {
+                    final Row row = new Row();
+                    row.setGroupId(group.getGroupId());
+                    row.setGroupName(group.getGroupName());
+                    row.setPartition(partition.getPartition());
+                    row.setNodeId(node.getNodeId());
+                    row.setPrimary(partition.isPrimary());
+                    row.setState(partition.getState());
+                    row.setUpdateCounter(partition.getUpdateCounter());
+                    row.setSize(partition.getSize());
+                    row.setAddresses(node.getAddresses());
+                    row.setUserAttributes(node.getUserAttributes());
+
+                    rows.add(row);
+                }
+            }
+        }
+
+        rows.sort(null);
+
+        StringBuilder userAttrsName = new StringBuilder();
+        if (!rows.isEmpty() && rows.get(0).userAttrs != null) {
+            for (String userAttribute : rows.get(0).userAttrs.keySet()) {
+                userAttrsName.append(',');
+
+                if (userAttribute != null)
+                    userAttrsName.append(userAttribute);
+            }
+        }
+        out.println("[groupId,partition,nodeId,primary,state,updateCounter,partitionSize,nodeAddresses" + userAttrsName + "]");
+
+        int oldGrpId = 0;
+
+        for (Row row : rows) {
+            if (oldGrpId != row.grpId) {
+                out.println("[next group: id=" + row.grpId + ", name=" + row.grpName + ']');
+
+                oldGrpId = row.getGroupId();
+            }
+
+            row.print(out);
+        }
+    }
+
+    /**
+     * Class for
+     */
     private static class Row implements Comparable {
         /** */
-        private int groupId;
+        private int grpId;
 
         /** */
-        private String groupName;
+        private String grpName;
 
         /** */
-        private int partition;
+        private int partId;
 
         /** */
         private UUID nodeId;
@@ -112,45 +172,45 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
         private GridDhtPartitionState state;
 
         /** */
-        private long updateCounter;
+        private long updateCntr;
 
         /** */
         private long size;
 
         /** */
-        private String addresses;
+        private String addrs;
 
         /** User attribute in result. */
-        private Map<String, String> userAttributes;
+        private Map<String, String> userAttrs;
 
         /** */
         public int getGroupId() {
-            return groupId;
+            return grpId;
         }
 
         /** */
-        public void setGroupId(int groupId) {
-            this.groupId = groupId;
+        public void setGroupId(int grpId) {
+            this.grpId = grpId;
         }
 
         /** */
         public String getGroupName() {
-            return groupName;
+            return grpName;
         }
 
         /** */
-        public void setGroupName(String groupName) {
-            this.groupName = groupName;
+        public void setGroupName(String grpName) {
+            this.grpName = grpName;
         }
 
         /** */
         public int getPartition() {
-            return partition;
+            return partId;
         }
 
         /** */
-        public void setPartition(int partition) {
-            this.partition = partition;
+        public void setPartition(int partId) {
+            this.partId = partId;
         }
 
         /** */
@@ -185,12 +245,12 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
 
         /** */
         public long getUpdateCounter() {
-            return updateCounter;
+            return updateCntr;
         }
 
         /** */
-        public void setUpdateCounter(long updateCounter) {
-            this.updateCounter = updateCounter;
+        public void setUpdateCounter(long updateCntr) {
+            this.updateCntr = updateCntr;
         }
 
         /** */
@@ -205,52 +265,53 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
 
         /** */
         public String getAddresses() {
-            return addresses;
+            return addrs;
         }
 
         /** */
-        public void setAddresses(String addresses) {
-            this.addresses = addresses;
+        public void setAddresses(String addrs) {
+            this.addrs = addrs;
         }
 
         /**
          * @return User attribute in result.
          */
         public Map<String, String> getUserAttributes() {
-            return userAttributes;
+            return userAttrs;
         }
 
         /**
          * @param userAttrs New user attribute in result.
          */
         public void setUserAttributes(Map<String, String> userAttrs) {
-            userAttributes = userAttrs;
+            this.userAttrs = userAttrs;
         }
 
+        /** {@inheritDoc} */
         @Override public int compareTo(@NotNull Object o) {
             assert o instanceof Row;
 
             Row other = (Row)o;
 
-            int result = groupId - other.groupId;
+            int res = grpId - other.grpId;
 
-            if (result == 0) {
-                result = partition - other.partition;
+            if (res == 0) {
+                res = partId - other.partId;
 
-                if (result == 0)
-                    result = nodeId.compareTo(other.nodeId);
+                if (res == 0)
+                    res = nodeId.compareTo(other.nodeId);
 
             }
 
-            return result;
+            return res;
         }
 
         /** */
         public void print(PrintStream out) {
-            out.print(groupId);
+            out.print(grpId);
             out.print(',');
 
-            out.print(partition);
+            out.print(partId);
             out.print(',');
 
             out.print(U.id8(getNodeId()));
@@ -262,81 +323,23 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
             out.print(state);
             out.print(',');
 
-            out.print(updateCounter);
+            out.print(updateCntr);
             out.print(',');
 
             out.print(size);
             out.print(',');
 
-            out.print(addresses);
+            out.print(addrs);
 
-            if (userAttributes!=null){
-                for (String userAttribute:userAttributes.values()){
+            if (userAttrs != null) {
+                for (String userAttribute : userAttrs.values()) {
                     out.print(',');
-                    if (userAttribute!=null)
+                    if (userAttribute != null)
                         out.print(userAttribute);
                 }
             }
 
             out.println();
-        }
-    }
-
-    /**
-     * Print collect information on the distribution of partitions.
-     *
-     * @param out
-     */
-    public void print(PrintStream out) {
-        if (nodeResultList.isEmpty())
-            return;
-
-        List<Row> rows = new ArrayList<>();
-
-        for (CacheDistributionNode node : nodeResultList) {
-            for (CacheDistributionGroup group : node.getGroups()) {
-                for (CacheDistributionPartition partition : group.getPartitions()) {
-                    final Row row = new Row();
-                    row.setGroupId(group.getGroupId());
-                    row.setGroupName(group.getGroupName());
-                    row.setPartition(partition.getPartition());
-                    row.setNodeId(node.getNodeId());
-                    row.setPrimary(partition.isPrimary());
-                    row.setState(partition.getState());
-                    row.setUpdateCounter(partition.getUpdateCounter());
-                    row.setSize(partition.getSize());
-                    row.setAddresses(node.getAddresses());
-                    row.setUserAttributes(node.getUserAttributes());
-
-                    rows.add(row);
-                }
-            }
-        }
-
-        rows.sort(null);
-
-
-        StringBuilder userAttributesName=new StringBuilder();
-        if (!rows.isEmpty() && rows.get(0).userAttributes!=null){
-            for (String userAttribute:rows.get(0).userAttributes.keySet()){
-                userAttributesName.append(',');
-
-                if (userAttribute!=null)
-                    userAttributesName.append(userAttribute);
-            }
-        }
-        out.println("[groupId,partition,nodeId,primary,state,updateCounter,partitionSize,nodeAddresses"+userAttributesName+"]");
-
-        int oldGroupId = 0;
-
-        for (Row row : rows) {
-            if (oldGroupId != row.groupId) {
-                out.println("[next group: id=" + row.groupId + ", name=" + row.groupName + ']');
-
-                oldGroupId = row.getGroupId();
-            }
-
-            row.print(out);
         }
     }
 }

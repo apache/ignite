@@ -807,11 +807,9 @@ public class CommandHandler {
      * @param cacheArgs Cache args.
      */
     private void cacheDistribution(GridClient client, CacheArguments cacheArgs) throws GridClientException {
-        CacheDistributionTaskArg taskArg = new CacheDistributionTaskArg(cacheArgs.caches());
+        CacheDistributionTaskArg taskArg = new CacheDistributionTaskArg(cacheArgs.caches(), cacheArgs.getUserAttributes());
 
         UUID nodeId = cacheArgs.nodeId() == null ? BROADCAST_UUID : cacheArgs.nodeId();
-
-        taskArg.setUserAttributes(cacheArgs.getUserAttributes());
 
         CacheDistributionTaskResult res = executeTaskByNameOnNode(client, CacheDistributionTask.class.getName(), taskArg, nodeId);
 

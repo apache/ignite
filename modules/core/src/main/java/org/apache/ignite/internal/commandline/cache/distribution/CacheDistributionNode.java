@@ -36,10 +36,10 @@ public class CacheDistributionNode extends VisorDataTransferObject {
     private UUID nodeId;
 
     /** Network addresses. */
-    private String addresses;
+    private String addrs;
 
     /** User attribute in result. */
-    private Map<String, String> userAttributes;
+    private Map<String, String> userAttrs;
 
     /** Information about groups. */
     private List<CacheDistributionGroup> groups;
@@ -50,16 +50,16 @@ public class CacheDistributionNode extends VisorDataTransferObject {
 
     /**
      * @param nodeId Node identifier.
-     * @param addresses Network addresses.
-     * @param userAttributes Map node user attribute.
+     * @param addrs Network addresses.
+     * @param userAttrs Map node user attribute.
      * @param groups Information about groups.
      */
-    public CacheDistributionNode(UUID nodeId, String addresses,
-        Map<String, String> userAttributes,
+    public CacheDistributionNode(UUID nodeId, String addrs,
+        Map<String, String> userAttrs,
         List<CacheDistributionGroup> groups) {
         this.nodeId = nodeId;
-        this.addresses = addresses;
-        this.userAttributes = userAttributes;
+        this.addrs = addrs;
+        this.userAttrs = userAttrs;
         this.groups = groups;
     }
 
@@ -75,26 +75,26 @@ public class CacheDistributionNode extends VisorDataTransferObject {
 
     /** */
     public String getAddresses() {
-        return addresses;
+        return addrs;
     }
 
     /** */
-    public void setAddresses(String addresses) {
-        this.addresses = addresses;
+    public void setAddresses(String addrs) {
+        this.addrs = addrs;
     }
 
     /**
      * @return User attribute in result.
      */
     public Map<String, String> getUserAttributes() {
-        return userAttributes;
+        return userAttrs;
     }
 
     /**
-     * @param userAttributes New user attribute in result.
+     * @param userAttrs New user attribute in result.
      */
-    public void setUserAttributes(Map<String, String> userAttributes) {
-        this.userAttributes = userAttributes;
+    public void setUserAttributes(Map<String, String> userAttrs) {
+        this.userAttrs = userAttrs;
     }
 
     /** */
@@ -110,8 +110,8 @@ public class CacheDistributionNode extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeUuid(out, nodeId);
-        U.writeString(out, addresses);
-        U.writeMap(out, userAttributes);
+        U.writeString(out, addrs);
+        U.writeMap(out, userAttrs);
         U.writeCollection(out, groups);
     }
 
@@ -119,8 +119,8 @@ public class CacheDistributionNode extends VisorDataTransferObject {
     @Override protected void readExternalData(byte protoVer,
         ObjectInput in) throws IOException, ClassNotFoundException {
         nodeId = U.readUuid(in);
-        addresses = U.readString(in);
-        userAttributes = U.readMap(in);
+        addrs = U.readString(in);
+        userAttrs = U.readMap(in);
         groups = U.readList(in);
     }
 

@@ -31,7 +31,7 @@ public class CacheDistributionPartition extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Partition identifier. */
-    private int partition;
+    private int partId;
 
     /** Flag primary or backup partition. */
     private boolean primary;
@@ -40,7 +40,7 @@ public class CacheDistributionPartition extends VisorDataTransferObject {
     private GridDhtPartitionState state;
 
     /** Partition update counters. */
-    private long updateCounter;
+    private long updateCntr;
 
     /** Number of entries in partition. */
     private long size;
@@ -50,29 +50,29 @@ public class CacheDistributionPartition extends VisorDataTransferObject {
     }
 
     /**
-     * @param partition Partition identifier.
+     * @param partId Partition identifier.
      * @param primary Flag primary or backup partition.
      * @param state Partition status.
-     * @param updateCounter Partition update counters.
+     * @param updateCntr Partition update counters.
      * @param size Number of entries in partition.
      */
-    public CacheDistributionPartition(int partition, boolean primary,
-        GridDhtPartitionState state, long updateCounter, long size) {
-        this.partition = partition;
+    public CacheDistributionPartition(int partId, boolean primary,
+        GridDhtPartitionState state, long updateCntr, long size) {
+        this.partId = partId;
         this.primary = primary;
         this.state = state;
-        this.updateCounter = updateCounter;
+        this.updateCntr = updateCntr;
         this.size = size;
     }
 
     /** */
     public int getPartition() {
-        return partition;
+        return partId;
     }
 
     /** */
-    public void setPartition(int partition) {
-        this.partition = partition;
+    public void setPartition(int partId) {
+        this.partId = partId;
     }
 
     /** */
@@ -97,12 +97,12 @@ public class CacheDistributionPartition extends VisorDataTransferObject {
 
     /** */
     public long getUpdateCounter() {
-        return updateCounter;
+        return updateCntr;
     }
 
     /** */
-    public void setUpdateCounter(long updateCounter) {
-        this.updateCounter = updateCounter;
+    public void setUpdateCounter(long updateCntr) {
+        this.updateCntr = updateCntr;
     }
 
     /** */
@@ -117,19 +117,19 @@ public class CacheDistributionPartition extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeInt(partition);
+        out.writeInt(partId);
         out.writeBoolean(primary);
         U.writeEnum(out, state);
-        out.writeLong(updateCounter);
+        out.writeLong(updateCntr);
         out.writeLong(size);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException {
-        partition = in.readInt();
+        partId = in.readInt();
         primary = in.readBoolean();
         state = GridDhtPartitionState.fromOrdinal(in.readByte());
-        updateCounter = in.readLong();
+        updateCntr = in.readLong();
         size = in.readLong();
     }
 }

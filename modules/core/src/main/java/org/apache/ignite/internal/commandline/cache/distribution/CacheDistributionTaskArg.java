@@ -35,7 +35,7 @@ public class CacheDistributionTaskArg extends VisorDataTransferObject {
     private Set<String> caches;
 
     /** Add user attribute in result. */
-    private Set<String> userAttributes;
+    private Set<String> userAttrs;
 
     /**
      * Default constructor.
@@ -46,11 +46,11 @@ public class CacheDistributionTaskArg extends VisorDataTransferObject {
 
     /**
      * @param caches Caches.
-     * @param userAttributes Add user attribute in result.
+     * @param userAttrs Add user attribute in result.
      */
-    public CacheDistributionTaskArg(Set<String> caches, Set<String> userAttributes) {
+    public CacheDistributionTaskArg(Set<String> caches, Set<String> userAttrs) {
         this.caches = caches;
-        this.userAttributes = userAttributes;
+        this.userAttrs = userAttrs;
     }
 
     /**
@@ -64,27 +64,27 @@ public class CacheDistributionTaskArg extends VisorDataTransferObject {
      * @return Add user attribute in result
      */
     public Set<String> getUserAttributes() {
-        return userAttributes;
+        return userAttrs;
     }
 
     /**
      * @param userAttrs New add user attribute in result
      */
     public void setUserAttributes(Set<String> userAttrs) {
-        userAttributes = userAttrs;
+        this.userAttrs = userAttrs;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeCollection(out, caches);
-        U.writeCollection(out, userAttributes);
+        U.writeCollection(out, userAttrs);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer,
         ObjectInput in) throws IOException, ClassNotFoundException {
         caches = U.readSet(in);
-        userAttributes = U.readSet(in);
+        userAttrs = U.readSet(in);
     }
 
     /** {@inheritDoc} */

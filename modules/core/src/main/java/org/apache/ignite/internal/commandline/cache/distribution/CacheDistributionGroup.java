@@ -31,10 +31,10 @@ public class CacheDistributionGroup extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Group identifier. */
-    private int groupId;
+    private int grpId;
 
     /** Group name. */
-    private String groupName;
+    private String grpName;
 
     /** List of partitions. */
     private List<CacheDistributionPartition> partitions;
@@ -44,34 +44,34 @@ public class CacheDistributionGroup extends VisorDataTransferObject {
     }
 
     /**
-     * @param groupId Group identifier.
-     * @param groupName Group name.
+     * @param grpId Group identifier.
+     * @param grpName Group name.
      * @param partitions List of partitions.
      */
-    public CacheDistributionGroup(int groupId, String groupName, List<CacheDistributionPartition> partitions) {
-        this.groupId = groupId;
-        this.groupName = groupName;
+    public CacheDistributionGroup(int grpId, String grpName, List<CacheDistributionPartition> partitions) {
+        this.grpId = grpId;
+        this.grpName = grpName;
         this.partitions = partitions;
     }
 
     /** */
     public int getGroupId() {
-        return groupId;
+        return grpId;
     }
 
     /** */
-    public void setGroupId(int groupId) {
-        this.groupId = groupId;
+    public void setGroupId(int grpId) {
+        this.grpId = grpId;
     }
 
     /** */
     public String getGroupName() {
-        return groupName;
+        return grpName;
     }
 
     /** */
-    public void setGroupName(String groupName) {
-        this.groupName = groupName;
+    public void setGroupName(String grpName) {
+        this.grpName = grpName;
     }
 
     /** */
@@ -87,16 +87,16 @@ public class CacheDistributionGroup extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeInt(groupId);
-        U.writeString(out, groupName);
+        out.writeInt(grpId);
+        U.writeString(out, grpName);
         U.writeCollection(out, partitions);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer,
         ObjectInput in) throws IOException, ClassNotFoundException {
-        groupId = in.readInt();
-        groupName = U.readString(in);
+        grpId = in.readInt();
+        grpName = U.readString(in);
         partitions = U.readList(in);
     }
 }

@@ -24,6 +24,9 @@ import java.util.Map;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
+/**
+ * Result of CacheResetLostPartitionsTask
+ */
 public class CacheResetLostPartitionsTaskResult extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
@@ -31,7 +34,7 @@ public class CacheResetLostPartitionsTaskResult extends VisorDataTransferObject 
     /**
      * Map group name to result execute message.
      */
-    private Map<String, String> messageMap;
+    private Map<String, String> msgMap;
 
     /**
      * @param groupName - Cache group name.
@@ -39,38 +42,39 @@ public class CacheResetLostPartitionsTaskResult extends VisorDataTransferObject 
      * @return the previous value associated with <tt>key</tt>, or <tt>null</tt>
      */
     public String put(String groupName, String message) {
-        return this.messageMap.put(groupName, message);
+        return this.msgMap.put(groupName, message);
     }
 
     /**
      * Print job result.
      *
-     * @param out
+     * @param out Print stream.
      */
     public void print(PrintStream out) {
-        if (messageMap == null || messageMap.isEmpty())
+        if (msgMap == null || msgMap.isEmpty())
             return;
 
-        for (String message : messageMap.values())
+        for (String message : msgMap.values())
             out.println(message);
     }
 
     /** */
     public Map<String, String> getMessageMap() {
-        return messageMap;
+        return msgMap;
     }
 
     /** */
     public void setMessageMap(Map<String, String> messageMap) {
-        this.messageMap = messageMap;
+        this.msgMap = messageMap;
     }
 
+    /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeMap(out, messageMap);
+        U.writeMap(out, msgMap);
     }
 
-    @Override
-    protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        messageMap = U.readMap(in);
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        msgMap = U.readMap(in);
     }
 }

@@ -117,19 +117,19 @@ public class CacheDistributionTask extends VisorMultiNodeTask<CacheDistributionT
                     return info;
 
                 for (Integer id : grpIds) {
-                    final CacheDistributionGroup group = new CacheDistributionGroup();
+                    final CacheDistributionGroup grp = new CacheDistributionGroup();
 
-                    info.getGroups().add(group);
+                    info.getGroups().add(grp);
 
-                    group.setGroupId(id);
+                    grp.setGroupId(id);
 
                     final DynamicCacheDescriptor desc = ignite.context().cache().cacheDescriptor(id);
 
                     final CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(desc == null ? id : desc.groupId());
 
-                    group.setGroupName(grpCtx.cacheOrGroupName());
+                    grp.setGroupName(grpCtx.cacheOrGroupName());
 
-                    group.setPartitions(new ArrayList<>());
+                    grp.setPartitions(new ArrayList<>());
 
                     GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl)grpCtx.topology();
 
@@ -143,16 +143,16 @@ public class CacheDistributionTask extends VisorMultiNodeTask<CacheDistributionT
                         if (part == null)
                             continue;
 
-                        final CacheDistributionPartition partition = new CacheDistributionPartition();
+                        final CacheDistributionPartition partDto = new CacheDistributionPartition();
 
-                        group.getPartitions().add(partition);
+                        grp.getPartitions().add(partDto);
 
                         int p = part.id();
-                        partition.setPartition(p);
-                        partition.setPrimary(assignment.primaryPartitions(node.id()).contains(p));
-                        partition.setState(part.state());
-                        partition.setUpdateCounter(part.updateCounter());
-                        partition.setSize(desc == null ? part.dataStore().fullSize() : part.dataStore().cacheSize(id));
+                        partDto.setPartition(p);
+                        partDto.setPrimary(assignment.primaryPartitions(node.id()).contains(p));
+                        partDto.setState(part.state());
+                        partDto.setUpdateCounter(part.updateCounter());
+                        partDto.setSize(desc == null ? part.dataStore().fullSize() : part.dataStore().cacheSize(id));
                     }
                 }
                 return info;

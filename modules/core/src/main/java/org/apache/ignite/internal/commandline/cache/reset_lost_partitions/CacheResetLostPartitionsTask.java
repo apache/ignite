@@ -38,7 +38,8 @@ public class CacheResetLostPartitionsTask extends VisorOneNodeTask<CacheResetLos
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<CacheResetLostPartitionsTaskArg, CacheResetLostPartitionsTaskResult> job(CacheResetLostPartitionsTaskArg arg) {
+    @Override protected VisorJob<CacheResetLostPartitionsTaskArg, CacheResetLostPartitionsTaskResult> job(
+        CacheResetLostPartitionsTaskArg arg) {
         return new CacheResetLostPartitionsJob(arg, debug);
     }
 
@@ -56,37 +57,38 @@ public class CacheResetLostPartitionsTask extends VisorOneNodeTask<CacheResetLos
         }
 
         /** {@inheritDoc} */
-        @Override public CacheResetLostPartitionsTaskResult run(CacheResetLostPartitionsTaskArg arg) throws IgniteException {
+        @Override public CacheResetLostPartitionsTaskResult run(
+            CacheResetLostPartitionsTaskArg arg) throws IgniteException {
             try {
-                final CacheResetLostPartitionsTaskResult result = new CacheResetLostPartitionsTaskResult();
-                result.setMessageMap(new HashMap<>());
+                final CacheResetLostPartitionsTaskResult res = new CacheResetLostPartitionsTaskResult();
+                res.setMessageMap(new HashMap<>());
 
                 if (!F.isEmpty(arg.getCaches())) {
                     for (String groupName : arg.getCaches()) {
-                        final int groupId = CU.cacheId(groupName);
+                        final int grpId = CU.cacheId(groupName);
 
-                        CacheGroupContext group = ignite.context().cache().cacheGroup(groupId);
+                        CacheGroupContext grp = ignite.context().cache().cacheGroup(grpId);
 
-                        if (group != null) {
-                            SortedSet<String> cacheNames = group.caches().stream()
+                        if (grp != null) {
+                            SortedSet<String> cacheNames = grp.caches().stream()
                                 .map(GridCacheContext::name)
                                 .collect(Collectors.toCollection(TreeSet::new));
 
                             if (!F.isEmpty(cacheNames)) {
                                 ignite.resetLostPartitions(cacheNames);
 
-                                result.put(groupName, String.format("Reset LOST-partitions performed successfully. " +
+                                res.put(groupName, String.format("Reset LOST-partitions performed successfully. " +
                                         "Cache group (name = '%s', id = %d), caches (%s).",
-                                    groupName, groupId, cacheNames));
+                                    groupName, grpId, cacheNames));
                             }
                         }
                         else
-                            result.put(groupName, String.format("Cache group (name = '%s', id = %d) not found.",
-                                groupName, groupId));
+                            res.put(groupName, String.format("Cache group (name = '%s', id = %d) not found.",
+                                groupName, grpId));
                     }
                 }
 
-                return result;
+                return res;
             }
             catch (Exception e) {
                 throw new IgniteException(e);
