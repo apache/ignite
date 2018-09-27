@@ -91,6 +91,8 @@ public class TensorFlowServerScriptFormatter {
     /**
      * Formats "TF_CONFIG" variable to be passed into user script.
      *
+     * @param srv Server description.
+     * @param ignite Ignite instance.
      * @return Formatted "TF_CONFIG" variable to be passed into user script.
      */
     private String formatTfConfigVar(TensorFlowServer srv, Ignite ignite) {
