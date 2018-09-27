@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -166,29 +167,62 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
         assert grp.dataRegion().pageMemory() instanceof PageMemoryEx;
 
-        reuseList.saveMetadata();
+        Executor execSvc = ctx.executor();
 
-        boolean metaWasUpdated = false;
+        if (execSvc == null) {
+            reuseList.saveMetadata();
 
-        for (CacheDataStore store : partDataStores.values())
-            metaWasUpdated |= saveStoreMetadata(store, ctx, !metaWasUpdated, false);
+            if (ctx.nextSnapshot())
+                updateSnapshotTag(ctx);
+
+            for (CacheDataStore store : partDataStores.values())
+                saveStoreMetadata(store, ctx, false);
+        }
+        else {
+            execSvc.execute(() -> {
+                try {
+                    reuseList.saveMetadata();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            });
+
+            if (ctx.nextSnapshot()) {
+                execSvc.execute(() -> {
+                    try {
+                        updateSnapshotTag(ctx);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                });
+            }
+
+            for (CacheDataStore store : partDataStores.values())
+                execSvc.execute(() -> {
+                    try {
+                        saveStoreMetadata(store, ctx, false);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                });
+        }
     }
 
     /**
      * @param store Store to save metadata.
      * @throws IgniteCheckedException If failed.
      */
-    private boolean saveStoreMetadata(
+    private void saveStoreMetadata(
         CacheDataStore store,
         Context ctx,
-        boolean saveMeta,
         boolean beforeDestroy
     ) throws IgniteCheckedException {
         RowStore rowStore0 = store.rowStore();
 
         boolean needSnapshot = ctx != null && ctx.nextSnapshot() && ctx.needToSnapshot(grp.cacheOrGroupName());
-
-        boolean wasSaveToMeta = false;
 
         if (rowStore0 != null) {
             CacheFreeListImpl freeList = (CacheFreeListImpl)rowStore0.freeList();
@@ -220,7 +254,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     // Do not save meta for evicted partitions on next checkpoints.
                     if (state == null)
-                        return false;
+                        return;
                 }
 
                 int grpId = grp.groupId();
@@ -232,10 +266,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     if (partMetaPageAddr == 0L) {
                         U.warn(log, "Failed to acquire write lock for meta page [metaPage=" + partMetaPage +
-                            ", saveMeta=" + saveMeta + ", beforeDestroy=" + beforeDestroy + ", size=" + size +
+                            ", beforeDestroy=" + beforeDestroy + ", size=" + size +
                             ", updCntr=" + updCntr + ", state=" + state + ']');
 
-                        return false;
+                        return;
                     }
 
                     boolean changed = false;
@@ -282,12 +316,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             pageCnt = this.ctx.pageStore().pages(grpId, store.partId());
 
                             io.setCandidatePageCount(partMetaPageAddr, size == 0 ? 0 : pageCnt);
-
-                            if (saveMeta) {
-                                saveMeta(ctx);
-
-                                wasSaveToMeta = true;
-                            }
 
                             if (state == OWNING) {
                                 assert part != null;
@@ -344,8 +372,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
         else if (needSnapshot)
             tryAddEmptyPartitionToSnapshot(store, ctx);
-
-        return wasSaveToMeta;
     }
 
     /**
@@ -494,7 +520,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /**
      * @param ctx Context.
      */
-    private void saveMeta(Context ctx) throws IgniteCheckedException {
+    private void updateSnapshotTag(Context ctx) throws IgniteCheckedException {
         int grpId = grp.groupId();
         PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
         IgniteWriteAheadLogManager wal = this.ctx.wal();
@@ -590,7 +616,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         ctx.database().checkpointReadLock();
 
         try {
-            saveStoreMetadata(store, null, false, true);
+            saveStoreMetadata(store, null, true);
         }
         finally {
             ctx.database().checkpointReadUnlock();
