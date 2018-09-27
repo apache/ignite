@@ -89,6 +89,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
             double[][] means = new double[labelCount][featureCount];
             double[][] variances = new double[labelCount][featureCount];
             double[] classProbabilities = new double[labelCount];
+            double[] labels = new double[labelCount];
 
             long datasetSize = mean.featureCount.values().stream().mapToInt(i -> i).sum();
             Map<Double, double[]> meansHolder = new HashMap<>();
@@ -104,6 +105,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
 
                 meansHolder.put(label, means[lbl]);
                 classProbabilities[lbl] = (double)count / datasetSize;
+                labels[lbl] = label;
                 ++lbl;
             }
 
@@ -129,7 +131,8 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                 assert  classProbabilities.length == priorProbabilities.length;
                 classProbabilities = priorProbabilities;
             }
-            return new GaussianNaiveBayesModel(means, variances, classProbabilities);
+
+            return new GaussianNaiveBayesModel(means, variances, classProbabilities, labels);
         }
         catch (Exception e) {
             throw new

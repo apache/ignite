@@ -27,15 +27,17 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * Simple naive Bayes model which predicts result value {@code y} belongs to a class {@code C_k, k in [0..K]} as {@code
  * p(C_k,y) = p(C_k)*p(y_1,C_k) *...*p(y_n,C_k) / p(y)}. Return the number of the most possible class.
  */
-public class GaussianNaiveBayesModel implements Model<Vector, Integer>, Exportable<GaussianNaiveBayesModel>, Serializable {
+public class GaussianNaiveBayesModel implements Model<Vector, Double>, Exportable<GaussianNaiveBayesModel>, Serializable {
     /** */
     private static final long serialVersionUID = -127386523291350345L;
-    /** Means of features for all classes */
+    /** Means of features for all classes. kth row contains means for labels[k] class. */
     private final double[][] means;
-    /** Variances of features for all classes */
+    /** Variances of features for all classes. kth row contains variances for labels[k] class */
     private final double[][] variances;
     /** Prior probabilities of each class */
     private final double[] classProbabilities;
+    /** Labels. */
+    private final double[] labels;
 
     /**
      * @param means means of features for all classes
@@ -43,10 +45,11 @@ public class GaussianNaiveBayesModel implements Model<Vector, Integer>, Exportab
      * @param classProbabilities probabilities for all classes
      */
     public GaussianNaiveBayesModel(double[][] means, double[][] variances,
-        double[] classProbabilities) {
+        double[] classProbabilities,  double[] labels) {
         this.means = means;
         this.variances = variances;
         this.classProbabilities = classProbabilities;
+        this.labels = labels;
     }
 
     /** {@inheritDoc} */
@@ -55,7 +58,7 @@ public class GaussianNaiveBayesModel implements Model<Vector, Integer>, Exportab
     }
 
     /** Returns a number of class to which the input belongs. */
-    @Override public Integer apply(Vector vector) {
+    @Override public Double apply(Vector vector) {
         int k = classProbabilities.length;
         double[] probabilites = new double[k];
 
@@ -74,7 +77,7 @@ public class GaussianNaiveBayesModel implements Model<Vector, Integer>, Exportab
             if (probabilites[i] > probabilites[max])
                 max = i;
         }
-        return max;
+        return labels[max];
     }
 
     /** */

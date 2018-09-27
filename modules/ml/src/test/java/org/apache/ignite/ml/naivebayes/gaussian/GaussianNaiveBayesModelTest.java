@@ -29,6 +29,8 @@ public class GaussianNaiveBayesModelTest {
 
     @Test
     public void testPredictWithTwoClasses() {
+        double first = 1;
+        double second = 2;
         double[][] means = new double[][] {
             {5.855, 176.25, 11.25},
             {5.4175, 132.5, 7.5},
@@ -38,10 +40,10 @@ public class GaussianNaiveBayesModelTest {
             {9.7225E-2, 5.5833E2, 1.6667},
         };
         double[] probabilities = new double[] {.5, .5};
-        GaussianNaiveBayesModel mdl = new GaussianNaiveBayesModel(means, variances, probabilities);
+        GaussianNaiveBayesModel mdl = new GaussianNaiveBayesModel(means, variances, probabilities, new double[]{first,second});
         Vector observation = new DenseVector(new double[] {6, 130, 8});
 
-        Assert.assertEquals(Integer.valueOf(1), mdl.apply(observation));
+        Assert.assertEquals(second, mdl.apply(observation), 0.0001);
     }
 
 }

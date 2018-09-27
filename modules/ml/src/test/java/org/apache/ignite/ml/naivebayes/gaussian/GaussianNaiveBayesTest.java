@@ -58,7 +58,7 @@ public class GaussianNaiveBayesTest {
         );
         Vector observation = new DenseVector(new double[] {6, 130, 8});
 
-        Assert.assertEquals(Integer.valueOf(1), model.apply(observation));
+        Assert.assertEquals(female, model.apply(observation), PRECISION);
     }
 
     /**
@@ -83,7 +83,7 @@ public class GaussianNaiveBayesTest {
         );
         Vector observation = new DenseVector(new double[] {-0.8, -1});
 
-        Assert.assertEquals(0, model.apply(observation), PRECISION);
+        Assert.assertEquals(one, model.apply(observation), PRECISION);
     }
 
 }
