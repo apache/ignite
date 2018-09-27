@@ -53,19 +53,19 @@ import servicesModule from './services';
 import i18n from './data/i18n';
 
 // Directives.
-import igniteAutoFocus from './directives/auto-focus.directive.js';
+import igniteAutoFocus from './directives/auto-focus.directive';
 import igniteBsAffixUpdate from './directives/bs-affix-update.directive';
-import igniteCentered from './directives/centered/centered.directive.js';
-import igniteCopyToClipboard from './directives/copy-to-clipboard.directive.js';
+import igniteCentered from './directives/centered/centered.directive';
+import igniteCopyToClipboard from './directives/copy-to-clipboard.directive';
 import igniteHideOnStateChange from './directives/hide-on-state-change/hide-on-state-change.directive';
 import igniteInformation from './directives/information/information.directive';
-import igniteMatch from './directives/match.directive.js';
-import igniteOnClickFocus from './directives/on-click-focus.directive.js';
-import igniteOnEnter from './directives/on-enter.directive.js';
-import igniteOnEnterFocusMove from './directives/on-enter-focus-move.directive.js';
-import igniteOnEscape from './directives/on-escape.directive.js';
-import igniteOnFocusOut from './directives/on-focus-out.directive.js';
-import igniteRestoreInputFocus from './directives/restore-input-focus.directive.js';
+import igniteMatch from './directives/match.directive';
+import igniteOnClickFocus from './directives/on-click-focus.directive';
+import igniteOnEnter from './directives/on-enter.directive';
+import igniteOnEnterFocusMove from './directives/on-enter-focus-move.directive';
+import igniteOnEscape from './directives/on-escape.directive';
+import igniteOnFocusOut from './directives/on-focus-out.directive';
+import igniteRestoreInputFocus from './directives/restore-input-focus.directive';
 import igniteUiAceCSharp from './directives/ui-ace-sharp/ui-ace-sharp.directive';
 import igniteUiAcePojos from './directives/ui-ace-pojos/ui-ace-pojos.directive';
 import igniteUiAcePom from './directives/ui-ace-pom/ui-ace-pom.directive';
@@ -76,8 +76,8 @@ import btnIgniteLink from './directives/btn-ignite-link';
 
 // Services.
 import ChartColors from './services/ChartColors.service';
-import {default as IgniteConfirm, Confirm} from './services/Confirm.service.js';
-import ConfirmBatch from './services/ConfirmBatch.service.js';
+import {default as IgniteConfirm, Confirm} from './services/Confirm.service';
+import ConfirmBatch from './services/ConfirmBatch.service';
 import CopyToClipboard from './services/CopyToClipboard.service';
 import Countries from './services/Countries.service';
 import ErrorPopover from './services/ErrorPopover.service';
@@ -90,10 +90,10 @@ import LegacyTable from './services/LegacyTable.service';
 import LegacyUtils from './services/LegacyUtils.service';
 import Messages from './services/Messages.service';
 import ErrorParser from './services/ErrorParser.service';
-import ModelNormalizer from './services/ModelNormalizer.service.js';
+import ModelNormalizer from './services/ModelNormalizer.service';
 import Caches from './services/Caches';
 import {CSV} from './services/CSV';
-import {$exceptionHandler} from './services/exceptionHandler.js';
+import {$exceptionHandler} from './services/exceptionHandler';
 import IGFSs from './services/IGFSs';
 import Models from './services/Models';
 

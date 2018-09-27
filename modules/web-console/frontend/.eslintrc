@@ -1,7 +1,7 @@
-parser: "babel-eslint"
+parser: "typescript-eslint-parser"
 
 plugins:
-    - babel
+    - typescript
 
 env:
     es6: true
@@ -154,13 +154,15 @@ rules:
     no-throw-literal: 0
     no-this-before-super: 2
     no-unexpected-multiline: 2
-    no-undef: 2
+    // The rule produces undesired results with TS
+    // no-undef: 2
     no-undef-init: 2
     no-undefined: 2
     no-unneeded-ternary: 2
     no-unreachable: 2
     no-unused-expressions: [2, { allowShortCircuit: true }]
     no-unused-vars: [0, {"vars": "all", "args": "after-used"}]
+    typescript/no-unused-vars: [0]
     no-use-before-define: 2
     no-useless-call: 2
     no-void: 0
@@ -195,4 +197,3 @@ rules:
     wrap-iife: 0
     wrap-regex: 0
     yoda: [2, "never"]
-    babel/semi: 2
