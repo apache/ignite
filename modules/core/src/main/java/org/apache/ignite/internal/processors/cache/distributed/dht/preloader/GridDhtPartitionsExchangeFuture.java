@@ -1827,7 +1827,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable AffinityTopologyVersion res, @Nullable Throwable err) {
+    @Override public boolean onDone(@Nullable AffinityTopologyVersion res, @Nullable final Throwable err) {
         if (isDone() || !done.compareAndSet(false, true))
             return false;
 
@@ -1905,44 +1905,48 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             cctx.coordinators().onExchangeDone(exchCtx.newMvccCoordinator(), exchCtx.events().discoveryCache(),
                 exchCtx.activeQueries());
 
-        cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
+        listen(f -> {
+            cctx.exchange().lastFinishedFuture(this);
 
-        cctx.exchange().onExchangeDone(res, initialVersion(), err);
+            cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
 
-        cctx.kernalContext().authentication().onActivate();
+            cctx.exchange().onExchangeDone(res, initialVersion(), err);
 
-        if (exchActions != null && err == null)
-            exchActions.completeRequestFutures(cctx, null);
+            cctx.kernalContext().authentication().onActivate();
 
-        if (stateChangeExchange() && err == null)
-            cctx.kernalContext().state().onStateChangeExchangeDone(exchActions.stateChangeRequest());
+            if (exchActions != null && err == null)
+                exchActions.completeRequestFutures(cctx, null);
 
-        Map<T2<Integer, Integer>, Long> localReserved = partHistSuppliers.getReservations(cctx.localNodeId());
+            if (stateChangeExchange() && err == null)
+                cctx.kernalContext().state().onStateChangeExchangeDone(exchActions.stateChangeRequest());
 
-        if (localReserved != null) {
-            for (Map.Entry<T2<Integer, Integer>, Long> e : localReserved.entrySet()) {
-                boolean success = cctx.database().reserveHistoryForPreloading(
-                    e.getKey().get1(), e.getKey().get2(), e.getValue());
+            Map<T2<Integer, Integer>, Long> localReserved = partHistSuppliers.getReservations(cctx.localNodeId());
 
-                if (!success) {
-                    // TODO: how to handle?
-                    err = new IgniteCheckedException("Could not reserve history");
+            if (localReserved != null) {
+                for (Map.Entry<T2<Integer, Integer>, Long> e : localReserved.entrySet()) {
+                    boolean success = cctx.database().reserveHistoryForPreloading(
+                        e.getKey().get1(), e.getKey().get2(), e.getValue());
+
+                    if (!success) {
+                        // TODO: how to handle?
+                        //err = new IgniteCheckedException("Could not reserve history");
+                    }
                 }
             }
-        }
 
-        cctx.database().releaseHistoryForExchange();
+            cctx.database().releaseHistoryForExchange();
 
-        cctx.database().rebuildIndexesIfNeeded(this);
+            cctx.database().rebuildIndexesIfNeeded(this);
 
-        if (err == null) {
-            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                if (!grp.isLocal())
-                    grp.topology().onExchangeDone(this, grp.affinity().readyAffinity(res), false);
+            if (err == null) {
+                for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+                    if (!grp.isLocal())
+                        grp.topology().onExchangeDone(this, grp.affinity().readyAffinity(res), false);
+                }
+
+                cctx.walState().changeLocalStatesOnExchangeDone(res);
             }
-
-            cctx.walState().changeLocalStatesOnExchangeDone(res);
-        }
+        });
 
         if (super.onDone(res, err)) {
             if (log.isDebugEnabled())
@@ -1971,8 +1975,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 ((DiscoveryCustomEvent)firstDiscoEvt).customMessage(null);
 
             if (err == null) {
-                cctx.exchange().lastFinishedFuture(this);
-
                 if (exchCtx != null && (exchCtx.events().hasServerLeft() || exchCtx.events().hasServerJoin())) {
                     ExchangeDiscoveryEvents evts = exchCtx.events();
 
