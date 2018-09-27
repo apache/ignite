@@ -40,7 +40,7 @@ TextQuery with filter
 =========================
 
  see examples/org.apache.ignite.examples.datagrid.CacheQueryExample.java
- https://github.com/apache/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/datagrid/CacheQueryExample.java
+    https://github.com/junphine/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/datagrid/CacheQueryExample.java
  
  IgniteBiPredicate<AffinityKey, Person> filter = new IgniteBiPredicate<AffinityKey, Person>() {
             @Override public boolean apply(AffinityKey key, Person person) {
