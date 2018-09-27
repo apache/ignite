@@ -46,4 +46,8 @@ TextQuery with filter
         };    
  new TextQuery<Long, Person>(Person.class, "Master",filter)
  
+ =====================
+ Support user define function use CREATE ALIAS  like H2.
+ CREATE ALIAS <FUNC_NAME> FOR "<package.Class.staticMethod>"
+ 
  
