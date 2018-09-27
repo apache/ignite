@@ -15,10 +15,17 @@
  * limitations under the License.
  */
 
-// Service to copy some value to OS clipboard.
-export default ['IgniteCopyToClipboard', ['$window', 'IgniteMessages', function($window, Messages) {
+import angular from 'angular';
+
+/**
+ * Service to copy some value to OS clipboard.
+ * @param {ng.IWindowService} $window
+ * @param {ReturnType<typeof import('./Messages.service').default>} Messages
+ */
+export default function factory($window, Messages) {
     const body = angular.element($window.document.body);
 
+    /** @type {JQuery<HTMLTextAreaElement>} */
     const textArea = angular.element('<textarea/>');
 
     textArea.css({
@@ -27,6 +34,9 @@ export default ['IgniteCopyToClipboard', ['$window', 'IgniteMessages', function(
     });
 
     return {
+        /**
+         * @param {string} toCopy
+         */
         copy(toCopy) {
             textArea.val(toCopy);
 
@@ -47,4 +57,6 @@ export default ['IgniteCopyToClipboard', ['$window', 'IgniteMessages', function(
             textArea.remove();
         }
     };
-}]];
+}
+
+factory.$inject = ['$window', 'IgniteMessages'];

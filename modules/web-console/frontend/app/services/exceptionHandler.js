@@ -17,6 +17,9 @@
 
 import {CancellationError} from 'app/errors/CancellationError';
 
+/**
+ * @param {ng.ILogService} $log
+ */
 export function $exceptionHandler($log) {
     return function(exception, cause) {
         if (exception instanceof CancellationError)

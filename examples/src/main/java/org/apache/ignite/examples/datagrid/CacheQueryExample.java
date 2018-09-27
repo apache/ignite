@@ -18,6 +18,7 @@
 package org.apache.ignite.examples.datagrid;
 
 import javax.cache.Cache;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -76,10 +77,14 @@ public class CacheQueryExample {
      * @param args Command line arguments, none required.
      * @throws Exception If example execution failed.
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws Exception {    	
+    	System.setProperty("IGNITE_H2_DEBUG_CONSOLE", "true");
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
             System.out.println(">>> Cache query example started.");
+            
+            ignite.cluster().active(true);
+            
 
             CacheConfiguration<Long, Organization> orgCacheCfg = new CacheConfiguration<>(ORG_CACHE);
 
@@ -94,22 +99,30 @@ public class CacheQueryExample {
 
             try {
                 // Create caches.
-                ignite.getOrCreateCache(orgCacheCfg);
-                ignite.getOrCreateCache(personCacheCfg);
+            	IgniteCache o = ignite.getOrCreateCache(orgCacheCfg);
+                IgniteCache p = ignite.getOrCreateCache(personCacheCfg);
 
                 // Populate caches.
                 initialize();
+                
+                System.in.read();
 
                 // Example for SCAN-based query based on a predicate.
                 scanQuery();
 
                 // Example for TEXT-based querying for a given string in peoples resumes.
                 textQuery();
+                
+                textBinaryQuery();
+                
+                o.close();
+                p.close();
             }
             finally {
+            	
                 // Distributed cache could be removed from cluster only by Ignite.destroyCache() call.
-                ignite.destroyCache(PERSON_CACHE);
-                ignite.destroyCache(ORG_CACHE);
+               ignite.destroyCache(PERSON_CACHE);
+               ignite.destroyCache(ORG_CACHE);
             }
 
             print("Cache query example finished.");

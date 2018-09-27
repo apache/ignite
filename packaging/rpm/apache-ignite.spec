@@ -11,7 +11,7 @@
 #
 
 Name:             apache-ignite
-Version:          2.6.0
+Version:          2.7.0
 Release:          1
 Summary:          Apache Ignite In-Memory Computing, Database and Caching Platform
 Group:            Development/System
@@ -246,6 +246,7 @@ ln -sf %{_log}/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 %{_datadir}/%{name}/libs
 %{_datadir}/%{name}/platforms
 %{_datadir}/%{name}/work
+%{_datadir}/doc/%{name}-%{version}
 %{_libdir}/%{name}
 %{_sysconfdir}/systemd/system/%{name}@.service
 %{_sharedstatedir}/%{name}/log
@@ -265,7 +266,10 @@ ln -sf %{_log}/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 # Changelog
 #
 
-* Fri Jun 17 2018 Peter Ivanov <mr.weider@gmail.com> - 2.6.0-1
+* Thu Jul 26 2018 Peter Ivanov <mr.weider@gmail.com> - 2.7.0-1
+- Updated Apache Ignite to version 2.7.0
+
+* Fri Jun 15 2018 Peter Ivanov <mr.weider@gmail.com> - 2.6.0-1
 - Updated Apache Ignite to version 2.6.0
 
 * Tue Apr 17 2018 Peter Ivanov <mr.weider@gmail.com> - 2.5.0-1
@@ -273,3 +277,4 @@ ln -sf %{_log}/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 
 * Wed Jan 17 2018 Peter Ivanov <mr.weider@gmail.com> - 2.4.0-1
 - Initial package release
+
