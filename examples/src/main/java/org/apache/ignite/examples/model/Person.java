@@ -42,8 +42,8 @@ public class Person implements Serializable {
     @QuerySqlField
     public String firstName;
 
-    /** Last name (not indexed). */
-    @QuerySqlField
+    /** Last name (text indexed). */
+    @QueryTextField
     public String lastName;
 
     /** Resume text (create LUCENE-based TEXT index for this field). */

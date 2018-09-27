@@ -35,6 +35,7 @@ import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.examples.model.Organization;
 import org.apache.ignite.examples.model.Person;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteClosure;
 
 /**
  * Cache queries example. This example demonstrates TEXT and FULL SCAN

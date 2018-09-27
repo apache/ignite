@@ -17,6 +17,9 @@
 
 package org.apache.ignite.examples.model;
 
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.binary.BinaryReader;
