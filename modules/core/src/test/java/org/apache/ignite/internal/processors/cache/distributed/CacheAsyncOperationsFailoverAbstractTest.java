@@ -248,7 +248,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
         });
 
         try {
-            final IgniteCache<TestKey, TestValue> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
+            final IgniteCache<TestKey, TestValue> cache = ignite(NODE_CNT).cache(DEFAULT_CACHE_NAME);
 
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {
