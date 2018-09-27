@@ -632,10 +632,6 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         cleanup(cfg, cctx.store().configuredStore(), false);
 
         if (!CU.isUtilityCache(cfg.getName()) && !CU.isSystemCache(cfg.getName())) {
-            System.err.println(">>> unreg " + ctx.localNodeId());
-
-            Thread.dumpStack();
-
             unregisterMbean(cctx.cache().localMxBean(), cfg.getName(), false);
             unregisterMbean(cctx.cache().clusterMxBean(), cfg.getName(), false);
         }
@@ -1751,10 +1747,6 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         }
 
         if (!CU.isUtilityCache(cache.name()) && !CU.isSystemCache(cache.name())) {
-            System.err.println(">>> reg " + ctx.localNodeId());
-
-            Thread.dumpStack();
-
             registerMbean(cache.localMxBean(), cache.name(), false);
             registerMbean(cache.clusterMxBean(), cache.name(), false);
         }
