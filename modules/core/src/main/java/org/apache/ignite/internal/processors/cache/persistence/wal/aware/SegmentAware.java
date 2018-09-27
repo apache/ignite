@@ -36,15 +36,17 @@ public class SegmentAware {
     /** Manages last archived index, emulates archivation in no-archiver mode. */
     private final SegmentArchivedStorage segmentArchivedStorage = buildArchivedStorage(segmentLockStorage);
     /** Storage of actual information about current index of compressed segments. */
-    private final SegmentCompressStorage segmentCompressStorage = buildCompressStorage(segmentArchivedStorage);
+    private final SegmentCompressStorage segmentCompressStorage;
     /** Storage of absolute current segment index. */
     private final SegmentCurrentStateStorage segmentCurrStateStorage;
 
     /**
      * @param walSegmentsCnt Total WAL segments count.
+     * @param compactionEnabled Is wal compaction enabled.
      */
-    public SegmentAware(int walSegmentsCnt) {
+    public SegmentAware(int walSegmentsCnt, boolean compactionEnabled) {
         segmentCurrStateStorage = buildCurrentStateStorage(walSegmentsCnt, segmentArchivedStorage);
+        segmentCompressStorage = buildCompressStorage(segmentArchivedStorage, compactionEnabled);
     }
 
     /**

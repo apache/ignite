@@ -31,6 +31,9 @@ public class SegmentCompressStorage {
     /** Manages last archived index, emulates archivation in no-archiver mode. */
     private final SegmentArchivedStorage segmentArchivedStorage;
 
+    /** If WAL compaction enabled. */
+    private final boolean compactionEnabled;
+
     /** Last successfully compressed segment. */
     private volatile long lastCompressedIdx = -1L;
 
@@ -45,18 +48,23 @@ public class SegmentCompressStorage {
 
     /**
      * @param segmentArchivedStorage Storage of last archived segment.
+     * @param compactionEnabled If WAL compaction enabled.
      */
-    private SegmentCompressStorage(SegmentArchivedStorage segmentArchivedStorage) {
+    private SegmentCompressStorage(SegmentArchivedStorage segmentArchivedStorage, boolean compactionEnabled) {
         this.segmentArchivedStorage = segmentArchivedStorage;
+
+        this.compactionEnabled = compactionEnabled;
 
         this.segmentArchivedStorage.addObserver(this::onSegmentArchived);
     }
 
     /**
      * @param segmentArchivedStorage Storage of last archived segment.
+     * @param compactionEnabled If WAL compaction enabled.
      */
-    static SegmentCompressStorage buildCompressStorage(SegmentArchivedStorage segmentArchivedStorage) {
-        SegmentCompressStorage storage = new SegmentCompressStorage(segmentArchivedStorage);
+    static SegmentCompressStorage buildCompressStorage(SegmentArchivedStorage segmentArchivedStorage,
+                                                       boolean compactionEnabled) {
+        SegmentCompressStorage storage = new SegmentCompressStorage(segmentArchivedStorage, compactionEnabled);
 
         segmentArchivedStorage.addObserver(storage::onSegmentArchived);
 
@@ -120,10 +128,9 @@ public class SegmentCompressStorage {
      * Callback for waking up compressor when new segment is archived.
      */
     private synchronized void onSegmentArchived(long lastAbsArchivedIdx) {
-        if (lastAbsArchivedIdx > lastEnqueuedToCompressIdx) {
-            segmentsToCompress.add(lastAbsArchivedIdx);
-
-            lastEnqueuedToCompressIdx = lastAbsArchivedIdx;
+        if (lastAbsArchivedIdx > lastEnqueuedToCompressIdx && compactionEnabled) {
+            while(lastEnqueuedToCompressIdx < lastAbsArchivedIdx)
+                segmentsToCompress.add(++lastEnqueuedToCompressIdx);
         }
 
         notifyAll();
