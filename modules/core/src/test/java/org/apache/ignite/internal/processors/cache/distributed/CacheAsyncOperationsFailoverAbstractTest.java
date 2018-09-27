@@ -217,7 +217,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
                     try {
                         startGrid(NODE_CNT);
 
-                        U.sleep(500);
+                        U.sleep(5000);
                     }
                     catch (Throwable t) {
                         log.error("Start", t);
