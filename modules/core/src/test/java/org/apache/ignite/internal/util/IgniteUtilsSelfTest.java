@@ -47,6 +47,7 @@ import java.util.UUID;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -886,18 +887,43 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     public void testDoInParallel() throws Throwable {
         CyclicBarrier barrier = new CyclicBarrier(3);
 
-        IgniteUtils.doInParallel(
+        IgniteUtils.doInParallel(3,
             Executors.newFixedThreadPool(3),
             Arrays.asList(1, 2, 3),
             (i) -> {
                 try {
-                    barrier.await(3, TimeUnit.SECONDS);
+                    barrier.await(1, TimeUnit.SECONDS);
                 }
                 catch (Exception e) {
                     throw new IgniteCheckedException(e);
                 }
-            }
-        );
+            });
+    }
+
+    /**
+     *
+     */
+    public void testDoInParallelBatch() throws Throwable {
+        CyclicBarrier barrier = new CyclicBarrier(3);
+
+        try {
+            IgniteUtils.doInParallel(2,
+                Executors.newFixedThreadPool(3),
+                Arrays.asList(1, 2, 3),
+                (i) -> {
+                    try {
+                        barrier.await(400, TimeUnit.MILLISECONDS);
+                    }
+                    catch (Exception e) {
+                        throw new IgniteCheckedException(e);
+                    }
+                });
+
+            fail("Should throw timeout exception");
+        }
+        catch (Exception e) {
+            assertTrue(e.getCause() instanceof TimeoutException);
+        }
     }
 
     /**
@@ -907,14 +933,13 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         String expectedException = "ExpectedException";
 
         try {
-            IgniteUtils.doInParallel(
+            IgniteUtils.doInParallel(3,
                 Executors.newFixedThreadPool(1),
                 Arrays.asList(1, 2, 3),
                 (i) -> {
                     if (i == 1)
                         throw new IgniteCheckedException(expectedException);
-                }
-            );
+                });
 
             fail("Should throw ParallelExecutionException");
         }

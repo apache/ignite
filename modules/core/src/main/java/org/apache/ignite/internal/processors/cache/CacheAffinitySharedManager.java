@@ -82,7 +82,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 
 /**
  *
@@ -448,7 +447,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             .collect(Collectors.toSet());
 
         try {
-            cctx.cache().prepareCachesStartInParallel(startCacheInfos);
+            cctx.cache().prepareStartCaches(startCacheInfos);
         }
         catch (IgniteCheckedException e) {
             cctx.cache().closeCaches(startedCaches, false);
@@ -862,8 +861,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         assert exchActions != null && !exchActions.empty() : exchActions;
 
         final ExchangeDiscoveryEvents evts = fut.context().events();
-
-        List<T2<StartCacheInfo, DynamicCacheChangeRequest>> startCacheInfos = new ArrayList<>();
 
         for (ExchangeActions.CacheActionData action : exchActions.cacheStartRequests()) {
             DynamicCacheDescriptor cacheDesc = action.descriptor();

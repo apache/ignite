@@ -974,6 +974,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_EVICTION_PERMITS = "IGNITE_EVICTION_PERMITS";
 
     /**
+     * Enables start caches in parallel.
+     *
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_ALLOW_START_CACHES_IN_PARALLEL = "IGNITE_ALLOW_START_CACHES_IN_PARALLEL";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

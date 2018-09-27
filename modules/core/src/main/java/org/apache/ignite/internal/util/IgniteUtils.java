@@ -138,6 +138,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
@@ -213,7 +214,6 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -10508,28 +10508,59 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Execute operation on data in parallel.
+     *
      * @param executorSvc Service for parallel execution.
      * @param srcDatas List of data for parallelization.
-     * @param consumer Logic for execution of on each item of data.
+     * @param operation Logic for execution of on each item of data.
      * @param <T> Type of data.
      * @throws IgniteCheckedException if parallel execution was failed.
      */
     public static <T> void doInParallel(ExecutorService executorSvc, Collection<T> srcDatas,
-        IgniteThrowableConsumer<T> consumer) throws IgniteCheckedException, IgniteInterruptedCheckedException {
+        IgniteThrowableConsumer<T> operation) throws IgniteCheckedException, IgniteInterruptedCheckedException {
+        doInParallel(srcDatas.size(), executorSvc, srcDatas, operation);
+    }
 
-        List<T2<T, Future<Object>>> consumerFutures = srcDatas.stream()
-            .map(item -> new T2<>(
-                item,
-                executorSvc.submit(() -> {
-                    consumer.accept(item);
-
-                    return null;
-                })))
+    /**
+     * Execute operation on data in parallel.
+     *
+     * @param parallelismLvl Number of threads on which it should be executed.
+     * @param executorSvc Service for parallel execution.
+     * @param srcDatas List of data for parallelization.
+     * @param operation Logic for execution of on each item of data.
+     * @param <T> Type of data.
+     * @throws IgniteCheckedException if parallel execution was failed.
+     */
+    public static <T> void doInParallel(
+        int parallelismLvl,
+        ExecutorService executorSvc,
+        Collection<T> srcDatas,
+        IgniteThrowableConsumer<T> operation
+    ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
+        List<List<T>> batches = IntStream.range(0, parallelismLvl)
+            .mapToObj(i -> new ArrayList<T>())
             .collect(Collectors.toList());
 
-        for (T2<T, Future<Object>> future : consumerFutures) {
+        int i = 0;
+        for (T src : srcDatas) {
+            batches.get(i++ % parallelismLvl).add(src);
+        }
+
+        List<Future<Object>> consumerFutures = batches.stream()
+            .filter(batch -> !batch.isEmpty())
+            .map(batch -> executorSvc.submit(() -> {
+                for (T item : batch)
+                    operation.accept(item);
+
+                return null;
+            }))
+            .collect(Collectors.toList());
+
+        Throwable error =null;
+
+        for (Future<Object> future : consumerFutures) {
             try {
-                future.get2().get();
+                future.get();
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -10537,17 +10568,30 @@ public abstract class IgniteUtils {
                 throw new IgniteInterruptedCheckedException(e);
             }
             catch (ExecutionException e) {
-                if (e.getCause() instanceof IgniteCheckedException)
-                    throw (IgniteCheckedException)e.getCause();
-
-                if (e.getCause() instanceof RuntimeException)
-                    throw (RuntimeException)e.getCause();
-
-                if (e.getCause() instanceof Error)
-                    throw (Error)e.getCause();
-
-                throw new IgniteCheckedException(e.getCause());
+                if(error == null)
+                    error = e.getCause();
+                else
+                    error.addSuppressed(e.getCause());
             }
+            catch (CancellationException e) {
+                if(error == null)
+                    error = e;
+                else
+                    error.addSuppressed(e);
+            }
+        }
+
+        if (error != null) {
+            if (error instanceof IgniteCheckedException)
+                throw (IgniteCheckedException)error;
+
+            if (error instanceof RuntimeException)
+                throw (RuntimeException)error;
+
+            if (error instanceof Error)
+                throw (Error)error;
+
+            throw new IgniteCheckedException(error);
         }
     }
 
