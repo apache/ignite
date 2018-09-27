@@ -1961,17 +1961,20 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
 
         /**
-         * Calculate optimal additional compressor worker threads count.
+         * Calculate optimal additional compressor worker threads count. If quarter of proc threads greater
+         * than WAL_COMPRESSOR_WORKER_THREAD_CNT, use this value. Otherwise, reduce number of threads.
+         *
+         * @return Optimal number of compressor threads.
          */
         private int calculateThreadCount() {
             int procNum = Runtime.getRuntime().availableProcessors();
 
-            int cfgNumThreads = WAL_COMPRESSOR_WORKER_THREAD_CNT - 1;
-
-            if (procNum >> 4 > cfgNumThreads)
-                return cfgNumThreads;
+            // If quarter of proc threads greater than WAL_COMPRESSOR_WORKER_THREAD_CNT,
+            // use this value. Otherwise, reduce number of threads.
+            if (procNum >> 2 >= WAL_COMPRESSOR_WORKER_THREAD_CNT)
+                return WAL_COMPRESSOR_WORKER_THREAD_CNT;
             else
-                return procNum >> 4;
+                return procNum >> 2;
         }
 
 
