@@ -63,9 +63,10 @@ namespace ignite
             autoCommit(true),
             parser(),
             config(),
-            info(config)
+            info(config),
+            streamingContext()
         {
-            // No-op.
+            streamingContext.SetConnection(*this);
         }
 
         Connection::~Connection()
@@ -375,7 +376,7 @@ namespace ignite
             return config;
         }
 
-        bool Connection::IsAutoCommit()
+        bool Connection::IsAutoCommit() const
         {
             return autoCommit;
         }
@@ -670,8 +671,10 @@ namespace ignite
                 if (!rsp.GetError().empty())
                     constructor << "Additional info: " << rsp.GetError() << " ";
 
-                constructor << "Current node Apache Ignite version: " << rsp.GetCurrentVer().ToString() << ", "
-                            << "driver protocol version introduced in version: " << protocolVersion.ToString() << ".";
+                constructor << "Current version of the protocol, used by the server node is " 
+                            << rsp.GetCurrentVer().ToString() << ", "
+                            << "driver protocol version introduced in version "
+                            << protocolVersion.ToString() << ".";
 
                 AddStatusRecord(SqlState::S08004_CONNECTION_REJECTED, constructor.str());
 

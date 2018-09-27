@@ -19,23 +19,61 @@ include /app/helpers/jade/mixins
 -var model = '$ctrl.clonedCluster.collision.PriorityQueue'
 
 .pc-form-grid-col-30
-    +number('Parallel jobs number:', `${model}.parallelJobsNumber`, '"priorityParallelJobsNumber"', 'true', 'availableProcessors * 2', '1',
-        'Number of jobs that can be executed in parallel')
+    +form-field__number({
+        label: 'Parallel jobs number:',
+        model: `${model}.parallelJobsNumber`,
+        name: '"priorityParallelJobsNumber"',
+        placeholder: 'availableProcessors * 2',
+        min: '1',
+        tip: 'Number of jobs that can be executed in parallel'
+    })
 .pc-form-grid-col-30
-    +number('Waiting jobs number:', `${model}.waitingJobsNumber`, '"priorityWaitingJobsNumber"', 'true', 'Integer.MAX_VALUE', '0',
-        'Maximum number of jobs that are allowed to wait in waiting queue')
+    +form-field__number({
+        label: 'Waiting jobs number:',
+        model: `${model}.waitingJobsNumber`,
+        name: '"priorityWaitingJobsNumber"',
+        placeholder: 'Integer.MAX_VALUE',
+        min: '0',
+        tip: 'Maximum number of jobs that are allowed to wait in waiting queue'
+    })
 .pc-form-grid-col-30
-    +text('Priority attribute key:', `${model}.priorityAttributeKey`, '"priorityPriorityAttributeKey"', 'false', 'grid.task.priority',
-        'Task priority attribute key')
+    +form-field__text({
+        label: 'Priority attribute key:',
+        model: `${model}.priorityAttributeKey`,
+        name: '"priorityPriorityAttributeKey"',
+        placeholder: 'grid.task.priority',
+        tip: 'Task priority attribute key'
+    })
 .pc-form-grid-col-30
-    +text('Job priority attribute key:', `${model}.jobPriorityAttributeKey`, '"priorityJobPriorityAttributeKey"', 'false', 'grid.job.priority',
-        'Job priority attribute key')
+    +form-field__text({
+        label: 'Job priority attribute key:',
+        model: `${model}.jobPriorityAttributeKey`,
+        name: '"priorityJobPriorityAttributeKey"',
+        placeholder: 'grid.job.priority',
+        tip: 'Job priority attribute key'
+    })
 .pc-form-grid-col-30
-    +number('Default priority:', `${model}.defaultPriority`, '"priorityDefaultPriority"', 'true', '0', '0',
-        'Default priority to use if a job does not have priority attribute set')
+    +form-field__number({
+        label: 'Default priority:',
+        model: `${model}.defaultPriority`,
+        name: '"priorityDefaultPriority"',
+        placeholder: '0',
+        min: '0',
+        tip: 'Default priority to use if a job does not have priority attribute set'
+    })
 .pc-form-grid-col-30
-    +number('Starvation increment:', `${model}.starvationIncrement`, '"priorityStarvationIncrement"', 'true', '1', '0',
-        'Value to increment job priority by every time a lower priority job gets behind a higher priority job')
+    +form-field__number({
+        label: 'Starvation increment:',
+        model: `${model}.starvationIncrement`,
+        name: '"priorityStarvationIncrement"',
+        placeholder: '1',
+        min: '0',
+        tip: 'Value to increment job priority by every time a lower priority job gets behind a higher priority job'
+    })
 .pc-form-grid-col-60
-    +checkbox('Starvation prevention enabled', `${model}.starvationPreventionEnabled`, '"priorityStarvationPreventionEnabled"',
-        'Job starvation prevention is enabled')
+    +form-field__checkbox({
+        label: 'Starvation prevention enabled',
+        model: `${model}.starvationPreventionEnabled`,
+        name: '"priorityStarvationPreventionEnabled"',
+        tip: 'Job starvation prevention is enabled'
+    })

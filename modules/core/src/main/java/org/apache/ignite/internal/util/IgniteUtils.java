@@ -193,6 +193,7 @@ import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
+import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -1319,7 +1320,7 @@ public abstract class IgniteUtils {
 
         final Set<Long> deadlockedThreadsIds = getDeadlockedThreadIds(mxBean);
 
-        if (deadlockedThreadsIds.size() == 0)
+        if (deadlockedThreadsIds.isEmpty())
             warn(log, "No deadlocked threads detected.");
         else
             warn(log, "Deadlocked threads detected (see thread dump below) " +
@@ -1344,6 +1345,22 @@ public abstract class IgniteUtils {
         }
 
         sb.a(NL);
+
+        warn(log, sb.toString());
+    }
+
+    /**
+     * Dumps stack trace of the thread to the given log at warning level.
+     *
+     * @param t Thread to be dumped.
+     * @param log Logger.
+     */
+    public static void dumpThread(Thread t, @Nullable IgniteLogger log) {
+        ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
+
+        GridStringBuilder sb = new GridStringBuilder();
+
+        printThreadInfo(mxBean.getThreadInfo(t.getId()), sb, Collections.emptySet());
 
         warn(log, sb.toString());
     }
@@ -4016,6 +4033,22 @@ public abstract class IgniteUtils {
             }
             catch (Exception e) {
                 warn(log, "Failed to close resource: " + e.getMessage());
+            }
+    }
+
+    /**
+     * Closes given resource suppressing possible checked exception.
+     *
+     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
+     * @param e Suppressor exception
+     */
+    public static void closeWithSuppressingException(@Nullable AutoCloseable rsrc, @NotNull Exception e) {
+        if (rsrc != null)
+            try {
+                rsrc.close();
+            }
+            catch (Exception suppressed) {
+               e.addSuppressed(suppressed);
             }
     }
 
@@ -8662,13 +8695,32 @@ public abstract class IgniteUtils {
             if (clsFilter != null && !clsFilter.apply(clsName))
                 throw new RuntimeException("Deserialization of class " + clsName + " is disallowed.");
 
-            Class old = ldrMap.putIfAbsent(clsName, cls = Class.forName(clsName, true, ldr));
+            // Avoid class caching inside Class.forName
+            if (ldr instanceof CacheClassLoaderMarker)
+                cls = ldr.loadClass(clsName);
+            else
+                cls = Class.forName(clsName, true, ldr);
+
+            Class old = ldrMap.putIfAbsent(clsName, cls);
 
             if (old != null)
                 cls = old;
         }
 
         return cls;
+    }
+
+    /**
+     * Clears class associated with provided class loader from class cache.
+     *
+     * @param ldr Class loader.
+     * @param clsName Class name of clearing class.
+     */
+    public static void clearClassFromClassCache(ClassLoader ldr, String clsName){
+        ConcurrentMap<String, Class> map = classCache.get(ldr);
+
+        if (map!=null)
+            map.remove(clsName);
     }
 
     /**

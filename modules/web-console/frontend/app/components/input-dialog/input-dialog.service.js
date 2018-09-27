@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
 import controller from './input-dialog.controller';
 import templateUrl from './input-dialog.tpl.pug';
 import {CancellationError} from 'app/errors/CancellationError';
@@ -22,6 +23,10 @@ import {CancellationError} from 'app/errors/CancellationError';
 export default class InputDialog {
     static $inject = ['$modal', '$q'];
 
+    /**
+     * @param {mgcrea.ngStrap.modal.IModalService} $modal
+     * @param {ng.IQService} $q
+     */
     constructor($modal, $q) {
         this.$modal = $modal;
         this.$q = $q;
@@ -34,7 +39,7 @@ export default class InputDialog {
      * @param {String} label Input field label.
      * @param {String} value Default value.
      * @param {Function} [toValidValue] Validator function.
-     * @returns {Promise.<String>} User input.
+     * @returns {ng.IPromise<string>} User input.
      */
     input(title, label, value, toValidValue) {
         const deferred = this.$q.defer();
@@ -67,7 +72,7 @@ export default class InputDialog {
      *
      * @param {String} srcName Name of source object.
      * @param {Array.<String>} names List of already exist names.
-     * @returns {Promise.<String>} New name
+     * @returns {ng.IPromise<string>} New name
      */
     clone(srcName, names) {
         const uniqueName = (value) => {

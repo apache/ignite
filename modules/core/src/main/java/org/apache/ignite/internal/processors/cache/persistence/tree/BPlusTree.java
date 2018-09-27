@@ -981,7 +981,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /** {@inheritDoc} */
-    public final GridCursor<T> find(L lower, L upper, Object x) throws IgniteCheckedException {
+    @Override public final GridCursor<T> find(L lower, L upper, Object x) throws IgniteCheckedException {
         return find(lower, upper, null, x);
     }
 
@@ -2384,7 +2384,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         reuseList.addForRecycle(bag);
 
-        assert bag.size() == 0 : bag.size();
+        assert bag.isEmpty() : bag.size();
 
         return pagesCnt;
     }

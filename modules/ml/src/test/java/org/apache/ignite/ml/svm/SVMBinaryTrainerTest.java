@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
 
@@ -49,7 +50,47 @@ public class SVMBinaryTrainerTest extends TrainerTest {
             (k, v) -> v[0]
         );
 
-        TestUtils.assertEquals(-1, mdl.apply(VectorUtils.of(100, 10)), PRECISION);
+        TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(100, 10)), PRECISION);
         TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(10, 100)), PRECISION);
+    }
+
+    /** */
+    @Test
+    public void testUpdate() {
+        Map<Integer, double[]> cacheMock = new HashMap<>();
+
+        for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
+            cacheMock.put(i, twoLinearlySeparableClasses[i]);
+
+        SVMLinearBinaryClassificationTrainer trainer = new SVMLinearBinaryClassificationTrainer()
+            .withAmountOfIterations(1000)
+            .withSeed(1234L);
+
+        SVMLinearBinaryClassificationModel originalMdl = trainer.fit(
+            cacheMock,
+            parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+            (k, v) -> v[0]
+        );
+
+        SVMLinearBinaryClassificationModel updatedOnSameDS = trainer.update(
+            originalMdl,
+            cacheMock,
+            parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+            (k, v) -> v[0]
+        );
+
+        SVMLinearBinaryClassificationModel updatedOnEmptyDS = trainer.update(
+            originalMdl,
+            new HashMap<Integer, double[]>(),
+            parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+            (k, v) -> v[0]
+        );
+
+        Vector v = VectorUtils.of(100, 10);
+        TestUtils.assertEquals(originalMdl.apply(v), updatedOnSameDS.apply(v), PRECISION);
+        TestUtils.assertEquals(originalMdl.apply(v), updatedOnEmptyDS.apply(v), PRECISION);
     }
 }

@@ -34,6 +34,8 @@ import javax.management.ObjectName;
 import mx4j.tools.adaptor.http.HttpAdaptor;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.IgniteSpi;
@@ -160,10 +162,17 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
         }
 
         /** {@inheritDoc} */
-        @Override public void onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot,
-            Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage data) {
+        @Override public IgniteInternalFuture onDiscovery(
+            int type,
+            long topVer,
+            ClusterNode node,
+            Collection<ClusterNode> topSnapshot,
+            Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage data
+        ) {
             if (type == EVT_NODE_METRICS_UPDATED)
                 isMetricsUpdate = true;
+
+            return new GridFinishedFuture();
         }
     }
 
@@ -237,13 +246,15 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
                     // No-op.
                 }
 
-                @Override public void onDiscovery(int type, long topVer, ClusterNode node,
+                @Override public IgniteInternalFuture onDiscovery(int type, long topVer, ClusterNode node,
                     Collection<ClusterNode> topSnapshot, Map<Long, Collection<ClusterNode>> topHist,
                     @Nullable DiscoverySpiCustomMessage data) {
                     // If METRICS_UPDATED came from local node
                     if (type == EVT_NODE_METRICS_UPDATED
                         && node.id().equals(spi.getLocalNode().id()))
                         spiCnt.addAndGet(1);
+
+                    return new GridFinishedFuture();
                 }
             };
 
@@ -405,7 +416,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
                     }
 
                     @SuppressWarnings({"NakedNotify"})
-                    @Override public void onDiscovery(int type, long topVer, ClusterNode node,
+                    @Override public IgniteInternalFuture onDiscovery(int type, long topVer, ClusterNode node,
                         Collection<ClusterNode> topSnapshot, Map<Long, Collection<ClusterNode>> topHist,
                         @Nullable DiscoverySpiCustomMessage data) {
                         info("Discovery event [type=" + type + ", node=" + node + ']');
@@ -413,6 +424,8 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
                         synchronized (mux) {
                             mux.notifyAll();
                         }
+
+                        return new GridFinishedFuture();
                     }
                 });
 

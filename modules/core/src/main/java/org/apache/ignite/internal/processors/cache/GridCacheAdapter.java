@@ -87,7 +87,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImpl;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -275,14 +275,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** Whether this cache is IGFS data cache. */
     private boolean igfsDataCache;
-
-    /** Whether this cache is Mongo data cache. */
-    @SuppressWarnings("UnusedDeclaration")
-    private boolean mongoDataCache;
-
-    /** Whether this cache is Mongo meta cache. */
-    @SuppressWarnings("UnusedDeclaration")
-    private boolean mongoMetaCache;
 
     /** Current IGFS data cache size. */
     private LongAdder igfsDataCacheSize;
@@ -798,7 +790,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 return it;
             }
 
-            public String toString() {
+            @Override public String toString() {
                 return "CacheLocalEntries []";
             }
         };
@@ -4400,20 +4392,36 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
             if (fut != null && !fut.isDone()) {
                 IgniteInternalFuture<T> f = new GridEmbeddedFuture(fut,
-                    new IgniteOutClosure<IgniteInternalFuture>() {
-                        @Override public IgniteInternalFuture<T> apply() {
-                            if (ctx.kernalContext().isStopping())
-                                return new GridFinishedFuture<>(
-                                    new IgniteCheckedException("Operation has been cancelled (node is stopping)."));
+                    (IgniteOutClosure<IgniteInternalFuture>)() -> {
+                        GridFutureAdapter resFut = new GridFutureAdapter();
 
-                            try {
-                                return op.op(tx0, opCtx).chain(clo);
+                        ctx.kernalContext().closure().runLocalSafe(() -> {
+                            IgniteInternalFuture fut0;
+
+                            if (ctx.kernalContext().isStopping())
+                                fut0 = new GridFinishedFuture<>(
+                                    new IgniteCheckedException("Operation has been cancelled (node is stopping)."));
+                            else {
+                                try {
+                                    fut0 = op.op(tx0, opCtx).chain(clo);
+                                }
+                                finally {
+                                    // It is necessary to clear tx context in this thread as well.
+                                    ctx.shared().txContextReset();
+                                }
                             }
-                            finally {
-                                // It is necessary to clear tx context in this thread as well.
-                                ctx.shared().txContextReset();
-                            }
-                        }
+
+                            fut0.listen((IgniteInClosure<IgniteInternalFuture>)fut01 -> {
+                                try {
+                                    resFut.onDone(fut01.get());
+                                }
+                                catch (Throwable ex) {
+                                    resFut.onDone(ex);
+                                }
+                            });
+                        }, true);
+
+                        return resFut;
                     });
 
                 saveFuture(holder, f, retry);
@@ -4570,16 +4578,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         assert igfsDataCache;
 
         return igfsDataCacheSize.longValue();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMongoDataCache() {
-        return mongoDataCache;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMongoMetaCache() {
-        return mongoMetaCache;
     }
 
     /**
@@ -5485,14 +5483,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /**
          * @return Whether to clear server cache.
          */
-        protected boolean clearServerCache() {
+        @Override protected boolean clearServerCache() {
             return false;
         }
 
         /**
          * @return Whether to clear near cache.
          */
-        protected boolean clearNearCache() {
+        @Override protected boolean clearNearCache() {
             return true;
         }
     }
@@ -5538,7 +5536,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return S.toString(PartitionSizeLongJob.class, this);
         }
     }
@@ -5578,7 +5576,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return S.toString(SizeJob.class, this);
         }
     }
@@ -5618,7 +5616,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return S.toString(SizeLongJob.class, this);
         }
     }
@@ -5675,7 +5673,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return S.toString(LoadCacheJob.class, this);
         }
     }
@@ -5718,7 +5716,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return S.toString(LoadCacheJobV2.class, this);
         }
     }

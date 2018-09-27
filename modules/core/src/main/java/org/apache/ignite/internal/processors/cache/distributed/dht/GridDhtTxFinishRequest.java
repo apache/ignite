@@ -20,11 +20,9 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -73,9 +71,10 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /** */
     private MvccSnapshot mvccSnapshot;
 
-    /** Map of update counters made by this tx. Mapping: cacheId -> partId -> updCntr. */
-    @GridDirectMap(keyType = Integer.class, valueType = GridDhtPartitionsUpdateCountersMap.class)
-    private Map<Integer, GridDhtPartitionsUpdateCountersMap> updCntrs;
+    /** */
+    @GridDirectCollection(PartitionUpdateCountersMessage.class)
+    private Collection<PartitionUpdateCountersMessage> updCntrs;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -106,6 +105,10 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
      * @param addDepInfo Deployment info flag.
+     * @param retVal Need return value
+     * @param waitRemoteTxs Wait remote transactions flag
+     * @param mvccSnapshot Mvcc snapshot.
+     * @param updCntrs Update counters for mvcc Tx.
      */
     public GridDhtTxFinishRequest(
         UUID nearNodeId,
@@ -132,7 +135,8 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         boolean addDepInfo,
         boolean retVal,
         boolean waitRemoteTxs,
-        MvccSnapshot mvccSnapshot
+        MvccSnapshot mvccSnapshot,
+        Collection<PartitionUpdateCountersMessage> updCntrs
     ) {
         super(
             xidVer,
@@ -162,6 +166,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         this.isolation = isolation;
         this.miniId = miniId;
         this.mvccSnapshot = mvccSnapshot;
+        this.updCntrs = updCntrs;
 
         needReturnValue(retVal);
         waitRemoteTransactions(waitRemoteTxs);
@@ -192,6 +197,10 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param taskNameHash Task name hash.
      * @param updateIdxs Partition update idxs.
      * @param addDepInfo Deployment info flag.
+     * @param retVal Need return value
+     * @param waitRemoteTxs Wait remote transactions flag
+     * @param mvccSnapshot Mvcc snapshot.
+     * @param updCntrs Update counters for mvcc Tx.
      */
     public GridDhtTxFinishRequest(
         UUID nearNodeId,
@@ -220,7 +229,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         boolean retVal,
         boolean waitRemoteTxs,
         MvccSnapshot mvccSnapshot,
-        Map<Integer, GridDhtPartitionsUpdateCountersMap> updCntrs
+        Collection<PartitionUpdateCountersMessage> updCntrs
     ) {
         this(nearNodeId,
             futId,
@@ -246,7 +255,8 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             addDepInfo,
             retVal,
             waitRemoteTxs,
-            mvccSnapshot);
+            mvccSnapshot,
+            updCntrs);
 
         if (updateIdxs != null && !updateIdxs.isEmpty()) {
             partUpdateCnt = new GridLongList(updateIdxs.size());
@@ -254,8 +264,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             for (Long idx : updateIdxs)
                 partUpdateCnt.add(idx);
         }
-
-        this.updCntrs = updCntrs;
     }
 
     /**
@@ -362,10 +370,11 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     public void needReturnValue(boolean retVal) {
         setFlag(retVal, NEED_RETURN_VALUE_FLAG_MASK);
     }
+
     /**
-     * @return Partition update counters map.
+     * @return Partition counters update deferred until transaction commit.
      */
-    public Map<Integer, GridDhtPartitionsUpdateCountersMap> updateCountersMap() {
+    public Collection<PartitionUpdateCountersMessage> updateCounters() {
         return updCntrs;
     }
 
@@ -397,37 +406,37 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
-                    return false;
-
-                writer.incrementState();
-
-            case 24:
                 if (!writer.writeUuid("nearNodeId", nearNodeId))
                     return false;
 
                 writer.incrementState();
 
-            case 25:
+            case 24:
                 if (!writer.writeMessage("partUpdateCnt", partUpdateCnt))
                     return false;
 
                 writer.incrementState();
 
-            case 26:
+            case 25:
                 if (!writer.writeCollection("pendingVers", pendingVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
+            case 26:
+                if (!writer.writeMessage("writeVer", writeVer))
+                    return false;
+
+                writer.incrementState();
+
             case 27:
-                if (!writer.writeMap("updCntrs", updCntrs, MessageCollectionItemType.INT, MessageCollectionItemType.MSG))
+                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
                     return false;
 
                 writer.incrementState();
 
             case 28:
-                if (!writer.writeMessage("writeVer", writeVer))
+                if (!writer.writeCollection("updCntrs", updCntrs, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -469,14 +478,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 reader.incrementState();
 
             case 23:
-                mvccSnapshot = reader.readMessage("mvccSnapshot");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 24:
                 nearNodeId = reader.readUuid("nearNodeId");
 
                 if (!reader.isLastRead())
@@ -484,7 +485,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 reader.incrementState();
 
-            case 25:
+            case 24:
                 partUpdateCnt = reader.readMessage("partUpdateCnt");
 
                 if (!reader.isLastRead())
@@ -492,7 +493,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 reader.incrementState();
 
-            case 26:
+            case 25:
                 pendingVers = reader.readCollection("pendingVers", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -500,8 +501,16 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 reader.incrementState();
 
+            case 26:
+                writeVer = reader.readMessage("writeVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
             case 27:
-                updCntrs = reader.readMap("updCntrs", MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
+                mvccSnapshot = reader.readMessage("mvccSnapshot");
 
                 if (!reader.isLastRead())
                     return false;
@@ -509,7 +518,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 reader.incrementState();
 
             case 28:
-                writeVer = reader.readMessage("writeVer");
+                updCntrs = reader.readCollection("updCntrs", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

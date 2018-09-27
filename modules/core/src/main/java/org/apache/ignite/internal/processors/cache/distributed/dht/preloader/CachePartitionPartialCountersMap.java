@@ -225,7 +225,7 @@ public class CachePartitionPartialCountersMap implements Serializable {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         StringBuilder sb = new StringBuilder("CachePartitionPartialCountersMap {");
 
         for (int i = 0; i < partIds.length; i++) {

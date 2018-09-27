@@ -15,9 +15,12 @@
  * limitations under the License.
  */
 
-export default ['IgniteLoading', [function() {
+export default function() {
     const _overlays = {};
 
+    /**
+     * @param {string} key
+     */
     const start = (key) => {
         setTimeout(() => {
             const loadingOverlay = _overlays[key];
@@ -26,6 +29,9 @@ export default ['IgniteLoading', [function() {
         });
     };
 
+    /**
+     * @param {string} key
+     */
     const finish = (key) => {
         setTimeout(() => {
             const loadingOverlay = _overlays[key];
@@ -45,4 +51,4 @@ export default ['IgniteLoading', [function() {
         start,
         finish
     };
-}]];
+}
