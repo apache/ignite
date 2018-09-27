@@ -155,7 +155,7 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
 
         startGrids(nodesCnt);
 
-        grid(0).cluster().active(true);
+        grid(finder.getActivateNode(grid(0).cluster().nodes())).cluster().active(true);
 
         stopSecondHalfNodes();
 
@@ -201,7 +201,7 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
 
         startGrids(nodesCnt);
 
-        grid(0).cluster().active(true);
+        grid(finder.getActivateNode(grid(0).cluster().nodes())).cluster().active(true);
 
         CacheConfiguration<Long, Long> cacheCfg = new CacheConfiguration<Long, Long>(DEFAULT_CACHE_NAME).setBackups(0);
 
