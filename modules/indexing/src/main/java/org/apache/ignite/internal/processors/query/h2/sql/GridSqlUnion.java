@@ -32,7 +32,7 @@ public class GridSqlUnion extends GridSqlQuery {
     public static final int RIGHT_CHILD = 3;
 
     /** */
-    private int unionType;
+    private SelectUnion.UnionType unionType;
 
     /** */
     private GridSqlQuery right;
@@ -108,19 +108,19 @@ public class GridSqlUnion extends GridSqlQuery {
         buff.append('(').append(left.getSQL()).append(')');
 
         switch (unionType()) {
-            case SelectUnion.UNION_ALL:
+            case UNION_ALL:
                 buff.append("\nUNION ALL\n");
                 break;
 
-            case SelectUnion.UNION:
+            case UNION:
                 buff.append("\nUNION\n");
                 break;
 
-            case SelectUnion.INTERSECT:
+            case INTERSECT:
                 buff.append("\nINTERSECT\n");
                 break;
 
-            case SelectUnion.EXCEPT:
+            case EXCEPT:
                 buff.append("\nEXCEPT\n");
                 break;
 
@@ -137,7 +137,7 @@ public class GridSqlUnion extends GridSqlQuery {
 
     /** {@inheritDoc} */
     @Override public boolean simpleQuery() {
-        return unionType() == SelectUnion.UNION_ALL && sort().isEmpty() &&
+        return unionType() == SelectUnion.UnionType.UNION_ALL && sort().isEmpty() &&
             offset() == null && limit() == null &&
             left().simpleQuery() && right().simpleQuery();
     }
@@ -145,14 +145,14 @@ public class GridSqlUnion extends GridSqlQuery {
     /**
      * @return Union type.
      */
-    public int unionType() {
+    public SelectUnion.UnionType unionType() {
         return unionType;
     }
 
     /**
      * @param unionType New union type.
      */
-    public void unionType(int unionType) {
+    public void unionType(SelectUnion.UnionType unionType) {
         this.unionType = unionType;
     }
 
