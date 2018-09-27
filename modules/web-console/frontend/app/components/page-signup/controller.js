@@ -33,7 +33,10 @@ export default class PageSignup {
     static $inject = ['IgniteCountries', 'Auth', 'IgniteMessages', 'IgniteFormUtils'];
 
     /**
+     * @param {ReturnType<typeof import('app/services/Countries.service').default>} Countries
      * @param {import('app/modules/user/Auth.service').default} Auth
+     * @param {ReturnType<typeof import('app/services/Messages.service').default>} IgniteMessages
+     * @param {ReturnType<typeof import('app/services/FormUtils.service').default>} IgniteFormUtils
      */
     constructor(Countries, Auth, IgniteMessages, IgniteFormUtils) {
         this.Auth = Auth;
