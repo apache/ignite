@@ -111,8 +111,8 @@ import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
@@ -181,7 +181,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     public static final String IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC = "IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC";
 
     /** MemoryPolicyConfiguration name reserved for meta store. */
-    private static final String METASTORE_DATA_REGION_NAME = "metastoreMemPlc";
+    public static final String METASTORE_DATA_REGION_NAME = "metastoreMemPlc";
 
     /** */
     private static final long GB = 1024L * 1024 * 1024;
@@ -812,6 +812,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     ) throws IgniteCheckedException {
         assert !cctx.localNode().isClient();
 
+        long time = System.currentTimeMillis();
+
         checkpointReadLock();
 
         try {
@@ -869,6 +871,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
         finally {
             checkpointReadUnlock();
+
+            if (log.isInfoEnabled())
+                log.info("Binary recovery performed in " + (System.currentTimeMillis() - time) + " ms.");
         }
     }
 
@@ -1302,6 +1307,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         boolean restored = false;
 
+        long time = System.currentTimeMillis();
+
         // In case of cluster activation or local join restore, restore whole manager state.
         if (clusterInTransitionStateToActive || (joinEvt && locNode && isSrvNode)) {
             restoreState();
@@ -1331,6 +1338,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
             }
         }
+
+        if (log.isInfoEnabled())
+            log.info("Logical recovery performed in " + (System.currentTimeMillis() - time) + " ms.");
 
         return restored;
     }
@@ -1626,12 +1636,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @throws IgniteCheckedException If first checkpoint has failed.
      */
     @Override public void onStateRestored() throws IgniteCheckedException {
+        long time = System.currentTimeMillis();
+
         new IgniteThread(cctx.igniteInstanceName(), "db-checkpoint-thread", checkpointer).start();
 
         CheckpointProgressSnapshot chp = checkpointer.wakeupForCheckpoint(0, "node started");
 
         if (chp != null)
             chp.cpBeginFut.get();
+
+        if (log.isInfoEnabled())
+            log.info("Checkpointer initilialzation performed in " + (System.currentTimeMillis() - time) + " ms.");
     }
 
     /** {@inheritDoc} */
@@ -2416,6 +2431,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     if (storeMgr.pages(grpId, i) <= 1)
                         continue;
 
+                    if (log.isDebugEnabled())
+                        log.debug("Creating partition on recovery (exists in page store) " +
+                            "[grp=" + grp.cacheOrGroupName() + ", p=" + i + "]");
+
                     GridDhtLocalPartition part = grp.topology().forceCreatePartition(i);
 
                     assert part != null;
@@ -2451,9 +2470,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                                         changed = true;
                                     }
+
+                                    if (log.isDebugEnabled())
+                                        log.debug("Restored partition state (from WAL) " +
+                                            "[grp=" + grp.cacheOrGroupName() + ", p=" + i + ", state=" + part.state() +
+                                            "updCntr=" + part.initialUpdateCounter() + "]");
                                 }
-                                else
-                                    changed = updateState(part, (int)io.getPartitionState(pageAddr));
+                                else {
+                                    changed = updateState(part, (int) io.getPartitionState(pageAddr));
+
+                                    if (log.isDebugEnabled())
+                                        log.debug("Restored partition state (from page memory) " +
+                                            "[grp=" + grp.cacheOrGroupName() + ", p=" + i + ", state=" + part.state() +
+                                            "updCntr=" + part.initialUpdateCounter() + "]");
+                                }
                             }
                             finally {
                                 pageMem.writeUnlock(grpId, partMetaId, partMetaPage, null, changed);
@@ -2468,6 +2498,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     }
                 }
                 else if (restore != null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Creating partition on recovery (exists in WAL) " +
+                            "[grp=" + grp.cacheOrGroupName() + ", p=" + i + "]");
+
                     GridDhtLocalPartition part = grp.topology().forceCreatePartition(i);
 
                     assert part != null;
@@ -2476,6 +2510,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     grp.offheap().onPartitionInitialCounterUpdated(i, 0);
 
                     updateState(part, restore.get1());
+
+                    if (log.isDebugEnabled())
+                        log.debug("Restored partition state (from WAL) " +
+                            "[grp=" + grp.cacheOrGroupName() + ", p=" + i + ", state=" + part.state() +
+                            "updCntr=" + part.initialUpdateCounter() + "]");
                 }
 
                 cntParts++;
