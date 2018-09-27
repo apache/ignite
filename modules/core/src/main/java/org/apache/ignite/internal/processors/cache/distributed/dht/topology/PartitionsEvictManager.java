@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
+package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
 import java.util.Collection;
 import java.util.Comparator;
@@ -45,7 +45,6 @@ import static org.apache.ignite.IgniteSystemProperties.getLong;
  * Multiple partition from group can be evicted at the same time.
  */
 public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
-
     /** Default eviction progress show frequency. */
     private static final int DEFAULT_SHOW_EVICTION_PROGRESS_FREQ_MS = 2 * 60 * 1000; // 2 Minutes.
 
@@ -122,6 +121,10 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
 
         if (evictionTask == null)
             return;
+
+        if (log.isDebugEnabled())
+            log.debug("Partition has been scheduled for eviction [grp=" + grp.cacheOrGroupName()
+                + ", p=" + part.id() + ", state=" + part.state() + "]");
 
         int bucket;
 
