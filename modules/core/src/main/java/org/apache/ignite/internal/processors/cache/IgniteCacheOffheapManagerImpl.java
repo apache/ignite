@@ -1937,22 +1937,23 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 if (entryProc != null) {
                     CacheInvokeEntry.Operation op = applyEntryProcessor(cctx, key, ver, entryProc, invokeArgs, updateRow, oldRow);
 
-                    if(op == CacheInvokeEntry.Operation.NONE) {
-                        //TODO: IGNITE-9540: unlock updateRow here.
+                    if (op == CacheInvokeEntry.Operation.NONE) {
+                        if (res == ResultType.PREV_NOT_NULL) {
+                            updateRow.value(oldRow.value()); // Restore prev. value.
 
-                        cleanup(cctx, updateRow.cleanupRows());
+                            cleanup(cctx, updateRow.cleanupRows());
+                        }
 
                         return updateRow;
                     }
 
-                    // Mark old version as removed if exists.
-                    if(oldRow != null)
-                        rowStore.updateDataRow(oldRow.link(), mvccUpdateMarker, mvccSnapshot);
+                    // Mark old version as removed.
+                    rowStore.updateDataRow(oldRow.link(), mvccUpdateMarker, mvccSnapshot);
 
-                    if(op == CacheInvokeEntry.Operation.REMOVE) {
+                    if (op == CacheInvokeEntry.Operation.REMOVE) {
                         cleanup(cctx, updateRow.cleanupRows());
 
-                        if(res == ResultType.PREV_NOT_NULL)
+                        if (res == ResultType.PREV_NOT_NULL)
                             clearPendingEntries(cctx, oldRow);
 
                         return updateRow; // Won't create new version on remove.

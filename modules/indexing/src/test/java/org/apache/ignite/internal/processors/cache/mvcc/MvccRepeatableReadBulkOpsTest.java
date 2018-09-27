@@ -47,6 +47,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.GET;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.INVOKE;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.DML;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.PUT;
@@ -110,8 +111,8 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testRepeatableReadIsolationInvoke() throws Exception {
-        checkOperations(ReadMode.INVOKE, ReadMode.INVOKE, WriteMode.INVOKE, true);
-        checkOperations(ReadMode.INVOKE, ReadMode.INVOKE, WriteMode.INVOKE, false);
+        checkOperations(GET, GET, WriteMode.INVOKE, true);
+        checkOperations(GET, GET, WriteMode.INVOKE, false);
     }
 
     /**
@@ -141,14 +142,6 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testRepeatableReadIsolationInvokeDml() throws Exception {
-        checkOperations(ReadMode.INVOKE, ReadMode.INVOKE, DML, true);
-        checkOperations(ReadMode.INVOKE, ReadMode.INVOKE, DML, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testRepeatableReadIsolationGetDml() throws Exception {
         checkOperations(GET, GET, DML, true);
         checkOperations(GET, GET, DML, false);
@@ -160,6 +153,8 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
     public void testRepeatableReadIsolationMixedPut() throws Exception {
         checkOperations(SQL, GET, PUT, false);
         checkOperations(SQL, GET, PUT, true);
+        checkOperations(SQL, GET, WriteMode.INVOKE, false);
+        checkOperations(SQL, GET, WriteMode.INVOKE, true);
     }
 
     /**
@@ -193,11 +188,11 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
      */
     public void testOperationConsistency() throws Exception {
         checkOperationsConsistency(PUT, false);
-        checkOperationsConsistency(DML, false);
+     /*   checkOperationsConsistency(DML, false);
         checkOperationsConsistency(WriteMode.INVOKE, false);
         checkOperationsConsistency(PUT, true);
         checkOperationsConsistency(DML, true);
-        checkOperationsConsistency(WriteMode.INVOKE, true);
+        checkOperationsConsistency(WriteMode.INVOKE, true);*/
     }
 
     /**
@@ -349,13 +344,15 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
         Map<Integer, MvccTestAccount> updatedVals = null;
 
         try (Transaction tx = txs.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
-            Map<Integer, MvccTestAccount> vals1 = getEntries(cache, allKeys, GET);
-            Map<Integer, MvccTestAccount> vals2 = getEntries(cache, allKeys, SQL);
+//            Map<Integer, MvccTestAccount> vals1 = getEntries(cache, allKeys, GET);
+//            Map<Integer, MvccTestAccount> vals2 = getEntries(cache, allKeys, SQL);
+            Map<Integer, MvccTestAccount> vals3 = getEntries(cache, allKeys, ReadMode.INVOKE);
 
-            assertEquals(initialVals, vals1);
-            assertEquals(initialVals, vals2);
+//            assertEquals(initialVals, vals1);
+//            assertEquals(initialVals, vals2);
+            assertEquals(initialVals, vals3);
 
-            for (ReadMode readMode : new ReadMode[] {GET, SQL}) {
+            for (ReadMode readMode : new ReadMode[] {GET, SQL, INVOKE}) {
                 int updCnt0 = ++updCnt;
 
                 updatedVals = keysForUpdate.stream().collect(Collectors.toMap(Function.identity(),
@@ -373,6 +370,7 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
         try (Transaction tx = txs.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
             assertEquals(updatedVals, getEntries(cache, allKeys, GET));
             assertEquals(updatedVals, getEntries(cache, allKeys, SQL));
+            assertEquals(updatedVals, getEntries(cache, allKeys, INVOKE));
 
             tx.commit();
         }
