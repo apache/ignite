@@ -144,11 +144,11 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
     ) throws Exception {
         assert nodesCnt > 1;
 
-        Map<ClusterNode, Ignite> nodes = start(nodesCnt);
+        startGrids(nodesCnt);
 
         grid(0).cluster().active(true);
 
-        stopSecondHalfNodes(nodes);
+        stopSecondHalfNodes();
 
         CacheConfiguration<Long, Long> cacheCfg =
             new CacheConfiguration<Long, Long>(DEFAULT_CACHE_NAME).setBackups((nodesCnt + 1) / 2);
@@ -188,7 +188,7 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
     ) throws Exception {
         assert nodesCnt >= 2;
 
-        Map<ClusterNode, Ignite> nodes = start(nodesCnt);
+        startGrids(nodesCnt);
 
         grid(0).cluster().active(true);
 
@@ -198,7 +198,7 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
 
         populateData(cache0);
 
-        stopSecondHalfNodes(nodes);
+        stopSecondHalfNodes();
 
         cache0.destroy();
 
@@ -217,16 +217,14 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
 
     private void startSecondHalfNodes(int clusterSize) throws Exception {
         for (int i = clusterSize / 2; i < clusterSize; i++)
-            startGrids(i);
+            startGrid(i);
     }
 
-    private void stopSecondHalfNodes(Map<ClusterNode, Ignite> nodesMap) {
+    private void stopSecondHalfNodes() {
         Collection<ClusterNode> nodes = grid(0).cluster().nodes();
 
-        List<ClusterNode> nodesForStop = nodes.stream().skip(nodes.size() / 2).collect(Collectors.toList());
-
-        for (ClusterNode node : nodesForStop)
-            nodesMap.get(node).close();
+        for(int i=nodes.size()/2;i<nodes.size();i++)
+            grid(getTestIgniteInstanceName(i)).close();
     }
 
     private void populateData(IgniteCache<Long, Long> cache) {
@@ -237,20 +235,6 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
     private void checkDataPresent(IgniteCache<Long, Long> cache) {
         for (int i = 0; i < NUMBER_RECORDS; i++)
             assertTrue(cache.containsKey(1L << i));
-    }
-
-    private Map<ClusterNode, Ignite> start(int cnt) throws Exception {
-        assert cnt > 0;
-
-        Map<ClusterNode, Ignite> map = new HashMap<>(cnt);
-
-        for (int i = 0; i < cnt; i++) {
-            IgniteEx ignite = startGrid(i);
-
-            map.put(ignite.localNode(), ignite);
-        }
-
-        return map;
     }
 
     private interface ActivateNodeFinder {

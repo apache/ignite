@@ -649,9 +649,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 fillWalDisabledGroups();
 
-                notifyMetastorageReadyForRead();
-
                 readStoredCacheConfigFut.onDone(readStoredCacheConfiguration0());
+
+                notifyMetastorageReadyForRead();
             }
             finally {
                 checkpointReadUnlock();
