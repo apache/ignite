@@ -22,10 +22,10 @@ export default class ErrorPopover {
     static $inject = ['$popover', '$anchorScroll', '$timeout', 'IgniteFormUtils'];
 
     /**
-     * @param $popover
-     * @param $anchorScroll
-     * @param $timeout
-     * @param FormUtils
+     * @param {mgcrea.ngStrap.popover.IPopoverService} $popover
+     * @param {ng.IAnchorScrollService} $anchorScroll
+     * @param {ng.ITimeoutService} $timeout
+     * @param {ReturnType<typeof import('app/services/FormUtils.service').default>} FormUtils
      */
     constructor($popover, $anchorScroll, $timeout, FormUtils) {
         this.$popover = $popover;
@@ -41,7 +41,7 @@ export default class ErrorPopover {
     /**
      * Check that element is document area.
      *
-     * @param el Element to check.
+     * @param {HTMLElement} el Element to check.
      * @returns {boolean} True when element in document area.
      */
     static _isElementInViewport(el) {
@@ -58,8 +58,8 @@ export default class ErrorPopover {
     /**
      * Internal show popover message with detected properties.
      *
-     * @param id Id element to show popover message.
-     * @param message Message to show.
+     * @param {string }id Id element to show popover message.
+     * @param {string} message Message to show.
      * @param showTime Time before popover will be hidden.
      */
     _show(id, message, showTime = 5000) {

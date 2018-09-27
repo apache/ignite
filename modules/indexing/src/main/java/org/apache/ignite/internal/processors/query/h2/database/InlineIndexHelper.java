@@ -35,6 +35,7 @@ import org.h2.value.ValueDate;
 import org.h2.value.ValueDouble;
 import org.h2.value.ValueFloat;
 import org.h2.value.ValueInt;
+import org.h2.value.ValueJavaObject;
 import org.h2.value.ValueLong;
 import org.h2.value.ValueNull;
 import org.h2.value.ValueShort;
@@ -70,7 +71,8 @@ public class InlineIndexHelper {
         Value.STRING,
         Value.STRING_FIXED,
         Value.STRING_IGNORECASE,
-        Value.BYTES
+        Value.BYTES,
+        Value.JAVA_OBJECT
     );
 
     /** */
@@ -153,6 +155,7 @@ public class InlineIndexHelper {
             case Value.STRING_FIXED:
             case Value.STRING_IGNORECASE:
             case Value.BYTES:
+            case Value.JAVA_OBJECT:
                 this.size = -1;
                 break;
 
@@ -298,6 +301,9 @@ public class InlineIndexHelper {
             case Value.BYTES:
                 return ValueBytes.get(readBytes(pageAddr, off));
 
+            case Value.JAVA_OBJECT:
+                return ValueJavaObject.getNoCopy(null, readBytes(pageAddr, off), null);
+
             default:
                 throw new UnsupportedOperationException("no get operation for fast index type " + type);
         }
@@ -327,6 +333,7 @@ public class InlineIndexHelper {
             case Value.STRING_FIXED:
             case Value.STRING_IGNORECASE:
             case Value.BYTES:
+            case Value.JAVA_OBJECT:
                 return (PageUtils.getShort(pageAddr, off + 1) & 0x8000) == 0;
 
             default:
@@ -417,6 +424,7 @@ public class InlineIndexHelper {
                 return compareAsUUID(pageAddr, off, v, type);
 
             case Value.BYTES:
+            case Value.JAVA_OBJECT:
                 return compareAsBytes(pageAddr, off, v);
         }
 
@@ -900,23 +908,30 @@ public class InlineIndexHelper {
                 }
             }
 
-            case Value.BYTES: {
+            case Value.BYTES:
+            case Value.JAVA_OBJECT:
+             {
                 short size;
 
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
 
-                if (val.getBytes().length + 3 <= maxSize) {
-                    size = (short)val.getBytes().length;
+                 byte[] bytes = val.getBytes();
+
+                 if (bytes.length + 3 <= maxSize) {
+                    size = (short)bytes.length;
                     PageUtils.putShort(pageAddr, off + 1, size);
-                    PageUtils.putBytes(pageAddr, off + 3, val.getBytes());
+                    PageUtils.putBytes(pageAddr, off + 3, bytes);
+
+                    return size + 3;
                 }
                 else {
                     size = (short)((maxSize - 3) | 0x8000);
                     PageUtils.putShort(pageAddr, off + 1, size);
-                    PageUtils.putBytes(pageAddr, off + 3, Arrays.copyOfRange(val.getBytes(), 0, maxSize - 3));
+                    PageUtils.putBytes(pageAddr, off + 3, Arrays.copyOfRange(bytes, 0, maxSize - 3));
+
+                    return maxSize;
                 }
 
-                return size + 3;
             }
 
             default:
@@ -959,6 +974,7 @@ public class InlineIndexHelper {
             case Value.STRING_FIXED:
             case Value.STRING_IGNORECASE:
             case Value.BYTES:
+            case Value.JAVA_OBJECT:
                 if (shortVal.getType() == Value.NULL || v2.getType() == Value.NULL)
                     return true;
 
@@ -968,7 +984,7 @@ public class InlineIndexHelper {
                 int l1;
                 int l2;
 
-                if (type == Value.BYTES) {
+                if (type == Value.BYTES || type == Value.JAVA_OBJECT) {
                     l1 = shortVal.getBytes().length;
                     l2 = v2.getBytes().length;
                 }

@@ -200,8 +200,12 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
          *
          */
         TimeoutWorker() {
-            super(ctx.config().getIgniteInstanceName(), "grid-timeout-worker",
-                GridTimeoutProcessor.this.log, ctx.workersRegistry());
+            super(
+                ctx.config().getIgniteInstanceName(),
+                "grid-timeout-worker",
+                GridTimeoutProcessor.this.log,
+                ctx.workersRegistry()
+            );
         }
 
         /** {@inheritDoc} */
@@ -210,7 +214,11 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
             try {
                 while (!isCancelled()) {
+                    updateHeartbeat();
+
                     long now = U.currentTimeMillis();
+
+                    onIdle();
 
                     for (Iterator<GridTimeoutObject> iter = timeoutObjs.iterator(); iter.hasNext(); ) {
                         GridTimeoutObject timeoutObj = iter.next();
@@ -254,13 +262,29 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                             if (first != null) {
                                 long waitTime = first.endTime() - U.currentTimeMillis();
 
-                                if (waitTime > 0)
-                                    mux.wait(waitTime);
+                                if (waitTime > 0) {
+                                    blockingSectionBegin();
+
+                                    try {
+                                        mux.wait(waitTime);
+                                    }
+                                    finally {
+                                        blockingSectionEnd();
+                                    }
+                                }
                                 else
                                     break;
                             }
-                            else
-                                mux.wait(5000);
+                            else {
+                                blockingSectionBegin();
+
+                                try {
+                                    mux.wait(5000);
+                                }
+                                finally {
+                                    blockingSectionEnd();
+                                }
+                            }
                         }
                     }
                 }
