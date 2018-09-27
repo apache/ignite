@@ -750,16 +750,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             return new GridFinishedFuture(e);
         }
 
-        // Cached entry may be passed only from entry wrapper.
-        final Map<?, ?> map0 = map;
-        final Map<?, EntryProcessor<K, V, Object>> invokeMap0 = (Map<K, EntryProcessor<K, V, Object>>)invokeMap;
-
         if (log.isDebugEnabled())
-            log.debug("Called putAllAsync(...) [tx=" + this + ", map=" + map0 + ", retval=" + retval + "]");
+            log.debug("Called putAllAsync(...) [tx=" + this + ", map=" + map + ", retval=" + retval + "]");
 
-        assert map0 != null || invokeMap0 != null;
+        assert map != null || invokeMap != null;
 
-        if (F.isEmpty(map0) && F.isEmpty(invokeMap0)) {
+        if (F.isEmpty(map) && F.isEmpty(invokeMap)) {
             if (implicit())
                 try {
                     commit();
@@ -771,12 +767,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             return new GridFinishedFuture<>(new GridCacheReturn(true, false));
         }
 
-        try {
-            // Set transform flag for transaction.
-            if (invokeMap != null)
-                transform = true;
+        // Set transform flag for operation.
+        boolean transform = invokeMap != null;
 
-            Set<?> keys = map0 != null ? map0.keySet() : invokeMap0.keySet();
+        try {
+            Set<?> keys = map != null ? map.keySet() : invokeMap.keySet();
 
             final Map<KeyCacheObject, Message> enlisted = new HashMap<>(keys.size());
 
@@ -790,7 +785,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     throw new NullPointerException("Null key.");
                 }
 
-                Object val = map0 == null ? null : map0.get(key);
+                Object val = map == null ? null : map.get(key);
                 EntryProcessor entryProcessor = transform ? invokeMap.get(key) : null;
 
                 if (val == null && entryProcessor == null) {
@@ -2120,18 +2115,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                     mvccSnapshot.incrementOperationCounter();
 
-                    GridCacheReturn res = null;
+                    Object val = futRes.value();
 
-                    if(futRes.invokeResult()) {
-                         res = new GridCacheReturn(true, futRes.success());
+                    if (futRes.invokeResult()) {
+                        assert val instanceof Map;
 
-                        res.mergeEntryProcessResults(futRes);
+                        val = cacheCtx.unwrapInvokeResult((Map)val, keepBinary);
                     }
-                    else
-                        res = new GridCacheReturn(cacheCtx, true, keepBinary, futRes.value(), futRes.success());
 
-
-                    return res;
+                    return new GridCacheReturn(cacheCtx, true, keepBinary, val, futRes.success());
                 }
             }));
         }

@@ -126,7 +126,6 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
             CacheInvokeResult invokeRes = txRes.invokeResult();
 
             if (invokeRes != null) {
-                //TODO: IGNITE-9540: check if keepBinary flag usage is correct.
                 if(invokeRes.result() != null || invokeRes.error() != null)
                     res.addEntryProcessResult(cctx, key, null, invokeRes.result(), invokeRes.error(), cctx.keepBinary());
             }
