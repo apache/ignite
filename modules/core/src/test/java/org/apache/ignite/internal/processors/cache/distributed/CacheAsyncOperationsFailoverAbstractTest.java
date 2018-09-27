@@ -217,7 +217,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
                     try {
                         startGrid(NODE_CNT);
 
-                        U.sleep(5000);
+                        U.sleep(500);
                     }
                     catch (Throwable t) {
                         log.error("Start", t);
@@ -286,7 +286,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
                     catch (IgniteException ex) {
                     }
                     catch (Throwable e) {
-                        log.error("Put", e);
+                        //log.error("Put", e);
 
                         throw e;
                     }
