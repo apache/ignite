@@ -73,7 +73,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     private List<List<?>> execSql(Ignite ignite, String sql, Object ... args) {
-        IgniteCache cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
@@ -114,7 +114,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
      * Test system views modifications.
      */
     public void testModifications() throws Exception {
-        startGrid();
+        startGrid(getConfiguration());
 
         assertSqlError("DROP TABLE IGNITE.NODES");
 
@@ -497,6 +497,11 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
         assertEquals(1, res.size());
 
         assertEquals("node2", res.get(0).get(0));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        return super.getConfiguration().setCacheConfiguration(new CacheConfiguration().setName(DEFAULT_CACHE_NAME));
     }
 
     /**
