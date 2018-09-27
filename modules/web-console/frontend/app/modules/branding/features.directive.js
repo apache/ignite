@@ -17,7 +17,10 @@
 
 const template = '<div class="features" ng-bind-html="features.html"></div>';
 
-export default ['igniteFeatures', ['IgniteBranding', function(branding) {
+/**
+ * @param {import('./branding.service').default} branding
+ */
+export default function factory(branding) {
     function controller() {
         const ctrl = this;
 
@@ -31,5 +34,7 @@ export default ['igniteFeatures', ['IgniteBranding', function(branding) {
         controllerAs: 'features',
         replace: true
     };
-}]];
+}
+
+factory.$inject = ['IgniteBranding'];
 
