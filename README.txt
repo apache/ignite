@@ -33,3 +33,16 @@ SELECT FTL_INIT();
 SELECT * FROM FTL_SEARCH('CacheClientBinaryQueryExampleEmployees','EMPLOYEE','TX', 0, 0);
 
 SELECT e.name,e.street FROM FTL_SEARCH('CacheClientBinaryQueryExampleEmployees','EMPLOYEE','TX', 0, 0) f ,"CacheClientBinaryQueryExampleEmployees".EMPLOYEE e where f._key=e._key
+
+TextQuery with filter
+--------------------
+ see examples/org.apache.ignite.examples.datagrid.CacheQueryExample.java
+ 
+ IgniteBiPredicate<AffinityKey, Person> filter = new IgniteBiPredicate<AffinityKey, Person>() {
+            @Override public boolean apply(AffinityKey key, Person person) {
+                return person.salary > 1000;
+            }
+        };    
+ new TextQuery<Long, Person>(Person.class, "Master",filter)
+ 
+ 
