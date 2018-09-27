@@ -52,6 +52,10 @@ public class ZookeeperClient implements Watcher {
         IgniteSystemProperties.getInteger("IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT", 10);
 
     /** */
+    private static final boolean PINGER_ENABLED =
+        IgniteSystemProperties.getBoolean("IGNITE_ZOOKEEPER_DISCOVERY_PINGER_ENABLED", false);
+
+    /** */
     private final AtomicInteger retryCount = new AtomicInteger();
 
     /** */
@@ -92,6 +96,9 @@ public class ZookeeperClient implements Watcher {
 
     /** */
     private volatile boolean closing;
+
+    /** */
+    private volatile ZkPinger pinger;
 
     /**
      * @param log Logger.
@@ -160,6 +167,13 @@ public class ZookeeperClient implements Watcher {
         synchronized (stateMux) {
             return state == ConnectionState.Connected;
         }
+    }
+
+    /**
+     * @return {@code True} if pinger is enabled
+     */
+    boolean pingerEnabled() {
+        return PINGER_ENABLED;
     }
 
     /** */
@@ -557,7 +571,6 @@ public class ZookeeperClient implements Watcher {
     }
 
     /**
-     * @param parent Parent path.
      * @param paths Children paths.
      * @param ver Version.
      * @throws KeeperException.NoNodeException If at least one of nodes does not exist.
@@ -764,6 +777,13 @@ public class ZookeeperClient implements Watcher {
      *
      */
     public void close() {
+        if (PINGER_ENABLED) {
+            ZkPinger pinger0 = pinger;
+
+            if (pinger0 != null)
+                pinger0.stop();
+        }
+
         closeClient();
     }
 
@@ -890,6 +910,14 @@ public class ZookeeperClient implements Watcher {
         assert state == ConnectionState.Disconnected : state;
 
         connTimer.schedule(new ConnectionTimeoutTask(connStartTime), connLossTimeout);
+    }
+
+    /**
+     * @param pinger Pinger.
+     */
+    void attachPinger(ZkPinger pinger) {
+        if (PINGER_ENABLED)
+            this.pinger = pinger;
     }
 
     /**
