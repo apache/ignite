@@ -33,7 +33,7 @@ Building the Apache Ignite C++ components:
 
 Among standard included by autotools options configure script also include following
 Ignite-specific options:
- * --enable-odbc - build included ODBC driver. Disabled by default.
+ * --enable-odbc - build included ODBC driver. Enabled by default.
  * --enable-core - build Ignite core library. Enabled by default.
  * --enable-thin-client - build thin client library. Enabled by default.
  * --enable-node - build stand-alone node executable. Enabled by default.
