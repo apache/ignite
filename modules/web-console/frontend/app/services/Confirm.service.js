@@ -39,7 +39,7 @@ export class Confirm {
                 templateUrl,
                 backdrop: true,
                 onBeforeHide: () => reject(new CancellationError()),
-                controller: ['$scope', ($scope) => {
+                controller: ['$scope', function($scope) {
                     $scope.yesNo = yesNo;
                     $scope.content = content;
                     $scope.confirmCancel = $scope.confirmNo = () => {
@@ -56,8 +56,15 @@ export class Confirm {
     }
 }
 
-// Confirm popup service.
-export default ['IgniteConfirm', ['$rootScope', '$q', '$modal', '$animate', ($root, $q, $modal, $animate) => {
+/**
+ * Confirm popup service.
+ * @deprecated Use Confirm instead
+ * @param {ng.IRootScopeService} $root
+ * @param {ng.IQService} $q
+ * @param {mgcrea.ngStrap.modal.IModalService} $modal
+ * @param {ng.animate.IAnimateService} $animate
+ */
+export default function IgniteConfirm($root, $q, $modal, $animate) {
     const scope = $root.$new();
 
     const modal = $modal({templateUrl, scope, show: false, backdrop: true});
@@ -106,4 +113,6 @@ export default ['IgniteConfirm', ['$rootScope', '$q', '$modal', '$animate', ($ro
     };
 
     return modal;
-}]];
+}
+
+IgniteConfirm.$inject = ['$rootScope', '$q', '$modal', '$animate'];

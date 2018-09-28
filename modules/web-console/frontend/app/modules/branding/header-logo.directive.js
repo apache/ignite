@@ -17,7 +17,10 @@
 
 import template from './header-logo.pug';
 
-export default ['igniteHeaderLogo', ['IgniteBranding', (branding) => {
+/**
+ * @param {import('./branding.service').default} branding
+ */
+export default function factory(branding) {
     function controller() {
         const ctrl = this;
 
@@ -31,4 +34,6 @@ export default ['igniteHeaderLogo', ['IgniteBranding', (branding) => {
         controllerAs: 'logo',
         replace: true
     };
-}]];
+}
+
+factory.$inject = ['IgniteBranding'];

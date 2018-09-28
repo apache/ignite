@@ -30,7 +30,6 @@
 #   define BOOST_TEST_DYN_LINK
 #endif
 
-#include <boost/regex.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/ignite.h"
@@ -70,7 +69,7 @@ struct QueriesTestSuiteFixture : odbc::OdbcTestSuite
         cache1(0),
         cache2(0)
     {
-        grid = StartTestNode("queries-test.xml", "NodeMain");
+        grid = StartPlatformNode("queries-test.xml", "NodeMain");
 
         cache1 = grid.GetCache<int64_t, TestType>("cache");
         cache2 = grid.GetCache<int64_t, ComplexType>("cache2");
@@ -225,7 +224,7 @@ struct QueriesTestSuiteFixture : odbc::OdbcTestSuite
 
     static Ignite StartAdditionalNode(const char* name)
     {
-        return StartTestNode("queries-test.xml", name);
+        return StartPlatformNode("queries-test.xml", name);
     }
 
     /** Node started during the test. */
@@ -262,12 +261,12 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsUint16)
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsInt32)
 {
-    CheckTwoRowsInt<signed long>(SQL_C_SLONG);
+    CheckTwoRowsInt<SQLINTEGER>(SQL_C_SLONG);
 }
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsUint32)
 {
-    CheckTwoRowsInt<unsigned long>(SQL_C_ULONG);
+    CheckTwoRowsInt<SQLUINTEGER>(SQL_C_ULONG);
 }
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsInt64)
@@ -1625,10 +1624,9 @@ BOOST_AUTO_TEST_CASE(TestErrorMessage)
     BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
 
     std::string error = GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt);
-    std::string pattern = "42000: Table \"B\" not found; SQL statement:\\vSELECT a FROM B.*";
+    std::string pattern = "42000: Table \"B\" not found; SQL statement:\nSELECT a FROM B";
 
-    boost::cmatch what;
-    if (!boost::regex_match(error.c_str(), what, boost::regex(pattern)))
+    if (error.substr(0, pattern.size()) != pattern)
         BOOST_FAIL("'" + error + "' does not match '" + pattern + "'");
 }
 
@@ -2031,7 +2029,7 @@ BOOST_AUTO_TEST_CASE(TestQueryAndConnectionTimeoutBoth)
 BOOST_AUTO_TEST_CASE(TestSeveralInsertsWithoutClosing)
 {
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
-    
+
     SQLCHAR request[] = "INSERT INTO TestType(_key, i32Field) VALUES(?, ?)";
 
     SQLRETURN ret = SQLPrepare(stmt, request, SQL_NTS);
@@ -2057,6 +2055,160 @@ BOOST_AUTO_TEST_CASE(TestSeveralInsertsWithoutClosing)
         data = i * 10;
 
         ret = SQLExecute(stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(TestManyCursors)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    for (int32_t i = 0; i < 1000; ++i)
+    {
+        SQLCHAR req[] = "SELECT 1";
+
+        SQLRETURN ret = SQLExecDirect(stmt, req, SQL_NTS);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        ret = SQLFreeStmt(stmt, SQL_CLOSE);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(TestManyCursors2)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLRETURN ret = SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    for (int32_t i = 0; i < 1000; ++i)
+    {
+        ret = SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        SQLCHAR req[] = "SELECT 1";
+
+        ret = SQLExecDirect(stmt, req, SQL_NTS);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        int32_t res = 0;
+        SQLLEN resLen = 0;
+        ret = SQLBindCol(stmt, 1, SQL_INTEGER, &res, 0, &resLen);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        ret = SQLFetch(stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_REQUIRE_EQUAL(res, 1);
+
+        ret = SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(TestManyCursorsTwoSelects1)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    for (int32_t i = 0; i < 1000; ++i)
+    {
+        SQLCHAR req[] = "SELECT 1; SELECT 2";
+
+        SQLRETURN ret = SQLExecDirect(stmt, req, SQL_NTS);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        ret = SQLFreeStmt(stmt, SQL_CLOSE);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(TestManyCursorsTwoSelects2)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    for (int32_t i = 0; i < 1000; ++i)
+    {
+        SQLCHAR req[] = "SELECT 1; SELECT 2;";
+
+        SQLRETURN ret = SQLExecDirect(stmt, req, SQL_NTS);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        ret = SQLMoreResults(stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        ret = SQLFreeStmt(stmt, SQL_CLOSE);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(TestManyCursorsSelectMerge1)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    for (int32_t i = 0; i < 1000; ++i)
+    {
+        SQLCHAR req[] = "SELECT 1; MERGE into TestType(_key) values(2)";
+
+        SQLRETURN ret = SQLExecDirect(stmt, req, SQL_NTS);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        ret = SQLFreeStmt(stmt, SQL_CLOSE);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(TestManyCursorsSelectMerge2)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    for (int32_t i = 0; i < 1000; ++i)
+    {
+        SQLCHAR req[] = "SELECT 1; MERGE into TestType(_key) values(2)";
+
+        SQLRETURN ret = SQLExecDirect(stmt, req, SQL_NTS);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        ret = SQLMoreResults(stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        ret = SQLFreeStmt(stmt, SQL_CLOSE);
 
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));

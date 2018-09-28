@@ -43,7 +43,7 @@ public class DecisionTreeDataBuilder<K, V, C extends Serializable>
     private final IgniteBiFunction<K, V, Double> lbExtractor;
 
     /** Build index. */
-    private final boolean buildIndex;
+    private final boolean buildIdx;
 
     /**
      * Constructs a new instance of decision tree data builder.
@@ -56,7 +56,7 @@ public class DecisionTreeDataBuilder<K, V, C extends Serializable>
         IgniteBiFunction<K, V, Double> lbExtractor, boolean buildIdx) {
         this.featureExtractor = featureExtractor;
         this.lbExtractor = lbExtractor;
-        this.buildIndex = buildIdx;
+        this.buildIdx = buildIdx;
     }
 
     /** {@inheritDoc} */
@@ -75,6 +75,6 @@ public class DecisionTreeDataBuilder<K, V, C extends Serializable>
             ptr++;
         }
 
-        return new DecisionTreeData(features, labels, buildIndex);
+        return new DecisionTreeData(features, labels, buildIdx);
     }
 }

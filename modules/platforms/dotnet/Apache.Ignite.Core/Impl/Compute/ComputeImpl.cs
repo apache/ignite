@@ -65,6 +65,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** */
         private const int OpExecNative = 8;
 
+        /** */
+        private const int OpWithNoResultCache = 9;
+
         /** Underlying projection. */
         private readonly ClusterGroupImpl _prj;
 
@@ -115,6 +118,14 @@ namespace Apache.Ignite.Core.Impl.Compute
         public void WithTimeout(long timeout)
         {
             DoOutInOp(OpWithTimeout, timeout);
+        }
+
+        /// <summary>
+        /// Disables caching for the next executed task in the current thread.
+        /// </summary>
+        public void WithNoResultCache()
+        {
+            DoOutInOp(OpWithNoResultCache);
         }
 
         /// <summary>

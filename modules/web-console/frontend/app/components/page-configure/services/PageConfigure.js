@@ -38,7 +38,8 @@ import {default as ConfigureState} from 'app/components/page-configure/services/
 import {default as ConfigSelectors} from 'app/components/page-configure/store/selectors';
 
 export default class PageConfigure {
-    static $inject = [ConfigureState.name, ConfigSelectors.name];
+    static $inject = ['ConfigureState', 'ConfigSelectors'];
+
     /**
      * @param {ConfigureState} ConfigureState
      * @param {ConfigSelectors} ConfigSelectors
@@ -55,7 +56,7 @@ export default class PageConfigure {
                 .take(1)
                 .do(() => this.ConfigureState.dispatchAction({type: 'LOAD_COMPLETE_CONFIGURATION', clusterID, isDemo}))
                 .ignoreElements(),
-            this.ConfigureState.actions$.let(ofType('LOAD_COMPLETE_CONFIGURATION_ERR')).take(1).map((e) => {throw e;}),
+            this.ConfigureState.actions$.let(ofType('LOAD_COMPLETE_CONFIGURATION_ERR')).take(1).pluck('error').map((e) => Promise.reject(e)),
             this.ConfigureState.state$
                 .let(this.ConfigSelectors.selectCompleteClusterConfiguration({clusterID, isDemo}))
                 .filter((c) => c.__isComplete)

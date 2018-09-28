@@ -46,6 +46,8 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultInfo;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlParseException;
@@ -208,7 +210,7 @@ public class JdbcThinStatement implements Statement {
         }
 
         JdbcResult res0 = conn.sendRequest(new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
-            maxRows, sql, args == null ? null : args.toArray(new Object[args.size()])));
+            maxRows, conn.getAutoCommit(), sql, args == null ? null : args.toArray(new Object[args.size()])));
 
         assert res0 != null;
 
@@ -253,7 +255,7 @@ public class JdbcThinStatement implements Statement {
         else
             throw new SQLException("Unexpected result [res=" + res0 + ']');
 
-        assert resultSets.size() > 0 : "At least one results set is expected";
+        assert !resultSets.isEmpty() : "At least one results set is expected";
     }
 
     /**
@@ -646,7 +648,8 @@ public class JdbcThinStatement implements Statement {
             throw new SQLException("Batch is empty.");
 
         try {
-            JdbcBatchExecuteResult res = conn.sendRequest(new JdbcBatchExecuteRequest(conn.getSchema(), batch, false));
+            JdbcBatchExecuteResult res = conn.sendRequest(new JdbcBatchExecuteRequest(conn.getSchema(), batch,
+                conn.getAutoCommit(), false));
 
             if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS) {
                 throw new BatchUpdateException(res.errorMessage(), IgniteQueryErrorCode.codeToSqlState(res.errorCode()),

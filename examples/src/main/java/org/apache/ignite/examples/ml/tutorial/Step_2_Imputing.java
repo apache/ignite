@@ -32,18 +32,31 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Usage of imputer to fill missed data (Double.NaN) values in the chosen columns.
+ * Usage of {@link ImputerTrainer} to fill missed data ({@code Double.NaN}) values in the chosen columns.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with test data (based on Titanic passengers data).</p>
+ * <p>
+ * After that it defines preprocessors that extract features from an upstream data and
+ * <a href="https://en.wikipedia.org/wiki/Imputation_(statistics)">impute</a> missing values.</p>
+ * <p>
+ * Then, it trains the model based on the processed data using decision tree classification.</p>
+ * <p>
+ * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_2_Imputing {
     /** Run example. */
     public static void main(String[] args) throws InterruptedException {
+        System.out.println();
+        System.out.println(">>> Tutorial step 2 (imputing) example started.");
+
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 Step_2_Imputing.class.getSimpleName(), () -> {
                 try {
                     IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
 
-                    IgniteBiFunction<Integer, Object[], Vector> featureExtractor = (k, v) -> VectorUtils.of((double) v[0], (double) v[5], (double) v[6]);
+                    IgniteBiFunction<Integer, Object[], Vector> featureExtractor
+                        = (k, v) -> VectorUtils.of((double) v[0], (double) v[5], (double) v[6]);
 
                     IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
 
@@ -63,6 +76,8 @@ public class Step_2_Imputing {
                         lbExtractor
                     );
 
+                    System.out.println("\n>>> Trained model: " + mdl);
+
                     double accuracy = Evaluator.evaluate(
                         dataCache,
                         mdl,
@@ -73,6 +88,8 @@ public class Step_2_Imputing {
 
                     System.out.println("\n>>> Accuracy " + accuracy);
                     System.out.println("\n>>> Test Error " + (1 - accuracy));
+
+                    System.out.println(">>> Tutorial step 2 (imputing) example completed.");
                 }
                 catch (FileNotFoundException e) {
                     e.printStackTrace();

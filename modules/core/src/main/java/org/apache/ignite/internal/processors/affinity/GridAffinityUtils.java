@@ -184,7 +184,7 @@ class GridAffinityUtils {
 
             GridAffinityAssignment assign = assign0 instanceof GridAffinityAssignment ?
                 (GridAffinityAssignment)assign0 :
-                new GridAffinityAssignment(topVer, assign0.assignment(), assign0.idealAssignment());
+                new GridAffinityAssignment(topVer, assign0.assignment(), assign0.idealAssignment(), assign0.mvccCoordinator());
 
             return F.t(
                 affinityMessage(ctx, cctx.config().getAffinity()),

@@ -15,11 +15,23 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+
 import template from './ui-ace-sharp.pug';
 import controller from './ui-ace-sharp.controller';
 
-export default ['igniteUiAceSharp', ['IgniteSharpTransformer', (generator) => {
-    const link = (scope, $el, attrs, [ctrl, igniteUiAceTabs, formCtrl, ngModelCtrl]) => {
+/**
+ * @param {import('app/modules/configuration/generator/SharpTransformer.service').default} generator
+ */
+export default function directive(generator) {
+    /**
+     * @param {ng.IScope} scope
+     * @param {JQLite} $el
+     * @param {ng.IAttributes} attrs
+     * @param {[typeof controller, any?, ng.IFormController?, ng.INgModelController?]} controllers
+     */
+    const link = (scope, $el, attrs, controllers) => {
+        const [ctrl, igniteUiAceTabs, formCtrl, ngModelCtrl] = controllers;
         if (formCtrl && ngModelCtrl)
             formCtrl.$removeControl(ngModelCtrl);
 
@@ -130,4 +142,6 @@ export default ['igniteUiAceSharp', ['IgniteSharpTransformer', (generator) => {
         controllerAs: 'ctrl',
         require: ['igniteUiAceSharp', '?^igniteUiAceTabs', '?^form', '?ngModel']
     };
-}]];
+}
+
+directive.$inject = ['IgniteSharpTransformer'];

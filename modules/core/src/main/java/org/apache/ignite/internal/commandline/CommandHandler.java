@@ -51,6 +51,12 @@ import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.commandline.cache.CacheArguments;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
+import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTask;
+import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskArg;
+import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskResult;
+import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTask;
+import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTaskArg;
+import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTaskResult;
 import org.apache.ignite.internal.processors.cache.verify.CacheInfo;
 import org.apache.ignite.internal.processors.cache.verify.ContentionInfo;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
@@ -95,7 +101,6 @@ import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTask;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskResult;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
@@ -160,6 +165,9 @@ public class CommandHandler {
 
     /** */
     private static final String CMD_SKIP_ZEROS = "--skipZeros";
+
+    /** */
+    private static final String CMD_USER_ATTRIBUTES = "--user-attributes";
 
     /** List of optional auxiliary commands. */
     private static final Set<String> AUX_COMMANDS = new HashSet<>();
@@ -588,6 +596,16 @@ public class CommandHandler {
 
                 break;
 
+            case DISTRIBUTION:
+                cacheDistribution(client, cacheArgs);
+
+                break;
+
+            case RESET_LOST_PARTITIONS:
+                cacheResetLostPartitions(client, cacheArgs);
+
+                break;
+
             default:
                 cacheView(client, cacheArgs);
 
@@ -605,6 +623,8 @@ public class CommandHandler {
         usage("  Show hot keys that are point of contention for multiple transactions:", CACHE, " contention minQueueSize [nodeId] [maxPrint]");
         usage("  Verify partition counters and hashes between primary and backups on idle cluster:", CACHE, " idle_verify [--dump] [--skipZeros] [cache1,...,cacheN]");
         usage("  Validate custom indexes on idle cluster:", CACHE, " validate_indexes [cache1,...,cacheN] [nodeId] [checkFirst|checkThrough]");
+        usage("  Collect partition distribution information:", CACHE, " distribution nodeId|null [cacheName1,...,cacheNameN] [--user-attributes attributeName1[,...,attributeNameN]]");
+        usage("  Reset lost partitions:", CACHE, " reset_lost_partitions cacheName1[,...,cacheNameN]");
 
         log("  If [nodeId] is not specified, contention and validate_indexes commands will be broadcasted to all server nodes.");
         log("  Another commands where [nodeId] is optional will run on a random server node.");
@@ -780,6 +800,33 @@ public class CommandHandler {
                 log("Partition instances: " + entry.getValue());
             }
         }
+    }
+
+    /**
+     * @param client Client.
+     * @param cacheArgs Cache args.
+     */
+    private void cacheDistribution(GridClient client, CacheArguments cacheArgs) throws GridClientException {
+        CacheDistributionTaskArg taskArg = new CacheDistributionTaskArg(cacheArgs.caches(), cacheArgs.getUserAttributes());
+
+        UUID nodeId = cacheArgs.nodeId() == null ? BROADCAST_UUID : cacheArgs.nodeId();
+
+        CacheDistributionTaskResult res = executeTaskByNameOnNode(client, CacheDistributionTask.class.getName(), taskArg, nodeId);
+
+        res.print(System.out);
+    }
+
+    /**
+     * @param client Client.
+     * @param cacheArgs Cache args.
+     */
+    private void cacheResetLostPartitions(GridClient client, CacheArguments cacheArgs) throws GridClientException {
+
+        CacheResetLostPartitionsTaskArg taskArg = new CacheResetLostPartitionsTaskArg(cacheArgs.caches());
+
+        CacheResetLostPartitionsTaskResult res = executeTaskByNameOnNode(client, CacheResetLostPartitionsTask.class.getName(), taskArg, null);
+
+        res.print(System.out);
     }
 
     /**
@@ -1060,29 +1107,7 @@ public class CommandHandler {
                     "]");
 
                 for (VisorTxInfo info : entry.getValue().getInfos())
-                    log("    Tx: [xid=" + info.getXid() +
-                        ", label=" + info.getLabel() +
-                        ", state=" + info.getState() +
-                        ", startTime=" + info.getFormattedStartTime() +
-                        ", duration=" + info.getDuration() / 1000 +
-                        ", isolation=" + info.getIsolation() +
-                        ", concurrency=" + info.getConcurrency() +
-                        ", timeout=" + info.getTimeout() +
-                        ", size=" + info.getSize() +
-                        ", dhtNodes=" + (info.getPrimaryNodes() == null ? "N/A" :
-                        F.transform(info.getPrimaryNodes(), new IgniteClosure<UUID, String>() {
-                            @Override public String apply(UUID id) {
-                                return U.id8(id);
-                            }
-                        })) +
-                        ", nearXid=" + info.getNearXid() +
-                        ", parentNodeIds=" + (info.getMasterNodeIds() == null ? "N/A" :
-                        F.transform(info.getMasterNodeIds(), new IgniteClosure<UUID, String>() {
-                            @Override public String apply(UUID id) {
-                                return U.id8(id);
-                            }
-                        })) +
-                        ']');
+                    log(info.toUserString());
             }
         }
         catch (Throwable e) {
@@ -1582,6 +1607,39 @@ public class CommandHandler {
 
                     parseCacheNames(arg, cacheArgs);
                 }
+
+                break;
+
+            case DISTRIBUTION:
+                String nodeIdStr = nextArg("Node id expected or null");
+                if (!"null".equals(nodeIdStr))
+                    cacheArgs.nodeId(UUID.fromString(nodeIdStr));
+
+                while (hasNextCacheArg()) {
+                    String nextArg = nextArg("");
+
+                    if (CMD_USER_ATTRIBUTES.equals(nextArg)){
+                        nextArg = nextArg("User attributes are expected to be separated by commas");
+
+                        Set<String> userAttributes = new HashSet();
+
+                        for (String userAttribute:nextArg.split(","))
+                            userAttributes.add(userAttribute.trim());
+
+                        cacheArgs.setUserAttributes(userAttributes);
+
+                        nextArg = (hasNextCacheArg()) ? nextArg("") : null;
+
+                    }
+
+                    if (nextArg!=null)
+                        parseCacheNames(nextArg, cacheArgs);
+                }
+
+                break;
+
+            case RESET_LOST_PARTITIONS:
+                parseCacheNames(nextArg("Cache name expected"), cacheArgs);
 
                 break;
 

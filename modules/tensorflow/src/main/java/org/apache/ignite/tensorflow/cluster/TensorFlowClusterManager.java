@@ -230,6 +230,30 @@ public class TensorFlowClusterManager {
     }
 
     /**
+     * Checks if chief completed and returns result.
+     *
+     * @param clusterId Cluster identifier.
+     * @return {@code true} if chief completed, otherwise {@code false}.
+     */
+    public boolean isChiefCompleted(UUID clusterId) {
+        TensorFlowChiefRunner runner = chiefRunners.get(clusterId);
+
+        return runner != null && runner.isCompleted();
+    }
+
+    /**
+     * Returns an exception that happened during execution or {@code null} if there is no exception.
+     *
+     * @param clusterId Cluster identifier.
+     * @return Exception that happened during execution or {@code null} if there is no exception.
+     */
+    public Exception getChiefException(UUID clusterId) {
+        TensorFlowChiefRunner runner = chiefRunners.get(clusterId);
+
+        return runner != null ? runner.getException() : null;
+    }
+
+    /**
      * Starts user script processes using the specified job archive.
      *
      * @param clusterId Cluster identifier.
@@ -276,6 +300,18 @@ public class TensorFlowClusterManager {
         TensorFlowUserScriptRunner runner = userScriptRunners.get(clusterId);
 
         return runner != null && runner.isCompleted();
+    }
+
+    /**
+     * Returns an exception that happened during execution or {@code null} if there is no exception.
+     *
+     * @param clusterId Cluster identifier.
+     * @return Exception that happened during execution or {@code null} if there is no exception.
+     */
+    public Exception getUserScriptException(UUID clusterId) {
+        TensorFlowUserScriptRunner runner = userScriptRunners.get(clusterId);
+
+        return runner != null ? runner.getException() : null;
     }
 
     /**

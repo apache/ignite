@@ -17,22 +17,8 @@
 
 import angular from 'angular';
 
-// Fields styles.
-import './field/field.scss';
-import './field/feedback.scss';
-import './field/input/text.scss';
-
-// Panel.
-import igniteFormPanelChevron from './panel/chevron.directive';
-
 // Field.
-import igniteFormFieldLabel from './field/label.directive';
-import igniteFormFieldTooltip from './field/tooltip.directive';
 import placeholder from './field/bs-select-placeholder.directive';
-
-// Group.
-import igniteFormGroupAdd from './group/add.directive';
-import igniteFormGroupTooltip from './group/tooltip.directive';
 
 // Validators.
 import ipaddress from './validator/ipaddress.directive';
@@ -48,41 +34,27 @@ import uuid from './validator/uuid.directive';
 
 // Helpers.
 import igniteFormFieldInputAutofocus from './field/input/autofocus.directive';
-import igniteFormControlFeedback from './field/form-control-feedback.directive';
-import igniteFormFieldUp from './field/up.directive';
-import igniteFormFieldDown from './field/down.directive';
-
 import IgniteFormGUID from './services/FormGUID.service.js';
 
 angular
 .module('ignite-console.Form', [
 
 ])
-// Panel.
-.directive(...igniteFormPanelChevron)
 // Field.
-.directive(...igniteFormFieldLabel)
-.directive(...igniteFormFieldTooltip)
-.directive(...placeholder)
-// Group.
-.directive(...igniteFormGroupAdd)
-.directive(...igniteFormGroupTooltip)
+.directive('bsSelect', placeholder)
 // Validators.
-.directive(...ipaddress)
-.directive(...javaKeywords)
-.directive(...javaPackageSpecified)
-.directive(...javaBuiltInClass)
-.directive(...javaIdentifier)
-.directive(...javaPackageName)
-.directive(...propertyValueSpecified)
-.directive(...propertyUnique)
-.directive(...unique)
-.directive(...uuid)
+.directive('ipaddress', ipaddress)
+.directive('javaKeywords', javaKeywords)
+.directive('javaPackageSpecified', javaPackageSpecified)
+.directive('javaBuiltInClass', javaBuiltInClass)
+.directive('javaIdentifier', javaIdentifier)
+.directive('javaPackageName', javaPackageName)
+.directive('ignitePropertyValueSpecified', propertyValueSpecified)
+.directive('ignitePropertyUnique', propertyUnique)
+.directive('igniteUnique', unique)
+.directive('uuid', uuid)
 // Helpers.
-.directive(...igniteFormFieldInputAutofocus)
-.directive(...igniteFormControlFeedback)
-.directive(...igniteFormFieldUp)
-.directive(...igniteFormFieldDown)
+.directive('igniteFormFieldInputAutofocus', igniteFormFieldInputAutofocus)
 
 // Generator of globally unique identifier.
 .service('IgniteFormGUID', IgniteFormGUID);

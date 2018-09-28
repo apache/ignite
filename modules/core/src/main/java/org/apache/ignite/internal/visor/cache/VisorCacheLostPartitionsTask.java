@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -66,8 +66,9 @@ public class VisorCacheLostPartitionsTask
                 IgniteInternalCache cache = ignite.cachex(cacheName);
 
                 if (cache != null) {
-                    GridDhtPartitionTopology topology = cache.context().topology();
-                    List<Integer> lostPartitions = new ArrayList<>(topology.lostPartitions());
+                    GridDhtPartitionTopology top = cache.context().topology();
+
+                    List<Integer> lostPartitions = new ArrayList<>(top.lostPartitions());
 
                     if (!lostPartitions.isEmpty())
                         res.put(cacheName, lostPartitions);

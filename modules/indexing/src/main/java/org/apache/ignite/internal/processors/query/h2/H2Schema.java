@@ -34,6 +34,9 @@ public class H2Schema {
     /** */
     private final ConcurrentMap<H2TypeKey, H2TableDescriptor> typeToTbl = new ConcurrentHashMap<>();
 
+    /** Whether schema is predefined and cannot be dorpped. */
+    private final boolean predefined;
+
     /** Usage count. */
     private int usageCnt;
 
@@ -41,9 +44,11 @@ public class H2Schema {
      * Constructor.
      *
      * @param schemaName Schema name.
+     * @param predefined Predefined flag.
      */
-    public H2Schema(String schemaName) {
+    public H2Schema(String schemaName, boolean predefined) {
         this.schemaName = schemaName;
+        this.predefined = predefined;
     }
 
     /**
@@ -55,20 +60,19 @@ public class H2Schema {
 
     /**
      * Increments counter for number of caches having this schema.
-     *
-     * @return New value of caches counter.
      */
-    public int incrementUsageCount() {
-        return ++usageCnt;
+    public void incrementUsageCount() {
+        if (!predefined)
+            ++usageCnt;
     }
 
     /**
      * Increments counter for number of caches having this schema.
      *
-     * @return New value of caches counter.
+     * @return If schema is no longer used.
      */
-    public int decrementUsageCount() {
-        return --usageCnt;
+    public boolean decrementUsageCount() {
+        return !predefined && --usageCnt == 0;
     }
 
     /**
@@ -128,14 +132,9 @@ public class H2Schema {
     }
 
     /**
-     * Called after the schema was dropped.
+     * @return {@code True} if schema is predefined.
      */
-    public void dropAll() {
-        for (H2TableDescriptor tbl : tbls.values())
-            tbl.onDrop();
-
-        tbls.clear();
-
-        typeToTbl.clear();
+    public boolean predefined() {
+        return predefined;
     }
 }

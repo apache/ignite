@@ -65,7 +65,7 @@ struct MetaQueriesTestSuiteFixture : public odbc::OdbcTestSuite
      */
     static Ignite StartAdditionalNode(const char* name)
     {
-        return StartTestNode("queries-test.xml", name);
+        return StartPlatformNode("queries-test.xml", name);
     }
 
     /**
@@ -129,7 +129,7 @@ struct MetaQueriesTestSuiteFixture : public odbc::OdbcTestSuite
         cache1(0),
         cache2(0)
     {
-        grid = StartTestNode("queries-test.xml", "NodeMain");
+        grid = StartPlatformNode("queries-test.xml", "NodeMain");
 
         cache1 = grid.GetCache<int64_t, TestType>("cache");
         cache2 = grid.GetCache<int64_t, ComplexType>("cache2");
@@ -180,6 +180,8 @@ BOOST_AUTO_TEST_CASE(TestColAttributesColumnLength)
 
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(intVal, 60);
 }
 
 BOOST_AUTO_TEST_CASE(TestColAttributesColumnPresicion)
@@ -197,6 +199,8 @@ BOOST_AUTO_TEST_CASE(TestColAttributesColumnPresicion)
 
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(intVal, 60);
 }
 
 BOOST_AUTO_TEST_CASE(TestColAttributesColumnScale)
@@ -276,6 +280,19 @@ BOOST_AUTO_TEST_CASE(TestGetDataWithSelectQuery)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
     CheckSingleRowResultSetWithGetData(stmt);
+}
+
+BOOST_AUTO_TEST_CASE(TestInsertTooLongValueFail)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLCHAR insertReq[] =
+        "insert into TestType(_key, strField) VALUES(42, '0123456789012345678901234567890123456789012345678901234567891')";
+
+    SQLRETURN ret = SQLExecDirect(stmt, insertReq, SQL_NTS);
+
+    if (SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 }
 
 BOOST_AUTO_TEST_CASE(TestGetInfoScrollOptions)

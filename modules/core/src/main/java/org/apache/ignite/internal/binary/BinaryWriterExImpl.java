@@ -116,6 +116,13 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
+     * @return Fail if unregistered flag value.
+     */
+    public boolean failIfUnregistered() {
+        return failIfUnregistered;
+    }
+
+    /**
      * @param failIfUnregistered Fail if unregistered.
      */
     public void failIfUnregistered(boolean failIfUnregistered) {
@@ -372,7 +379,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Byte array.
      */
-    public void write(byte[] val) {
+    @Override public void write(byte[] val) {
         out.writeByteArray(val);
     }
 
@@ -381,7 +388,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param off Offset.
      * @param len Length.
      */
-    public void write(byte[] val, int off, int len) {
+    @Override public void write(byte[] val, int off, int len) {
         out.write(val, off, len);
     }
 
@@ -502,6 +509,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
             BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, out, schema, handles());
+
+            writer.failIfUnregistered(failIfUnregistered);
 
             writer.marshal(obj);
         }
@@ -1492,6 +1501,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         else {
             BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, out, schema, null);
 
+            writer.failIfUnregistered(failIfUnregistered);
+
             writer.marshal(obj);
         }
     }
@@ -1914,6 +1925,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     public BinaryWriterExImpl newWriter(int typeId) {
         BinaryWriterExImpl res = new BinaryWriterExImpl(ctx, out, schema, handles());
+
+        res.failIfUnregistered(failIfUnregistered);
 
         res.typeId(typeId);
 

@@ -17,7 +17,11 @@
 
 import angular from 'angular';
 
-export default ['igniteBsAffixUpdate', ['$window', '$timeout', ($window, $timeout) => {
+/**
+ * @param {ng.IWindowService} $window
+ * @param {ng.ITimeoutService} $timeout
+ */
+export default function directive($window, $timeout) {
     let update = null;
 
     const link = ({$last}) => {
@@ -31,4 +35,6 @@ export default ['igniteBsAffixUpdate', ['$window', '$timeout', ($window, $timeou
         restrict: 'A',
         link
     };
-}]];
+}
+
+directive.$inject = ['$window', '$timeout'];

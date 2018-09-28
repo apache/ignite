@@ -84,7 +84,7 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
     public void testTwoNodes() throws Exception {
         checkNodes(startGridsMultiThreaded(2));
 
-        assertTrue(colocated(0, "test").size() > 0);
+        assertTrue(!colocated(0, "test").isEmpty());
         assertTrue(jcache(0, "test").localSize() > 0);
     }
 
@@ -92,7 +92,7 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
     public void testThreeNodes() throws Exception {
         checkNodes(startGridsMultiThreaded(3));
 
-        assertTrue(colocated(0, "test").size() > 0);
+        assertTrue(!colocated(0, "test").isEmpty());
         assertTrue(jcache(0, "test").localSize() > 0);
     }
 

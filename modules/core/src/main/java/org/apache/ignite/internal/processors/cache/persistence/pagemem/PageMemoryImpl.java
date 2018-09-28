@@ -52,7 +52,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
@@ -778,8 +778,12 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 ByteBuffer buf = wrapPointer(pageAddr, pageSize());
 
+                long actualPageId = 0;
+
                 try {
                     storeMgr.read(grpId, pageId, buf);
+
+                    actualPageId = PageIO.getPageId(buf);
 
                     memMetrics.onPageRead();
                 }
@@ -794,7 +798,8 @@ public class PageMemoryImpl implements PageMemoryEx {
                     memMetrics.onPageRead();
                 }
                 finally {
-                    rwLock.writeUnlock(lockedPageAbsPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
+                    rwLock.writeUnlock(lockedPageAbsPtr + PAGE_LOCK_OFFSET,
+                        actualPageId == 0 ? OffheapReadWriteLock.TAG_LOCK_ALWAYS : PageIdUtils.tag(actualPageId));
                 }
             }
         }

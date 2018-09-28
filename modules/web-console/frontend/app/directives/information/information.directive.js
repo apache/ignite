@@ -17,7 +17,7 @@
 
 import template from './information.pug';
 
-export default ['igniteInformation', [() => {
+export default function() {
     return {
         scope: {
             title: '@'
@@ -27,4 +27,4 @@ export default ['igniteInformation', [() => {
         replace: true,
         transclude: true
     };
-}]];
+}
