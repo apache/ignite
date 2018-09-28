@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -305,8 +306,8 @@ public class GridDistributedTxMapping {
     /**
      * @return Mapped backup nodes.
      */
-    @Nullable public Set<UUID> backups() {
-        return backups;
+    public Set<UUID> backups() {
+        return backups != null ? backups : Collections.emptySet();
     }
 
     /** {@inheritDoc} */
