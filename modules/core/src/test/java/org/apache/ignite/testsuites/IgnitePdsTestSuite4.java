@@ -61,7 +61,7 @@ public class IgnitePdsTestSuite4 extends TestSuite {
         // Integrity test.
         suite.addTestSuite(IgnitePdsRecoveryAfterFileCorruptionTest.class);
 
-        // Activate/Deactive + persistence + memory reuse.
+        // Activate/Deactivate + persistence + memory reuse.
         suite.addTestSuite(IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse.class);
     }
 }
