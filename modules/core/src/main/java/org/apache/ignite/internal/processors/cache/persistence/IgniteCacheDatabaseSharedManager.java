@@ -31,6 +31,7 @@ import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -70,6 +71,7 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_MAX_SIZE;
@@ -88,6 +90,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** Maximum initial size on 32-bit JVM */
     private static final long MAX_PAGE_MEMORY_INIT_SIZE_32_BIT = 2L * 1024 * 1024 * 1024;
+
+    /** {@code True} to reuse memory on deactive. */
+    private static final boolean REUSE_MEMORY = IgniteSystemProperties.getBoolean(IGNITE_REUSE_MEMORY_ON_DEACTIVATE);
 
     /** */
     protected volatile Map<String, DataRegion> dataRegionMap;
@@ -113,7 +118,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** First eviction was warned flag. */
     private volatile boolean firstEvictWarn;
 
-    /** */
+    /** Stores memory providers eligible for reuse. */
     private Map<String, DirectMemoryProvider> memProviderMap;
 
     /** {@inheritDoc} */
@@ -128,8 +133,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         validateConfiguration(memCfg);
 
         pageSize = memCfg.getPageSize();
-
-        memProviderMap = new HashMap<>();
 
         initDataRegions(memCfg);
     }
@@ -249,6 +252,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         dataRegionMap = U.newHashMap(3 + dataRegions);
         memMetricsMap = U.newHashMap(3 + dataRegions);
+        memProviderMap = REUSE_MEMORY ? U.newHashMap(3 + dataRegions) : null;
 
         if (dataRegionCfgs != null) {
             for (DataRegionConfiguration dataRegionCfg : dataRegionCfgs)
@@ -271,9 +275,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             CU.isPersistenceEnabled(memCfg)
         );
 
-        for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext())) {
+        for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
             lsnr.onInitDataRegions(this);
-        }
     }
 
     /**
@@ -941,24 +944,49 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         DataRegionMetricsImpl memMetrics,
         boolean trackable
     ) throws IgniteCheckedException {
-        // Reuse memory provider.
-        DirectMemoryProvider memProvider = memProviderMap.get(plcCfg.getName());
-
-        if (memProvider == null) {
-            File allocPath = buildAllocPath(plcCfg);
-
-            memProvider = allocPath == null ?
-                new UnsafeMemoryProvider(log) :
-                new MappedFileMemoryProvider(
-                    log,
-                    allocPath);
-
-            memProviderMap.put(plcCfg.getName(), memProvider);
-        }
-
-        PageMemory pageMem = createPageMemory(memProvider, memCfg, plcCfg, memMetrics, trackable);
+        PageMemory pageMem = createPageMemory(createOrReuseMemoryProvider(plcCfg), memCfg, plcCfg, memMetrics, trackable);
 
         return new DataRegion(pageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, pageMem));
+    }
+
+    /**
+     * @param plcCfg Policy config.
+     * @return DirectMemoryProvider provider.
+     */
+    private DirectMemoryProvider createOrReuseMemoryProvider(DataRegionConfiguration plcCfg)
+        throws IgniteCheckedException {
+        if (!supportsMemoryReuse(plcCfg))
+            return createMemoryProvider(plcCfg);
+
+        DirectMemoryProvider memProvider = memProviderMap.get(plcCfg.getName());
+
+        if (memProvider == null)
+            memProviderMap.put(plcCfg.getName(), (memProvider = createMemoryProvider(plcCfg)));
+
+        return memProvider;
+    }
+
+    /**
+     * @param plcCfg Policy config.
+     *
+     * @return {@code True} if policy supports memory reuse.
+     */
+    private boolean supportsMemoryReuse(DataRegionConfiguration plcCfg) {
+        return REUSE_MEMORY && plcCfg.getSwapPath() == null;
+    }
+
+    /**
+     * @param plcCfg Policy config.
+     * @return DirectMemoryProvider provider.
+     */
+    private DirectMemoryProvider createMemoryProvider(DataRegionConfiguration plcCfg) throws IgniteCheckedException {
+        File allocPath = buildAllocPath(plcCfg);
+
+        return allocPath == null ?
+            new UnsafeMemoryProvider(log) :
+            new MappedFileMemoryProvider(
+                log,
+                allocPath);
     }
 
     /**
@@ -1058,8 +1086,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 memProvider.initialize(chunkSizes);
             }
 
-            @Override public void shutdown(boolean stop) {
-                memProvider.shutdown(stop);
+            @Override public void shutdown(boolean deallocate) {
+                memProvider.shutdown(deallocate);
             }
 
             @Override public DirectMemoryRegion nextRegion() {
@@ -1114,7 +1142,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        onDeActivate(false);
+        onDeActivate(!REUSE_MEMORY);
     }
 
     /**
@@ -1126,7 +1154,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         if (dataRegionMap != null) {
             for (DataRegion memPlc : dataRegionMap.values()) {
-                memPlc.pageMemory().stop();
+                memPlc.pageMemory().stop(shutdown);
 
                 memPlc.evictionTracker().stop();
 
@@ -1137,10 +1165,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             dataRegionMap = null;
 
-            if (shutdown) {
-                for (DirectMemoryProvider provider : memProviderMap.values())
-                    provider.shutdown(true);
-
+            if (shutdown && memProviderMap != null) {
                 memProviderMap.clear();
 
                 memProviderMap = null;

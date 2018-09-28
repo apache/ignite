@@ -29,7 +29,9 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- *
+ * Memory provider implementation based on unsafe memory access.
+ * <p>
+ * Supports memory reuse semantics.
  */
 public class UnsafeMemoryProvider implements DirectMemoryProvider {
     /** */
@@ -66,14 +68,13 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
         isInit = true;
     }
 
-    /** {@inheritDoc}
-     * @param stop*/
-    @Override public void shutdown(boolean stop) {
+    /** {@inheritDoc} */
+    @Override public void shutdown(boolean deallocate) {
         if (regions != null) {
             for (Iterator<DirectMemoryRegion> it = regions.iterator(); it.hasNext(); ) {
                 DirectMemoryRegion chunk = it.next();
 
-                if (stop) {
+                if (deallocate) {
                     GridUnsafe.freeMemory(chunk.address());
 
                     // Safety.
@@ -81,8 +82,7 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
                 }
             }
 
-            /** provider will be recreated if {@code stop} is true. */
-            if (!stop)
+            if (!deallocate)
                 used = 0;
         }
     }
@@ -131,4 +131,5 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
 
         return region;
     }
+
 }

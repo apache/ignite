@@ -1088,6 +1088,7 @@ public abstract class GridUnsafe {
      */
     public static long allocateMemory(long size) {
         cnt.incrementAndGet();
+        cnt1.incrementAndGet();
 
         return UNSAFE.allocateMemory(size);
     }
@@ -1194,6 +1195,8 @@ public abstract class GridUnsafe {
     }
 
     public static GridAtomicLong cnt = new GridAtomicLong();
+    public static GridAtomicLong cnt1 = new GridAtomicLong();
+    public static GridAtomicLong cnt2 = new GridAtomicLong();
 
     /**
      * Frees memory.
@@ -1202,6 +1205,7 @@ public abstract class GridUnsafe {
      */
     public static void freeMemory(long addr) {
         cnt.decrementAndGet();
+        cnt2.incrementAndGet();
 
         UNSAFE.freeMemory(addr);
     }

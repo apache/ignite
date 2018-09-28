@@ -30,7 +30,9 @@ import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- *
+ * Memory provider implementation based on memory mapped file.
+ * <p>
+ * Doesn't support memory reuse semantics.
  */
 public class MappedFileMemoryProvider implements DirectMemoryProvider {
     /** */
@@ -100,9 +102,8 @@ public class MappedFileMemoryProvider implements DirectMemoryProvider {
         isInit = true;
     }
 
-    /** {@inheritDoc}
-     * @param stop*/
-    @Override public void shutdown(boolean stop) {
+    /** {@inheritDoc} */
+    @Override public void shutdown(boolean deallocate) {
         if (mappedFiles != null) {
             for (MappedFile file : mappedFiles) {
                 try {
