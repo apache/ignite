@@ -124,7 +124,7 @@ public class TensorFlowUserScriptRunner extends AsyncNativeProcessRunner {
 
         Map<String, String> env = procBuilder.environment();
         env.put("PYTHONPATH", workingDir.getAbsolutePath());
-        env.put("TF_CONFIG", formatTfConfigVar());
+        env.put("TF_CLUSTER", formatTfClusterVar());
         env.put("TF_WORKERS", formatTfWorkersVar());
         env.put("TF_CHIEF_SERVER", formatTfChiefServerVar());
 
@@ -132,17 +132,12 @@ public class TensorFlowUserScriptRunner extends AsyncNativeProcessRunner {
     }
 
     /**
-     * Formats "TF_CONFIG" variable to be passed into user script.
+     * Formats "TF_CLUSTER" variable to be passed into user script.
      *
-     * @return Formatted "TF_CONFIG" variable to be passed into user script.
+     * @return Formatted "TF_CLUSTER" variable to be passed into user script.
      */
-    private String formatTfConfigVar() {
-        return new StringBuilder()
-            .append("{\"cluster\" : ")
-            .append(clusterSpec.format(Ignition.ignite()))
-            .append(", ")
-            .append("\"task\": {\"type\" : \"" + TensorFlowClusterResolver.CHIEF_JOB_NAME + "\", \"index\": 0}}")
-            .toString();
+    private String formatTfClusterVar() {
+        return clusterSpec.format(Ignition.ignite());
     }
 
     /**
