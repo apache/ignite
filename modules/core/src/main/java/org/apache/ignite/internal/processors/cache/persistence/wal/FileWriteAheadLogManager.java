@@ -134,6 +134,7 @@ import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SEGMENT_SYNC_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
@@ -256,6 +257,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     private static final double THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE =
         IgniteSystemProperties.getDouble(IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, 0.5);
+
+    /**
+     * Number of WAL compressor worker threads.
+     */
+    private final int WAL_COMPRESSOR_WORKER_THREAD_CNT =
+            IgniteSystemProperties.getInteger(IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT, 4);
 
     /** */
     private final boolean alwaysWriteFullPages;
@@ -415,7 +422,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         evt = ctx.event();
         failureProcessor = ctx.failure();
-        segmentAware = new SegmentAware(dsCfg.getWalSegments());
+        segmentAware = new SegmentAware(dsCfg.getWalSegments(), dsCfg.isWalCompactionEnabled());
     }
 
     /**
@@ -486,7 +493,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 segmentAware.setLastArchivedAbsoluteIndex(lastAbsArchivedIdx);
 
             if (dsCfg.isWalCompactionEnabled()) {
-                compressor = new FileCompressor();
+                if (compressor == null)
+                    compressor = new FileCompressor(log);
 
                 if (decompressor == null) {  // Preventing of two file-decompressor thread instantiations.
                     decompressor = new FileDecompressor(log);
@@ -895,7 +903,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public boolean reserve(WALPointer start) throws IgniteCheckedException {
+    @Override public boolean reserve(WALPointer start) {
         assert start != null && start instanceof FileWALPointer : "Invalid start pointer: " + start;
 
         if (mode == WALMode.NONE)
@@ -1005,7 +1013,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** {@inheritDoc} */
     @Override public void notchLastCheckpointPtr(WALPointer ptr) {
         if (compressor != null)
-            compressor.keepUncompressedIdxFrom(((FileWALPointer)ptr).index());
+            segmentAware.keepUncompressedIdxFrom(((FileWALPointer)ptr).index());
     }
 
     /** {@inheritDoc} */
@@ -1910,16 +1918,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * Responsible for compressing WAL archive segments.
      * Also responsible for deleting raw copies of already compressed WAL archive segments if they are not reserved.
      */
-    private class FileCompressor extends Thread {
-        /** Current thread stopping advice. */
-        private volatile boolean stopped;
-
-        /** All segments prior to this (inclusive) can be compressed. */
-        private volatile long minUncompressedIdxToKeep = -1L;
+    private class FileCompressor extends FileCompressorWorker {
+        /** Workers queue. */
+        List<FileCompressorWorker> workers = new ArrayList<>();
 
         /** */
-        FileCompressor() {
-            super("wal-file-compressor%" + cctx.igniteInstanceName());
+        FileCompressor(IgniteLogger log) {
+            super(0, log);
         }
 
         /** */
@@ -1927,7 +1932,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             File[] toDel = walArchiveDir.listFiles(WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER);
 
             for (File f : toDel) {
-                if (stopped)
+                if (isCancelled())
                     return;
 
                 f.delete();
@@ -1936,21 +1941,82 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             FileDescriptor[] alreadyCompressed = scan(walArchiveDir.listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER));
 
             if (alreadyCompressed.length > 0)
-                segmentAware.lastCompressedIdx(alreadyCompressed[alreadyCompressed.length - 1].idx());
+                segmentAware.onSegmentCompressed(alreadyCompressed[alreadyCompressed.length - 1].idx());
+
+            for (int i = 1; i < calculateThreadCount(); i++) {
+                FileCompressorWorker worker = new FileCompressorWorker(i, log);
+
+                worker.start();
+
+                workers.add(worker);
+            }
         }
 
         /**
-         * @param idx Minimum raw segment index that should be preserved from deletion.
+         * Calculate optimal additional compressor worker threads count. If quarter of proc threads greater
+         * than WAL_COMPRESSOR_WORKER_THREAD_CNT, use this value. Otherwise, reduce number of threads.
+         *
+         * @return Optimal number of compressor threads.
          */
-        void keepUncompressedIdxFrom(long idx) {
-            minUncompressedIdxToKeep = idx;
+        private int calculateThreadCount() {
+            int procNum = Runtime.getRuntime().availableProcessors();
+
+            // If quarter of proc threads greater than WAL_COMPRESSOR_WORKER_THREAD_CNT,
+            // use this value. Otherwise, reduce number of threads.
+            if (procNum >> 2 >= WAL_COMPRESSOR_WORKER_THREAD_CNT)
+                return WAL_COMPRESSOR_WORKER_THREAD_CNT;
+            else
+                return procNum >> 2;
+        }
+
+
+        /** {@inheritDoc} */
+        @Override public void body() throws InterruptedException, IgniteInterruptedCheckedException{
+            init();
+
+            super.body0();
+        }
+
+        /**
+         * @throws IgniteInterruptedCheckedException If failed to wait for thread shutdown.
+         */
+        private void shutdown() throws IgniteInterruptedCheckedException {
+            synchronized (this) {
+                for (FileCompressorWorker worker: workers)
+                    U.cancel(worker);
+
+                for (FileCompressorWorker worker: workers)
+                    U.join(worker);
+
+                U.cancel(this);
+            }
+
+            U.join(this);
+        }
+    }
+
+    /** */
+    private class FileCompressorWorker extends GridWorker {
+        /** */
+        private Thread thread;
+
+        /** */
+        FileCompressorWorker(int idx,  IgniteLogger log) {
+            super(cctx.igniteInstanceName(), "wal-file-compressor-%" + cctx.igniteInstanceName() + "%-" + idx, log);
+        }
+
+        /** */
+        void start() {
+            thread = new IgniteThread(this);
+
+            thread.start();
         }
 
         /**
          * Pessimistically tries to reserve segment for compression in order to avoid concurrent truncation.
          * Waits if there's no segment to archive right now.
          */
-        private long tryReserveNextSegmentOrWait() throws IgniteCheckedException {
+        private long tryReserveNextSegmentOrWait() throws IgniteInterruptedCheckedException{
             long segmentToCompress = segmentAware.waitNextSegmentToCompress();
 
             boolean reserved = reserve(new FileWALPointer(segmentToCompress, 0, 0));
@@ -1958,60 +2024,35 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             return reserved ? segmentToCompress : -1;
         }
 
-        /**
-         * Deletes raw WAL segments if they aren't locked and already have compressed copies of themselves.
-         */
-        private void deleteObsoleteRawSegments() {
-            FileDescriptor[] descs = scan(walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER));
-
-            Set<Long> indices = new HashSet<>();
-            Set<Long> duplicateIndices = new HashSet<>();
-
-            for (FileDescriptor desc : descs) {
-                if (!indices.add(desc.idx))
-                    duplicateIndices.add(desc.idx);
-            }
-
-            for (FileDescriptor desc : descs) {
-                if (desc.isCompressed())
-                    continue;
-
-                // Do not delete reserved or locked segment and any segment after it.
-                if (segmentReservedOrLocked(desc.idx))
-                    return;
-
-                if (desc.idx < minUncompressedIdxToKeep && duplicateIndices.contains(desc.idx)) {
-                    if (!desc.file.delete())
-                        U.warn(log, "Failed to remove obsolete WAL segment (make sure the process has enough rights): " +
-                            desc.file.getAbsolutePath() + ", exists: " + desc.file.exists());
-                }
-            }
+        /** {@inheritDoc} */
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            body0();
         }
 
-        /** {@inheritDoc} */
-        @Override public void run() {
-            init();
-
-            while (!Thread.currentThread().isInterrupted() && !stopped) {
-                long currReservedSegment = -1;
+        /** */
+        private void body0() {
+            while (!isCancelled()) {
+                long segIdx = -1L;
 
                 try {
-                    deleteObsoleteRawSegments();
+                    segIdx = tryReserveNextSegmentOrWait();
 
-                    currReservedSegment = tryReserveNextSegmentOrWait();
-                    if (currReservedSegment == -1)
+                    if (segIdx <= segmentAware.lastCompressedIdx())
                         continue;
 
-                    File tmpZip = new File(walArchiveDir, FileDescriptor.fileName(currReservedSegment)
-                        + FilePageStoreManager.ZIP_SUFFIX + FilePageStoreManager.TMP_SUFFIX);
+                    deleteObsoleteRawSegments();
 
-                    File zip = new File(walArchiveDir, FileDescriptor.fileName(currReservedSegment) + FilePageStoreManager.ZIP_SUFFIX);
+                    File tmpZip = new File(walArchiveDir, FileDescriptor.fileName(segIdx)
+                            + FilePageStoreManager.ZIP_SUFFIX + FilePageStoreManager.TMP_SUFFIX);
 
-                    File raw = new File(walArchiveDir, FileDescriptor.fileName(currReservedSegment));
+                    File zip = new File(walArchiveDir, FileDescriptor.fileName(segIdx) + FilePageStoreManager.ZIP_SUFFIX);
+
+                    File raw = new File(walArchiveDir, FileDescriptor.fileName(segIdx));
+
                     if (!Files.exists(raw.toPath()))
                         throw new IgniteCheckedException("WAL archive segment is missing: " + raw);
 
-                    compressSegmentToFile(currReservedSegment, raw, tmpZip);
+                    compressSegmentToFile(segIdx, raw, tmpZip);
 
                     Files.move(tmpZip.toPath(), zip.toPath());
 
@@ -2022,27 +2063,27 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                         if (evt.isRecordable(EVT_WAL_SEGMENT_COMPACTED)) {
                             evt.record(new WalSegmentCompactedEvent(
-                                cctx.discovery().localNode(),
-                                currReservedSegment,
-                                zip.getAbsoluteFile())
+                                    cctx.localNode(),
+                                    segIdx,
+                                    zip.getAbsoluteFile())
                             );
                         }
                     }
 
-                    segmentAware.lastCompressedIdx(currReservedSegment);
+                    segmentAware.onSegmentCompressed(segIdx);
                 }
                 catch (IgniteInterruptedCheckedException ignore) {
                     Thread.currentThread().interrupt();
                 }
                 catch (IgniteCheckedException | IOException e) {
-                    U.error(log, "Compression of WAL segment [idx=" + currReservedSegment +
-                        "] was skipped due to unexpected error", e);
+                    U.error(log, "Compression of WAL segment [idx=" + segIdx +
+                            "] was skipped due to unexpected error", e);
 
-                    segmentAware.lastCompressedIdx(currReservedSegment);
+                    segmentAware.onSegmentCompressed(segIdx);
                 }
                 finally {
-                    if (currReservedSegment != -1)
-                        release(new FileWALPointer(currReservedSegment, 0, 0));
+                    if (segIdx != -1L)
+                        release(new FileWALPointer(segIdx, 0, 0));
                 }
             }
         }
@@ -2053,7 +2094,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @param zip Zip file.
          */
         private void compressSegmentToFile(long nextSegment, File raw, File zip)
-            throws IOException, IgniteCheckedException {
+                throws IOException, IgniteCheckedException {
             int segmentSerializerVer;
 
             try (FileIO fileIO = ioFactory.create(raw)) {
@@ -2083,7 +2124,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 };
 
                 try (SingleSegmentLogicalRecordsIterator iter = new SingleSegmentLogicalRecordsIterator(
-                    log, cctx, ioFactory, BUF_SIZE, nextSegment, walArchiveDir, appendToZipC)) {
+                        log, cctx, ioFactory, BUF_SIZE, nextSegment, walArchiveDir, appendToZipC)) {
 
                     while (iter.hasNextX())
                         iter.nextX();
@@ -2102,7 +2143,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @param ser Record Serializer.
          */
         @NotNull private ByteBuffer prepareSwitchSegmentRecordBuffer(long nextSegment, RecordSerializer ser)
-            throws IgniteCheckedException {
+                throws IgniteCheckedException {
             SwitchSegmentRecord switchRecord = new SwitchSegmentRecord();
 
             int switchRecordSize = ser.size(switchRecord);
@@ -2117,16 +2158,33 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
 
         /**
-         * @throws IgniteInterruptedCheckedException If failed to wait for thread shutdown.
+         * Deletes raw WAL segments if they aren't locked and already have compressed copies of themselves.
          */
-        private void shutdown() throws IgniteInterruptedCheckedException {
-            synchronized (this) {
-                stopped = true;
+        private void deleteObsoleteRawSegments() {
+            FileDescriptor[] descs = scan(walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER));
 
-                notifyAll();
+            Set<Long> indices = new HashSet<>();
+            Set<Long> duplicateIndices = new HashSet<>();
+
+            for (FileDescriptor desc : descs) {
+                if (!indices.add(desc.idx))
+                    duplicateIndices.add(desc.idx);
             }
 
-            U.join(this);
+            for (FileDescriptor desc : descs) {
+                if (desc.isCompressed())
+                    continue;
+
+                // Do not delete reserved or locked segment and any segment after it.
+                if (segmentReservedOrLocked(desc.idx))
+                    return;
+
+                if (desc.idx < segmentAware.keepUncompressedIdxFrom() && duplicateIndices.contains(desc.idx)) {
+                    if (desc.file.exists() && !desc.file.delete())
+                        U.warn(log, "Failed to remove obsolete WAL segment (make sure the process has enough rights): " +
+                                desc.file.getAbsolutePath() + ", exists: " + desc.file.exists());
+                }
+            }
         }
     }
 

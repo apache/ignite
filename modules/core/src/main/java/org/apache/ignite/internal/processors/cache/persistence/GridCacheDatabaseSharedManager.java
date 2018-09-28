@@ -1758,16 +1758,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (ptr == null)
             return false;
 
-        boolean reserved;
-
-        try {
-            reserved = cctx.wal().reserve(ptr);
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Error while trying to reserve history", e);
-
-            reserved = false;
-        }
+        boolean reserved = cctx.wal().reserve(ptr);
 
         if (reserved)
             reservedForPreloading.put(new T2<>(grpId, partId), new T2<>(cntr, ptr));

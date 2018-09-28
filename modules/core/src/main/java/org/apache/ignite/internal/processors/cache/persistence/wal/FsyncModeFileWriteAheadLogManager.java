@@ -783,7 +783,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /** {@inheritDoc} */
-    @Override public boolean reserve(WALPointer start) throws IgniteCheckedException {
+    @Override public boolean reserve(WALPointer start) {
         assert start != null && start instanceof FileWALPointer : "Invalid start pointer: " + start;
 
         if (mode == WALMode.NONE)
@@ -791,8 +791,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         FileArchiver archiver0 = archiver;
 
-        if (archiver0 == null)
-            throw new IgniteCheckedException("Could not reserve WAL segment: archiver == null");
+        assert archiver0 != null : "Could not reserve WAL segment: archiver == null";
 
         archiver0.reserve(((FileWALPointer)start).index());
 
@@ -1912,7 +1911,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
          * Pessimistically tries to reserve segment for compression in order to avoid concurrent truncation.
          * Waits if there's no segment to archive right now.
          */
-        private long tryReserveNextSegmentOrWait() throws InterruptedException, IgniteCheckedException {
+        private long tryReserveNextSegmentOrWait() throws InterruptedException {
             long segmentToCompress = lastCompressedIdx + 1;
 
             synchronized (this) {
