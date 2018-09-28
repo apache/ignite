@@ -251,7 +251,7 @@ public class MapQueryLazyWorker extends GridWorker {
     private void awaitStop() {
         synchronized (mux) {
             try {
-                mux.wait();
+                mux.wait(500);
 
                 U.await(stopLatch);
             }
