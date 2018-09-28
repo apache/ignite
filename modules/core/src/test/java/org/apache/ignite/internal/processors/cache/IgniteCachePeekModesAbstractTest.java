@@ -1407,13 +1407,13 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 
             T2<List<Integer>, List<Integer>> swapKeys = swapKeys(nodeIdx);
 
-            assertTrue(swapKeys.get1().size() > 0);
-            assertTrue(swapKeys.get2().size() > 0);
+            assertTrue(!swapKeys.get1().isEmpty());
+            assertTrue(!swapKeys.get2().isEmpty());
 
             T2<List<Integer>, List<Integer>> offheapKeys = offheapKeys(nodeIdx);
 
-            assertTrue(offheapKeys.get1().size() > 0);
-            assertTrue(offheapKeys.get2().size() > 0);
+            assertTrue(!offheapKeys.get1().isEmpty());
+            assertTrue(!offheapKeys.get2().isEmpty());
 
             List<Integer> swap = new ArrayList<>();
 

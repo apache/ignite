@@ -38,6 +38,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxRemoteAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -387,12 +389,11 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @param keys Keys.
      * @param vals Values.
      * @param snapshot Mvcc snapshot.
-     * @param updCntrs Update counters.
      * @throws IgniteCheckedException If failed.
      */
     public void mvccEnlistBatch(GridCacheContext ctx, EnlistOperation op, List<KeyCacheObject> keys,
-        List<Message> vals, MvccSnapshot snapshot, GridLongList updCntrs) throws IgniteCheckedException {
-        assert keys != null && updCntrs != null && keys.size() == updCntrs.size();
+        List<Message> vals, MvccSnapshot snapshot) throws IgniteCheckedException {
+        assert keys != null && (vals == null || vals.size() == keys.size());
 
         WALPointer ptr = null;
 
@@ -438,7 +439,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                         this,
                                         ctx.localNodeId(),
                                         topologyVersion(),
-                                        updCntrs.get(i),
                                         snapshot,
                                         false);
 
@@ -453,7 +453,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                         val,
                                         0,
                                         topologyVersion(),
-                                        updCntrs.get(i),
                                         snapshot,
                                         op.cacheOperation(),
                                         false,
@@ -471,7 +470,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                             updRes = entry.mvccUpdateRowsWithPreloadInfo(this,
                                 ctx.localNodeId(),
                                 topologyVersion(),
-                                updCntrs.get(i),
                                 entries.infos(),
                                 op.cacheOperation(),
                                 snapshot);

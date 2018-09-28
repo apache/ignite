@@ -22,8 +22,8 @@ include /app/helpers/jade/mixins
     required: '$ctrl.required',
     disabled: '$ctrl.ngDisabled'
 })
-    +form-field__tooltip({ title: '{{::$ctrl.tip}}' })(
-        ng-if='::$ctrl.tip'
+    +form-field__tooltip({title: '{{$ctrl.tip}}'})(
+        ng-if='$ctrl.tip'
     )
 
 .form-field__control.form-field__control-group(ng-form='$ctrl.innerForm')
