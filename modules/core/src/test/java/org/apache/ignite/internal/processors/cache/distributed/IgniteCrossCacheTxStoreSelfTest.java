@@ -162,8 +162,8 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
             "delete cacheA",
             "write cacheB",
             "sessionEnd true"
-        ),
-        firstStoreEvts);
+            ),
+            firstStoreEvts);
 
         assertEquals(0, secondStoreEvts.size());
     }
@@ -205,23 +205,22 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
             tx.commit();
         }
 
-        System.out.println("SECOND : " + secondStoreEvts);
         assertEqualsCollections(F.asList(
             "writeAll cacheA 2",
             "deleteAll cacheA 2",
             "write cacheA",
             "delete cacheA",
             "sessionEnd true"
-        ),
-        firstStoreEvts);
+            ),
+            firstStoreEvts);
 
         assertEqualsCollections(F.asList(
             "writeAll cacheC 2",
             "deleteAll cacheC 2",
             "write cacheC",
             "sessionEnd true"
-        ),
-        secondStoreEvts);
+            ),
+            secondStoreEvts);
     }
 
     /**
@@ -261,15 +260,14 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
             tx.commit();
         }
 
-
         assertEqualsCollections(F.asList(
             "writeAll cacheA 2",
             "deleteAll cacheA 2",
             "write cacheA",
             "delete cacheA",
             "sessionEnd true"
-        ),
-        firstStoreEvts);
+            ),
+            firstStoreEvts);
 
         assertEquals(0, secondStoreEvts.size());
     }
@@ -324,10 +322,6 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
             CacheStoreSession ses = session();
 
             String cacheName = ses.cacheName();
-
-            if (cacheName == null) {
-                System.out.println();
-            }
 
             evts.add("write " + cacheName);
         }
