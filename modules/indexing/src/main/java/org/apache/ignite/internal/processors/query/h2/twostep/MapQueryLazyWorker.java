@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
@@ -50,6 +51,9 @@ public class MapQueryLazyWorker extends GridWorker {
 
     /** Active lazy worker count (for testing purposes). */
     private static final LongAdder ACTIVE_CNT = new LongAdder();
+
+    /** Mutex to synchronization worker start/stop. */
+    private final Object mux = new Object();
 
     /** Task to be executed. */
     private final BlockingQueue<Runnable> tasks = new LinkedBlockingDeque<>();
@@ -91,27 +95,32 @@ public class MapQueryLazyWorker extends GridWorker {
     /**
      *
      */
-    void start() {
-        if (!exec.busyLock().enterBusy()) {
-            log.warning("Lazy worker isn't started. Node is stopped [key=" + key + ']');
+    void start() throws QueryCancelledException {
+        synchronized (mux) {
+            if (!exec.busyLock().enterBusy()) {
+                log.warning("Lazy worker isn't started. Node is stopped [key=" + key + ']');
 
-            return;
-        }
-
-        try {
-            if (started)
                 return;
+            }
 
-            started = true;
+            try {
+                if (started)
+                    return;
 
-            exec.registerLazyWorker(this);
+                if (isCancelled)
+                    throw new QueryCancelledException();
 
-            IgniteThread thread = new IgniteThread(this);
+                started = true;
 
-            thread.start();
-        }
-        finally {
-            exec.busyLock().leaveBusy();
+                exec.registerLazyWorker(this);
+
+                IgniteThread thread = new IgniteThread(this);
+
+                thread.start();
+            }
+            finally {
+                exec.busyLock().leaveBusy();
+            }
         }
     }
 
@@ -176,6 +185,19 @@ public class MapQueryLazyWorker extends GridWorker {
     }
 
     /**
+     * @param task Stop task.
+     * @param nodeStop Node stop flag.
+     */
+    public void submitStopTask(Runnable task, boolean nodeStop) {
+        synchronized (mux) {
+            if (!started || LAZY_WORKER.get() != null)
+                task.run();
+            else
+                submit(task);
+        }
+    }
+
+    /**
      * @return Worker key.
      */
     public MapQueryLazyWorkerKey key() {
@@ -186,18 +208,8 @@ public class MapQueryLazyWorker extends GridWorker {
      * Stop the worker.
      * @param nodeStop Node is stopping.
      */
-    public void stop(final boolean nodeStop) {
-        if (isCancelled)
-            return;
-
-        if (started && currentWorker() == null) {
-            submit(new Runnable() {
-                @Override public void run() {
-                    stop(nodeStop);
-                }
-            });
-        }
-        else if (currentWorker() != null) {
+    private void stop0(boolean nodeStop) {
+        synchronized (mux) {
             if (qctx != null && qctx.distributedJoinMode() == OFF && !qctx.isCleared())
                 qctx.clearContext(nodeStop);
 
@@ -205,18 +217,50 @@ public class MapQueryLazyWorker extends GridWorker {
                 detached.recycle();
 
             isCancelled = true;
+
+            mux.notifyAll();
+        }
+    }
+
+    /**
+     * Stop the worker.
+     * @param nodeStop Node is stopping.
+     */
+    public void stop(final boolean nodeStop) {
+        synchronized (mux) {
+            if (isCancelled)
+                return;
+
+            if (started && currentWorker() == null) {
+                submit(new Runnable() {
+                    @Override public void run() {
+                        stop0(nodeStop);
+                    }
+                });
+
+                awaitStop();
+            }
+            else if (currentWorker() != null)
+                stop0(nodeStop);
         }
     }
 
     /**
      * Await worker stop.
      */
-    public void awaitStop() {
-        try {
-            U.await(stopLatch);
-        }
-        catch (IgniteInterruptedCheckedException e) {
-            throw new IgniteException("Failed to wait for lazy worker stop (interrupted): " + name(), e);
+    private void awaitStop() {
+        synchronized (mux) {
+            try {
+                mux.wait();
+
+                U.await(stopLatch);
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                throw new IgniteException("Failed to wait for lazy worker stop (interrupted): " + name(), e);
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
@@ -258,13 +302,6 @@ public class MapQueryLazyWorker extends GridWorker {
      */
     public void detachedConnection(ObjectPoolReusable<H2ConnectionWrapper> conn) {
         this.detached = conn;
-    }
-
-    /**
-     * @return {@code true} if the worker have started.
-     */
-    public boolean isStarted() {
-        return started;
     }
 
     /**

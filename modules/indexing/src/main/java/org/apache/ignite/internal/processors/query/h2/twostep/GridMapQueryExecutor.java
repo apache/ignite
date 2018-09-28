@@ -57,12 +57,12 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CompoundLockFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionsReservation;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransactionalCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionsReservation;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
@@ -217,11 +217,8 @@ public class GridMapQueryExecutor {
         for (MapNodeResults res : qryRess.values())
             res.cancelAll();
 
-        for (MapQueryLazyWorker w : lazyWorkers.values()) {
+        for (MapQueryLazyWorker w : lazyWorkers.values())
             w.stop(true);
-
-            w.awaitStop();
-        }
 
         assert lazyWorkers.isEmpty() : "Not cleaned lazy workers: " + lazyWorkers.size();
     }
@@ -987,15 +984,6 @@ public class GridMapQueryExecutor {
 
                     worker.start();
 
-                    final MapQueryResults qryResults0 = qryResults;
-
-                    worker.submit(new Runnable() {
-                        @Override public void run() {
-                            if (qryResults0.cancelled())
-                                qryResults0.close();
-                        }
-                    });
-
                     GridH2QueryContext.clearThreadLocal();
                 }
             }
@@ -1016,62 +1004,71 @@ public class GridMapQueryExecutor {
                 // Prev worker is closed within MapQueryResult
                 worker = createLazyWorker(node, reqId, segmentId);
 
-                worker.start();
+                try {
+                    worker.start();
 
-                worker.submit(new Runnable() {
-                    @Override public void run() {
-                        onQueryRequest0(
-                            node,
-                            reqId,
-                            segmentId,
-                            schemaName,
-                            qrys,
-                            cacheIds,
-                            topVer,
-                            partsMap,
-                            parts,
-                            pageSize,
-                            distributedJoinMode,
-                            enforceJoinOrder,
-                            replicated,
-                            timeout,
-                            params,
-                            txDetails == null,
-                            mvccSnapshot,
-                            tx,
-                            txDetails,
-                            lockFut,
-                            runCntr);
-                    }
-                });
+                    worker.submit(new Runnable() {
+                        @Override public void run() {
+                            onQueryRequest0(
+                                node,
+                                reqId,
+                                segmentId,
+                                schemaName,
+                                qrys,
+                                cacheIds,
+                                topVer,
+                                partsMap,
+                                parts,
+                                pageSize,
+                                distributedJoinMode,
+                                enforceJoinOrder,
+                                replicated,
+                                timeout,
+                                params,
+                                txDetails == null,
+                                mvccSnapshot,
+                                tx,
+                                txDetails,
+                                lockFut,
+                                runCntr);
+                        }
+                    });
+                }
+                catch (QueryCancelledException eCanceled) {
+                    sendError(node, reqId, new QueryCancelledException());
+                }
             }
             else {
                 // Stop and unregister worker after possible cancellation.
                 if (lazy)
                     worker.stop(false);
 
-                JdbcSQLException sqlEx = X.cause(e, JdbcSQLException.class);
-
-                if (sqlEx != null && sqlEx.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
-                    sendError(node, reqId, new QueryCancelledException());
+                if (e instanceof QueryCancelledException)
+                    sendError(node, reqId, e);
                 else {
-                    GridH2RetryException retryErr = X.cause(e, GridH2RetryException.class);
+                    JdbcSQLException sqlEx = X.cause(e, JdbcSQLException.class);
 
-            if (retryErr != null) {
-                final String retryCause = String.format(
-                    "Failed to execute non-collocated query (will retry) [localNodeId=%s, rmtNodeId=%s, reqId=%s, " +
-                    "errMsg=%s]", ctx.localNodeId(), node.id(), reqId, retryErr.getMessage()
-                );
+                    if (sqlEx != null && sqlEx.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
+                        sendError(node, reqId, new QueryCancelledException());
+                    else {
+                        GridH2RetryException retryErr = X.cause(e, GridH2RetryException.class);
 
-                sendRetry(node, reqId, segmentId, retryCause);
-            }
-            else {
-                U.error(log, "Failed to execute local query.", e);
+                        if (retryErr != null) {
+                            final String retryCause = String.format(
+                                "Failed to execute non-collocated query (will retry) [localNodeId=%s, rmtNodeId=%s, reqId=%s, " +
+                                    "errMsg=%s]", ctx.localNodeId(), node.id(), reqId, retryErr.getMessage()
+                            );
 
-                        sendError(node, reqId, e);
+                            sendRetry(node, reqId, segmentId, retryCause);
+                        }
+                        else {
+                            U.error(log, "Failed to execute local query.", e);
 
-                        if (e instanceof Error)
-                            throw (Error)e;
+                            sendError(node, reqId, e);
+
+                            if (e instanceof Error)
+                                throw (Error)e;
+                        }
                     }
                 }
             }
@@ -1428,6 +1425,7 @@ public class GridMapQueryExecutor {
      * @param node Node.
      * @param reqId Request ID.
      * @param segmentId Index segment ID.
+     * @param retryCause Description of the retry cause.
      */
     private void sendRetry(ClusterNode node, long reqId, int segmentId, String retryCause) {
         try {

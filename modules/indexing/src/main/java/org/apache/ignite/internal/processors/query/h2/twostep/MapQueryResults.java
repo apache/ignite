@@ -154,29 +154,24 @@ class MapQueryResults {
      * Close the query.
      */
     void close() {
-        // TODO VO: lazyWOrker.isStarted() doesn't use any synchronization, looks like a race.
-        // TODO VO: Something is really wrong with synchronization of close() and cancel() operations,
-        // TODO VO: and lazy worker stop.
-        // TODO VO: Key problem is synchronization around MapQueryLazyWorker.started.
-        if (lazyWorker == null || !lazyWorker.isStarted() || MapQueryLazyWorker.currentWorker() != null) {
-            for (int i = 0; i < results.length(); i++) {
-                MapQueryResult res = results.get(i);
-
-                if (res != null)
-                    res.close();
-            }
-
-            if (lazyWorker != null)
-                lazyWorker.stop(false);
-        }
+        if (lazyWorker == null)
+            close0();
         else {
-            lazyWorker.submit(new Runnable() {
-                @Override public void run() {
-                    close();
-                }
-            });
+            lazyWorker.submitStopTask(this::close0, false);
 
-            lazyWorker.awaitStop();
+            lazyWorker.stop(false);
+        }
+    }
+
+    /**
+     *
+     */
+    private void close0() {
+        for (int i = 0; i < results.length(); i++) {
+            MapQueryResult res = results.get(i);
+
+            if (res != null)
+                res.close();
         }
     }
 

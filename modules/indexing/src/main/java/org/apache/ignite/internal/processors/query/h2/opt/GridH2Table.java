@@ -263,10 +263,6 @@ public class GridH2Table extends TableBase {
         if (destroyed) {
             unlock(exclusive);
 
-            // TODO: Lock is not acquired! What is the reason to decrement the counter?
-            if (!exclusive)
-                lazyTransferCnt.decrementAndGet();
-
             throw new IllegalStateException("Table " + identifierString() + " already destroyed.");
         }
 
@@ -378,16 +374,13 @@ public class GridH2Table extends TableBase {
     public void onLazyTransferStarted(Session ses) {
         assert sessions.containsKey(ses) : "Detached session have not locked the table: " + getName();
 
-        // TODO VO: Is it possible that session will be exclusive here? I think no. But if it is possible, then
-        // TODO VO: we need to perform the same check in onLazyTransferFinished.
-        if (!sessions.get(ses))
-            lazyTransferCnt.incrementAndGet();
+        lazyTransferCnt.incrementAndGet();
 
         unlock(false);
     }
 
     /**
-     * Callback invoked when lazy transfer finished. Acuire the lock, decrement transfer counter.
+     * Callback invoked when lazy transfer finished. Acquire the lock, decrement transfer counter.
      *
      * @param ses Session to detach.
      */
