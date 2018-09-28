@@ -691,4 +691,9 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return IO statistic manager.
      */
     public GridIoStatManager ioStats();
+
+    /**
+     * @return Default uncaught exception handler used by thread pools.
+     */
+    public Thread.UncaughtExceptionHandler uncaughtExceptionHandler();
 }
