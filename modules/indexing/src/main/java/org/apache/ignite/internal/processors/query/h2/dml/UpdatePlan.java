@@ -95,6 +95,9 @@ public final class UpdatePlan {
 
     /** Additional info for distributed update. */
     private final DmlDistributedPlanInfo distributed;
+    
+    //add@byron
+    private GridCacheContext cacheContext = null;
 
     /**
      * Constructor.
@@ -530,11 +533,20 @@ public final class UpdatePlan {
     public UpdateMode mode() {
         return mode;
     }
+    /**
+     * add@byron set Cache context.
+     * @return 
+     */
+    public UpdatePlan cacheContext(GridCacheContext cc) {
+    	cacheContext = cc;
+        return this;
+    }
 
     /**
      * @return Cache context.
      */
     public GridCacheContext cacheContext() {
+    	if(cacheContext!=null) return cacheContext;
         return tbl.cache();
     }
 

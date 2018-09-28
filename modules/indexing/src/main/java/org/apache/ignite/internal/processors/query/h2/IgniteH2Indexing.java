@@ -2226,7 +2226,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         IndexingQueryFilter filter = (loc ? backupFilter(null, qry.getPartitions()) : null);
 
         if (!prepared.isQuery()) {
-            if (DmlStatementsProcessor.isDmlStatement(prepared)) {
+        	//modify@byron alias cmd is support
+            //-if (DmlStatementsProcessor.isDmlStatement(prepared)) {
+            if (DmlStatementsProcessor.isDmlStatement(prepared) || DdlStatementsProcessor.supportSchemaDdlStatement(prepared)) {
                 try {
                     Connection conn = connectionForSchema(schemaName);
 

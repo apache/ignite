@@ -22,9 +22,11 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -50,6 +52,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDelete;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlInsert;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlMerge;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlNativeStatement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlParameter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
@@ -67,6 +70,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
 import org.h2.table.Column;
+import org.h2.value.ValueInt;
+import org.h2.value.ValueString;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
@@ -135,6 +140,8 @@ public final class UpdatePlanBuilder {
             return planForInsert(stmt, loc, idx, mvccEnabled, conn, fieldsQry);
         else if (stmt instanceof GridSqlUpdate || stmt instanceof GridSqlDelete)
             return planForUpdate(stmt, loc, idx, mvccEnabled, conn, fieldsQry, errKeysPos);
+        else if (stmt instanceof GridSqlNativeStatement) //add@byron for function alias       	
+            return planForFunction(stmt, loc, idx, conn, fieldsQry, errKeysPos);      
         else
             throw new IgniteSQLException("Unsupported operation: " + prepared.getSQL(),
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -486,6 +493,69 @@ public final class UpdatePlanBuilder {
         }
     }
 
+    /**
+     * Prepare update plan for Create or Drop Alias
+     * add@byron
+     * @param stmt Create or Drop Alias statement .
+     * @param loc Local query flag.
+     * @param idx Indexing.
+     * @param conn Connection.
+     * @param fieldsQuery Original query.
+     * @param errKeysPos index to inject param for re-run keys at. Null if it's not a re-run plan.
+     * @return Update plan.
+     * @throws IgniteCheckedException if failed.
+     */
+    private static UpdatePlan planForFunction(GridSqlStatement stmt, boolean loc, IgniteH2Indexing idx,
+        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQuery, @Nullable Integer errKeysPos)
+        throws IgniteCheckedException {
+        GridSqlElement target;               
+
+        UpdateMode mode;
+
+        if (stmt instanceof GridSqlNativeStatement) {           
+            mode = UpdateMode.UPDATE;
+        }        
+        else
+            throw new IgniteSQLException("Unexpected Alias DDL operation [cls=" + stmt.getClass().getName() + ']',
+                IgniteQueryErrorCode.UNEXPECTED_OPERATION);
+        
+        GridSqlNativeStatement nstmt = (GridSqlNativeStatement) stmt;
+        String cmdCls = nstmt.getCmd().getClass().getSimpleName();
+        if(cmdCls.startsWith("Create")){
+        	mode = UpdateMode.UPDATE;
+        }
+        FastUpdate fu = null;
+        String selectSql = stmt.getSQL();  
+        DmlDistributedPlanInfo distributed = null;
+        if(!loc){
+	        Collection<String> caches = idx.objectContext().kernalContext().cache().cacheNames();
+	    	List<Integer> cacheIds = new ArrayList<>();
+	        for(String cache:caches){
+	        	cacheIds.add(CU.cacheId(cache));
+	        }
+	
+	        distributed = new DmlDistributedPlanInfo(false, cacheIds);
+        }
+        else{
+        	int ret = nstmt.getCmd().update();      
+        	fu = FastUpdate.create(new GridSqlConst(ValueString.get("ret")), new GridSqlConst(ValueInt.get(ret)) , null);
+        }
+        
+        GridCacheContext context = idx.objectContext().kernalContext().cache().getOrStartCache("default").context();
+        
+        UpdatePlan plan = new UpdatePlan(
+        	mode,
+            null,
+            selectSql,
+            fu,
+            distributed
+        );
+       
+        plan.cacheContext(context);       
+        return plan;
+       
+    }
+    
     /**
      * Prepare update plan for COPY command (AKA bulk load).
      *

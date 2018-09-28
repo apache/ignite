@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteSystemProperties;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -57,8 +59,10 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropTable;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlNativeStatement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
+import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.security.SecurityContextHolder;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
@@ -76,10 +80,13 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.AlterTableAlterColumn;
+import org.h2.command.ddl.CreateFunctionAlias;
 import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.CreateTable;
+import org.h2.command.ddl.DropFunctionAlias;
 import org.h2.command.ddl.DropIndex;
 import org.h2.command.ddl.DropTable;
+import org.h2.command.ddl.SchemaCommand;
 import org.h2.table.Column;
 import org.h2.value.DataType;
 import org.h2.value.Value;
@@ -487,6 +494,26 @@ public class DdlStatementsProcessor {
                     }
                 }
             }
+            else if(stmt0 instanceof GridSqlNativeStatement){
+            	//add@byron broadcast native sql stmt to all node.
+            	GridSqlNativeStatement nsql = (GridSqlNativeStatement) stmt0;             	
+            	SqlFieldsQueryEx qry = new SqlFieldsQueryEx(nsql.toString(),false);
+            	qry.setSkipReducerOnUpdate(true);
+            	
+            	//nsql.getCmd().update();
+            	//idx.querySqlFields(nsql.schemaName(),qry, null, false, true, null);            	
+            	
+            	// it is update stmt.
+            	idx.mapDistributedUpdate(nsql.schemaName(),qry, null, null, false);
+            
+            	GridReduceQueryExecutor grd = idx.reduceQueryExecutor();
+            	
+            	//CU.cacheId(nsql.schemaName());   
+            
+            	//grd.update(nsql.schemaName(),distInfo.getCacheIds(),qry.getSql(), null, false,1,1000,null,false,null);
+            	
+            	//end@
+            }
             else
                 throw new IgniteSQLException("Unsupported DDL operation: " + sql,
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -762,7 +789,17 @@ public class DdlStatementsProcessor {
      */
     public static boolean isDdlStatement(Prepared cmd) {
         return cmd instanceof CreateIndex || cmd instanceof DropIndex || cmd instanceof CreateTable ||
-            cmd instanceof DropTable || cmd instanceof AlterTableAlterColumn;
+            cmd instanceof DropTable || cmd instanceof AlterTableAlterColumn 
+            || cmd instanceof SchemaCommand //add@byron scheam op also is ddl
+            ;
+    }
+    /**
+     * add@byron
+     * @param cmd Statement.
+     * @return Whether {@code cmd} is a schema DDL statement we're able to handle.
+     */
+    public static boolean supportSchemaDdlStatement(Prepared cmd) {
+        return cmd instanceof CreateFunctionAlias || cmd instanceof DropFunctionAlias;
     }
 
     /**

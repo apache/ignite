@@ -28,7 +28,9 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+
 import javax.cache.CacheException;
+
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -51,10 +53,12 @@ import org.h2.command.Prepared;
 import org.h2.command.ddl.AlterTableAddConstraint;
 import org.h2.command.ddl.AlterTableAlterColumn;
 import org.h2.command.ddl.CommandWithColumns;
+import org.h2.command.ddl.CreateFunctionAlias;
 import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.CreateTable;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.command.ddl.DefineCommand;
+import org.h2.command.ddl.DropFunctionAlias;
 import org.h2.command.ddl.DropIndex;
 import org.h2.command.ddl.DropTable;
 import org.h2.command.ddl.SchemaCommand;
@@ -1796,6 +1800,14 @@ public class GridSqlQueryParser {
 
         if (stmt instanceof AlterTableAlterColumn)
             return parseAlterColumn((AlterTableAlterColumn)stmt);
+        
+        //add@byron support create and drop alias cmd
+        if (stmt instanceof CreateFunctionAlias)
+            return new GridSqlNativeStatement((CreateFunctionAlias)stmt);
+        
+        if (stmt instanceof DropFunctionAlias)
+            return new GridSqlNativeStatement((DropFunctionAlias)stmt);
+        //end@
 
         throw new CacheException("Unsupported SQL statement: " + stmt);
     }
