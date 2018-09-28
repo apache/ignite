@@ -568,6 +568,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
         if (X.hasCause(err, ClusterTopologyCheckedException.class))
             tx.removeMapping(nodeId);
+        else
+            tx.mappings().get(nodeId).addBackups(res.newDhtNodes());
 
         if (err != null)
             processFailure(err, null);
