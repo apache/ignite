@@ -639,7 +639,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             checkpointReadLock();
 
             try {
-                restoreMemory(status, true, storePageMem);
+                restoreMemory(status, true, storePageMem, Collections.emptySet());
 
                 metaStorage = new MetaStorage(cctx, regCfg, memMetrics, true);
 
@@ -841,9 +841,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             Map<Integer, CacheGroupDescriptor> missingCacheGroups = cctx.cache().missingCacheGroupDescriptors();
 
-            missingCacheGroups.values().forEach(d->initiallyLocalWalDisabledGrps.add(d.groupId()));
-
-            WALPointer restore = restoreMemory(status);
+            WALPointer restore = restoreMemory(status, missingCacheGroups.keySet());
 
             if (restore == null && !status.endPtr.equals(CheckpointStatus.NULL_PTR)) {
                 throw new StorageException("Restore wal pointer = " + restore + ", while status.endPtr = " +
@@ -2057,8 +2055,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @throws IgniteCheckedException If failed.
      * @throws StorageException In case I/O error occurred during operations with storage.
      */
-    @Nullable private WALPointer restoreMemory(CheckpointStatus status) throws IgniteCheckedException {
-        return restoreMemory(status, false, (PageMemoryEx)metaStorage.pageMemory());
+    @Nullable private WALPointer restoreMemory(CheckpointStatus status, Collection<Integer> missingCacheGroupIds) throws IgniteCheckedException {
+        return restoreMemory(status, false, (PageMemoryEx)metaStorage.pageMemory(), missingCacheGroupIds);
     }
 
     /**
@@ -2071,7 +2069,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Nullable private WALPointer restoreMemory(
         CheckpointStatus status,
         boolean metastoreOnly,
-        PageMemoryEx storePageMem
+        PageMemoryEx storePageMem,
+        Collection<Integer> missingCacheGroupIds
     ) throws IgniteCheckedException {
         assert !metastoreOnly || storePageMem != null;
 
@@ -2097,7 +2096,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         RestoreBinaryState restoreBinaryState = new RestoreBinaryState(status, lastArchivedSegment, log);
 
         Collection<Integer> ignoreGrps = metastoreOnly ? Collections.emptySet() :
-            F.concat(false, initiallyGlobalWalDisabledGrps, initiallyLocalWalDisabledGrps);
+            F.concat(false,
+                missingCacheGroupIds,
+                F.concat(false, initiallyGlobalWalDisabledGrps, initiallyLocalWalDisabledGrps));
 
         int applied = 0;
 

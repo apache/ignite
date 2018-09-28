@@ -97,7 +97,7 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
     }
 
     /**
-     * Checks, that lost node will get cache configuration updates (one cache was started) on startup.
+     * Checks, that lost nodes will get cache configuration updates (one cache was started) on startup.
      *
      * @throws Exception if failed.
      */
@@ -106,7 +106,7 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
     }
 
     /**
-     * Checks, that lost node will get cache configuration updates (one cache was destroyed) on startup.
+     * Checks, that lost nodes will get cache configuration updates (one cache was destroyed) on startup.
      *
      * @throws Exception if failed.
      */
@@ -114,38 +114,52 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
         restoreClusterAfterCacheDestroy(NODES_COUNT, false, LAST_NODE);
     }
 
+    /** */
     public void testFullRestartAfterCacheDestroyActivateFromCoordinator() throws Exception {
         restoreClusterAfterCacheDestroy(NODES_COUNT, true, COORDINATOR_NODE);
     }
 
+    /** */
     public void testFullRestartAfterCacheDestroyActivateFromNonCoordinator() throws Exception {
         restoreClusterAfterCacheDestroy(NODES_COUNT, true, NON_COORDINATOR_NODE);
     }
 
+    /** */
     public void testFullRestartAfterCacheDestroyActivateFromFirstNode() throws Exception {
         restoreClusterAfterCacheDestroy(NODES_COUNT, true, FIRST_NODE);
     }
 
+    /** */
     public void testFullRestartAfterCacheDestroyActivateFromLastNode() throws Exception {
         restoreClusterAfterCacheDestroy(NODES_COUNT, true, LAST_NODE);
     }
 
+    /** */
     public void testFullRestartAfterCacheCreateActivateFromCoordinator() throws Exception {
         restoreClusterAfterCacheCreate(NODES_COUNT, true, COORDINATOR_NODE);
     }
 
+    /** */
     public void testFullRestartAfterCacheCreateActivateFromNonCoordinator() throws Exception {
         restoreClusterAfterCacheCreate(NODES_COUNT, true, NON_COORDINATOR_NODE);
     }
 
+    /** */
     public void testFullRestartAfterCacheCreateActivateFromFirstNode() throws Exception {
         restoreClusterAfterCacheCreate(NODES_COUNT, true, FIRST_NODE);
     }
 
+    /** */
     public void testFullRestartAfterCacheCreateActivateFromLastNode() throws Exception {
         restoreClusterAfterCacheCreate(NODES_COUNT, true, LAST_NODE);
     }
 
+    /**
+     * @param nodesCnt Size of cluster.
+     * @param fullStop Flag for full cluster restart.
+     * @param finder implementation of algorithm solve node for cluster activation.
+     * @throws Exception
+     */
     private void restoreClusterAfterCacheCreate(
         int nodesCnt,
         boolean fullStop,
@@ -167,8 +181,6 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
         populateData(cache0);
 
         ClusterNode nodeActivator;
-
-        log.error("IGNITE-8717 stage!");
 
         if (fullStop) {
             stopAllGrids();
@@ -192,6 +204,12 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
         checkDataPresent(cache);
     }
 
+    /**
+     * @param nodesCnt Size of cluster.
+     * @param fullStop Flag for full cluster restart.
+     * @param finder implementation of algorithm solve node for cluster activation.
+     * @throws Exception
+     */
     private void restoreClusterAfterCacheDestroy(
         int nodesCnt,
         boolean fullStop,
@@ -213,8 +231,6 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
 
         cache0.destroy();
 
-        log.error("IGNITE-8717 stage!");
-
         if (fullStop) {
             stopAllGrids();
 
@@ -228,11 +244,13 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
         awaitPartitionMapExchange();
     }
 
+    /** */
     private void startSecondHalfNodes(int clusterSize) throws Exception {
         for (int i = clusterSize / 2; i < clusterSize; i++)
             startGrid(i);
     }
 
+    /** */
     private void stopSecondHalfNodes() {
         Collection<ClusterNode> nodes = grid(0).cluster().nodes();
 
@@ -245,11 +263,13 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
         }
     }
 
+    /** */
     private void populateData(IgniteCache<Long, Long> cache) {
         for (int i = 0; i < NUMBER_RECORDS; i++)
             cache.put(1L << i, 1L << i);
     }
 
+    /** */
     private void checkDataPresent(IgniteCache<Long, Long> cache) {
         for (int i = 0; i < NUMBER_RECORDS; i++)
             assertTrue(cache.containsKey(1L << i));
@@ -271,7 +291,9 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
         super.stopGrid(igniteInstanceName, cancel, awaitTop);
     }
 
+    /** */
     private interface ActivateNodeFinder {
+        /** */
         ClusterNode getActivateNode(Collection<ClusterNode> nodes);
     }
 }
