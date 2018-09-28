@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -28,8 +30,11 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -111,7 +116,9 @@ public class CacheMvccProcessorTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If fails.
      */
-    public void testMvccTracker() throws Exception {
+    public void testMvccTrackerFailure() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7388");
+
         testSpi = true;
         disableScheduledVacuum = true;
 
@@ -133,20 +140,35 @@ public class CacheMvccProcessorTest extends CacheMvccAbstractTest {
 
         IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
-                cache.putAsync(key, 1);
+                try(Transaction tx = txs1.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+                    cache.put(key, 1);
+
+                    tx.commit();
+                }
             }
         });
 
-        assertTrue("Failed to wait MvccSnapshotResponse message",
-            GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                @Override public boolean apply() {
-                    return spi.hasBlockedMessages();
-                }
-            }, 3_000));
+        try {
+            assertTrue("Failed to wait MvccSnapshotResponse message",
+                GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        return spi.hasBlockedMessages();
+                    }
+                }, 3_000));
 
-        fut.cancel();
+            fut.cancel();
 
-        spi.stopBlock();
+            try {
+                fut.get();
+            }
+            catch (IgniteCheckedException ex) {
+                if(!X.hasCause(ex, IgniteInterruptedException.class))
+                    throw ex;
+            }
+        }
+        finally {
+            spi.stopBlock(true);
+        }
 
         assertNull(cache.get(1));
 
