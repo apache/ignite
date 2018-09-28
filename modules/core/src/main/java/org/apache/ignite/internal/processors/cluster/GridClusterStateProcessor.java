@@ -63,6 +63,7 @@ import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
@@ -195,21 +196,13 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             else {
                 GridFutureAdapter<Void> fut = transitionFuts.get(globalState.transitionRequestId());
                 if (fut != null) {
-                    if(asyncWaitForTransition) {
-                        return new IgniteFutureImpl<>(fut.chain(x -> {
-                            try {
-                                ctx.gateway().readLock();
-                                DiscoveryDataClusterState gs = this.globalState;
-                                if (gs == null)
-                                    return false;
-
-                                Boolean res = gs.transitionResult();
+                    if (asyncWaitForTransition) {
+                         return new IgniteFutureImpl<>(fut.chain(new C1<IgniteInternalFuture<Void>, Boolean>() {
+                            @Override public Boolean apply(IgniteInternalFuture<Void> future) {
+                                Boolean res = globalState.transitionResult();
                                 assert res != null;
 
                                 return res;
-                            }
-                            finally {
-                                ctx.gateway().readUnlock();
                             }
                         }));
                     } else
