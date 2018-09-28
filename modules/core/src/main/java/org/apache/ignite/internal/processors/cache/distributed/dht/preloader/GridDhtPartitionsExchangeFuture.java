@@ -3311,7 +3311,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     GridDhtPartitionTopology top = grpCtx != null
                         ? grpCtx.topology()
-                        : cctx.exchange().clientTopology(grpCtx.groupId(), events().discoveryCache());
+                        : cctx.exchange().clientTopology(groupDescriptor.groupId(), events().discoveryCache());
 
                     if (!CU.isPersistentCache(groupDescriptor.config(), cctx.gridConfig().getDataStorageConfiguration()))
                         assignPartitionSizes(top);
