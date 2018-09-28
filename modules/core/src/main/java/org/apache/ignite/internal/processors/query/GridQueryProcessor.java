@@ -950,7 +950,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     Class<?> valCls = U.box(U.classForName(qryEntity.findValueType(), null, true));
 
                     if (binaryEnabled) {
-                        registerDescriptorLocallyIfNeeded(keyCls);
+                        if (keyCls != null)
+                            registerDescriptorLocallyIfNeeded(keyCls);
 
                         if (valCls != null)
                             registerDescriptorLocallyIfNeeded(valCls);
