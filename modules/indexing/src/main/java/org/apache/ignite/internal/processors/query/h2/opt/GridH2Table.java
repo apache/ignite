@@ -17,21 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.LongAdder;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -61,6 +48,19 @@ import org.h2.table.TableType;
 import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
@@ -74,9 +74,6 @@ public class GridH2Table extends TableBase {
 
     /** Cache context. */
     private final GridCacheContext cctx;
-
-    /** Logger. */
-    private final IgniteLogger log;
 
     /** */
     private final GridH2RowDescriptor desc;
@@ -143,7 +140,6 @@ public class GridH2Table extends TableBase {
 
         this.desc = desc;
         this.cctx = cctx;
-        this.log = cctx.logger(GridH2Table.class);
 
         if (desc.context() != null && !desc.context().customAffinityMapper()) {
             boolean affinityColExists = true;
@@ -373,11 +369,16 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     * @param ses Session to detach.
+     * Callback invoked when session is to be transferred to lazy thread. In order to prevent concurrent changes
+     * by DDL during move we increment counter before releasing read lock.
+     *
+     * @param ses Session.
      */
-    private void detachReadLockFromCurrentThread(Session ses) {
+    public void onLazyTransferStarted(Session ses) {
         assert sessions.containsKey(ses) : "Detached session have not locked the table: " + getName();
 
+        // TODO VO: Is it possible that session will be exclusive here? I think no. But if it is possible, then
+        // TODO VO: we need to perform the same check in onLazyTransferFinished.
         if (!sessions.get(ses))
             lazyTransferCnt.incrementAndGet();
 
@@ -385,38 +386,16 @@ public class GridH2Table extends TableBase {
     }
 
     /**
+     * Callback invoked when lazy transfer finished. Acuire the lock, decrement transfer counter.
+     *
      * @param ses Session to detach.
      */
-    private void attachReadLockToCurrentThread(Session ses) {
+    public void onLazyTransferFinished(Session ses) {
         assert sessions.containsKey(ses) : "Attached session have not locked the table: " + getName();
 
         lock(false);
 
         lazyTransferCnt.decrementAndGet();
-    }
-
-    /**
-     * @param ses Session to detach.
-     */
-    public static void detachReadLocksFromCurrentThread(Session ses) {
-        GridH2QueryContext qctx = GridH2QueryContext.get();
-
-        assert qctx != null;
-
-        for(GridH2Table tbl : qctx.lockedTables())
-            tbl.detachReadLockFromCurrentThread(ses);
-    }
-
-    /**
-     * @param ses Session to detach.
-     */
-    public static void attachReadLocksToCurrentThread(Session ses) {
-        GridH2QueryContext qctx = GridH2QueryContext.get();
-
-        assert qctx != null;
-
-        for(GridH2Table tbl : qctx.lockedTables())
-            tbl.attachReadLockToCurrentThread(ses);
     }
 
     /**
@@ -1053,9 +1032,10 @@ public class GridH2Table extends TableBase {
     }
 
     /**
+     * Drop columns.
      *
-     * @param cols
-     * @param ifExists
+     * @param cols Columns.
+     * @param ifExists IF EXISTS flag.
      */
     public void dropColumns(List<String> cols, boolean ifExists) {
         assert !ifExists || cols.size() == 1;

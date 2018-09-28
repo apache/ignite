@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
+import org.h2.engine.Session;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
@@ -125,7 +126,7 @@ public class MapQueryLazyWorker extends GridWorker {
                 GridH2QueryContext.set(qctx);
 
             if(detached != null)
-                GridH2Table.attachReadLocksToCurrentThread(H2Utils.session(detached.object().connection()));
+                lazyTransferFinish(H2Utils.session(detached.object().connection()));
 
             while (!isCancelled()) {
                 Runnable task = tasks.poll(POLL_TASK_TIMEOUT_MS, TimeUnit.MILLISECONDS);
@@ -264,5 +265,33 @@ public class MapQueryLazyWorker extends GridWorker {
      */
     public boolean isStarted() {
         return started;
+    }
+
+    /**
+     * Start session transfer to lazy thread.
+     *
+     * @param ses Session.
+     */
+    public static void lazyTransferStart(Session ses) {
+        GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        assert qctx != null;
+
+        for(GridH2Table tbl : qctx.lockedTables())
+            tbl.onLazyTransferStarted(ses);
+    }
+
+    /**
+     * Finish session transfer to lazy thread.
+     *
+     * @param ses Session.
+     */
+    public static void lazyTransferFinish(Session ses) {
+        GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        assert qctx != null;
+
+        for(GridH2Table tbl : qctx.lockedTables())
+            tbl.onLazyTransferFinished(ses);
     }
 }

@@ -984,7 +984,7 @@ public class GridMapQueryExecutor {
 
                     worker.detachedConnection(detachedConn);
 
-                    GridH2Table.detachReadLocksFromCurrentThread(H2Utils.session(conn));
+                    MapQueryLazyWorker.lazyTransferStart(H2Utils.session(conn));
 
                     worker.start();
 
