@@ -176,7 +176,7 @@ public class DmlInsideTransactionTest extends GridCommonAbstractTest {
                     cache.query(query);
 
                     return null;
-                }, CacheException.class, "DML statement doesn't allowed within a transaction");
+                }, CacheException.class, "DML statements are not allowed inside a transaction over cache(s) with TRANSACTIONAL atomicity");
             }
 
             tx.commit();

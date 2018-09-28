@@ -107,6 +107,8 @@ public final class UpdatePlanBuilder {
 
         GridCacheContext cctx = null;
 
+        List<String> cacheNames= new ArrayList<>();
+
         // check all involved caches
         for (Object o : parser.objectsMap().values()) {
             if (o instanceof GridSqlInsert)
@@ -127,14 +129,24 @@ public final class UpdatePlanBuilder {
                         ((GridSqlTable)o).tableName() + "'", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
                 }
 
-                if (cctx == null)
+                if (cctx == null) {
                     mvccEnabled = (cctx = (((GridSqlTable)o).dataTable()).cache()).mvccEnabled();
-                else if (((GridSqlTable)o).dataTable().cache().mvccEnabled() != mvccEnabled)
-                    MvccUtils.throwAtomicityModesMismatchException(cctx, ((GridSqlTable)o).dataTable().cache());
+
+                    cacheNames.add(cctx.name());
+                }
+                else {
+                    GridCacheContext cache = ((GridSqlTable)o).dataTable().cache();
+
+                    cacheNames.add(cache.name());
+
+                    if (cache.mvccEnabled() != mvccEnabled)
+                        MvccUtils.throwAtomicityModesMismatchException(cctx, cache);
+                }
+
             }
         }
 
-        checkDmlOperationIsAllowed(mvccEnabled, dmlAllowedForNonMVCC, cctx);
+        checkDmlOperationIsAllowed(mvccEnabled, cacheNames, dmlAllowedForNonMVCC, cctx);
 
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
             return planForInsert(stmt, loc, idx, mvccEnabled, conn, fieldsQry);
@@ -149,17 +161,23 @@ public final class UpdatePlanBuilder {
      * Check that DML operation allowed.
      *
      * @param mvccEnabled {@code true} in case mvccEnabled.
+     * @param cacheNames Cache names participating in DML.
      * @param dmlAllowedForNonMVCC {@code true} in case DML allowed for non MVCC mode.
      * @param ctx Context.
      * @throws IgniteSQLException In case DML not allowed.
      */
-    private static void checkDmlOperationIsAllowed(boolean mvccEnabled, boolean dmlAllowedForNonMVCC, GridCacheContext ctx) throws IgniteSQLException {
+    private static void checkDmlOperationIsAllowed(boolean mvccEnabled, List<String> cacheNames,
+        boolean dmlAllowedForNonMVCC, GridCacheContext ctx) throws IgniteSQLException {
         //For MVCC DML operation is always allowed.
         if (mvccEnabled)
             return;
 
-        if (ctx != null && ctx.cache().context().tm().inUserTx() && !dmlAllowedForNonMVCC)
-            throw new IgniteSQLException("DML statement doesn't allowed within a transaction");
+        if (ctx != null && ctx.cache().context().tm().inUserTx() && !dmlAllowedForNonMVCC) {
+            String errMsg= "DML statements are not allowed inside a transaction over cache(s) with TRANSACTIONAL atomicity " +
+                "mode (change atomicity mode to TRANSACTIONAL_SNAPSHOT or disable this error message with system " +
+                "property \"-DIGNITE_ALLOW_DML_INSIDE_TRANSACTION=true\") cacheName(s)=" + cacheNames;
+            throw new IgniteSQLException(errMsg);
+        }
     }
 
     /**
