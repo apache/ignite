@@ -2053,7 +2053,8 @@ public class IgnitionEx {
                             startLatch.countDown();
                         }
                     },
-                    workerRegistry
+                    workerRegistry,
+                    oomeHnd
                 );
 
                 state = STARTED;
