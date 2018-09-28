@@ -110,12 +110,12 @@ public class SegmentAware {
     }
 
     /**
-     * Force set last compressed segment.
+     * Callback after segment compression finish.
      *
-     * @param lastCompressedIdx Segment which was last compressed.
+     * @param compressedIdx Index of compressed segment.
      */
-    public void lastCompressedIdx(long lastCompressedIdx) {
-        segmentCompressStorage.lastCompressedIdx(lastCompressedIdx);
+    public void onSegmentCompressed(long compressedIdx) {
+        segmentCompressStorage.onSegmentCompressed(compressedIdx);
     }
 
     /**

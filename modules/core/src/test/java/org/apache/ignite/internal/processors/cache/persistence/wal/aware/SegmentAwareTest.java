@@ -365,7 +365,7 @@ public class SegmentAwareTest extends TestCase {
         //given: thread which awaited segment.
         SegmentAware aware = new SegmentAware(10, true);
 
-        aware.lastCompressedIdx(5);
+        aware.onSegmentCompressed(5);
 
         IgniteInternalFuture future = awaitThread(aware::waitNextSegmentToCompress);
 
@@ -383,7 +383,7 @@ public class SegmentAwareTest extends TestCase {
         //given: thread which awaited segment.
         SegmentAware aware = new SegmentAware(10, true);
 
-        aware.lastCompressedIdx(5);
+        aware.onSegmentCompressed(5);
 
         IgniteInternalFuture future = awaitThread(aware::waitNextSegmentToCompress);
 
@@ -401,7 +401,7 @@ public class SegmentAwareTest extends TestCase {
         //given: thread which awaited segment.
         SegmentAware aware = new SegmentAware(10, true);
 
-        aware.lastCompressedIdx(5);
+        aware.onSegmentCompressed(5);
         aware.setLastArchivedAbsoluteIndex(6);
         aware.lastTruncatedArchiveIdx(7);
 
@@ -418,7 +418,7 @@ public class SegmentAwareTest extends TestCase {
     public void testFinishWaitSegmentToCompress_WhenInterruptWasCall() throws IgniteCheckedException, InterruptedException {
         //given: thread which awaited segment.
         SegmentAware aware = new SegmentAware(10, true);
-        aware.lastCompressedIdx(5);
+        aware.onSegmentCompressed(5);
 
         IgniteInternalFuture future = awaitThread(aware::waitNextSegmentToCompress);
 
@@ -430,7 +430,7 @@ public class SegmentAwareTest extends TestCase {
     }
 
     /**
-     * Tests that {@link SegmentAware#lastCompressedIdx} returns segments in proper order.
+     * Tests that {@link SegmentAware#onSegmentCompressed} returns segments in proper order.
      */
     public void testLastCompressedIdxProperOrdering() throws IgniteInterruptedCheckedException {
         SegmentAware aware = new SegmentAware(10, true);
@@ -440,15 +440,15 @@ public class SegmentAwareTest extends TestCase {
             aware.waitNextSegmentToCompress();
         }
 
-        aware.lastCompressedIdx(0);
+        aware.onSegmentCompressed(0);
 
-        aware.lastCompressedIdx(4);
+        aware.onSegmentCompressed(4);
         assertEquals(0, aware.lastCompressedIdx());
-        aware.lastCompressedIdx(1);
+        aware.onSegmentCompressed(1);
         assertEquals(1, aware.lastCompressedIdx());
-        aware.lastCompressedIdx(3);
+        aware.onSegmentCompressed(3);
         assertEquals(1, aware.lastCompressedIdx());
-        aware.lastCompressedIdx(2);
+        aware.onSegmentCompressed(2);
         assertEquals(4, aware.lastCompressedIdx());
     }
 

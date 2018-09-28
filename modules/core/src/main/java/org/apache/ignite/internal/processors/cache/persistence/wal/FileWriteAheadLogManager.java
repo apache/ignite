@@ -1941,7 +1941,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             FileDescriptor[] alreadyCompressed = scan(walArchiveDir.listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER));
 
             if (alreadyCompressed.length > 0)
-                segmentAware.lastCompressedIdx(alreadyCompressed[alreadyCompressed.length - 1].idx());
+                segmentAware.onSegmentCompressed(alreadyCompressed[alreadyCompressed.length - 1].idx());
 
             for (int i = 1; i < calculateThreadCount(); i++) {
                 FileCompressorWorker worker = new FileCompressorWorker(i, log);
@@ -2070,7 +2070,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         }
                     }
 
-                    segmentAware.lastCompressedIdx(segIdx);
+                    segmentAware.onSegmentCompressed(segIdx);
                 }
                 catch (IgniteInterruptedCheckedException ignore) {
                     Thread.currentThread().interrupt();
@@ -2079,7 +2079,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     U.error(log, "Compression of WAL segment [idx=" + segIdx +
                             "] was skipped due to unexpected error", e);
 
-                    segmentAware.lastCompressedIdx(segIdx);
+                    segmentAware.onSegmentCompressed(segIdx);
                 }
                 finally {
                     if (segIdx != -1L)

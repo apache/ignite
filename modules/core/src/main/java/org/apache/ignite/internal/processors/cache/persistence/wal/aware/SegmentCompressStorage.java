@@ -45,6 +45,7 @@ public class SegmentCompressStorage {
     /** Segments to compress queue. */
     private final Queue<Long> segmentsToCompress = new ArrayDeque<>();
 
+    /** List of currently compressing segments. */
     private final List<Long> compressingSegments = new ArrayList<>();
 
     /** Compressed segment with maximal index. */
@@ -79,15 +80,17 @@ public class SegmentCompressStorage {
     }
 
     /**
-     * Force set last compressed segment.
+     * Callback after segment compression finish.
      *
-     * @param lastCompressedIdx Segment which was last compressed.
+     * @param compressedIdx Index of compressed segment.
      */
-    synchronized void lastCompressedIdx(long lastCompressedIdx) {
-        if (lastCompressedIdx > lastMaxCompressedIdx)
-            lastMaxCompressedIdx = lastCompressedIdx;
+    synchronized void onSegmentCompressed(long compressedIdx) {
+        if (compressedIdx > lastMaxCompressedIdx)
+            lastMaxCompressedIdx = compressedIdx;
 
-        if (compressingSegments.remove(lastCompressedIdx) && compressingSegments.size() > 0)
+        compressingSegments.remove(compressedIdx);
+
+        if (!compressingSegments.isEmpty())
             this.lastCompressedIdx = Math.min(lastMaxCompressedIdx, compressingSegments.get(0) - 1);
         else
             this.lastCompressedIdx = lastMaxCompressedIdx;
@@ -115,7 +118,7 @@ public class SegmentCompressStorage {
 
         checkInterrupted();
 
-        Long idx =  segmentsToCompress.poll();
+        Long idx = segmentsToCompress.poll();
 
         compressingSegments.add(idx);
 
@@ -143,7 +146,7 @@ public class SegmentCompressStorage {
      * Callback for waking up compressor when new segment is archived.
      */
     private synchronized void onSegmentArchived(long lastAbsArchivedIdx) {
-        while(lastEnqueuedToCompressIdx < lastAbsArchivedIdx && compactionEnabled)
+        while (lastEnqueuedToCompressIdx < lastAbsArchivedIdx && compactionEnabled)
             segmentsToCompress.add(++lastEnqueuedToCompressIdx);
 
         notifyAll();
