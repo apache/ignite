@@ -1919,10 +1919,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * Also responsible for deleting raw copies of already compressed WAL archive segments if they are not reserved.
      */
     private class FileCompressor extends FileCompressorWorker {
-        /** Current thread stopping advice. */
-        private volatile boolean stopped;
-
-
         /** Workers queue. */
         List<FileCompressorWorker> workers = new ArrayList<>();
 
@@ -1940,7 +1936,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             File[] toDel = walArchiveDir.listFiles(WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER);
 
             for (File f : toDel) {
-                if (stopped)
+                if (isCancelled())
                     return;
 
                 f.delete();
