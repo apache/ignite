@@ -73,7 +73,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.ObjectPool;
+import org.apache.ignite.internal.processors.query.h2.ObjectPoolReusable;
 import org.apache.ignite.internal.processors.query.h2.ResultSetEnlistFuture;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
@@ -980,7 +980,7 @@ public class GridMapQueryExecutor {
                 releaseReservations();
             else if (!qryResults.isAllClosed()) {
                 if (MapQueryLazyWorker.currentWorker() == null) {
-                    final ObjectPool.Reusable<H2ConnectionWrapper> detachedConn = h2.detachConnection();
+                    final ObjectPoolReusable<H2ConnectionWrapper> detachedConn = h2.detachConnection();
 
                     worker.detachedConnection(detachedConn);
 

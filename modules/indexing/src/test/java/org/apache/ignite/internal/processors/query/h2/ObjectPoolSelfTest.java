@@ -31,13 +31,13 @@ public class ObjectPoolSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testObjectIsReusedAfterRecycling() throws Exception {
-        ObjectPool.Reusable<Obj> r1 = pool.borrow();
+        ObjectPoolReusable<Obj> r1 = pool.borrow();
 
         Obj o1 = r1.object();
 
         r1.recycle();
 
-        ObjectPool.Reusable<Obj> r2 = pool.borrow();
+        ObjectPoolReusable<Obj> r2 = pool.borrow();
 
         Obj o2 = r2.object();
 
@@ -50,8 +50,8 @@ public class ObjectPoolSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBorrowedObjectIsNotReturnedTwice() throws Exception {
-        ObjectPool.Reusable<Obj> r1 = pool.borrow();
-        ObjectPool.Reusable<Obj> r2 = pool.borrow();
+        ObjectPoolReusable<Obj> r1 = pool.borrow();
+        ObjectPoolReusable<Obj> r2 = pool.borrow();
 
         assertNotSame(r1.object(), r2.object());
     }
@@ -60,8 +60,8 @@ public class ObjectPoolSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testObjectShouldBeClosedOnRecycleIfPoolIsFull() throws Exception {
-        ObjectPool.Reusable<Obj> r1 = pool.borrow();
-        ObjectPool.Reusable<Obj> r2 = pool.borrow();
+        ObjectPoolReusable<Obj> r1 = pool.borrow();
+        ObjectPoolReusable<Obj> r2 = pool.borrow();
 
         Obj o2 = r2.object();
 
@@ -78,8 +78,8 @@ public class ObjectPoolSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testObjectShouldNotBeReturnedIfPoolIsFull() throws Exception {
-        ObjectPool.Reusable<Obj> r1 = pool.borrow();
-        ObjectPool.Reusable<Obj> r2 = pool.borrow();
+        ObjectPoolReusable<Obj> r1 = pool.borrow();
+        ObjectPoolReusable<Obj> r2 = pool.borrow();
 
         r1.recycle();
 
@@ -94,7 +94,7 @@ public class ObjectPoolSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testObjectShouldReturnedToBag() throws Exception {
-        ObjectPool.Reusable<Obj> r1 = pool.borrow();
+        ObjectPoolReusable<Obj> r1 = pool.borrow();
 
         CompletableFuture.runAsync(() -> {
             r1.recycle();

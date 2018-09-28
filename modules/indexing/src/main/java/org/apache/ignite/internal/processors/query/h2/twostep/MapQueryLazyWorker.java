@@ -27,7 +27,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
-import org.apache.ignite.internal.processors.query.h2.ObjectPool;
+import org.apache.ignite.internal.processors.query.h2.ObjectPoolReusable;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -69,7 +69,7 @@ public class MapQueryLazyWorker extends GridWorker {
     private volatile boolean started;
 
     /** Detached connection. */
-    private ObjectPool.Reusable<H2ConnectionWrapper> detached;
+    private ObjectPoolReusable<H2ConnectionWrapper> detached;
 
     /**
      * Constructor.
@@ -255,7 +255,7 @@ public class MapQueryLazyWorker extends GridWorker {
     /**
      * @param conn Detached H2 connection.
      */
-    public void detachedConnection(ObjectPool.Reusable<H2ConnectionWrapper> conn) {
+    public void detachedConnection(ObjectPoolReusable<H2ConnectionWrapper> conn) {
         this.detached = conn;
     }
 

@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import org.apache.ignite.internal.util.typedef.internal.U;
+
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Thread-safe pool for managing limited number objects for further reuse.
@@ -28,57 +29,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * @param <E> Pooled objects type.
  */
 public final class ObjectPool<E extends AutoCloseable> {
-    /**
-     * Wrapper for a pooled object with capability to return the object to a pool.
-     *
-     * @param <T> Enclosed object type.
-     */
-    public static class Reusable<T extends AutoCloseable> {
-        /** Object pool to recycle. */
-        private final ObjectPool<T> pool;
-
-        /** Detached object. */
-        private T object;
-
-        /**
-         * @param pool Object pool.
-         * @param object Detached object.
-         */
-        private Reusable(ObjectPool<T> pool, T object) {
-            this.pool = pool;
-            this.object = object;
-        }
-
-        /**
-         * @return Enclosed object.
-         */
-        public T object() {
-            return object;
-        }
-
-        /**
-         * Returns an object to a pool or closes it if the pool is already full.
-         */
-        public void recycle() {
-            assert object != null  : "Already recycled";
-
-            if (pool.bag.size() < pool.poolSize) {
-                pool.bag.add(object);
-
-                if (pool.recycleLsnr != null)
-                    pool.recycleLsnr.accept(object);
-            }
-            else {
-                if (pool.closer == null)
-                    U.closeQuiet(object);
-                else
-                    pool.closer.accept(object);
-            }
-
-            object = null;
-        }
-    }
-
     /** */
     private final Supplier<E> objectFactory;
 
@@ -92,19 +42,19 @@ public final class ObjectPool<E extends AutoCloseable> {
     private final Consumer<E> closer;
 
     /** The listener is called when object is returned to the pool. */
-    private final Consumer<E> recycleLsnr;
+    private final Consumer<E> recycler;
 
     /**
      * @param objectFactory Factory used for new objects creation.
      * @param poolSize Number of objects which pool can contain.
      * @param closer Function to close object.
-     * @param recycleLsnr The listener is called when object is returned to the pool.
+     * @param recycler The listener is called when object is returned to the pool.
      */
-    public ObjectPool(Supplier<E> objectFactory, int poolSize, Consumer<E> closer, Consumer<E> recycleLsnr) {
+    public ObjectPool(Supplier<E> objectFactory, int poolSize, Consumer<E> closer, Consumer<E> recycler) {
         this.objectFactory = objectFactory;
         this.poolSize = poolSize;
-        this.closer = closer;
-        this.recycleLsnr =recycleLsnr;
+        this.closer = closer != null ? closer : U::closeQuiet;
+        this.recycler = recycler;
     }
 
     /**
@@ -113,10 +63,28 @@ public final class ObjectPool<E extends AutoCloseable> {
      *
      * @return Reusable object wrapper.
      */
-    public Reusable<E> borrow() {
+    public ObjectPoolReusable<E> borrow() {
         E pooled = bag.poll();
 
-        return new Reusable<>(this, pooled != null ? pooled : objectFactory.get());
+        return new ObjectPoolReusable<>(this, pooled != null ? pooled : objectFactory.get());
+    }
+
+    /**
+     * Recycles an object.
+     *
+     * @param object Object.
+     */
+    void recycle(E object) {
+        assert object != null  : "Already recycled";
+
+        if (bag.size() < poolSize) {
+            bag.add(object);
+
+            if (recycler != null)
+                recycler.accept(object);
+        }
+        else
+            closer.accept(object);
     }
 
     /**

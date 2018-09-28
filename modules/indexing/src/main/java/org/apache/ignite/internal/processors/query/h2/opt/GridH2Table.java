@@ -96,8 +96,8 @@ public class GridH2Table extends TableBase {
     /** */
     private final ReadWriteLock lock;
 
-    /** */
-    private final AtomicInteger readLockCnt = new AtomicInteger();
+    /** Nunmber of reading threads which currently move execution from query pool to dedicated thread. */
+    private final AtomicInteger lazyTransferCnt = new AtomicInteger();
 
     /** */
     private boolean destroyed;
@@ -268,7 +268,7 @@ public class GridH2Table extends TableBase {
             unlock(exclusive);
 
             if (!exclusive)
-                readLockCnt.decrementAndGet();
+                lazyTransferCnt.decrementAndGet();
 
             throw new IllegalStateException("Table " + identifierString() + " already destroyed.");
         }
@@ -309,17 +309,17 @@ public class GridH2Table extends TableBase {
         Lock l = exclusive ? lock.writeLock() : lock.readLock();
 
         try {
-            if (!exclusive
-                && IgniteThread.current() != null
-                && IgniteThread.current().policy() == GridIoPolicy.QUERY_POOL) {
-                // Readlock in QUERY_POOL
-                if (!l.tryLock(200, TimeUnit.MILLISECONDS))
-                    throw new GridH2ReadLockTimeoutException();
-            }
-            else if (exclusive) {
-                for (; ; ) {
+            if (exclusive) {
+                // Attempting to obtain exclusive lock for DDL.
+                // Lock is considered acquired only if "lazyTransferCnt" is zero, meaning that 
+                // currently there are no reader threads moving query execution from query 
+                // pool to dedicated thread.
+                // It is possible that reader which is currently transferring execution gets
+                // queued after the write lock we are trying to acquire. So we use timed waiting
+                // and a loop to avoid deadlocks.
+                for (;;) {
                     if (l.tryLock(200, TimeUnit.MILLISECONDS)) {
-                        if (readLockCnt.get() == 0)
+                        if (lazyTransferCnt.get() == 0)
                             break;
                         else
                             l.unlock();
@@ -328,8 +328,20 @@ public class GridH2Table extends TableBase {
                     Thread.yield();
                 }
             }
-            else
-                l.lockInterruptibly();
+            else {
+                // Attempt to acquire read lock (query execution, DML, cache update).
+                // If query is being executed inside a query pool, we do not want it to be blocked
+                // for a long time, as it would prevent other queries from being executed. So we
+                // wait a little and then force transfer to dedicated thread by throwing special
+                // timeout exception.
+                // If query is not in the query pool, then we simply wait for lock acquisition.
+                if (isQueryPool()) {
+                    if (!l.tryLock(200, TimeUnit.MILLISECONDS))
+                        throw new GridH2ReadLockTimeoutException();
+                }
+                else
+                    l.lockInterruptibly();
+            }
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -350,13 +362,24 @@ public class GridH2Table extends TableBase {
     }
 
     /**
+     * Check if table is being locked in query pool.
+     *
+     * @return {@code True} if is in query pool.
+     */
+    private static boolean isQueryPool() {
+        IgniteThread thread = IgniteThread.current();
+
+        return thread != null && thread.policy() == GridIoPolicy.QUERY_POOL;
+    }
+
+    /**
      * @param ses Session to detach.
      */
     private void detachReadLockFromCurrentThread(Session ses) {
         assert sessions.containsKey(ses) : "Detached session have not locked the table: " + getName();
 
         if (!sessions.get(ses))
-            readLockCnt.incrementAndGet();
+            lazyTransferCnt.incrementAndGet();
 
         unlock(false);
     }
@@ -369,7 +392,7 @@ public class GridH2Table extends TableBase {
 
         lock(false);
 
-        readLockCnt.decrementAndGet();
+        lazyTransferCnt.decrementAndGet();
     }
 
     /**

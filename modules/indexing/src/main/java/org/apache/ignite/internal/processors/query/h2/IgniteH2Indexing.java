@@ -339,10 +339,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** */
     // TODO https://issues.apache.org/jira/browse/IGNITE-9062
-    private final ThreadLocal<ObjectPool.Reusable<H2ConnectionWrapper>> connCache
-        = new ThreadLocal<ObjectPool.Reusable<H2ConnectionWrapper>>() {
-        @Override public ObjectPool.Reusable<H2ConnectionWrapper> get() {
-            ObjectPool.Reusable<H2ConnectionWrapper> reusable = super.get();
+    private final ThreadLocal<ObjectPoolReusable<H2ConnectionWrapper>> connCache
+        = new ThreadLocal<ObjectPoolReusable<H2ConnectionWrapper>>() {
+        @Override public ObjectPoolReusable<H2ConnectionWrapper> get() {
+            ObjectPoolReusable<H2ConnectionWrapper> reusable = super.get();
 
             boolean reconnect = true;
 
@@ -362,10 +362,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return reusable;
         }
 
-        @Override protected ObjectPool.Reusable<H2ConnectionWrapper> initialValue() {
+        @Override protected ObjectPoolReusable<H2ConnectionWrapper> initialValue() {
             ObjectPool<H2ConnectionWrapper> pool = connectionPool.get();
 
-            ObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = pool.borrow();
+            ObjectPoolReusable<H2ConnectionWrapper> reusableConnection = pool.borrow();
 
             ConcurrentHashMap<H2ConnectionWrapper, Boolean> perThreadConns = conns.get(Thread.currentThread());
 
@@ -481,8 +481,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Removes from threadlocal cache and returns associated with current thread connection.
      * @return Connection associated with current thread.
      */
-    public ObjectPool.Reusable<H2ConnectionWrapper> detachConnection() {
-        ObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = connCache.get();
+    public ObjectPoolReusable<H2ConnectionWrapper> detachConnection() {
+        ObjectPoolReusable<H2ConnectionWrapper> reusableConnection = connCache.get();
 
         connCache.remove();
 
