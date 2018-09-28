@@ -283,22 +283,20 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
         AffinityTopologyVersion topVer = tx.topologyVersion();
 
-        GridDhtTxMapping txMapping = new GridDhtTxMapping();
-
         boolean queryMapped = false;
+
+        Collection<GridDistributedTxMapping> mvccMappings = F.view(
+            !tx.implicitSingle() ? tx.mappings().mappings() : Collections.singleton(tx.mappings().singleMapping()),
+            CU.FILTER_QUERY_MAPPING);
+
+        Map<UUID, Collection<UUID>> mvccTxNodes = new HashMap<>(mvccMappings.size());
 
         assert !tx.implicitSingle() || tx.queryEnlisted(); // Non-mvcc implicit-single tx goes fast commit way.
 
-        Collection<GridDistributedTxMapping> txMappings = !tx.implicitSingle() ? tx.mappings().mappings()
-            : Collections.singleton(tx.mappings().singleMapping());
+        for (GridDistributedTxMapping m : mvccMappings) {
+            mappings.putIfAbsent(m.primary().id(), m);
 
-        for (GridDistributedTxMapping m : F.view(txMappings, CU.FILTER_QUERY_MAPPING)) {
-            GridDistributedTxMapping nodeMapping = mappings.get(m.primary().id());
-
-            if (nodeMapping == null)
-                mappings.put(m.primary().id(), m);
-
-            txMapping.addMapping(F.asList(m.primary()));
+            mvccTxNodes.put(m.primary().id(), m.backups());
 
             queryMapped = true;
         }
@@ -306,6 +304,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         MvccCoordinator mvccCrd = null;
 
         boolean hasNearCache = false;
+
+        GridDhtTxMapping txMapping = new GridDhtTxMapping();
 
         if (!queryMapped) {
             for (IgniteTxEntry txEntry : tx.allEntries()) {
@@ -361,10 +361,12 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
         assert !tx.txState().mvccEnabled(cctx) || tx.mvccSnapshot() != null || mvccCrd != null;
 
-        tx.transactionNodes(txMapping.transactionNodes());
+        Map<UUID, Collection<UUID>> txNodes = !mvccTxNodes.isEmpty() ? mvccTxNodes : txMapping.transactionNodes();
+
+        tx.transactionNodes(txNodes);
 
         if (!hasNearCache)
-            checkOnePhase(txMapping);
+            checkOnePhase(txNodes);
 
         long timeout = tx.remainingTime();
 
@@ -375,8 +377,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         }
 
         int miniId = 0;
-
-        Map<UUID, Collection<UUID>> txNodes = txMapping.transactionNodes();
 
         for (final GridDistributedTxMapping m : mappings.values()) {
             final ClusterNode primary = m.primary();
@@ -393,7 +393,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
             if (primary.isLocal()) {
                 if (m.hasNearCacheEntries() && m.hasColocatedCacheEntries()) {
-                    GridNearTxPrepareRequest nearReq = createRequest(txMapping.transactionNodes(),
+                    GridNearTxPrepareRequest nearReq = createRequest(txNodes,
                         m,
                         timeout,
                         m.nearEntriesReads(),

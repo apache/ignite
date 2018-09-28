@@ -18,8 +18,11 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -38,6 +41,10 @@ public class GridDistributedTxMapping {
     /** Mapped node. */
     @GridToStringExclude
     private ClusterNode primary;
+
+    // t0d0 -> concurrent set with proper initialization
+    /** Mapped backup nodes. */
+    private Set<UUID> backups;
 
     /** Entries. */
     @GridToStringInclude
@@ -280,6 +287,26 @@ public class GridDistributedTxMapping {
      */
     public boolean empty() {
         return entries.isEmpty();
+    }
+
+    /**
+     * @param newBackups Backups to be added to this mapping.
+     */
+    public void addBackups(Collection<UUID> newBackups) {
+        if (newBackups == null)
+            return;
+
+        if (backups == null)
+            backups = new HashSet<>(newBackups);
+        else
+            backups.addAll(newBackups);
+    }
+
+    /**
+     * @return Mapped backup nodes.
+     */
+    @Nullable public Set<UUID> backups() {
+        return backups;
     }
 
     /** {@inheritDoc} */

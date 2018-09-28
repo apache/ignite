@@ -371,8 +371,12 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
                 if (node.isLocal())
                     tx.colocatedLocallyMapped(false);
             }
-            else if (res != null && res.result() > 0 && !node.isLocal())
-                tx.hasRemoteLocks(true);
+            else {
+                tx.mappings().get(node.id()).addBackups(res.newDhtNodes());
+
+                if (res != null && res.result() > 0 && !node.isLocal())
+                    tx.hasRemoteLocks(true);
+            }
 
             return err != null ? onDone(err) : onDone(res.result(), res.error());
         }
