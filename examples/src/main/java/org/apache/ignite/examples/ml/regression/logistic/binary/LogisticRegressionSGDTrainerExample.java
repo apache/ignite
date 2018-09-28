@@ -60,11 +60,16 @@ public class LogisticRegressionSGDTrainerExample {
             IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
 
             System.out.println(">>> Create new logistic regression trainer object.");
-            LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>(new UpdatesStrategy<>(
-                new SimpleGDUpdateCalculator(0.2),
-                SimpleGDParameterUpdate::sumLocal,
-                SimpleGDParameterUpdate::avg
-            ), 100000,  10, 100, 123L);
+            LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>()
+                .withUpdatesStgy(new UpdatesStrategy<>(
+                    new SimpleGDUpdateCalculator(0.2),
+                    SimpleGDParameterUpdate::sumLocal,
+                    SimpleGDParameterUpdate::avg
+                ))
+                .withMaxIterations(100000)
+                .withLocIterations(100)
+                .withBatchSize(10)
+                .withSeed(123L);
 
             System.out.println(">>> Perform the training to get the model.");
             LogisticRegressionModel mdl = trainer.fit(
@@ -218,5 +223,4 @@ public class LogisticRegressionSGDTrainerExample {
         {1, 5.1, 2.5, 3, 1.1},
         {1, 5.7, 2.8, 4.1, 1.3},
     };
-
 }

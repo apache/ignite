@@ -47,7 +47,7 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  */
 public class Step_3_Categorial {
     /** Run example. */
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 3 (categorial) example started.");
 
