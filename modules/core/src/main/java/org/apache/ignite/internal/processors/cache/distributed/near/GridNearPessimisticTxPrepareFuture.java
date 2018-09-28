@@ -294,7 +294,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         assert !tx.implicitSingle() || tx.queryEnlisted(); // Non-mvcc implicit-single tx goes fast commit way.
 
         for (GridDistributedTxMapping m : mvccMappings) {
-            mappings.putIfAbsent(m.primary().id(), m);
+            mappings.put(m.primary().id(), m);
 
             mvccTxNodes.put(m.primary().id(), m.backups());
 
