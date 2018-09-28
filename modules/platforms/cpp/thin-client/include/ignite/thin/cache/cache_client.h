@@ -160,8 +160,6 @@ namespace ignite
                  * will be loaded from persistent store.
                  * This method is transactional and will enlist the entry into ongoing transaction if there is one.
                  *
-                 * This method should only be used on the valid instance.
-                 *
                  * @param begin Iterator pointing to the beggining of the key sequence.
                  * @param end Iterator pointing to the end of the key sequence.
                  * @param dst Output iterator. Should dereference to std::pair or CacheEntry.
@@ -169,8 +167,8 @@ namespace ignite
                 template<typename InIter, typename OutIter>
                 void GetAll(InIter begin, InIter end, OutIter dst)
                 {
-                    impl::thin::WritableSequenceImpl<InIter> wrSeq(begin, end);
-                    impl::thin::ReadableSequenceImpl<OutIter> rdSeq(dst);
+                    impl::thin::WritableSequenceImpl<K, InIter> wrSeq(begin, end);
+                    impl::thin::ReadableMapImpl<K, V, OutIter> rdSeq(dst);
 
                     proxy.GetAll(wrSeq, rdSeq);
                 }

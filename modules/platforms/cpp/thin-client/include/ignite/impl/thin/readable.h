@@ -18,7 +18,7 @@
 #ifndef _IGNITE_IMPL_THIN_READABLE
 #define _IGNITE_IMPL_THIN_READABLE
 
-#include <ignite/impl/binary/binary_reader_impl.h>
+#include <ignite/binary/binary_raw_reader.h>
 
 namespace ignite
 {
@@ -90,6 +90,72 @@ namespace ignite
             private:
                 /** Data router. */
                 ValueType& value;
+            };
+
+            /**
+             * Implementtation of Readable interface for map.
+             *
+             * @tparam T1 Type of the first element in the pair.
+             * @tparam T2 Type of the second element in the pair.
+             * @tparam I Out iterator.
+             */
+            template<typename T1, typename T2, typename I>
+            class ReadableMapImpl : public Readable
+            {
+            public:
+                /** Type of the first element in the pair. */
+                typedef T1 ElementType1;
+
+                /** Type of the second element in the pair. */
+                typedef T2 ElementType2;
+                
+                /** Type of the iterator. */
+                typedef I IteratorType;
+
+                /**
+                 * Constructor.
+                 *
+                 * @param iter Iterator.
+                 */
+                ReadableMapImpl(IteratorType iter) :
+                    iter(iter)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~ReadableMapImpl()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Read value using reader.
+                 *
+                 * @param reader Reader to use.
+                 */
+                virtual void Read(binary::BinaryReaderImpl& reader)
+                {
+                    using namespace ignite::binary;
+
+                    BinaryRawReader reader0(&reader);
+
+                    BinaryMapReader<ElementType1, ElementType2> mreader =
+                        reader0.ReadMap<ElementType1, ElementType2>();
+
+                    while (mreader.HasNext())
+                    {
+                        mreader.GetNext(iter->first, iter->second);
+
+                        ++iter;
+                    }
+                }
+
+            private:
+                /** Iterator type. */
+                IteratorType iter;
             };
         }
     }

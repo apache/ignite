@@ -18,7 +18,7 @@
 #ifndef _IGNITE_IMPL_THIN_WRITABLE
 #define _IGNITE_IMPL_THIN_WRITABLE
 
-#include <ignite/impl/binary/binary_writer_impl.h>
+#include <ignite/binary/binary_raw_writer.h>
 
 namespace ignite
 {
@@ -95,10 +95,13 @@ namespace ignite
             /**
              * Implementation of the Writable class for a sequence.
              */
-            template<typename I>
+            template<typename T, typename I>
             class WritableSequenceImpl : public Writable
             {
             public:
+                /** Iterator type. */
+                typedef T ElementType;
+
                 /** Iterator type. */
                 typedef I IteratorType;
 
@@ -130,9 +133,11 @@ namespace ignite
                  */
                 virtual void Write(binary::BinaryWriterImpl& writer) const
                 {
-                    writer.WriteCollection(ignite::binary::CollectionType::HASH_SET);
-                    for (IteratorType it = begin; it != end; ++it)
-                        writer.WriteObject(*it);
+                    using namespace ignite::binary;
+
+                    BinaryRawWriter writer0(&writer);
+
+                    writer0.WriteCollection<IteratorType>(begin, end, CollectionType::HASH_SET);
                 }
 
             private:
