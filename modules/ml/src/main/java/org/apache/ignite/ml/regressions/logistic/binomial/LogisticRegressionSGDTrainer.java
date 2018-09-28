@@ -33,6 +33,8 @@ import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
+import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.jetbrains.annotations.NotNull;
 
@@ -41,7 +43,11 @@ import org.jetbrains.annotations.NotNull;
  */
 public class LogisticRegressionSGDTrainer<P extends Serializable> extends SingleLabelDatasetTrainer<LogisticRegressionModel> {
     /** Update strategy. */
-    private UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy;
+    private UpdatesStrategy updatesStgy = new UpdatesStrategy<>(
+        new SimpleGDUpdateCalculator(0.2),
+        SimpleGDParameterUpdate::sumLocal,
+        SimpleGDParameterUpdate::avg
+    );
 
     /** Max number of iteration. */
     private int maxIterations = 100;
@@ -199,7 +205,7 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
      *
      * @return The property value.
      */
-    public UpdatesStrategy<? super MultilayerPerceptron, P> getUpdatesStgy() {
+    public UpdatesStrategy getUpdatesStgy() {
         return updatesStgy;
     }
 
