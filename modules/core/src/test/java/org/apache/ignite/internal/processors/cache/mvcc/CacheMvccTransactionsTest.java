@@ -2437,6 +2437,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testMvccCoordinatorChangeSimple() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9722");
+
         Ignite srv0 = startGrid(0);
 
         final List<String> cacheNames = new ArrayList<>();
