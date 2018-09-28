@@ -37,6 +37,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
+import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -77,11 +78,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Abstract future processing transaction enlisting and locking
- * of entries produced with DML and SELECT FOR UPDATE queries.
+ * Abstract future processing transaction enlisting and locking.
  */
-public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapter<Long>
-    implements DhtLockFuture<Long> {
+public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAdapter<T>
+    implements DhtLockFuture<T> {
     /** Done field updater. */
     private static final AtomicIntegerFieldUpdater<GridDhtTxAbstractEnlistFuture> DONE_UPD =
         AtomicIntegerFieldUpdater.newUpdater(GridDhtTxAbstractEnlistFuture.class, "done");
@@ -134,9 +134,6 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
     /** */
     protected final MvccSnapshot mvccSnapshot;
 
-    /** Processed entries count. */
-    protected long cnt;
-
     /** New DHT nodes. */
     protected Set<UUID> newDhtNodes = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
@@ -145,6 +142,9 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
 
     /** Near lock version. */
     protected final GridCacheVersion nearLockVer;
+
+    /** Filter. */
+    private final CacheEntryPredicate filter;
 
     /** Timeout object. */
     @GridToStringExclude
@@ -202,6 +202,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
      * @param tx Transaction.
      * @param timeout Lock acquisition timeout.
      * @param cctx Cache context.
+     * @param filter Filter.
      */
     protected GridDhtTxAbstractEnlistFuture(UUID nearNodeId,
         GridCacheVersion nearLockVer,
@@ -212,7 +213,8 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
         @Nullable int[] parts,
         GridDhtTxLocalAdapter tx,
         long timeout,
-        GridCacheContext<?, ?> cctx) {
+        GridCacheContext<?, ?> cctx,
+        @Nullable CacheEntryPredicate filter) {
         assert tx != null;
         assert timeout >= 0;
         assert nearNodeId != null;
@@ -229,6 +231,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
         this.timeout = timeout;
         this.tx = tx;
         this.parts = parts;
+        this.filter = filter;
 
         lockVer = tx.xidVersion();
 
@@ -238,10 +241,36 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
     }
 
     /**
+     * Gets source to be updated iterator.
+     *
      * @return iterator.
      * @throws IgniteCheckedException If failed.
      */
     protected abstract UpdateSourceIterator<?> createIterator() throws IgniteCheckedException;
+
+    /**
+     * Gets query result.
+     *
+     * @return Query result.
+     */
+    protected abstract T result0();
+
+    /**
+     * Gets need previous value flag.
+     *
+     * @return {@code True} if previous value is required.
+     */
+    public boolean needResult() {
+        return false;
+    }
+
+    /**
+     * Entry processed callback.
+     *
+     * @param key Entry key.
+     * @param res Update result.
+     */
+    protected abstract void onEntryProcessed(KeyCacheObject key, GridCacheUpdateTxResult res);
 
     /**
      *
@@ -291,13 +320,13 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
 
         boolean added = cctx.mvcc().addFuture(this, futId);
 
-        assert added;
-
         if (isDone()) {
             cctx.mvcc().removeFuture(futId);
 
             return;
         }
+
+        assert added;
 
         if (timeoutObj != null)
             cctx.time().addTimeoutObject(timeoutObj);
@@ -310,12 +339,15 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
             if (!it.hasNext()) {
                 U.close(it, log);
 
-                onDone(0L);
+                onDone(result0());
 
                 return;
             }
 
-            tx.addActiveCache(cctx, false);
+            if(!tx.implicitSingle())
+                tx.addActiveCache(cctx, false);
+            else // Nothing to do for single update.
+                assert tx.txState().cacheIds().contains(cctx.cacheId()) && tx.txState().cacheIds().size() == 1;
 
             this.it = it;
         }
@@ -391,7 +423,9 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                                         cctx.localNodeId(),
                                         topVer,
                                         mvccSnapshot,
-                                        isMoving(key.partition()));
+                                        isMoving(key.partition()),
+                                        filter,
+                                        needResult());
 
                                     break;
 
@@ -407,7 +441,9 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                                         mvccSnapshot,
                                         op.cacheOperation(),
                                         isMoving(key.partition()),
-                                        op.noCreate());
+                                        op.noCreate(),
+                                        filter,
+                                        needResult());
 
                                     break;
 
@@ -493,7 +529,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                     }
 
                     if (noPendingRequests()) {
-                        onDone(cnt);
+                        onDone(result0());
 
                         return;
                     }
@@ -569,10 +605,10 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
         if (ptr0 != null)
             walPtr = ptr0;
 
+        onEntryProcessed(entry.key(), updRes);
+
         if (!updRes.success())
             return;
-
-        cnt++;
 
         if (op != EnlistOperation.LOCK)
             addToBatch(entry.key(), val, updRes.mvccHistory(), entry.context().cacheId());
@@ -980,7 +1016,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Long res, @Nullable Throwable err) {
+    @Override public boolean onDone(@Nullable T res, @Nullable Throwable err) {
         assert res != null || err != null;
 
         if (!DONE_UPD.compareAndSet(this, 0, 1))

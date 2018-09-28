@@ -17,53 +17,47 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.EnlistOperation;
-import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Future processing transaction enlisting and locking of entries
- * produces by complex DML queries with reduce step.
+ * Abstract future processing transaction enlisting and locking of entries produced with DML and SELECT FOR UPDATE
+ * queries.
  */
-public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstractEnlistFuture implements UpdateSourceIterator<Object> {
-    /** Enlist operation. */
-    private EnlistOperation op;
-
-    /** Source iterator. */
-    private Iterator<Object> it;
+public abstract class GridDhtTxQueryAbstractEnlistFuture extends GridDhtTxAbstractEnlistFuture<Long> {
+    /** Processed entries count. */
+    protected long cnt;
 
     /**
+     * Constructor.
+     *
      * @param nearNodeId Near node ID.
      * @param nearLockVer Near lock version.
      * @param mvccSnapshot Mvcc snapshot.
      * @param threadId Thread ID.
      * @param nearFutId Near future id.
      * @param nearMiniId Near mini future id.
+     * @param parts Partitions.
      * @param tx Transaction.
      * @param timeout Lock acquisition timeout.
      * @param cctx Cache context.
-     * @param rows Collection of rows.
-     * @param op Operation.
      */
-    public GridDhtTxQueryResultsEnlistFuture(UUID nearNodeId,
+    protected GridDhtTxQueryAbstractEnlistFuture(UUID nearNodeId,
         GridCacheVersion nearLockVer,
         MvccSnapshot mvccSnapshot,
         long threadId,
         IgniteUuid nearFutId,
         int nearMiniId,
+        @Nullable int[] parts,
         GridDhtTxLocalAdapter tx,
         long timeout,
-        GridCacheContext<?, ?> cctx,
-        Collection<Object> rows,
-        EnlistOperation op) {
+        GridCacheContext<?, ?> cctx) {
         super(nearNodeId,
             nearLockVer,
             mvccSnapshot,
@@ -73,37 +67,17 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstr
             null,
             tx,
             timeout,
-            cctx);
-
-        this.op = op;
-
-        it = rows.iterator();
-
-        skipNearNodeUpdates = true;
+            cctx, null);
     }
 
     /** {@inheritDoc} */
-    @Override protected UpdateSourceIterator<?> createIterator() throws IgniteCheckedException {
-        return this;
+    @Override protected Long result0() {
+        return cnt;
     }
 
     /** {@inheritDoc} */
-    @Override public EnlistOperation operation() {
-        return op;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasNextX() {
-        return it.hasNext();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object nextX() {
-        return it.next();
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridDhtTxQueryResultsEnlistFuture.class, this);
+    @Override protected void onEntryProcessed(KeyCacheObject key, GridCacheUpdateTxResult res) {
+        if(res.success())
+            cnt++;
     }
 }

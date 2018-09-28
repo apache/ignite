@@ -173,7 +173,7 @@ public abstract class CacheMvccAbstractFeatureTest extends CacheMvccAbstractTest
             int idx;
 
             do {
-                idx = (int) (Math.random() * 100) + 1;
+                idx = (int) (Math.random() * 100);
             }
             while (!keys.add(idx));
         }

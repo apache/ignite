@@ -21,9 +21,12 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
@@ -38,6 +41,8 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwar
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
@@ -49,6 +54,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.isActiv
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.isVisible;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccVersionIsValid;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.unexpectedStateException;
+import static org.apache.ignite.internal.processors.cache.tree.mvcc.data.ResultType.FILTERED;
 
 /**
  *
@@ -94,6 +100,9 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     /** Whether tx has overridden it's own update. */
     private static final int OWN_VALUE_OVERRIDDEN = DELETED << 1;
 
+    /** Force read full entry instead of header only.  */
+    private static final int NEED_PREV_VALUE = OWN_VALUE_OVERRIDDEN << 1;
+
     /** */
     @GridToStringExclude
     private final GridCacheContext cctx;
@@ -125,6 +134,10 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     /** */
     private List<MvccLinkAwareSearchRow> historyRows;
 
+    /** */
+    @GridToStringExclude
+    private CacheEntryPredicate filter;
+
     /**
      * @param cctx Cache context.
      * @param key Key.
@@ -148,10 +161,12 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
         long expireTime,
         MvccSnapshot mvccSnapshot,
         MvccVersion newVer,
+        @Nullable CacheEntryPredicate filter,
         boolean primary,
         boolean lockOnly,
         boolean needHistory,
-        boolean fastUpdate) {
+        boolean fastUpdate,
+        boolean needPrevValue) {
         super(key,
             val,
             ver,
@@ -163,6 +178,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
         this.mvccSnapshot = mvccSnapshot;
         this.cctx = cctx;
+        this.filter = filter;
         this.keyAbsentBefore = primary; // True for primary and false for backup (backups do not use this flag).
 
         assert !lockOnly || val == null;
@@ -180,6 +196,9 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
         if (fastUpdate)
             flags |= FAST_UPDATE;
+
+        if(needPrevValue)
+            flags |= NEED_PREV_VALUE;
 
         setFlags(flags);
     }
@@ -237,8 +256,18 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
                 if (removed)
                     setFlags(DELETED);
-                else
-                    oldRow = row;
+                else {
+                    // Actually, full row can be omitted for replace(k,newval) and putIfAbsent, but
+                    // operation context is not available here and full row required if filter is set.
+                    if (res == ResultType.PREV_NOT_NULL && (isFlagsSet(NEED_PREV_VALUE) || filter != null))
+                        oldRow = tree.getRow(io, pageAddr, idx, RowData.FULL);
+                    else
+                        oldRow = row;
+                }
+
+                // TODO: IGNITE-9689: optimize filter usage here. See {@link org.apache.ignite.internal.processors.cache.CacheOperationFilter}.
+                if(filter != null && !applyFilter(res == ResultType.PREV_NOT_NULL ? oldRow.value() : null))
+                    res = FILTERED;
 
                 setFlags(LAST_COMMITTED_FOUND | OWN_VALUE_OVERRIDDEN);
 
@@ -293,9 +322,14 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                     else {
                         res = ResultType.PREV_NOT_NULL;
 
-                        oldRow = row;
-
                         keyAbsentBefore = false;
+
+                        // Actually, full row can be omitted for replace(k,newval) and putIfAbsent, but
+                        // operation context is not available here and full row required if filter is set.
+                        if( (isFlagsSet(NEED_PREV_VALUE) || filter != null))
+                            oldRow = tree.getRow(io, pageAddr, idx, RowData.FULL);
+                        else
+                            oldRow = row;
                     }
 
                     if (isFlagsSet(CHECK_VERSION)) {
@@ -337,9 +371,13 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                         }
                     }
 
+                    // TODO: IGNITE-9689: optimize filter usage here. See {@link org.apache.ignite.internal.processors.cache.CacheOperationFilter}.
+                    if(filter != null && !applyFilter(res == ResultType.PREV_NOT_NULL ? oldRow.value() : null))
+                        res = FILTERED;
+
                     // Lock entry for primary partition if needed.
                     // If invisible row is found for FAST_UPDATE case we should not lock row.
-                    if (isFlagsSet(PRIMARY | REMOVE_OR_LOCK) && !isFlagsSet(FAST_MISMATCH)) {
+                    if (!isFlagsSet(DELETED) && isFlagsSet(PRIMARY | REMOVE_OR_LOCK) && !isFlagsSet(FAST_MISMATCH)) {
                         rowIo.setMvccLockCoordinatorVersion(pageAddr, idx, mvccCrd);
                         rowIo.setMvccLockCounter(pageAddr, idx, mvccCntr);
 
@@ -423,6 +461,22 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
         return unsetFlags(FIRST);
     }
 
+    /**
+     * Apply filter.
+     *
+     * @param val0 Previous value.
+     * @return Filter result.
+     */
+    private boolean applyFilter(final CacheObject val0) {
+        GridCacheEntryEx e = new GridDhtDetachedCacheEntry(cctx, key) {
+            @Nullable @Override public CacheObject peekVisibleValue() {
+                return val0;
+            }
+        };
+
+        return filter.apply(e);
+    }
+
     /** {@inheritDoc} */
     @Override public int state() {
         return state;
@@ -436,10 +490,26 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     }
 
     /**
-     * @return {@code True} if previous value was non-null.
+     * @return Result type.
      */
-    @Override public ResultType resultType() {
-        return res == null ? ResultType.PREV_NULL : res;
+    @NotNull @Override public ResultType resultType() {
+        return res == null ? defaultResult() : res;
+    }
+
+    /**
+     * Evaluate default result type.
+     *
+     * @return Result type.
+     */
+    @NotNull private ResultType defaultResult() {
+        assert res == null;
+
+        if (filter != null && !applyFilter(null))
+            res = FILTERED;
+        else
+            res = ResultType.PREV_NULL; // Default.
+
+        return res;
     }
 
     /**

@@ -1720,10 +1720,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      */
     public void markQueryEnlisted(MvccSnapshot ver) {
         if (!qryEnlisted) {
+            assert ver != null || mvccSnapshot != null;
+
             if (mvccSnapshot == null)
                 mvccSnapshot = ver;
 
-            cctx.coordinators().registerLocalTransaction(ver.coordinatorVersion(), ver.counter());
+            if(dht())
+                cctx.coordinators().registerLocalTransaction(mvccSnapshot.coordinatorVersion(), mvccSnapshot.counter());
 
             qryEnlisted = true;
         }
