@@ -15,12 +15,15 @@
  * limitations under the License.
  */
 
-export interface ISiginData {
-    email: string,
-    password: string
-}
+package org.apache.ignite.internal.processors.odbc;
 
-export interface ISigninFormController extends ng.IFormController {
-    email: ng.INgModelController,
-    password: ng.INgModelController
+/**
+ * Client listener response result sender.
+ */
+public interface ClientListenerResponseSender {
+    /**
+     * Send response to the client. Used for asynchronous result send.
+     * @param resp Client listener response.
+     */
+    public void send(ClientListenerResponse resp);
 }

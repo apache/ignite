@@ -15,37 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
+package org.apache.ignite.mxbean;
+
+import org.apache.ignite.configuration.DataStorageConfiguration;
 
 /**
- * Exception thrown whenever entry is created for invalid partition.
+ * An MX bean allowing to monitor and tune persistence.
  */
-public class GridDhtInvalidPartitionException extends RuntimeException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Partition. */
-    private final int part;
+public interface DataStorageMXBean {
+    @MXBeanDescription("ZIP compression level to WAL compaction.")
+    int getWalCompactionLevel();
 
     /**
-     * @param part Partition.
-     * @param msg Message.
+     * Sets ZIP compression level to WAL compaction.
+     * {@link DataStorageConfiguration#setWalCompactionLevel(int)} configuration property.
+     *
+     * @param walCompactionLevel ZIP compression level.
      */
-    public GridDhtInvalidPartitionException(int part, String msg) {
-        super(msg);
-
-        this.part = part;
-    }
-
-    /**
-     * @return Partition.
-     */
-    public int partition() {
-        return part;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return getClass() + " [part=" + part + ", msg=" + getMessage() + ']';
-    }
+    @MXBeanDescription("Sets ZIP compression level to WAL compaction.")
+    @MXBeanParametersNames("walCompactionLevel")
+    @MXBeanParametersDescriptions("ZIP compression level.")
+    void setWalCompactionLevel(int walCompactionLevel);
 }

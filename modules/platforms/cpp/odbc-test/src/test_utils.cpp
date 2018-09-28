@@ -122,6 +122,19 @@ namespace ignite_test
         return Ignition::Start(cfg, name);
     }
 
+    ignite::Ignite StartPlatformNode(const char* cfg, const char* name)
+    {
+        std::string config(cfg);
+
+#ifdef IGNITE_TESTS_32
+        // Cutting off the ".xml" part.
+        config.resize(config.size() - 4);
+        config += "-32.xml";
+#endif //IGNITE_TESTS_32
+
+        return StartNode(config.c_str(), name);
+    }
+
     std::string AppendPath(const std::string& base, const std::string& toAdd)
     {
         std::stringstream stream;

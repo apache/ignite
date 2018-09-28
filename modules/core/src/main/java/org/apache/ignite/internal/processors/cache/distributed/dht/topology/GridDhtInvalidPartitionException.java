@@ -15,17 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc.jdbc;
-
-import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
 /**
- * JDBC response result sender.
+ * Exception thrown whenever entry is created for invalid partition.
  */
-public interface JdbcResponseSender {
+public class GridDhtInvalidPartitionException extends RuntimeException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** Partition. */
+    private final int part;
+
     /**
-     * Send response to the client. Used for asynchronous result send.
-     * @param resp JDBC response.
+     * @param part Partition.
+     * @param msg Message.
      */
-    public void send(ClientListenerResponse resp);
+    public GridDhtInvalidPartitionException(int part, String msg) {
+        super(msg);
+
+        this.part = part;
+    }
+
+    /**
+     * @return Partition.
+     */
+    public int partition() {
+        return part;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return getClass() + " [part=" + part + ", msg=" + getMessage() + ']';
+    }
 }
