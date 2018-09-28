@@ -170,11 +170,23 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         Executor execSvc = ctx.executor();
 
+        if (ctx.nextSnapshot() && ctx.needToSnapshot(grp.cacheOrGroupName())) {
+            if (execSvc == null)
+                updateSnapshotTag(ctx);
+            else {
+                execSvc.execute(() -> {
+                    try {
+                        updateSnapshotTag(ctx);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                });
+            }
+        }
+
         if (execSvc == null) {
             reuseList.saveMetadata();
-
-            if (ctx.nextSnapshot())
-                updateSnapshotTag(ctx);
 
             for (CacheDataStore store : partDataStores.values())
                 saveStoreMetadata(store, ctx, false);
@@ -188,17 +200,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     throw new IgniteException(e);
                 }
             });
-
-            if (ctx.nextSnapshot()) {
-                execSvc.execute(() -> {
-                    try {
-                        updateSnapshotTag(ctx);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-                });
-            }
 
             for (CacheDataStore store : partDataStores.values())
                 execSvc.execute(() -> {
