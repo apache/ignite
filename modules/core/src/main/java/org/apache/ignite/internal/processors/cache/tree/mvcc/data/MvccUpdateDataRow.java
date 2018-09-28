@@ -593,6 +593,11 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
         return state &= (~flags);
     }
 
+    /** */
+    public void resultType(ResultType type) {
+        res = type;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(MvccUpdateDataRow.class, this, "super", super.toString());

@@ -1107,8 +1107,17 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             if (res.resultType() == ResultType.VERSION_MISMATCH)
                 throw new IgniteSQLException("Mvcc version mismatch.", CONCURRENT_UPDATE);
-            else if (res.resultType() == ResultType.FILTERED ||
-                (noCreate && !invoke && res.resultType() == ResultType.PREV_NULL))
+            else if (res.resultType() == ResultType.FILTERED) {
+                GridCacheUpdateTxResult updRes = new GridCacheUpdateTxResult(invoke);
+
+                assert !invoke || res.invokeResult() != null;
+
+                if(invoke) // No-op invoke happened.
+                    updRes.invokeResult(res.invokeResult());
+
+                return updRes;
+            }
+            else if(noCreate && !invoke && res.resultType() == ResultType.PREV_NULL)
                 return new GridCacheUpdateTxResult(false);
             else if (res.resultType() == ResultType.LOCKED) {
                 unlockEntry();
@@ -1131,7 +1140,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (cctx.deferredDelete() && deletedUnlocked() && !detached())
                 deletedUnlocked(false);
 
-            //TODO: IGNITE-9540: fix counters for invoke.
             if (res.resultType() == ResultType.PREV_NULL) {
                 TxCounters counters = tx.txCounters(true);
 
@@ -1149,14 +1157,26 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 counters.incrementUpdateCounter(cctx.cacheId(), partition());
             }
+            else if (res.resultType() == ResultType.REMOVED_NOT_NULL) {
+                TxCounters counters = tx.txCounters(true);
+
+                if (res.isOwnValueOverridden()) {
+                    if (res.isKeyAbsentBefore()) // Do not count own update removal.
+                        counters.decrementUpdateCounter(cctx.cacheId(), partition());
+                }
+                else
+                    counters.incrementUpdateCounter(cctx.cacheId(), partition());
+
+                counters.accumulateSizeDelta(cctx.cacheId(), partition(), -1);
+            }
 
             if (cctx.group().persistenceEnabled() && cctx.group().walEnabled()) {
                 logPtr = cctx.shared().wal().log(new DataRecord(new DataEntry(
                     cctx.cacheId(),
                     key,
                     val,
-                    //TODO: IGNITE-9540: fix this.
-                    res.resultType() == ResultType.PREV_NULL ? CREATE : UPDATE,
+                    res.resultType() == ResultType.PREV_NULL ? CREATE :
+                        (res.resultType() == ResultType.REMOVED_NOT_NULL) ? DELETE : UPDATE,
                     tx.nearXidVersion(),
                     newVer,
                     expireTime,
@@ -5368,6 +5388,19 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     return;
                 }
+                else if (res.resultType() == ResultType.FILTERED) {
+                    GridCacheUpdateTxResult updRes = new GridCacheUpdateTxResult(invoke);
+
+                    if (invoke) { // No-op invoke happened.
+                        assert res.invokeResult() != null;
+
+                        updRes.invokeResult(res.invokeResult());
+                    }
+
+                    resFut.onDone(updRes);
+
+                    return;
+                }
                 else if (op == CREATE && tx.local() && (res.resultType() == ResultType.PREV_NOT_NULL ||
                     res.resultType() == ResultType.VERSION_FOUND)) {
                     resFut.onDone(new IgniteSQLException("Duplicate key during INSERT [key=" + entry.key() + ']',
@@ -5379,7 +5412,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (cctx.deferredDelete() && entry.deletedUnlocked() && !entry.detached())
                     entry.deletedUnlocked(false);
 
-                //TODO: IGNITE-9540: fix counters for invoke.
                 if (res.resultType() == ResultType.PREV_NULL) {
                     TxCounters counters = tx.txCounters(true);
 
@@ -5397,13 +5429,26 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     counters.incrementUpdateCounter(cctx.cacheId(), entry.partition());
                 }
+                else if (res.resultType() == ResultType.REMOVED_NOT_NULL) {
+                    TxCounters counters = tx.txCounters(true);
+
+                    if (res.isOwnValueOverridden()) {
+                        if (res.isKeyAbsentBefore()) // Do not count own update removal.
+                            counters.decrementUpdateCounter(cctx.cacheId(), entry.partition());
+                    }
+                    else
+                        counters.incrementUpdateCounter(cctx.cacheId(), entry.partition());
+
+                    counters.accumulateSizeDelta(cctx.cacheId(), entry.partition(), -1);
+                }
 
                 if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
                     logPtr = cctx.shared().wal().log(new DataRecord(new DataEntry(
                         cctx.cacheId(),
                         entry.key(),
                         val,
-                        res.resultType() == ResultType.PREV_NULL ? CREATE : UPDATE,
+                       res.resultType() == ResultType.PREV_NULL ? CREATE :
+                        (res.resultType() == ResultType.REMOVED_NOT_NULL) ? DELETE : UPDATE,
                         tx.nearXidVersion(),
                         newVer,
                         expireTime,

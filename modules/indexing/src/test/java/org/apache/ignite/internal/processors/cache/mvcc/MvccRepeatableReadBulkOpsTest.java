@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -27,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.cache.processor.EntryProcessorException;
@@ -188,11 +190,66 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
      */
     public void testOperationConsistency() throws Exception {
         checkOperationsConsistency(PUT, false);
-     /*   checkOperationsConsistency(DML, false);
+        checkOperationsConsistency(DML, false);
         checkOperationsConsistency(WriteMode.INVOKE, false);
         checkOperationsConsistency(PUT, true);
         checkOperationsConsistency(DML, true);
-        checkOperationsConsistency(WriteMode.INVOKE, true);*/
+        checkOperationsConsistency(WriteMode.INVOKE, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeConsistency() throws Exception {
+        Ignite node = grid(/*requestFromClient ? nodesCount() - 1 :*/ 0);
+
+        TestCache<Integer, MvccTestAccount> cache = new TestCache<>(node.cache(DEFAULT_CACHE_NAME));
+
+        final Set<Integer> keys1 = new HashSet<>(3);
+        final Set<Integer> keys2 = new HashSet<>(3);
+
+        Set<Integer> allKeys = generateKeySet(cache.cache, keys1, keys2);
+
+        final Map<Integer, MvccTestAccount> map1 = keys1.stream().collect(
+            Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 1)));
+
+        final Map<Integer, MvccTestAccount> map2 = keys2.stream().collect(
+            Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 1)));
+
+        assertEquals(0, cache.cache.size());
+
+        updateEntries(cache, map1, WriteMode.INVOKE);
+        assertEquals(3, cache.cache.size());
+
+        updateEntries(cache, map1, WriteMode.INVOKE);
+        assertEquals(3, cache.cache.size());
+
+        getEntries(cache, allKeys, INVOKE);
+        assertEquals(3, cache.cache.size());
+
+        updateEntries(cache, map2, WriteMode.INVOKE);
+        assertEquals(6, cache.cache.size());
+
+        getEntries(cache, keys2, INVOKE);
+        assertEquals(6, cache.cache.size());
+
+        removeEntries(cache, keys1, WriteMode.INVOKE);
+        assertEquals(3, cache.cache.size());
+
+        removeEntries(cache, keys1, WriteMode.INVOKE);
+        assertEquals(3, cache.cache.size());
+
+        getEntries(cache, allKeys, INVOKE);
+        assertEquals(3, cache.cache.size());
+
+        updateEntries(cache, map1, WriteMode.INVOKE);
+        assertEquals(6, cache.cache.size());
+
+        removeEntries(cache, allKeys, WriteMode.INVOKE);
+        assertEquals(0, cache.cache.size());
+
+        getEntries(cache, allKeys, INVOKE);
+        assertEquals(0, cache.cache.size());
     }
 
     /**
@@ -235,6 +292,8 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
             @Override public Void call() throws Exception {
                 updateStart.await();
 
+                assertEquals(initialMap.size(), cache2.cache.size());
+
                 try (Transaction tx = txs2.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
                     tx.timeout(TX_TIMEOUT);
 
@@ -249,6 +308,7 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
                     updateFinish.countDown();
                 }
 
+                assertEquals(updateMap.size(), cache2.cache.size());
 
                 return null;
             }
@@ -295,7 +355,7 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
      * @return All keys.
      * @throws IgniteCheckedException If failed.
      */
-    protected Set<Integer> generateKeySet(IgniteCache<Object, Object> cache, Set<Integer> keySet1,
+    protected Set<Integer> generateKeySet(IgniteCache<?, ?> cache, Set<Integer> keySet1,
         Set<Integer> keySet2) throws IgniteCheckedException {
         LinkedHashSet<Integer> allKeys = new LinkedHashSet<>();
 
@@ -327,53 +387,72 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
 
         TestCache<Integer, MvccTestAccount> cache = new TestCache<>(node.cache(DEFAULT_CACHE_NAME));
 
-        final Set<Integer> keysForUpdate = new HashSet<>(3);
-        final Set<Integer> keysForRemove = new HashSet<>(3);
 
-        final Set<Integer> allKeys = generateKeySet(grid(0).cache(DEFAULT_CACHE_NAME), keysForUpdate, keysForRemove);
+            final Set<Integer> keysForUpdate = new HashSet<>(3);
+            final Set<Integer> keysForRemove = new HashSet<>(3);
 
-        int updCnt = 1;
+            final Set<Integer> allKeys = generateKeySet(grid(0).cache(DEFAULT_CACHE_NAME), keysForUpdate, keysForRemove);
 
-        final Map<Integer, MvccTestAccount> initialVals = allKeys.stream().collect(
-            Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 1)));
+        try {
+            int updCnt = 1;
 
-        cache.cache.putAll(initialVals);
+            final Map<Integer, MvccTestAccount> initialVals = allKeys.stream().collect(
+                Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 1)));
 
-        IgniteTransactions txs = node.transactions();
+            updateEntries(cache, initialVals, writeMode);
 
-        Map<Integer, MvccTestAccount> updatedVals = null;
+            assertEquals(initialVals.size(), cache.cache.size());
 
-        try (Transaction tx = txs.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
-//            Map<Integer, MvccTestAccount> vals1 = getEntries(cache, allKeys, GET);
-//            Map<Integer, MvccTestAccount> vals2 = getEntries(cache, allKeys, SQL);
-            Map<Integer, MvccTestAccount> vals3 = getEntries(cache, allKeys, ReadMode.INVOKE);
+            IgniteTransactions txs = node.transactions();
 
-//            assertEquals(initialVals, vals1);
-//            assertEquals(initialVals, vals2);
-            assertEquals(initialVals, vals3);
+            Map<Integer, MvccTestAccount> updatedVals = null;
 
-            for (ReadMode readMode : new ReadMode[] {GET, SQL, INVOKE}) {
-                int updCnt0 = ++updCnt;
+            try (Transaction tx = txs.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+                Map<Integer, MvccTestAccount> vals1 = getEntries(cache, allKeys, GET);
+                Map<Integer, MvccTestAccount> vals2 = getEntries(cache, allKeys, SQL);
+                Map<Integer, MvccTestAccount> vals3 = getEntries(cache, allKeys, ReadMode.INVOKE);
 
-                updatedVals = keysForUpdate.stream().collect(Collectors.toMap(Function.identity(),
-                    k -> new MvccTestAccount(k, updCnt0)));
+                assertEquals(initialVals, vals1);
+                assertEquals(initialVals, vals2);
+                assertEquals(initialVals, vals3);
 
-                updateEntries(cache, updatedVals, writeMode);
-                removeEntries(cache, keysForRemove, writeMode);
+                assertEquals(initialVals.size(), cache.cache.size());
 
-                assertEquals(String.valueOf(readMode), updatedVals, getEntries(cache, allKeys, readMode));
+                for (ReadMode readMode : new ReadMode[] {GET, SQL, INVOKE}) {
+                    int updCnt0 = ++updCnt;
+
+                    updatedVals = allKeys.stream().collect(Collectors.toMap(Function.identity(),
+                        k -> new MvccTestAccount(k, updCnt0)));
+
+                    updateEntries(cache, updatedVals, writeMode);
+                    assertEquals(allKeys.size(), cache.cache.size());
+
+                    removeEntries(cache, keysForRemove, writeMode);
+
+                    for (Integer key : keysForRemove)
+                        updatedVals.remove(key);
+
+                    assertEquals(String.valueOf(readMode), updatedVals, getEntries(cache, allKeys, readMode));
+                }
+
+                tx.commit();
             }
 
-            tx.commit();
+            try (Transaction tx = txs.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+                assertEquals(updatedVals, getEntries(cache, allKeys, GET));
+                assertEquals(updatedVals, getEntries(cache, allKeys, SQL));
+                assertEquals(updatedVals, getEntries(cache, allKeys, INVOKE));
+
+                tx.commit();
+            }
+
+            assertEquals(updatedVals.size(), cache.cache.size());
+        }
+        finally {
+            cache.cache.removeAll(keysForUpdate);
         }
 
-        try (Transaction tx = txs.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
-            assertEquals(updatedVals, getEntries(cache, allKeys, GET));
-            assertEquals(updatedVals, getEntries(cache, allKeys, SQL));
-            assertEquals(updatedVals, getEntries(cache, allKeys, INVOKE));
-
-            tx.commit();
-        }
+        assertEquals(0, cache.cache.size());
     }
 
     /**

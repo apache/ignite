@@ -1938,27 +1938,32 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     CacheInvokeEntry.Operation op = applyEntryProcessor(cctx, key, ver, entryProc, invokeArgs, updateRow, oldRow);
 
                     if (op == CacheInvokeEntry.Operation.NONE) {
-                        if (res == ResultType.PREV_NOT_NULL) {
+                        if (res == ResultType.PREV_NOT_NULL)
                             updateRow.value(oldRow.value()); // Restore prev. value.
 
-                            cleanup(cctx, updateRow.cleanupRows());
-                        }
+                        updateRow.resultType(ResultType.FILTERED);
+
+                        cleanup(cctx, updateRow.cleanupRows());
 
                         return updateRow;
                     }
 
                     // Mark old version as removed.
-                    if (res == ResultType.PREV_NOT_NULL)
+                    if (res == ResultType.PREV_NOT_NULL) {
                         rowStore.updateDataRow(oldRow.link(), mvccUpdateMarker, mvccSnapshot);
 
-                    if (op == CacheInvokeEntry.Operation.REMOVE) {
-                        cleanup(cctx, updateRow.cleanupRows());
+                        if (op == CacheInvokeEntry.Operation.REMOVE) {
+                            updateRow.resultType(ResultType.REMOVED_NOT_NULL);
 
-                        if (res == ResultType.PREV_NOT_NULL)
+                            cleanup(cctx, updateRow.cleanupRows());
+
                             clearPendingEntries(cctx, oldRow);
 
-                        return updateRow; // Won't create new version on remove.
+                            return updateRow; // Won't create new version on remove.
+                        }
                     }
+                    else
+                        assert op != CacheInvokeEntry.Operation.REMOVE;
                 }
                 else if (oldRow != null)
                     rowStore.updateDataRow(oldRow.link(), mvccUpdateMarker, mvccSnapshot);
@@ -2024,14 +2029,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             CacheObject oldVal = oldRow == null ? null : oldRow.value();
 
-            //TODO: IGNITE-9540: check if keepBinary flag and context usage is correct.
             CacheInvokeEntry invokeEntry = new CacheInvokeEntry<>(key, oldVal, ver, cctx.keepBinary(),
                 new GridDhtDetachedCacheEntry(cctx, key));
 
             try {
                 procRes = entryProc.process(invokeEntry, invokeArgs);
 
-                if(invokeEntry.op() != CacheInvokeEntry.Operation.REMOVE && invokeEntry.modified()) {
+                if(invokeEntry.modified() && invokeEntry.op() != CacheInvokeEntry.Operation.REMOVE) {
                     Object val = invokeEntry.getValue(true);
 
                     CacheObject val0 = cctx.toCacheObject(val);
