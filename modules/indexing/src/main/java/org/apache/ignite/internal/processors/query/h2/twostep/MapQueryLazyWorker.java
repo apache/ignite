@@ -94,6 +94,7 @@ public class MapQueryLazyWorker extends GridWorker {
 
     /**
      *
+     * @throws QueryCancelledException  In case query is canceled during the worker start.
      */
     void start() throws QueryCancelledException {
         synchronized (mux) {
@@ -251,8 +252,8 @@ public class MapQueryLazyWorker extends GridWorker {
     private void awaitStop() {
         synchronized (mux) {
             try {
-                // Short thread yield for parallel stop case.
-                mux.wait(500);
+                if (!isCancelled)
+                    mux.wait();
 
                 U.await(stopLatch);
             }
