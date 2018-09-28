@@ -24,13 +24,11 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.examples.ml.tree.DecisionTreeClassificationTrainerExample;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.selection.cv.CrossValidation;
 import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
-import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Run <a href="https://en.wikipedia.org/wiki/Decision_tree">decision tree</a> classification with
@@ -54,46 +52,38 @@ public class CrossValidationExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                DecisionTreeClassificationTrainerExample.class.getSimpleName(), () -> {
+            // Create cache with training data.
+            CacheConfiguration<Integer, LabeledPoint> trainingSetCfg = new CacheConfiguration<>();
+            trainingSetCfg.setName("TRAINING_SET");
+            trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
 
-                // Create cache with training data.
-                CacheConfiguration<Integer, LabeledPoint> trainingSetCfg = new CacheConfiguration<>();
-                trainingSetCfg.setName("TRAINING_SET");
-                trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
+            IgniteCache<Integer, LabeledPoint> trainingSet = ignite.createCache(trainingSetCfg);
 
-                IgniteCache<Integer, LabeledPoint> trainingSet = ignite.createCache(trainingSetCfg);
+            Random rnd = new Random(0);
 
-                Random rnd = new Random(0);
+            // Fill training data.
+            for (int i = 0; i < 1000; i++)
+                trainingSet.put(i, generatePoint(rnd));
 
-                // Fill training data.
-                for (int i = 0; i < 1000; i++)
-                    trainingSet.put(i, generatePoint(rnd));
+            // Create classification trainer.
+            DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0);
 
-                // Create classification trainer.
-                DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(4, 0);
+            CrossValidation<DecisionTreeNode, Double, Integer, LabeledPoint> scoreCalculator
+                = new CrossValidation<>();
 
-                CrossValidation<DecisionTreeNode, Double, Integer, LabeledPoint> scoreCalculator
-                    = new CrossValidation<>();
+            double[] scores = scoreCalculator.score(
+                trainer,
+                new Accuracy<>(),
+                ignite,
+                trainingSet,
+                (k, v) -> VectorUtils.of(v.x, v.y),
+                (k, v) -> v.lb,
+                4
+            );
 
-                double[] scores = scoreCalculator.score(
-                    trainer,
-                    new Accuracy<>(),
-                    ignite,
-                    trainingSet,
-                    (k, v) -> VectorUtils.of(v.x, v.y),
-                    (k, v) -> v.lb,
-                    4
-                );
+            System.out.println(">>> Accuracy: " + Arrays.toString(scores));
 
-                System.out.println(">>> Accuracy: " + Arrays.toString(scores));
-
-                System.out.println(">>> Cross validation score calculator example completed.");
-            });
-
-            igniteThread.start();
-
-            igniteThread.join();
+            System.out.println(">>> Cross validation score calculator example completed.");
         }
     }
 
