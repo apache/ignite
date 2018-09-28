@@ -1922,16 +1922,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** Workers queue. */
         List<FileCompressorWorker> workers = new ArrayList<>();
 
-        /**
-         *
-         */
+        /** */
         FileCompressor(IgniteLogger log) {
             super(0, log);
         }
 
-        /**
-         *
-         */
+        /** */
         private void init() {
             File[] toDel = walArchiveDir.listFiles(WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER);
 
@@ -2106,6 +2102,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
 
             try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip)))) {
+                zos.setLevel(dsCfg.getWalCompactionLevel());
                 zos.putNextEntry(new ZipEntry(""));
 
                 ByteBuffer buf = ByteBuffer.allocate(HEADER_RECORD_SIZE);
