@@ -152,8 +152,6 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        long l = GridUnsafe.allocated.get();
-
         super.afterTest();
     }
 

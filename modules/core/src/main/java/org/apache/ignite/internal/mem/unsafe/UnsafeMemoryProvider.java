@@ -74,7 +74,7 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
                 DirectMemoryRegion chunk = it.next();
 
                 if (stop) {
-                    GridUnsafe.freeMemory(chunk.address(), chunk.size());
+                    GridUnsafe.freeMemory(chunk.address());
 
                     // Safety.
                     it.remove();

@@ -148,8 +148,6 @@ public abstract class GridUnsafe {
     public static ByteBuffer allocateBuffer(int len) {
         long ptr = allocateMemory(len);
 
-        allocated.getAndAdd(len);
-
         return wrapPointer(ptr, len);
     }
 
@@ -1089,6 +1087,8 @@ public abstract class GridUnsafe {
      * @return address.
      */
     public static long allocateMemory(long size) {
+        cnt.incrementAndGet();
+
         return UNSAFE.allocateMemory(size);
     }
 
@@ -1193,7 +1193,7 @@ public abstract class GridUnsafe {
             UNSAFE.copyMemory(srcBase, srcOff, dstBase, dstOff, len);
     }
 
-    public static GridAtomicLong allocated = new GridAtomicLong();
+    public static GridAtomicLong cnt = new GridAtomicLong();
 
     /**
      * Frees memory.
@@ -1201,13 +1201,9 @@ public abstract class GridUnsafe {
      * @param addr Address.
      */
     public static void freeMemory(long addr) {
-        UNSAFE.freeMemory(addr);
-    }
+        cnt.decrementAndGet();
 
-    public static void freeMemory(long addr, long size) {
         UNSAFE.freeMemory(addr);
-
-        allocated.getAndAdd(-size);
     }
 
     /**

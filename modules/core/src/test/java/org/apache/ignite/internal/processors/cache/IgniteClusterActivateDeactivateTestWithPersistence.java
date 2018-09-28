@@ -62,6 +62,8 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
+        System.out.println();
+
         cleanPersistenceDir();
     }
 
@@ -83,6 +85,8 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 //    public void testActivateCachesRestore_SingleNode_WithNewCaches() throws Exception {
 //        activateCachesRestore(1, true);
 //    }
+
+
 
     /**
      * @throws Exception If failed.
