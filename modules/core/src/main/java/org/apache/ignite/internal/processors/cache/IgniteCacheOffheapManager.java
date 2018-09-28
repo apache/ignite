@@ -276,6 +276,8 @@ public interface IgniteCacheOffheapManager {
      * @param primary {@code True} if on primary node.
      * @param needHistory Flag to collect history.
      * @param noCreate Flag indicating that row should not be created if absent.
+     * @param filter Filter.
+     * @param retVal Flag to return previous value.
      * @return Update result.
      * @throws IgniteCheckedException If failed.
      */
@@ -287,13 +289,17 @@ public interface IgniteCacheOffheapManager {
         MvccSnapshot mvccSnapshot,
         boolean primary,
         boolean needHistory,
-        boolean noCreate) throws IgniteCheckedException;
+        boolean noCreate,
+        @Nullable CacheEntryPredicate filter,
+        boolean retVal) throws IgniteCheckedException;
 
     /**
      * @param entry Entry.
      * @param mvccSnapshot MVCC snapshot.
      * @param primary {@code True} if on primary node.
      * @param needHistory Flag to collect history.
+     * @param filter Filter.
+     * @param retVal Flag to return previous value.
      * @return Update result.
      * @throws IgniteCheckedException If failed.
      */
@@ -301,7 +307,9 @@ public interface IgniteCacheOffheapManager {
         GridCacheMapEntry entry,
         MvccSnapshot mvccSnapshot,
         boolean primary,
-        boolean needHistory) throws IgniteCheckedException;
+        boolean needHistory,
+        @Nullable CacheEntryPredicate filter,
+        boolean retVal) throws IgniteCheckedException;
 
     /**
      * @param entry Entry.
@@ -788,9 +796,11 @@ public interface IgniteCacheOffheapManager {
          * @param ver Version.
          * @param expireTime Expire time.
          * @param mvccSnapshot MVCC snapshot.
+         * @param filter Filter.
          * @param primary {@code True} if update is executed on primary node.
          * @param needHistory Flag to collect history.
          * @param noCreate Flag indicating that row should not be created if absent.
+         * @param retVal Flag to return previous value.
          * @return Update result.
          * @throws IgniteCheckedException If failed.
          */
@@ -801,16 +811,20 @@ public interface IgniteCacheOffheapManager {
             GridCacheVersion ver,
             long expireTime,
             MvccSnapshot mvccSnapshot,
+            @Nullable CacheEntryPredicate filter,
             boolean primary,
             boolean needHistory,
-            boolean noCreate) throws IgniteCheckedException;
+            boolean noCreate,
+            boolean retVal) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.
          * @param key Key.
          * @param mvccSnapshot MVCC snapshot.
+         * @param filter Filter.
          * @param primary {@code True} if update is executed on primary node.
          * @param needHistory Flag to collect history.
+         * @param retVal Flag to return previous value.
          * @return List of transactions to wait for.
          * @throws IgniteCheckedException If failed.
          */
@@ -818,8 +832,10 @@ public interface IgniteCacheOffheapManager {
             GridCacheContext cctx,
             KeyCacheObject key,
             MvccSnapshot mvccSnapshot,
+            @Nullable CacheEntryPredicate filter,
             boolean primary,
-            boolean needHistory) throws IgniteCheckedException;
+            boolean needHistory,
+            boolean retVal) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.

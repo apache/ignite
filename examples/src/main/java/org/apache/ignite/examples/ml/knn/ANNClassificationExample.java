@@ -34,7 +34,6 @@ import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
-import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Run ANN multi-class classification trainer ({@link ANNClassificationTrainer}) over distributed dataset.
@@ -59,73 +58,67 @@ public class ANNClassificationExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                ANNClassificationExample.class.getSimpleName(), () -> {
-                IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
+            IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
-                ANNClassificationTrainer trainer = new ANNClassificationTrainer()
-                    .withDistance(new ManhattanDistance())
-                    .withK(50)
-                    .withMaxIterations(1000)
-                    .withSeed(1234L)
-                    .withEpsilon(1e-2);
+            ANNClassificationTrainer trainer = new ANNClassificationTrainer()
+                .withDistance(new ManhattanDistance())
+                .withK(50)
+                .withMaxIterations(1000)
+                .withSeed(1234L)
+                .withEpsilon(1e-2);
 
-                long startTrainingTime = System.currentTimeMillis();
+            long startTrainingTime = System.currentTimeMillis();
 
-                NNClassificationModel knnMdl = trainer.fit(
-                    ignite,
-                    dataCache,
-                    (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-                    (k, v) -> v[0]
-                ).withK(5)
-                    .withDistanceMeasure(new EuclideanDistance())
-                    .withStrategy(NNStrategy.WEIGHTED);
+            NNClassificationModel knnMdl = trainer.fit(
+                ignite,
+                dataCache,
+                (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+                (k, v) -> v[0]
+            ).withK(5)
+                .withDistanceMeasure(new EuclideanDistance())
+                .withStrategy(NNStrategy.WEIGHTED);
 
-                long endTrainingTime = System.currentTimeMillis();
+            long endTrainingTime = System.currentTimeMillis();
 
-                System.out.println(">>> ---------------------------------");
-                System.out.println(">>> | Prediction\t| Ground Truth\t|");
-                System.out.println(">>> ---------------------------------");
+            System.out.println(">>> ---------------------------------");
+            System.out.println(">>> | Prediction\t| Ground Truth\t|");
+            System.out.println(">>> ---------------------------------");
 
-                int amountOfErrors = 0;
-                int totalAmount = 0;
+            int amountOfErrors = 0;
+            int totalAmount = 0;
 
-                long totalPredictionTime = 0L;
+            long totalPredictionTime = 0L;
 
-                try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {
-                    for (Cache.Entry<Integer, double[]> observation : observations) {
-                        double[] val = observation.getValue();
-                        double[] inputs = Arrays.copyOfRange(val, 1, val.length);
-                        double groundTruth = val[0];
+            try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {
+                for (Cache.Entry<Integer, double[]> observation : observations) {
+                    double[] val = observation.getValue();
+                    double[] inputs = Arrays.copyOfRange(val, 1, val.length);
+                    double groundTruth = val[0];
 
-                        long startPredictionTime = System.currentTimeMillis();
-                        double prediction = knnMdl.apply(new DenseVector(inputs));
-                        long endPredictionTime = System.currentTimeMillis();
+                    long startPredictionTime = System.currentTimeMillis();
+                    double prediction = knnMdl.apply(new DenseVector(inputs));
+                    long endPredictionTime = System.currentTimeMillis();
 
-                        totalPredictionTime += (endPredictionTime - startPredictionTime);
+                    totalPredictionTime += (endPredictionTime - startPredictionTime);
 
-                        totalAmount++;
-                        if (groundTruth != prediction)
-                            amountOfErrors++;
+                    totalAmount++;
+                    if (groundTruth != prediction)
+                        amountOfErrors++;
 
-                        System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
-                    }
-
-                    System.out.println(">>> ---------------------------------");
-
-                    System.out.println("Training costs = " + (endTrainingTime - startTrainingTime));
-                    System.out.println("Prediction costs = " + totalPredictionTime);
-
-                    System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
-                    System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double) totalAmount));
-                    System.out.println(totalAmount);
-
-                    System.out.println(">>> ANN multi-class classification algorithm over cached dataset usage example completed.");
+                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
                 }
-            });
 
-            igniteThread.start();
-            igniteThread.join();
+                System.out.println(">>> ---------------------------------");
+
+                System.out.println("Training costs = " + (endTrainingTime - startTrainingTime));
+                System.out.println("Prediction costs = " + totalPredictionTime);
+
+                System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
+                System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double) totalAmount));
+                System.out.println(totalAmount);
+
+                System.out.println(">>> ANN multi-class classification algorithm over cached dataset usage example completed.");
+            }
         }
     }
 

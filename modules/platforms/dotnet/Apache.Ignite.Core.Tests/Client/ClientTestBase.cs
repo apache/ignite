@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Tests.Client
             var cache = GetCache<int>();
             cache.RemoveAll();
             cache.Clear();
-            
+
             Assert.AreEqual(0, cache.GetSize(CachePeekMode.All));
             Assert.AreEqual(0, GetClientCache<int>().GetSize(CachePeekMode.All));
         }
@@ -140,7 +140,7 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             return new IgniteClientConfiguration
             {
-                Host = IPAddress.Loopback.ToString()
+                Endpoints = new[] {IPAddress.Loopback.ToString()}
             };
         }
 
