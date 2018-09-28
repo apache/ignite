@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import java.sql.ResultSet;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReferenceArray;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -31,9 +30,6 @@ import org.jetbrains.annotations.Nullable;
  * Mapper query results.
  */
 class MapQueryResults {
-    /** Logger. */
-    private final IgniteLogger log;
-
     /** H2 indexing. */
     private final IgniteH2Indexing h2;
 
@@ -70,7 +66,6 @@ class MapQueryResults {
     @SuppressWarnings("unchecked")
     MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable GridCacheContext<?, ?> cctx,
         @Nullable MapQueryLazyWorker lazyWorker, boolean forUpdate) {
-        this.log = h2.kernalContext().log(MapQueryResults.class);
         this.forUpdate = forUpdate;
         this.h2 = h2;
         this.qryReqId = qryReqId;
@@ -159,6 +154,10 @@ class MapQueryResults {
      * Close the query.
      */
     void close() {
+        // TODO VO: lazyWOrker.isStarted() doesn't use any synchronization, looks like a race.
+        // TODO VO: Something is really wrong with synchronization of close() and cancel() operations,
+        // TODO VO: and lazy worker stop.
+        // TODO VO: Key problem is synchronization around MapQueryLazyWorker.started.
         if (lazyWorker == null || !lazyWorker.isStarted() || MapQueryLazyWorker.currentWorker() != null) {
             for (int i = 0; i < results.length(); i++) {
                 MapQueryResult res = results.get(i);

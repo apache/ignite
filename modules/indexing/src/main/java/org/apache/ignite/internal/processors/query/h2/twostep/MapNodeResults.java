@@ -90,6 +90,8 @@ class MapNodeResults {
                 if (removed != null) {
                     removed.cancel();
 
+                    // TODO VO: lazyWOrker.isStarted() doesn't use any synchronization, looks like a race.
+                    // TODO VO: Shouldn't we set "!" before "removed.lazyWorker().isStarted()"?
                     if (removed.lazyWorker() == null || removed.lazyWorker().isStarted())
                         removed.close();
                 }
