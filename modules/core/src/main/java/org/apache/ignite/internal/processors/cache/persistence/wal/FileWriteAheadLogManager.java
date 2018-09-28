@@ -2412,19 +2412,23 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private abstract static class FileHandle {
         /** I/O interface for read/write operations with file */
         SegmentIO fileIO;
+        
+        /** Segment idx corresponded to fileIo*/
+        final long segmentIdx;
 
         /**
-         * @param fileIO I/O interface for read/write operations of FileHandle.         *
+         * @param fileIO I/O interface for read/write operations of FileHandle.
          */
-        private FileHandle(SegmentIO fileIO) {
+        private FileHandle(@NotNull SegmentIO fileIO) {
             this.fileIO = fileIO;
+            segmentIdx = fileIO.getSegmentId();
         }
 
         /**
          * @return Absolute WAL segment file index (incremental counter).
          */
         public long getSegmentId(){
-            return fileIO.getSegmentId();
+            return segmentIdx;
         }
     }
 
