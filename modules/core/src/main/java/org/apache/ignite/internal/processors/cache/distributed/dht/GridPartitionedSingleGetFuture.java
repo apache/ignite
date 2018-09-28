@@ -607,7 +607,9 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                         try {
                             AffinityTopologyVersion topVer = fut.get();
 
-                            remap(topVer);
+                            cctx.shared().exchange().affinityReadyFuture(topVer).listen(f -> {
+                                remap(topVer);
+                            });
                         }
                         catch (IgniteCheckedException e) {
                             onDone(e);
@@ -748,7 +750,11 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                     @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                         try {
-                            remap(fut.get());
+                            AffinityTopologyVersion topVer0 = fut.get();
+
+                            cctx.shared().exchange().affinityReadyFuture(topVer0).listen(f -> {
+                                remap(topVer0);
+                            });
                         }
                         catch (IgniteCheckedException e) {
                             onDone(e);
