@@ -430,6 +430,29 @@ public class SegmentAwareTest extends TestCase {
     }
 
     /**
+     * Tests that {@link SegmentAware#lastCompressedIdx} returns segments in proper order.
+     */
+    public void testLastCompressedIdxProperOrdering() throws IgniteInterruptedCheckedException {
+        SegmentAware aware = new SegmentAware(10, true);
+
+        for (int i = 0; i < 5 ; i++) {
+            aware.setLastArchivedAbsoluteIndex(i);
+            aware.waitNextSegmentToCompress();
+        }
+
+        aware.lastCompressedIdx(0);
+
+        aware.lastCompressedIdx(4);
+        assertEquals(0, aware.lastCompressedIdx());
+        aware.lastCompressedIdx(1);
+        assertEquals(1, aware.lastCompressedIdx());
+        aware.lastCompressedIdx(3);
+        assertEquals(1, aware.lastCompressedIdx());
+        aware.lastCompressedIdx(2);
+        assertEquals(4, aware.lastCompressedIdx());
+    }
+
+    /**
      * Segment reserve correctly.
      */
     public void testReserveCorrectly() {

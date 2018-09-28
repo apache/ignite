@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 
 /**
@@ -42,6 +44,11 @@ public class SegmentCompressStorage {
 
     /** Segments to compress queue. */
     private final Queue<Long> segmentsToCompress = new ArrayDeque<>();
+
+    private final List<Long> compressingSegments = new ArrayList<>();
+
+    /** Compressed segment with maximal index. */
+    private long lastMaxCompressedIdx = -1L;
 
     /** Min uncompressed index to keep. */
     private volatile long minUncompressedIdxToKeep = -1L;
@@ -76,8 +83,14 @@ public class SegmentCompressStorage {
      *
      * @param lastCompressedIdx Segment which was last compressed.
      */
-    void lastCompressedIdx(long lastCompressedIdx) {
-        this.lastCompressedIdx = lastCompressedIdx;
+    synchronized void lastCompressedIdx(long lastCompressedIdx) {
+        if (lastCompressedIdx > lastMaxCompressedIdx)
+            lastMaxCompressedIdx = lastCompressedIdx;
+
+        if (compressingSegments.remove(lastCompressedIdx) && compressingSegments.size() > 0)
+            this.lastCompressedIdx = Math.min(lastMaxCompressedIdx, compressingSegments.get(0) - 1);
+        else
+            this.lastCompressedIdx = lastMaxCompressedIdx;
     }
 
     /**
@@ -104,6 +117,8 @@ public class SegmentCompressStorage {
 
         Long idx =  segmentsToCompress.poll();
 
+        compressingSegments.add(idx);
+
         return idx == null ? -1L : idx;
     }
 
@@ -128,10 +143,8 @@ public class SegmentCompressStorage {
      * Callback for waking up compressor when new segment is archived.
      */
     private synchronized void onSegmentArchived(long lastAbsArchivedIdx) {
-        if (lastAbsArchivedIdx > lastEnqueuedToCompressIdx && compactionEnabled) {
-            while(lastEnqueuedToCompressIdx < lastAbsArchivedIdx)
-                segmentsToCompress.add(++lastEnqueuedToCompressIdx);
-        }
+        while(lastEnqueuedToCompressIdx < lastAbsArchivedIdx && compactionEnabled)
+            segmentsToCompress.add(++lastEnqueuedToCompressIdx);
 
         notifyAll();
     }
