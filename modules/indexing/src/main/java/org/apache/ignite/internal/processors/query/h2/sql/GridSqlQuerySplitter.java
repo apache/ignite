@@ -2354,13 +2354,7 @@ public class GridSqlQuerySplitter {
 
         GridH2Table tbl = (GridH2Table) column.column().getTable();
 
-        GridH2RowDescriptor desc = tbl.rowDescriptor();
-
-        IndexColumn affKeyCol = tbl.getAffinityKeyColumn();
-
-        int colId = column.column().getColumnId();
-
-        if ((affKeyCol == null || colId < DEFAULT_COLUMNS_COUNT || !desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT) || colId != affKeyCol.column.getColumnId()) && !desc.isKeyColumn(colId))
+        if (!isAffinityKey(column, tbl))
             return null;
 
         if (right instanceof GridSqlConst) {
@@ -2374,6 +2368,29 @@ public class GridSqlQuerySplitter {
 
         return new CacheQueryPartitionInfo(-1, tbl.cacheName(), tbl.getName(),
             column.column().getType(), param.index());
+    }
+
+    /**
+     *
+     * @param col Column to check
+     * @param tbl H2 Table
+     * @return is affinity key or not
+     */
+    private static boolean isAffinityKey(GridSqlColumn col, GridH2Table tbl) {
+        GridH2RowDescriptor desc = tbl.rowDescriptor();
+
+        int colId = col.column().getColumnId();
+
+        if (desc.isKeyColumn(colId))
+            return true;
+
+        IndexColumn affKeyCol = tbl.getAffinityKeyColumn();
+
+        try {
+            return affKeyCol != null && colId >= DEFAULT_COLUMNS_COUNT && desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT) && colId == affKeyCol.column.getColumnId();
+        } catch(IllegalStateException e) {
+            return false;
+        }
     }
 
     /**

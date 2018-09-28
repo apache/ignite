@@ -151,7 +151,7 @@ public class AffinityKeyNameAndValueFieldNameConflictTest extends GridCommonAbst
 
         List<List<?>> result = personCache.query(query.setArgs(keyFieldSpecified ? "o1" : "p1")).getAll();
 
-        assertEquals(result.size(), 1);
+        assertEquals(1, result.size());
 
         stopAllGrids();
     }
