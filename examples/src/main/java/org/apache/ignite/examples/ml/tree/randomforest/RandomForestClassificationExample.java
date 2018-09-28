@@ -33,7 +33,6 @@ import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.randomforest.RandomForestClassifierTrainer;
 import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategies;
-import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Example represents a solution for the task of wine classification based on a
@@ -62,57 +61,50 @@ public class RandomForestClassificationExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                RandomForestClassificationExample.class.getSimpleName(), () -> {
-                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
+            IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
 
-                AtomicInteger idx = new AtomicInteger(0);
-                RandomForestClassifierTrainer classifier = new RandomForestClassifierTrainer(
-                    IntStream.range(0, data[0].length - 1).mapToObj(
-                        x -> new FeatureMeta("", idx.getAndIncrement(), false)).collect(Collectors.toList())
-                ).withAmountOfTrees(101)
-                    .withFeaturesCountSelectionStrgy(FeaturesCountSelectionStrategies.ONE_THIRD)
-                    .withMaxDepth(4)
-                    .withMinImpurityDelta(0.)
-                    .withSubSampleSize(0.3)
-                    .withSeed(0);
+            AtomicInteger idx = new AtomicInteger(0);
+            RandomForestClassifierTrainer classifier = new RandomForestClassifierTrainer(
+                IntStream.range(0, data[0].length - 1).mapToObj(
+                    x -> new FeatureMeta("", idx.getAndIncrement(), false)).collect(Collectors.toList())
+            ).withAmountOfTrees(101)
+                .withFeaturesCountSelectionStrgy(FeaturesCountSelectionStrategies.ONE_THIRD)
+                .withMaxDepth(4)
+                .withMinImpurityDelta(0.)
+                .withSubSampleSize(0.3)
+                .withSeed(0);
 
-                System.out.println(">>> Configured trainer: " + classifier.getClass().getSimpleName());
+            System.out.println(">>> Configured trainer: " + classifier.getClass().getSimpleName());
 
-                ModelsComposition randomForest = classifier.fit(ignite, dataCache,
-                    (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-                    (k, v) -> v[0]
-                );
+            ModelsComposition randomForest = classifier.fit(ignite, dataCache,
+                (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+                (k, v) -> v[0]
+            );
 
-                System.out.println(">>> Trained model: " + randomForest.toString(true));
+            System.out.println(">>> Trained model: " + randomForest.toString(true));
 
-                int amountOfErrors = 0;
-                int totalAmount = 0;
+            int amountOfErrors = 0;
+            int totalAmount = 0;
 
-                try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {
-                    for (Cache.Entry<Integer, double[]> observation : observations) {
-                        double[] val = observation.getValue();
-                        double[] inputs = Arrays.copyOfRange(val, 1, val.length);
-                        double groundTruth = val[0];
+            try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {
+                for (Cache.Entry<Integer, double[]> observation : observations) {
+                    double[] val = observation.getValue();
+                    double[] inputs = Arrays.copyOfRange(val, 1, val.length);
+                    double groundTruth = val[0];
 
-                        double prediction = randomForest.apply(VectorUtils.of(inputs));
+                    double prediction = randomForest.apply(VectorUtils.of(inputs));
 
-                        totalAmount++;
-                        if (groundTruth != prediction)
-                            amountOfErrors++;
-
-                    }
-
-                    System.out.println("\n>>> Evaluated model on " + totalAmount + " data points.");
-
-                    System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
-                    System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double) totalAmount));
-                    System.out.println(">>> Random Forest multi-class classification algorithm over cached dataset usage example completed.");
+                    totalAmount++;
+                    if (groundTruth != prediction)
+                        amountOfErrors++;
                 }
-            });
 
-            igniteThread.start();
-            igniteThread.join();
+                System.out.println("\n>>> Evaluated model on " + totalAmount + " data points.");
+
+                System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
+                System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double) totalAmount));
+                System.out.println(">>> Random Forest multi-class classification algorithm over cached dataset usage example completed.");
+            }
         }
     }
 
