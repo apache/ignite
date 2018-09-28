@@ -440,6 +440,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                         ctx.localNodeId(),
                                         topologyVersion(),
                                         snapshot,
+                                        false,
+                                        null,
                                         false);
 
                                     break;
@@ -456,6 +458,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                         snapshot,
                                         op.cacheOperation(),
                                         false,
+                                        false,
+                                        null,
                                         false);
 
                                     break;
