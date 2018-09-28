@@ -66,7 +66,7 @@ namespace ignite
 
         bool Cursor::IsClosedRemotely() const
         {
-            return !currentPage.get() || currentPage->IsLast();
+            return currentPage.get() && currentPage->IsLast();
         }
 
         void Cursor::UpdateData(std::auto_ptr<ResultPage>& newPage)

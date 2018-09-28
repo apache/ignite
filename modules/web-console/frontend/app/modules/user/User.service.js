@@ -15,10 +15,35 @@
  * limitations under the License.
  */
 
-export default ['User', ['$q', '$injector', '$rootScope', '$state', '$http', function($q, $injector, $root, $state, $http) {
+/**
+ * @typedef User
+ * @prop {string} _id
+ * @prop {boolean} admin
+ * @prop {string} country
+ * @prop {string} email
+ * @prop {string} firstName
+ * @prop {string} lastName
+ * @prop {string} lastActivity
+ * @prop {string} lastLogin
+ * @prop {string} registered
+ * @prop {string} token
+ */
+
+/**
+ * @param {ng.IQService} $q
+ * @param {ng.auto.IInjectorService} $injector
+ * @param {ng.IRootScopeService} $root
+ * @param {import('@uirouter/angularjs').StateService} $state
+ * @param {ng.IHttpService} $http
+ */
+export default function User($q, $injector, $root, $state, $http) {
+    /** @type {ng.IPromise<User>} */
     let user;
 
     return {
+        /**
+         * @returns {ng.IPromise<User>}
+         */
         load() {
             return user = $http.post('/api/v1/user')
                 .then(({data}) => {
@@ -48,4 +73,6 @@ export default ['User', ['$q', '$injector', '$rootScope', '$state', '$http', fun
             sessionStorage.removeItem('IgniteDemoMode');
         }
     };
-}]];
+}
+
+User.$inject = ['$q', '$injector', '$rootScope', '$state', '$http'];
