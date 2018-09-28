@@ -41,14 +41,14 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_BIT_OFF;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_MASK;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compare;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.isActive;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.isVisible;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccVersionIsValid;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.unexpectedStateException;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.MVCC_HINTS_BIT_OFF;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.MVCC_HINTS_MASK;
 
 /**
  *
@@ -56,16 +56,22 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
 public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, BPlusTree.TreeVisitorClosure<CacheSearchRow, CacheDataRow> {
     /** */
     private static final int FIRST = DIRTY << 1;
+
     /** */
     private static final int CHECK_VERSION = FIRST << 1;
+
     /** */
     private static final int LAST_COMMITTED_FOUND = CHECK_VERSION << 1;
+
     /** */
     private static final int CAN_CLEANUP = LAST_COMMITTED_FOUND << 1;
+
     /** */
     private static final int PRIMARY = CAN_CLEANUP << 1;
+
     /** */
     private static final int REMOVE_OR_LOCK = PRIMARY << 1;
+
     /** */
     private static final int NEED_HISTORY = REMOVE_OR_LOCK << 1;
     /**
@@ -78,10 +84,15 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
      * but more versions should be checked.
      */
     private static final int FAST_UPDATE = NEED_HISTORY << 1;
+
     /** */
     private static final int FAST_MISMATCH = FAST_UPDATE << 1;
+
     /** */
     private static final int DELETED = FAST_MISMATCH << 1;
+
+    /** Whether tx has overridden it's own update. */
+    private static final int OWN_VALUE_OVERRIDDEN = DELETED << 1;
 
     /** */
     @GridToStringExclude
@@ -152,6 +163,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
         this.mvccSnapshot = mvccSnapshot;
         this.cctx = cctx;
+        this.keyAbsentBefore = primary; // True for primary and false for backup (backups do not use this flag).
 
         assert !lockOnly || val == null;
 
@@ -228,7 +240,11 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                 else
                     oldRow = row;
 
-                setFlags(LAST_COMMITTED_FOUND);
+                setFlags(LAST_COMMITTED_FOUND | OWN_VALUE_OVERRIDDEN);
+
+                // Copy new key flag from the previous row version if it was created by the current tx.
+                if (isFlagsSet(PRIMARY))
+                    keyAbsentBefore = row.isKeyAbsentBefore();
             }
         }
 
@@ -238,13 +254,13 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
         long rowCntr = row.mvccCounter();
 
         // with hint bits
-        int rowOpCntr = (row.mvccTxState() << MVCC_HINTS_BIT_OFF) | (row.mvccOperationCounter() & ~MVCC_HINTS_MASK);
+        int rowOpCntr = (row.mvccTxState() << MVCC_HINTS_BIT_OFF) | (row.mvccOperationCounter() & ~MVCC_OP_COUNTER_MASK);
 
         long rowNewCrd = row.newMvccCoordinatorVersion();
         long rowNewCntr = row.newMvccCounter();
 
         // with hint bits
-        int rowNewOpCntr = (row.newMvccTxState() << MVCC_HINTS_BIT_OFF) | (row.newMvccOperationCounter() & ~MVCC_HINTS_MASK);
+        int rowNewOpCntr = (row.newMvccTxState() << MVCC_HINTS_BIT_OFF) | (row.newMvccOperationCounter() & ~MVCC_OP_COUNTER_MASK);
 
         // Search for youngest committed by another transaction row.
         if (!isFlagsSet(LAST_COMMITTED_FOUND)) {
@@ -278,6 +294,8 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                         res = ResultType.PREV_NOT_NULL;
 
                         oldRow = row;
+
+                        keyAbsentBefore = false;
                     }
 
                     if (isFlagsSet(CHECK_VERSION)) {
@@ -380,7 +398,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
             if (cleanupRows == null)
                 cleanupRows = new ArrayList<>();
 
-            cleanupRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowOpCntr & ~MVCC_HINTS_MASK, rowLink));
+            cleanupRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowOpCntr & ~MVCC_OP_COUNTER_MASK, rowLink));
         }
         else {
             // Row obsoleted by current operation, all rows created or updated with current tx.
@@ -391,7 +409,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                 if (historyRows == null)
                     historyRows = new ArrayList<>();
 
-                historyRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowOpCntr & ~MVCC_HINTS_MASK, rowLink));
+                historyRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowOpCntr & ~MVCC_OP_COUNTER_MASK, rowLink));
             }
 
             if (cleanupVer > MVCC_OP_COUNTER_NA // Do not clean if cleanup version is not assigned.
@@ -461,6 +479,11 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
             historyRows = new ArrayList<>();
 
         return historyRows;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isOwnValueOverridden() {
+        return isFlagsSet(OWN_VALUE_OVERRIDDEN);
     }
 
     /** */

@@ -46,6 +46,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxAbstractEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxSelectForUpdateFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -61,7 +64,6 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -135,6 +137,9 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
     /** Processed entries count. */
     protected long cnt;
 
+    /** New DHT nodes. */
+    protected Set<UUID> newDhtNodes = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
     /** Near node ID. */
     protected final UUID nearNodeId;
 
@@ -185,9 +190,6 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
 
     /** Moving partitions. */
     private Map<Integer, Boolean> movingParts;
-
-    /** Update counters to be sent to the near node in case it is a backup node also. */
-    protected GridLongList nearUpdCntrs;
 
     /**
      * @param nearNodeId Near node ID.
@@ -388,7 +390,6 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                                         tx,
                                         cctx.localNodeId(),
                                         topVer,
-                                        null,
                                         mvccSnapshot,
                                         isMoving(key.partition()));
 
@@ -403,7 +404,6 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                                         val,
                                         0,
                                         topVer,
-                                        null,
                                         mvccSnapshot,
                                         op.cacheOperation(),
                                         isMoving(key.partition()),
@@ -575,7 +575,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
         cnt++;
 
         if (op != EnlistOperation.LOCK)
-            addToBatch(entry.key(), val, updRes.mvccHistory(), updRes.updateCounter(), entry.context().cacheId());
+            addToBatch(entry.key(), val, updRes.mvccHistory(), entry.context().cacheId());
     }
 
     /**
@@ -585,9 +585,8 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
      * @param key Key.
      * @param val Value.
      * @param hist History rows.
-     * @param updCntr Update counter.
      */
-    private void addToBatch(KeyCacheObject key, CacheObject val, List<MvccLinkAwareSearchRow> hist, long updCntr,
+    private void addToBatch(KeyCacheObject key, CacheObject val, List<MvccLinkAwareSearchRow> hist,
         int cacheId) throws IgniteCheckedException {
         List<ClusterNode> backups = backupNodes(key);
 
@@ -609,14 +608,9 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                 updateMappings(node);
 
                 if (newRemoteTx(node))
-                    tx.addLockTransactionNode(node);
+                    addNewRemoteTxNode(node);
 
                 hasNearNodeUpdates = true;
-
-                if (nearUpdCntrs == null)
-                    nearUpdCntrs = new GridLongList();
-
-                nearUpdCntrs.add(updCntr);
 
                 continue;
             }
@@ -637,7 +631,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                 hist0 = fetchHistoryInfo(key, hist);
             }
 
-            batch.add(key, moving ? hist0 : val, updCntr);
+            batch.add(key, moving ? hist0 : val);
 
             if (batch.size() == BATCH_SIZE) {
                 assert batches != null;
@@ -705,6 +699,17 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
     }
 
     /**
+     * Add new involved DHT node.
+     *
+     * @param node Node.
+     */
+    private void addNewRemoteTxNode(ClusterNode node) {
+        tx.addLockTransactionNode(node);
+
+        newDhtNodes.add(node.id());
+    }
+
+    /**
      * Checks if there free space in batches or free slot in in-flight batches is available for the given key.
      *
      * @param key Key.
@@ -752,7 +757,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
         GridDhtTxQueryEnlistRequest req;
 
         if (newRemoteTx(node)) {
-            tx.addLockTransactionNode(node);
+            addNewRemoteTxNode(node);
 
             // If this is a first request to this node, send full info.
             req = new GridDhtTxQueryFirstEnlistRequest(cctx.cacheId(),
@@ -768,8 +773,8 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                 it.operation(),
                 FIRST_BATCH_ID,
                 batch.keys(),
-                batch.values(),
-                batch.updateCounters());
+                batch.values()
+            );
         }
         else {
             // Send only keys, values, LockVersion and batchId if this is not a first request to this backup.
@@ -780,8 +785,8 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                 ++batchIdCntr,
                 mvccSnapshot.operationCounter(),
                 batch.keys(),
-                batch.values(),
-                batch.updateCounters());
+                batch.values()
+            );
         }
 
         ConcurrentMap<Integer, Batch> pending0 = null;
@@ -1036,9 +1041,6 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
          */
         private List<Message> vals;
 
-        /** Update counters. */
-        private GridLongList updCntrs;
-
         /**
          * @param node Cluster node.
          */
@@ -1059,9 +1061,8 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
          * @param key Key.
          * @param val Value or preload entries collection.
          */
-        public void add(KeyCacheObject key, Message val, long updCntr) {
+        public void add(KeyCacheObject key, Message val) {
             assert val == null || val instanceof CacheObject || val instanceof CacheEntryInfoCollection;
-            assert updCntr > 0;
 
             if (keys == null)
                 keys = new ArrayList<>();
@@ -1074,11 +1075,6 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
 
                 vals.add(val);
             }
-
-            if (updCntrs == null)
-                updCntrs = new GridLongList();
-
-            updCntrs.add(updCntr);
 
             assert (vals == null) || keys.size() == vals.size();
         }
@@ -1102,13 +1098,6 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
          */
         public List<Message> values() {
             return vals;
-        }
-
-        /**
-         * @return Update counters.
-         */
-        public GridLongList updateCounters() {
-            return updCntrs;
         }
     }
 

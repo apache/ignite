@@ -94,7 +94,7 @@ public class LinearRegressionSGDTrainerTest extends TrainerTest {
             RPropParameterUpdate::avg
         ), 100000, 10, 100, 0L);
 
-        LinearRegressionModel originalModel = trainer.withSeed(0).fit(
+        LinearRegressionModel originalMdl = trainer.withSeed(0).fit(
             data,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
@@ -103,7 +103,7 @@ public class LinearRegressionSGDTrainerTest extends TrainerTest {
 
 
         LinearRegressionModel updatedOnSameDS = trainer.withSeed(0).update(
-            originalModel,
+            originalMdl,
             data,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
@@ -111,7 +111,7 @@ public class LinearRegressionSGDTrainerTest extends TrainerTest {
         );
 
         LinearRegressionModel updatedOnEmptyDS = trainer.withSeed(0).update(
-            originalModel,
+            originalMdl,
             new HashMap<Integer, double[]>(),
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
@@ -119,19 +119,19 @@ public class LinearRegressionSGDTrainerTest extends TrainerTest {
         );
 
         assertArrayEquals(
-            originalModel.getWeights().getStorage().data(),
+            originalMdl.getWeights().getStorage().data(),
             updatedOnSameDS.getWeights().getStorage().data(),
             1.0
         );
 
-        assertEquals(originalModel.getIntercept(), updatedOnSameDS.getIntercept(), 1.0);
+        assertEquals(originalMdl.getIntercept(), updatedOnSameDS.getIntercept(), 1.0);
 
         assertArrayEquals(
-            originalModel.getWeights().getStorage().data(),
+            originalMdl.getWeights().getStorage().data(),
             updatedOnEmptyDS.getWeights().getStorage().data(),
             1e-1
         );
 
-        assertEquals(originalModel.getIntercept(), updatedOnEmptyDS.getIntercept(), 1e-1);
+        assertEquals(originalMdl.getIntercept(), updatedOnEmptyDS.getIntercept(), 1e-1);
     }
 }

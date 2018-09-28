@@ -22,6 +22,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 public class OnMajorityPredictionsAggregatorTest {
+    /** Aggregator. */
     private PredictionsAggregator aggregator = new OnMajorityPredictionsAggregator();
 
     /** */
