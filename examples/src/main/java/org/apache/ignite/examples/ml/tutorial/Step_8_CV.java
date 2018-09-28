@@ -63,7 +63,7 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  */
 public class Step_8_CV {
     /** Run example. */
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 8 (cross-validation) example started.");
 

@@ -45,7 +45,7 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  */
 public class Step_4_Add_age_fare {
     /** Run example. */
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 4 (add age and fare) example started.");
 

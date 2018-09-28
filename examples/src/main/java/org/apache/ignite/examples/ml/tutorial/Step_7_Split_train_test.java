@@ -51,7 +51,7 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  */
 public class Step_7_Split_train_test {
     /** Run example. */
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 7 (split to train and test) example started.");
 

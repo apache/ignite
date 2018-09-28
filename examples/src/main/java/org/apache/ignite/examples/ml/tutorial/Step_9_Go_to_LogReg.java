@@ -56,7 +56,7 @@ import org.apache.ignite.ml.selection.split.TrainTestSplit;
  */
 public class Step_9_Go_to_LogReg {
     /** Run example. */
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 9 (logistic regression) example started.");
 
@@ -124,12 +124,13 @@ public class Step_9_Go_to_LogReg {
                                             minMaxScalerPreprocessor
                                         );
 
-                                    LogisticRegressionSGDTrainer<?> trainer
-                                        = new LogisticRegressionSGDTrainer<>(new UpdatesStrategy<>(
-                                        new SimpleGDUpdateCalculator(learningRate),
-                                        SimpleGDParameterUpdate::sumLocal,
-                                        SimpleGDParameterUpdate::avg
-                                    ), maxIterations, batchSize, locIterations, 123L);
+                                    LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>()
+                                        .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(learningRate),
+                                            SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
+                                        .withMaxIterations(maxIterations)
+                                        .withLocIterations(locIterations)
+                                        .withBatchSize(batchSize)
+                                        .withSeed(123L);
 
                                     CrossValidation<LogisticRegressionModel, Double, Integer, Object[]>
                                         scoreCalculator = new CrossValidation<>();
@@ -187,11 +188,13 @@ public class Step_9_Go_to_LogReg {
                         minMaxScalerPreprocessor
                     );
 
-                LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>(new UpdatesStrategy<>(
-                    new SimpleGDUpdateCalculator(bestLearningRate),
-                    SimpleGDParameterUpdate::sumLocal,
-                    SimpleGDParameterUpdate::avg
-                ), bestMaxIterations,  bestBatchSize, bestLocIterations, 123L);
+                LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>()
+                    .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(bestLearningRate),
+                        SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
+                    .withMaxIterations(bestMaxIterations)
+                    .withLocIterations(bestLocIterations)
+                    .withBatchSize(bestBatchSize)
+                    .withSeed(123L);
 
                 System.out.println(">>> Perform the training to get the model.");
                 LogisticRegressionModel bestMdl = trainer.fit(
