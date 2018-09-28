@@ -2055,8 +2055,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @throws IgniteCheckedException If failed.
      * @throws StorageException In case I/O error occurred during operations with storage.
      */
-    @Nullable private WALPointer restoreMemory(CheckpointStatus status, Collection<Integer> missingCacheGroupIds) throws IgniteCheckedException {
-        return restoreMemory(status, false, (PageMemoryEx)metaStorage.pageMemory(), missingCacheGroupIds);
+    @Nullable private WALPointer restoreMemory(CheckpointStatus status, Collection<Integer> missingCacheGrpIds) throws IgniteCheckedException {
+        return restoreMemory(status, false, (PageMemoryEx)metaStorage.pageMemory(), missingCacheGrpIds);
     }
 
     /**
@@ -2070,7 +2070,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         CheckpointStatus status,
         boolean metastoreOnly,
         PageMemoryEx storePageMem,
-        Collection<Integer> missingCacheGroupIds
+        Collection<Integer> missingCacheGrpIds
     ) throws IgniteCheckedException {
         assert !metastoreOnly || storePageMem != null;
 
@@ -2097,7 +2097,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         Collection<Integer> ignoreGrps = metastoreOnly ? Collections.emptySet() :
             F.concat(false,
-                missingCacheGroupIds,
+                missingCacheGrpIds,
                 F.concat(false, initiallyGlobalWalDisabledGrps, initiallyLocalWalDisabledGrps));
 
         int applied = 0;
