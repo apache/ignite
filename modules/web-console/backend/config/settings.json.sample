@@ -1,7 +1,7 @@
 {
     "server": {
         "port": 3000,
-        "sessionSecret": "CHANGE ME",
+        "sessionSecret": "ignite",
         "ssl": false,
         "key": "serve/keys/test.key",
         "cert": "serve/keys/test.crt",
