@@ -97,7 +97,7 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
 
         long chunkSize = sizes[regions.size()];
 
-        long ptr = -1;
+        long ptr;
 
         try {
             ptr = GridUnsafe.allocateMemory(chunkSize);
@@ -112,9 +112,6 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
             U.error(log, msg);
 
             return null;
-        }
-        catch (java.lang.OutOfMemoryError e0) {
-            System.out.println();
         }
 
         if (ptr <= 0) {
