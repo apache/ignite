@@ -38,6 +38,8 @@
     <properties>
         <!--fix <attachartifact>...< /> at apache-release profile if changed-->
         <ignite.zip.pattern>${project.artifactId}-${ignite.edition}-${project.version}-bin</ignite.zip.pattern>
+		<maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
 
     <scm>

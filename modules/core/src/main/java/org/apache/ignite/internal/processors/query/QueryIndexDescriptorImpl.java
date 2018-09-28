@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -51,6 +52,12 @@ public class QueryIndexDescriptorImpl implements GridQueryIndexDescriptor {
     @GridToStringExclude
     private final QueryTypeDescriptorImpl typDesc;
 
+    /**
+     * add@byron get extra index info 
+     */
+	@GridToStringExclude
+	private QueryIndex queryIndex;
+
     /** Index name. */
     private final String name;
 
@@ -76,6 +83,23 @@ public class QueryIndexDescriptorImpl implements GridQueryIndexDescriptor {
         this.type = type;
         this.inlineSize = inlineSize;
     }
+
+	public QueryIndexDescriptorImpl(QueryTypeDescriptorImpl typDesc, QueryIndex queryIndex) {
+		assert queryIndex.getIndexType() != null;
+		this.queryIndex = queryIndex;
+		this.typDesc = typDesc;
+		this.name = queryIndex.getName();
+		this.type = queryIndex.getIndexType();
+		this.inlineSize = queryIndex.getInlineSize();
+	}
+
+	public QueryIndex getQueryIndex() {
+		return queryIndex;
+	}
+
+	public void setQueryIndex(QueryIndex queryIndex) {
+		this.queryIndex = queryIndex;
+	}
 
     /**
      * @return Type descriptor.

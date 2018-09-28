@@ -762,6 +762,10 @@ public class QueryUtils {
 
                 d.addFieldToTextIndex(field);
             }
+            //add@byron set extra index info.
+            QueryIndexDescriptorImpl qidx = (QueryIndexDescriptorImpl)d.textIndex();
+            qidx.setQueryIndex(idx);
+            //end@
         }
         else if (idxTyp != null)
             throw new IllegalArgumentException("Unsupported index type [idx=" + idx.getName() +
