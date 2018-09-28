@@ -398,7 +398,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 seg.close();
         }
 
-        directMemoryProvider.shutdown();
+        directMemoryProvider.shutdown(false);
     }
 
     /** {@inheritDoc} */

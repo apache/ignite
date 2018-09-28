@@ -1115,8 +1115,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 checkPointBufferIdxCnt.set(chunkSizes.length);
             }
 
-            @Override public void shutdown() {
-                memProvider.shutdown();
+            @Override public void shutdown(boolean stop) {
+                memProvider.shutdown(stop);
             }
 
             @Override public DirectMemoryRegion nextRegion() {

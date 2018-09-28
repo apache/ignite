@@ -243,7 +243,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         if (log.isDebugEnabled())
             log.debug("Stopping page memory.");
 
-        directMemoryProvider.shutdown();
+        directMemoryProvider.shutdown(false);
 
         if (directMemoryProvider instanceof Closeable) {
             try {

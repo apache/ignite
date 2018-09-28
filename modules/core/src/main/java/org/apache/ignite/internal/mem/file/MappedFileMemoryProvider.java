@@ -100,8 +100,9 @@ public class MappedFileMemoryProvider implements DirectMemoryProvider {
         isInit = true;
     }
 
-    /** {@inheritDoc} */
-    @Override public void shutdown() {
+    /** {@inheritDoc}
+     * @param stop*/
+    @Override public void shutdown(boolean stop) {
         if (mappedFiles != null) {
             for (MappedFile file : mappedFiles) {
                 try {

@@ -28,8 +28,10 @@ public interface DirectMemoryProvider {
 
     /**
      * Shuts down the provider. Will deallocate all previously allocated regions.
+     *
+     * @param stop {@code True} if shutdown on node stopping.
      */
-    public void shutdown();
+    public void shutdown(boolean stop);
 
     /**
      * Attempts to allocate next memory region. Will return {@code null} if no more regions are available.

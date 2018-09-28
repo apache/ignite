@@ -44,6 +44,9 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
     /** Flag shows if current memory provider have been already initialized. */
     private boolean isInit;
 
+    /** */
+    private int used = 0;
+
     /**
      * @param log Ignite logger to use.
      */
@@ -54,7 +57,7 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
     /** {@inheritDoc} */
     @Override public void initialize(long[] sizes) {
         if (isInit)
-            throw new IgniteException("Second initialization does not allowed for current provider");
+            return;
 
         this.sizes = sizes;
 
@@ -63,28 +66,38 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
         isInit = true;
     }
 
-    /** {@inheritDoc} */
-    @Override public void shutdown() {
+    /** {@inheritDoc}
+     * @param stop*/
+    @Override public void shutdown(boolean stop) {
         if (regions != null) {
             for (Iterator<DirectMemoryRegion> it = regions.iterator(); it.hasNext(); ) {
                 DirectMemoryRegion chunk = it.next();
 
-                GridUnsafe.freeMemory(chunk.address());
+                if (stop) {
+                    GridUnsafe.freeMemory(chunk.address(), chunk.size());
 
-                // Safety.
-                it.remove();
+                    // Safety.
+                    it.remove();
+                }
             }
+
+            /** provider will be recreated if {@code stop} is true. */
+            if (!stop)
+                used = 0;
         }
     }
 
     /** {@inheritDoc} */
     @Override public DirectMemoryRegion nextRegion() {
-        if (regions.size() == sizes.length)
+        if (used == sizes.length)
             return null;
+
+        if (used < regions.size())
+            return regions.get(used++);
 
         long chunkSize = sizes[regions.size()];
 
-        long ptr;
+        long ptr = -1;
 
         try {
             ptr = GridUnsafe.allocateMemory(chunkSize);
@@ -100,6 +113,9 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
 
             return null;
         }
+        catch (java.lang.OutOfMemoryError e0) {
+            System.out.println();
+        }
 
         if (ptr <= 0) {
             U.error(log, "Failed to allocate next memory chunk: " + U.readableSize(chunkSize, true));
@@ -110,6 +126,8 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
         DirectMemoryRegion region = new UnsafeChunk(ptr, chunkSize);
 
         regions.add(region);
+
+        used++;
 
         return region;
     }

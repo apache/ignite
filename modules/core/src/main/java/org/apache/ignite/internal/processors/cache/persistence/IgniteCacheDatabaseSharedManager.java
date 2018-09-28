@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -112,6 +113,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** First eviction was warned flag. */
     private volatile boolean firstEvictWarn;
 
+    /** */
+    private Map<String, DirectMemoryProvider> memProviderMap;
+
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         if (cctx.kernalContext().clientNode() && cctx.kernalContext().config().getDataStorageConfiguration() == null)
@@ -124,6 +128,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         validateConfiguration(memCfg);
 
         pageSize = memCfg.getPageSize();
+
+        memProviderMap = new HashMap<>();
 
         initDataRegions(memCfg);
     }
@@ -706,7 +712,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
-        onDeActivate(cctx.kernalContext());
+        onDeActivate(true);
     }
 
     /**
@@ -935,13 +941,20 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         DataRegionMetricsImpl memMetrics,
         boolean trackable
     ) throws IgniteCheckedException {
-        File allocPath = buildAllocPath(plcCfg);
+        // Reuse memory provider.
+        DirectMemoryProvider memProvider = memProviderMap.get(plcCfg.getName());
 
-        DirectMemoryProvider memProvider = allocPath == null ?
-            new UnsafeMemoryProvider(log) :
-            new MappedFileMemoryProvider(
-                log,
-                allocPath);
+        if (memProvider == null) {
+            File allocPath = buildAllocPath(plcCfg);
+
+            memProvider = allocPath == null ?
+                new UnsafeMemoryProvider(log) :
+                new MappedFileMemoryProvider(
+                    log,
+                    allocPath);
+
+            memProviderMap.put(plcCfg.getName(), memProvider);
+        }
 
         PageMemory pageMem = createPageMemory(memProvider, memCfg, plcCfg, memMetrics, trackable);
 
@@ -1045,8 +1058,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 memProvider.initialize(chunkSizes);
             }
 
-            @Override public void shutdown() {
-                memProvider.shutdown();
+            @Override public void shutdown(boolean stop) {
+                memProvider.shutdown(stop);
             }
 
             @Override public DirectMemoryRegion nextRegion() {
@@ -1095,16 +1108,21 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         initPageMemoryDataStructures(memCfg);
 
-        for (DatabaseLifecycleListener lsnr : getDatabaseListeners(kctx)) {
+        for (DatabaseLifecycleListener lsnr : getDatabaseListeners(kctx))
             lsnr.afterInitialise(this);
-        }
     }
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext())) {
+        onDeActivate(false);
+    }
+
+    /**
+     * @param shutdown Shutdown.
+     */
+    private void onDeActivate(boolean shutdown) {
+        for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
             lsnr.beforeStop(this);
-        }
 
         if (dataRegionMap != null) {
             for (DataRegion memPlc : dataRegionMap.values()) {
@@ -1118,6 +1136,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             dataRegionMap.clear();
 
             dataRegionMap = null;
+
+            if (shutdown) {
+                for (DirectMemoryProvider provider : memProviderMap.values())
+                    provider.shutdown(true);
+
+                memProviderMap.clear();
+
+                memProviderMap = null;
+            }
 
             dataRegionsInitialized = false;
         }

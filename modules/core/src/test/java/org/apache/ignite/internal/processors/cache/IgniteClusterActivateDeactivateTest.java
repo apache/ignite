@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -120,11 +121,11 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
         memCfg.setPageSize(4 * 1024);
         memCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-            .setMaxSize(300L * 1024 * 1024)
+            .setMaxSize(150L * 1024 * 1024)
             .setPersistenceEnabled(persistenceEnabled()));
 
         memCfg.setDataRegionConfigurations(new DataRegionConfiguration()
-            .setMaxSize(300L * 1024 * 1024)
+            .setMaxSize(150L * 1024 * 1024)
             .setName(NO_PERSISTENCE_REGION)
             .setPersistenceEnabled(false));
 
@@ -132,6 +133,8 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             memCfg.setWalMode(WALMode.LOG_ONLY);
 
         cfg.setDataStorageConfiguration(memCfg);
+
+        cfg.setFailureDetectionTimeout(60000);
 
         if (testSpi) {
             TestRecordingCommunicationSpi spi = new TestRecordingCommunicationSpi();
@@ -149,6 +152,8 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
+        long l = GridUnsafe.allocated.get();
+
         super.afterTest();
     }
 
@@ -162,37 +167,37 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    public void testActivateSimple_SingleNode() throws Exception {
-        activateSimple(1, 0, 0);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testActivateSimple_5_Servers() throws Exception {
-        activateSimple(5, 0, 0);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testActivateSimple_5_Servers2() throws Exception {
-        activateSimple(5, 0, 4);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testActivateSimple_5_Servers_5_Clients() throws Exception {
-        activateSimple(5, 4, 0);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testActivateSimple_5_Servers_5_Clients_FromClient() throws Exception {
-        activateSimple(5, 4, 6);
-    }
+//    public void testActivateSimple_SingleNode() throws Exception {
+//        activateSimple(1, 0, 0);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testActivateSimple_5_Servers() throws Exception {
+//        activateSimple(5, 0, 0);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testActivateSimple_5_Servers2() throws Exception {
+//        activateSimple(5, 0, 4);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testActivateSimple_5_Servers_5_Clients() throws Exception {
+//        activateSimple(5, 4, 0);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testActivateSimple_5_Servers_5_Clients_FromClient() throws Exception {
+//        activateSimple(5, 4, 6);
+//    }
 
     /**
      * @param srvs Number of servers.
@@ -278,75 +283,75 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    public void testJoinWhileActivate1_Server() throws Exception {
-        joinWhileActivate1(false, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testJoinWhileActivate1_WithCache_Server() throws Exception {
-        joinWhileActivate1(false, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testJoinWhileActivate1_Client() throws Exception {
-        joinWhileActivate1(true, false);
-    }
-
-    /**
-     * @param startClient If {@code true} joins client node, otherwise server.
-     * @param withNewCache If {@code true} joining node has new cache in configuration.
-     * @throws Exception If failed.
-     */
-    private void joinWhileActivate1(final boolean startClient, final boolean withNewCache) throws Exception {
-        IgniteInternalFuture<?> activeFut = startNodesAndBlockStatusChange(2, 0, 0, false);
-
-        IgniteInternalFuture<?> startFut = GridTestUtils.runAsync((Callable<Void>)() -> {
-            client = startClient;
-
-            ccfgs = withNewCache ? cacheConfigurations2() : cacheConfigurations1();
-
-            startGrid(2);
-
-            return null;
-        });
-
-        TestRecordingCommunicationSpi spi1 = TestRecordingCommunicationSpi.spi(ignite(1));
-
-        spi1.stopBlock();
-
-        activeFut.get();
-        startFut.get();
-
-        for (int c = 0; c < 2; c++)
-            checkCache(ignite(2), CACHE_NAME_PREFIX + c, true);
-
-        if (withNewCache) {
-            for (int i = 0; i < 3; i++) {
-                for (int c = 0; c < 4; c++)
-                    checkCache(ignite(i), CACHE_NAME_PREFIX + c, true);
-            }
-        }
-
-        awaitPartitionMapExchange();
-
-        checkCaches(3, withNewCache ? 4 : 2);
-
-        client = false;
-
-        startGrid(3);
-
-        checkCaches(4, withNewCache ? 4 : 2);
-
-        client = true;
-
-        startGrid(4);
-
-        checkCaches(5, withNewCache ? 4 : 2);
-    }
+//    public void testJoinWhileActivate1_Server() throws Exception {
+//        joinWhileActivate1(false, false);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testJoinWhileActivate1_WithCache_Server() throws Exception {
+//        joinWhileActivate1(false, true);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testJoinWhileActivate1_Client() throws Exception {
+//        joinWhileActivate1(true, false);
+//    }
+//
+//    /**
+//     * @param startClient If {@code true} joins client node, otherwise server.
+//     * @param withNewCache If {@code true} joining node has new cache in configuration.
+//     * @throws Exception If failed.
+//     */
+//    private void joinWhileActivate1(final boolean startClient, final boolean withNewCache) throws Exception {
+//        IgniteInternalFuture<?> activeFut = startNodesAndBlockStatusChange(2, 0, 0, false);
+//
+//        IgniteInternalFuture<?> startFut = GridTestUtils.runAsync((Callable<Void>)() -> {
+//            client = startClient;
+//
+//            ccfgs = withNewCache ? cacheConfigurations2() : cacheConfigurations1();
+//
+//            startGrid(2);
+//
+//            return null;
+//        });
+//
+//        TestRecordingCommunicationSpi spi1 = TestRecordingCommunicationSpi.spi(ignite(1));
+//
+//        spi1.stopBlock();
+//
+//        activeFut.get();
+//        startFut.get();
+//
+//        for (int c = 0; c < 2; c++)
+//            checkCache(ignite(2), CACHE_NAME_PREFIX + c, true);
+//
+//        if (withNewCache) {
+//            for (int i = 0; i < 3; i++) {
+//                for (int c = 0; c < 4; c++)
+//                    checkCache(ignite(i), CACHE_NAME_PREFIX + c, true);
+//            }
+//        }
+//
+//        awaitPartitionMapExchange();
+//
+//        checkCaches(3, withNewCache ? 4 : 2);
+//
+//        client = false;
+//
+//        startGrid(3);
+//
+//        checkCaches(4, withNewCache ? 4 : 2);
+//
+//        client = true;
+//
+//        startGrid(4);
+//
+//        checkCaches(5, withNewCache ? 4 : 2);
+//    }
 
     /**
      * @param srvs Number of servers.
@@ -426,23 +431,23 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    public void testJoinWhileDeactivate1_Server() throws Exception {
-        joinWhileDeactivate1(false, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testJoinWhileDeactivate1_WithCache_Server() throws Exception {
-        joinWhileDeactivate1(false, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testJoinWhileDeactivate1_Client() throws Exception {
-        joinWhileDeactivate1(true, false);
-    }
+//    public void testJoinWhileDeactivate1_Server() throws Exception {
+//        joinWhileDeactivate1(false, false);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testJoinWhileDeactivate1_WithCache_Server() throws Exception {
+//        joinWhileDeactivate1(false, true);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testJoinWhileDeactivate1_Client() throws Exception {
+//        joinWhileDeactivate1(true, false);
+//    }
 
     /**
      * @param startClient If {@code true} joins client node, otherwise server.
@@ -553,37 +558,37 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    public void testDeactivateSimple_SingleNode() throws Exception {
-        deactivateSimple(1, 0, 0);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDeactivateSimple_5_Servers() throws Exception {
-        deactivateSimple(5, 0, 0);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDeactivateSimple_5_Servers2() throws Exception {
-        deactivateSimple(5, 0, 4);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDeactivateSimple_5_Servers_5_Clients() throws Exception {
-        deactivateSimple(5, 4, 0);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDeactivateSimple_5_Servers_5_Clients_FromClient() throws Exception {
-        deactivateSimple(5, 4, 6);
-    }
+//    public void testDeactivateSimple_SingleNode() throws Exception {
+//        deactivateSimple(1, 0, 0);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testDeactivateSimple_5_Servers() throws Exception {
+//        deactivateSimple(5, 0, 0);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testDeactivateSimple_5_Servers2() throws Exception {
+//        deactivateSimple(5, 0, 4);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testDeactivateSimple_5_Servers_5_Clients() throws Exception {
+//        deactivateSimple(5, 4, 0);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testDeactivateSimple_5_Servers_5_Clients_FromClient() throws Exception {
+//        deactivateSimple(5, 4, 6);
+//    }
 
     /**
      * @param srvs Number of servers.
