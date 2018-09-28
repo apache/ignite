@@ -49,16 +49,16 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
     private UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy;
 
     /** Max number of iteration. */
-    private int amountOfIterations;
+    private int amountOfIterations = 100;
 
     /** Batch size. */
-    private int batchSize;
+    private int batchSize = 100;
 
     /** Number of local iterations. */
-    private int amountOfLocIterations;
+    private int amountOfLocIterations = 100;
 
     /** Seed for random generator. */
-    private long seed;
+    private long seed = 1234L;
 
     /**
      * Trains model based on the specified data.
@@ -90,7 +90,11 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
 
         classes.forEach(clsLb -> {
             LogisticRegressionSGDTrainer<?> trainer =
-                new LogisticRegressionSGDTrainer<>(updatesStgy, amountOfIterations, batchSize, amountOfLocIterations, seed);
+                new LogisticRegressionSGDTrainer<>()
+                    .withBatchSize(batchSize)
+                    .withLocIterations(amountOfLocIterations)
+                    .withMaxIterations(amountOfIterations)
+                    .withSeed(seed);
 
             IgniteBiFunction<K, V, Double> lbTransformer = (k, v) -> {
                 Double lb = lbExtractor.apply(k, v);
@@ -238,7 +242,7 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
     }
 
     /**
-     * Set up the regularization parameter.
+     * Set up the updates strategy.
      *
      * @param updatesStgy Update strategy.
      * @return Trainer with new update strategy parameter value.
@@ -249,7 +253,7 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
     }
 
     /**
-     * Get the update strategy..
+     * Get the update strategy.
      *
      * @return The parameter value.
      */

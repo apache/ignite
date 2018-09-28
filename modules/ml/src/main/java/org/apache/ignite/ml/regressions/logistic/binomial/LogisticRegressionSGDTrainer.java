@@ -44,34 +44,16 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
     private UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy;
 
     /** Max number of iteration. */
-    private int maxIterations;
+    private int maxIterations = 100;
 
     /** Batch size. */
-    private int batchSize;
+    private int batchSize = 100;
 
     /** Number of local iterations. */
-    private int locIterations;
+    private int locIterations = 100;
 
     /** Seed for random generator. */
-    private long seed;
-
-    /**
-     * Constructs a new instance of linear regression SGD trainer.
-     *
-     * @param updatesStgy Update strategy.
-     * @param maxIterations Max number of iteration.
-     * @param batchSize Batch size.
-     * @param locIterations Number of local iterations.
-     * @param seed Seed for random generator.
-     */
-    public LogisticRegressionSGDTrainer(UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy, int maxIterations,
-        int batchSize, int locIterations, long seed) {
-        this.updatesStgy = updatesStgy;
-        this.maxIterations = maxIterations;
-        this.batchSize = batchSize;
-        this.locIterations = locIterations;
-        this.seed = seed;
-    }
+    private long seed = 1234L;
 
     /** {@inheritDoc} */
     @Override public <K, V> LogisticRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
@@ -198,6 +180,17 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
      */
     public LogisticRegressionSGDTrainer<P> withSeed(long seed) {
         this.seed = seed;
+        return this;
+    }
+
+    /**
+     * Set up the regularization parameter.
+     *
+     * @param updatesStgy Update strategy.
+     * @return Trainer with new update strategy parameter value.
+     */
+    public LogisticRegressionSGDTrainer withUpdatesStgy(UpdatesStrategy updatesStgy) {
+        this.updatesStgy = updatesStgy;
         return this;
     }
 
