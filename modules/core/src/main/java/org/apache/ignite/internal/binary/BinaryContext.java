@@ -819,7 +819,7 @@ public class BinaryContext {
                 typeName,
                 desc.fieldsMeta(),
                 affFieldName,
-                Collections.singleton(desc.schema()),
+                null,
                 desc.isEnum(),
                 cls.isEnum() ? enumMap(cls) : null
             );

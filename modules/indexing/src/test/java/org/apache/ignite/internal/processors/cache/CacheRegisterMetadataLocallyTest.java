@@ -32,6 +32,7 @@ import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage;
+import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -144,7 +145,7 @@ public class CacheRegisterMetadataLocallyTest extends GridCommonAbstractTest {
 
         testClientFindsValueByAffinityKey(cache, new StaticKey(1), new StaticValue(2));
 
-        assertCustomMessages(0);
+        assertCustomMessages(2); //MetadataUpdateProposedMessage for update schema.
         assertCommunicationMessages();
     }
 
@@ -158,7 +159,8 @@ public class CacheRegisterMetadataLocallyTest extends GridCommonAbstractTest {
 
         testClientFindsValueByAffinityKey(cache, new DynamicKey(3), new DynamicValue(4));
 
-        assertCustomMessages(1);//Expected only DynamicCacheChangeBatch.
+        //Expected only DynamicCacheChangeBatch for start cache and MetadataUpdateProposedMessage for update schema.
+        assertCustomMessages(3);
         assertCommunicationMessages();
     }
 
@@ -215,7 +217,7 @@ public class CacheRegisterMetadataLocallyTest extends GridCommonAbstractTest {
     private void assertCustomMessages(int expMsgCnt) {
         assertEquals(customMessages.toString(), expMsgCnt, customMessages.size());
 
-        customMessages.forEach(cm -> assertTrue(cm.toString(), cm instanceof DynamicCacheChangeBatch));
+        customMessages.forEach(cm -> assertTrue(cm.toString(), cm instanceof DynamicCacheChangeBatch || cm instanceof MetadataUpdateProposedMessage));
     }
 
     /**
