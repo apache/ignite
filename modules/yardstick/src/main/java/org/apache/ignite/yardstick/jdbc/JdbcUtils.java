@@ -66,7 +66,7 @@ public class JdbcUtils {
                 println(cfg, "Populate " + l);
         }
 
-        qProc.querySqlFields(new SqlFieldsQuery("CREATE INDEX val_idx ON test_upload (val)"), true);
+        qProc.querySqlFields(new SqlFieldsQuery("CREATE INDEX val_idx ON test_long (val)"), true);
 
         println(cfg, "Finished populating data");
     }
