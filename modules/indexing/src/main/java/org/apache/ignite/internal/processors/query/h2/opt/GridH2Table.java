@@ -263,6 +263,7 @@ public class GridH2Table extends TableBase {
         if (destroyed) {
             unlock(exclusive);
 
+            // TODO: Lock is not acquired! What is the reason to decrement the counter?
             if (!exclusive)
                 lazyTransferCnt.decrementAndGet();
 
