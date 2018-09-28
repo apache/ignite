@@ -42,10 +42,10 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -53,11 +53,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public abstract class GridNearTxAbstractEnlistFuture extends GridCacheCompoundIdentityFuture<Long> implements
-    GridCacheVersionedFuture<Long> {
-    /** */
-    private static final long serialVersionUID = -6069985059301497282L;
-
+public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoundIdentityFuture<T> implements
+    GridCacheVersionedFuture<T> {
     /** Done field updater. */
     private static final AtomicIntegerFieldUpdater<GridNearTxAbstractEnlistFuture> DONE_UPD =
         AtomicIntegerFieldUpdater.newUpdater(GridNearTxAbstractEnlistFuture.class, "done");
@@ -117,10 +114,11 @@ public abstract class GridNearTxAbstractEnlistFuture extends GridCacheCompoundId
      * @param cctx Cache context.
      * @param tx Transaction.
      * @param timeout Timeout.
+     * @param rdc Compound future reducer.
      */
     public GridNearTxAbstractEnlistFuture(
-        GridCacheContext<?, ?> cctx, GridNearTxLocal tx, long timeout) {
-        super(CU.longReducer());
+        GridCacheContext<?, ?> cctx, GridNearTxLocal tx, long timeout, @Nullable IgniteReducer<T, T> rdc) {
+        super(rdc);
 
         assert cctx != null;
         assert tx != null;
@@ -300,8 +298,6 @@ public abstract class GridNearTxAbstractEnlistFuture extends GridCacheCompoundId
             throw new IgniteCheckedException("Future is done.");
     }
 
-
-
     /**
      */
     private void mapOnTopology() {
@@ -359,7 +355,7 @@ public abstract class GridNearTxAbstractEnlistFuture extends GridCacheCompoundId
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean processFailure(Throwable err, IgniteInternalFuture<Long> fut) {
+    @Override protected boolean processFailure(Throwable err, IgniteInternalFuture<T> fut) {
         if (ex != null || !EX_UPD.compareAndSet(this, null, err))
             ex.addSuppressed(err);
 
@@ -367,7 +363,7 @@ public abstract class GridNearTxAbstractEnlistFuture extends GridCacheCompoundId
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Long res, @Nullable Throwable err, boolean cancelled) {
+    @Override public boolean onDone(@Nullable T res, @Nullable Throwable err, boolean cancelled) {
         if (!DONE_UPD.compareAndSet(this, 0, 1))
             return false;
 
