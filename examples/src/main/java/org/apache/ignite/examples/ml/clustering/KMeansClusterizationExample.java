@@ -30,7 +30,6 @@ import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
-import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Run KMeans clustering algorithm ({@link KMeansTrainer}) over distributed dataset.
@@ -55,58 +54,52 @@ public class KMeansClusterizationExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                KMeansClusterizationExample.class.getSimpleName(), () -> {
-                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
+            IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
 
-                KMeansTrainer trainer = new KMeansTrainer()
-                    .withSeed(7867L);
+            KMeansTrainer trainer = new KMeansTrainer()
+                .withSeed(7867L);
 
-                KMeansModel mdl = trainer.fit(
-                    ignite,
-                    dataCache,
-                    (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-                    (k, v) -> v[0]
-                );
+            KMeansModel mdl = trainer.fit(
+                ignite,
+                dataCache,
+                (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+                (k, v) -> v[0]
+            );
 
-                System.out.println(">>> KMeans centroids");
-                Tracer.showAscii(mdl.getCenters()[0]);
-                Tracer.showAscii(mdl.getCenters()[1]);
-                System.out.println(">>>");
+            System.out.println(">>> KMeans centroids");
+            Tracer.showAscii(mdl.getCenters()[0]);
+            Tracer.showAscii(mdl.getCenters()[1]);
+            System.out.println(">>>");
 
-                System.out.println(">>> -----------------------------------");
-                System.out.println(">>> | Predicted cluster\t| Real Label\t|");
-                System.out.println(">>> -----------------------------------");
+            System.out.println(">>> -----------------------------------");
+            System.out.println(">>> | Predicted cluster\t| Real Label\t|");
+            System.out.println(">>> -----------------------------------");
 
-                int amountOfErrors = 0;
-                int totalAmount = 0;
+            int amountOfErrors = 0;
+            int totalAmount = 0;
 
-                try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {
-                    for (Cache.Entry<Integer, double[]> observation : observations) {
-                        double[] val = observation.getValue();
-                        double[] inputs = Arrays.copyOfRange(val, 1, val.length);
-                        double groundTruth = val[0];
+            try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {
+                for (Cache.Entry<Integer, double[]> observation : observations) {
+                    double[] val = observation.getValue();
+                    double[] inputs = Arrays.copyOfRange(val, 1, val.length);
+                    double groundTruth = val[0];
 
-                        double prediction = mdl.apply(new DenseVector(inputs));
+                    double prediction = mdl.apply(new DenseVector(inputs));
 
-                        totalAmount++;
-                        if (groundTruth != prediction)
-                            amountOfErrors++;
+                    totalAmount++;
+                    if (groundTruth != prediction)
+                        amountOfErrors++;
 
-                        System.out.printf(">>> | %.4f\t\t\t| %.4f\t\t|\n", prediction, groundTruth);
-                    }
-
-                    System.out.println(">>> ---------------------------------");
-
-                    System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
-                    System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double)totalAmount));
-
-                    System.out.println(">>> KMeans clustering algorithm over cached dataset usage example completed.");
+                    System.out.printf(">>> | %.4f\t\t\t| %.4f\t\t|\n", prediction, groundTruth);
                 }
-            });
 
-            igniteThread.start();
-            igniteThread.join();
+                System.out.println(">>> ---------------------------------");
+
+                System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
+                System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double)totalAmount));
+
+                System.out.println(">>> KMeans clustering algorithm over cached dataset usage example completed.");
+            }
         }
     }
 

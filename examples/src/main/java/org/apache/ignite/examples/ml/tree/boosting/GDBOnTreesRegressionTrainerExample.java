@@ -29,7 +29,6 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.boosting.GDBRegressionOnTreesTrainer;
-import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -52,43 +51,35 @@ public class GDBOnTreesRegressionTrainerExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                GDBOnTreesRegressionTrainerExample.class.getSimpleName(), () -> {
+            // Create cache with training data.
+            CacheConfiguration<Integer, double[]> trainingSetCfg = createCacheConfiguration();
+            IgniteCache<Integer, double[]> trainingSet = fillTrainingData(ignite, trainingSetCfg);
 
-                // Create cache with training data.
-                CacheConfiguration<Integer, double[]> trainingSetCfg = createCacheConfiguration();
-                IgniteCache<Integer, double[]> trainingSet = fillTrainingData(ignite, trainingSetCfg);
+            // Create regression trainer.
+            DatasetTrainer<ModelsComposition, Double> trainer = new GDBRegressionOnTreesTrainer(1.0, 2000, 1, 0.)
+                .withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.001));
 
-                // Create regression trainer.
-                DatasetTrainer<ModelsComposition, Double> trainer = new GDBRegressionOnTreesTrainer(1.0, 2000, 1, 0.)
-                    .withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.001));
+            // Train decision tree model.
+            Model<Vector, Double> mdl = trainer.fit(
+                ignite,
+                trainingSet,
+                (k, v) -> VectorUtils.of(v[0]),
+                (k, v) -> v[1]
+            );
 
-                // Train decision tree model.
-                Model<Vector, Double> mdl = trainer.fit(
-                    ignite,
-                    trainingSet,
-                    (k, v) -> VectorUtils.of(v[0]),
-                    (k, v) -> v[1]
-                );
+            System.out.println(">>> ---------------------------------");
+            System.out.println(">>> | Prediction\t| Valid answer \t|");
+            System.out.println(">>> ---------------------------------");
 
-                System.out.println(">>> ---------------------------------");
-                System.out.println(">>> | Prediction\t| Valid answer \t|");
-                System.out.println(">>> ---------------------------------");
+            // Calculate score.
+            for (int x = -5; x < 5; x++) {
+                double predicted = mdl.apply(VectorUtils.of(x));
 
-                // Calculate score.
-                for (int x = -5; x < 5; x++) {
-                    double predicted = mdl.apply(VectorUtils.of(x));
+                System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", predicted, Math.pow(x, 2));
+            }
 
-                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", predicted, Math.pow(x, 2));
-                }
-
-                System.out.println(">>> ---------------------------------");
-
-                System.out.println(">>> GDB regression trainer example completed.");
-            });
-
-            igniteThread.start();
-            igniteThread.join();
+            System.out.println(">>> ---------------------------------");
+            System.out.println(">>> GDB regression trainer example completed.");
         }
     }
 

@@ -32,7 +32,6 @@ import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerPreprocessor
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
-import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Run linear regression model based on <a href="http://web.stanford.edu/group/SOL/software/lsqr/">LSQR algorithm</a>
@@ -116,55 +115,47 @@ public class LinearRegressionLSQRTrainerWithMinMaxScalerExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                LinearRegressionLSQRTrainerWithMinMaxScalerExample.class.getSimpleName(), () -> {
-                IgniteCache<Integer, Vector> dataCache = new TestCache(ignite).getVectors(data);
+            IgniteCache<Integer, Vector> dataCache = new TestCache(ignite).getVectors(data);
 
-                System.out.println(">>> Create new minmaxscaling trainer object.");
-                MinMaxScalerTrainer<Integer, Vector> normalizationTrainer = new MinMaxScalerTrainer<>();
+            System.out.println(">>> Create new minmaxscaling trainer object.");
+            MinMaxScalerTrainer<Integer, Vector> normalizationTrainer = new MinMaxScalerTrainer<>();
 
-                System.out.println(">>> Perform the training to get the minmaxscaling preprocessor.");
-                IgniteBiFunction<Integer, Vector, Vector> preprocessor = normalizationTrainer.fit(
-                    ignite,
-                    dataCache,
-                    (k, v) -> {
-                        double[] arr = v.asArray();
-                        return VectorUtils.of(Arrays.copyOfRange(arr, 1, arr.length));
-                    }
-                );
-
-                System.out.println(">>> Create new linear regression trainer object.");
-                LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
-
-                System.out.println(">>> Perform the training to get the model.");
-                LinearRegressionModel mdl = trainer.fit(ignite, dataCache, preprocessor, (k, v) -> v.get(0));
-
-                System.out.println(">>> Linear regression model: " + mdl);
-
-                System.out.println(">>> ---------------------------------");
-                System.out.println(">>> | Prediction\t| Ground Truth\t|");
-                System.out.println(">>> ---------------------------------");
-
-                try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
-                    for (Cache.Entry<Integer, Vector> observation : observations) {
-                        Integer key = observation.getKey();
-                        Vector val = observation.getValue();
-                        double groundTruth = val.get(0);
-
-                        double prediction = mdl.apply(preprocessor.apply(key, val));
-
-                        System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
-                    }
+            System.out.println(">>> Perform the training to get the minmaxscaling preprocessor.");
+            IgniteBiFunction<Integer, Vector, Vector> preprocessor = normalizationTrainer.fit(
+                ignite,
+                dataCache,
+                (k, v) -> {
+                    double[] arr = v.asArray();
+                    return VectorUtils.of(Arrays.copyOfRange(arr, 1, arr.length));
                 }
+            );
 
-                System.out.println(">>> ---------------------------------");
+            System.out.println(">>> Create new linear regression trainer object.");
+            LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
 
-                System.out.println(">>> Linear regression model with minmaxscaling preprocessor over cache based dataset usage example completed.");
-            });
+            System.out.println(">>> Perform the training to get the model.");
+            LinearRegressionModel mdl = trainer.fit(ignite, dataCache, preprocessor, (k, v) -> v.get(0));
 
-            igniteThread.start();
+            System.out.println(">>> Linear regression model: " + mdl);
 
-            igniteThread.join();
+            System.out.println(">>> ---------------------------------");
+            System.out.println(">>> | Prediction\t| Ground Truth\t|");
+            System.out.println(">>> ---------------------------------");
+
+            try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
+                for (Cache.Entry<Integer, Vector> observation : observations) {
+                    Integer key = observation.getKey();
+                    Vector val = observation.getValue();
+                    double groundTruth = val.get(0);
+
+                    double prediction = mdl.apply(preprocessor.apply(key, val));
+
+                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
+                }
+            }
+
+            System.out.println(">>> ---------------------------------");
+            System.out.println(">>> Linear regression model with minmaxscaling preprocessor over cache based dataset usage example completed.");
         }
     }
 }
