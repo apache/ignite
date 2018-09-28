@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-/**
- * @param {import("@uirouter/angularjs").UIRouter} $uiRouter
- */
-export function registerState($uiRouter) {
-    /** @type {import("app/types").IIgniteNg1StateDeclaration} */
-    const state = {
+import {UIRouter} from '@uirouter/angularjs';
+import {IIgniteNg1StateDeclaration} from 'app/types';
+
+export function registerState($uiRouter: UIRouter) {
+    const state: IIgniteNg1StateDeclaration = {
         url: '/signin',
         name: 'signin',
         component: 'pageSignin',
