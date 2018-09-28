@@ -19,11 +19,12 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -39,13 +40,16 @@ import org.jetbrains.annotations.Nullable;
  * Transaction node mapping.
  */
 public class GridDistributedTxMapping {
+    /** */
+    private static final AtomicReferenceFieldUpdater<GridDistributedTxMapping, Set> BACKUPS_FIELD_UPDATER
+        = AtomicReferenceFieldUpdater.newUpdater(GridDistributedTxMapping.class, Set.class, "backups");
+
     /** Mapped node. */
     @GridToStringExclude
     private ClusterNode primary;
 
-    // t0d0 -> concurrent set with proper initialization
     /** Mapped backup nodes. */
-    private Set<UUID> backups;
+    private volatile Set<UUID> backups;
 
     /** Entries. */
     @GridToStringInclude
@@ -298,9 +302,9 @@ public class GridDistributedTxMapping {
             return;
 
         if (backups == null)
-            backups = new HashSet<>(newBackups);
-        else
-            backups.addAll(newBackups);
+            BACKUPS_FIELD_UPDATER.compareAndSet(this, null, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+
+        backups.addAll(newBackups);
     }
 
     /**
