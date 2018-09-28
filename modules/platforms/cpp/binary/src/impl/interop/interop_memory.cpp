@@ -110,6 +110,11 @@ namespace ignite
                 return Data(memPtr);
             }
 
+            const int8_t* InteropMemory::Data() const
+            {
+                return Data(memPtr);
+            }
+
             int32_t InteropMemory::Capacity() const
             {
                 return Capacity(memPtr);

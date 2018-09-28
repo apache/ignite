@@ -27,9 +27,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * This handler could be used only with ignite.(sh|bat) script.
  * Process will be terminated using {@link Ignition#restart(boolean)} call.
  */
-public class RestartProcessFailureHandler implements FailureHandler {
+public class RestartProcessFailureHandler extends AbstractFailureHandler {
     /** {@inheritDoc} */
-    @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+    @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
         new Thread(
             new Runnable() {
                 @Override public void run() {
@@ -46,6 +46,6 @@ public class RestartProcessFailureHandler implements FailureHandler {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(RestartProcessFailureHandler.class, this);
+        return S.toString(RestartProcessFailureHandler.class, this, "super", super.toString());
     }
 }

@@ -15,10 +15,16 @@
  * limitations under the License.
  */
 
-export default [function() {
-    return ($scope, $element) => {
+export default function() {
+    /**
+     * @param {ng.IScope} $scope
+     * @param {JQuery} $element
+     */
+    const directive = ($scope, $element) => {
         $element.on('click', () => {
             $element.siblings('.input-tip').find('input').focus();
         });
     };
-}];
+
+    return directive;
+}

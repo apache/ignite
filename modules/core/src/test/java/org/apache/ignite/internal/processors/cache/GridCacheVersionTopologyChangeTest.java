@@ -84,7 +84,7 @@ public class GridCacheVersionTopologyChangeTest extends GridCommonAbstractTest {
      */
     private void checkVersionIncrease(List<CacheConfiguration<Object, Object>> ccfgs) throws Exception {
         try {
-            assert ccfgs.size() > 0;
+            assert !ccfgs.isEmpty();
 
             Ignite ignite = startGrid(0);
 
