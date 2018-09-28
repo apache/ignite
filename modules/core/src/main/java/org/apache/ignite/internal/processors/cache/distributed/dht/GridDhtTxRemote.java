@@ -441,7 +441,9 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                         snapshot,
                                         false,
                                         futId,
-                                        batchNum);
+                                        batchNum,
+                                        null,
+                                        false);
 
                                     break;
 
@@ -459,7 +461,9 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                         false,
                                         false,
                                         futId,
-                                        batchNum);
+                                        batchNum,
+                                        null,
+                                        false);
 
                                     break;
 

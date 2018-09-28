@@ -355,6 +355,8 @@ public interface GridCacheEntryEx {
      * @param noCreate Entry should not be created when enabled, e.g. SQL INSERT.
      * @param futId Enlist future id.
      * @param batchNum Batch number.
+     * @param filter Filter.
+     * @param retVal Previous value return flag.
      * @return Tuple containing success flag and old value. If success is {@code false},
      *      then value is {@code null}.
      * @throws IgniteCheckedException If storing value failed.
@@ -371,7 +373,9 @@ public interface GridCacheEntryEx {
         boolean needHist,
         boolean noCreate,
         IgniteUuid futId,
-        int batchNum) throws IgniteCheckedException, GridCacheEntryRemovedException;
+        int batchNum,
+        @Nullable CacheEntryPredicate filter,
+        boolean retVal) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * @param tx Cache transaction.
@@ -381,6 +385,8 @@ public interface GridCacheEntryEx {
      * @param needHist Whether to collect rows created or affected by the current tx.
      * @param futId Enlist future id.
      * @param batchNum Batch number.
+     * @param filter Filter.
+     * @param retVal Previous value return flag.
      * @return Tuple containing success flag and old value. If success is {@code false},
      *      then value is {@code null}.
      * @throws IgniteCheckedException If storing value failed.
@@ -393,7 +399,9 @@ public interface GridCacheEntryEx {
         MvccSnapshot mvccVer,
         boolean needHist,
         IgniteUuid futId,
-        int batchNum) throws IgniteCheckedException, GridCacheEntryRemovedException;
+        int batchNum,
+        @Nullable CacheEntryPredicate filter,
+        boolean retVal) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * @param tx Transaction adapter.

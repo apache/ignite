@@ -48,7 +48,7 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  */
 public class Step_5_Scaling {
     /** Run example. */
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 5 (scaling) example started.");
 

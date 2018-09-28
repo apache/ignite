@@ -277,6 +277,8 @@ public interface IgniteCacheOffheapManager {
      * @param needHist Flag to collect history.
      * @param noCreate Flag indicating that row should not be created if absent.
      * @param needOldVal {@code True} if need old value.
+     * @param filter Filter.
+     * @param retVal Flag to return previous value.
      * @return Update result.
      * @throws IgniteCheckedException If failed.
      */
@@ -289,7 +291,9 @@ public interface IgniteCacheOffheapManager {
         boolean primary,
         boolean needHist,
         boolean noCreate,
-        boolean needOldVal) throws IgniteCheckedException;
+        boolean needOldVal,
+        @Nullable CacheEntryPredicate filter,
+        boolean retVal) throws IgniteCheckedException;
 
     /**
      * @param entry Entry.
@@ -297,6 +301,8 @@ public interface IgniteCacheOffheapManager {
      * @param primary {@code True} if on primary node.
      * @param needHist Flag to collect history.
      * @param needOldVal {@code True} if need old value.
+     * @param filter Filter.
+     * @param retVal Flag to return previous value.
      * @return Update result.
      * @throws IgniteCheckedException If failed.
      */
@@ -305,7 +311,9 @@ public interface IgniteCacheOffheapManager {
         MvccSnapshot mvccSnapshot,
         boolean primary,
         boolean needHist,
-        boolean needOldVal) throws IgniteCheckedException;
+        boolean needOldVal,
+        @Nullable CacheEntryPredicate filter,
+        boolean retVal) throws IgniteCheckedException;
 
     /**
      * @param entry Entry.
@@ -792,10 +800,12 @@ public interface IgniteCacheOffheapManager {
          * @param ver Version.
          * @param expireTime Expire time.
          * @param mvccSnapshot MVCC snapshot.
+         * @param filter Filter.
          * @param primary {@code True} if update is executed on primary node.
          * @param needHist Flag to collect history.
          * @param noCreate Flag indicating that row should not be created if absent.
          * @param needOldVal {@code True} if need old value.
+         * @param retVal Flag to return previous value.
          * @return Update result.
          * @throws IgniteCheckedException If failed.
          */
@@ -806,18 +816,22 @@ public interface IgniteCacheOffheapManager {
             GridCacheVersion ver,
             long expireTime,
             MvccSnapshot mvccSnapshot,
+            @Nullable CacheEntryPredicate filter,
             boolean primary,
             boolean needHist,
             boolean noCreate,
-            boolean needOldVal) throws IgniteCheckedException;
+            boolean needOldVal,
+            boolean retVal) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.
          * @param key Key.
          * @param mvccSnapshot MVCC snapshot.
+         * @param filter Filter.
          * @param primary {@code True} if update is executed on primary node.
          * @param needHistory Flag to collect history.
          * @param needOldVal {@code True} if need old value.
+         * @param retVal Flag to return previous value.
          * @return List of transactions to wait for.
          * @throws IgniteCheckedException If failed.
          */
@@ -825,9 +839,11 @@ public interface IgniteCacheOffheapManager {
             GridCacheContext cctx,
             KeyCacheObject key,
             MvccSnapshot mvccSnapshot,
+            @Nullable CacheEntryPredicate filter,
             boolean primary,
             boolean needHistory,
-            boolean needOldVal) throws IgniteCheckedException;
+            boolean needOldVal,
+            boolean retVal) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.
