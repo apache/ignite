@@ -787,6 +787,19 @@ public class ZookeeperDiscoveryImpl {
             }
 
             startJoin(rtState, prevState, joinDataBytes);
+
+            try {
+                if (rtState.zkClient.pingerEnabled() && !locNode.isClient() && !locNode.isDaemon()) {
+                    ZkPinger pinger = new ZkPinger(log, rtState.zkClient.zk(), zkPaths);
+
+                    rtState.zkClient.attachPinger(pinger);
+
+                    pinger.start();
+                }
+            }
+            catch (Exception e) {
+                log.error("Failed to create and attach Zookeeper pinger", e);
+            }
         }
         finally {
             busyLock.leaveBusy();
