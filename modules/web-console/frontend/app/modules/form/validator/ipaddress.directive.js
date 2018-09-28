@@ -15,7 +15,12 @@
  * limitations under the License.
  */
 
-export default ['ipaddress', ['IgniteInetAddress', (InetAddress) => {
+import _ from 'lodash';
+
+/**
+ * @param {ReturnType<typeof import('app/services/InetAddress.service').default>} InetAddress
+ */
+export default function factory(InetAddress) {
     const onlyDigits = (str) => (/^\d+$/.test(str));
 
     const strictParseInt = (str) => onlyDigits(str) ? parseInt(str, 10) : Number.NaN;
@@ -27,6 +32,12 @@ export default ['ipaddress', ['IgniteInetAddress', (InetAddress) => {
         return {ipOrHost, ports};
     };
 
+    /**
+     * @param {ng.IScope} scope
+     * @param {JQLite} el
+     * @param {ng.IAttributes} attrs
+     * @param {[ng.INgModelController]} [ngModel]
+     */
     const link = (scope, el, attrs, [ngModel]) => {
         const isEmpty = (modelValue) => {
             return ngModel.$isEmpty(modelValue) || _.isUndefined(attrs.ipaddress) || attrs.ipaddress !== 'true';
@@ -83,4 +94,6 @@ export default ['ipaddress', ['IgniteInetAddress', (InetAddress) => {
         link,
         require: ['ngModel']
     };
-}]];
+}
+
+factory.$inject = ['IgniteInetAddress'];

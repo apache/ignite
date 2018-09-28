@@ -15,17 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc.jdbc;
+package org.apache.ignite.tests.p2p;
 
-import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
- * JDBC response result sender.
+ *
  */
-public interface JdbcResponseSender {
-    /**
-     * Send response to the client. Used for asynchronous result send.
-     * @param resp JDBC response.
-     */
-    public void send(ClientListenerResponse resp);
+public class AlwaysTruePredicate implements IgniteBiPredicate<Object, Object> {
+    /** */
+    @Override public boolean apply(Object k, Object v) {
+        return new CacheDeploymentAlwaysTruePredicate().apply(k,v);
+    }
 }

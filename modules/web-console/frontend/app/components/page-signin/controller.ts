@@ -15,30 +15,33 @@
  * limitations under the License.
  */
 
+import AuthService from 'app/modules/user/Auth.service';
+
+interface ISiginData {
+    email: string,
+    password: string
+}
+
+interface ISigninFormController extends ng.IFormController {
+    email: ng.INgModelController,
+    password: ng.INgModelController
+}
+
 export default class {
-    /** @type {import('./types').ISiginData} */
-    data = {
+    data: ISiginData = {
         email: null,
         password: null
     };
-    /** @type {import('./types').ISigninFormController} */
-    form;
-    /** @type {string} */
-    serverError = null;
+
+    form: ISigninFormController;
+
+    serverError: string = null;
 
     static $inject = ['Auth', 'IgniteMessages', 'IgniteFormUtils'];
 
-    /**
-     * @param {import('app/modules/user/Auth.service').default} Auth
-     */
-    constructor(Auth, IgniteMessages, IgniteFormUtils) {
-        this.Auth = Auth;
-        this.IgniteMessages = IgniteMessages;
-        this.IgniteFormUtils = IgniteFormUtils;
-    }
+    constructor(private Auth: AuthService, private IgniteMessages, private IgniteFormUtils) {}
 
-    /** @param {import('./types').ISigninFormController} form */
-    canSubmitForm(form) {
+    canSubmitForm(form: ISigninFormController) {
         return form.$error.server ? true : !form.$invalid;
     }
 
@@ -47,8 +50,7 @@ export default class {
         this.form.password.$validators.server = () => !this.serverError;
     }
 
-    /** @param {string} error */
-    setServerError(error) {
+    setServerError(error: string) {
         this.serverError = error;
         this.form.email.$validate();
         this.form.password.$validate();

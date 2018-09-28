@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private const byte DotNetPlatformId = 1;
 
         /** Socket. */
-        private readonly ClientSocket _socket;
+        private readonly IClientSocket _socket;
 
         /** Marshaller. */
         private readonly Marshaller _marsh = BinaryUtils.Marshaller;
@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Initializes a new instance of the <see cref="BinaryProcessorClient"/> class.
         /// </summary>
         /// <param name="socket">The socket.</param>
-        public BinaryProcessorClient(ClientSocket socket)
+        public BinaryProcessorClient(IClientSocket socket)
         {
             Debug.Assert(socket != null);
 
