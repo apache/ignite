@@ -1948,7 +1948,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     }
 
                     // Mark old version as removed.
-                    rowStore.updateDataRow(oldRow.link(), mvccUpdateMarker, mvccSnapshot);
+                    if (res == ResultType.PREV_NOT_NULL)
+                        rowStore.updateDataRow(oldRow.link(), mvccUpdateMarker, mvccSnapshot);
 
                     if (op == CacheInvokeEntry.Operation.REMOVE) {
                         cleanup(cctx, updateRow.cleanupRows());
