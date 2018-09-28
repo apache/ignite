@@ -17,13 +17,10 @@
 
 package org.apache.ignite.testframework;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
+import java.util.Collection;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -44,9 +41,9 @@ public class ListeningTestLogger implements IgniteLogger {
     private final IgniteLogger echo;
 
     /**
-     * Log messages listeners.
+     * Registered log messages listeners.
      */
-    private final List<T2<Pattern, CI1<String>>> lsnrs = new CopyOnWriteArrayList<>();
+    private final Collection<Consumer<String>> lsnrs = new CopyOnWriteArraySet<>();
 
     /**
      * Default constructor.
@@ -72,20 +69,42 @@ public class ListeningTestLogger implements IgniteLogger {
     }
 
     /**
-     * Register log message listener, that will be executed when certain pattern appears in a log message.
+     * Registers message listener.
      *
-     * @param regex Regular expression that is searched for in a log message.
-     * @param lsnr Listener to execute when {@code regex} expression occurs in a log message.
-     * @throws PatternSyntaxException If the expression's syntax is invalid.
+     * @param lsnr Message listener.
      */
-    public void listen(@NotNull String regex, @NotNull CI1<String> lsnr) {
-        lsnrs.add(new T2<>(Pattern.compile(regex), lsnr));
+    public void registerListener(@NotNull LogListener lsnr) {
+        lsnr.reset();
+
+        lsnrs.add(lsnr);
+    }
+
+    /**
+     * Registers message listener.
+     * <p>
+     * NOTE listener is executed in the thread causing the logging, so it is not recommended to throw any exceptions
+     * from it. Use {@link LogListener} to create message predicates with assertions.
+     *
+     * @param lsnr Message listener.
+     * @see LogListener
+     */
+    public void registerListener(@NotNull Consumer<String> lsnr) {
+        lsnrs.add(lsnr);
+    }
+
+    /**
+     * Unregisters message listener.
+     *
+     * @param lsnr Message listener.
+     */
+    public void unregisterListener(@NotNull Consumer<String> lsnr) {
+        lsnrs.remove(lsnr);
     }
 
     /**
      * Clears all listeners.
      */
-    public void reset() {
+    public void clearListeners() {
         lsnrs.clear();
     }
 
@@ -180,9 +199,7 @@ public class ListeningTestLogger implements IgniteLogger {
         if (msg == null)
             return;
 
-        for (T2<Pattern, CI1<String>> entry : lsnrs) {
-            if (entry.getKey().matcher(msg).find())
-                entry.getValue().apply(msg);
-        }
+        for (Consumer<String> lsnr : lsnrs)
+            lsnr.accept(msg);
     }
 }
