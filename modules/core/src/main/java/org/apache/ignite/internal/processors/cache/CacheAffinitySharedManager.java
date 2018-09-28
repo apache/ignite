@@ -1029,9 +1029,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param crd Coordinator flag.
      * @param msg Affinity change message.
      */
-    public void onExchangeChangeAffinityMessage(GridDhtPartitionsExchangeFuture exchFut,
+    public void onExchangeChangeAffinityMessage(
+        GridDhtPartitionsExchangeFuture exchFut,
         boolean crd,
-        CacheAffinityChangeMessage msg) {
+        CacheAffinityChangeMessage msg
+    ) {
         if (log.isDebugEnabled()) {
             log.debug("Process exchange affinity change message [exchVer=" + exchFut.initialVersion() +
                 ", msg=" + msg + ']');
@@ -1045,7 +1047,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         assert assignment != null;
 
-        final Map<Object, List<List<ClusterNode>>> affCache = new HashMap<>();
+        final Map<Object, List<List<ClusterNode>>> affCache = new ConcurrentHashMap<>();
 
         forAllCacheGroups(crd, new IgniteInClosureX<GridAffinityAssignmentCache>() {
             @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
@@ -1079,10 +1081,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param msg Message.
      * @throws IgniteCheckedException If failed.
      */
-    public void onChangeAffinityMessage(final GridDhtPartitionsExchangeFuture exchFut,
+    public void onChangeAffinityMessage(
+        final GridDhtPartitionsExchangeFuture exchFut,
         boolean crd,
-        final CacheAffinityChangeMessage msg)
-        throws IgniteCheckedException {
+        final CacheAffinityChangeMessage msg
+    ) {
         assert msg.topologyVersion() != null && msg.exchangeId() == null : msg;
 
         final AffinityTopologyVersion topVer = exchFut.initialVersion();
@@ -1098,7 +1101,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         final Map<Integer, IgniteUuid> deploymentIds = msg.cacheDeploymentIds();
 
-        final Map<Object, List<List<ClusterNode>>> affCache = new HashMap<>();
+        final Map<Object, List<List<ClusterNode>>> affCache = new ConcurrentHashMap<>();
 
         forAllCacheGroups(crd, new IgniteInClosureX<GridAffinityAssignmentCache>() {
             @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
@@ -1409,11 +1412,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param fut Current exchange future.
      * @param msg Finish exchange message.
      */
-    public void applyAffinityFromFullMessage(final GridDhtPartitionsExchangeFuture fut,
-        final GridDhtPartitionsFullMessage msg) {
-        final Map<Long, ClusterNode> nodesByOrder = new HashMap<>();
+    public void applyAffinityFromFullMessage(
+        final GridDhtPartitionsExchangeFuture fut,
+        final GridDhtPartitionsFullMessage msg
+    ) {
+        // Please do not use following pattern of code (nodesByOrder, affCache). NEVER.
+        final Map<Long, ClusterNode> nodesByOrder = new ConcurrentHashMap<>();
 
-        final Map<Object, List<List<ClusterNode>>> affCache = new HashMap<>();
+        final Map<Object, List<List<ClusterNode>>> affCache = new ConcurrentHashMap<>();
 
         long time = System.currentTimeMillis();
 
@@ -1460,12 +1466,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param msg Message finish message.
      * @param resTopVer Result topology version.
      */
-    public void onLocalJoin(final GridDhtPartitionsExchangeFuture fut,
+    public void onLocalJoin(
+        final GridDhtPartitionsExchangeFuture fut,
         GridDhtPartitionsFullMessage msg,
-        final AffinityTopologyVersion resTopVer) {
+        final AffinityTopologyVersion resTopVer
+    ) {
         final Set<Integer> affReq = fut.context().groupsAffinityRequestOnJoin();
-
-        final Map<Long, ClusterNode> nodesByOrder = new ConcurrentHashMap<>();
 
         final Map<Integer, CacheGroupAffinityMessage> receivedAff = msg.joinedNodeAffinity();
 
@@ -1474,6 +1480,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 "[requestedCnt=" + (affReq != null ? affReq.size() : "none") +
                 ", receivedCnt=" + (receivedAff != null ? receivedAff.size() : "none") +
                 ", msg=" + msg + "]");
+
+        final Map<Long, ClusterNode> nodesByOrder = new ConcurrentHashMap<>();
 
         long time = System.currentTimeMillis();
 
@@ -1897,7 +1905,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         final GridDhtPartitionsExchangeFuture fut,
         final boolean newAff
     ) throws IgniteCheckedException {
-        final List<IgniteInternalFuture<AffinityTopologyVersion>> futs = new ArrayList<>();
+        final List<IgniteInternalFuture<AffinityTopologyVersion>> futs = Collections.synchronizedList(new ArrayList<>());
 
         final AffinityTopologyVersion topVer = fut.initialVersion();
 
@@ -2281,7 +2289,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     try {
                         resFut.onDone(initAffinityBasedOnPartitionsAvailability(fut.initialVersion(), fut, NODE_TO_ID, false));
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (Exception e) {
                         resFut.onDone(e);
                     }
                 }
@@ -2301,14 +2309,15 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param fut Exchange future.
      * @param c Closure converting affinity diff.
      * @param initAff {@code True} if need initialize affinity.
-     * @return Affinity assignment.
-     * @throws IgniteCheckedException If failed.
+     *
+     * @return Affinity assignment for each of registered cache group.
      */
-    private <T> Map<Integer, Map<Integer, List<T>>> initAffinityBasedOnPartitionsAvailability(final AffinityTopologyVersion topVer,
+    private <T> Map<Integer, Map<Integer, List<T>>> initAffinityBasedOnPartitionsAvailability(
+        final AffinityTopologyVersion topVer,
         final GridDhtPartitionsExchangeFuture fut,
         final IgniteClosure<ClusterNode, T> c,
-        final boolean initAff)
-        throws IgniteCheckedException {
+        final boolean initAff
+    ) {
         final boolean enforcedCentralizedAssignment =
             DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(fut.firstEvent());
 
@@ -2318,7 +2327,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         final Collection<ClusterNode> aliveNodes = fut.context().events().discoveryCache().serverNodes();
 
-        final Map<Integer, Map<Integer, List<T>>> assignment = new HashMap<>();
+        final Map<Integer, Map<Integer, List<T>>> assignment = new ConcurrentHashMap<>();
 
         forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
             @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {
