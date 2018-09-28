@@ -15,22 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.tree.mvcc.data;
+package org.apache.ignite.internal.processors.cache.distributed.near;
+
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
  *
  */
-public enum ResultType {
-    /** */
-    VERSION_FOUND,
-    /** */
-    PREV_NULL,
-    /** */
-    PREV_NOT_NULL,
-    /** */
-    LOCKED,
-    /** */
-    VERSION_MISMATCH,
-    /** */
-    FILTERED
+public abstract class GridNearTxQueryAbstractEnlistFuture extends GridNearTxAbstractEnlistFuture<Long> {
+    /**
+     * @param cctx Cache context.
+     * @param tx Transaction.
+     * @param timeout Timeout.
+     */
+    public GridNearTxQueryAbstractEnlistFuture(
+        GridCacheContext<?, ?> cctx, GridNearTxLocal tx, long timeout) {
+        super(cctx, tx, timeout, CU.longReducer());
+    }
 }
