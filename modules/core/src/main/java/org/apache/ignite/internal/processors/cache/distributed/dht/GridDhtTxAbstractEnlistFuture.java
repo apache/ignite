@@ -896,9 +896,10 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             for (int i = 0; i < parts.length; i++) {
                 GridDhtLocalPartition p = top.localPartition(parts[i]);
 
-                if (p == null || p.state() != GridDhtPartitionState.OWNING)
+                if (p == null || p.state() != GridDhtPartitionState.OWNING) {
                     throw new ClusterTopologyCheckedException("Cannot run update query. " +
-                        "Node must own all the necessary partitions."); // TODO IGNITE-7185 Send retry instead.
+                        "Node must own all the necessary partitions.");
+                }
             }
         }
         finally {
