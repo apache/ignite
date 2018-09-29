@@ -348,7 +348,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public Lock lockAll(final Collection<? extends K> keys) {
-        //TODO IGNITE-7764
+        //TODO: IGNITE-9324: add explicit locks support.
         MvccUtils.verifyMvccOperationSupport(ctx, "Lock");
 
         return new CacheLockImpl<>(ctx.gate(), delegate, ctx.operationContextPerCall(), keys);

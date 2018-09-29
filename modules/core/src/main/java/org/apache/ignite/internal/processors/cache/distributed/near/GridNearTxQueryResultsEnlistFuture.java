@@ -62,10 +62,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * A future tracking requests for remote nodes transaction enlisting and locking
  * of entries produced with complex DML queries requiring reduce step.
  */
-public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlistFuture {
-    /** */
-    private static final long serialVersionUID = 4339957209840477447L;
-
+public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractEnlistFuture {
     /** */
     public static final int DFLT_BATCH_SIZE = 1024;
 
