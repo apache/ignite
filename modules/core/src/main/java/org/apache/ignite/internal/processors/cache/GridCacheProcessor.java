@@ -3905,7 +3905,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
-                throw new IgniteInterruptedException(e);
+              //  throw new IgniteInterruptedException(e);
             }
         }
     }
