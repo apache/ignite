@@ -55,10 +55,8 @@
         <module>modules/core</module>
         <module>modules/dev-utils</module>
         <module>modules/direct-io</module>
-        <module>modules/hadoop</module>
-        <module>modules/extdata/p2p</module>
-        <module>modules/extdata/uri</module>
-        <module>modules/extdata/platform</module>
+        
+        
         <module>modules/clients</module>
         <module>modules/spring</module>
         <module>modules/spring-data</module>
@@ -70,35 +68,19 @@
         <module>modules/ssh</module>
         <module>modules/rest-http</module>
         <module>modules/jta</module>
-        <module>modules/aws</module>
+        
         <module>modules/log4j</module>
         <module>modules/log4j2</module>
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
         <module>modules/codegen</module>
-        <module>modules/gce</module>
-        <module>modules/cloud</module>
-        <module>modules/mesos</module>
-        <module>modules/kafka</module>
-        <module>modules/flume</module>
-        <module>modules/yarn</module>
+       
         <module>modules/jms11</module>
-        <module>modules/twitter</module>
+        
         <module>modules/mqtt</module>
         <module>modules/zookeeper</module>
         <module>modules/hibernate-core</module>
-        <module>modules/camel</module>
-        <module>modules/storm</module>
-        <module>modules/osgi-paxlogging</module>
-        <module>modules/osgi-karaf</module>
-        <module>modules/osgi</module>
-        <module>modules/web/ignite-appserver-test</module>
-        <module>modules/web/ignite-websphere-test</module>
-        <module>modules/cassandra</module>
-        <module>modules/flink</module>
-        <module>modules/kubernetes</module>
-        <module>modules/zeromq</module>
-        <module>modules/rocketmq</module>
+
         <module>modules/sqlline</module>
         <module>modules/ml</module>
     </modules>
@@ -130,6 +112,33 @@
                 <module>modules/visor-plugins</module>
             </modules>
         </profile>
+		
+		<profile>
+            <id>all-interg</id><!-- used to update project versions and check all modules compilation -->
+            <modules><!-- sorted alphabetically -->
+						<module>modules/hadoop</module>
+						<module>modules/aws</module>
+						<module>modules/gce</module>
+						<module>modules/cloud</module>
+						<module>modules/mesos</module>
+						<module>modules/kafka</module>
+						<module>modules/flume</module>
+						<module>modules/yarn</module>
+						<module>modules/twitter</module>
+						
+                        <module>modules/camel</module>
+						<module>modules/storm</module>
+						<module>modules/osgi-paxlogging</module>
+						<module>modules/osgi-karaf</module>
+						<module>modules/osgi</module>
+						
+						<module>modules/cassandra</module>
+						<module>modules/flink</module>
+						<module>modules/kubernetes</module>
+						<module>modules/zeromq</module>
+						<module>modules/rocketmq</module>
+            </modules>
+        </profile>
 
         <profile>
             <id>all-other</id> <!-- used to update project versions and check all modules compilation -->
@@ -140,6 +149,13 @@
 
         <profile>
             <id>test</id>
+			 <modules><!-- sorted alphabetically -->
+				<module>modules/extdata/p2p</module>
+				<module>modules/extdata/uri</module>
+				<module>modules/extdata/platform</module>
+				<module>modules/web/ignite-appserver-test</module>
+				<module>modules/web/ignite-websphere-test</module>
+			</modules>
             <build>
                 <plugins>
                     <plugin>
@@ -456,7 +472,7 @@
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
                             </execution>
-
+							<!--
                             <execution>
                                 <id>dependencies-visor-console</id>
                                 <phase>validate</phase>
@@ -472,7 +488,7 @@
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
                             </execution>
-
+							-->
                             <execution>
                                 <id>dependencies-sqlline</id>
                                 <phase>validate</phase>
@@ -488,7 +504,7 @@
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
                             </execution>
-
+							<!--
                             <execution>
                                 <id>scala-scripts</id>
                                 <phase>validate</phase>
@@ -504,6 +520,7 @@
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
                             </execution>
+							-->
                         </executions>
                     </plugin>
 

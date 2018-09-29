@@ -16,22 +16,12 @@
  */
 
 package org.apache.ignite.internal.processors.query.h2.opt;
-/**
- * 修改记录：
- * 1. 不保存val，
- * 2. 将倒排索引保存到磁盘
- */
-//modify@byron
-import java.io.File;
+
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.sql.SQLException;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.FullTextLucene;
 import org.apache.ignite.cache.FullTextLucene.IndexAccess;
 import org.apache.ignite.cache.FullTextQueryIndex;
@@ -44,14 +34,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
@@ -78,17 +66,15 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.store.BaseDirectory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.LockFactory;
-import org.apache.lucene.store.NativeFSLockFactory;
 import org.apache.lucene.util.BytesRef;
 import org.h2.util.JdbcUtils;
-import org.h2.util.Utils;
 import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
+
+
 
 /**
  * Lucene fulltext index.
@@ -96,12 +82,7 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_N
 public class GridLuceneIndex implements AutoCloseable {
     /** Field name for string representation of value. */
     public static final String VAL_STR_FIELD_NAME = "_gg_val_str__";
-
-    /** Field name for value version. */
-    public static final String VER_FIELD_NAME = "_gg_ver__";
-
-    /** Field name for value expiration time. */
-    public static final String EXPIRATION_TIME_FIELD_NAME = "_gg_expires__";
+  
 
     /** */
     private final String cacheName;
@@ -156,7 +137,7 @@ public class GridLuceneIndex implements AutoCloseable {
         try {
         	 indexAccess = FullTextLucene.getIndexAccess(null, type.schemaName(), type.name());
         }
-        catch (SQLException e) {
+        catch (Exception e) {
             throw new IgniteCheckedException(e);
         }
 
@@ -263,7 +244,7 @@ public class GridLuceneIndex implements AutoCloseable {
 
             doc.add(new StoredField(QueryUtils.VER_FIELD_NAME, ver.toString().getBytes()));
 
-            doc.add(new StoredField(EXPIRATION_TIME_FIELD_NAME, expires));
+            doc.add(new StoredField(FullTextLucene.EXPIRATION_TIME_FIELD_NAME, expires));
 
             // Next implies remove than add atomically operation.
             indexAccess.writer.updateDocument(term, doc);
@@ -303,8 +284,7 @@ public class GridLuceneIndex implements AutoCloseable {
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(String qry,
-        IndexingQueryFilter filters) throws IgniteCheckedException {
+    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(String qry, IndexingQueryFilter filters) throws IgniteCheckedException {
        
 
         try {
@@ -347,7 +327,7 @@ public class GridLuceneIndex implements AutoCloseable {
             }
 
             // Filter expired items.
-            Query filter = LongPoint.newRangeQuery(EXPIRATION_TIME_FIELD_NAME, U.currentTimeMillis(), Long.MAX_VALUE);
+            Query filter = LongPoint.newRangeQuery(FullTextLucene.EXPIRATION_TIME_FIELD_NAME, U.currentTimeMillis(), Long.MAX_VALUE);
 
             BooleanQuery.Builder query = new BooleanQuery.Builder()
                 .add(parser.parse(qry), BooleanClause.Occur.MUST)
@@ -394,7 +374,7 @@ public class GridLuceneIndex implements AutoCloseable {
     /**
      * Key-value iterator over fulltext search result.
      */   
-    private class It<K, V> extends GridCloseableIteratorAdapter<IgniteBiTuple<K, V>> {
+    private class It<K, V> extends GridCloseableIteratorAdapter<IgniteBiTuple<K, V> > {
         /** */
         private static final long serialVersionUID = 0L;
 

@@ -78,11 +78,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.IndexWriter;
 
 
-
-
-import static org.apache.ignite.internal.processors.query.h2.opt.GridLuceneIndex.*;;
-
-
 /**
  * This class implements the full text search based on Apache Lucene.
  * Most methods can be called using SQL statements as well.
@@ -119,7 +114,10 @@ public class FullTextLucene {
     private static final String TRIGGER_PREFIX = "FTL_";
     private static final String SCHEMA = "FTL";
    
-    private static final String LUCENE_FIELD_MODIFIED = "_modified";
+    public static final String LUCENE_FIELD_MODIFIED = "_modified";
+    
+    /** Field name for value expiration time. */
+    public static final String EXPIRATION_TIME_FIELD_NAME = "_expires";
    
     /**
      * The prefix for a in-memory path. This prefix is only used internally
