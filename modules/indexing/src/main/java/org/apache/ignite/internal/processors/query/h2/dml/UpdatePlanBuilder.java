@@ -538,9 +538,9 @@ public final class UpdatePlanBuilder {
         }
         else{
         	int ret = nstmt.getCmd().update();      
-        	fu = FastUpdate.create(new GridSqlConst(ValueString.get("ret")), new GridSqlConst(ValueInt.get(ret)) , null);
+        	fu = FastUpdate.create(new GridSqlConst(ValueString.get("ret")), new GridSqlConst(ValueInt.get(0)) , new GridSqlConst(ValueInt.get(ret)));
         }
-        
+        //notice@byron must conf default cache.
         GridCacheContext context = idx.objectContext().kernalContext().cache().getOrStartCache("default").context();
         
         UpdatePlan plan = new UpdatePlan(

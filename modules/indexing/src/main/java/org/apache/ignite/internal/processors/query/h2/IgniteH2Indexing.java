@@ -1092,8 +1092,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 throw new IgniteSQLException("Multiple statements queries are not supported for local queries");
 
             Prepared p = GridSqlQueryParser.prepared(stmt);
-
-            if (DmlStatementsProcessor.isDmlStatement(p)) {
+            //modify@byron some schema ddl stmt is exec by dmlProc
+            if (DmlStatementsProcessor.isDmlStatement(p) || DdlStatementsProcessor.supportSchemaDdlStatement(p)) {
                 SqlFieldsQuery fldsQry = new SqlFieldsQuery(qry);
 
                 if (params != null)
@@ -2226,9 +2226,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         IndexingQueryFilter filter = (loc ? backupFilter(null, qry.getPartitions()) : null);
 
         if (!prepared.isQuery()) {
-        	//modify@byron alias cmd is support
-            //-if (DmlStatementsProcessor.isDmlStatement(prepared)) {
-            if (DmlStatementsProcessor.isDmlStatement(prepared) || DdlStatementsProcessor.supportSchemaDdlStatement(prepared)) {
+        	
+            if (DmlStatementsProcessor.isDmlStatement(prepared)) {         
                 try {
                     Connection conn = connectionForSchema(schemaName);
 
@@ -2256,9 +2255,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     throw new IgniteSQLException("Failed to execute DML statement [stmt=" + sqlQry +
                         ", params=" + Arrays.deepToString(qry.getArgs()) + "]", e);
                 }
-            }
-
-            if (DdlStatementsProcessor.isDdlStatement(prepared)) {
+            }           
+            else if (DdlStatementsProcessor.isDdlStatement(prepared)) {
                 if (loc)
                     throw new IgniteSQLException("DDL statements are not supported for LOCAL caches",
                         IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -2266,7 +2264,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return Collections.singletonList(ddlProc.runDdlStatement(sqlQry, prepared));
             }
 
-            if (prepared instanceof NoOperation) {
+            else if (prepared instanceof NoOperation) {
                 QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(
                     Collections.singletonList(Collections.singletonList(0L)), null, false);
 
@@ -2639,9 +2637,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Connection conn = connectionForSchema(schemaName);
 
         H2Utils.setupConnection(conn, false, fldsQry.isEnforceJoinOrder());
-
-        PreparedStatement stmt = preparedStatementWithParams(conn, fldsQry.getSql(),
-            Arrays.asList(fldsQry.getArgs()), true);
+        List args = Collections.EMPTY_LIST;
+        if(fldsQry.getArgs()!=null){
+        	args = Arrays.asList(fldsQry.getArgs());
+        }
+        PreparedStatement stmt = preparedStatementWithParams(conn, fldsQry.getSql(),args, true);
 
         return dmlProc.mapDistributedUpdate(schemaName, stmt, fldsQry, filter, cancel, local);
     }

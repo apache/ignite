@@ -45,7 +45,7 @@ public class GridSqlNativeStatement extends GridSqlStatement {
     	this.cmd = cmd;  
     	Field getSchema;
 		try {
-			getSchema = cmd.getClass().getDeclaredField("schema");
+			getSchema = SchemaCommand.class.getDeclaredField("schema");
 			getSchema.setAccessible(true);
 	    	this.schemaName = ((Schema)getSchema.get(cmd)).getName();
 		} catch (Exception e) {

@@ -36,7 +36,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.cache.CacheException;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -100,6 +102,7 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.thread.IgniteThread;
 import org.h2.command.Prepared;
 import org.h2.jdbc.JdbcResultSet;
+import org.h2.jdbc.JdbcSQLException;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
@@ -912,9 +915,13 @@ public class GridMapQueryExecutor {
                         try {
                             stmt = h2.prepareStatement(conn, sql, true);
                         }
-                        catch (SQLException e) {
-                            throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
+                        catch (JdbcSQLException e) { //add@byron                          
+                            throw new IgniteCheckedException("Failed to parse SQL query: " + sql+" \n"+e.getOriginalMessage(), e);                          
                         }
+                        catch (SQLException e) {
+                           
+                            throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
+                         }
 
                         Prepared p = GridSqlQueryParser.prepared(stmt);
 

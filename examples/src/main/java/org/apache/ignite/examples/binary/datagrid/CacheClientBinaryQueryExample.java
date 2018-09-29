@@ -17,11 +17,14 @@
 
 package org.apache.ignite.examples.binary.datagrid;
 
+import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
+
 import javax.cache.Cache;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -65,8 +68,9 @@ public class CacheClientBinaryQueryExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
+     * @throws IOException 
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
             System.out.println(">>> Binary objects cache query example started.");
@@ -106,6 +110,8 @@ public class CacheClientBinaryQueryExample {
                 // Get cache that will work with binary objects.
                 IgniteCache<BinaryObject, BinaryObject> binaryCache = employeeCache.withKeepBinary();
 
+                System.in.read();
+                
                 // Run SQL query example.
                 sqlQuery(binaryCache);
 
