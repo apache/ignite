@@ -1967,9 +1967,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             exchActions = null;
 
-            if (firstDiscoEvt instanceof DiscoveryCustomEvent)
-                ((DiscoveryCustomEvent)firstDiscoEvt).customMessage(null);
-
             if (err == null) {
                 cctx.exchange().lastFinishedFuture(this);
 
