@@ -36,6 +36,12 @@ import static java.util.Comparator.comparingLong;
  *
  */
 public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTest {
+    private static final String SECOND_CACHE_NAME = DEFAULT_CACHE_NAME + "-2";
+
+    private static final String CACHE_GROUP_NAME = "test-group";
+
+    private static final String SQL_CACHE_NAME = DEFAULT_CACHE_NAME + "-sql";
+
     /** Number records in cache. */
     private static final int NUMBER_RECORDS = 30;
 
@@ -111,27 +117,47 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
      * @throws Exception if failed.
      */
     public void testStartNodeAfterCacheDestroy() throws Exception {
-        restoreClusterAfterCacheDestroy(NODES_COUNT, false, LAST_NODE);
+        restoreClusterAfterCacheDestroy(NODES_COUNT, false, false, LAST_NODE);
+    }
+
+    /** */
+    public void testFullRestartAfterOneCacheDestroyActivateFromCoordinator() throws Exception {
+        restoreClusterAfterCacheDestroy(NODES_COUNT, true, true, COORDINATOR_NODE);
+    }
+
+    /** */
+    public void testFullRestartAfterOneCacheDestroyActivateFromNonCoordinator() throws Exception {
+        restoreClusterAfterCacheDestroy(NODES_COUNT, true, true, NON_COORDINATOR_NODE);
+    }
+
+    /** */
+    public void testFullRestartAfterOneCacheDestroyActivateFromFirstNode() throws Exception {
+        restoreClusterAfterCacheDestroy(NODES_COUNT, true, true, FIRST_NODE);
+    }
+
+    /** */
+    public void testFullRestartAfterOneCacheDestroyActivateFromLastNode() throws Exception {
+        restoreClusterAfterCacheDestroy(NODES_COUNT, true, true, LAST_NODE);
     }
 
     /** */
     public void testFullRestartAfterCacheDestroyActivateFromCoordinator() throws Exception {
-        restoreClusterAfterCacheDestroy(NODES_COUNT, true, COORDINATOR_NODE);
+        restoreClusterAfterCacheDestroy(NODES_COUNT, true, false, COORDINATOR_NODE);
     }
 
     /** */
     public void testFullRestartAfterCacheDestroyActivateFromNonCoordinator() throws Exception {
-        restoreClusterAfterCacheDestroy(NODES_COUNT, true, NON_COORDINATOR_NODE);
+        restoreClusterAfterCacheDestroy(NODES_COUNT, true, false, NON_COORDINATOR_NODE);
     }
 
     /** */
     public void testFullRestartAfterCacheDestroyActivateFromFirstNode() throws Exception {
-        restoreClusterAfterCacheDestroy(NODES_COUNT, true, FIRST_NODE);
+        restoreClusterAfterCacheDestroy(NODES_COUNT, true, false, FIRST_NODE);
     }
 
     /** */
     public void testFullRestartAfterCacheDestroyActivateFromLastNode() throws Exception {
-        restoreClusterAfterCacheDestroy(NODES_COUNT, true, LAST_NODE);
+        restoreClusterAfterCacheDestroy(NODES_COUNT, true, false, LAST_NODE);
     }
 
     /** */
@@ -174,7 +200,9 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
         stopSecondHalfNodes();
 
         CacheConfiguration<Long, Long> cacheCfg =
-            new CacheConfiguration<Long, Long>(DEFAULT_CACHE_NAME).setBackups((nodesCnt + 1) / 2);
+            new CacheConfiguration<Long, Long>(DEFAULT_CACHE_NAME)
+                .setBackups((nodesCnt + 1) / 2)
+                .setGroupName(CACHE_GROUP_NAME);
 
         IgniteCache<Long, Long> cache0 = grid(0).getOrCreateCache(cacheCfg);
 
@@ -207,12 +235,14 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
     /**
      * @param nodesCnt Size of cluster.
      * @param fullStop Flag for full cluster restart.
+     * @param createSecondCache Flag for creation second cache in same cache group.
      * @param finder implementation of algorithm solve node for cluster activation.
      * @throws Exception
      */
     private void restoreClusterAfterCacheDestroy(
         int nodesCnt,
         boolean fullStop,
+        boolean createSecondCache,
         ActivateNodeFinder finder
     ) throws Exception {
         assert nodesCnt >= 2;
@@ -221,11 +251,25 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
 
         grid(finder.getActivateNode(grid(0).cluster().nodes())).cluster().active(true);
 
-        CacheConfiguration<Long, Long> cacheCfg = new CacheConfiguration<Long, Long>(DEFAULT_CACHE_NAME).setBackups(0);
+        CacheConfiguration<Long, Long> cacheCfg =
+            new CacheConfiguration<Long, Long>(DEFAULT_CACHE_NAME)
+                .setBackups(nodesCnt / 2)
+                .setGroupName(CACHE_GROUP_NAME);
 
         IgniteCache<Long, Long> cache0 = grid(0).getOrCreateCache(cacheCfg);
 
         populateData(cache0);
+
+        if (createSecondCache) {
+            CacheConfiguration<Long, Long> cacheCfg2 =
+                new CacheConfiguration<Long, Long>(SECOND_CACHE_NAME)
+                    .setBackups(nodesCnt / 2)
+                    .setGroupName(CACHE_GROUP_NAME);
+
+            IgniteCache<Long, Long> cache2 = grid(0).getOrCreateCache(cacheCfg2);
+
+            populateData(cache2);
+        }
 
         stopSecondHalfNodes();
 
@@ -242,6 +286,9 @@ public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTe
             startSecondHalfNodes(nodesCnt);
 
         awaitPartitionMapExchange();
+
+        if (createSecondCache)
+            checkDataPresent(grid(0).cache(SECOND_CACHE_NAME));
     }
 
     /** */
