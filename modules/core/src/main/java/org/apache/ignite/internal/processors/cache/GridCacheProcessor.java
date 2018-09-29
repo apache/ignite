@@ -3650,7 +3650,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
-                throw new IgniteInterruptedException(e);
+              //  throw new IgniteInterruptedException(e);
             }
         }
     }
