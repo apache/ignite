@@ -389,7 +389,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 boolean skipEntry = readNoEntry;
 
                 if (readNoEntry) {
-                    CacheDataRow row = mvccSnapshot != null ? cctx.offheap().mvccRead(cctx, key, mvccSnapshot) :
+                    CacheDataRow row = mvccSnapshot != null ?
+                        cctx.offheap().mvccRead(cctx, key, mvccSnapshot) :
                         cctx.offheap().read(cctx, key);
 
                     if (row != null) {
