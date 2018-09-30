@@ -45,7 +45,7 @@ public class GiniImpurityMeasureCalculatorTest {
 
     /** Use index. */
     @Parameterized.Parameter
-    public boolean useIndex;
+    public boolean useIdx;
 
     /** */
     @Test
@@ -56,9 +56,9 @@ public class GiniImpurityMeasureCalculatorTest {
         Map<Double, Integer> encoder = new HashMap<>();
         encoder.put(0.0, 0);
         encoder.put(1.0, 1);
-        GiniImpurityMeasureCalculator calculator = new GiniImpurityMeasureCalculator(encoder, useIndex);
+        GiniImpurityMeasureCalculator calculator = new GiniImpurityMeasureCalculator(encoder, useIdx);
 
-        StepFunction<GiniImpurityMeasure>[] impurity = calculator.calculate(new DecisionTreeData(data, labels, useIndex), fs -> true, 0);
+        StepFunction<GiniImpurityMeasure>[] impurity = calculator.calculate(new DecisionTreeData(data, labels, useIdx), fs -> true, 0);
 
         assertEquals(2, impurity.length);
 
@@ -88,9 +88,9 @@ public class GiniImpurityMeasureCalculatorTest {
         Map<Double, Integer> encoder = new HashMap<>();
         encoder.put(0.0, 0);
         encoder.put(1.0, 1);
-        GiniImpurityMeasureCalculator calculator = new GiniImpurityMeasureCalculator(encoder, useIndex);
+        GiniImpurityMeasureCalculator calculator = new GiniImpurityMeasureCalculator(encoder, useIdx);
 
-        StepFunction<GiniImpurityMeasure>[] impurity = calculator.calculate(new DecisionTreeData(data, labels, useIndex), fs -> true, 0);
+        StepFunction<GiniImpurityMeasure>[] impurity = calculator.calculate(new DecisionTreeData(data, labels, useIdx), fs -> true, 0);
 
         assertEquals(1, impurity.length);
 
@@ -111,7 +111,7 @@ public class GiniImpurityMeasureCalculatorTest {
         encoder.put(1.0, 1);
         encoder.put(2.0, 2);
 
-        GiniImpurityMeasureCalculator calculator = new GiniImpurityMeasureCalculator(encoder, useIndex);
+        GiniImpurityMeasureCalculator calculator = new GiniImpurityMeasureCalculator(encoder, useIdx);
 
         assertEquals(0, calculator.getLabelCode(0.0));
         assertEquals(1, calculator.getLabelCode(1.0));
