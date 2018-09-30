@@ -1233,7 +1233,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                                             for (TxKey key : waitMap.keySet()) {
                                                 assert key.major() == snapshot.coordinatorVersion()
                                                     && key.minor() > snapshot.cleanupVersion()
-                                                    || key.major() > snapshot.coordinatorVersion();
+                                                    || key.major() > snapshot.coordinatorVersion() :
+                                                    "key=" + key + ", snapshot=" + snapshot;
                                             }
                                         }
 
