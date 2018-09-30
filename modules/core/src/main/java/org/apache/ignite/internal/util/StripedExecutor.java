@@ -37,6 +37,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -74,7 +76,7 @@ public class StripedExecutor implements ExecutorService {
         String igniteInstanceName,
         String poolName,
         final IgniteLogger log,
-        IgniteInClosure<Throwable> errHnd,
+        IgniteInClosure<FailureContext> errHnd,
         GridWorkerListener gridWorkerLsnr
     ) {
         this(cnt, igniteInstanceName, poolName, log, errHnd, false, gridWorkerLsnr);
@@ -94,7 +96,7 @@ public class StripedExecutor implements ExecutorService {
         String igniteInstanceName,
         String poolName,
         final IgniteLogger log,
-        IgniteInClosure<Throwable> errHnd,
+        IgniteInClosure<FailureContext> errHnd,
         boolean stealTasks,
         GridWorkerListener gridWorkerLsnr
     ) {
@@ -440,7 +442,7 @@ public class StripedExecutor implements ExecutorService {
         protected Thread thread;
 
         /** Critical failure handler. */
-        private IgniteInClosure<Throwable> errHnd;
+        private IgniteInClosure<FailureContext> errHnd;
 
         /**
          * @param igniteInstanceName Ignite instance name.
@@ -455,7 +457,7 @@ public class StripedExecutor implements ExecutorService {
             String poolName,
             int idx,
             IgniteLogger log,
-            IgniteInClosure<Throwable> errHnd,
+            IgniteInClosure<FailureContext> errHnd,
             GridWorkerListener gridWorkerLsnr
         ) {
             super(igniteInstanceName, poolName + "-stripe-" + idx, log, gridWorkerLsnr);
@@ -519,15 +521,17 @@ public class StripedExecutor implements ExecutorService {
                 }
                 catch (Throwable e) {
                     if (e instanceof OutOfMemoryError)
-                        errHnd.apply(e);
+                        errHnd.apply(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
                     U.error(log, "Failed to execute runnable.", e);
                 }
             }
 
             if (!isCancelled) {
-                errHnd.apply(new IllegalStateException("Thread " + Thread.currentThread().getName() +
-                    " is terminated unexpectedly"));
+                errHnd.apply(new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION, new IllegalStateException(
+                    "Thread " + Thread.currentThread().getName() + " is terminated unexpectedly")) );
+
+                cancel();
             }
         }
 
@@ -592,7 +596,7 @@ public class StripedExecutor implements ExecutorService {
             String poolName,
             int idx,
             IgniteLogger log,
-            IgniteInClosure<Throwable> errHnd,
+            IgniteInClosure<FailureContext> errHnd,
             GridWorkerListener gridWorkerLsnr
         ) {
             this(igniteInstanceName, poolName, idx, log, null, errHnd, gridWorkerLsnr);
@@ -612,7 +616,7 @@ public class StripedExecutor implements ExecutorService {
             int idx,
             IgniteLogger log,
             Stripe[] others,
-            IgniteInClosure<Throwable> errHnd,
+            IgniteInClosure<FailureContext> errHnd,
             GridWorkerListener gridWorkerLsnr
         ) {
             super(
@@ -728,7 +732,7 @@ public class StripedExecutor implements ExecutorService {
             String poolName,
             int idx,
             IgniteLogger log,
-            IgniteInClosure<Throwable> errHnd,
+            IgniteInClosure<FailureContext> errHnd,
             GridWorkerListener gridWorkerLsnr
         ) {
             super(igniteInstanceName,
@@ -790,7 +794,7 @@ public class StripedExecutor implements ExecutorService {
             String poolName,
             int idx,
             IgniteLogger log,
-            IgniteInClosure<Throwable> errHnd,
+            IgniteInClosure<FailureContext> errHnd,
             GridWorkerListener gridWorkerLsnr
         ) {
             super(igniteInstanceName,
