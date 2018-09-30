@@ -38,7 +38,8 @@ public abstract class GridH2SearchRowAdapter implements GridH2SearchRow {
 
     /** {@inheritDoc} */
     @Override public int getVersion() {
-        throw new UnsupportedOperationException();
+    	return 0;
+        //throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -53,7 +54,8 @@ public abstract class GridH2SearchRowAdapter implements GridH2SearchRow {
 
     /** {@inheritDoc} */
     @Override public int getMemory() {
-        throw new UnsupportedOperationException();
+    	return this.getColumnCount()*8;
+        //throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -78,7 +80,8 @@ public abstract class GridH2SearchRowAdapter implements GridH2SearchRow {
 
     /** {@inheritDoc} */
     @Override public void setDeleted(boolean deleted) {
-        throw new UnsupportedOperationException();
+    	if(deleted) //add@byron
+    		throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -98,7 +101,8 @@ public abstract class GridH2SearchRowAdapter implements GridH2SearchRow {
 
     /** {@inheritDoc} */
     @Override public boolean isDeleted() {
-        throw new UnsupportedOperationException();
+    	return false;
+        //throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

@@ -40,6 +40,9 @@ public class GridH2PlainRowFactory extends RowFactory {
      * @return Row.
      */
     public static Row create(Value... data) {
+    	if(data==null){
+    		return new RowKey(null);
+    	}
         switch (data.length) {
             case 0:
                 throw new IllegalStateException("Zero columns row.");
@@ -100,6 +103,11 @@ public class GridH2PlainRowFactory extends RowFactory {
         @Override public String toString() {
             return S.toString(RowKey.class, this);
         }
+        /** {@inheritDoc} */
+        @Override public boolean isEmpty() {        	
+        	if(key==null) return true;
+        	return false;
+        }
     }
 
     /**
@@ -151,6 +159,12 @@ public class GridH2PlainRowFactory extends RowFactory {
         @Override public String toString() {
             return S.toString(RowPair.class, this);
         }
+        /** {@inheritDoc} */
+        @Override public boolean isEmpty() {        	
+        	if(v1==null && v2==null) return true;
+        	return false;
+            
+        }
     }
 
     /**
@@ -191,6 +205,16 @@ public class GridH2PlainRowFactory extends RowFactory {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(RowSimple.class, this);
+        }
+        /** {@inheritDoc} */
+        @Override public boolean isEmpty() {
+        	int nemp = 0;
+        	for(Value v: vals){
+        		nemp = v==null? nemp+1: nemp;
+        	}
+        	if(nemp==vals.length) return true;
+        	return false;
+            
         }
     }
 }
