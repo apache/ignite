@@ -97,6 +97,7 @@ import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridTuple6;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -584,7 +585,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
             }
 
-            @Override public IgniteInternalFuture onDiscovery(
+            @Override public IgniteFuture<?> onDiscovery(
                 final int type,
                 final long topVer,
                 final ClusterNode node,
@@ -592,7 +593,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 final Map<Long, Collection<ClusterNode>> snapshots,
                 @Nullable DiscoverySpiCustomMessage spiCustomMsg
             ) {
-                GridFutureAdapter notificationFut = new GridFutureAdapter();
+                GridFutureAdapter<?> notificationFut = new GridFutureAdapter<>();
 
                 discoNotifierWrk.submit(notificationFut, () -> {
                     synchronized (discoEvtMux) {
@@ -600,7 +601,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
                 });
 
-                return notificationFut;
+                return new IgniteFutureImpl<>(notificationFut);
             }
 
             /**
