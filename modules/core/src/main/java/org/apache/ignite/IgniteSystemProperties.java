@@ -994,6 +994,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT = "IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT";
 
     /**
+     * Try reuse memory on deactivation. Useful in case of huge page memory region size.
+     */
+    public static final String IGNITE_REUSE_MEMORY_ON_DEACTIVATE = "IGNITE_REUSE_MEMORY_ON_DEACTIVATE";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
