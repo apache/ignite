@@ -37,8 +37,12 @@ esac
 # Pass the conditionals to automake
 AM_CONDITIONAL([MAC_POSTPROCESS], [test "$build_mac" = "yes"])
 
+AC_CHECK_DECLS([TCP_KEEPIDLE], [], [], [[#include <netinet/tcp.h>]])
+
 AC_CONFIG_MACRO_DIR([m4])
 AC_LANG([C++])
+
+AX_CHECK_OPENSSL(/usr/bin/true, /usr/bin/false)
 
 AM_INIT_AUTOMAKE([-Wall foreign subdir-objects])
 AC_CONFIG_HEADERS(config.h)
