@@ -45,6 +45,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -111,9 +112,9 @@ import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
@@ -158,8 +159,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
-import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteTaskTrackingThreadPoolExecutor;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
@@ -358,6 +359,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Future that will be done when stored cache configurations from metastore were read. */
     private final GridFutureAdapter<Map<String, StoredCacheData>> readStoredCacheConfigFut = new GridFutureAdapter<>();
 
+    private final Map<CacheConfiguration<?,?>,IgniteInternalFuture<?>> saveCacheConfigurationFuts = new ConcurrentHashMap<>();
+
+    private final CountDownLatch metaStorageReadyForWriteLatch = new CountDownLatch(1);
+
     /**
      * @param ctx Kernal context.
      */
@@ -393,6 +398,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** */
     private void notifyMetastorageReadyForReadWrite() throws IgniteCheckedException {
+        metaStorageReadyForWriteLatch.countDown();
+
         for (MetastorageLifecycleListener lsnr : metastorageLifecycleLsnrs)
             lsnr.onReadyForReadWrite(metaStorage);
     }
@@ -870,6 +877,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             metaStorage.init(this);
 
             notifyMetastorageReadyForReadWrite();
+
+            waitNewCacheConfigurationsArePersisted();
 
             for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
                 lsnr.afterMemoryRestore(this);
@@ -1503,16 +1512,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** {@inheritDoc} */
     @Override public void storeCacheConfiguration(StoredCacheData cacheData,
         boolean overwrite) throws IgniteCheckedException {
-        this.context().database().checkpointReadLock();
+        if (metaStorageReadyForWriteLatch.getCount() == 0L)
+            storeCacheConfiguration0(cacheData, overwrite);
+        else {
+            IgniteInternalFuture<?> fut = cctx.kernalContext().closure().runLocalSafe(() -> {
+                try {
+                    metaStorageReadyForWriteLatch.await();
 
-        try {
-            String key = getCacheConfigMetastoreKey(cacheData.config());
+                    storeCacheConfiguration0(cacheData, overwrite);
+                }
+                catch (IgniteCheckedException | InterruptedException e) {
+                    U.error(log, "Failed to store cache configuration! " + cacheData, e);
+                }
+            });
 
-            if (metaStorage.read(key) == null || overwrite)
-                metaStorage.write(key, cacheData);
-        }
-        finally {
-            this.context().database().checkpointReadUnlock();
+            saveCacheConfigurationFuts.put(cacheData.config(),fut);
         }
     }
 
@@ -1529,6 +1543,52 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
         finally {
             this.context().database().checkpointReadUnlock();
+        }
+    }
+
+    /**
+     * Store cache configuration routine.
+     */
+    private void storeCacheConfiguration0(StoredCacheData cacheData,
+        boolean overwrite) throws IgniteCheckedException {
+        context().database().checkpointReadLock();
+
+        try {
+            String key = getCacheConfigMetastoreKey(cacheData.config());
+
+            if (metaStorage.read(key) == null || overwrite)
+                metaStorage.write(key, cacheData);
+        }
+        finally {
+            context().database().checkpointReadUnlock();
+        }
+
+    }
+
+    /**
+     * Method waits for new cache configurations persisting to disk.
+     */
+    private void waitNewCacheConfigurationsArePersisted() {
+        try {
+            for (Map.Entry<CacheConfiguration<?, ?>, IgniteInternalFuture<?>> e : saveCacheConfigurationFuts.entrySet()) {
+                if (!e.getValue().isDone()) {
+                    final int timeout = 10_000;
+                    while(true) {
+                        try {
+                            e.getValue().get(timeout, TimeUnit.SECONDS);
+                            break;
+                        }
+                        catch (IgniteFutureTimeoutCheckedException te) {
+                            log.warning("Failed to wait for cache configuration saving within timeout. " +
+                                "Probably disk is too busy or slow." +
+                                "[caches=" + e.getKey() + "]");
+                        }
+                    }
+                }
+            }
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to wait for caches configuration saving", e);
         }
     }
 
