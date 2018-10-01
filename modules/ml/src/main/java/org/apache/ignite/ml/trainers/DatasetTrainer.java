@@ -70,9 +70,9 @@ public abstract class DatasetTrainer<M extends Model, L> {
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
 
         if(mdl != null) {
-            if(checkState(mdl)) {
+            if (checkState(mdl))
                 return updateModel(mdl, datasetBuilder, featureExtractor, lbExtractor);
-            } else {
+            else {
                 environment.logger(getClass()).log(
                     MLLogger.VerboseLevel.HIGH,
                     "Model cannot be updated because of initial state of " +

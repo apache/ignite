@@ -24,43 +24,46 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequestNoId;
  */
 public class OdbcRequest extends ClientListenerRequestNoId {
     /** Execute sql query. */
-    public static final int QRY_EXEC = 2;
+    public static final byte QRY_EXEC = 2;
 
     /** Fetch query results. */
-    public static final int QRY_FETCH = 3;
+    public static final byte QRY_FETCH = 3;
 
     /** Close query. */
-    public static final int QRY_CLOSE = 4;
+    public static final byte QRY_CLOSE = 4;
 
     /** Get columns meta query. */
-    public static final int META_COLS = 5;
+    public static final byte META_COLS = 5;
 
     /** Get columns meta query. */
-    public static final int META_TBLS = 6;
+    public static final byte META_TBLS = 6;
 
     /** Get parameters meta. */
-    public static final int META_PARAMS = 7;
+    public static final byte META_PARAMS = 7;
 
     /** Execute sql query with the batch of parameters. */
-    public static final int QRY_EXEC_BATCH = 8;
+    public static final byte QRY_EXEC_BATCH = 8;
 
     /** Get next result set. */
-    public static final int MORE_RESULTS = 9;
+    public static final byte MORE_RESULTS = 9;
+
+    /** Process ordered streaming batch. */
+    public static final byte STREAMING_BATCH = 10;
 
     /** Command. */
-    private final int cmd;
+    private final byte cmd;
 
     /**
      * @param cmd Command type.
      */
-    public OdbcRequest(int cmd) {
+    public OdbcRequest(byte cmd) {
         this.cmd = cmd;
     }
 
     /**
      * @return Command.
      */
-    public int command() {
+    public byte command() {
         return cmd;
     }
 }

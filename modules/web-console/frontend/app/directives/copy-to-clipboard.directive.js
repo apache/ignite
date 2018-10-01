@@ -15,10 +15,17 @@
  * limitations under the License.
  */
 
-// Directive for copy to clipboard.
-export default ['igniteCopyToClipboard', ['IgniteCopyToClipboard', function(CopyToClipboard) {
+/**
+ * @param {ReturnType<typeof import('../services/CopyToClipboard.service').default>} CopyToClipboard
+ */
+export default function directive(CopyToClipboard) {
     return {
         restrict: 'A',
+        /**
+         * @param {ng.IScope} scope
+         * @param {JQLite} element
+         * @param {ng.IAttributes} attrs
+         */
         link(scope, element, attrs) {
             element.bind('click', () => CopyToClipboard.copy(attrs.igniteCopyToClipboard));
 
@@ -26,4 +33,6 @@ export default ['igniteCopyToClipboard', ['IgniteCopyToClipboard', function(Copy
                 element.hide();
         }
     };
-}]];
+}
+
+directive.$inject = ['IgniteCopyToClipboard'];

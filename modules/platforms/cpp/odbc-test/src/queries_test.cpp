@@ -69,7 +69,7 @@ struct QueriesTestSuiteFixture : odbc::OdbcTestSuite
         cache1(0),
         cache2(0)
     {
-        grid = StartTestNode("queries-test.xml", "NodeMain");
+        grid = StartPlatformNode("queries-test.xml", "NodeMain");
 
         cache1 = grid.GetCache<int64_t, TestType>("cache");
         cache2 = grid.GetCache<int64_t, ComplexType>("cache2");
@@ -224,7 +224,7 @@ struct QueriesTestSuiteFixture : odbc::OdbcTestSuite
 
     static Ignite StartAdditionalNode(const char* name)
     {
-        return StartTestNode("queries-test.xml", name);
+        return StartPlatformNode("queries-test.xml", name);
     }
 
     /** Node started during the test. */
