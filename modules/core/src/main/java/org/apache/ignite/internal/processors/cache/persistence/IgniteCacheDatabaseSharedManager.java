@@ -1143,10 +1143,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             return;
 
         initAndStartRegions(cctx.kernalContext().config().getDataStorageConfiguration());
-
-        for (DatabaseLifecycleListener lsnr : getDatabaseListeners(kctx)) {
-            lsnr.afterInitialise(this);
-        }
     }
 
     /**
@@ -1166,7 +1162,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             initPageMemoryDataStructures(cfg);
 
-            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(kctx))
+            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
                 lsnr.afterInitialise(this);
 
             dataRegionsStarted = true;
