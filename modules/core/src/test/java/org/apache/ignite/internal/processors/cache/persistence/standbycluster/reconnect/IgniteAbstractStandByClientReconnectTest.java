@@ -31,9 +31,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
@@ -389,7 +389,7 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture onDiscovery(
+        @Override public IgniteFuture<?> onDiscovery(
             int type,
             long topVer,
             ClusterNode node,
@@ -397,7 +397,7 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
             @Nullable Map<Long, Collection<ClusterNode>> topHist,
             @Nullable DiscoverySpiCustomMessage data
         ) {
-            IgniteInternalFuture fut = delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, data);
+            IgniteFuture<?> fut = delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, data);
 
             if (type == EVT_CLIENT_NODE_DISCONNECTED) {
                 try {
