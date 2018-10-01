@@ -2162,16 +2162,16 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
         cacheCtx.onStarted();
 
-        String memPlcName = cfg.getDataRegionName();
+        String dataRegion = cfg.getDataRegionName();
 
-        if (memPlcName == null && ctx.config().getDataStorageConfiguration() != null)
-            memPlcName = ctx.config().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName();
+        if (dataRegion == null && ctx.config().getDataStorageConfiguration() != null)
+            dataRegion = ctx.config().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName();
 
         if (log.isInfoEnabled()) {
             log.info("Started cache [name=" + cfg.getName() +
                 ", id=" + cacheCtx.cacheId() +
                 (cfg.getGroupName() != null ? ", group=" + cfg.getGroupName() : "") +
-                ", memoryPolicyName=" + memPlcName +
+                ", dataRegionName=" + dataRegion +
                 ", mode=" + cfg.getCacheMode() +
                 ", atomicity=" + cfg.getAtomicityMode() +
                 ", backups=" + cfg.getBackups() +
@@ -2197,12 +2197,10 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      * @return Found group or null.
      */
     private CacheGroupContext findCacheGroup(String grpName) {
-        for (CacheGroupContext grp0 : cacheGrps.values()) {
-            if (grp0.sharedGroup() && grpName.equals(grp0.name()))
-                return grp0;
-        }
-
-        return null;
+        return cacheGrps.values().stream()
+            .filter(grp -> grp.sharedGroup() && grpName.equals(grp.name()))
+            .findAny()
+            .orElse(null);
     }
 
     /**

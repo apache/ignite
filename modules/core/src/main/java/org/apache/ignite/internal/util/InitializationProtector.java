@@ -27,15 +27,15 @@ import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
  */
 public class InitializationProtector {
     /** Default striped lock concurrency level. */
-    private static final int DEFAULT_CONCURRENCY_LEVEL = 20;
+    private static final int DEFAULT_CONCURRENCY_LEVEL = Runtime.getRuntime().availableProcessors();
     /** Striped lock. */
-    GridStripedLock stripedLock = new GridStripedLock(DEFAULT_CONCURRENCY_LEVEL);
+    private GridStripedLock stripedLock = new GridStripedLock(DEFAULT_CONCURRENCY_LEVEL);
 
     /**
      * @param protectedKey Unique value by which initialization code should be run only one time.
      * @param initializedVal Supplier for given already initialized value if it exist or null as sign that
      * initialization required.
-     * @param initializationCode Code for initialization value corresponding protectedKey.
+     * @param initializationCode Code for initialization value corresponding protectedKey. Should be idempotent.
      * @param <T> Type of initialization value.
      * @return Initialized value.
      * @throws IgniteCheckedException if initialization was failed.
@@ -67,10 +67,9 @@ public class InitializationProtector {
 
     /**
      * It method allows to avoid simultaneous initialization from various threads.
-     * Garantee protection only for first call.
      *
      * @param protectedKey Unique value by which initialization code should be run only from one thread in one time.
-     * @param initializationCode Code for initialization value corresponding protectedKey.
+     * @param initializationCode Code for initialization value corresponding protectedKey. Should be idempotent.
      * @throws IgniteCheckedException if initialization was failed.
      */
     public void protect(Object protectedKey, IgniteThrowableRunner initializationCode) throws IgniteCheckedException {
