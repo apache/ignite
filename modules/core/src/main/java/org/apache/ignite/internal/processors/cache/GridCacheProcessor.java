@@ -3160,7 +3160,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 try {
                     Collection<byte[]> grpKeys = fut.result();
 
-                    if (F.isEmpty(grpKeys))
+                    if (F.size(grpKeys, F.alwaysTrue()) != keyCnt)
                         res.onDone(false, fut.error());
 
                     IgniteInternalFuture<Boolean> dynStartCacheFut = after.apply(grpKeys);
