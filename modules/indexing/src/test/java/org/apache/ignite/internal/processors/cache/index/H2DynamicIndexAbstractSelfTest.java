@@ -60,9 +60,9 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
 
         IgniteCache<KeyClass, ValueClass> cache = client().cache(CACHE_NAME);
 
-        cache.put(new KeyClass(1), new ValueClass("val1"));
-        cache.put(new KeyClass(2), new ValueClass("val2"));
-        cache.put(new KeyClass(3), new ValueClass("val3"));
+        cache.put(new KeyClass(1), new ValueClass(1L));
+        cache.put(new KeyClass(2), new ValueClass(2L));
+        cache.put(new KeyClass(3), new ValueClass(3L));
     }
 
     /** {@inheritDoc} */
@@ -106,7 +106,7 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
 
         assertSize(2);
 
-        cache.put(new KeyClass(4), new ValueClass("someVal"));
+        cache.put(new KeyClass(4), new ValueClass(1L));
 
         assertSize(3);
     }
@@ -215,7 +215,7 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
 
         assertColumnValues("val1", "val3");
 
-        cache.put(new KeyClass(0), new ValueClass("someVal"));
+        cache.put(new KeyClass(0), new ValueClass(1L));
 
         assertColumnValues("someVal", "val1", "val3");
 
