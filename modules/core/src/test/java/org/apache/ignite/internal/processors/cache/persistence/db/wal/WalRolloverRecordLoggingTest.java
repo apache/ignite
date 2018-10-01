@@ -29,6 +29,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
+import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -51,11 +52,6 @@ public class WalRolloverRecordLoggingTest extends GridCommonAbstractTest {
         /** */
         private RolloverRecord() {
             super(null);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean rollOver() {
-            return true;
         }
     }
 
@@ -138,7 +134,7 @@ public class WalRolloverRecordLoggingTest extends GridCommonAbstractTest {
                 dbMgr.checkpointReadLock();
 
                 try {
-                    walMgr.log(rec);
+                    walMgr.log(rec, RolloverType.NEXT_SEGMENT);
                 }
                 finally {
                     dbMgr.checkpointReadUnlock();
