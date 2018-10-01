@@ -42,6 +42,8 @@ public class IgnitePdsTestSuite4 extends TestSuite {
 
         suite.addTestSuite(IgnitePdsTaskCancelingTest.class);
 
+        suite.addTestSuite(IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse.class);
+
         return suite;
     }
 
@@ -60,8 +62,5 @@ public class IgnitePdsTestSuite4 extends TestSuite {
 
         // Integrity test.
         suite.addTestSuite(IgnitePdsRecoveryAfterFileCorruptionTest.class);
-
-        // Activate/Deactivate + persistence + memory reuse.
-        suite.addTestSuite(IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse.class);
     }
 }

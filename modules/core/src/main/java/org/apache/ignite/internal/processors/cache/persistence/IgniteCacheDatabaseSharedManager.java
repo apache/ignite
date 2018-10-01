@@ -21,7 +21,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -92,7 +91,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     private static final long MAX_PAGE_MEMORY_INIT_SIZE_32_BIT = 2L * 1024 * 1024 * 1024;
 
     /** {@code True} to reuse memory on deactive. */
-    private static final boolean REUSE_MEMORY = IgniteSystemProperties.getBoolean(IGNITE_REUSE_MEMORY_ON_DEACTIVATE);
+    private final boolean reuseMemory = IgniteSystemProperties.getBoolean(IGNITE_REUSE_MEMORY_ON_DEACTIVATE);
 
     /** */
     protected volatile Map<String, DataRegion> dataRegionMap;
@@ -252,7 +251,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         dataRegionMap = U.newHashMap(3 + dataRegions);
         memMetricsMap = U.newHashMap(3 + dataRegions);
-        memProviderMap = REUSE_MEMORY ? U.newHashMap(3 + dataRegions) : null;
+        memProviderMap = reuseMemory ? U.newHashMap(3 + dataRegions) : null;
 
         if (dataRegionCfgs != null) {
             for (DataRegionConfiguration dataRegionCfg : dataRegionCfgs)
@@ -972,7 +971,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @return {@code True} if policy supports memory reuse.
      */
     private boolean supportsMemoryReuse(DataRegionConfiguration plcCfg) {
-        return REUSE_MEMORY && plcCfg.getSwapPath() == null;
+        return reuseMemory && plcCfg.getSwapPath() == null;
     }
 
     /**
@@ -1142,7 +1141,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        onDeActivate(!REUSE_MEMORY);
+        onDeActivate(!reuseMemory);
     }
 
     /**
