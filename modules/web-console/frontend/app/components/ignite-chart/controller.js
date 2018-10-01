@@ -53,7 +53,7 @@ export class IgniteChartController {
 
     /**
      * @param {JQLite} $element
-     * @param {ng.IScope} $scope
+     * @param {Array<string>} IgniteChartColors
      * @param {ng.IFilterService} $filter
      */
     constructor($element, IgniteChartColors, $filter) {
@@ -93,8 +93,8 @@ export class IgniteChartController {
         if (this.chart && _.get(changes, 'refreshRate.currentValue'))
             this.onRefreshRateChanged(_.get(changes, 'refreshRate.currentValue'));
 
-        // TODO: Investigate other signaling for resetting component state.
-        if (changes.chartDataPoint && _.isNil(changes.chartDataPoint.currentValue)) {
+        if ((changes.chartDataPoint && _.isNil(changes.chartDataPoint.currentValue)) ||
+            (changes.chartHistory && _.isEmpty(changes.chartHistory.currentValue))) {
             this.clearDatasets();
 
             return;

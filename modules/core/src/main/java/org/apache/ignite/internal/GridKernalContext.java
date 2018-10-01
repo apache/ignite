@@ -685,4 +685,9 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return subscription processor to manage internal-only (strict node-local) subscriptions between components.
      */
     public GridInternalSubscriptionProcessor internalSubscriptionProcessor();
+
+    /**
+     * @return Default uncaught exception handler used by thread pools.
+     */
+    public Thread.UncaughtExceptionHandler uncaughtExceptionHandler();
 }

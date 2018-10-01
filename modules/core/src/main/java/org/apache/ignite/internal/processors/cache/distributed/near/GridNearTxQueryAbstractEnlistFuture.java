@@ -15,17 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc.jdbc;
+package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
- * JDBC response result sender.
+ *
  */
-public interface JdbcResponseSender {
+public abstract class GridNearTxQueryAbstractEnlistFuture extends GridNearTxAbstractEnlistFuture<Long> {
     /**
-     * Send response to the client. Used for asynchronous result send.
-     * @param resp JDBC response.
+     * @param cctx Cache context.
+     * @param tx Transaction.
+     * @param timeout Timeout.
      */
-    public void send(ClientListenerResponse resp);
+    public GridNearTxQueryAbstractEnlistFuture(
+        GridCacheContext<?, ?> cctx, GridNearTxLocal tx, long timeout) {
+        super(cctx, tx, timeout, CU.longReducer());
+    }
 }

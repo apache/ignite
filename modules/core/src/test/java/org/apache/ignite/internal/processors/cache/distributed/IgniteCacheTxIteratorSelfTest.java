@@ -27,6 +27,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -154,6 +157,13 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
                 for (TransactionIsolation iso : TransactionIsolation.values()) {
                     for (TransactionConcurrency con : TransactionConcurrency.values()) {
                         try (Transaction transaction = ignite.transactions().txStart(con, iso)) {
+                            //TODO: IGNITE-7187: Fix when ticket will be implemented. (Near cache)
+                            //TODO: IGNITE-7956: Fix when ticket will be implemented. (Eviction)
+                            if (((IgniteCacheProxy)cache).context().mvccEnabled() &&
+                                ((iso != TransactionIsolation.REPEATABLE_READ && con != TransactionConcurrency.PESSIMISTIC)
+                                    || nearEnabled || useEvicPlc))
+                                return; // Nothing to do. Mode is not supported.
+
                             assertEquals(val, cache.get(key));
 
                             transaction.commit();

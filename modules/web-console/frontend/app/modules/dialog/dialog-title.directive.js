@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-export default ['igniteDialogTitle', [() => {
+export default () => {
     const link = ($scope, $element, $attrs, igniteDialog) => {
         igniteDialog.title = $element.text();
 
@@ -28,4 +28,4 @@ export default ['igniteDialogTitle', [() => {
         link,
         require: '^igniteDialog'
     };
-}]];
+};
