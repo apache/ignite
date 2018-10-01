@@ -2681,7 +2681,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         ? Math.min(curTimeout, dumpTimeout)
                                         : dumpTimeout;
 
-                                    blockingSectionEnd();
+                                    blockingSectionBegin();
 
                                     try {
                                         resVer = exchFut.get(exchTimeout, TimeUnit.MILLISECONDS);
