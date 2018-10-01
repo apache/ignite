@@ -132,6 +132,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
 
         try (Statement stmt = con.createStatement()) {
             int cnt = stmt.executeUpdate(("DELETE " + FULL_TABLE_NAME + " WHERE _key=1"));
+
             Assert.assertEquals(1, cnt);
         }
 
@@ -149,7 +150,9 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
         Connection con = connect(clientNode, null);
 
         try (Statement stmt = con.createStatement()) {
-            int cnt = stmt.executeUpdate(("INSERT INTO " + FULL_TABLE_NAME + "(_key, name, orgId) VALUES(1000,'new_name', 10000)"));
+            int cnt = stmt.executeUpdate(
+                "INSERT INTO " + FULL_TABLE_NAME + "(_key, name, orgId) VALUES(1000,'new_name', 10000)");
+
             Assert.assertEquals(1, cnt);
         }
 
@@ -168,6 +171,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
 
         try (Statement stmt = con.createStatement()) {
             int cnt = stmt.executeUpdate(("UPDATE " + FULL_TABLE_NAME + " SET name = 'new_name'"));
+
             Assert.assertEquals(CACHE_ELEMENT_COUNT, cnt);
         }
 
