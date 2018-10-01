@@ -251,7 +251,6 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public boolean lock(Session ses, boolean exclusive, boolean force) {
-        cctx.kernalContext().log("H2Table").info("+++ LOCK " + getName());
         // In accordance with base method semantics, we'll return true if we were already exclusively locked.
         Boolean res = sessions.get(ses);
 
@@ -481,7 +480,6 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public void unlock(Session ses) {
-        cctx.kernalContext().log("H2Table").info("+++ UNLOCK " + getName());
         Boolean exclusive = sessions.remove(ses);
 
         if (exclusive == null)
