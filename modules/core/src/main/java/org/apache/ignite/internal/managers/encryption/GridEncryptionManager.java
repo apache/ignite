@@ -163,65 +163,69 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         ctx.addNodeAttribute(ATTR_ENCRYPTION_MASTER_KEY_DIGEST, getSpi().masterKeyDigest());
 
-        ctx.event().addDiscoveryEventListener(discoLsnr = (evt, discoCache) -> {
-            UUID leftNodeId = evt.eventNode().id();
+        if (ctx.event() != null) {
+            ctx.event().addDiscoveryEventListener(discoLsnr = (evt, discoCache) -> {
+                UUID leftNodeId = evt.eventNode().id();
 
-            synchronized (genEcnKeyMux) {
-                Iterator<Map.Entry<IgniteUuid, GenerateEncryptionKeyFuture>> futsIter =
-                    genEncKeyFuts.entrySet().iterator();
+                synchronized (genEcnKeyMux) {
+                    Iterator<Map.Entry<IgniteUuid, GenerateEncryptionKeyFuture>> futsIter =
+                        genEncKeyFuts.entrySet().iterator();
 
-                while (futsIter.hasNext()) {
-                    GenerateEncryptionKeyFuture fut = futsIter.next().getValue();
+                    while (futsIter.hasNext()) {
+                        GenerateEncryptionKeyFuture fut = futsIter.next().getValue();
 
-                    if (!F.eq(leftNodeId, fut.nodeId()))
-                        return;
+                        if (!F.eq(leftNodeId, fut.nodeId()))
+                            return;
 
-                    try {
-                        futsIter.remove();
+                        try {
+                            futsIter.remove();
 
-                        sendGenerateEncryptionKeyRequest(fut);
+                            sendGenerateEncryptionKeyRequest(fut);
 
-                        genEncKeyFuts.put(fut.id(), fut);
-                    }
-                    catch (IgniteCheckedException e) {
-                        fut.onDone(null, e);
-                    }
-                }
-            }
-        }, EVT_NODE_LEFT, EVT_NODE_FAILED);
-
-        ctx.io().addMessageListener(TOPIC_GEN_ENC_KEY, ioLsnr = (nodeId, msg, plc) -> {
-            synchronized (genEcnKeyMux) {
-                if (msg instanceof GenerateEncryptionKeyRequest) {
-                    GenerateEncryptionKeyRequest req = (GenerateEncryptionKeyRequest)msg;
-
-                    assert req.keyCount() != 0;
-
-                    List<byte[]> encKeys = new ArrayList<>(req.keyCount());
-
-                    for (int i = 0; i < req.keyCount(); i++)
-                        encKeys.add(getSpi().encryptKey(getSpi().create()));
-
-                    try {
-                        ctx.io().sendToGridTopic(nodeId, TOPIC_GEN_ENC_KEY,
-                            new GenerateEncryptionKeyResponse(req.id(), encKeys), SYSTEM_POOL);
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Unable to send generate key response[nodeId=" + nodeId + "]");
+                            genEncKeyFuts.put(fut.id(), fut);
+                        }
+                        catch (IgniteCheckedException e) {
+                            fut.onDone(null, e);
+                        }
                     }
                 }
-                else {
-                    GenerateEncryptionKeyResponse resp = (GenerateEncryptionKeyResponse)msg;
+            }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+        }
 
-                    GenerateEncryptionKeyFuture fut = genEncKeyFuts.get(resp.requestId());
+        if (ctx.io() != null) {
+            ctx.io().addMessageListener(TOPIC_GEN_ENC_KEY, ioLsnr = (nodeId, msg, plc) -> {
+                synchronized (genEcnKeyMux) {
+                    if (msg instanceof GenerateEncryptionKeyRequest) {
+                        GenerateEncryptionKeyRequest req = (GenerateEncryptionKeyRequest)msg;
 
-                    if (fut != null)
-                        fut.onDone(resp.encryptionKeys(), null);
-                    else
-                        U.warn(log, "Response received for a unknown request.[reqId=" + resp.requestId() + "]");
+                        assert req.keyCount() != 0;
+
+                        List<byte[]> encKeys = new ArrayList<>(req.keyCount());
+
+                        for (int i = 0; i < req.keyCount(); i++)
+                            encKeys.add(getSpi().encryptKey(getSpi().create()));
+
+                        try {
+                            ctx.io().sendToGridTopic(nodeId, TOPIC_GEN_ENC_KEY,
+                                new GenerateEncryptionKeyResponse(req.id(), encKeys), SYSTEM_POOL);
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Unable to send generate key response[nodeId=" + nodeId + "]");
+                        }
+                    }
+                    else {
+                        GenerateEncryptionKeyResponse resp = (GenerateEncryptionKeyResponse)msg;
+
+                        GenerateEncryptionKeyFuture fut = genEncKeyFuts.get(resp.requestId());
+
+                        if (fut != null)
+                            fut.onDone(resp.encryptionKeys(), null);
+                        else
+                            U.warn(log, "Response received for a unknown request.[reqId=" + resp.requestId() + "]");
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     /** {@inheritDoc} */
