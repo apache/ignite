@@ -35,7 +35,7 @@ import static java.util.Comparator.comparingLong;
 /**
  *
  */
-public class CacheConfigurationChecksOnNodeJoinTest extends GridCommonAbstractTest {
+public class CacheConfigurationCheckOnNodeJoinTest extends GridCommonAbstractTest {
     private static final String SECOND_CACHE_NAME = DEFAULT_CACHE_NAME + "-2";
 
     private static final String CACHE_GROUP_NAME = "test-group";
