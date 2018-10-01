@@ -71,7 +71,7 @@ public class PageMemoryNoStoreLeakTest extends GridCommonAbstractTest {
                 mem.start();
             }
             finally {
-                mem.stop();
+                mem.stop(true);
             }
 
             long committedVMSize = D.getCommittedVirtualMemorySize();
