@@ -1080,12 +1080,12 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 159:
+            case 161:
                 msg = new GenerateEncryptionKeyRequest();
 
                 break;
 
-            case 160:
+            case 162:
                 msg = new GenerateEncryptionKeyResponse();
 
                 break;
