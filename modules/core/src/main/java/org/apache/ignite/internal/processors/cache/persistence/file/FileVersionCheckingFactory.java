@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
 
 /**
@@ -64,7 +63,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public PageStore createPageStore(
+    @Override public FilePageStore createPageStore(
         byte type,
         File file,
         AllocatedPageTracker allocatedTracker) throws IgniteCheckedException {
@@ -117,7 +116,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
      * @param ver Version.
      * @param allocatedTracker Metrics updater
      */
-    public PageStore createPageStore(
+    public FilePageStore createPageStore(
         byte type,
         File file,
         int ver,
