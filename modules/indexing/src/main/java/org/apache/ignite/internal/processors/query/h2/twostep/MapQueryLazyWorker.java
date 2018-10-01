@@ -71,7 +71,7 @@ public class MapQueryLazyWorker extends GridWorker {
     private GridH2QueryContext qctx;
 
     /** Worker is started flag. */
-    private volatile boolean started;
+    private boolean started;
 
     /** Detached connection. */
     private ObjectPoolReusable<H2ConnectionWrapper> detached;
@@ -93,10 +93,25 @@ public class MapQueryLazyWorker extends GridWorker {
     }
 
     /**
+     * The processing of the message will be produced in the started lazy thread (e.g. after long wait on table lock).
      *
      * @throws QueryCancelledException  In case query is canceled during the worker start.
      */
-    void start() throws QueryCancelledException {
+    void startForWholeQuery() throws QueryCancelledException {
+        startForQueryRemains(null, null);
+    }
+
+
+    /**
+     * Start lazy worker for half-processed query.
+     * In this case we have to detach H2 connection from current thread and use it for current query processing.
+     * Also tables locks must be transferred to lazy thread from QUERY_POOL thread pool.
+     *
+     * @param ses H2 Session.
+     * @param detached H2 connection detached from current thread.
+     * @throws QueryCancelledException  In case query is canceled during the worker start.
+     */
+    void startForQueryRemains(Session ses, ObjectPoolReusable<H2ConnectionWrapper> detached) throws QueryCancelledException {
         synchronized (mux) {
             if (!exec.busyLock().enterBusy()) {
                 log.warning("Lazy worker isn't started. Node is stopped [key=" + key + ']');
@@ -108,14 +123,23 @@ public class MapQueryLazyWorker extends GridWorker {
                 if (started)
                     return;
 
-                if (isCancelled)
-                    throw new QueryCancelledException();
+                if (isCancelled) {
+                    if (detached != null)
+                        detached.recycle();
 
-                started = true;
+                    throw new QueryCancelledException();
+                }
+
+                if (ses != null)
+                    lazyTransferStart(ses);
+
+                this.detached = detached;
 
                 exec.registerLazyWorker(this);
 
                 IgniteThread thread = new IgniteThread(this);
+
+                started = true;
 
                 thread.start();
             }
@@ -191,7 +215,7 @@ public class MapQueryLazyWorker extends GridWorker {
      */
     public void submitStopTask(Runnable task, boolean nodeStop) {
         synchronized (mux) {
-            if (!started || LAZY_WORKER.get() != null)
+            if (LAZY_WORKER.get() != null)
                 task.run();
             else
                 submit(task);
@@ -214,8 +238,11 @@ public class MapQueryLazyWorker extends GridWorker {
             if (qctx != null && qctx.distributedJoinMode() == OFF && !qctx.isCleared())
                 qctx.clearContext(nodeStop);
 
-            if (detached != null)
+            if (detached != null) {
                 detached.recycle();
+
+                detached = null;
+            }
 
             isCancelled = true;
 
@@ -300,18 +327,11 @@ public class MapQueryLazyWorker extends GridWorker {
     }
 
     /**
-     * @param conn Detached H2 connection.
-     */
-    public void detachedConnection(ObjectPoolReusable<H2ConnectionWrapper> conn) {
-        this.detached = conn;
-    }
-
-    /**
      * Start session transfer to lazy thread.
      *
      * @param ses Session.
      */
-    public static void lazyTransferStart(Session ses) {
+    private static void lazyTransferStart(Session ses) {
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
         assert qctx != null;
@@ -325,7 +345,7 @@ public class MapQueryLazyWorker extends GridWorker {
      *
      * @param ses Session.
      */
-    public static void lazyTransferFinish(Session ses) {
+    private static void lazyTransferFinish(Session ses) {
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
         assert qctx != null;

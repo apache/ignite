@@ -978,11 +978,7 @@ public class GridMapQueryExecutor {
                 if (MapQueryLazyWorker.currentWorker() == null) {
                     final ObjectPoolReusable<H2ConnectionWrapper> detachedConn = h2.detachConnection();
 
-                    worker.detachedConnection(detachedConn);
-
-                    MapQueryLazyWorker.lazyTransferStart(H2Utils.session(conn));
-
-                    worker.start();
+                    worker.startForQueryRemains(H2Utils.session(conn), detachedConn);
 
                     GridH2QueryContext.clearThreadLocal();
                 }
@@ -1005,7 +1001,7 @@ public class GridMapQueryExecutor {
                 worker = createLazyWorker(node, reqId, segmentId);
 
                 try {
-                    worker.start();
+                    worker.startForWholeQuery();
 
                     worker.submit(new Runnable() {
                         @Override public void run() {
