@@ -54,7 +54,7 @@ public class GridNearTxQueryResultsEnlistResponse extends GridNearTxQueryEnlistR
      * @param res Result.
      * @param dhtFutId Dht future id.
      * @param dhtVer Dht version.
-     * @param newDhtNodes New
+     * @param newDhtNodes New DHT nodes involved into transaction.
      */
     public GridNearTxQueryResultsEnlistResponse(int cacheId,
         IgniteUuid futId,
