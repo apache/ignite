@@ -15,22 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.tree.mvcc.data;
+package org.apache.ignite.internal.processors.cache.persistence.db;
+
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
  *
  */
-public enum ResultType {
-    /** */
-    VERSION_FOUND,
-    /** */
-    PREV_NULL,
-    /** */
-    PREV_NOT_NULL,
-    /** */
-    LOCKED,
-    /** */
-    VERSION_MISMATCH,
-    /** */
-    FILTERED
+public class IgnitePdsReserveWalSegmentsWithCompactionTest extends IgnitePdsReserveWalSegmentsTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.getDataStorageConfiguration().setWalCompactionEnabled(true);
+
+        return cfg;
+    }
 }
