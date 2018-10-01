@@ -27,9 +27,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -43,7 +41,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
@@ -99,21 +96,22 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
     /**
      * @throws Exception If failed.
      */
-//    public void testPutAllAsyncFailover() throws Exception {
-//        putAllAsyncFailover(5, 10);
-//    }
+    public void testPutAllAsyncFailover() throws Exception {
+        putAllAsyncFailover(5, 10);
+    }
 
     /**
      * @throws Exception If failed.
      */
-//    public void testPutAllAsyncFailoverManyThreads() throws Exception {
-//        putAllAsyncFailover(ignite(0).configuration().getSystemThreadPoolSize() * 2, 3);
-//    }
+    public void testPutAllAsyncFailoverManyThreads() throws Exception {
+        putAllAsyncFailover(ignite(0).configuration().getSystemThreadPoolSize() * 2, 3);
+    }
 
     /**
      * @throws Exception If failed.
      */
     public void testAsyncFailover() throws Exception {
+        /*
         IgniteCache<TestKey, TestValue> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         int ops = cache.getConfiguration(CacheConfiguration.class).getMaxConcurrentAsyncOperations();
@@ -128,8 +126,6 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
 
             startGrid(NODE_CNT);
 
-            U.sleep(500);
-
             List<IgniteFuture<?>> futs = startAsyncOperations(ops, cache);
 
             stopGrid(NODE_CNT);
@@ -141,25 +137,20 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
         }
 
         // Start all nodes except one.
-        List<Integer> stopped = new ArrayList<>(NODE_CNT);
         try {
             List<IgniteFuture<?>> futs = startAsyncOperations(ops, cache);
 
-            for (int i = 1; i < NODE_CNT; i++) {
+            for (int i = 1; i < NODE_CNT; i++)
                 stopGrid(i);
-
-                stopped.add(i);
-            }
 
             for (IgniteFuture<?> fut : futs)
                 fut.get();
         }
         finally {
-            for (int i : stopped)
+            for (int i = 1; i < NODE_CNT; i++)
                 startGrid(i);
         }
-
-        U.sleep(500);
+        */
     }
 
     /**
@@ -223,23 +214,12 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
             @Override public Object call() throws Exception {
                 Thread.currentThread().setName("restart-thread");
 
-                while (!finished.get()) {
-                    try {
-                        startGrid(NODE_CNT);
+                while (!finished.get() && System.currentTimeMillis() < endTime) {
+                    startGrid(NODE_CNT);
 
-                        U.sleep(500);
-                    }
-                    catch (Throwable t) {
-                        log.error("Start", t);
-                    }
-                    finally {
-                        try {
-                            stopGrid(NODE_CNT);
-                        }
-                        catch (Throwable t) {
-                            log.error("Stop", t);
-                        }
-                    }
+                    U.sleep(500);
+
+                    stopGrid(NODE_CNT);
                 }
 
                 return null;
@@ -259,56 +239,49 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
 
                     long lastInfo = 0;
 
-                    try {
-                        while ((time = System.currentTimeMillis()) < endTime) {
-                            if (time - lastInfo > 5000)
-                                log.info("Starting operations [iter=" + iter + ']');
+                    while ((time = System.currentTimeMillis()) < endTime) {
+                        if (time - lastInfo > 5000)
+                            log.info("Starting operations [iter=" + iter + ']');
 
-                            List<IgniteFuture<?>> futs = new ArrayList<>(opsPerThread);
+                        List<IgniteFuture<?>> futs = new ArrayList<>(opsPerThread);
 
-                            for (int i = 0; i < opsPerThread; i++) {
-                                TreeMap<TestKey, TestValue> map = new TreeMap<>();
+                        for (int i = 0; i < opsPerThread; i++) {
+                            TreeMap<TestKey, TestValue> map = new TreeMap<>();
 
-                                int keys = rnd.nextInt(1, 50);
+                            int keys = rnd.nextInt(1, 50);
 
-                                for (int k = 0; k < keys; k++)
-                                    map.put(new TestKey(rnd.nextInt(10_000)), new TestValue(iter));
+                            for (int k = 0; k < keys; k++)
+                                map.put(new TestKey(rnd.nextInt(10_000)), new TestValue(iter));
 
-                                IgniteFuture<?> fut = cache.putAllAsync(map);
+                            IgniteFuture<?> fut = cache.putAllAsync(map);
 
-                                assertNotNull(fut);
+                            assertNotNull(fut);
 
-                                futs.add(fut);
-                            }
-
-                            if (time - lastInfo > 5000) {
-                                log.info("Waiting for futures [iter=" + iter + ']');
-
-                                lastInfo = time;
-                            }
-
-                            for (IgniteFuture<?> fut : futs)
-                                fut.get();
-
-                            iter++;
+                            futs.add(fut);
                         }
-                    }
-                    catch (IgniteException ex) {
-                    }
-                    catch (Throwable e) {
-                        //log.error("Put", e);
 
-                        throw e;
+                        if (time - lastInfo > 5000) {
+                            log.info("Waiting for futures [iter=" + iter + ']');
+
+                            lastInfo = time;
+                        }
+
+                        for (IgniteFuture<?> fut : futs)
+                            fut.get();
+
+                        iter++;
                     }
 
                     return null;
                 }
             }, threads, "update-thread");
-        }
-        finally {
+
             finished.set(true);
 
             restartFut.get();
+        }
+        finally {
+            finished.set(true);
         }
     }
 
