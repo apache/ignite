@@ -15,28 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.mem;
+package org.apache.ignite.internal.processors.cache;
+
+import org.apache.ignite.IgniteSystemProperties;
 
 /**
- * Direct memory provider interface. Not thread-safe.
+ *
  */
-public interface DirectMemoryProvider {
-    /**
-     * @param chunkSizes Initializes provider with the chunk sizes.
-     */
-    public void initialize(long[] chunkSizes);
+public class IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse extends
+    IgniteClusterActivateDeactivateTestWithPersistence {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE, "true");
 
-    /**
-     * Shuts down the provider.
-     *
-     * @param deallocate {@code True} to deallocate memory, {@code false} to allow memory reuse.
-     */
-    public void shutdown(boolean deallocate);
+        super.beforeTest();
+    }
 
-    /**
-     * Attempts to allocate next memory region. Will return {@code null} if no more regions are available.
-     *
-     * @return Next memory region.
-     */
-    public DirectMemoryRegion nextRegion();
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE);
+    }
 }
