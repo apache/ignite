@@ -509,12 +509,15 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
                 if (regionId == UNMAPPED_REGION)
                     fail();
             }
-            catch (CacheException ignored) {
-                if (X.hasCause(ignored, InterruptedException.class, IgniteInterruptedCheckedException.class))
+            catch (CacheException e) {
+                if (X.hasCause(e, InterruptedException.class, IgniteInterruptedCheckedException.class))
                     return; // Allow interruptions.
 
-                if (regionId != UNMAPPED_REGION)
-                    fail();
+                if (regionId != UNMAPPED_REGION) {
+                    e.printStackTrace(System.err);
+
+                    fail("Unexpected exception (see details above): " + e.getMessage());
+                }
             }
         }
     }

@@ -38,6 +38,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxRemoteAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -438,6 +440,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                         ctx.localNodeId(),
                                         topologyVersion(),
                                         snapshot,
+                                        false,
+                                        null,
                                         false);
 
                                     break;
@@ -454,6 +458,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                         snapshot,
                                         op.cacheOperation(),
                                         false,
+                                        false,
+                                        null,
                                         false);
 
                                     break;

@@ -16,14 +16,13 @@
  */
 
 #pragma warning disable 618
-namespace Apache.Ignite.Core.Tests 
+namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.IO;
     using System.Linq;
     using System.Runtime.Serialization.Formatters.Binary;
     using System.Threading;
-    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;

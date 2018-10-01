@@ -807,7 +807,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /** {@inheritDoc} */
-    @Override public boolean reserve(WALPointer start) throws IgniteCheckedException {
+    @Override public boolean reserve(WALPointer start) {
         assert start != null && start instanceof FileWALPointer : "Invalid start pointer: " + start;
 
         if (mode == WALMode.NONE)
@@ -815,8 +815,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         FileArchiver archiver0 = archiver;
 
-        if (archiver0 == null)
-            throw new IgniteCheckedException("Could not reserve WAL segment: archiver == null");
+        assert archiver0 != null : "Could not reserve WAL segment: archiver == null";
 
         archiver0.reserve(((FileWALPointer)start).index());
 
@@ -1901,16 +1900,12 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         /** All segments prior to this (inclusive) can be compressed. */
         private volatile long minUncompressedIdxToKeep = -1L;
 
-        /**
-         *
-         */
+        /** */
         FileCompressor() {
             super("wal-file-compressor%" + cctx.igniteInstanceName());
         }
 
-        /**
-         *
-         */
+        /** */
         private void init() {
             File[] toDel = walArchiveDir.listFiles(WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER);
 
@@ -1947,7 +1942,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
          * Pessimistically tries to reserve segment for compression in order to avoid concurrent truncation.
          * Waits if there's no segment to archive right now.
          */
-        private long tryReserveNextSegmentOrWait() throws InterruptedException, IgniteCheckedException {
+        private long tryReserveNextSegmentOrWait() throws InterruptedException {
             long segmentToCompress = lastCompressedIdx + 1;
 
             synchronized (this) {
@@ -2081,6 +2076,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             }
 
             try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip)))) {
+                zos.setLevel(dsCfg.getWalCompactionLevel());
                 zos.putNextEntry(new ZipEntry(""));
 
                 zos.write(prepareSerializerVersionBuffer(nextSegment, segmentSerializerVer, true).array());
