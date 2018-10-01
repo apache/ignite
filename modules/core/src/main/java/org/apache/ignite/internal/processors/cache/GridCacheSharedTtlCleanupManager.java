@@ -161,17 +161,10 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
                 if (err == null && !isCancelled)
                     err = new IllegalStateException("Thread " + name() + " is terminated unexpectedly");
 
-                boolean failed = true;
-
                 if (err instanceof OutOfMemoryError)
                     cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
                 else if (err != null)
                     cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
-                else
-                    failed = false;
-
-                if (failed)
-                    cancel();
             }
         }
     }

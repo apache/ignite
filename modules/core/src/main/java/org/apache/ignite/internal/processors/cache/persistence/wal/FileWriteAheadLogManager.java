@@ -2415,7 +2415,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** Segment idx corresponded to fileIo*/
         final long segmentIdx;
-
+        
         /**
          * @param fileIO I/O interface for read/write operations of FileHandle.
          */
