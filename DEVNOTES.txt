@@ -19,7 +19,7 @@ Ignite Fabric Maven Build Instructions
 
         mvn initialize -Prelease
 
-Look for apache-ignite-fabric-<version>-bin.zip in ./target/bin directory.
+Look for apache-ignite-<version>-bin.zip in ./target/bin directory.
 
 
 Ignite Fabric with LGPL Maven Build Instructions
@@ -41,9 +41,9 @@ Ignite Fabric with LGPL Maven Build Instructions
 
 4) Assembly Apache Ignite fabric with LGPL dependencies:
 
-        mvn initialize -Prelease,lgpl -Dignite.edition=fabric-lgpl
+        mvn initialize -Prelease,lgpl -Dignite.edition=apache-ignite-lgpl
 
-   Look for apache-ignite-fabric-lgpl-<version>-bin.zip in ./target/bin directory.
+   Look for apache-ignite-lgpl-<version>-bin.zip in ./target/bin directory.
 
 
 Ignite Hadoop Accelerator Maven Build Instructions
@@ -60,7 +60,7 @@ Ignite Hadoop Accelerator Maven Build Instructions
 
 2) Assembly Hadoop Accelerator:
 
-        mvn initialize -Prelease -Dignite.edition=hadoop
+        mvn initialize -Prelease -Dignite.edition=apache-ignite-hadoop
 
    Look for apache-ignite-hadoop-<version>-bin.zip in ./target/bin directory. Resulting binary
    assembly will also include integration module for Apache Spark.
@@ -161,12 +161,7 @@ Ignite Release Instructions
 
    3.4) Assembly Hadoop Accelerator:
 
-                mvn initialize -Prelease -Dignite.edition=hadoop
-
-   NOTE: Binary artifact name can be changed by setting additional property -Dignite.zip.pattern. Binary artifact will be
-   created inside /target/bin folder when release profile is used.
-
-   NOTE: Sources artifact name is fixed. Sources artifact will be created inside /target dir when apache-release profile is used.
+                mvn initialize -Prelease -Dignite.edition=apache-ignite-hadoop
 
    NOTE: Nexus staging (repository.apache.org) should be closed with appropriate comment contains release version and
    release candidate number, for example "Apache Ignite 1.0.0-rc7", when mvn deploy finished.

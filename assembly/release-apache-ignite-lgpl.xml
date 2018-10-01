@@ -21,7 +21,7 @@
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2
           http://maven.apache.org/xsd/assembly-1.1.2.xsd">
-    <id>fabric</id>
+    <id>apache-ignite-lgpl</id>
 
     <includeBaseDirectory>false</includeBaseDirectory>
 
@@ -31,19 +31,19 @@
 
     <componentDescriptors>
         <componentDescriptor>release-base.xml</componentDescriptor>
-        <componentDescriptor>release-fabric-base.xml</componentDescriptor>
+        <componentDescriptor>release-apache-ignite-base.xml</componentDescriptor>
         <componentDescriptor>release-yardstick.xml</componentDescriptor>
     </componentDescriptors>
 
     <files>
         <file>
-            <source>examples/pom-standalone.xml</source>
+            <source>examples/pom-standalone-lgpl.xml</source>
             <outputDirectory>/examples</outputDirectory>
             <destName>pom.xml</destName>
         </file>
 
         <file>
-            <source>examples/README.txt</source>
+            <source>examples/README-LGPL.txt</source>
             <outputDirectory>/examples</outputDirectory>
             <destName>README.txt</destName>
         </file>
