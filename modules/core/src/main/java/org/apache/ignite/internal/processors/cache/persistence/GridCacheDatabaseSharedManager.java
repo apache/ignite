@@ -362,7 +362,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Map of futures that will be done, when new stored caches configuration were write to metastore. */
     private final Map<CacheConfiguration<?,?>,IgniteInternalFuture<?>> saveCacheConfigurationFuts = new ConcurrentHashMap<>();
 
-    /** Barrier for notification that metasore ready for write. */
+    /** Barrier for notification that metastore ready for write. */
     private final CountDownLatch metaStorageReadyForWriteLatch = new CountDownLatch(1);
 
     /**
@@ -1512,8 +1512,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public void storeCacheConfiguration(StoredCacheData cacheData,
-        boolean overwrite) throws IgniteCheckedException {
+    @Override public void storeCacheConfiguration(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException {
         if (metaStorageReadyForWriteLatch.getCount() == 0L)
             storeCacheConfiguration0(cacheData, overwrite);
         else {
@@ -1551,8 +1550,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * Store cache configuration routine.
      */
-    private void storeCacheConfiguration0(StoredCacheData cacheData,
-        boolean overwrite) throws IgniteCheckedException {
+    private void storeCacheConfiguration0(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException {
         context().database().checkpointReadLock();
 
         try {
