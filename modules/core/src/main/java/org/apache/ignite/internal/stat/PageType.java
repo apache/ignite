@@ -27,6 +27,8 @@ import org.apache.ignite.internal.util.typedef.T2;
  */
 public enum PageType {
     /** */
+    UNKNOWN(Integer.MIN_VALUE),
+    /** */
     T_DATA(PageIO.T_DATA),
     /** */
     T_BPLUS_META(PageIO.T_BPLUS_META),
@@ -127,7 +129,7 @@ public enum PageType {
                 return t;
         }
 
-        throw new IgniteException("pageIoType " + pageIoType + "doesn't support");
+        return UNKNOWN;
     }
 
 }
