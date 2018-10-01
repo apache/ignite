@@ -34,6 +34,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
@@ -1154,6 +1155,9 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         sharedCtx.removeCacheContext(cctx);
 
         caches.remove(cctx.name());
+
+        initFinished(cctx.name());
+
         jCacheProxies.remove(cctx.name());
 
         stoppedCaches.add(cctx.cache());
@@ -1755,6 +1759,14 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     }
 
     /**
+     * Finish all proxy latches.
+     */
+    public void finishedAll() {
+        for (String name : jCacheProxies.keySet())
+            initFinished(name);
+    }
+
+    /**
      * Gets a collection of currently started caches.
      *
      * @return Collection of started cache names.
@@ -2187,8 +2199,11 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             if (proxy != null)
                 proxy.restart();
         }
-        else
+        else {
+            initFinished(req.cacheName());
+
             proxy = jCacheProxies.remove(req.cacheName());
+        }
 
         if (proxy != null)
             proxy.context().gate().onStopped();
@@ -2282,6 +2297,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             assert cache != null : cctx.name();
 
             jCacheProxies.put(cctx.name(), new IgniteCacheProxyImpl(cache.context(), cache, false));
+
+            initFinished(cctx.name());
         }
         else {
             cctx.gate().onStopped();
@@ -2292,6 +2309,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             try {
                 if (!cctx.affinityNode() && cctx.transactional())
                     sharedCtx.tm().rollbackTransactionsForCache(cctx.cacheId());
+
+                initFinished(cctx.name());
 
                 jCacheProxies.remove(cctx.name());
 
@@ -3869,7 +3888,46 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
         IgniteCacheProxy<K, V> jcache = (IgniteCacheProxy<K, V>)jCacheProxies.get(name);
 
+        awaitInitProxy(jcache);
+
         return jcache == null ? null : jcache.internalProxy();
+    }
+
+    /**
+     * Await proxy initialization.
+     *
+     * @param jcache Cache proxy.
+     */
+    private void awaitInitProxy(IgniteCacheProxy<?, ?> jcache){
+        if (jcache != null) {
+            CountDownLatch initLatch = ((IgniteCacheProxyImpl<?, ?>)jcache).getInitLatch();
+
+            try {
+                while (initLatch.getCount() > 0) {
+                    initLatch.await(2000, TimeUnit.MILLISECONDS);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to wait init latch cache proxy completed, cache=" + jcache.getName());
+                }
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                // Skip intterupt.
+                //  throw new IgniteInterruptedException(e);
+            }
+        }
+    }
+
+    /**
+     *
+     * @param name Cache name.
+     */
+    public void initFinished(String name) {
+        IgniteCacheProxy<?, ?> jcache = jCacheProxies.get(name);
+
+        if (jcache != null){
+            ((IgniteCacheProxyImpl<?, ?>)jcache).getInitLatch().countDown();
+        }
     }
 
     /**
@@ -3901,6 +3959,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
             cache = jCacheProxies.get(name);
         }
+
+        awaitInitProxy(cache);
 
         return cache == null ? null : (IgniteInternalCache<K, V>)cache.internalProxy();
     }
@@ -3945,6 +4005,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         if (ctx.discovery().localNode().isClient()) {
             IgniteCacheProxy<K, V> proxy = (IgniteCacheProxy<K, V>)jCacheProxies.get(name);
 
+            awaitInitProxy(proxy);
+
             if (proxy == null) {
                 GridCacheAdapter<?, ?> cacheAdapter = caches.get(name);
 
@@ -3982,6 +4044,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             throw new IllegalStateException("Failed to get cache because it is a system cache: " + name);
 
         IgniteCacheProxy<K, V> jcache = (IgniteCacheProxy<K, V>)jCacheProxies.get(name);
+
+        awaitInitProxy(jcache);
 
         if (jcache == null)
             throw new IllegalArgumentException("Cache is not started: " + name);
@@ -4030,6 +4094,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
             cache = jCacheProxies.get(cacheName);
         }
+
+        awaitInitProxy(cache);
 
         return cache != null ? (IgniteCacheProxy<K, V>)cache.gatewayWrapper() : null;
     }
@@ -4153,9 +4219,17 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         if (cache == null) {
             GridCacheAdapter<?, ?> cacheAdapter = caches.get(name);
 
-            if (cacheAdapter != null)
+            if (cacheAdapter != null) {
                 cache = new IgniteCacheProxyImpl(cacheAdapter.context(), cacheAdapter, false);
+
+                IgniteCacheProxyImpl<?, ?> prev = jCacheProxies.putIfAbsent(name, (IgniteCacheProxyImpl<?, ?>)cache);
+
+                if (prev != null)
+                    cache = (IgniteCacheProxy<K, V>)prev;
+            }
         }
+
+        awaitInitProxy(cache);
 
         if (cache == null)
             throw new IllegalArgumentException("Cache is not configured: " + name);
@@ -4168,7 +4242,11 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      * @return Cache proxy.
      */
     @Nullable public IgniteCacheProxy jcacheProxy(String name) {
-        return jCacheProxies.get(name);
+        IgniteCacheProxyImpl<?, ?> cache = jCacheProxies.get(name);
+
+        awaitInitProxy(cache);
+
+        return cache;
     }
 
     /**
