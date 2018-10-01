@@ -33,14 +33,14 @@ import static java.util.Comparator.comparingInt;
 import static java.util.Comparator.comparingLong;
 
 /**
- *
+ * Check's correct node behavior on join in case caches were changed.
  */
 public class CacheConfigurationCheckOnNodeJoinTest extends GridCommonAbstractTest {
+    /** Second cache name. */
     private static final String SECOND_CACHE_NAME = DEFAULT_CACHE_NAME + "-2";
 
+    /** Cache group name. */
     private static final String CACHE_GROUP_NAME = "test-group";
-
-    private static final String SQL_CACHE_NAME = DEFAULT_CACHE_NAME + "-sql";
 
     /** Number records in cache. */
     private static final int NUMBER_RECORDS = 30;

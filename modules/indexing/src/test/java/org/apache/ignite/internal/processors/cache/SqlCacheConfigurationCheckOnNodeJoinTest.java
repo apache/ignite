@@ -27,16 +27,36 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+/**
+ * Check's correct node behavior on join in case sql table was changed.
+ */
 public class SqlCacheConfigurationCheckOnNodeJoinTest extends GridCommonAbstractTest {
+    /** Schema name. */
+    private static final String SCHEMA_NAME = "PUBLIC";
+
+    /** Table name. */
     private static final String TABLE_NAME = "PERSON";
 
+    /** Create table sql. */
     private static final String CREATE_TABLE_SQL = "CREATE TABLE " + TABLE_NAME + " (id int primary key, name varchar) WITH \"backups=1\"";
 
+    /** Select sql. */
     private static final String SELECT_SQL = "SELECT id from " + TABLE_NAME + " where name = 'foo'";
 
+    /** Second select sql. */
+    private static final String SELECT_SQL_2 = "SELECT id2 from " + TABLE_NAME + " where name = 'foo'";
+
+    /** Insert sql. */
     private static final String INSERT_SQL = "INSERT INTO " + TABLE_NAME + "(id, name) VALUES(?,?)";
 
+    /** Drop table sql. */
     private static final String DROP_TABLE_SQL = "DROP TABLE " + TABLE_NAME;
+
+    /** Alter table sql. */
+    private static final String ALTER_TABLE_SQL = "ALTER TABLE " + TABLE_NAME + " ADD COLUMN (id2 int)";
+
+    /** Update table sql. */
+    private static final String UPDATE_TABLE_SQL = "UPDATE " + TABLE_NAME + " SET id2 = ? WHERE id = ?";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -69,14 +89,97 @@ public class SqlCacheConfigurationCheckOnNodeJoinTest extends GridCommonAbstract
         cleanPersistenceDir();
     }
 
-    public void test() throws Exception {
+    /**
+     * @throws Exception if failed.
+     */
+    public void testCreateTableAfterNodeShutdown() throws Exception {
         testCreateTableAfterNodeShutdown(false);
     }
 
-    public void test2() throws Exception {
+    /**
+     * @throws Exception if failed.
+     */
+    public void testCreateTableAfterNodeShutdownAndClusterRestart() throws Exception {
+        testCreateTableAfterNodeShutdown(true);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testDropTableAfterNodeShutdown() throws Exception {
         testDropTableAfterNodeShutdown(false);
     }
 
+    /**
+     * @throws Exception if failed.
+     */
+    public void testDropTableAfterNodeShutdownAndClusterRestart() throws Exception {
+        testDropTableAfterNodeShutdown(true);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testAlterTableAfterNodeShutdown() throws Exception {
+        testAlterTableAfterNodeShutdown(false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testAlterTableAfterNodeShutdownAndClusterRestart() throws Exception {
+        testAlterTableAfterNodeShutdown(true);
+    }
+
+    /** */
+    private void testAlterTableAfterNodeShutdown(boolean clusterRestart) throws Exception {
+        startGrids(2);
+
+        grid(0).cluster().active(true);
+
+        awaitPartitionMapExchange();
+
+        CacheConfiguration<Integer, Person> cacheCfg =
+            new CacheConfiguration<Integer, Person>(DEFAULT_CACHE_NAME)
+                .setBackups(1).setIndexedTypes(Integer.class, Person.class);
+
+        IgniteCache<Integer, Person> cache0 = grid(0).getOrCreateCache(cacheCfg);
+
+        cache0.query(new SqlFieldsQuery(CREATE_TABLE_SQL).setSchema(SCHEMA_NAME)).getAll();
+
+        populateData(cache0);
+
+        checkDataPresent(cache0, SELECT_SQL);
+        checkDataPresent(grid(1).cache(DEFAULT_CACHE_NAME), SELECT_SQL);
+
+        stopGrid(1);
+
+        cache0.query(new SqlFieldsQuery(ALTER_TABLE_SQL).setSchema(SCHEMA_NAME)).getAll();
+
+        updateData(cache0);
+
+        checkDataPresent(cache0, SELECT_SQL_2);
+
+        Ignite ignite1;
+
+        if (clusterRestart) {
+            stopAllGrids();
+
+            startGrids(2);
+
+            ignite1 = grid(1);
+
+            ignite1.cluster().active(true);
+        }
+        else
+            ignite1 = startGrid(1);
+
+        IgniteCache<Integer, Person> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
+
+        checkDataPresent(cache1, SELECT_SQL_2);
+    }
+
+    /** */
     private void testCreateTableAfterNodeShutdown(boolean clusterRestart) throws Exception {
         startGrids(2);
 
@@ -92,36 +195,32 @@ public class SqlCacheConfigurationCheckOnNodeJoinTest extends GridCommonAbstract
 
         stopGrid(1);
 
-        cache0.query(new SqlFieldsQuery(CREATE_TABLE_SQL).setSchema("PUBLIC")).getAll();
+        cache0.query(new SqlFieldsQuery(CREATE_TABLE_SQL).setSchema(SCHEMA_NAME)).getAll();
 
-        for (int i = 0; i < 30; i++)
-            cache0.query(new SqlFieldsQuery(INSERT_SQL).setSchema("PUBLIC").setArgs(i, i % 2 == 0 ? "foo" : "bar")).getAll();
+        populateData(cache0);
 
-        List<List<?>> ids = cache0.query(new SqlFieldsQuery(SELECT_SQL).setSchema("PUBLIC")).getAll();
+        checkDataPresent(cache0, SELECT_SQL);
 
-        assertFalse(ids.isEmpty());
+        Ignite ignite1;
 
-        for (List<?> l : ids) {
-            assertEquals(1, l.size());
+        if (clusterRestart) {
+            stopAllGrids();
 
-            assertEquals(0, ((Integer)l.get(0)) % 2);
+            startGrids(2);
+
+            ignite1 = grid(1);
+
+            ignite1.cluster().active(true);
         }
-
-        Ignite ignite1 = startGrid(1);
+        else
+            ignite1 = startGrid(1);
 
         IgniteCache<Integer, Person> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
-        ids = cache1.query(new SqlFieldsQuery(SELECT_SQL).setSchema("PUBLIC")).getAll();
-
-        assertFalse(ids.isEmpty());
-
-        for (List<?> l : ids) {
-            assertEquals(1, l.size());
-
-            assertEquals(0, ((Integer)l.get(0)) % 2);
-        }
+        checkDataPresent(cache1, SELECT_SQL);
     }
 
+    /** */
     private void testDropTableAfterNodeShutdown(boolean clusterRestart) throws Exception {
         startGrids(2);
 
@@ -135,12 +234,64 @@ public class SqlCacheConfigurationCheckOnNodeJoinTest extends GridCommonAbstract
 
         IgniteCache<Integer, Person> cache0 = grid(0).getOrCreateCache(cacheCfg);
 
-        cache0.query(new SqlFieldsQuery(CREATE_TABLE_SQL).setSchema("PUBLIC")).getAll();
+        cache0.query(new SqlFieldsQuery(CREATE_TABLE_SQL).setSchema(SCHEMA_NAME)).getAll();
 
-        for (int i = 0; i < 30; i++)
-            cache0.query(new SqlFieldsQuery(INSERT_SQL).setSchema("PUBLIC").setArgs(i, i % 2 == 0 ? "foo" : "bar")).getAll();
+        populateData(cache0);
 
-        List<List<?>> ids = cache0.query(new SqlFieldsQuery(SELECT_SQL).setSchema("PUBLIC")).getAll();
+        checkDataPresent(cache0, SELECT_SQL);
+
+        stopGrid(1);
+
+        cache0.query(new SqlFieldsQuery(DROP_TABLE_SQL).setSchema(SCHEMA_NAME)).getAll();
+
+        Ignite ignite1;
+
+        if (clusterRestart) {
+            stopAllGrids();
+
+            startGrids(2);
+
+            ignite1 = grid(1);
+
+            ignite1.cluster().active(true);
+        }
+        else
+            ignite1 = startGrid(1);
+
+        ignite1.cache(DEFAULT_CACHE_NAME);
+    }
+
+    /** */
+    private void populateData(IgniteCache<Integer, Person> cache) {
+        for (int i = 0; i < 30; i++) {
+            cache.query(
+                new SqlFieldsQuery(INSERT_SQL)
+                    .setSchema(SCHEMA_NAME)
+                    .setArgs(i, i % 2 == 0 ? "foo" : "bar")
+            ).getAll();
+        }
+    }
+
+    /** */
+    private void updateData(IgniteCache<Integer, Person> cache) {
+        List<List<?>> ids = cache.query(new SqlFieldsQuery(SELECT_SQL).setSchema(SCHEMA_NAME)).getAll();
+
+        assertFalse(ids.isEmpty());
+
+        for (List<?> l : ids) {
+            assertEquals(1, l.size());
+
+            cache.query(
+                new SqlFieldsQuery(UPDATE_TABLE_SQL)
+                    .setSchema(SCHEMA_NAME)
+                    .setArgs(l.get(0), l.get(0))
+            ).getAll();
+        }
+    }
+
+    /** */
+    private void checkDataPresent(IgniteCache<Integer, Person> cache, String selectSql) {
+        List<List<?>> ids = cache.query(new SqlFieldsQuery(selectSql).setSchema(SCHEMA_NAME)).getAll();
 
         assertFalse(ids.isEmpty());
 
@@ -149,13 +300,5 @@ public class SqlCacheConfigurationCheckOnNodeJoinTest extends GridCommonAbstract
 
             assertEquals(0, ((Integer)l.get(0)) % 2);
         }
-
-        stopGrid(1);
-
-        cache0.query(new SqlFieldsQuery(DROP_TABLE_SQL).setSchema("PUBLIC")).getAll();
-
-        Ignite ignite1 = startGrid(1);
-
-        IgniteCache<Integer, Person> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
     }
 }

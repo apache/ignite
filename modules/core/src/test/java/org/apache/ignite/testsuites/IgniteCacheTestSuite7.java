@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.authentication.AuthenticationOnNotA
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorNPEOnStartTest;
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorNodeRestartTest;
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheConfigurationCheckOnNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.CacheDataRegionConfigurationTest;
 import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMBeanTest;
 import org.apache.ignite.internal.processors.cache.CacheMetricsManageTest;
@@ -103,6 +104,8 @@ public class IgniteCacheTestSuite7 extends TestSuite {
         suite.addTestSuite(CacheDataLossOnPartitionMoveTest.class);
 
         suite.addTestSuite(CachePageWriteLockUnlockTest.class);
+
+        suite.addTestSuite(CacheConfigurationCheckOnNodeJoinTest.class);
 
         return suite;
     }
