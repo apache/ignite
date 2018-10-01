@@ -1193,6 +1193,8 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void stateChangeFailover3(boolean activate) throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-14259");
+
         testReconnectSpi = true;
 
         startNodesAndBlockStatusChange(4, 0, 0, !activate);
