@@ -511,7 +511,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
                     "META-INF/ignite.xml.");
         }
 
-        ioStatMgr = new GridIoStatManager(log);
+        ioStatMgr = new GridIoStatManager();
     }
 
     /** {@inheritDoc} */

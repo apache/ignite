@@ -608,8 +608,6 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer pageBuffer(long pageAddr) {
-        ioStatMgr.trackLogicalRead(pageAddr);
-
         return wrapPointer(pageAddr, pageSize());
     }
 

@@ -203,7 +203,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         rwLock = new OffheapReadWriteLock(lockConcLvl);
 
-        ioStatMgr = ctx != null ? ctx.kernalContext().ioStats() : new GridIoStatManager(log);
+        ioStatMgr = ctx != null ? ctx.kernalContext().ioStats() : new GridIoStatManager();
     }
 
     /** {@inheritDoc} */
@@ -263,8 +263,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer pageBuffer(long pageAddr) {
-        ioStatMgr.trackLogicalRead(pageAddr);
-
         return wrapPointer(pageAddr, pageSize());
     }
 
@@ -326,8 +324,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         // TODO pass an argument to decide whether the page should be cleaned.
         GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, sysPageSize - PAGE_OVERHEAD, (byte)0);
-
-        ioStatMgr.trackLogicalRead(absPtr + PAGE_OVERHEAD);
 
         return pageId;
     }

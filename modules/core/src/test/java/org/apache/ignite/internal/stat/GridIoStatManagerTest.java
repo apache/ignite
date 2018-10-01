@@ -18,15 +18,15 @@
 
 package org.apache.ignite.internal.stat;
 
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.testframework.GridTestUtils.SystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
@@ -35,6 +35,9 @@ import org.junit.Assert;
  * Tests for IO statistic manager.
  */
 public class GridIoStatManagerTest extends GridCommonAbstractTest {
+
+    /** */
+    private static final int RECORD_COUNT = 1000;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -64,66 +67,31 @@ public class GridIoStatManagerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test statistics for persistent cache with disabled statistics tracking.
-     *
-     * @throws Exception In case of failure.
-     */
-    public void testPersistentIOStatDisabled() throws Exception {
-        ioStatPageTrackDisabledTest(true);
-    }
-
-    /**
-     * Test statistics for not persistent cache with disabled statistics tracking.
-     *
-     * @throws Exception In case of failure.
-     */
-    public void testNotPersistentIOStatDisabled() throws Exception {
-        ioStatPageTrackDisabledTest(false);
-    }
-
-    /**
      * Check statistics for enabled statistics tracking.
      *
      * @param isPersistent {@code true} in case persistence should be enable.
      * @throws Exception In case of failure.
      */
     public void ioStatPageTrackEnabledTest(boolean isPersistent) throws Exception {
-        try (SystemProperty ignored = new SystemProperty(IgniteSystemProperties.IGNITE_PAGE_TRACK_LOG_ENABLE, "true")) {
-            GridIoStatManager ioStatMgr = prepareData(isPersistent);
+        GridIoStatManager ioStatMgr = prepareData(isPersistent);
 
-            if (isPersistent) {
-                Assert.assertFalse(ioStatMgr.physicalReads().isEmpty());
+        long physicalReadsCnt = ioStatMgr.physicalReads().values().stream().reduce(Long::sum).get();
+        long physicalWritesCnt = ioStatMgr.physicalWrites().values().stream().reduce(Long::sum).get();
+        if (isPersistent) {
+            Assert.assertTrue(physicalReadsCnt>0);
 
-                Assert.assertFalse(ioStatMgr.physicalWrites().isEmpty());
-            }
-            else {
-                Assert.assertTrue(ioStatMgr.physicalReads().isEmpty());
-
-                Assert.assertTrue(ioStatMgr.physicalWrites().isEmpty());
-
-            }
-
-            Assert.assertTrue(ioStatMgr.logicalReads().containsKey(GridIoStatManager.PageType.DATA));
-            Assert.assertTrue(ioStatMgr.logicalReads().get(GridIoStatManager.PageType.DATA) > 0);
+            Assert.assertTrue(physicalWritesCnt > 0);
         }
-    }
+        else {
+            Assert.assertEquals(0, physicalReadsCnt);
 
-    /**
-     * Check statistics for disabled statistics tracking.
-     *
-     * @param isPersistent {@code true} in case persistence should be enable.
-     * @throws Exception In case of failure.
-     */
-    public void ioStatPageTrackDisabledTest(boolean isPersistent) throws Exception {
-        try (SystemProperty ignored = new SystemProperty(IgniteSystemProperties.IGNITE_PAGE_TRACK_LOG_ENABLE, "false")) {
-            GridIoStatManager ioStatMgr = prepareData(isPersistent);
-
-            Assert.assertTrue(ioStatMgr.physicalReads().isEmpty());
-
-            Assert.assertTrue(ioStatMgr.physicalWrites().isEmpty());
-
-            Assert.assertTrue(ioStatMgr.logicalReads().isEmpty());
+            Assert.assertEquals(0, physicalWritesCnt);
         }
+
+        Map<AggregatePageType, AtomicLong> aggLogReads = ioStatMgr.aggregate(ioStatMgr.logicalReads());
+
+        Assert.assertTrue(aggLogReads.containsKey(AggregatePageType.INDEX));
+        Assert.assertEquals(RECORD_COUNT, aggLogReads.get(AggregatePageType.INDEX).longValue());
     }
 
     /**
@@ -142,10 +110,8 @@ public class GridIoStatManagerTest extends GridCommonAbstractTest {
 
         ioStatMgr.resetStats();
 
-        for (int i = 0; i < 1000; i++)
+        for (int i = 0; i < RECORD_COUNT; i++)
             cache.put("KEY-" + i, "VAL-" + i);
-
-        ioStatMgr.logStats();
 
         return ioStatMgr;
     }
