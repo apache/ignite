@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.rest.handlers.cluster;
 
 import java.util.Collection;
-
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
@@ -31,8 +30,10 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVATE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_CURRENT_STATE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_DEACTIVATE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_INACTIVE;
 
 /**
@@ -41,7 +42,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER
 public class GridChangeStateCommandHandler extends GridRestCommandHandlerAdapter {
     /** Commands. */
     private static final Collection<GridRestCommand> commands =
-        U.sealList(CLUSTER_ACTIVE, CLUSTER_INACTIVE, CLUSTER_CURRENT_STATE);
+        U.sealList(CLUSTER_ACTIVATE, CLUSTER_DEACTIVATE, CLUSTER_CURRENT_STATE, CLUSTER_ACTIVE, CLUSTER_INACTIVE);
 
     /**
      * @param ctx Context.
@@ -64,13 +65,21 @@ public class GridChangeStateCommandHandler extends GridRestCommandHandlerAdapter
         final GridRestResponse res = new GridRestResponse();
 
         try {
-            if (req.command().equals(CLUSTER_CURRENT_STATE)) {
-                Boolean currentState = ctx.state().publicApiActiveState(false);
+            switch (req.command()) {
+                case CLUSTER_CURRENT_STATE:
+                    Boolean currentState = ctx.state().publicApiActiveState(false);
 
-                res.setResponse(currentState);
+                    res.setResponse(currentState);
+                    break;
+                case CLUSTER_ACTIVE:
+                case CLUSTER_INACTIVE:
+                    log.warning(req.command().key() + " is deprecated. Use newer commands.");
+                default:
+                    ctx.grid().cluster().active(req.active());
+
+                    res.setResponse(req.command().key() + " started");
+                    break;
             }
-            else
-                ctx.grid().active(req.active());
 
             fut.onDone(res);
         }
