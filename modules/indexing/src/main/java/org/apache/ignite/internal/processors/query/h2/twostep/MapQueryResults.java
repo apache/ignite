@@ -148,16 +148,11 @@ class MapQueryResults {
             if (cancel != null)
                 cancel.cancel();
         }
-    }
 
-    /**
-     * Close the query.
-     */
-    void close() {
         if (lazyWorker == null)
-            close0();
+            close();
         else {
-            lazyWorker.submitStopTask(this::close0, false);
+            lazyWorker.submitStopTask(this::close, false);
 
             lazyWorker.stop(false);
         }
@@ -166,7 +161,7 @@ class MapQueryResults {
     /**
      *
      */
-    private void close0() {
+    public void close() {
         for (int i = 0; i < results.length(); i++) {
             MapQueryResult res = results.get(i);
 
