@@ -74,6 +74,9 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     private static final String NO_PERSISTENCE_REGION = "no-persistence-region";
 
     /** */
+    private static final int DEFAULT_CACHES_COUNT = 2;
+
+    /** */
     boolean client;
 
     /** */
