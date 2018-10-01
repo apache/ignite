@@ -174,7 +174,7 @@ public class MapQueryLazyWorker extends GridWorker {
                     }
                 }
                 else
-                    try{
+                    try {
                         if (!exec.busyLock().enterBusy()) {
                             log.info("Stop lazy worker [key=" + key + ']');
 
