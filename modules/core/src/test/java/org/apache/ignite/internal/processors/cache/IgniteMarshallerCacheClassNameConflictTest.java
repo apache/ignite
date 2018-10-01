@@ -31,10 +31,10 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -193,7 +193,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
             }
 
             /** {@inheritDoc} */
-            @Override public IgniteInternalFuture onDiscovery(
+            @Override public IgniteFuture<?> onDiscovery(
                     int type,
                     long topVer,
                     ClusterNode node,
@@ -221,7 +221,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
                 if (delegate != null)
                     return delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
 
-                return new GridFinishedFuture();
+                return new IgniteFinishedFutureImpl<>();
             }
 
             /** {@inheritDoc} */
