@@ -22,6 +22,21 @@ AC_PREREQ([2.69])
 AC_INIT([Apache Ignite C++], [2.9.0.42453], [dev@ignite.apache.org], [ignite], [ignite.apache.org])
 
 AC_CANONICAL_HOST
+
+# Detect the target system
+build_mac=no
+case "${host_os}" in
+    darwin*)
+        build_mac=yes
+        ;;
+    *)
+        build_mac=no
+        ;;
+esac
+
+# Pass the conditionals to automake
+AM_CONDITIONAL([MAC_POSTPROCESS], [test "$build_mac" = "yes"])
+
 AC_CONFIG_MACRO_DIR([m4])
 AC_LANG([C++])
 

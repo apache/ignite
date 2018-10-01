@@ -60,3 +60,9 @@ clean-local: clean-check
 
 clean-check:
 	$(RM) $(ignite_OBJECTS)
+	
+if MAC_POSTPROCESS
+all-local: ignite
+	install_name_tool -add_rpath $(JAVA_HOME)/jre/lib/server ignite
+endif
+
