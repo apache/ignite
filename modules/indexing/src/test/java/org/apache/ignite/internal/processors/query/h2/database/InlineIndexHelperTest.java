@@ -221,7 +221,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
             if (page != 0L)
                 pageMem.releasePage(CACHE_ID, pageId, page);
 
-            pageMem.stop();
+            pageMem.stop(true);
         }
     }
 
@@ -324,7 +324,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
         finally {
             if (page != 0L)
                 pageMem.releasePage(CACHE_ID, pageId, page);
-            pageMem.stop();
+            pageMem.stop(true);
         }
     }
 
@@ -371,7 +371,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
         finally {
             if (page != 0L)
                 pageMem.releasePage(CACHE_ID, pageId, page);
-            pageMem.stop();
+            pageMem.stop(true);
         }
     }
 
@@ -490,7 +490,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
             if (page != 0L)
                 pageMem.releasePage(CACHE_ID, pageId, page);
 
-            pageMem.stop();
+            pageMem.stop(true);
         }
     }
 
