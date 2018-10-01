@@ -2739,22 +2739,17 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     body0();
                 }
                 catch (InterruptedException e) {
-                    if (!isCancelled) {
+                    if (!isCancelled)
                         ctx.failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, e));
-
-                        cancel();
-                    }
 
                     throw e;
                 }
                 catch (Throwable t) {
-                    U.error(log, "Exception in discovery notifier worker thread.", t);
+                    U.error(log, "Exception in discovery notyfier worker thread.", t);
 
                     FailureType type = t instanceof OutOfMemoryError ? CRITICAL_ERROR : SYSTEM_WORKER_TERMINATION;
 
                     ctx.failure().process(new FailureContext(type, t));
-
-                    cancel();
 
                     throw t;
                 }
@@ -2866,11 +2861,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     onIdle();
                 }
                 catch (InterruptedException e) {
-                    if (!isCancelled) {
+                    if (!isCancelled)
                         ctx.failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, e));
-
-                        cancel();
-                    }
 
                     throw e;
                 }
@@ -2880,8 +2872,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     FailureType type = t instanceof OutOfMemoryError ? CRITICAL_ERROR : SYSTEM_WORKER_TERMINATION;
 
                     ctx.failure().process(new FailureContext(type, t));
-
-                    cancel();
 
                     throw t;
                 }

@@ -299,17 +299,10 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                 if (err == null && !isCancelled)
                     err = new IllegalStateException("Thread " + name() + " is terminated unexpectedly.");
 
-                boolean failed = true;
-
                 if (err instanceof OutOfMemoryError)
                     ctx.failure().process(new FailureContext(CRITICAL_ERROR, err));
                 else if (err != null)
                     ctx.failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
-                else
-                    failed = false;
-
-                if (failed)
-                    cancel();
             }
 
         }

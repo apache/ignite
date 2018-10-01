@@ -4309,18 +4309,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     if (err == null && !stopping)
                         err = new IllegalStateException("Thread  " + getName() + " is terminated unexpectedly.");
 
-                    boolean failed = true;
-
                     if (err instanceof OutOfMemoryError)
                         ((IgniteEx)ignite).context().failure().process(new FailureContext(CRITICAL_ERROR, err));
                     else if (err != null)
                         ((IgniteEx)ignite).context().failure().process(
                             new FailureContext(SYSTEM_WORKER_TERMINATION, err));
-                    else
-                        failed = false;
-
-                    if (failed)
-                        cancel();
                 }
             }
         }

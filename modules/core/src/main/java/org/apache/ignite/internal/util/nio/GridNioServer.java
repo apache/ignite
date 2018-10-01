@@ -1819,8 +1819,6 @@ public class GridNioServer<T> {
                     throw e;
             }
             finally {
-                boolean failed = true;
-
                 if (err instanceof OutOfMemoryError)
                     lsnr.onFailure(CRITICAL_ERROR, err);
                 else if (!closed) {
@@ -1832,11 +1830,6 @@ public class GridNioServer<T> {
                 }
                 else if (err != null)
                     lsnr.onFailure(SYSTEM_WORKER_TERMINATION, err);
-                else
-                    failed = false;
-
-                if (failed)
-                    cancel();
             }
         }
 
@@ -2909,17 +2902,10 @@ public class GridNioServer<T> {
                 if (err == null && !closed)
                     err = new IllegalStateException("Thread " + name() + " is terminated unexpectedly");
 
-                boolean failed = true;
-
                 if (err instanceof OutOfMemoryError)
                     lsnr.onFailure(CRITICAL_ERROR, err);
                 else if (err != null)
                     lsnr.onFailure(SYSTEM_WORKER_TERMINATION, err);
-                else
-                    failed = false;
-
-                if (failed)
-                    cancel();
             }
         }
 

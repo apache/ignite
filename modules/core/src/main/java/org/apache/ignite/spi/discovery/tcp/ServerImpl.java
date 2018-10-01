@@ -2742,17 +2742,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
 
-                    boolean failed = true;
-
                     if (err instanceof OutOfMemoryError)
                         failure.process(new FailureContext(CRITICAL_ERROR, err));
                     else if (err != null)
                         failure.process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
-                    else
-                        failed = false;
-
-                    if (failed)
-                        cancel();
                 }
             }
         }
@@ -5911,17 +5904,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
 
-                    boolean failed = true;
-
                     if (err instanceof OutOfMemoryError)
                         failure.process(new FailureContext(CRITICAL_ERROR, err));
                     else if (err != null)
                         failure.process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
-                    else
-                        failed = false;
-
-                    if (failed)
-                        cancel();
                 }
 
                 U.closeQuiet(srvrSock);

@@ -3079,17 +3079,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (err == null && !(stopping && isCancelled))
                     err = new IllegalStateException("Thread " + name() + " is terminated unexpectedly");
 
-                boolean failed = true;
-
                 if (err instanceof OutOfMemoryError)
                     cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
                 else if (err != null)
                     cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
-                else
-                    failed = false;
-
-                if (failed)
-                    cancel();
             }
 
             // Final run after the cancellation.

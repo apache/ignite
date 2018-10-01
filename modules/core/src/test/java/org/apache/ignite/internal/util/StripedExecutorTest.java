@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -32,8 +31,8 @@ public class StripedExecutorTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override public void beforeTest() {
         stripedExecSvc = new StripedExecutor(3, "foo name", "pool name", new JavaLogger(),
-            new IgniteInClosure<FailureContext>() {
-                @Override public void apply(FailureContext failureCtx) {}
+            new IgniteInClosure<Throwable>() {
+                @Override public void apply(Throwable throwable) {}
             }, null);
     }
 
