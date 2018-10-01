@@ -103,7 +103,7 @@ public class LogRegMultiClassTrainerTest extends TrainerTest {
             .withBatchSize(100)
             .withSeed(123L);
 
-        LogRegressionMultiClassModel originalModel = trainer.fit(
+        LogRegressionMultiClassModel originalMdl = trainer.fit(
             cacheMock,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
@@ -111,7 +111,7 @@ public class LogRegMultiClassTrainerTest extends TrainerTest {
         );
 
         LogRegressionMultiClassModel updatedOnSameDS = trainer.update(
-            originalModel,
+            originalMdl,
             cacheMock,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
@@ -119,7 +119,7 @@ public class LogRegMultiClassTrainerTest extends TrainerTest {
         );
 
         LogRegressionMultiClassModel updatedOnEmptyDS = trainer.update(
-            originalModel,
+            originalMdl,
             new HashMap<Integer, double[]>(),
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
@@ -133,10 +133,9 @@ public class LogRegMultiClassTrainerTest extends TrainerTest {
             VectorUtils.of(10, -10)
         );
 
-
         for (Vector vec : vectors) {
-            TestUtils.assertEquals(originalModel.apply(vec), updatedOnSameDS.apply(vec), PRECISION);
-            TestUtils.assertEquals(originalModel.apply(vec), updatedOnEmptyDS.apply(vec), PRECISION);
+            TestUtils.assertEquals(originalMdl.apply(vec), updatedOnSameDS.apply(vec), PRECISION);
+            TestUtils.assertEquals(originalMdl.apply(vec), updatedOnEmptyDS.apply(vec), PRECISION);
         }
     }
 }

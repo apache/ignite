@@ -32,7 +32,6 @@ import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpda
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
-import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Run logistic regression model based on <a href="https://en.wikipedia.org/wiki/Stochastic_gradient_descent">
@@ -57,69 +56,67 @@ public class LogisticRegressionSGDTrainerExample {
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
-            IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                LogisticRegressionSGDTrainerExample.class.getSimpleName(), () -> {
 
-                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
+            IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
 
-                System.out.println(">>> Create new logistic regression trainer object.");
-                LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>(new UpdatesStrategy<>(
+            System.out.println(">>> Create new logistic regression trainer object.");
+            LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>()
+                .withUpdatesStgy(new UpdatesStrategy<>(
                     new SimpleGDUpdateCalculator(0.2),
                     SimpleGDParameterUpdate::sumLocal,
                     SimpleGDParameterUpdate::avg
-                ), 100000,  10, 100, 123L);
+                ))
+                .withMaxIterations(100000)
+                .withLocIterations(100)
+                .withBatchSize(10)
+                .withSeed(123L);
 
-                System.out.println(">>> Perform the training to get the model.");
-                LogisticRegressionModel mdl = trainer.fit(
-                    ignite,
-                    dataCache,
-                    (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-                    (k, v) -> v[0]
-                );
+            System.out.println(">>> Perform the training to get the model.");
+            LogisticRegressionModel mdl = trainer.fit(
+                ignite,
+                dataCache,
+                (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+                (k, v) -> v[0]
+            );
 
-                System.out.println(">>> Logistic regression model: " + mdl);
+            System.out.println(">>> Logistic regression model: " + mdl);
 
-                int amountOfErrors = 0;
-                int totalAmount = 0;
+            int amountOfErrors = 0;
+            int totalAmount = 0;
 
-                // Build confusion matrix. See https://en.wikipedia.org/wiki/Confusion_matrix
-                int[][] confusionMtx = {{0, 0}, {0, 0}};
+            // Build confusion matrix. See https://en.wikipedia.org/wiki/Confusion_matrix
+            int[][] confusionMtx = {{0, 0}, {0, 0}};
 
-                try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {
-                    for (Cache.Entry<Integer, double[]> observation : observations) {
-                        double[] val = observation.getValue();
-                        double[] inputs = Arrays.copyOfRange(val, 1, val.length);
-                        double groundTruth = val[0];
+            try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {
+                for (Cache.Entry<Integer, double[]> observation : observations) {
+                    double[] val = observation.getValue();
+                    double[] inputs = Arrays.copyOfRange(val, 1, val.length);
+                    double groundTruth = val[0];
 
-                        double prediction = mdl.apply(new DenseVector(inputs));
+                    double prediction = mdl.apply(new DenseVector(inputs));
 
-                        totalAmount++;
-                        if(groundTruth != prediction)
-                            amountOfErrors++;
+                    totalAmount++;
+                    if(groundTruth != prediction)
+                        amountOfErrors++;
 
-                        int idx1 = (int)prediction;
-                        int idx2 = (int)groundTruth;
+                    int idx1 = (int)prediction;
+                    int idx2 = (int)groundTruth;
 
-                        confusionMtx[idx1][idx2]++;
+                    confusionMtx[idx1][idx2]++;
 
-                        System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
-                    }
-
-                    System.out.println(">>> ---------------------------------");
-
-                    System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
-                    System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double)totalAmount));
+                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
                 }
 
-                System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtx));
                 System.out.println(">>> ---------------------------------");
 
-                System.out.println(">>> Logistic regression model over partitioned dataset usage example completed.");
-            });
+                System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
+                System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double)totalAmount));
+            }
 
-            igniteThread.start();
+            System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtx));
+            System.out.println(">>> ---------------------------------");
 
-            igniteThread.join();
+            System.out.println(">>> Logistic regression model over partitioned dataset usage example completed.");
         }
     }
 
@@ -226,5 +223,4 @@ public class LogisticRegressionSGDTrainerExample {
         {1, 5.1, 2.5, 3, 1.1},
         {1, 5.7, 2.8, 4.1, 1.3},
     };
-
 }

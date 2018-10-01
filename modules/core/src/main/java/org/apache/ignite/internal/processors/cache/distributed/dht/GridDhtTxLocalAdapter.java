@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.io.Externalizable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -944,43 +945,32 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param node Backup node.
      * @return Partition counters map for the given backup node.
      */
-    public Map<Integer, PartitionUpdateCounters> filterUpdateCountersForBackupNode(ClusterNode node) {
+    public List<PartitionUpdateCountersMessage> filterUpdateCountersForBackupNode(ClusterNode node) {
         TxCounters txCntrs = txCounters(false);
 
-        if (txCntrs == null)
+        if (txCntrs == null || F.isEmpty(txCntrs.updateCounters()))
             return null;
 
-        Map<Integer, PartitionUpdateCounters> updCntrs = txCntrs.updateCounters();
+        Collection<PartitionUpdateCountersMessage> updCntrs = txCntrs.updateCounters();
 
-        Map<Integer, PartitionUpdateCounters> res = new HashMap<>();
+        List<PartitionUpdateCountersMessage> res = new ArrayList<>(updCntrs.size());
 
         AffinityTopologyVersion top = topologyVersionSnapshot();
 
-        for (Map.Entry<Integer, PartitionUpdateCounters> entry : updCntrs.entrySet()) {
-            Integer cacheId = entry.getKey();
+        for (PartitionUpdateCountersMessage partCntrs : updCntrs) {
+            GridCacheAffinityManager affinity = cctx.cacheContext(partCntrs.cacheId()).affinity();
 
-            Map<Integer, Long> partsCntrs = entry.getValue().updateCounters();
+            PartitionUpdateCountersMessage resCntrs = new PartitionUpdateCountersMessage(partCntrs.cacheId(), partCntrs.size());
 
-            assert !F.isEmpty(partsCntrs);
+            for (int i = 0; i < partCntrs.size(); i++) {
+                int part = partCntrs.partition(i);
 
-            GridCacheAffinityManager affinity = cctx.cacheContext(cacheId).affinity();
-
-            Map<Integer, Long> resCntrs = new HashMap<>(partsCntrs.size());
-
-            for (Map.Entry<Integer, Long> e : partsCntrs.entrySet()) {
-                Integer p = e.getKey();
-
-                Long cntr = e.getValue();
-
-                if (affinity.backupByPartition(node, p, top)) {
-                    assert cntr != null && cntr > 0 : cntr;
-
-                    resCntrs.put(p, cntr);
-                }
+                if (affinity.backupByPartition(node, part, top))
+                    resCntrs.add(part, partCntrs.initialCounter(i), partCntrs.updatesCount(i));
             }
 
-            if (!resCntrs.isEmpty())
-                res.put(cacheId, new PartitionUpdateCounters(resCntrs));
+            if (resCntrs.size() > 0)
+                res.add(resCntrs);
         }
 
         return res;

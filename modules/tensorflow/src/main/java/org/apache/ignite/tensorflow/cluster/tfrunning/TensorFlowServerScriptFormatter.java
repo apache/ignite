@@ -34,10 +34,16 @@ public class TensorFlowServerScriptFormatter {
     public String format(TensorFlowServer srv, boolean join, Ignite ignite) {
         StringBuilder builder = new StringBuilder();
 
+        builder.append("from __future__ import absolute_import").append("\n");
+        builder.append("from __future__ import division").append("\n");
+        builder.append("from __future__ import print_function").append("\n");
+
         builder.append("from threading import Thread").append("\n");
         builder.append("from time import sleep").append("\n");
         builder.append("import os, signal").append("\n");
+
         builder.append("\n");
+
         builder.append("def check_pid(pid):").append("\n");
         builder.append("    try:").append("\n");
         builder.append("        os.kill(pid, 0)").append("\n");
@@ -45,24 +51,23 @@ public class TensorFlowServerScriptFormatter {
         builder.append("        return False").append("\n");
         builder.append("    else:").append("\n");
         builder.append("        return True").append("\n");
+
         builder.append("\n");
+
         builder.append("def threaded_function(pid):").append("\n");
         builder.append("    while check_pid(pid):").append("\n");
         builder.append("        sleep(1)").append("\n");
         builder.append("    os.kill(os.getpid(), signal.SIGUSR1)").append("\n");
+
         builder.append("\n");
+
         builder.append("Thread(target = threaded_function, args = (int(os.environ['PPID']), )).start()")
             .append("\n");
         builder.append("\n");
 
         builder.append("import tensorflow as tf").append('\n');
-        builder.append("from tensorflow.contrib.ignite import IgniteDataset").append("\n");
-        builder.append("\n");
-        builder.append("cluster = tf.train.ClusterSpec(")
-            .append(srv.getClusterSpec().format(ignite))
-            .append(')')
-            .append('\n');
-        builder.append("");
+        builder.append("fto_import_contrib_ops = tf.contrib.resampler").append("\n");
+        builder.append("import tensorflow.contrib.igfs.python.ops.igfs_ops").append("\n");
 
         builder.append("print('job:%s task:%d' % ('")
             .append(srv.getJobName())
@@ -74,22 +79,30 @@ public class TensorFlowServerScriptFormatter {
         builder.append("print('IGNITE_DATASET_PORT = ', os.environ.get('IGNITE_DATASET_PORT'))").append("\n");
         builder.append("print('IGNITE_DATASET_PART = ', os.environ.get('IGNITE_DATASET_PART'))").append("\n");
 
-        builder.append("server = tf.train.Server(cluster");
-
-        if (srv.getJobName() != null)
-            builder.append(", job_name=\"").append(srv.getJobName()).append('"');
-
-        if (srv.getTaskIdx() != null)
-            builder.append(", task_index=").append(srv.getTaskIdx());
-
-        if (srv.getProto() != null)
-            builder.append(", protocol=\"").append(srv.getProto()).append('"');
-
-        builder.append(')').append('\n');
+        builder.append("os.environ['TF_CONFIG'] = '").append(formatTfConfigVar(srv, ignite)).append("'\n");
+        builder.append("server = tf.contrib.distribute.run_standard_tensorflow_server()").append("\n");
 
         if (join)
             builder.append("server.join()").append('\n');
 
         return builder.toString();
+    }
+
+    /**
+     * Formats "TF_CONFIG" variable to be passed into user script.
+     *
+     * @param srv Server description.
+     * @param ignite Ignite instance.
+     * @return Formatted "TF_CONFIG" variable to be passed into user script.
+     */
+    private String formatTfConfigVar(TensorFlowServer srv, Ignite ignite) {
+        return "{\"cluster\" : " +
+            srv.getClusterSpec().format(ignite).replace('\n', ' ') +
+            ", " +
+            "\"task\": {\"type\" : \"" +
+            srv.getJobName() +
+            "\", \"index\": " +
+            srv.getTaskIdx() +
+            "}}";
     }
 }

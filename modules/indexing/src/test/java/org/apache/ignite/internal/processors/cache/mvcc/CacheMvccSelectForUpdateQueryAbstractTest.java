@@ -96,6 +96,8 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
      *
      */
     public void testSelectForUpdateDistributed() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9724");
+
         doTestSelectForUpdateDistributed("Person", false);
     }
 

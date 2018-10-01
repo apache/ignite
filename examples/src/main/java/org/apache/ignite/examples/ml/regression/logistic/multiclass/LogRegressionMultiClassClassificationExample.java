@@ -35,7 +35,6 @@ import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalcula
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.regressions.logistic.multiclass.LogRegressionMultiClassModel;
 import org.apache.ignite.ml.regressions.logistic.multiclass.LogRegressionMultiClassTrainer;
-import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Run Logistic Regression multi-class classification trainer ({@link LogRegressionMultiClassModel}) over distributed
@@ -62,115 +61,109 @@ public class LogRegressionMultiClassClassificationExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                LogRegressionMultiClassClassificationExample.class.getSimpleName(), () -> {
-                IgniteCache<Integer, Vector> dataCache = new TestCache(ignite).getVectors(data);
+            IgniteCache<Integer, Vector> dataCache = new TestCache(ignite).getVectors(data);
 
-                LogRegressionMultiClassTrainer<?> trainer = new LogRegressionMultiClassTrainer<>()
-                    .withUpdatesStgy(new UpdatesStrategy<>(
-                            new SimpleGDUpdateCalculator(0.2),
-                            SimpleGDParameterUpdate::sumLocal,
-                            SimpleGDParameterUpdate::avg
-                        ))
-                    .withAmountOfIterations(100000)
-                    .withAmountOfLocIterations(10)
-                    .withBatchSize(100)
-                    .withSeed(123L);
+            LogRegressionMultiClassTrainer<?> trainer = new LogRegressionMultiClassTrainer<>()
+                .withUpdatesStgy(new UpdatesStrategy<>(
+                        new SimpleGDUpdateCalculator(0.2),
+                        SimpleGDParameterUpdate::sumLocal,
+                        SimpleGDParameterUpdate::avg
+                    ))
+                .withAmountOfIterations(100000)
+                .withAmountOfLocIterations(10)
+                .withBatchSize(100)
+                .withSeed(123L);
 
-                LogRegressionMultiClassModel mdl = trainer.fit(
-                    ignite,
-                    dataCache,
-                    (k, v) -> {
-                        double[] arr = v.asArray();
-                        return VectorUtils.of(Arrays.copyOfRange(arr, 1, arr.length));
-                    },
-                    (k, v) -> v.get(0)
-                );
+            LogRegressionMultiClassModel mdl = trainer.fit(
+                ignite,
+                dataCache,
+                (k, v) -> {
+                    double[] arr = v.asArray();
+                    return VectorUtils.of(Arrays.copyOfRange(arr, 1, arr.length));
+                },
+                (k, v) -> v.get(0)
+            );
 
-                System.out.println(">>> SVM Multi-class model");
-                System.out.println(mdl.toString());
+            System.out.println(">>> SVM Multi-class model");
+            System.out.println(mdl.toString());
 
-                MinMaxScalerTrainer<Integer, Vector> normalizationTrainer = new MinMaxScalerTrainer<>();
+            MinMaxScalerTrainer<Integer, Vector> normalizationTrainer = new MinMaxScalerTrainer<>();
 
-                IgniteBiFunction<Integer, Vector, Vector> preprocessor = normalizationTrainer.fit(
-                    ignite,
-                    dataCache,
-                    (k, v) -> {
-                        double[] arr = v.asArray();
-                        return VectorUtils.of(Arrays.copyOfRange(arr, 1, arr.length));
-                    }
-                );
-
-                LogRegressionMultiClassModel mdlWithNormalization = trainer.fit(
-                    ignite,
-                    dataCache,
-                    preprocessor,
-                    (k, v) -> v.get(0)
-                );
-
-                System.out.println(">>> Logistic Regression Multi-class model with minmaxscaling");
-                System.out.println(mdlWithNormalization.toString());
-
-                System.out.println(">>> ----------------------------------------------------------------");
-                System.out.println(">>> | Prediction\t| Prediction with Normalization\t| Ground Truth\t|");
-                System.out.println(">>> ----------------------------------------------------------------");
-
-                int amountOfErrors = 0;
-                int amountOfErrorsWithNormalization = 0;
-                int totalAmount = 0;
-
-                // Build confusion matrix. See https://en.wikipedia.org/wiki/Confusion_matrix
-                int[][] confusionMtx = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-                int[][] confusionMtxWithNormalization = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-
-                try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
-                    for (Cache.Entry<Integer, Vector> observation : observations) {
-                        double[] val = observation.getValue().asArray();
-                        double[] inputs = Arrays.copyOfRange(val, 1, val.length);
-                        double groundTruth = val[0];
-
-                        double prediction = mdl.apply(new DenseVector(inputs));
-                        double predictionWithNormalization = mdlWithNormalization.apply(new DenseVector(inputs));
-
-                        totalAmount++;
-
-                        // Collect data for model
-                        if(groundTruth != prediction)
-                            amountOfErrors++;
-
-                        int idx1 = (int)prediction == 1 ? 0 : ((int)prediction == 3 ? 1 : 2);
-                        int idx2 = (int)groundTruth == 1 ? 0 : ((int)groundTruth == 3 ? 1 : 2);
-
-                        confusionMtx[idx1][idx2]++;
-
-                        // Collect data for model with minmaxscaling
-                        if(groundTruth != predictionWithNormalization)
-                            amountOfErrorsWithNormalization++;
-
-                        idx1 = (int)predictionWithNormalization == 1 ? 0 : ((int)predictionWithNormalization == 3 ? 1 : 2);
-                        idx2 = (int)groundTruth == 1 ? 0 : ((int)groundTruth == 3 ? 1 : 2);
-
-                        confusionMtxWithNormalization[idx1][idx2]++;
-
-                        System.out.printf(">>> | %.4f\t\t| %.4f\t\t\t\t\t\t| %.4f\t\t|\n", prediction, predictionWithNormalization, groundTruth);
-                    }
-                    System.out.println(">>> ----------------------------------------------------------------");
-                    System.out.println("\n>>> -----------------Logistic Regression model-------------");
-                    System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
-                    System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double)totalAmount));
-                    System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtx));
-
-                    System.out.println("\n>>> -----------------Logistic Regression model with Normalization-------------");
-                    System.out.println("\n>>> Absolute amount of errors " + amountOfErrorsWithNormalization);
-                    System.out.println("\n>>> Accuracy " + (1 - amountOfErrorsWithNormalization / (double)totalAmount));
-                    System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtxWithNormalization));
-
-                    System.out.println(">>> Logistic Regression Multi-class classification model over cached dataset usage example completed.");
+            IgniteBiFunction<Integer, Vector, Vector> preprocessor = normalizationTrainer.fit(
+                ignite,
+                dataCache,
+                (k, v) -> {
+                    double[] arr = v.asArray();
+                    return VectorUtils.of(Arrays.copyOfRange(arr, 1, arr.length));
                 }
-            });
+            );
 
-            igniteThread.start();
-            igniteThread.join();
+            LogRegressionMultiClassModel mdlWithNormalization = trainer.fit(
+                ignite,
+                dataCache,
+                preprocessor,
+                (k, v) -> v.get(0)
+            );
+
+            System.out.println(">>> Logistic Regression Multi-class model with minmaxscaling");
+            System.out.println(mdlWithNormalization.toString());
+
+            System.out.println(">>> ----------------------------------------------------------------");
+            System.out.println(">>> | Prediction\t| Prediction with Normalization\t| Ground Truth\t|");
+            System.out.println(">>> ----------------------------------------------------------------");
+
+            int amountOfErrors = 0;
+            int amountOfErrorsWithNormalization = 0;
+            int totalAmount = 0;
+
+            // Build confusion matrix. See https://en.wikipedia.org/wiki/Confusion_matrix
+            int[][] confusionMtx = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+            int[][] confusionMtxWithNormalization = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+
+            try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
+                for (Cache.Entry<Integer, Vector> observation : observations) {
+                    double[] val = observation.getValue().asArray();
+                    double[] inputs = Arrays.copyOfRange(val, 1, val.length);
+                    double groundTruth = val[0];
+
+                    double prediction = mdl.apply(new DenseVector(inputs));
+                    double predictionWithNormalization = mdlWithNormalization.apply(new DenseVector(inputs));
+
+                    totalAmount++;
+
+                    // Collect data for model
+                    if(groundTruth != prediction)
+                        amountOfErrors++;
+
+                    int idx1 = (int)prediction == 1 ? 0 : ((int)prediction == 3 ? 1 : 2);
+                    int idx2 = (int)groundTruth == 1 ? 0 : ((int)groundTruth == 3 ? 1 : 2);
+
+                    confusionMtx[idx1][idx2]++;
+
+                    // Collect data for model with minmaxscaling
+                    if(groundTruth != predictionWithNormalization)
+                        amountOfErrorsWithNormalization++;
+
+                    idx1 = (int)predictionWithNormalization == 1 ? 0 : ((int)predictionWithNormalization == 3 ? 1 : 2);
+                    idx2 = (int)groundTruth == 1 ? 0 : ((int)groundTruth == 3 ? 1 : 2);
+
+                    confusionMtxWithNormalization[idx1][idx2]++;
+
+                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t\t\t\t\t| %.4f\t\t|\n", prediction, predictionWithNormalization, groundTruth);
+                }
+                System.out.println(">>> ----------------------------------------------------------------");
+                System.out.println("\n>>> -----------------Logistic Regression model-------------");
+                System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
+                System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double)totalAmount));
+                System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtx));
+
+                System.out.println("\n>>> -----------------Logistic Regression model with Normalization-------------");
+                System.out.println("\n>>> Absolute amount of errors " + amountOfErrorsWithNormalization);
+                System.out.println("\n>>> Accuracy " + (1 - amountOfErrorsWithNormalization / (double)totalAmount));
+                System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtxWithNormalization));
+
+                System.out.println(">>> Logistic Regression Multi-class classification model over cached dataset usage example completed.");
+            }
         }
     }
 

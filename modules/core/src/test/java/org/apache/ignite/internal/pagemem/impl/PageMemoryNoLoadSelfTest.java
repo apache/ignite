@@ -96,7 +96,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            mem.stop();
+            mem.stop(true);
         }
     }
 
@@ -121,7 +121,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
             assertEquals(mem.loadedPages(), expPages);
         }
         finally {
-            mem.stop();
+            mem.stop(true);
         }
     }
 
@@ -173,7 +173,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            mem.stop();
+            mem.stop(true);
         }
     }
 
@@ -200,7 +200,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
                 assertFalse(handles.add(allocatePage(mem)));
         }
         finally {
-            mem.stop();
+            mem.stop(true);
         }
     }
 
@@ -304,7 +304,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            mem.stop();
+            mem.stop(true);
         }
     }
 

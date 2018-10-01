@@ -19,7 +19,7 @@ import {suite, test} from 'mocha';
 import {assert} from 'chai';
 import {spy} from 'sinon';
 
-import Provider from './Clusters.js';
+import Provider from './Clusters';
 
 const mocks = () => new Map([
     ['$http', {

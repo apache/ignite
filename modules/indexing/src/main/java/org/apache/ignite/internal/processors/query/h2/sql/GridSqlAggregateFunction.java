@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import org.apache.ignite.internal.util.typedef.F;
+import org.h2.expression.Aggregate;
 import org.h2.util.StatementBuilder;
+import org.h2.util.StringUtils;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.AVG;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.COUNT;
@@ -37,6 +40,39 @@ public class GridSqlAggregateFunction extends GridSqlFunction {
         COUNT_ALL, COUNT, GROUP_CONCAT, SUM, MIN, MAX, AVG,
 //        STDDEV_POP, STDDEV_SAMP, VAR_POP, VAR_SAMP, BOOL_OR, BOOL_AND, SELECTIVITY, HISTOGRAM,
     };
+
+    /**
+     * Map type.
+     *
+     * @param type H2 type.
+     * @return Ignite type, {@code null} if not supported.
+     */
+    @Nullable private static GridSqlFunctionType mapType(Aggregate.AggregateType type) {
+        switch (type) {
+            case COUNT_ALL:
+                return COUNT_ALL;
+
+            case COUNT:
+                return COUNT;
+
+            case GROUP_CONCAT:
+                return GROUP_CONCAT;
+
+            case SUM:
+                return SUM;
+
+            case MIN:
+                return MIN;
+
+            case MAX:
+                return MAX;
+
+            case AVG:
+                return AVG;
+        }
+
+        return null;
+    }
 
     /** */
     private final boolean distinct;
@@ -62,20 +98,20 @@ public class GridSqlAggregateFunction extends GridSqlFunction {
 
     /**
      * @param distinct Distinct.
-     * @param typeId Type.
+     * @param type Type.
      */
-    public GridSqlAggregateFunction(boolean distinct, int typeId) {
-        this(distinct, TYPE_INDEX[typeId]);
+    public GridSqlAggregateFunction(boolean distinct, Aggregate.AggregateType type) {
+        this(distinct, mapType(type));
     }
 
     /**
      * Checks if the aggregate type is valid.
      *
-     * @param typeId Aggregate type id.
+     * @param type Aggregate type.
      * @return True is valid, otherwise false.
      */
-    protected static boolean isValidType(int typeId) {
-        return (typeId >= 0) && (typeId < TYPE_INDEX.length);
+    protected static boolean isValidType(Aggregate.AggregateType type) {
+        return mapType(type) != null;
     }
 
     /**

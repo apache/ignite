@@ -27,6 +27,7 @@
 #include "ignite/odbc/config/connection_info.h"
 #include "ignite/odbc/config/configuration.h"
 #include "ignite/odbc/diagnostic/diagnosable_adapter.h"
+#include "ignite/odbc/streaming/streaming_context.h"
 #include "ignite/odbc/odbc_error.h"
 
 namespace ignite
@@ -113,6 +114,20 @@ namespace ignite
 
             /**
              * Send data by established connection.
+             * Uses connection timeout.
+             *
+             * @param data Data buffer.
+             * @param len Data length.
+             * @return @c true on success, @c false on timeout.
+             * @throw OdbcError on error.
+             */
+            bool Send(const int8_t* data, size_t len)
+            {
+                return Send(data, len, timeout);
+            }
+
+            /**
+             * Send data by established connection.
              *
              * @param data Data buffer.
              * @param len Data length.
@@ -151,7 +166,17 @@ namespace ignite
              *
              * @return @c true if the auto commit is enabled.
              */
-            bool IsAutoCommit();
+            bool IsAutoCommit() const;
+
+            /**
+             * Get streaming context.
+             *
+             * @return Streaming context.
+             */
+            streaming::StreamingContext& GetStreamingContext()
+            {
+                return streamingContext;
+            }
 
             /**
              * Create diagnostic record associated with the Connection instance.
@@ -227,6 +252,28 @@ namespace ignite
                     throw OdbcError(SqlState::SHYT01_CONNECTION_TIMEOUT, "Receive operation timed out");
 
                 parser.Decode(rsp, tempBuffer);
+            }
+
+            /**
+             * Send request message.
+             * Uses connection timeout.
+             *
+             * @param req Request message.
+             * @throw OdbcError on error.
+             */
+            template<typename ReqT>
+            void SendRequest(const ReqT& req)
+            {
+                EnsureConnected();
+
+                std::vector<int8_t> tempBuffer;
+
+                parser.Encode(req, tempBuffer);
+
+                bool success = Send(tempBuffer.data(), tempBuffer.size(), timeout);
+
+                if (!success)
+                    throw OdbcError(SqlState::SHYT01_CONNECTION_TIMEOUT, "Send operation timed out");
             }
 
             /**
@@ -470,6 +517,9 @@ namespace ignite
 
             /** Connection info. */
             config::ConnectionInfo info;
+
+            /** Streaming context. */
+            streaming::StreamingContext streamingContext;
         };
     }
 }

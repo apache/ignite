@@ -18,7 +18,12 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.Set;
+import java.util.UUID;
+
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -27,12 +32,13 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * A response to {@link GridNearTxQueryEnlistRequest}.
  */
 public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements ExceptionAware {
     /** */
@@ -59,6 +65,10 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
 
     /** */
     private GridCacheVersion lockVer;
+
+    /** New DHT nodes involved into transaction. */
+    @GridDirectCollection(UUID.class)
+    private Collection<UUID> newDhtNodes;
 
     /**
      * Default constructor.
@@ -89,14 +99,17 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
      * @param lockVer Lock version.
      * @param res Result.
      * @param removeMapping Remove mapping flag.
+     * @param newDhtNodes New DHT nodes involved into transaction.
      */
-    public GridNearTxQueryEnlistResponse(int cacheId, IgniteUuid futId, int miniId, GridCacheVersion lockVer, long res, boolean removeMapping) {
+    public GridNearTxQueryEnlistResponse(int cacheId, IgniteUuid futId, int miniId, GridCacheVersion lockVer, long res,
+        boolean removeMapping, Set<UUID> newDhtNodes) {
         this.cacheId = cacheId;
         this.futId = futId;
         this.miniId = miniId;
         this.lockVer = lockVer;
         this.res = res;
         this.removeMapping = removeMapping;
+        this.newDhtNodes = newDhtNodes;
     }
 
     /**
@@ -128,6 +141,13 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
     }
 
     /**
+     * @return New DHT nodes involved into transaction.
+     */
+    public Collection<UUID> newDhtNodes() {
+        return newDhtNodes;
+    }
+
+    /**
      * @return Remove mapping flag.
      */
     public boolean removeMapping() {
@@ -146,7 +166,7 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 9;
+        return 10;
     }
 
     /** {@inheritDoc} */
@@ -200,6 +220,11 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
 
                 writer.incrementState();
 
+            case 9:
+                if (!writer.writeCollection("newDhtNodes", newDhtNodes, MessageCollectionItemType.UUID))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -264,6 +289,13 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
 
                 reader.incrementState();
 
+            case 9:
+                newDhtNodes = reader.readCollection("newDhtNodes", MessageCollectionItemType.UUID);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridNearTxQueryEnlistResponse.class);

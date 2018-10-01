@@ -32,7 +32,6 @@ import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
-import org.apache.ignite.thread.IgniteThread;
 
 /**
  * {@link MinMaxScalerTrainer} and {@link NormalizationTrainer} are used in this example due to different values
@@ -49,59 +48,53 @@ import org.apache.ignite.thread.IgniteThread;
  */
 public class Step_5_Scaling_with_Pipeline {
     /** Run example. */
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 5 (scaling) via Pipeline example started.");
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                Step_5_Scaling_with_Pipeline.class.getSimpleName(), () -> {
-                try {
-                    IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
+            try {
+                IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
 
-                    // Defines first preprocessor that extracts features from an upstream data.
-                    // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare".
-                    IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
-                        = (k, v) -> new Object[]{v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
+                // Defines first preprocessor that extracts features from an upstream data.
+                // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare".
+                IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
+                    = (k, v) -> new Object[]{v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
 
-                    IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
+                IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
 
-                    PipelineMdl<Integer, Object[]> mdl = new Pipeline<Integer, Object[], Object[]>()
-                        .addFeatureExtractor(featureExtractor)
-                        .addLabelExtractor(lbExtractor)
-                        .addPreprocessor(new EncoderTrainer<Integer, Object[]>()
-                            .withEncoderType(EncoderType.STRING_ENCODER)
-                            .withEncodedFeature(1)
-                            .withEncodedFeature(6))
-                        .addPreprocessor(new ImputerTrainer<Integer, Object[]>())
-                        .addPreprocessor(new MinMaxScalerTrainer<Integer, Object[]>())
-                        .addPreprocessor(new NormalizationTrainer<Integer, Object[]>()
-                            .withP(1))
-                        .addTrainer(new DecisionTreeClassificationTrainer(5, 0))
-                        .fit(ignite, dataCache);
+                PipelineMdl<Integer, Object[]> mdl = new Pipeline<Integer, Object[], Object[]>()
+                    .addFeatureExtractor(featureExtractor)
+                    .addLabelExtractor(lbExtractor)
+                    .addPreprocessor(new EncoderTrainer<Integer, Object[]>()
+                        .withEncoderType(EncoderType.STRING_ENCODER)
+                        .withEncodedFeature(1)
+                        .withEncodedFeature(6))
+                    .addPreprocessor(new ImputerTrainer<Integer, Object[]>())
+                    .addPreprocessor(new MinMaxScalerTrainer<Integer, Object[]>())
+                    .addPreprocessor(new NormalizationTrainer<Integer, Object[]>()
+                        .withP(1))
+                    .addTrainer(new DecisionTreeClassificationTrainer(5, 0))
+                    .fit(ignite, dataCache);
 
-                    System.out.println("\n>>> Trained model: " + mdl);
+                System.out.println("\n>>> Trained model: " + mdl);
 
-                    double accuracy = Evaluator.evaluate(
-                        dataCache,
-                        mdl,
-                        mdl.getFeatureExtractor(),
-                        mdl.getLabelExtractor(),
-                        new Accuracy<>()
-                    );
+                double accuracy = Evaluator.evaluate(
+                    dataCache,
+                    mdl,
+                    mdl.getFeatureExtractor(),
+                    mdl.getLabelExtractor(),
+                    new Accuracy<>()
+                );
 
-                    System.out.println("\n>>> Accuracy " + accuracy);
-                    System.out.println("\n>>> Test Error " + (1 - accuracy));
+                System.out.println("\n>>> Accuracy " + accuracy);
+                System.out.println("\n>>> Test Error " + (1 - accuracy));
 
-                    System.out.println(">>> Tutorial step 5 (scaling) via Pipeline example completed.");
-                }
-                catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
-            });
-
-            igniteThread.start();
-            igniteThread.join();
+                System.out.println(">>> Tutorial step 5 (scaling) via Pipeline example completed.");
+            }
+            catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

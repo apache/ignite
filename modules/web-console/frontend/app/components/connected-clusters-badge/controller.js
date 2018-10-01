@@ -15,17 +15,14 @@
  * limitations under the License.
  */
 
-import AgentManager from 'app/modules/agent/AgentManager.service';
-
 export default class {
     static $inject = ['AgentManager', 'ConnectedClustersDialog'];
 
-    /** @type {Number} */
     connectedClusters = 0;
 
     /**
-     * @param {AgentManager} agentMgr
-     * @param connectedClustersDialog
+     * @param {import('app/modules/agent/AgentManager.service').default} agentMgr
+     * @param {import('../connected-clusters-dialog/service').default} connectedClustersDialog
      */
     constructor(agentMgr, connectedClustersDialog) {
         this.agentMgr = agentMgr;

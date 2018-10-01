@@ -371,7 +371,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.activeCachesDeploymentEnabled(),
                 false,
                 false,
-                tx.mvccSnapshot());
+                tx.mvccSnapshot(),
+                tx.filterUpdateCountersForBackupNode(n));
 
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
@@ -457,11 +458,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             for (IgniteTxEntry e : dhtMapping.entries())
                 updCntrs.add(e.updateCounter());
 
-            Map<Integer, PartitionUpdateCounters> updCntrsForNode = null;
-
-            if (dhtMapping.queryUpdate() && commit)
-                updCntrsForNode = tx.filterUpdateCountersForBackupNode(n);
-
             GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
                 tx.nearNodeId(),
                 futId,
@@ -489,7 +485,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 false,
                 false,
                 mvccSnapshot,
-                updCntrsForNode);
+                commit ? null : tx.filterUpdateCountersForBackupNode(n));
 
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
 
@@ -559,7 +555,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     tx.activeCachesDeploymentEnabled(),
                     false,
                     false,
-                    mvccSnapshot);
+                    mvccSnapshot,
+                    null);
 
                 req.writeVersion(tx.writeVersion());
 

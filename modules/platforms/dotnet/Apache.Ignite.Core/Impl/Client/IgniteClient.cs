@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Net;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
@@ -39,7 +40,7 @@ namespace Apache.Ignite.Core.Impl.Client
     internal class IgniteClient : IIgniteInternal, IIgniteClient
     {
         /** Socket. */
-        private readonly ClientSocket _socket;
+        private readonly IClientSocket _socket;
 
         /** Marshaller. */
         private readonly Marshaller _marsh;
@@ -63,7 +64,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             _configuration = new IgniteClientConfiguration(clientConfiguration);
 
-            _socket = new ClientSocket(_configuration);
+            _socket = new ClientFailoverSocket(_configuration);
 
             _marsh = new Marshaller(_configuration.BinaryConfiguration)
             {
@@ -78,7 +79,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Gets the socket.
         /// </summary>
-        public ClientSocket Socket
+        public IClientSocket Socket
         {
             get { return _socket; }
         }
@@ -115,7 +116,7 @@ namespace Apache.Ignite.Core.Impl.Client
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
             DoOutOp(ClientOp.CacheGetOrCreateWithConfiguration,
-                w => ClientCacheConfigurationSerializer.Write(w.Stream, configuration, ServerVersion()));
+                w => ClientCacheConfigurationSerializer.Write(w.Stream, configuration, ServerVersion));
 
             return GetCache<TK, TV>(configuration.Name);
         }
@@ -136,7 +137,7 @@ namespace Apache.Ignite.Core.Impl.Client
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
             DoOutOp(ClientOp.CacheCreateWithConfiguration,
-                w => ClientCacheConfigurationSerializer.Write(w.Stream, configuration, ServerVersion()));
+                w => ClientCacheConfigurationSerializer.Write(w.Stream, configuration, ServerVersion));
 
             return GetCache<TK, TV>(configuration.Name);
         }
@@ -172,6 +173,18 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             // Return a copy to allow modifications by the user.
             return new IgniteClientConfiguration(_configuration);
+        }
+
+        /** <inheritDoc /> */
+        public EndPoint RemoteEndPoint
+        {
+            get { return _socket.RemoteEndPoint; }
+        }
+
+        /** <inheritDoc /> */
+        public EndPoint LocalEndPoint
+        {
+            get { return _socket.LocalEndPoint; }
         }
 
         /** <inheritDoc /> */
@@ -219,8 +232,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Gets the protocol version supported by server.
         /// </summary>
-        public ClientProtocolVersion ServerVersion() {
-            return _socket.ServerVersion;
+        public ClientProtocolVersion ServerVersion
+        {
+            get { return _socket.ServerVersion; }
         }
 
         /// <summary>

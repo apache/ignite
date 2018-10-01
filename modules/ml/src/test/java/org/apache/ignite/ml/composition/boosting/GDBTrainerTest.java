@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
 import org.apache.ignite.ml.composition.boosting.convergence.simple.ConvergenceCheckerStubFactory;
@@ -38,7 +39,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /** */
-public class GDBTrainerTest {
+public class GDBTrainerTest extends TrainerTest {
     /** */
     @Test
     public void testFitRegression() {

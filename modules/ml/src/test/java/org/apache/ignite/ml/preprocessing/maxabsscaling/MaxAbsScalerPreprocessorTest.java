@@ -42,7 +42,7 @@ public class MaxAbsScalerPreprocessorTest {
             (k, v) -> v
         );
 
-        double[][] expectedData = new double[][] {
+        double[][] expData = new double[][] {
             {.5, 4. / 22, 1. / 300},
             {.25, 8. / 22, 22. / 300},
             {-1., 10. / 22, 100. / 300},
@@ -50,6 +50,6 @@ public class MaxAbsScalerPreprocessorTest {
         };
 
         for (int i = 0; i < data.length; i++)
-            assertArrayEquals(expectedData[i], preprocessor.apply(i, VectorUtils.of(data[i])).asArray(), 1e-8);
+            assertArrayEquals(expData[i], preprocessor.apply(i, VectorUtils.of(data[i])).asArray(), 1e-8);
     }
 }

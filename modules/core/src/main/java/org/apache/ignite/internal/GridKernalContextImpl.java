@@ -372,6 +372,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private WorkersRegistry workersRegistry;
 
     /** */
+    private Thread.UncaughtExceptionHandler hnd;
+
+    /** */
     private IgniteEx grid;
 
     /** */
@@ -438,6 +441,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param customExecSvcs Custom named executors.
      * @param plugins Plugin providers.
      * @param workerRegistry Worker registry.
+     * @param hnd Default uncaught exception handler used by thread pools.
      */
     @SuppressWarnings("TypeMayBeWeakened")
     protected GridKernalContextImpl(
@@ -463,7 +467,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         @Nullable Map<String, ? extends ExecutorService> customExecSvcs,
         List<PluginProvider> plugins,
         IgnitePredicate<String> clsFilter,
-        WorkersRegistry workerRegistry
+        WorkersRegistry workerRegistry,
+        Thread.UncaughtExceptionHandler hnd
     ) {
         assert grid != null;
         assert cfg != null;
@@ -489,6 +494,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.schemaExecSvc = schemaExecSvc;
         this.customExecSvcs = customExecSvcs;
         this.workersRegistry = workerRegistry;
+        this.hnd = hnd;
 
         marshCtx = new MarshallerContextImpl(plugins, clsFilter);
 
@@ -1155,6 +1161,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public FailureProcessor failure() {
         return failureProc;
+    }
+
+    /** {@inheritDoc} */
+    public Thread.UncaughtExceptionHandler uncaughtExceptionHandler() {
+        return hnd;
     }
 
     /** {@inheritDoc} */

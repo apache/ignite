@@ -46,7 +46,17 @@ public enum CacheCommand {
     /**
      * Prints info about contended keys (the keys concurrently locked from multiple transactions).
      */
-    CONTENTION("contention");
+    CONTENTION("contention"),
+
+    /**
+     * Collect information on the distribution of partitions.
+     */
+    DISTRIBUTION("distribution"),
+
+    /**
+     * Reset lost partitions
+     */
+    RESET_LOST_PARTITIONS("reset_lost_partitions");
 
     /** Enumerated values. */
     private static final CacheCommand[] VALS = values();

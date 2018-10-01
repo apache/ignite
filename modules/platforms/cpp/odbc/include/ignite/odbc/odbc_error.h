@@ -20,7 +20,8 @@
 
 #include <string>
 
-#include "ignite/odbc/common_types.h"
+#include <ignite/odbc/common_types.h>
+#include <ignite/common/expected.h>
 
 namespace ignite
 {
@@ -51,6 +52,18 @@ namespace ignite
             OdbcError() :
                 status(SqlState::UNKNOWN),
                 errMessage()
+            {
+                // No-op.
+            }
+
+            /**
+             * Copy constructor.
+             *
+             * @param other Other instance.
+             */
+            OdbcError(const OdbcError& other) :
+                status(other.status),
+                errMessage(other.errMessage)
             {
                 // No-op.
             }
@@ -87,6 +100,27 @@ namespace ignite
 
             /** Error message. */
             std::string errMessage;
+        };
+
+        typedef common::Unexpected<OdbcError> OdbcUnexpected;
+
+        /**
+         * Expected specialization for OdbcError.
+         */
+        template<typename R>
+        struct OdbcExpected : common::Expected<R, OdbcError>
+        {
+            OdbcExpected(const R& res)
+                : common::Expected<R, OdbcError>(res)
+            {
+                // No-op.
+            }
+
+            OdbcExpected(const OdbcError& err)
+                : common::Expected<R, OdbcError>(OdbcUnexpected(err))
+            {
+                // No-op.
+            }
         };
     }
 }

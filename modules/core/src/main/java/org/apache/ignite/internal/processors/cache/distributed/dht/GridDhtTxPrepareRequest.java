@@ -88,6 +88,10 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     @GridDirectCollection(GridCacheVersion.class)
     private Collection<GridCacheVersion> ownedVals;
 
+    /** */
+    @GridDirectCollection(PartitionUpdateCountersMessage.class)
+    private Collection<PartitionUpdateCountersMessage> counters;
+
     /** Near transaction ID. */
     private GridCacheVersion nearXidVer;
 
@@ -130,7 +134,9 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param last {@code True} if this is last prepare request for node.
      * @param addDepInfo Deployment info flag.
      * @param storeWriteThrough Cache store write through flag.
-     * @param retVal Need return value flag.
+     * @param retVal Need return value flag
+     * @param mvccSnapshot Mvcc snapshot.
+     * @param counters Update counters for mvcc Tx.
      */
     public GridDhtTxPrepareRequest(
         IgniteUuid futId,
@@ -149,7 +155,8 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         boolean addDepInfo,
         boolean storeWriteThrough,
         boolean retVal,
-        MvccSnapshot mvccInfo) {
+        MvccSnapshot mvccSnapshot,
+        Collection<PartitionUpdateCountersMessage> counters) {
         super(tx,
             timeout,
             null,
@@ -170,7 +177,8 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         this.nearXidVer = nearXidVer;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
-        this.mvccSnapshot = mvccInfo;
+        this.mvccSnapshot = mvccSnapshot;
+        this.counters = counters;
 
         storeWriteThrough(storeWriteThrough);
         needReturnValue(retVal);
@@ -187,6 +195,13 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      */
     public MvccSnapshot mvccSnapshot() {
         return mvccSnapshot;
+    }
+
+    /**
+     * @return Update counters list.
+     */
+    public Collection<PartitionUpdateCountersMessage> updateCounters() {
+        return counters;
     }
 
     /**
@@ -492,6 +507,12 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 writer.incrementState();
 
+            case 34:
+                if (!writer.writeCollection("counters", counters, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -620,6 +641,14 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 reader.incrementState();
 
+            case 34:
+                counters = reader.readCollection("counters", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridDhtTxPrepareRequest.class);
@@ -632,7 +661,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 34;
+        return 35;
     }
 
     /** {@inheritDoc} */

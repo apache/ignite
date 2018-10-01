@@ -43,15 +43,16 @@ import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
  * several learning iterations.
  */
 public class GDBOnTreesLearningStrategy  extends GDBLearningStrategy {
-    private boolean useIndex;
+    /** Use index. */
+    private boolean useIdx;
 
     /**
      * Create an instance of learning strategy.
      *
-     * @param useIndex Use index.
+     * @param useIdx Use index.
      */
-    public GDBOnTreesLearningStrategy(boolean useIndex) {
-        this.useIndex = useIndex;
+    public GDBOnTreesLearningStrategy(boolean useIdx) {
+        this.useIdx = useIdx;
     }
 
     /** {@inheritDoc} */
@@ -70,23 +71,23 @@ public class GDBOnTreesLearningStrategy  extends GDBLearningStrategy {
 
         try (Dataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
-            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, useIndex)
+            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, useIdx)
         )) {
             for (int i = 0; i < cntOfIterations; i++) {
                 double[] weights = Arrays.copyOf(compositionWeights, models.size());
-                WeightedPredictionsAggregator aggregator = new WeightedPredictionsAggregator(weights, meanLabelValue);
+                WeightedPredictionsAggregator aggregator = new WeightedPredictionsAggregator(weights, meanLbVal);
                 ModelsComposition currComposition = new ModelsComposition(models, aggregator);
 
                 if(convCheck.isConverged(dataset, currComposition))
                     break;
 
                 dataset.compute(part -> {
-                    if(part.getCopyOfOriginalLabels() == null)
-                        part.setCopyOfOriginalLabels(Arrays.copyOf(part.getLabels(), part.getLabels().length));
+                    if (part.getCopiedOriginalLabels() == null)
+                        part.setCopiedOriginalLabels(Arrays.copyOf(part.getLabels(), part.getLabels().length));
 
                     for(int j = 0; j < part.getLabels().length; j++) {
                         double mdlAnswer = currComposition.apply(VectorUtils.of(part.getFeatures()[j]));
-                        double originalLbVal = externalLbToInternalMapping.apply(part.getCopyOfOriginalLabels()[j]);
+                        double originalLbVal = externalLbToInternalMapping.apply(part.getCopiedOriginalLabels()[j]);
                         part.getLabels()[j] = -loss.gradient(sampleSize, originalLbVal, mdlAnswer);
                     }
                 });

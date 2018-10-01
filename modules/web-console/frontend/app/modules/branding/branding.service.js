@@ -18,6 +18,9 @@
 export default class {
     static $inject = ['IgniteVersion'];
 
+    /**
+     * @param {import('app/services/Version.service').default} Version
+     */
     constructor(Version) {
         this.titleSuffix = ' - Apache Ignite Web Console';
 

@@ -183,9 +183,9 @@ public abstract class ImpurityHistogramsComputer<S extends ImpurityComputer<Boot
          */
         private void addTo(Map<Integer, S> from, Map<Integer, S> to) {
             from.forEach((key, hist) -> {
-                if(!to.containsKey(key)) {
+                if (!to.containsKey(key))
                     to.put(key, hist);
-                } else {
+                else {
                     S sumOfHists = to.get(key).plus(hist);
                     to.put(key, sumOfHists);
                 }

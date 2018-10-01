@@ -151,6 +151,8 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
      * @throws Exception If failed.
      */
     private void updateSingleValue(boolean singleNode, final boolean locQry) throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9540");
+
         final int VALS = 100;
 
         final int writers = 4;
@@ -377,6 +379,8 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
      * @throws Exception If failed.
      */
     private void joinTransactional(boolean singleNode, final boolean distributedJoin) throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
+
         final int KEYS = 100;
 
         final int writers = 4;

@@ -193,6 +193,7 @@ import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
+import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -551,6 +552,12 @@ public abstract class IgniteUtils {
     private static boolean devOnlyLogDisabled =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DEV_ONLY_LOGGING_DISABLED);
 
+    /** JDK9: jdk.internal.loader.URLClassPath. */
+    private static Class clsURLClassPath;
+
+    /** JDK9: URLClassPath#getURLs. */
+    private static Method mthdURLClassPathGetUrls;
+
     /*
      * Initializes enterprise check.
      */
@@ -802,6 +809,15 @@ public abstract class IgniteUtils {
                 equalsMtd = mtd;
             else if ("toString".equals(mtd.getName()))
                 toStringMtd = mtd;
+        }
+
+        try {
+            clsURLClassPath = Class.forName("jdk.internal.loader.URLClassPath");
+            mthdURLClassPathGetUrls = clsURLClassPath.getMethod("getURLs");
+        }
+        catch (ReflectiveOperationException e) {
+            clsURLClassPath = null;
+            mthdURLClassPathGetUrls = null;
         }
     }
 
@@ -1344,6 +1360,22 @@ public abstract class IgniteUtils {
         }
 
         sb.a(NL);
+
+        warn(log, sb.toString());
+    }
+
+    /**
+     * Dumps stack trace of the thread to the given log at warning level.
+     *
+     * @param t Thread to be dumped.
+     * @param log Logger.
+     */
+    public static void dumpThread(Thread t, @Nullable IgniteLogger log) {
+        ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
+
+        GridStringBuilder sb = new GridStringBuilder();
+
+        printThreadInfo(mxBean.getThreadInfo(t.getId()), sb, Collections.emptySet());
 
         warn(log, sb.toString());
     }
@@ -7656,9 +7688,33 @@ public abstract class IgniteUtils {
             return ((URLClassLoader)clsLdr).getURLs();
         else if (bltClsLdrCls != null && urlClsLdrField != null && bltClsLdrCls.isAssignableFrom(clsLdr.getClass())) {
             try {
-                return ((URLClassLoader)urlClsLdrField.get(clsLdr)).getURLs();
+                synchronized (urlClsLdrField) {
+                    // Backup accessible field state.
+                    boolean accessible = urlClsLdrField.isAccessible();
+
+                    try {
+                        if (!accessible)
+                            urlClsLdrField.setAccessible(true);
+
+                        Object ucp = urlClsLdrField.get(clsLdr);
+
+                        if (ucp instanceof URLClassLoader)
+                            return ((URLClassLoader)ucp).getURLs();
+                        else if (clsURLClassPath!= null && clsURLClassPath.isInstance(ucp))
+                            return (URL[])mthdURLClassPathGetUrls.invoke(ucp);
+                        else
+                            throw new RuntimeException("Unknown classloader: " + clsLdr.getClass());
+                    }
+                    finally {
+                        // Recover accessible field state.
+                        if (!accessible)
+                            urlClsLdrField.setAccessible(false);
+                    }
+                }
             }
-            catch (IllegalAccessException e) {
+            catch (InvocationTargetException | IllegalAccessException e) {
+                e.printStackTrace(System.err);
+
                 return EMPTY_URL_ARR;
             }
         }
@@ -8678,13 +8734,32 @@ public abstract class IgniteUtils {
             if (clsFilter != null && !clsFilter.apply(clsName))
                 throw new RuntimeException("Deserialization of class " + clsName + " is disallowed.");
 
-            Class old = ldrMap.putIfAbsent(clsName, cls = Class.forName(clsName, true, ldr));
+            // Avoid class caching inside Class.forName
+            if (ldr instanceof CacheClassLoaderMarker)
+                cls = ldr.loadClass(clsName);
+            else
+                cls = Class.forName(clsName, true, ldr);
+
+            Class old = ldrMap.putIfAbsent(clsName, cls);
 
             if (old != null)
                 cls = old;
         }
 
         return cls;
+    }
+
+    /**
+     * Clears class associated with provided class loader from class cache.
+     *
+     * @param ldr Class loader.
+     * @param clsName Class name of clearing class.
+     */
+    public static void clearClassFromClassCache(ClassLoader ldr, String clsName){
+        ConcurrentMap<String, Class> map = classCache.get(ldr);
+
+        if (map!=null)
+            map.remove(clsName);
     }
 
     /**

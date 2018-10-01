@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.partstate;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
-import java.util.TreeMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
@@ -37,11 +37,11 @@ import org.jetbrains.annotations.Nullable;
 public class PartitionAllocationMap {
     /** Maps following pairs: (groupId, partId) -> (lastAllocatedCount, allocatedCount) */
     @GridToStringInclude
-    private final NavigableMap<GroupPartitionId, PagesAllocationRange> map = new TreeMap<>();
+    private final NavigableMap<GroupPartitionId, PagesAllocationRange> map = new ConcurrentSkipListMap<>();
 
     /** Partitions forced to be skipped. */
     @GridToStringInclude
-    private final Set<GroupPartitionId> skippedParts = new HashSet<>();
+    private final Set<GroupPartitionId> skippedParts = new GridConcurrentHashSet<>();
 
     /**
      * Returns the value to which the specified key is mapped,

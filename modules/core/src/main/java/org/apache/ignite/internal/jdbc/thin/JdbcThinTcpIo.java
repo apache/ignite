@@ -27,7 +27,8 @@ import java.net.UnknownHostException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -95,7 +96,7 @@ public class JdbcThinTcpIo {
     private static final int QUERY_CLOSE_MSG_SIZE = 9;
 
     /** Random. */
-    private static final Random RND = new Random(U.currentTimeMillis());
+    private static final AtomicLong IDX_GEN = new AtomicLong();
 
     /** Connection properties. */
     private final ConnectionProperties connProps;
@@ -115,9 +116,6 @@ public class JdbcThinTcpIo {
     /** Ignite server version. */
     private IgniteProductVersion igniteVer;
 
-    /** Address index. */
-    private int srvIdx;
-
     /** Ignite server version. */
     private Thread ownThread;
 
@@ -127,6 +125,9 @@ public class JdbcThinTcpIo {
     /** Current protocol version used to connection to Ignite. */
     private ClientListenerProtocolVersion srvProtocolVer;
 
+    /** Server index. */
+    private volatile int srvIdx;
+
     /**
      * Constructor.
      *
@@ -134,9 +135,6 @@ public class JdbcThinTcpIo {
      */
     public JdbcThinTcpIo(ConnectionProperties connProps) {
         this.connProps = connProps;
-
-        // Try to connect to random address then round robin.
-        srvIdx = RND.nextInt(connProps.getAddresses().length);
     }
 
     /**
@@ -172,7 +170,9 @@ public class JdbcThinTcpIo {
 
             HostAndPortRange[] srvs = connProps.getAddresses();
 
-            for (int i = 0; i < srvs.length; i++, srvIdx = (srvIdx + 1) % srvs.length) {
+            for (int i = 0; i < srvs.length; i++) {
+                srvIdx = nextServerIndex(srvs.length);
+
                 HostAndPortRange srv = srvs[srvIdx];
 
                 InetAddress[] addrs = getAllAddressesByHost(srv.host());
@@ -651,5 +651,28 @@ public class JdbcThinTcpIo {
         assert srvProtocolVer != null;
 
         return srvProtocolVer.compareTo(VER_2_5_0) >= 0;
+    }
+
+    /**
+     * @return Current server index.
+     */
+    public int serverIndex() {
+        return srvIdx;
+    }
+
+    /**
+     * Get next server index.
+     *
+     * @param len Number of servers.
+     * @return Index of the next server to connect to.
+     */
+    private static int nextServerIndex(int len) {
+        if (len == 1)
+            return 0;
+        else {
+            long nextIdx = IDX_GEN.getAndIncrement();
+
+            return (int)(nextIdx % len);
+        }
     }
 }

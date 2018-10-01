@@ -86,9 +86,8 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * Invoke this method to reserve WAL history since provided pointer and prevent it's deletion.
      *
      * @param start WAL pointer.
-     * @throws IgniteException If failed to reserve.
      */
-    public boolean reserve(WALPointer start) throws IgniteCheckedException;
+    public boolean reserve(WALPointer start);
 
     /**
      * Invoke this method to release WAL history since provided pointer that was previously reserved.

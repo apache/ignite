@@ -73,4 +73,9 @@ public interface MvccUpdateVersionAware {
     public default MvccVersion newMvccVersion() {
         return new MvccVersionImpl(newMvccCoordinatorVersion(), newMvccCounter(), newMvccOperationCounter());
     }
+
+    /**
+     * @return {@code True} if this key was inserted in the cache with this row in the same transaction.
+     */
+    public boolean isKeyAbsentBefore();
 }

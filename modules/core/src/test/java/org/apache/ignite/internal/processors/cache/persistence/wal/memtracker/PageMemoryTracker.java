@@ -283,7 +283,7 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         stats.clear();
 
-        memoryProvider.shutdown();
+        memoryProvider.shutdown(true);
 
         if (checkpointLsnr != null) {
             ((GridCacheDatabaseSharedManager)gridCtx.cache().context().database())

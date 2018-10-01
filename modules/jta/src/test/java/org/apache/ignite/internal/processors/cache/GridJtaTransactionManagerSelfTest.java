@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import javax.cache.configuration.Factory;
 import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -27,7 +28,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.objectweb.jotm.Current;
 import org.objectweb.jotm.Jotm;
-import org.objectweb.transaction.jta.TransactionManager;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;

@@ -24,8 +24,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.MVCC_HINTS_BIT_OFF;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.MVCC_HINTS_MASK;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_BIT_OFF;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_MASK;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_MASK;
 
 /**
  *
@@ -64,7 +65,7 @@ public class GridCacheMvccEntryInfo extends GridCacheEntryInfo implements MvccVe
 
     /** {@inheritDoc} */
     @Override public int newMvccOperationCounter() {
-        return newMvccOpCntr & ~MVCC_HINTS_MASK;
+        return newMvccOpCntr & ~MVCC_OP_COUNTER_MASK;
     }
 
     /** {@inheritDoc} */
@@ -84,7 +85,7 @@ public class GridCacheMvccEntryInfo extends GridCacheEntryInfo implements MvccVe
 
     /** {@inheritDoc} */
     @Override public int mvccOperationCounter() {
-        return mvccOpCntr & ~MVCC_HINTS_MASK;
+        return mvccOpCntr & ~MVCC_OP_COUNTER_MASK;
     }
 
     /** {@inheritDoc} */
@@ -118,6 +119,11 @@ public class GridCacheMvccEntryInfo extends GridCacheEntryInfo implements MvccVe
         mvccCrdVer = crd;
         mvccCntr = cntr;
         mvccOpCntr = opCntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isKeyAbsentBefore() {
+        return false;
     }
 
     /** {@inheritDoc} */

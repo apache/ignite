@@ -22,6 +22,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.failure.IoomFailureHandlerTest;
 import org.apache.ignite.failure.SystemWorkersTerminationTest;
 import org.apache.ignite.internal.ClusterBaselineNodesMetricsSelfTest;
+import org.apache.ignite.internal.GridNodeMetricsLogPdsSelfTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOnActivationTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOutsideBaselineTest;
 import org.apache.ignite.marshaller.GridMarshallerMappingConsistencyTest;
@@ -58,6 +59,8 @@ public class IgniteBasicWithPersistenceTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCommandHandlerTest.class);
         suite.addTestSuite(GridInternalTaskUnusedWalSegmentsTest.class);
+
+        suite.addTestSuite(GridNodeMetricsLogPdsSelfTest.class);
 
         return suite;
     }

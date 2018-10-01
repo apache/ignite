@@ -22,8 +22,27 @@ export default class PageProfileController {
         '$rootScope', '$scope', '$http', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteFocus', 'IgniteConfirm', 'IgniteCountries', 'User'
     ];
 
+    /**
+     * @param {ng.IRootScopeService} $root       
+     * @param {ng.IScope} $scope      
+     * @param {ng.IHttpService} $http       
+     * @param {ReturnType<typeof import('app/services/LegacyUtils.service').default>} LegacyUtils
+     * @param {ReturnType<typeof import('app/services/Messages.service').default>} Messages
+     * @param {ReturnType<typeof import('app/services/Focus.service').default>} Focus
+     * @param {import('app/services/Confirm.service').Confirm} Confirm
+     * @param {ReturnType<typeof import('app/services/Countries.service').default>} Countries
+     * @param {ReturnType<typeof import('app/modules/user/User.service').default>} User
+     */
     constructor($root, $scope, $http, LegacyUtils, Messages, Focus, Confirm, Countries, User) {
-        Object.assign(this, {$root, $scope, $http, LegacyUtils, Messages, Focus, Confirm, Countries, User});
+        this.$root = $root;
+        this.$scope = $scope;
+        this.$http = $http;
+        this.LegacyUtils = LegacyUtils;
+        this.Messages = Messages;
+        this.Focus = Focus;
+        this.Confirm = Confirm;
+        this.Countries = Countries;
+        this.User = User;
     }
 
     $onInit() {

@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +66,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryCntr;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTx;
@@ -86,9 +87,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 
@@ -98,11 +97,8 @@ import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstract
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SCAN;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.PUT;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker.MVCC_TRACKER_ID_NA;
-import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
-import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * TODO IGNITE-6739: tests reload
@@ -117,40 +113,104 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    public void testEmptyTx() throws Exception {
+        Ignite node = startGrids(2);
+
+        IgniteCache cache = node.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, DFLT_PARTITION_COUNT));
+
+        cache.putAll(Collections.emptyMap());
+
+        IgniteTransactions txs = node.transactions();
+        try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            tx.commit();
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testImplicitTxOps() throws Exception {
+        checkTxWithAllCaches(new CI1<IgniteCache<Integer, Integer>>() {
+            @Override public void apply(IgniteCache<Integer, Integer> cache) {
+                try {
+                    List<Integer> keys = testKeys(cache);
+
+                    for (Integer key : keys) {
+                        log.info("Test key: " + key);
+
+                        Integer val = cache.get(key);
+
+                        assertNull(val);
+
+                        assertFalse(cache.containsKey(key));
+
+                        cache.put(key, -1);
+
+                        val = (Integer)checkAndGet(true, cache, key, GET, SCAN);
+
+                        assertEquals(Integer.valueOf(-1), val);
+
+                        assertTrue(cache.containsKey(key));
+
+                        cache.put(key, key);
+
+                        val = (Integer)checkAndGet(true, cache, key, GET, SCAN);
+
+                        assertEquals(key, val);
+
+                        cache.remove(key);
+
+                        val = cache.get(key);
+
+                        assertNull(val);
+
+                        val = (Integer)checkAndGet(false, cache, key, SCAN, GET);
+
+                        assertNull(val);
+
+                        assertTrue(cache.putIfAbsent(key, key));
+
+                        val = (Integer)checkAndGet(true, cache, key, GET, SCAN);
+
+                        assertEquals(key, val);
+
+                        val = cache.getAndReplace(key, -1);
+
+                        assertEquals(key, val);
+
+                        val = (Integer)checkAndGet(true, cache, key, GET, SCAN);
+
+                        assertEquals(Integer.valueOf(-1), val);
+
+                        val = cache.getAndRemove(key);
+
+                        assertEquals(Integer.valueOf(-1), val);
+
+                        val = cache.get(key);
+
+                        assertNull(val);
+
+                        val = (Integer)checkAndGet(false, cache, key, SCAN, GET);
+
+                        assertNull(val);
+                    }
+                }
+                catch (Exception e) {
+                    throw new IgniteException(e);
+                }
+            }
+        });
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testPessimisticTx1() throws Exception {
-        checkTx1(PESSIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testOptimisticSerializableTx1() throws Exception {
-        checkTx1(OPTIMISTIC, SERIALIZABLE);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testOptimisticRepeatableReadTx1() throws Exception {
-        checkTx1(OPTIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testOptimisticReadCommittedTx1() throws Exception {
-        checkTx1(OPTIMISTIC, READ_COMMITTED);
-    }
-
-    /**
-     * @param concurrency Transaction concurrency.
-     * @param isolation Transaction isolation.
-     * @throws Exception If failed.
-     */
-    private void checkTx1(final TransactionConcurrency concurrency, final TransactionIsolation isolation)
-        throws Exception {
         checkTxWithAllCaches(new CI1<IgniteCache<Integer, Integer>>() {
             @Override public void apply(IgniteCache<Integer, Integer> cache) {
                 try {
@@ -161,7 +221,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                     for (Integer key : keys) {
                         log.info("Test key: " + key);
 
-                        try (Transaction tx = txs.txStart(concurrency, isolation)) {
+                        try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             Integer val = cache.get(key);
 
                             assertNull(val);
@@ -191,23 +251,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testPessimisticTx2() throws Exception {
-        checkTx2(PESSIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testOptimisticSerializableTx2() throws Exception {
-        checkTx2(OPTIMISTIC, SERIALIZABLE);
-    }
-
-    /**
-     * @param concurrency Transaction concurrency.
-     * @param isolation Transaction isolation.
-     * @throws Exception If failed.
-     */
-    private void checkTx2(final TransactionConcurrency concurrency, final TransactionIsolation isolation)
-        throws Exception {
         checkTxWithAllCaches(new CI1<IgniteCache<Integer, Integer>>() {
             @Override public void apply(IgniteCache<Integer, Integer> cache) {
                 try {
@@ -218,7 +261,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                     for (Integer key : keys) {
                         log.info("Test key: " + key);
 
-                        try (Transaction tx = txs.txStart(concurrency, isolation)) {
+                        try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             cache.put(key, key);
                             cache.put(key + 1, key + 1);
 
@@ -394,7 +437,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                         keys.add(rnd.nextInt());
 
                     if (tx) {
-                        try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
+                        try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             cache.getAll(keys);
 
                             if (rnd.nextBoolean())
@@ -417,8 +460,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testTxReadIsolationSimple() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7764");
-
         Ignite srv0 = startGrids(4);
 
         client = true;
@@ -453,37 +494,23 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                         @Override public Void call() throws Exception {
                             IgniteCache<Object, Object> cache = node.cache(DEFAULT_CACHE_NAME);
 
-                            try (Transaction tx = node.transactions().txStart(OPTIMISTIC, isolation)) {
+                            try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                 assertEquals(0, checkAndGet(false, cache, 0, SCAN, GET));
 
                                 readStart.countDown();
 
                                 assertTrue(readProceed.await(5, TimeUnit.SECONDS));
 
-                                if (isolation == READ_COMMITTED) {
-                                    assertNull(checkAndGet(false, cache, 1, SCAN, GET));
+                                assertEquals(0, checkAndGet(true, cache, 1, GET, SCAN));
 
-                                    assertEquals(1, checkAndGet(false, cache, 2, SCAN, GET));
+                                assertEquals(0, checkAndGet(true, cache, 2, GET, SCAN));
 
-                                    Map<Object, Object> res = checkAndGetAll(false, cache, startVals.keySet(), SCAN, GET);
+                                Map<Object, Object> res = checkAndGetAll(true, cache, startVals.keySet(), GET, SCAN);
 
-                                    assertEquals(startVals.size() / 2, res.size());
+                                assertEquals(startVals.size(), res.size());
 
-                                    for (Map.Entry<Object, Object> e : res.entrySet())
-                                        assertEquals("Invalid value for key: " + e.getKey(), 1, e.getValue());
-                                }
-                                else {
-                                    assertEquals(0, checkAndGet(true, cache, 1, GET, SCAN));
-
-                                    assertEquals(0, checkAndGet(true, cache, 2, GET, SCAN));
-
-                                    Map<Object, Object> res = checkAndGetAll(true, cache, startVals.keySet(), GET, SCAN);
-
-                                    assertEquals(startVals.size(), res.size());
-
-                                    for (Map.Entry<Object, Object> e : res.entrySet())
-                                        assertEquals("Invalid value for key: " + e.getKey(), 0, e.getValue());
-                                }
+                                for (Map.Entry<Object, Object> e : res.entrySet())
+                                    assertEquals("Invalid value for key: " + e.getKey(), 0, e.getValue());
 
                                 tx.rollback();
                             }
@@ -589,8 +616,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
      * @param largeKeys {@code True} to use large keys (not fitting in single page).
+     * @throws Exception If failed.
      */
     private void putRemoveSimple(boolean largeKeys) throws Exception {
         Ignite node = startGrid(0);
@@ -771,6 +798,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testWaitPreviousTxAck() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
+
         testSpi = true;
 
         startGrid(0);
@@ -1032,11 +1061,10 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             @Override public Void call() throws Exception {
                 IgniteCache<Integer, Integer> cache = client.cache(srvCache.getName());
 
-
                 Map<Integer, Integer> vals;
 
                 if (inTx) {
-                    try (Transaction tx = client.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
+                    try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         vals = checkAndGetAll(false, cache, F.asSet(key1, key2), SCAN, GET);
 
                         tx.rollback();
@@ -1085,6 +1113,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testCleanupWaitsForGet2() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
         /*
         Simulate case when there are two active transactions modifying the same key
         (it is possible if key lock is released but ack message is delayed), and at this moment
@@ -1430,8 +1459,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         putAllGetAll(RestartMode.RESTART_RND_SRV, 4, 2, 1, 64, null, SCAN, PUT);
     }
 
-
-
     /**
      * @throws Exception If failed.
      */
@@ -1576,79 +1603,35 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testPessimisticTxGetAllReadsSnapshot_SingleNode_SinglePartition() throws Exception {
-        txReadsSnapshot(1, 0, 0, 1, true, GET);
+        txReadsSnapshot(1, 0, 0, 1, GET);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPessimisticTxGetAllReadsSnapshot_ClientServer() throws Exception {
-        txReadsSnapshot(4, 2, 1, 64, true, GET);
+        txReadsSnapshot(4, 2, 1, 64, GET);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testOptimisticTxGetAllReadsSnapshot_SingleNode() throws Exception {
-        txReadsSnapshot(1, 0, 0, 64, false, GET);
+    public void testPessimisticTxScanReadsSnapshot_SingleNode_SinglePartition() throws Exception {
+        txReadsSnapshot(1, 0, 0, 1, SCAN);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testOptimisticTxGetAllReadsSnapshot_SingleNode_SinglePartition() throws Exception {
-        txReadsSnapshot(1, 0, 0, 1, false, GET);
+    public void testPessimisticTxScanReadsSnapshot_ClientServer() throws Exception {
+        txReadsSnapshot(4, 2, 1, 64, SCAN);
     }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testOptimisticTxGetAllReadsSnapshot_ClientServer() throws Exception {
-        txReadsSnapshot(4, 2, 1, 64, false, GET);
-    }
-
-//    TODO: IGNITE-7371
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testPessimisticTxScanReadsSnapshot_SingleNode_SinglePartition() throws Exception {
-//        txReadsSnapshot(1, 0, 0, 1, true, SCAN);
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testPessimisticTxScanReadsSnapshot_ClientServer() throws Exception {
-//        txReadsSnapshot(4, 2, 1, 64, true, SCAN);
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testOptimisticTxScanReadsSnapshot_SingleNode() throws Exception {
-//        txReadsSnapshot(1, 0, 0, 64, false, SCAN);
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testOptimisticTxScanReadsSnapshot_SingleNode_SinglePartition() throws Exception {
-//        txReadsSnapshot(1, 0, 0, 1, false, SCAN);
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testOptimisticTxScanReadsSnapshot_ClientServer() throws Exception {
-//        txReadsSnapshot(4, 2, 1, 64, false, SCAN);
-//    }
 
     /**
      * @param srvs Number of server nodes.
      * @param clients Number of client nodes.
      * @param cacheBackups Number of cache backups.
      * @param cacheParts Number of cache partitions.
-     * @param pessimistic If {@code true} uses pessimistic tx, otherwise optimistic.
      * @param readMode Read mode.
      * @throws Exception If failed.
      */
@@ -1657,9 +1640,10 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         final int clients,
         int cacheBackups,
         int cacheParts,
-        final boolean pessimistic,
         ReadMode readMode
     ) throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
+
         final int ACCOUNTS = 20;
 
         final int ACCOUNT_START_VAL = 1000;
@@ -1667,18 +1651,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         final int writers = 4;
 
         final int readers = 4;
-
-        final TransactionConcurrency concurrency;
-        final TransactionIsolation isolation;
-
-        if (pessimistic) {
-            concurrency = PESSIMISTIC;
-            isolation = REPEATABLE_READ;
-        }
-        else {
-            concurrency = OPTIMISTIC;
-            isolation = SERIALIZABLE;
-        }
 
         final IgniteInClosure<IgniteCache<Object, Object>> init = new IgniteInClosure<IgniteCache<Object, Object>>() {
             @Override public void apply(IgniteCache<Object, Object> cache) {
@@ -1689,7 +1661,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                 for (int i = 0; i < ACCOUNTS; i++)
                     accounts.put(i, new MvccTestAccount(ACCOUNT_START_VAL, 1));
 
-                try (Transaction tx = txs.txStart(concurrency, isolation)) {
+                try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     cache.putAll(accounts);
 
                     tx.commit();
@@ -1718,7 +1690,13 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                             while (id1.equals(id2))
                                 id2 = rnd.nextInt(ACCOUNTS);
 
-                            TreeSet<Integer> keys = new TreeSet<>();
+                            if(id1 > id2) {
+                                int tmp = id1;
+                                id1 = id2;
+                                id2 = tmp;
+                            }
+
+                            Set<Integer> keys = new HashSet<>();
 
                             keys.add(id1);
                             keys.add(id2);
@@ -1763,88 +1741,36 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
                         Map<Integer, MvccTestAccount> accounts = new HashMap<>();
 
-                        if (pessimistic) {
-                            try (Transaction tx = txs.txStart(concurrency, isolation)) {
-                                int remaining = ACCOUNTS;
+                        try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            int remaining = ACCOUNTS;
 
-                                do {
-                                    int readCnt = rnd.nextInt(remaining) + 1;
+                            do {
+                                int readCnt = rnd.nextInt(remaining) + 1;
 
-                                    Set<Integer> readKeys = new TreeSet<>();
+                                Set<Integer> readKeys = new TreeSet<>();
 
-                                    for (int i = 0; i < readCnt; i++)
-                                        readKeys.add(accounts.size() + i);
+                                for (int i = 0; i < readCnt; i++)
+                                    readKeys.add(accounts.size() + i);
 
-                                    Map<Integer, MvccTestAccount> readRes =
-                                        checkAndGetAll(false, cache.cache, readKeys, readMode);
+                                Map<Integer, MvccTestAccount> readRes =
+                                    checkAndGetAll(false, cache.cache, readKeys, readMode);
 
-                                    assertEquals(readCnt, readRes.size());
+                                assertEquals(readCnt, readRes.size());
 
-                                    accounts.putAll(readRes);
+                                accounts.putAll(readRes);
 
-                                    remaining = ACCOUNTS - accounts.size();
-                                }
-                                while (remaining > 0);
-
-                                validateSum(accounts);
-
-                                tx.commit();
-
-                                cnt++;
+                                remaining = ACCOUNTS - accounts.size();
                             }
-                            finally {
-                                cache.readUnlock();
-                            }
+                            while (remaining > 0);
+
+                            validateSum(accounts);
+
+                            tx.commit();
+
+                            cnt++;
                         }
-                        else {
-                            try (Transaction tx = txs.txStart(concurrency, isolation)) {
-                                int remaining = ACCOUNTS;
-
-                                do {
-                                    int readCnt = rnd.nextInt(remaining) + 1;
-
-                                    if (rnd.nextInt(3) == 0) {
-                                        for (int i = 0; i < readCnt; i++) {
-                                            Integer key = rnd.nextInt(ACCOUNTS);
-
-                                            MvccTestAccount account =
-                                                (MvccTestAccount)checkAndGet(false, cache.cache, key, readMode);
-
-                                            assertNotNull(account);
-
-                                            accounts.put(key, account);
-                                        }
-                                    }
-                                    else {
-                                        Set<Integer> readKeys = new LinkedHashSet<>();
-
-                                        for (int i = 0; i < readCnt; i++)
-                                            readKeys.add(rnd.nextInt(ACCOUNTS));
-
-                                        Map<Integer, MvccTestAccount> readRes =
-                                            checkAndGetAll(false, cache.cache, readKeys, readMode);
-
-                                        assertEquals(readKeys.size(), readRes.size());
-
-                                        accounts.putAll(readRes);
-                                    }
-
-                                    remaining = ACCOUNTS - accounts.size();
-                                }
-                                while (remaining > 0);
-
-                                validateSum(accounts);
-
-                                cnt++;
-
-                                tx.commit();
-                            }
-                            catch (TransactionOptimisticException ignore) {
-                                // No-op.
-                            }
-                            finally {
-                                cache.readUnlock();
-                            }
+                        finally {
+                            cache.readUnlock();
                         }
                     }
 
@@ -1954,9 +1880,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         int cacheBackups,
         int cacheParts,
         ReadMode readMode
-    )
-        throws Exception
-    {
+    ) throws Exception {
         final int writers = 4;
 
         final int readers = 4;
@@ -2103,50 +2027,26 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                     Map<Integer, Integer> map = new TreeMap<>();
+                    Set<Integer> keys = new LinkedHashSet();
 
                     int cnt = 0;
 
                     while (!stop.get()) {
-                        int keys = rnd.nextInt(32) + 1;
+                        int keysCnt = rnd.nextInt(32) + 1;
 
-                        while (map.size() < keys)
-                            map.put(rnd.nextInt(KEYS), cnt);
+                        while (keys.size() < keysCnt) {
+                            int key = rnd.nextInt(KEYS);
+
+                            if(keys.add(key))
+                                map.put(key, cnt);
+                        }
 
                         TestCache<Integer, Integer> cache = randomCache(caches, rnd);
 
                         try {
                             IgniteTransactions txs = cache.cache.unwrap(Ignite.class).transactions();
 
-                            TransactionConcurrency concurrency;
-                            TransactionIsolation isolation;
-
-                            switch (rnd.nextInt(3)) {
-                                case 0: {
-                                    concurrency = PESSIMISTIC;
-                                    isolation = REPEATABLE_READ;
-
-                                    break;
-                                }
-                                case 1: {
-                                    concurrency = OPTIMISTIC;
-                                    isolation = REPEATABLE_READ;
-
-                                    break;
-                                }
-                                case 2: {
-                                    concurrency = OPTIMISTIC;
-                                    isolation = SERIALIZABLE;
-
-                                    break;
-                                }
-                                default: {
-                                    fail();
-
-                                    return;
-                                }
-                            }
-
-                            try (Transaction tx = txs.txStart(concurrency, isolation)) {
+                            try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                 if (rnd.nextBoolean()) {
                                     Map<Integer, Integer> res = checkAndGetAll(false, cache.cache, map.keySet(),
                                         rnd.nextBoolean() ? GET : SCAN);
@@ -2158,18 +2058,16 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
                                 tx.commit();
                             }
-                            catch (TransactionOptimisticException e) {
-                                assertEquals(SERIALIZABLE, isolation);
-                            }
                             catch (Exception e) {
                                 Assert.assertTrue("Unexpected error: " + e, X.hasCause(e, ClusterTopologyException.class));
                             }
                         }
                         finally {
                             cache.readUnlock();
-                        }
 
-                        map.clear();
+                            keys.clear();
+                            map.clear();
+                        }
 
                         cnt++;
                     }
@@ -2282,7 +2180,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         Ignite srv0 = startGrid(0);
 
-        IgniteCache<Integer, Integer> cache =  (IgniteCache)srv0.createCache(
+        IgniteCache<Integer, Integer> cache = (IgniteCache)srv0.createCache(
             cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT));
 
         Map<Integer, Integer> map;
@@ -2413,32 +2311,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testTxPrepareFailureSimplePessimisticTx() throws Exception {
-        txPrepareFailureSimple(PESSIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxPrepareFailureSimpleSerializableTx() throws Exception {
-        txPrepareFailureSimple(OPTIMISTIC, SERIALIZABLE);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxPrepareFailureSimpleOptimisticTx() throws Exception {
-        txPrepareFailureSimple(OPTIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * @param concurrency Transaction concurrency.
-     * @param isolation Transaction isolation.
-     * @throws Exception If failed.
-     */
-    private void txPrepareFailureSimple(
-        final TransactionConcurrency concurrency,
-        final TransactionIsolation isolation
-    ) throws Exception {
         testSpi = true;
 
         startGrids(3);
@@ -2460,7 +2332,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable() {
             @Override public Object call() throws Exception {
                 try {
-                    try (Transaction tx = client.transactions().txStart(concurrency, isolation)) {
+                    try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         cache.put(key1, 1);
                         cache.put(key2, 2);
 
@@ -2477,7 +2349,16 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             }
         }, "tx-thread");
 
-        srv1Spi.waitForBlocked();
+        GridTestUtils.waitForCondition(
+            new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return srv1Spi.hasBlockedMessages() || fut.isDone() && fut.error() != null;
+                }
+            }, 10_000
+        );
+
+        if (fut.isDone())
+            fut.get(); // Just to fail with future error.
 
         assertFalse(fut.isDone());
 
@@ -2488,7 +2369,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         assertNull(cache.get(key1));
         assertNull(cache.get(key2));
 
-        try (Transaction tx = client.transactions().txStart(concurrency, isolation)) {
+        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.put(key1, 1);
             cache.put(key2, 2);
 
@@ -2502,64 +2383,9 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testSerializableTxRemap() throws Exception {
-        testSpi = true;
-
-        startGrids(2);
-
-        client = true;
-
-        final Ignite client = startGrid(2);
-
-        final IgniteCache cache = client.createCache(
-            cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT));
-
-        final Map<Object, Object> vals = new HashMap<>();
-
-        for (int i = 0; i < 100; i++)
-            vals.put(i, i);
-
-        TestRecordingCommunicationSpi clientSpi = TestRecordingCommunicationSpi.spi(ignite(2));
-
-        clientSpi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-            @Override public boolean apply(ClusterNode node, Message msg) {
-                return msg instanceof GridNearTxPrepareRequest;
-            }
-        });
-
-        IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable() {
-            @Override public Object call() throws Exception {
-                try (Transaction tx = client.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-                    cache.putAll(vals);
-
-                    tx.commit();
-                }
-
-                return null;
-            }
-        }, "tx-thread");
-
-        clientSpi.waitForBlocked(2);
-
-        this.client = false;
-
-        startGrid(3);
-
-        assertFalse(fut.isDone());
-
-        clientSpi.stopBlock();
-
-        fut.get();
-
-        for (Ignite node : G.allGrids())
-            checkValues(vals, node.cache(cache.getName()));
-    }
-
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testMvccCoordinatorChangeSimple() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9722");
+
         Ignite srv0 = startGrid(0);
 
         final List<String> cacheNames = new ArrayList<>();
@@ -2624,19 +2450,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         for (int i = 0; i < 10; i++)
             vals.put(i, val);
 
-        TransactionConcurrency concurrency;
-        TransactionIsolation isolation;
-
-        if (ThreadLocalRandom.current().nextBoolean()) {
-            concurrency = PESSIMISTIC;
-            isolation = REPEATABLE_READ;
-        }
-        else {
-            concurrency = OPTIMISTIC;
-            isolation = SERIALIZABLE;
-        }
-
-        try (Transaction tx = putNode.transactions().txStart(concurrency, isolation)) {
+        try (Transaction tx = putNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             for (String cacheName : cacheNames)
                 putNode.cache(cacheName).putAll(vals);
 
@@ -2906,8 +2720,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testUpdate_N_Objects_ClientServer_Backups1_Scan() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7764");
-
         int[] nValues = {3, 5, 10};
 
         for (int n : nValues) {
@@ -2923,7 +2735,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     public void testImplicitPartsScan_SingleNode_SinglePartition() throws Exception {
         doImplicitPartsScanTest(1, 0, 0, 1, 10_000);
     }
-
 
     /**
      * @throws Exception If failed.
@@ -2967,6 +2778,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         int cacheBackups,
         int cacheParts,
         long time) throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
+
         final int KEYS_PER_PART = 20;
 
         final int writers = 4;
@@ -3033,6 +2846,12 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                         while (k1.equals(k2))
                             k2 = partKeys.get(rnd.nextInt(KEYS_PER_PART));
 
+                        if(k1 > k2) {
+                            int tmp = k1;
+                            k1 = k2;
+                            k2 = tmp;
+                        }
+
                         TreeSet<Integer> keys = new TreeSet<>();
 
                         keys.add(k1);
@@ -3074,7 +2893,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
                             ScanQuery<Integer, MvccTestAccount> qry = new ScanQuery<>(part);
 
-                            List<Cache.Entry<Integer, MvccTestAccount>> res =  cache.cache.query(qry).getAll();
+                            List<Cache.Entry<Integer, MvccTestAccount>> res = cache.cache.query(qry).getAll();
 
                             int sum = 0;
 
@@ -3100,7 +2919,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                             try {
                                 ScanQuery<Integer, MvccTestAccount> qry = new ScanQuery<>();
 
-                                List<Cache.Entry<Integer, MvccTestAccount>> res =  cache.cache.query(qry).getAll();
+                                List<Cache.Entry<Integer, MvccTestAccount>> res = cache.cache.query(qry).getAll();
 
                                 int sum = 0;
 
@@ -3140,8 +2959,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     public void testSize() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9451");
-
         Ignite node = startGrid(0);
 
         IgniteCache cache = node.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, 1));
@@ -3150,6 +2967,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         final int KEYS = 10;
 
+        // Initial put.
         for (int i = 0; i < KEYS; i++) {
             final Integer key = i;
 
@@ -3162,6 +2980,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             assertEquals(i + 1, cache.size());
         }
 
+        // Update.
         for (int i = 0; i < KEYS; i++) {
             final Integer key = i;
 
@@ -3176,6 +2995,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         int size = KEYS;
 
+        // Remove.
         for (int i = 0; i < KEYS; i++) {
             if (i % 2 == 0) {
                 final Integer key = i;
@@ -3207,6 +3027,48 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             }
         }
 
+        // Check rollback create.
+        for (int i = 0; i < KEYS; i++) {
+            if (i % 2 == 0) {
+                final Integer key = i;
+
+                try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    cache.put(key, i);
+
+                    tx.rollback();
+                }
+
+                assertEquals(size, cache.size());
+            }
+        }
+
+        // Check rollback update.
+        for (int i = 0; i < KEYS; i++) {
+            final Integer key = i;
+
+            try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                cache.put(key, -1);
+
+                tx.rollback();
+            }
+
+            assertEquals(size, cache.size());
+        }
+
+        // Check rollback remove.
+        for (int i = 0; i < KEYS; i++) {
+            final Integer key = i;
+
+            try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                cache.remove(key);
+
+                tx.rollback();
+            }
+
+            assertEquals(size, cache.size());
+        }
+
+        // Restore original state.
         for (int i = 0; i < KEYS; i++) {
             if (i % 2 == 0) {
                 final Integer key = i;
@@ -3222,6 +3084,10 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                 assertEquals(size, cache.size());
             }
         }
+
+        // Check state.
+        for (int i = 0; i < KEYS; i++)
+            assertEquals(i, cache.get(i));
     }
 
     /**
@@ -3467,7 +3333,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @param readModes Read modes to check.
      * @return Value.
      */
-    private Object checkAndGet(boolean inTx, IgniteCache cache, Object key, ReadMode ... readModes) {
+    private Object checkAndGet(boolean inTx, IgniteCache cache, Object key, ReadMode... readModes) {
         assert readModes != null && readModes.length > 0;
 
         if (inTx)
@@ -3531,13 +3397,12 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         }
     }
 
-
     /**
      * Checks values obtained with different read modes.
      * And returns value in case of it's equality for all read modes.
      * Do not use in tests with writers contention.
      *
-     * // TODO remove inTx flag in IGNITE-7764
+     * // TODO remove inTx flag in IGNITE-6938
      * @param inTx Flag whether current read is inside transaction.
      * This is because reads can't see writes made in current transaction.
      * @param cache Cache.
@@ -3545,7 +3410,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @param readModes Read modes to check.
      * @return Value.
      */
-    private Map checkAndGetAll(boolean inTx, IgniteCache cache, Set keys, ReadMode ... readModes) {
+    private Map checkAndGetAll(boolean inTx, IgniteCache cache, Set keys, ReadMode... readModes) {
         assert readModes != null && readModes.length > 0;
 
         if (inTx)
@@ -3571,11 +3436,10 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         return prevVal;
     }
 
-
     /**
      * Reads value from cache for the given key using given read mode.
      *
-     * // TODO IGNITE-7764 remove inTx flag
+     * // TODO IGNITE-6938 remove inTx flag
      * // TODO IGNITE-6739 add SQL-get support "select _key, _val from cache where _key in ... keySet"
      * @param inTx Flag whether current read is inside transaction.
      * This is because reads can't see writes made in current transaction.

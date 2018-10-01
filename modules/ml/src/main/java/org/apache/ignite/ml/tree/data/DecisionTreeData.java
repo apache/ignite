@@ -28,13 +28,13 @@ import org.apache.ignite.ml.tree.TreeFilter;
  */
 public class DecisionTreeData extends FeatureMatrixWithLabelsOnHeapData implements AutoCloseable {
     /** Copy of vector with original labels. Auxiliary for Gradient Boosting on Trees.*/
-    private double[] copyOfOriginalLabels;
+    private double[] copiedOriginalLabels;
 
     /** Indexes cache. */
     private final List<TreeDataIndex> indexesCache;
 
     /** Build index. */
-    private final boolean buildIndex;
+    private final boolean buildIdx;
 
     /**
      * Constructs a new instance of decision tree data.
@@ -45,7 +45,7 @@ public class DecisionTreeData extends FeatureMatrixWithLabelsOnHeapData implemen
      */
     public DecisionTreeData(double[][] features, double[] labels, boolean buildIdx) {
         super(features, labels);
-        this.buildIndex = buildIdx;
+        this.buildIdx = buildIdx;
 
         indexesCache = new ArrayList<>();
         if (buildIdx)
@@ -81,7 +81,7 @@ public class DecisionTreeData extends FeatureMatrixWithLabelsOnHeapData implemen
             }
         }
 
-        return new DecisionTreeData(newFeatures, newLabels, buildIndex);
+        return new DecisionTreeData(newFeatures, newLabels, buildIdx);
     }
 
     /**
@@ -129,13 +129,13 @@ public class DecisionTreeData extends FeatureMatrixWithLabelsOnHeapData implemen
     }
 
     /** */
-    public double[] getCopyOfOriginalLabels() {
-        return copyOfOriginalLabels;
+    public double[] getCopiedOriginalLabels() {
+        return copiedOriginalLabels;
     }
 
     /** */
-    public void setCopyOfOriginalLabels(double[] copyOfOriginalLabels) {
-        this.copyOfOriginalLabels = copyOfOriginalLabels;
+    public void setCopiedOriginalLabels(double[] copiedOriginalLabels) {
+        this.copiedOriginalLabels = copiedOriginalLabels;
     }
 
     /** {@inheritDoc} */

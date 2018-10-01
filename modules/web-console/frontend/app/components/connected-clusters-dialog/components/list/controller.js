@@ -24,6 +24,7 @@ export default class SnapshotsListCachesCtrl {
 
     /**
      * @param {ng.IScope} $scope
+     * @param {import('app/modules/agent/AgentManager.service').default} agentMgr
      */
     constructor($scope, agentMgr) {
         this.$scope = $scope;

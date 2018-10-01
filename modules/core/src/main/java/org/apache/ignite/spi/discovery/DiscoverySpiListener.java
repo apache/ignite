@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -52,7 +52,7 @@ public interface DiscoverySpiListener {
      *
      * @return A future that will be completed when notification process has finished.
      */
-    public IgniteInternalFuture onDiscovery(
+    public IgniteFuture<?> onDiscovery(
         int type,
         long topVer,
         ClusterNode node,

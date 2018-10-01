@@ -82,13 +82,13 @@ public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
             );
 
         if (uniqLabels != null && uniqLabels.size() == 2) {
-            ArrayList<Double> lblsArray = new ArrayList<>(uniqLabels);
-            externalFirstCls = lblsArray.get(0);
-            externalSecondCls = lblsArray.get(1);
+            ArrayList<Double> lblsArr = new ArrayList<>(uniqLabels);
+            externalFirstCls = lblsArr.get(0);
+            externalSecondCls = lblsArr.get(1);
             return true;
-        } else {
-            return false;
         }
+        else
+            return false;
     }
 
     /** {@inheritDoc} */

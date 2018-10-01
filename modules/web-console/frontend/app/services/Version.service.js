@@ -49,8 +49,8 @@ const numberComparator = (a, b) => a > b ? 1 : a < b ? -1 : 0;
 
 /**
  * Compare to version.
- * @param a {Object} first compared version.
- * @param b {Object} second compared version.
+ * @param {Object} a first compared version.
+ * @param {Object} b second compared version.
  * @returns {Number} 1 if a > b, 0 if versions equals, -1 if a < b
  */
 const compare = (a, b) => {

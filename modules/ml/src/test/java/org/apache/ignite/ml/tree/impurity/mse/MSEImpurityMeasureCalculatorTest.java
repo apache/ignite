@@ -43,7 +43,7 @@ public class MSEImpurityMeasureCalculatorTest {
 
     /** Use index. */
     @Parameterized.Parameter
-    public boolean useIndex;
+    public boolean useIdx;
 
     /** */
     @Test
@@ -51,9 +51,9 @@ public class MSEImpurityMeasureCalculatorTest {
         double[][] data = new double[][]{{0, 2}, {1, 1}, {2, 0}, {3, 3}};
         double[] labels = new double[]{1, 2, 2, 1};
 
-        MSEImpurityMeasureCalculator calculator = new MSEImpurityMeasureCalculator(useIndex);
+        MSEImpurityMeasureCalculator calculator = new MSEImpurityMeasureCalculator(useIdx);
 
-        StepFunction<MSEImpurityMeasure>[] impurity = calculator.calculate(new DecisionTreeData(data, labels, useIndex), fs -> true, 0);
+        StepFunction<MSEImpurityMeasure>[] impurity = calculator.calculate(new DecisionTreeData(data, labels, useIdx), fs -> true, 0);
 
         assertEquals(2, impurity.length);
 

@@ -64,7 +64,7 @@ struct ErrorTestSuiteFixture : odbc::OdbcTestSuite
 {
     static Ignite StartAdditionalNode(const char* name)
     {
-        return StartTestNode("queries-test.xml", name);
+        return StartPlatformNode("queries-test.xml", name);
     }
 
     /**

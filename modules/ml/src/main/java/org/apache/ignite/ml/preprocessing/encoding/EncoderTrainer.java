@@ -35,9 +35,7 @@ import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderPr
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Trainer of the String Encoder preprocessor.
- * The String Encoder encodes string values (categories) to double values in range [0.0, amountOfCategories)
- * where the most popular value will be presented as 0.0 and the least popular value presented with amountOfCategories-1 value.
+ * Trainer of the String Encoder and One-Hot Encoder preprocessors.
  *
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
