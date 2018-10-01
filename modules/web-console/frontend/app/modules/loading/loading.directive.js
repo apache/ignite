@@ -18,7 +18,11 @@
 import template from './loading.pug';
 import './loading.scss';
 
-export default ['igniteLoading', ['IgniteLoading', '$compile', (Loading, $compile) => {
+/**
+ * @param {ReturnType<typeof import('./loading.service').default>} Loading
+ * @param {ng.ICompileService} $compile
+ */
+export default function factory(Loading, $compile) {
     const link = (scope, element) => {
         const compiledTemplate = $compile(template);
 
@@ -48,4 +52,6 @@ export default ['igniteLoading', ['IgniteLoading', '$compile', (Loading, $compil
         restrict: 'A',
         link
     };
-}]];
+}
+
+factory.$inject = ['IgniteLoading', '$compile'];

@@ -34,6 +34,8 @@ import java.util.stream.Collectors;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -42,6 +44,8 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -319,10 +323,14 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
                 try (Transaction tx = txs1.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
                     assertEquals(initialMap, getEntries(cache1, allKeys, readModeBefore));
 
+                    checkContains(cache1, true, allKeys);
+
                     updateStart.countDown();
                     updateFinish.await();
 
                     assertEquals(initialMap, getEntries(cache1, allKeys, readModeAfter));
+
+                    checkContains(cache1, true,allKeys);
 
                     tx.commit();
                 }

@@ -15,7 +15,18 @@
  * limitations under the License.
  */
 
-export default ['javaKeywords', ['JavaTypes', (JavaTypes) => {
+import _ from 'lodash';
+
+/**
+ * @param {import('app/services/JavaTypes.service').default} JavaTypes
+ */
+export default function factory(JavaTypes) {
+    /**
+     * @param {ng.IScope} scope
+     * @param {JQLite} el
+     * @param {ng.IAttributes} attrs
+     * @param {[ng.INgModelController]} [ngModel]
+     */
     const link = (scope, el, attrs, [ngModel]) => {
         if (_.isNil(attrs.javaKeywords) || attrs.javaKeywords === 'false')
             return;
@@ -36,4 +47,6 @@ export default ['javaKeywords', ['JavaTypes', (JavaTypes) => {
         link,
         require: ['ngModel']
     };
-}]];
+}
+
+factory.$inject = ['JavaTypes'];

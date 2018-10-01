@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryGetColumnsMetaRequest;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
@@ -127,7 +128,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private final Object orderedBatchesMux = new Object();
 
     /** Response sender. */
-    private final JdbcResponseSender sender;
+    private final ClientListenerResponseSender sender;
 
     /** Automatic close of cursors. */
     private final boolean autoCloseCursors;
@@ -158,7 +159,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param protocolVer Protocol version.
      */
     public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock,
-        JdbcResponseSender sender, int maxCursors,
+        ClientListenerResponseSender sender, int maxCursors,
         boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly,
         boolean autoCloseCursors, boolean lazy, boolean skipReducerOnUpdate, NestedTxMode nestedTxMode,
         AuthorizationContext actx, ClientListenerProtocolVersion protocolVer) {
