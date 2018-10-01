@@ -72,6 +72,8 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
     /** Non-persistent data region name. */
     private static final String NO_PERSISTENCE_REGION = "no-persistence-region";
+    /** */
+    private static final int DEFAULT_CACHES_COUNT = 2;
 
     /** */
     boolean client;
@@ -228,7 +230,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             assertTrue(ignite(i).cluster().active());
 
         for (int i = 0; i < srvs + clients; i++) {
-            for (int c = 0; c < 2; c++)
+            for (int c = 0; c < DEFAULT_CACHES_COUNT; c++)
                 checkCache(ignite(i), CACHE_NAME_PREFIX + c, true);
 
             checkCache(ignite(i), CU.UTILITY_CACHE_NAME, true);
@@ -240,7 +242,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         startGrid(srvs + clients);
 
-        for (int c = 0; c < 2; c++)
+        for (int c = 0; c < DEFAULT_CACHES_COUNT; c++)
             checkCache(ignite(srvs + clients), CACHE_NAME_PREFIX + c, true);
 
         checkCaches(srvs + clients + 1, CACHES);
@@ -249,7 +251,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         startGrid(srvs + clients + 1);
 
-        for (int c = 0; c < 2; c++)
+        for (int c = 0; c < DEFAULT_CACHES_COUNT; c++)
             checkCache(ignite(srvs + clients + 1), CACHE_NAME_PREFIX + c, false);
 
         checkCaches(srvs + clients + 2, CACHES);
@@ -278,14 +280,10 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     public void reactivateSimple(int srvs, int clients, int activateFrom) throws Exception {
         activateSimple(srvs, clients, activateFrom);
 
-        for (int c = 0; c < 2; c++) {
-            IgniteCache<Object, Object> cache = ignite(activateFrom).cache(CACHE_NAME_PREFIX + c);
-            for (int i = 0; i < 1000; i++)
-                cache.put(i, i);
-        }
+        rolloverSegmentAtLeastTwice(activateFrom);
 
         for (int i = 0; i < srvs + clients; i++) {
-            for (int c = 0; c < 2; c++)
+            for (int c = 0; c < DEFAULT_CACHES_COUNT; c++)
                 checkCache(ignite(i), CACHE_NAME_PREFIX + c, true);
 
             checkCache(ignite(i), CU.UTILITY_CACHE_NAME, true);
@@ -295,17 +293,25 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         ignite(activateFrom).cluster().active(true);
 
-        for (int c = 0; c < 2; c++) {
-            IgniteCache<Object, Object> cache = ignite(activateFrom).cache(CACHE_NAME_PREFIX + c);
-            for (int i = 0; i < 1000; i++)
-                cache.put(i, i);
-        }
+        rolloverSegmentAtLeastTwice(activateFrom);
 
         for (int i = 0; i < srvs + clients; i++) {
-            for (int c = 0; c < 2; c++)
+            for (int c = 0; c < DEFAULT_CACHES_COUNT; c++)
                 checkCache(ignite(i), CACHE_NAME_PREFIX + c, true);
 
             checkCache(ignite(i), CU.UTILITY_CACHE_NAME, true);
+        }
+    }
+
+    /**
+     * Work directory have 2 segments by default. This method do full circle.
+     */
+    private void rolloverSegmentAtLeastTwice(int activateFrom) {
+        for (int c = 0; c < DEFAULT_CACHES_COUNT; c++) {
+            IgniteCache<Object, Object> cache = ignite(activateFrom).cache(CACHE_NAME_PREFIX + c);
+            //this should be enough including free-,meta- page and etc.
+            for (int i = 0; i < 1000; i++)
+                cache.put(i, i);
         }
     }
 
@@ -377,7 +383,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         activeFut.get();
         startFut.get();
 
-        for (int c = 0; c < 2; c++)
+        for (int c = 0; c < DEFAULT_CACHES_COUNT; c++)
             checkCache(ignite(2), CACHE_NAME_PREFIX + c, true);
 
         if (withNewCache) {
@@ -529,7 +535,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         ignite(2).cluster().active(true);
 
-        for (int c = 0; c < 2; c++)
+        for (int c = 0; c < DEFAULT_CACHES_COUNT; c++)
             checkCache(ignite(2), CACHE_NAME_PREFIX + c, true);
 
         if (withNewCache) {
@@ -701,7 +707,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         }
 
         for (int i = 0; i < srvs; i++) {
-            for (int c = 0; c < 2; c++)
+            for (int c = 0; c < DEFAULT_CACHES_COUNT; c++)
                 checkCache(ignite(i), CACHE_NAME_PREFIX + c, true);
         }
 
