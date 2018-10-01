@@ -22,7 +22,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ProgressBarPlugin = require('progress-bar-webpack-plugin');
 
-const eslintFormatter = require('eslint-friendly-formatter');
+const eslintFormatter = require('eslint-formatter-friendly');
 
 const basedir = path.join(__dirname, '../');
 const contentBase = path.join(basedir, 'public');
@@ -53,7 +53,8 @@ const config = {
             app,
             images: path.join(basedir, 'public/images'),
             views: path.join(basedir, 'views')
-        }
+        },
+        extensions: ['.wasm', '.mjs', '.js', '.ts', '.json']
     },
 
     module: {
@@ -79,7 +80,7 @@ const config = {
             },
             { test: /\.worker\.js$/, use: { loader: 'worker-loader' } },
             {
-                test: /\.js$/,
+                test: /\.(js|ts)$/,
                 enforce: 'pre',
                 exclude: [/node_modules/],
                 use: [{
@@ -91,7 +92,7 @@ const config = {
                 }]
             },
             {
-                test: /\.js$/,
+                test: /\.(js|ts)$/,
                 exclude: /node_modules/,
                 use: 'babel-loader'
             },
