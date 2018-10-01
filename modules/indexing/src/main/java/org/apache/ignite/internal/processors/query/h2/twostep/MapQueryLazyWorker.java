@@ -173,7 +173,7 @@ public class MapQueryLazyWorker extends GridWorker {
                         log.warning("Lazy task error", t);
                     }
                 }
-                else
+                else {
                     try {
                         if (!exec.busyLock().enterBusy()) {
                             log.info("Stop lazy worker [key=" + key + ']');
@@ -184,6 +184,7 @@ public class MapQueryLazyWorker extends GridWorker {
                     finally {
                         exec.busyLock().leaveBusy();
                     }
+                }
             }
         }
         finally {
