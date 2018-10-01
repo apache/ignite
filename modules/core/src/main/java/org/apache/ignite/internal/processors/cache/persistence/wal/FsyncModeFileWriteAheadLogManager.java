@@ -41,6 +41,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -719,7 +720,11 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 assert cctx.database().checkpointLockIsHeldByThread();
 
                 if (rolloverType == RolloverType.NEXT_SEGMENT) {
-                    currWrHandle = rollOver(currWrHandle, record);
+                    WALPointer pos = record.position();
+
+                    do {
+                        currWrHandle = rollOver(currWrHandle, record);
+                    } while (Objects.equals(pos, record.position()));
 
                     ptr = record.position();
                 }

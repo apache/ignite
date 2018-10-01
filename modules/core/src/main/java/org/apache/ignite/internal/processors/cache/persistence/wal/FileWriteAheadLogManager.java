@@ -45,6 +45,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -826,7 +827,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 assert cctx.database().checkpointLockIsHeldByThread();
 
                 if (rolloverType == RolloverType.NEXT_SEGMENT) {
-                    currWrHandle = closeBufAndRollover(currWrHandle, rec, rolloverType);
+                    WALPointer pos = rec.position();
+
+                    do {
+                        currWrHandle = closeBufAndRollover(currWrHandle, rec, rolloverType);
+                    } while (Objects.equals(pos, rec.position()));
 
                     ptr = rec.position();
                 }
@@ -880,7 +885,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         FileWriteHandle res = rollOver(currWriteHandle, rolloverType == RolloverType.NEXT_SEGMENT ? rec : null);
 
         if (log != null && log.isInfoEnabled())
-            log.info("Rollover segment [" + idx + " to " + currWriteHandle.getSegmentId() + "], recordType=" + rec.type());
+            log.info("Rollover segment [" + idx + " to " + res.getSegmentId() + "], recordType=" + rec.type());
 
         return res;
     }

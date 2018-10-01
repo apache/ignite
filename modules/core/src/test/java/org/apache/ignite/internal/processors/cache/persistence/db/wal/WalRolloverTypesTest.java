@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -77,7 +78,9 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
                 .setPersistenceEnabled(true)
                 .setMaxSize(20 * 1024 * 1024))
             .setWalMode(walMode)
-            .setWalSegmentSize(4 * 1024 * 1024));
+            .setWalSegmentSize(4 * 1024 * 1024))
+            .setCheckpointSpi(new NoopCheckpointSpi())
+        ;
 
         return cfg;
     }
@@ -132,17 +135,12 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
 
         IgniteWriteAheadLogManager walMgr = ig.context().cache().context().wal();
 
-        // This will ensure initial checkpoint (and rollover) completion.
-        assertTrue(GridTestUtils.waitForCondition(() -> walMgr.lastArchivedSegment() == 0, 10_000));
-
-        // Now current segment is 1.
-
         ig.context().cache().context().database().checkpointReadLock();
 
         try {
             WALPointer ptr = walMgr.log(new AdHocWALRecord(), CURRENT_SEGMENT);
 
-            assertEquals(1, ((FileWALPointer)ptr).index());
+            assertEquals(0, ((FileWALPointer)ptr).index());
         }
         finally {
             ig.context().cache().context().database().checkpointReadUnlock();
@@ -157,17 +155,12 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
 
         IgniteWriteAheadLogManager walMgr = ig.context().cache().context().wal();
 
-        // This will ensure initial checkpoint (and rollover) completion.
-        assertTrue(GridTestUtils.waitForCondition(() -> walMgr.lastArchivedSegment() == 0, 10_000));
-
-        // Now current segment is 1.
-
         ig.context().cache().context().database().checkpointReadLock();
 
         try {
             WALPointer ptr = walMgr.log(new AdHocWALRecord(), NEXT_SEGMENT);
 
-            assertEquals(2, ((FileWALPointer)ptr).index());
+            assertEquals(1, ((FileWALPointer)ptr).index());
         }
         finally {
             ig.context().cache().context().database().checkpointReadUnlock();
@@ -205,7 +198,7 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
                 ThreadLocalRandom random = ThreadLocalRandom.current();
 
                 while (U.currentTimeMillis() - startTime < 30_000)
-                    cache.put(random.nextInt(100_000), random.nextInt(100_000));
+                    cache.put(random.nextInt(100), random.nextInt(100_000));
             },
             8, "cache-put-thread");
 
