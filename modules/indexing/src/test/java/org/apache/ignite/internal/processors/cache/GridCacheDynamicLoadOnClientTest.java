@@ -91,6 +91,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
         createAndFillServerCache();
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
@@ -103,7 +104,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
      * @throws Exception If failure.
      */
     public void testBatchMerge() throws Exception {
-        Connection con = connect(clientNode, null);
+        Connection con = connect(clientNode);
 
         final int BATCH_SIZE = 7;
 
@@ -128,7 +129,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
      * @throws Exception If failure.
      */
     public void testClientJdbcDelete() throws Exception {
-        Connection con = connect(clientNode, null);
+        Connection con = connect(clientNode);
 
         try (Statement stmt = con.createStatement()) {
             int cnt = stmt.executeUpdate(("DELETE " + FULL_TABLE_NAME + " WHERE _key=1"));
@@ -147,7 +148,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
      * @throws Exception If failure.
      */
     public void testClientJdbcInsert() throws Exception {
-        Connection con = connect(clientNode, null);
+        Connection con = connect(clientNode);
 
         try (Statement stmt = con.createStatement()) {
             int cnt = stmt.executeUpdate(
@@ -167,7 +168,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
      * @throws Exception If failure.
      */
     public void testClientJdbcUpdate() throws Exception {
-        Connection con = connect(clientNode, null);
+        Connection con = connect(clientNode);
 
         try (Statement stmt = con.createStatement()) {
             int cnt = stmt.executeUpdate(("UPDATE " + FULL_TABLE_NAME + " SET name = 'new_name'"));
@@ -186,7 +187,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
      * @throws Exception If failure.
      */
     public void testClientJdbc() throws Exception {
-        Connection con = connect(clientNode, null);
+        Connection con = connect(clientNode);
         try (Statement st = con.createStatement()) {
             ResultSet rs = st.executeQuery("SELECT count(*) FROM " + FULL_TABLE_NAME);
 
@@ -262,11 +263,10 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
      * Create SQL connection to node specified as argument
      *
      * @param node Node to connect.
-     * @param params Additional connection parameters
      * @return Connection.
      * @throws SQLException In case of failure.
      */
-    private static Connection connect(IgniteEx node, String params) throws SQLException {
+    private static Connection connect(IgniteEx node) throws SQLException {
         Collection<GridPortRecord> recs = node.context().ports().records();
 
         GridPortRecord cliLsnrRec = null;
@@ -280,9 +280,6 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
         }
 
         String connStr = "jdbc:ignite:thin://127.0.0.1:" + cliLsnrRec.port();
-
-        if (!F.isEmpty(params))
-            connStr += "/?" + params;
 
         return DriverManager.getConnection(connStr);
     }
