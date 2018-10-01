@@ -15,28 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.mem;
+package org.apache.ignite.testsuites;
+
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse;
 
 /**
- * Direct memory provider interface. Not thread-safe.
+ *
  */
-public interface DirectMemoryProvider {
+public class IgnitePdsTestSuite4 extends TestSuite {
     /**
-     * @param chunkSizes Initializes provider with the chunk sizes.
+     * @return Suite.
      */
-    public void initialize(long[] chunkSizes);
+    public static TestSuite suite() {
+        TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite 4");
 
-    /**
-     * Shuts down the provider.
-     *
-     * @param deallocate {@code True} to deallocate memory, {@code false} to allow memory reuse.
-     */
-    public void shutdown(boolean deallocate);
+        suite.addTestSuite(IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse.class);
 
-    /**
-     * Attempts to allocate next memory region. Will return {@code null} if no more regions are available.
-     *
-     * @return Next memory region.
-     */
-    public DirectMemoryRegion nextRegion();
+        return suite;
+    }
 }

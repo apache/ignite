@@ -387,7 +387,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @SuppressWarnings("OverlyStrongTypeCast")
-    @Override public void stop() throws IgniteException {
+    @Override public void stop(boolean deallocate) throws IgniteException {
         if (log.isDebugEnabled())
             log.debug("Stopping page memory.");
 
@@ -398,7 +398,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 seg.close();
         }
 
-        directMemoryProvider.shutdown();
+        directMemoryProvider.shutdown(deallocate);
     }
 
     /** {@inheritDoc} */

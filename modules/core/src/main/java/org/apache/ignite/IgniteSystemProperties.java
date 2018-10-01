@@ -964,6 +964,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_EVICTION_PERMITS = "IGNITE_EVICTION_PERMITS";
 
     /**
+     * Try reuse memory on deactivation. Useful in case of huge page memory region size.
+     */
+    public static final String IGNITE_REUSE_MEMORY_ON_DEACTIVATE = "IGNITE_REUSE_MEMORY_ON_DEACTIVATE";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

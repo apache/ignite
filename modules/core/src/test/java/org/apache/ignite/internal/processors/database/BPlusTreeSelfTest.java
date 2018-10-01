@@ -200,7 +200,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             assertEquals(0, acquiredPages());
         }
         finally {
-            pageMem.stop();
+            pageMem.stop(true);
 
             MAX_PER_PAGE = 0;
             PUT_INC = 1;

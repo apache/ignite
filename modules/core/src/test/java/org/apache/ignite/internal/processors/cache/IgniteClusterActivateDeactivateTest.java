@@ -122,13 +122,13 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
         memCfg.setPageSize(4 * 1024);
         memCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-            .setMaxSize(300 * 1024 * 1024)
+            .setMaxSize(150L * 1024 * 1024)
             .setPersistenceEnabled(persistenceEnabled()));
         memCfg.setWalSegments(2);
         memCfg.setWalSegmentSize(512 * 1024);
 
         memCfg.setDataRegionConfigurations(new DataRegionConfiguration()
-            .setMaxSize(300 * 1024 * 1024)
+            .setMaxSize(150L * 1024 * 1024)
             .setName(NO_PERSISTENCE_REGION)
             .setPersistenceEnabled(false));
 
@@ -136,6 +136,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             memCfg.setWalMode(WALMode.LOG_ONLY);
 
         cfg.setDataStorageConfiguration(memCfg);
+        cfg.setFailureDetectionTimeout(60_000);
 
         if (testSpi) {
             TestRecordingCommunicationSpi spi = new TestRecordingCommunicationSpi();
