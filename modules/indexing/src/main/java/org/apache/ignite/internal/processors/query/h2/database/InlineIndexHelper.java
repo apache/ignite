@@ -19,20 +19,10 @@ package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
@@ -60,19 +50,13 @@ import org.h2.value.ValueUuid;
  * Helper class for in-page indexes.
  */
 public class InlineIndexHelper {
+    /** Value for comparison meaning 'Not enough information to compare'. */
+    public static final int CANT_BE_COMPARE = -2;
+
     private static final Charset CHARSET = StandardCharsets.UTF_8;
 
     /** PageContext for use in IO's */
     private static final ThreadLocal<List<InlineIndexHelper>> currentIndex = new ThreadLocal<>();
-
-    /** Keep max inline size per table. */
-    private static final Map<String, AtomicInteger> maxInlineSizePerTable = new ConcurrentHashMap<>();
-
-    /** Counter of inline size calculation for throttling real invocations. */
-    private static final ThreadLocal<AtomicLong> inlineSizeCalculationCounter = ThreadLocal.withInitial(AtomicLong::new);
-
-    /** How often real invocation of inline size calculation will be skipped. */
-    private static final int THROTTLE_INLINE_SIZE_CALCULATION = 500;
 
     /** */
     public static final List<Integer> AVAILABLE_TYPES = Arrays.asList(
@@ -95,9 +79,6 @@ public class InlineIndexHelper {
     );
 
     /** */
-    private final String tblName;
-
-    /** */
     private final String colName;
 
     /** */
@@ -118,22 +99,16 @@ public class InlineIndexHelper {
     /** */
     private final boolean compareStringsOptimized;
 
-    /** */
-    private final IgniteLogger log;
-
     /**
-     * @param tblName Table name.
      * @param colName Column name.
      * @param type Index type (see {@link Value}).
      * @param colIdx Index column index.
      * @param sortType Column sort type (see {@link IndexColumn#sortType}).
      * @param compareMode Compare mode.
-     * @param ctx Kernal context.
      */
-    public InlineIndexHelper(String tblName, String colName, int type, int colIdx, int sortType,
-        CompareMode compareMode, GridKernalContext ctx) {
+    public InlineIndexHelper(String colName, int type, int colIdx, int sortType,
+        CompareMode compareMode) {
 
-        this.tblName = tblName;
         this.colName = colName;
         this.type = type;
         this.colIdx = colIdx;
@@ -144,8 +119,6 @@ public class InlineIndexHelper {
         // Optimized strings comparison can be used only if there are no custom collators.
         // H2 internal comparison will be used otherwise (may be slower).
         this.compareStringsOptimized = CompareMode.OFF.equals(compareMode.getName());
-
-        log = ctx != null ? ctx.log(getClass()) : null;
 
         switch (type) {
             case Value.BOOLEAN:
@@ -200,6 +173,13 @@ public class InlineIndexHelper {
             default:
                 throw new UnsupportedOperationException("no get operation for fast index type " + type);
         }
+    }
+
+    /**
+     * @return Column name
+     */
+    public String colName() {
+        return colName;
     }
 
     /**
@@ -385,7 +365,7 @@ public class InlineIndexHelper {
      * @param maxSize Maximum size to read.
      * @param v Value to compare.
      * @param comp Comparator.
-     * @return Compare result (-2 means we can't compare).
+     * @return Compare result ( {@code CANT_BE_COMPARE} means we can't compare).
      */
     public int compare(long pageAddr, int off, int maxSize, Value v, Comparator<Value> comp) {
         int c = tryCompareOptimized(pageAddr, off, maxSize, v);
@@ -396,7 +376,7 @@ public class InlineIndexHelper {
         Value v1 = get(pageAddr, off, maxSize);
 
         if (v1 == null)
-            return -2;
+            return CANT_BE_COMPARE;
 
         c = Integer.signum(comp.compare(v1, v));
 
@@ -406,7 +386,7 @@ public class InlineIndexHelper {
         if (isValueFull(pageAddr, off) || canRelyOnCompare(c, v1, v))
             return fixSort(c, sortType());
 
-        return -2;
+        return CANT_BE_COMPARE;
     }
 
     /**
@@ -414,7 +394,7 @@ public class InlineIndexHelper {
      * @param off Offset.
      * @param maxSize Maximum size to read.
      * @param v Value to compare.
-     * @return Compare result ({@code Integer.MIN_VALUE} means unsupported operation; {@code -2} - can't compare).
+     * @return Compare result ({@code Integer.MIN_VALUE} means unsupported operation; {@code CANT_BE_COMPARE} - can't compare).
      */
     private int tryCompareOptimized(long pageAddr, int off, int maxSize, Value v) {
         int type;
@@ -422,7 +402,7 @@ public class InlineIndexHelper {
         if ((size > 0 && size + 1 > maxSize)
                 || maxSize < 1
                 || (type = PageUtils.getByte(pageAddr, off)) == Value.UNKNOWN)
-            return -2;
+            return CANT_BE_COMPARE;
 
         if (type == Value.NULL)
             return Integer.MIN_VALUE;
@@ -606,7 +586,7 @@ public class InlineIndexHelper {
      * @param pageAddr Page address.
      * @param off Offset.
      * @param v Value to compare.
-     * @return Compare result ({@code -2} means we can't compare).
+     * @return Compare result ({@code CANT_BE_COMPARE} means we can't compare).
      */
     private int compareAsBytes(long pageAddr, int off, Value v) {
         byte[] bytes = v.getBytesNoCopy();
@@ -658,7 +638,7 @@ public class InlineIndexHelper {
             // b) Even truncated current value is longer, so that it's bigger.
             return fixSort(1, sortType());
 
-        return -2;
+        return CANT_BE_COMPARE;
     }
 
     /**
@@ -666,7 +646,7 @@ public class InlineIndexHelper {
      * @param off Offset.
      * @param v Value to compare.
      * @param ignoreCase {@code True} if a case-insensitive comparison should be used.
-     * @return Compare result ({@code -2} means we can't compare).
+     * @return Compare result ({@code CANT_BE_COMPARE} means we can't compare).
      */
     private int compareAsString(long pageAddr, int off, Value v, boolean ignoreCase) {
         String s = v.getString();
@@ -833,7 +813,7 @@ public class InlineIndexHelper {
             // b) Even truncated current value is longer, so that it's bigger.
             return fixSort(1, sortType());
 
-        return -2;
+        return CANT_BE_COMPARE;
     }
 
     /**
@@ -1094,65 +1074,62 @@ public class InlineIndexHelper {
         return sortType == SortOrder.ASCENDING ? c : -c;
     }
 
-
-    /**
-     * Calculate aggregate inline size for given indexes and log recomendation in case calculated size more than given
-     * payloadSize.
-     *
-     * @param inlineIdxs List of inline indexes.
-     * @param row Grid H2 row related to given inline indexes.
-     * @param maxPayloadSize Max size to keep all inline indexes.
-     */
-    public static void checkInlineSizeFit(List<InlineIndexHelper> inlineIdxs, GridH2SearchRow row, int maxPayloadSize) {
-        boolean throttle = inlineSizeCalculationCounter.get().incrementAndGet() % THROTTLE_INLINE_SIZE_CALCULATION != 0;
-
-        if (throttle)
-            return;
-
-        int fullSize = 0;
-
-        InlineIndexHelper idx = null;
-
-        List<String> colNames = new ArrayList<>();
-
-        for (InlineIndexHelper index : inlineIdxs) {
-            idx = index;
-
-            fullSize += index.inlineSizeOf(row.getValue(index.columnIndex()));
-
-            colNames.add(index.colName);
+    public static String nameTypeBycode(int typeCode) {
+        switch (typeCode) {
+            case Value.UNKNOWN:
+                return "UNKNOWN";
+            case Value.NULL:
+                return "NULL";
+            case Value.BOOLEAN:
+                return "BOOLEAN";
+            case Value.BYTE:
+                return "BYTE";
+            case Value.SHORT:
+                return "SHORT";
+            case Value.INT:
+                return "INT";
+            case Value.LONG:
+                return "LONG";
+            case Value.DECIMAL:
+                return "DECIMAL";
+            case Value.DOUBLE:
+                return "DOUBLE";
+            case Value.FLOAT:
+                return "FLOAT";
+            case Value.TIME:
+                return "TIME";
+            case Value.DATE:
+                return "DATE";
+            case Value.TIMESTAMP:
+                return "TIMESTAMP";
+            case Value.BYTES:
+                return "BYTES";
+            case Value.STRING:
+                return "STRING";
+            case Value.STRING_IGNORECASE:
+                return "STRING_IGNORECASE";
+            case Value.BLOB:
+                return "BLOB";
+            case Value.CLOB:
+                return "CLOB";
+            case Value.ARRAY:
+                return "ARRAY";
+            case Value.RESULT_SET:
+                return "RESULT_SET";
+            case Value.JAVA_OBJECT:
+                return "JAVA_OBJECT";
+            case Value.UUID:
+                return "UUID";
+            case Value.STRING_FIXED:
+                return "STRING_FIXED";
+            case Value.GEOMETRY:
+                return "GEOMETRY";
+            case Value.TIMESTAMP_TZ:
+                return "TIMESTAMP_TZ";
+            case Value.ENUM:
+                return "ENUM";
+            default:
+                return "UNKNOWN type " + typeCode;
         }
-
-        if (idx != null && fullSize > maxPayloadSize) {
-            AtomicInteger currMaxSize = maxInlineSizePerTable.computeIfAbsent(idx.tblName, t -> new AtomicInteger());
-
-            final int newSize = fullSize;
-
-            int prevSize = currMaxSize.getAndUpdate(prev -> Math.max(prev, newSize));
-
-            if (newSize > prevSize)
-                idx.warnNotFitIndex(newSize, colNames);
-        }
-    }
-
-    /**
-     * Log recomendation to increase inline index size.
-     *
-     * @param recomendedSize recommended size for inline index.
-     * @param colNames Names of columns related to index.
-     */
-    private void warnNotFitIndex(int recomendedSize, List<String> colNames) {
-        String cols = colNames.stream().collect(Collectors.joining(", ", "(", ")"));
-
-        String warn = "Inline index size is not enough to keep all indexed column for " + tblName + cols +
-            ". It can lead to performance degradation." +
-            " To increase inline Index size for primary and affinity columns need to set ENV property " +
-            IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE +
-            " (Be aware it will use by default for all inline indexes without explicit setting of inline size)." +
-            " For secondary indexes column use explicit settings by CACHE API or SQL CREATE INDEX syntax." +
-            " Calculated inline index size is " + recomendedSize;
-
-        if(log != null)
-            log.warning(warn);
     }
 }

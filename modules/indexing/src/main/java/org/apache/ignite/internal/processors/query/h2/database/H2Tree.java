@@ -17,10 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.h2.database;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
@@ -42,6 +48,8 @@ import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.query.h2.database.InlineIndexHelper.CANT_BE_COMPARE;
 
 /**
  */
@@ -65,6 +73,18 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     private final boolean mvccEnabled;
 
     /** */
+    private final boolean pk;
+
+    /** */
+    private final boolean affinityKey;
+
+    /** */
+    private final String cacheName;
+
+    /** */
+    private final String idxName;
+
+    /** */
     private final Comparator<Value> comp = new Comparator<Value>() {
         @Override public int compare(Value o1, Value o2) {
             return compareValues(o1, o2);
@@ -74,10 +94,24 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     /** Row cache. */
     private final H2RowCache rowCache;
 
+    /** How often real invocation of inline size calculation will be skipped. */
+    private static final int THROTTLE_INLINE_SIZE_CALCULATION = 500;
+
+    /** Counter of inline size calculation for throttling real invocations. */
+    private final ThreadLocal<AtomicLong> inlineSizeCalculationCounter = ThreadLocal.withInitial(AtomicLong::new);
+
+    /** Keep max calculated inline size for current index. */
+    private final AtomicInteger maxCalculatedInlineSize;
+
+    /** */
+    private final IgniteLogger log;
+
     /**
      * Constructor.
      *
      * @param name Tree name.
+     * @param idxName Name of index.
+     * @param cacheName Cache name.
      * @param reuseList Reuse list.
      * @param grpId Cache group ID.
      * @param pageMem Page memory.
@@ -86,12 +120,17 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      * @param metaPageId Meta page ID.
      * @param initNew Initialize new index.
      * @param rowCache Row cache.
+     * @param pk {@code true} for primary key.
+     * @param affinityKey {@code true} for affinity key.
      * @param mvccEnabled Mvcc flag.
      * @param failureProcessor if the tree is corrupted.
+     * @param log Logger.
      * @throws IgniteCheckedException If failed.
      */
     protected H2Tree(
         String name,
+        String idxName,
+        String cacheName,
         ReuseList reuseList,
         int grpId,
         PageMemory pageMem,
@@ -103,9 +142,13 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         IndexColumn[] cols,
         List<InlineIndexHelper> inlineIdxs,
         int inlineSize,
+        AtomicInteger maxCalculatedInlineSize,
+        boolean pk,
+        boolean affinityKey,
         boolean mvccEnabled,
         @Nullable H2RowCache rowCache,
-        @Nullable FailureProcessor failureProcessor
+        @Nullable FailureProcessor failureProcessor,
+        IgniteLogger log
     ) throws IgniteCheckedException {
         super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList, failureProcessor);
 
@@ -114,7 +157,15 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
             inlineSize = getMetaInlineSize();
         }
 
+        this.idxName = idxName;
+        this.cacheName = cacheName;
+
         this.inlineSize = inlineSize;
+        this.maxCalculatedInlineSize = maxCalculatedInlineSize;
+
+        this.pk = pk;
+        this.affinityKey = affinityKey;
+
         this.mvccEnabled = mvccEnabled;
 
         assert rowStore != null;
@@ -131,6 +182,8 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         setIos(H2ExtrasInnerIO.getVersions(inlineSize, mvccEnabled), H2ExtrasLeafIO.getVersions(inlineSize, mvccEnabled));
 
         this.rowCache = rowCache;
+
+        this.log = log;
 
         initTree(initNew, inlineSize);
     }
@@ -228,6 +281,8 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override protected int compare(BPlusIO<GridH2SearchRow> io, long pageAddr, int idx,
         GridH2SearchRow row) throws IgniteCheckedException {
+        inlineSizeRecomendation(row);
+
         if (inlineSize() == 0)
             return compareRows(getRow(io, pageAddr, idx), row);
         else {
@@ -247,7 +302,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
 
                 int c = inlineIdx.compare(pageAddr, off + fieldOff, inlineSize() - fieldOff, v2, comp);
 
-                if (c == -2)
+                if (c == CANT_BE_COMPARE)
                     break;
 
                 lastIdxUsed++;
@@ -359,6 +414,84 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
             return c;
 
         return -Long.compare(r1.mvccCounter(), r2.mvccCounter());
+    }
+
+    /**
+     * Calculate aggregate inline size for given indexes and log recommendation in case calculated size more than
+     * current inline size.
+     *
+     * @param row Grid H2 row related to given inline indexes.
+     */
+    private void inlineSizeRecomendation(SearchRow row) {
+        //Do the check only for put operations.
+        if(!(row instanceof GridH2KeyValueRowOnheap))
+            return;
+
+        boolean throttle = inlineSizeCalculationCounter.get().incrementAndGet() % THROTTLE_INLINE_SIZE_CALCULATION != 0;
+
+        if (throttle)
+            return;
+
+        String typeOfIdx = pk ? " (Primary Key) " : affinityKey ? " (Affinity Key) " : " (Secondary) ";
+
+        //Special case when for PK or Affinity key use only unsupported inline index types (e.g. complex java object).
+        if (inlineIdxs.isEmpty()) {
+            assert pk || affinityKey;
+
+            if (maxCalculatedInlineSize.get() == 0) {
+                maxCalculatedInlineSize.set(-1);
+
+                String colNames = Stream.of(cols).map(col -> col.columnName).collect(Collectors.joining(", ", "(", ")"));
+
+                String warn = "Inline index can't be used at all for index " + idxName +
+                    typeOfIdx + " created for " + cacheName + colNames +
+                    ". It can lead to performance degradation." +
+                    " To avoid it please use only supported types for index columns And set non zero inline size for the index." +
+                    " For set up inline index size for primary and affinity columns by set ENV property " +
+                    IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE +
+                    " (Be aware it will use by default for all inline indexes without explicit setting of inline size)." +
+                    " For secondary indexes column use explicit settings by CACHE API or SQL CREATE INDEX syntax.";
+
+                log.warning(warn);
+            }
+
+            return;
+        }
+
+        int fullSize = 0;
+
+        InlineIndexHelper idx;
+
+        List<String> colNames = new ArrayList<>();
+
+        for (InlineIndexHelper index : inlineIdxs) {
+            idx = index;
+
+            fullSize += idx.inlineSizeOf(row.getValue(idx.columnIndex()));
+
+            colNames.add(index.colName());
+        }
+
+        if (fullSize > inlineSize()) {
+            final int recomendedSize = fullSize;
+
+            int prevSize = maxCalculatedInlineSize.getAndUpdate(prev -> Math.max(prev, recomendedSize));
+
+            if (recomendedSize > prevSize) {
+                String cols = colNames.stream().collect(Collectors.joining(", ", "(", ")"));
+
+                String warn = "Inline index size is not enough to keep all indexed column for " + idxName + typeOfIdx +
+                    " index created for " + cacheName + cols +
+                    ". It can lead to performance degradation." +
+                    " To increase inline Index size for primary and affinity columns need to set ENV property " +
+                    IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE +
+                    " (Be aware it will use by default for all inline indexes without explicit setting of inline size)." +
+                    " For secondary indexes column use explicit settings by CACHE API or SQL CREATE INDEX syntax." +
+                    " Calculated inline index size is " + recomendedSize;
+
+                log.warning(warn);
+            }
+        }
     }
 
     /**

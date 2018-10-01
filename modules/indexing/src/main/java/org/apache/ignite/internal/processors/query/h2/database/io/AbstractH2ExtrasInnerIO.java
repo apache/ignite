@@ -106,8 +106,6 @@ public abstract class AbstractH2ExtrasInnerIO extends BPlusInnerIO<GridH2SearchR
 
         assert inlineIdxs != null : "no inline index helpers";
 
-        InlineIndexHelper.checkInlineSizeFit(inlineIdxs, row, payloadSize);
-
         int fieldOff = 0;
 
         for (int i = 0; i < inlineIdxs.size(); i++) {
