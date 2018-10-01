@@ -119,17 +119,19 @@ public interface MvccProcessor extends GridProcessor {
     /**
      * @param ver Version.
      * @param state State.
+     * @param tx Transaction.
      * @throws IgniteCheckedException If fails;
      */
-    void updateState(MvccVersion ver, byte state) throws IgniteCheckedException;
+    void updateState(MvccVersion ver, byte state, IgniteInternalTx tx) throws IgniteCheckedException;
 
     /**
      * @param ver Version.
      * @param state State.
      * @param primary Flag if this is primary node.
+     * @param tx Transaction.
      * @throws IgniteCheckedException If fails;
      */
-    void updateState(MvccVersion ver, byte state, boolean primary) throws IgniteCheckedException;
+    void updateState(MvccVersion ver, byte state, boolean primary, IgniteInternalTx tx) throws IgniteCheckedException;
 
     /**
      * @param crd Mvcc coordinator version.

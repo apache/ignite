@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -44,6 +45,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_BACKUP;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
 
@@ -53,7 +55,8 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
  */
 public class MvccTransactionEnlistCachingManager extends GridCacheSharedManagerAdapter {
     /** Maximum possible transaction size when caching is enabled. */
-    private static final int TX_SIZE_THRESHOLD = 20_000;
+    public static final int TX_SIZE_THRESHOLD = IgniteSystemProperties.getInteger(IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD,
+        20_000);
 
     /** Cached enlist values*/
     private final Map<GridCacheVersion, EnlistBuffer> enlistCache = new ConcurrentHashMap<>();
@@ -97,8 +100,10 @@ public class MvccTransactionEnlistCachingManager extends GridCacheSharedManagerA
 
         GridCacheContext ctx0 = cctx.cacheContext(cacheId);
 
-        // Do not cache updates if no DR or CQ enabled.
-        if (!needDrReplicate(ctx0, key) && F.isEmpty(continuousQueryListeners(ctx0, tx, key)))
+        // Do not cache updates if there is no DR or CQ enabled.
+        if (!needDrReplicate(ctx0, key) &&
+            F.isEmpty(continuousQueryListeners(ctx0, tx, key)) &&
+            !ctx0.group().hasContinuousQueryCaches())
             return;
 
         AtomicInteger cntr = cntrs.computeIfAbsent(new TxKey(mvccVer.coordinatorVersion(), mvccVer.counter()),
@@ -120,7 +125,7 @@ public class MvccTransactionEnlistCachingManager extends GridCacheSharedManagerA
      * @param tx Transaction.
      * @param commit {@code True} if commit.
      */
-    public void onTxFinished(IgniteInternalTx tx, boolean commit) {
+    public void onTxFinished(IgniteInternalTx tx, boolean commit) throws IgniteCheckedException {
         if (tx.system() || tx.internal() || tx.mvccSnapshot() == null)
             return;
 
@@ -179,15 +184,15 @@ public class MvccTransactionEnlistCachingManager extends GridCacheSharedManagerA
 
             e.updateCounter(resCntr);
 
+            if (ctx0.group().sharedGroup()) {
+                ctx0.group().onPartitionCounterUpdate(ctx0.cacheId(), e.key().partition(), resCntr,
+                    tx.topologyVersion(), tx.local());
+            }
+
             // DR
             if (ctx0.isDrEnabled()) {
-                try {
-                    ctx0.dr().replicate(e.key(), e.value(), e.ttl(), e.expireTime(), e.version(),
-                        tx.local() ? DR_PRIMARY : DR_BACKUP, e.topologyVersion());
-                }
-                catch (IgniteCheckedException ex) {
-                    log.error("Failed to replicate entry [entry=" + e + ']', ex);
-                }
+                ctx0.dr().replicate(e.key(), e.value(), e.ttl(), e.expireTime(), e.version(),
+                    tx.local() ? DR_PRIMARY : DR_BACKUP, e.topologyVersion());
             }
 
             // CQ
@@ -200,23 +205,18 @@ public class MvccTransactionEnlistCachingManager extends GridCacheSharedManagerA
                     Map<UUID, CacheContinuousQueryListener> lsnrCol = continuousQueryListeners(ctx0, tx, e.key());
 
                     if (!F.isEmpty(lsnrCol)) {
-                        try {
-                            contQryMgr.onEntryUpdated(
-                                lsnrCol,
-                                e.key(),
-                                e.value(),
-                                e.oldValue(),
-                                false,
-                                e.key().partition(),
-                                tx.local(),
-                                false,
-                                e.updateCounter(),
-                                null,
-                                e.topologyVersion());
-                        }
-                        catch (IgniteCheckedException ex) {
-                            log.error("Failed to notify listeners [entry=" + e + ']', ex);
-                        }
+                        contQryMgr.onEntryUpdated(
+                            lsnrCol,
+                            e.key(),
+                            e.value(),
+                            e.oldValue(),
+                            false,
+                            e.key().partition(),
+                            tx.local(),
+                            false,
+                            e.updateCounter(),
+                            null,
+                            e.topologyVersion());
                     }
                 }
                 finally {
@@ -292,7 +292,7 @@ public class MvccTransactionEnlistCachingManager extends GridCacheSharedManagerA
                 if (prev != null && prev.oldValue() != null)
                     e.oldValue(prev.oldValue());
             }
-            else { // batchNum == 0 means no reordering (e.g. this is a primary node).
+            else { // batchNum == -1 means no reordering (e.g. this is a primary node).
                 assert batchNum == -1;
 
                 MvccTxEnlistEntry prev = cached.put(key, e);

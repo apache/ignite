@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -77,10 +78,19 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
         else {
             CacheConfiguration ccfg = defaultCacheConfiguration();
 
+            ccfg.setAtomicityMode(atomicityMode());
+
             cfg.setCacheConfiguration(ccfg);
         }
 
         return cfg;
+    }
+
+    /**
+     * @return Transaction snapshot.
+     */
+    protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL;
     }
 
     /**

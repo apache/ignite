@@ -840,8 +840,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     finally {
                         cctx.database().checkpointReadUnlock();
 
-                        cctx.mvccCaching().onTxFinished(this, state() == COMMITTING && err == null);
-
                         if (wrapper != null)
                             wrapper.initialize(ret);
                     }
@@ -933,8 +931,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** {@inheritDoc} */
     @Override public final void rollbackRemoteTx() {
         try {
-            cctx.mvccCaching().onTxFinished(this, false);
-
             // Note that we don't evict near entries here -
             // they will be deleted by their corresponding transactions.
             if (state(ROLLING_BACK) || state() == UNKNOWN) {

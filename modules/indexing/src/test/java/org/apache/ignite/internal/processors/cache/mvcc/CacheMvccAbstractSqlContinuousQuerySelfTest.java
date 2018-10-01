@@ -14,38 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.mvcc;
 
-package org.apache.ignite.internal.processors.cache.query.continuous;
-
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryAbstractSelfTest;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
 /**
- *
+ * Base class for MVCC continuous queries.
  */
-public class CacheKeepBinaryIterationNearEnabledTest extends CacheKeepBinaryIterationTest {
+public abstract class CacheMvccAbstractSqlContinuousQuerySelfTest extends CacheMvccAbstractContinuousQuerySelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration<Object, Object> cacheConfiguration(
-        CacheMode cacheMode,
-        int backups,
-        CacheAtomicityMode atomicityMode) {
-        CacheConfiguration<Object, Object> ccfg =
-            super.cacheConfiguration(cacheMode, backups, atomicityMode);
-
-        ccfg.setNearConfiguration(new NearCacheConfiguration<>());
-
-        return ccfg;
+    @Override protected void cachePut(IgniteCache cache, Integer key, Integer val) {
+        cache.query(new SqlFieldsQuery("MERGE INTO Integer (_key, _val) values (" + key + ',' + val + ')')).getAll();
     }
 
     /** {@inheritDoc} */
-    @Override public void testMvccTxOnHeap() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testMvccTxOnHeapLocalEntries() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+    @Override protected void cacheRemove(IgniteCache  cache, Integer key) {
+        cache.query(new SqlFieldsQuery("DELETE FROM Integer WHERE _key=" + key)).getAll();
     }
 }

@@ -100,11 +100,11 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     /** Whether tx has overridden it's own update. */
     private static final int OWN_VALUE_OVERRIDDEN = DELETED << 1;
 
-    /** Whether need to remember old value. */
-    private static final int NEED_OLD = OWN_VALUE_OVERRIDDEN << 1;
-    //TODO one flag needed
-    /** Force read full entry instead of header only.  */
-    private static final int NEED_PREV_VALUE = OWN_VALUE_OVERRIDDEN << 1;
+    /** Whether need to remember old value. Old value == value before tx started. */
+    private static final int NEED_OLD_VALUE = OWN_VALUE_OVERRIDDEN << 1;
+
+    /** Force read full entry instead of header only. Prev value == value on previous tx step. */
+    private static final int NEED_PREV_VALUE = NEED_OLD_VALUE << 1;
 
     /** */
     @GridToStringExclude
@@ -125,6 +125,9 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
     /** */
     private CacheDataRow oldRow;
+
+    /** */
+    private CacheObject oldVal;
 
     /** */
     @GridToStringExclude
@@ -203,7 +206,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
             flags |= FAST_UPDATE;
 
         if (needOldVal)
-            flags |= NEED_OLD;
+            flags |= NEED_OLD_VALUE;
 
         if(needPrevValue)
             flags |= NEED_PREV_VALUE;
@@ -238,8 +241,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
             }
         }
 
-        MvccDataRow row = (MvccDataRow)tree.getRow(io, pageAddr, idx,
-            isFlagsSet(NEED_OLD | FIRST) ? RowData.NO_KEY : RowData.LINK_WITH_HEADER);
+        MvccDataRow row = (MvccDataRow)tree.getRow(io, pageAddr, idx, RowData.LINK_WITH_HEADER);
 
         // Check whether the row was updated by current transaction.
         // In this case the row is already locked by current transaction and visible to it.
@@ -335,8 +337,14 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
                         // Actually, full row can be omitted for replace(k,newval) and putIfAbsent, but
                         // operation context is not available here and full row required if filter is set.
-                        if( (isFlagsSet(NEED_PREV_VALUE) || filter != null))
-                            oldRow = tree.getRow(io, pageAddr, idx, RowData.FULL);
+                        if((isFlagsSet(NEED_PREV_VALUE) || filter != null || isFlagsSet(FIRST | NEED_OLD_VALUE))) {
+                            oldRow = tree.getRow(io, pageAddr, idx, RowData.NO_KEY);
+
+                            oldRow.key(key);
+
+                            if (isFlagsSet(FIRST | NEED_OLD_VALUE))
+                                oldVal = oldRow.value();
+                        }
                         else
                             oldRow = row;
                     }
@@ -562,7 +570,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
     /** {@inheritDoc} */
     @Override public CacheObject oldValue() {
-        return  null; //TODO!!!
+        return oldVal;
     }
 
     /** {@inheritDoc} */

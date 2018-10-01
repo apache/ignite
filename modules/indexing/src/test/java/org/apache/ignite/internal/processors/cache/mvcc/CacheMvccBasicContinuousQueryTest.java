@@ -20,8 +20,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import javax.cache.Cache;
+import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
@@ -41,6 +43,7 @@ import org.apache.ignite.transactions.Transaction;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccTransactionEnlistCachingManager.TX_SIZE_THRESHOLD;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -188,5 +191,40 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
             assertEquals(1, vals.size());
             assertEquals(3, (int)vals.get(0));
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCachingMaxSize() throws Exception {
+        Ignite node = startGrids(1);
+
+        final IgniteCache cache = node.createCache(
+            cacheConfiguration(cacheMode(), FULL_SYNC, 1, 2)
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setIndexedTypes(Integer.class, Integer.class));
+
+        ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
+
+        qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+                // No-op.
+            }
+        });
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache.query(qry)) {
+                    try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        for (int i = 0; i < TX_SIZE_THRESHOLD + 1; i++)
+                            cache.query(new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (" + i + ", 1)")).getAll();
+
+                        tx.commit();
+                    }
+                }
+
+                return null;
+            }
+        },  CacheException.class, "Failed to run update. Transaction is too large. Consider reducing transaction size");
     }
 }

@@ -1178,7 +1178,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                         try {
                             if (!cctx.localNode().isClient()) {
                                 if (dht() && remote())
-                                    cctx.coordinators().updateState(mvccSnapshot, txState, false);
+                                    cctx.coordinators().updateState(mvccSnapshot, txState, false, this);
                                 else if (local()) {
                                     IgniteInternalFuture<?> rollbackFut = rollbackFuture();
 
@@ -1186,13 +1186,15 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                                         rollbackFut == null || rollbackFut.isDone();
 
                                     if (syncUpdate)
-                                        cctx.coordinators().updateState(mvccSnapshot, txState);
+                                        cctx.coordinators().updateState(mvccSnapshot, txState, this);
                                     else {
+                                        final IgniteInternalTx self = this;
+
                                         // If tx was aborted, we need to wait tx log is updated on all backups.
                                         rollbackFut.listen(new IgniteInClosure<IgniteInternalFuture>() {
                                             @Override public void apply(IgniteInternalFuture fut) {
                                                 try {
-                                                    cctx.coordinators().updateState(mvccSnapshot, txState);
+                                                    cctx.coordinators().updateState(mvccSnapshot, txState, self);
                                                 }
                                                 catch (IgniteCheckedException e) {
                                                     U.error(log, "Failed to log TxState: " + txState, e);

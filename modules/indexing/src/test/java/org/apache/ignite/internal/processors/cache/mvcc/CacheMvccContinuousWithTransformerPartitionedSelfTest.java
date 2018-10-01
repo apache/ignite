@@ -14,38 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.ignite.internal.processors.cache.query.continuous;
+package org.apache.ignite.internal.processors.cache.mvcc;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousWithTransformerReplicatedSelfTest;
 
 /**
  *
  */
-public class CacheKeepBinaryIterationNearEnabledTest extends CacheKeepBinaryIterationTest {
+public class CacheMvccContinuousWithTransformerPartitionedSelfTest extends CacheContinuousWithTransformerReplicatedSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration<Object, Object> cacheConfiguration(
-        CacheMode cacheMode,
-        int backups,
-        CacheAtomicityMode atomicityMode) {
-        CacheConfiguration<Object, Object> ccfg =
-            super.cacheConfiguration(cacheMode, backups, atomicityMode);
-
-        ccfg.setNearConfiguration(new NearCacheConfiguration<>());
-
-        return ccfg;
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
     }
 
     /** {@inheritDoc} */
-    @Override public void testMvccTxOnHeap() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.PARTITIONED;
     }
 
     /** {@inheritDoc} */
-    @Override public void testMvccTxOnHeapLocalEntries() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+    @Override public void testExpired() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7311");
     }
 }
+

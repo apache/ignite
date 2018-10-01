@@ -989,6 +989,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT = "IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT";
 
     /**
+     * Maximum number for cached MVCC transaction updates. This caching is used for continuous query with MVCC caches.
+     */
+    public static final String IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD = "IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
