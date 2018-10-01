@@ -359,8 +359,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Future that will be done when stored cache configurations from metastore were read. */
     private final GridFutureAdapter<Map<String, StoredCacheData>> readStoredCacheConfigFut = new GridFutureAdapter<>();
 
+    /** Map of futures that will be done, when new stored caches configuration were write to metastore. */
     private final Map<CacheConfiguration<?,?>,IgniteInternalFuture<?>> saveCacheConfigurationFuts = new ConcurrentHashMap<>();
 
+    /** Barrier for notification that metasore ready for write. */
     private final CountDownLatch metaStorageReadyForWriteLatch = new CountDownLatch(1);
 
     /**
@@ -878,7 +880,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             notifyMetastorageReadyForReadWrite();
 
-            waitNewCacheConfigurationsArePersisted();
+            waitNewCachesConfigurationAreSaved();
 
             for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
                 lsnr.afterMemoryRestore(this);
@@ -1568,20 +1570,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * Method waits for new cache configurations persisting to disk.
      */
-    private void waitNewCacheConfigurationsArePersisted() {
+    private void waitNewCachesConfigurationAreSaved() {
         try {
             for (Map.Entry<CacheConfiguration<?, ?>, IgniteInternalFuture<?>> e : saveCacheConfigurationFuts.entrySet()) {
                 if (!e.getValue().isDone()) {
-                    final int timeout = 10_000;
+                    final long timeout = 10_000L;
+
                     while(true) {
                         try {
                             e.getValue().get(timeout, TimeUnit.SECONDS);
+
                             break;
                         }
                         catch (IgniteFutureTimeoutCheckedException te) {
                             log.warning("Failed to wait for cache configuration saving within timeout. " +
-                                "Probably disk is too busy or slow." +
-                                "[caches=" + e.getKey() + "]");
+                                "Probably disk is too busy or slow. [caches=" + e.getKey() + "]");
                         }
                     }
                 }
