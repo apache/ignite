@@ -41,5 +41,4 @@ public class GridCacheDynamicLoadOnClientPersistentTest extends GridCacheDynamic
 
         return cfg;
     }
-
 }
