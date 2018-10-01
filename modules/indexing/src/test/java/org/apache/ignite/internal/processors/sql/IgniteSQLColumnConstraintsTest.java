@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.sql;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -39,13 +38,31 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
 
         execSQL("INSERT INTO varchar_table VALUES(?, ?)", 1, "12345");
 
+        compareSqlResult("SELECT * FROM varchar_table WHERE id = ?", 1, "12345");
+
         execSQL("CREATE TABLE decimal_table(id INT PRIMARY KEY, val DECIMAL(4, 2))");
 
         execSQL("INSERT INTO decimal_table VALUES(?, ?)", 1, 12.34);
 
+        compareSqlResult("SELECT * FROM decimal_table WHERE id = ?", 1, BigDecimal.valueOf(12.34));
+
         execSQL("CREATE TABLE char_table(id INT PRIMARY KEY, str CHAR(5))");
 
         execSQL("INSERT INTO char_table VALUES(?, ?)", 1, "12345");
+
+        compareSqlResult("SELECT * FROM char_table WHERE id = ?", 1, "12345");
+
+        execSQL("CREATE TABLE decimal_table_4(id INT PRIMARY KEY, field DECIMAL(4, 2))");
+
+        execSQL("CREATE TABLE char_table_2(id INT PRIMARY KEY, field INTEGER)");
+
+        execSQL("CREATE TABLE decimal_table_2(id INT PRIMARY KEY, field INTEGER)");
+
+        execSQL("CREATE TABLE char_table_3(id INT PRIMARY KEY, field CHAR(5), field2 INTEGER)");
+
+        execSQL("CREATE TABLE decimal_table_3(id INT PRIMARY KEY, field DECIMAL(4, 2), field2 INTEGER)");
+
+        execSQL("CREATE TABLE char_table_4(id INT PRIMARY KEY, field CHAR(5))");
     }
 
     /**
@@ -75,9 +92,13 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
     public void testInsertTooLongDecimal() throws Exception {
         checkSQLThrows("INSERT INTO decimal_table VALUES(?, ?)", CONSTRAINT_VIOLATION, 2, 123.45);
 
+        assertTrue(execSQL("SELECT * FROM  decimal_table WHERE id = ?", 2).isEmpty());
+
         checkSQLThrows("UPDATE decimal_table SET val = ? WHERE id = ?", CONSTRAINT_VIOLATION, 123.45, 1);
 
         checkSQLThrows("MERGE INTO decimal_table(id, val) VALUES(?, ?)", CONSTRAINT_VIOLATION, 1, 123.45);
+
+        compareSqlResult("SELECT * FROM decimal_table WHERE id = ?", 1, BigDecimal.valueOf(12.34));
     }
 
     /**
@@ -86,9 +107,13 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
     public void testInsertTooLongScaleDecimal() throws Exception {
         checkSQLThrows("INSERT INTO decimal_table VALUES(?, ?)", CONSTRAINT_VIOLATION, 3, 1.234);
 
+        assertTrue(execSQL("SELECT * FROM  decimal_table WHERE id = ?", 3).isEmpty());
+
         checkSQLThrows("UPDATE decimal_table SET val = ? WHERE id = ?", CONSTRAINT_VIOLATION, 1.234, 1);
 
         checkSQLThrows("MERGE INTO decimal_table(id, val) VALUES(?, ?)", CONSTRAINT_VIOLATION, 1, 1.234);
+
+        compareSqlResult("SELECT * FROM decimal_table WHERE id = ?", 1, BigDecimal.valueOf(12.34));
     }
 
     /**
@@ -97,9 +122,13 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
     public void testInsertTooLongVarchar() throws Exception {
         checkSQLThrows("INSERT INTO varchar_table VALUES(?, ?)", CONSTRAINT_VIOLATION, 2, "123456");
 
+        assertTrue(execSQL("SELECT * FROM  varchar_table WHERE id = ?", 2).isEmpty());
+
         checkSQLThrows("UPDATE varchar_table SET str = ? WHERE id = ?", CONSTRAINT_VIOLATION, "123456", 1);
 
         checkSQLThrows("MERGE INTO varchar_table(id, str) VALUES(?, ?)", CONSTRAINT_VIOLATION, 1, "123456");
+
+        compareSqlResult("SELECT * FROM varchar_table WHERE id = ?", 1, "12345");
     }
 
     /**
@@ -108,39 +137,49 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
     public void testInsertTooLongChar() throws Exception {
         checkSQLThrows("INSERT INTO char_table VALUES(?, ?)", CONSTRAINT_VIOLATION, 2, "123456");
 
+        assertTrue(execSQL("SELECT * FROM  char_table WHERE id = ?", 2).isEmpty());
+
         checkSQLThrows("UPDATE char_table SET str = ? WHERE id = ?", CONSTRAINT_VIOLATION, "123456", 1);
 
         checkSQLThrows("MERGE INTO char_table(id, str) VALUES(?, ?)", CONSTRAINT_VIOLATION, 1, "123456");
+
+        compareSqlResult("SELECT * FROM char_table WHERE id = ?", 1, "12345");
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCharConstraintsAfterAlterTable() throws Exception {
-        execSQL("CREATE TABLE char_table_2(id INT PRIMARY KEY, field INTEGER)");
-
         execSQL("ALTER TABLE char_table_2 ADD COLUMN str CHAR(5) NOT NULL");
         
         execSQL("INSERT INTO char_table_2(id, str) VALUES(?, ?)", 1, "1");
 
+        compareSqlResult("SELECT * FROM char_table_2 WHERE id = ?", 1, null, "1");
+
         checkSQLThrows("INSERT INTO char_table_2(id, str) VALUES(?, ?)", CONSTRAINT_VIOLATION, 2, "123456");
+
+        assertTrue(execSQL("SELECT * FROM decimal_table_2 WHERE id = ?", 2).isEmpty());
 
         checkSQLThrows("UPDATE char_table_2 SET str = ? WHERE id = ?", CONSTRAINT_VIOLATION, "123456", 1);
 
         checkSQLThrows("MERGE INTO char_table_2(id, str) VALUES(?, ?)", CONSTRAINT_VIOLATION, 1, "123456");
+
+        compareSqlResult("SELECT * FROM char_table_2 WHERE id = ?", 1, null, "1");
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testDecimalConstraintsAfterAlterTable() throws Exception {
-        execSQL("CREATE TABLE decimal_table_2(id INT PRIMARY KEY, field INTEGER)");
-
         execSQL("ALTER TABLE decimal_table_2 ADD COLUMN val DECIMAL(4, 2) NOT NULL");
 
         execSQL("INSERT INTO decimal_table_2(id, val) VALUES(?, ?)", 1, 12.34);
 
+        compareSqlResult("SELECT * FROM decimal_table_2 WHERE id = ?", 1, null, BigDecimal.valueOf(12.34));
+
         checkSQLThrows("INSERT INTO decimal_table_2(id, val) VALUES(?, ?)", CONSTRAINT_VIOLATION, 2, 1234.56);
+
+        assertTrue(execSQL("SELECT * FROM decimal_table_2 WHERE id = ?", 2).isEmpty());
 
         checkSQLThrows("UPDATE decimal_table_2 SET val = ? WHERE id = ?", CONSTRAINT_VIOLATION, 1234.56, 1);
 
@@ -151,68 +190,98 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
         checkSQLThrows("UPDATE decimal_table_2 SET val = ? WHERE id = ?", CONSTRAINT_VIOLATION, 1.234, 1);
 
         checkSQLThrows("MERGE INTO decimal_table_2(id, val) VALUES(?, ?)", CONSTRAINT_VIOLATION, 1, 1.234);
+
+        compareSqlResult("SELECT * FROM decimal_table_2 WHERE id = ?", 1, null, BigDecimal.valueOf(12.34));
     }
 
     /**
+     * That test will be ignored if MVCC is enabled
+     * due to drop column(s) operation is unsupported at the moment.
+     *
      * @throws Exception If failed.
      */
     public void testCharDropColumnWithConstraint() throws Exception {
-        execSQL("CREATE TABLE char_table_3(id INT PRIMARY KEY, field CHAR(5), field2 INTEGER)");
+        if (mvccEnabled())
+            return;
 
         execSQL("INSERT INTO char_table_3(id, field, field2) VALUES(?, ?, ?)", 1, "12345", 1);
+
+        compareSqlResult("SELECT * FROM char_table_3 WHERE id = ?", 1, "12345", 1);
 
         checkSQLThrows("INSERT INTO char_table_3(id, field, field2) VALUES(?, ?, ?)", CONSTRAINT_VIOLATION,
             2, "123456", 1);
 
+        assertTrue(execSQL("SELECT * FROM decimal_table_3 WHERE id = ?", 2).isEmpty());
+
         execSQL("ALTER TABLE char_table_3 DROP COLUMN field");
 
         execSQL("INSERT INTO char_table_3(id, field2) VALUES(?, ?)", 3, 3);
+
+        compareSqlResult("SELECT * FROM char_table_3 WHERE id = ?", 3, 3);
     }
 
     /**
+     * That test will be ignored if MVCC is enabled
+     * due to drop column(s) operation is unsupported at the moment.
+     *
      * @throws Exception If failed.
      */
     public void testDecimalDropColumnWithConstraint() throws Exception {
-        execSQL("CREATE TABLE decimal_table_3(id INT PRIMARY KEY, field DECIMAL(4, 2), field2 INTEGER)");
+        if (mvccEnabled())
+            return;
 
         execSQL("INSERT INTO decimal_table_3(id, field, field2) VALUES(?, ?, ?)", 1, 12.34, 1);
+
+        compareSqlResult("SELECT * FROM decimal_table_3 WHERE id = ?", 1, BigDecimal.valueOf(12.34), 1);
 
         checkSQLThrows("INSERT INTO decimal_table_3(id, field, field2) VALUES(?, ?, ?)", CONSTRAINT_VIOLATION,
             2, 12.3456, 1);
 
+        assertTrue(execSQL("SELECT * FROM decimal_table_3 WHERE id = ?", 2).isEmpty());
+
         execSQL("ALTER TABLE decimal_table_3 DROP COLUMN field");
 
         execSQL("INSERT INTO decimal_table_3(id, field2) VALUES(?, ?)", 3, 3);
+
+        compareSqlResult("SELECT * FROM decimal_table_3 WHERE id = ?", 3, 3);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCharSqlState() throws Exception {
-        execSQL("CREATE TABLE char_table_4(id INT PRIMARY KEY, field CHAR(5))");
-
         checkSQLThrows("INSERT INTO char_table_4(id, field) VALUES(?, ?)", CONSTRAINT_VIOLATION, 1, "123456");
 
+        assertTrue(execSQL("SELECT * FROM decimal_table_4 WHERE id = ?", 1).isEmpty());
+
         execSQL("INSERT INTO char_table_4(id, field) VALUES(?, ?)", 2, "12345");
+
+        compareSqlResult("SELECT * FROM char_table_4 WHERE id = ?", 2, "12345");
 
         checkSQLThrows("UPDATE char_table_4 SET field = ? WHERE id = ?", CONSTRAINT_VIOLATION, "123456", 2);
 
         checkSQLThrows("MERGE INTO char_table_4(id, field) VALUES(?, ?)", CONSTRAINT_VIOLATION, 2, "123456");
+
+        compareSqlResult("SELECT * FROM char_table_4 WHERE id = ?", 2, "12345");
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testDecimalSqlState() throws Exception {
-        execSQL("CREATE TABLE decimal_table_4(id INT PRIMARY KEY, field DECIMAL(4, 2))");
-
         checkSQLThrows("INSERT INTO decimal_table_4 VALUES(?, ?)", CONSTRAINT_VIOLATION,
             1, BigDecimal.valueOf(1234.56));
+
+        assertTrue(execSQL("SELECT * FROM decimal_table_4 WHERE id = ?", 1).isEmpty());
 
         checkSQLThrows("INSERT INTO decimal_table_4 VALUES(?, ?)", CONSTRAINT_VIOLATION,
             1, BigDecimal.valueOf(1.345));
 
+        assertTrue(execSQL("SELECT * FROM decimal_table_4 WHERE id = ?", 1).isEmpty());
+
         execSQL("INSERT INTO decimal_table_4 (id, field) VALUES(?, ?)", 2, 12.34);
+
+        compareSqlResult("SELECT * FROM decimal_table_4 WHERE id = ?", 2, BigDecimal.valueOf(12.34));
 
         checkSQLThrows("UPDATE decimal_table_4 SET field = ? WHERE id = ?", CONSTRAINT_VIOLATION,
             BigDecimal.valueOf(1234.56), 2);
@@ -225,24 +294,64 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
 
         checkSQLThrows("MERGE INTO decimal_table_4(id, field) VALUES(?, ?)", CONSTRAINT_VIOLATION,
             2, BigDecimal.valueOf(1.345));
+
+        compareSqlResult("SELECT * FROM decimal_table_4 WHERE id = ?", 2, BigDecimal.valueOf(12.34));
     }
 
     /** */
-    private void checkSQLThrows(String sql, String sqlStateCode, Object... args) {
+    protected void checkSQLThrows(String sql, String sqlStateCode, Object... args) {
         IgniteSQLException err = (IgniteSQLException)GridTestUtils.assertThrowsWithCause(() -> {
             execSQL(sql, args);
 
             return 0;
         }, IgniteSQLException.class);
 
-        assertEquals((err).sqlState(), sqlStateCode);
+        assertEquals(err.sqlState(), sqlStateCode);
     }
 
     /** */
-    private List<?> execSQL(String sql, Object... args) {
+    protected List<?> execSQL(String sql, Object... args) {
         SqlFieldsQuery qry = new SqlFieldsQuery(sql)
             .setArgs(args);
 
         return grid(0).context().query().querySqlFields(qry, true).getAll();
+    }
+
+    /** */
+    protected void compareSqlResult(String sql, Object... args) {
+        List<?> rows = execSQL(sql, args);
+
+        if (rows.isEmpty()) {
+            assertTrue(args.length == 1);
+
+            return;
+        }
+
+        List<Object> row = (List<Object>)(rows.get(0));
+
+        assertTrue(row.size() == args.length);
+
+        for (int i = 0; i < args.length; i++) {
+            Object obj = row.get(i);
+
+            if (obj == null) {
+                assertTrue(args[i] == null);
+
+                continue;
+            }
+
+            if (obj instanceof BigDecimal) {
+                assertTrue(((BigDecimal)obj).compareTo((BigDecimal)args[i]) == 0);
+
+                continue;
+            }
+
+            assertTrue(obj.equals(args[i]));
+        }
+    }
+
+    /** */
+    protected boolean mvccEnabled() {
+        return false;
     }
 }
