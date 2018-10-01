@@ -85,6 +85,7 @@ class ClusterCachesInfo {
     /** */
     private final GridKernalContext ctx;
 
+    /** Cache groups were removed in time when node was off. */
     private final ConcurrentMap<Integer, CacheGroupDescriptor> missingCacheGroups = new ConcurrentHashMap<>();
 
     /** Dynamic caches. */
@@ -1961,6 +1962,9 @@ class ClusterCachesInfo {
         return registeredCacheGrps;
     }
 
+    /**
+     * @return Cache groups were removed in time when node was off.
+     */
     ConcurrentMap<Integer, CacheGroupDescriptor> missingCacheGroups() {
         return missingCacheGroups;
     }
