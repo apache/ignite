@@ -49,13 +49,13 @@
 
         <!-- Other files. -->
         <file>
-            <source>assembly/LICENSE_FABRIC</source>
+            <source>assembly/LICENSE_IGNITE</source>
             <destName>LICENSE</destName>
             <outputDirectory>/</outputDirectory>
         </file>
 
         <file>
-            <source>assembly/NOTICE_FABRIC</source>
+            <source>assembly/NOTICE_IGNITE</source>
             <destName>NOTICE</destName>
             <outputDirectory>/</outputDirectory>
         </file>
