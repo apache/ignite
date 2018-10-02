@@ -73,6 +73,12 @@ public class MvccSnapshotSearchRow extends MvccSearchRow implements MvccTreeClos
         return res;
     }
 
+    private boolean debug;
+
+    public void debug() {
+        debug = true;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean apply(BPlusTree<CacheSearchRow, CacheDataRow> tree, BPlusIO<CacheSearchRow> io,
         long pageAddr, int idx) throws IgniteCheckedException {
@@ -81,6 +87,12 @@ public class MvccSnapshotSearchRow extends MvccSearchRow implements MvccTreeClos
         long rowCrdVer = rowIo.getMvccCoordinatorVersion(pageAddr, idx);
         long rowCntr = rowIo.getMvccCounter(pageAddr, idx);
         int rowOpCntr = rowIo.getMvccOperationCounter(pageAddr, idx);
+
+        if (debug) {
+            CacheDataRow row = tree.getRow(io, pageAddr, idx, CacheDataRowAdapter.RowData.NO_KEY);
+
+            System.out.println(">>> MET ROW: " + row);
+        }
 
         assert MvccUtils.mvccVersionIsValid(rowCrdVer, rowCntr, rowOpCntr);
 

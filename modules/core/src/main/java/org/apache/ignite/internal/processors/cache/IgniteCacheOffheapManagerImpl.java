@@ -2622,6 +2622,26 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 clo
             );
 
+            if (GridCacheMapEntry.TREE_DEBUG) {
+                MvccSnapshotSearchRow debugClo = new MvccSnapshotSearchRow(cctx, key, snapshot);
+
+                debugClo.debug();
+
+                dataTree.iterate(
+                    debugClo,
+                    new MvccMinSearchRow(cacheId, key),
+                    debugClo
+                );
+
+                CacheDataRow debugRow = debugClo.row();
+
+//                while (allRows.next()) {
+//                    CacheDataRow debugRow = allRows.get();
+//
+//                    System.out.println(">>> DEBUG ROW: " + debugRow);
+//                }
+            }
+
             CacheDataRow row = clo.row();
 
             afterRowFound(row, key);
