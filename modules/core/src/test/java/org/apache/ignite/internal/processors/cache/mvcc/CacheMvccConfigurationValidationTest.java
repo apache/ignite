@@ -17,25 +17,37 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.io.Serializable;
+import java.util.UUID;
 import java.util.concurrent.Callable;
+import javax.cache.Cache;
 import javax.cache.CacheException;
+import javax.cache.configuration.Factory;
+import javax.cache.expiry.ExpiryPolicy;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  *
@@ -228,5 +240,126 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
                 return null;
             }
         }, IgniteCheckedException.class, "Cannot start cache. Statically configured atomicity mode");
+    }
+
+    /**
+     * Test TRANSACTIONAL_SNAPSHOT and near cache.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public void testTransactionalSnapshotLimitations() throws Exception {
+        assertCannotStart(
+            mvccCacheConfig().setCacheMode(LOCAL),
+            "LOCAL cache mode cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+
+        assertCannotStart(
+            mvccCacheConfig().setNearConfiguration(new NearCacheConfiguration<>()),
+            "near cache cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+
+        assertCannotStart(
+            mvccCacheConfig().setReadThrough(true),
+            "readThrough cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+
+        assertCannotStart(
+            mvccCacheConfig().setWriteThrough(true),
+            "writeThrough cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+
+        assertCannotStart(
+            mvccCacheConfig().setWriteBehindEnabled(true),
+            "writeBehindEnabled cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+
+        assertCannotStart(
+            mvccCacheConfig().setExpiryPolicyFactory(new TestExpiryPolicyFactory()),
+            "expiry policy cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+
+        assertCannotStart(
+            mvccCacheConfig().setInterceptor(new TestCacheInterceptor()),
+            "interceptor cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+    }
+
+    /**
+     * Make sure cache cannot be started with the given configuration.
+     *
+     * @param ccfg Cache configuration.
+     * @param msg Message.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private void assertCannotStart(CacheConfiguration ccfg, String msg) throws Exception {
+        Ignite node = startGrid(0);
+
+        try {
+            try {
+                node.getOrCreateCache(ccfg);
+
+                fail("Cache should not start.");
+            }
+            catch (Exception e) {
+                if (msg != null) {
+                    assert e.getMessage() != null : "Error message is null";
+                    assert e.getMessage().contains(msg) : "Wrong error message: " + e.getMessage();
+                }
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @return MVCC-enabled cache configuration.
+     */
+    private static CacheConfiguration mvccCacheConfig() {
+        return new CacheConfiguration().setName(DEFAULT_CACHE_NAME + UUID.randomUUID())
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * Test expiry policy.
+     */
+    private static class TestExpiryPolicyFactory implements Factory<ExpiryPolicy>, Serializable {
+        /** {@inheritDoc} */
+        @Override public ExpiryPolicy create() {
+            return null;
+        }
+    }
+
+    /**
+     * Test cache interceptor.
+     */
+    private static class TestCacheInterceptor implements CacheInterceptor, Serializable {
+        /** {@inheritDoc} */
+        @Nullable
+        @Override public Object onGet(Object key, @Nullable Object val) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onAfterPut(Cache.Entry entry) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onAfterRemove(Cache.Entry entry) {
+            // No-op.
+        }
     }
 }
