@@ -44,6 +44,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.configuration.WALMode.FSYNC;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.internal.pagemem.wal.record.RolloverType.CURRENT_SEGMENT;
@@ -78,6 +79,7 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
                 .setPersistenceEnabled(true)
                 .setMaxSize(20 * 1024 * 1024))
             .setWalMode(walMode)
+            .setWalArchivePath(DFLT_WAL_PATH)
             .setWalSegmentSize(4 * 1024 * 1024))
             .setCheckpointSpi(new NoopCheckpointSpi())
         ;
@@ -108,6 +110,8 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
 
     /** */
     public void testCurrentSegmentTypeLogFsyncMode() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9776");
+
         walMode = FSYNC;
 
         checkCurrentSegmentType();
@@ -122,6 +126,8 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
 
     /** */
     public void testNextSegmentTypeFsyncMode() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9776");
+
         walMode = FSYNC;
 
         checkNextSegmentType();
@@ -176,6 +182,8 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
 
     /** */
     public void testNextSegmentTypeWithCacheActivityFsyncMode() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9776");
+
         walMode = FSYNC;
 
         checkNextSegmentTypeWithCacheActivity();
@@ -190,6 +198,8 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
         ig.cluster().active(true);
 
         IgniteCache<Integer, Integer> cache = ig.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        final long testDuration = 30_000;
 
         long startTime = U.currentTimeMillis();
 
@@ -210,6 +220,8 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
 
         AdHocWALRecord markerRecord = new AdHocWALRecord();
 
+        WALPointer ptr;
+
         do {
             try {
                 U.sleep(1000);
@@ -217,7 +229,7 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
                 dbMgr.checkpointReadLock();
 
                 try {
-                    WALPointer ptr = walMgr.log(markerRecord, NEXT_SEGMENT);
+                    ptr = walMgr.log(markerRecord, NEXT_SEGMENT);
 
                     assert ptr instanceof FileWALPointer;
 
@@ -230,21 +242,21 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
             catch (IgniteCheckedException e) {
                 log.error(e.getMessage(), e);
             }
-        } while (U.currentTimeMillis() - startTime < 30_000);
+        }
+        while (U.currentTimeMillis() - startTime < testDuration);
 
         fut.get();
 
         dbMgr.checkpointReadLock();
 
         try {
-            walMgr.log(new CheckpointRecord(null), NEXT_SEGMENT);
+            ptr = walMgr.log(new CheckpointRecord(null), NEXT_SEGMENT);
         }
         finally {
             dbMgr.checkpointReadUnlock();
         }
 
-        assertTrue(GridTestUtils.waitForCondition(
-            () -> walMgr.lastArchivedSegment() >= forcedRolloverSegs.get(forcedRolloverSegs.size() - 1), 10_000));
+        walMgr.flush(ptr, true);
 
         WALIterator walIter = walMgr.replay(null);
 
@@ -261,7 +273,8 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
                 walEntry = walIter.next();
 
                 assertTrue(walEntry.getKey() instanceof FileWALPointer);
-            } while (((FileWALPointer)walEntry.getKey()).index() < idx);
+            }
+            while (((FileWALPointer)walEntry.getKey()).index() < idx);
 
             WALRecord rec = walEntry.getValue();
 
@@ -269,5 +282,5 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
 
             assertEquals(markerRecord.checkpointId(), ((CheckpointRecord)rec).checkpointId());
         }
-   }
+    }
 }
