@@ -238,11 +238,12 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() throws IgniteException {
+    @SuppressWarnings("OverlyStrongTypeCast")
+    @Override public void stop(boolean deallocate) throws IgniteException {
         if (log.isDebugEnabled())
             log.debug("Stopping page memory.");
 
-        directMemoryProvider.shutdown();
+        directMemoryProvider.shutdown(deallocate);
 
         if (directMemoryProvider instanceof Closeable) {
             try {
@@ -840,7 +841,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
-    public int checkpointBufferPagesCount() {
+    @Override public int checkpointBufferPagesCount() {
         return 0;
     }
 }

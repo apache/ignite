@@ -204,11 +204,20 @@ module.exports = {
 
             nodeListeners(sock) {
                 // Return command result from grid to browser.
-                sock.on('node:rest', ({clusterId, params, credentials} = {}, cb) => {
-                    if (_.isNil(clusterId) || _.isNil(params))
-                        return cb('Invalid format of message: "node:rest"');
+                sock.on('node:rest', (arg, cb) => {
+                    const {clusterId, params, credentials} = arg || {};
 
-                    const demo = sock.request._query.IgniteDemoMode === 'true';
+                    if (!_.isFunction(cb))
+                        cb = console.log;
+
+                    const demo = _.get(sock, 'request._query.IgniteDemoMode') === 'true';
+
+                    if ((_.isNil(clusterId) && !demo) || _.isNil(params)) {
+                        console.log('Received invalid message: "node:rest" on socket:', JSON.stringify(sock.handshake));
+
+                        return cb('Invalid format of message: "node:rest"');
+                    }
+
                     const token = sock.request.user.token;
 
                     const agent = this._agentHnd.agent(token, demo, clusterId);
@@ -236,11 +245,20 @@ module.exports = {
                 this.registerVisorTask('toggleClusterState', internalVisor('misc.VisorChangeGridActiveStateTask'), internalVisor('misc.VisorChangeGridActiveStateTaskArg'));
 
                 // Return command result from grid to browser.
-                sock.on('node:visor', ({clusterId, params, credentials} = {}, cb) => {
-                    if (_.isNil(clusterId) || _.isNil(params))
-                        return cb('Invalid format of message: "node:visor"');
+                sock.on('node:visor', (arg, cb) => {
+                    const {clusterId, params, credentials} = arg || {};
 
-                    const demo = sock.request._query.IgniteDemoMode === 'true';
+                    if (!_.isFunction(cb))
+                        cb = console.log;
+
+                    const demo = _.get(sock, 'request._query.IgniteDemoMode') === 'true';
+
+                    if ((_.isNil(clusterId) && !demo) || _.isNil(params)) {
+                        console.log('Received invalid message: "node:visor" on socket:', JSON.stringify(sock.handshake));
+
+                        return cb('Invalid format of message: "node:visor"');
+                    }
+
                     const token = sock.request.user.token;
 
                     const {taskId, nids, args = []} = params;

@@ -760,7 +760,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     /**
      * Cache class loader.
      */
-    private class CacheClassLoader extends ClassLoader {
+    private class CacheClassLoader extends ClassLoader implements CacheClassLoaderMarker {
         /** */
         private final String[] p2pExclude;
 

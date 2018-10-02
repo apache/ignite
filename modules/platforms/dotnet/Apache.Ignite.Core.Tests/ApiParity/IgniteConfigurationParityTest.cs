@@ -80,7 +80,9 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "TimeServerPortBase",
             "TimeServerPortRange",
             "IncludeProperties",
-            "isAutoActivationEnabled"  // IGNITE-7301
+            "isAutoActivationEnabled",  // IGNITE-7301
+            "MvccVacuumFrequency", //TODO: IGNITE-9390: Remove when Mvcc support will be added.
+            "MvccVacuumThreadCount" //TODO: IGNITE-9390: Remove when Mvcc support will be added.
         };
 
         /// <summary>

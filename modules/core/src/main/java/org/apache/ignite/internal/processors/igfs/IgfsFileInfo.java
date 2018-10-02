@@ -152,62 +152,62 @@ public final class IgfsFileInfo extends IgfsEntryInfo implements Binarylizable {
     }
 
     /** {@inheritDoc} */
-    public boolean isFile() {
+    @Override public boolean isFile() {
         return true;
     }
 
     /** {@inheritDoc} */
-    public long length() {
+    @Override public long length() {
         return len;
     }
 
     /** {@inheritDoc} */
-    public int blockSize() {
+    @Override public int blockSize() {
         return blockSize;
     }
 
     /** {@inheritDoc} */
-    public long blocksCount() {
+    @Override public long blocksCount() {
         return (len + blockSize() - 1) / blockSize();
     }
 
     /** {@inheritDoc} */
-    public Map<String, IgfsListingEntry> listing() {
+    @Override public Map<String, IgfsListingEntry> listing() {
         return Collections.emptyMap();
     }
 
     /** {@inheritDoc} */
-    public boolean hasChildren() {
+    @Override public boolean hasChildren() {
         return false;
     }
 
     /** {@inheritDoc} */
-    public boolean hasChild(String name) {
+    @Override public boolean hasChild(String name) {
         return false;
     }
 
     /** {@inheritDoc} */
-    public boolean hasChild(String name, IgniteUuid expId) {
+    @Override public boolean hasChild(String name, IgniteUuid expId) {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Nullable public IgniteUuid affinityKey() {
+    @Override @Nullable public IgniteUuid affinityKey() {
         return affKey;
     }
 
     /** {@inheritDoc} */
-    public IgfsFileMap fileMap() {
+    @Override public IgfsFileMap fileMap() {
         return fileMap;
     }
 
     /** {@inheritDoc} */
-    @Nullable public IgniteUuid lockId() {
+    @Override @Nullable public IgniteUuid lockId() {
         return lockId;
     }
 
     /** {@inheritDoc} */
-    public boolean evictExclude() {
+    @Override public boolean evictExclude() {
         return evictExclude;
     }
 

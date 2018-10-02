@@ -42,8 +42,11 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.mockito.Mockito;
 
 import static org.mockito.Matchers.any;
@@ -54,6 +57,10 @@ import static org.mockito.Mockito.when;
  * Unit test for delayed page replacement mode.
  */
 public class IgnitePageMemReplaceDelayedWriteUnitTest {
+    /** Per test timeout */
+    @Rule
+    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+
     /** CPU count. */
     private static final int CPUS = 32;
 
@@ -120,7 +127,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         assert totalEvicted.get() > 0;
 
-        memory.stop();
+        memory.stop(true);
     }
 
     /**
@@ -175,7 +182,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         assert totalEvicted.get() > 0;
 
-        memory.stop();
+        memory.stop(true);
     }
 
     /**

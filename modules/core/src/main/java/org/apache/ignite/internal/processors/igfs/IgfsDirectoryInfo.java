@@ -62,7 +62,7 @@ public class IgfsDirectoryInfo extends IgfsEntryInfo implements Binarylizable {
      * @param len New length.
      * @return Updated file info.
      */
-    public IgfsEntryInfo length(long len) {
+    @Override public IgfsEntryInfo length(long len) {
         throw new UnsupportedOperationException("length");
     }
 
@@ -107,47 +107,47 @@ public class IgfsDirectoryInfo extends IgfsEntryInfo implements Binarylizable {
     }
 
     /** {@inheritDoc} */
-    protected IgfsDirectoryInfo copy() {
+    @Override protected IgfsDirectoryInfo copy() {
         return new IgfsDirectoryInfo(id, listing, props, accessTime, modificationTime);
     }
 
     /** {@inheritDoc} */
-    public boolean isFile() {
+    @Override public boolean isFile() {
         return false;
     }
 
     /** {@inheritDoc} */
-    public long length() {
+    @Override public long length() {
         return 0;
     }
 
     /** {@inheritDoc} */
-    public int blockSize() {
+    @Override public int blockSize() {
         return 0;
     }
 
     /** {@inheritDoc} */
-    public long blocksCount() {
+    @Override public long blocksCount() {
         return 0;
     }
 
     /** {@inheritDoc} */
-    public Map<String, IgfsListingEntry> listing() {
+    @Override public Map<String, IgfsListingEntry> listing() {
         return listing != null ? listing : Collections.<String, IgfsListingEntry>emptyMap();
     }
 
     /** {@inheritDoc} */
-    public boolean hasChildren() {
+    @Override public boolean hasChildren() {
         return !F.isEmpty(listing);
     }
 
     /** {@inheritDoc} */
-    public boolean hasChild(String name) {
+    @Override public boolean hasChild(String name) {
         return listing != null && listing.containsKey(name);
     }
 
     /** {@inheritDoc} */
-    public boolean hasChild(String name, IgniteUuid expId) {
+    @Override public boolean hasChild(String name, IgniteUuid expId) {
         if (listing != null) {
             IgfsListingEntry entry = listing.get(name);
 
@@ -159,22 +159,22 @@ public class IgfsDirectoryInfo extends IgfsEntryInfo implements Binarylizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable public IgniteUuid affinityKey() {
+    @Override @Nullable public IgniteUuid affinityKey() {
         return null;
     }
 
     /** {@inheritDoc} */
-    public IgfsFileMap fileMap() {
+    @Override public IgfsFileMap fileMap() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Nullable public IgniteUuid lockId() {
+    @Override @Nullable public IgniteUuid lockId() {
         return null;
     }
 
     /** {@inheritDoc} */
-    public boolean evictExclude() {
+    @Override public boolean evictExclude() {
         return true;
     }
 

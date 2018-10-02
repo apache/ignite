@@ -96,7 +96,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
@@ -2151,6 +2153,11 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
     }
 
+    /** */
+    private static WorkersRegistry getWorkerRegistry(TcpDiscoverySpi spi) {
+        return spi.ignite() instanceof IgniteEx ? ((IgniteEx)spi.ignite()).context().workersRegistry() : null;
+    }
+
     /**
      * Discovery messages history used for client reconnect.
      */
@@ -2510,7 +2517,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          *
          * @return Non-discarded messages iterator.
          */
-        public Iterator<TcpDiscoveryAbstractMessage> iterator() {
+        @Override public Iterator<TcpDiscoveryAbstractMessage> iterator() {
             return new SkipIterator();
         }
 
@@ -2645,10 +2652,15 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param log Logger.
          */
         private RingMessageWorker(IgniteLogger log) {
-            super("tcp-disco-msg-worker", log, 10,
-                spi.ignite() instanceof IgniteEx ? ((IgniteEx)spi.ignite()).context().workersRegistry() : null);
+            super("tcp-disco-msg-worker", log, 10, getWorkerRegistry(spi));
 
             initConnectionCheckThreshold();
+
+            setBeforeEachPollAction(() -> {
+                updateHeartbeat();
+
+                onIdle();
+            });
         }
 
         /**
@@ -2679,8 +2691,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 log.debug("Message has been added to queue: " + msg);
         }
 
-        /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException {
+        /** */
+        protected void body() throws InterruptedException {
             Throwable err = null;
 
             try {
@@ -2821,7 +2833,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 processDiscardMessage((TcpDiscoveryDiscardMessage)msg);
 
             else if (msg instanceof TcpDiscoveryCustomEventMessage)
-                processCustomMessage((TcpDiscoveryCustomEventMessage)msg);
+                processCustomMessage((TcpDiscoveryCustomEventMessage)msg, false);
 
             else if (msg instanceof TcpDiscoveryClientPingRequest)
                 processClientPingRequest((TcpDiscoveryClientPingRequest)msg);
@@ -5404,8 +5416,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /**
          * @param msg Message.
+         * @param waitForNotification If {@code true} then thread will wait when discovery event notification has finished.
          */
-        private void processCustomMessage(TcpDiscoveryCustomEventMessage msg) {
+        private void processCustomMessage(TcpDiscoveryCustomEventMessage msg, boolean waitForNotification) {
             if (isLocalNodeCoordinator()) {
                 boolean delayMsg;
 
@@ -5439,14 +5452,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                     msg.topologyVersion(ring.topologyVersion());
 
                     if (pendingMsgs.procCustomMsgs.add(msg.id())) {
-                        notifyDiscoveryListener(msg);
+                        notifyDiscoveryListener(msg, waitForNotification);
 
                         if (sendMessageToRemotes(msg))
                             sendMessageAcrossRing(msg);
                         else {
                             registerPendingMessage(msg);
 
-                            processCustomMessage(msg);
+                            processCustomMessage(msg, waitForNotification);
                         }
                     }
 
@@ -5476,7 +5489,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 ackMsg.topologyVersion(msg.topologyVersion());
 
-                                processCustomMessage(ackMsg);
+                                processCustomMessage(ackMsg, waitForNotification);
                             }
                             catch (IgniteCheckedException e) {
                                 U.error(log, "Failed to marshal discovery custom message.", e);
@@ -5503,7 +5516,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     assert msg.topologyVersion() == ring.topologyVersion() :
                         "msg: " + msg + ", topVer=" + ring.topologyVersion();
 
-                    notifyDiscoveryListener(msg);
+                    notifyDiscoveryListener(msg, waitForNotification);
                 }
 
                 if (msg.verified())
@@ -5579,7 +5592,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 TcpDiscoveryCustomEventMessage msg;
 
                 while ((msg = pollPendingCustomeMessage()) != null)
-                    processCustomMessage(msg);
+                    processCustomMessage(msg, true);
             }
         }
 
@@ -5594,8 +5607,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /**
          * @param msg Custom message.
+         * @param waitForNotification If {@code true} thread will wait when discovery event notification has finished.
          */
-        private void notifyDiscoveryListener(TcpDiscoveryCustomEventMessage msg) {
+        private void notifyDiscoveryListener(TcpDiscoveryCustomEventMessage msg, boolean waitForNotification) {
             DiscoverySpiListener lsnr = spi.lsnr;
 
             TcpDiscoverySpiState spiState = spiStateCopy();
@@ -5611,23 +5625,34 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (lsnr != null && (spiState == CONNECTED || spiState == DISCONNECTING)) {
                 TcpDiscoveryNode node = ring.node(msg.creatorNodeId());
 
-                if (node != null) {
+                if (node == null)
+                    return;
+
+                DiscoverySpiCustomMessage msgObj;
+
+                try {
+                    msgObj = msg.message(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
+                }
+                catch (Throwable t) {
+                    throw new IgniteException("Failed to unmarshal discovery custom message: " + msg, t);
+                }
+
+                IgniteFuture<?> fut = lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
+                    msg.topologyVersion(),
+                    node,
+                    snapshot,
+                    hist,
+                    msgObj);
+
+                if (waitForNotification || msgObj.isMutable())
+                    fut.get();
+
+                if (msgObj.isMutable()) {
                     try {
-                        DiscoverySpiCustomMessage msgObj = msg.message(spi.marshaller(),
-                            U.resolveClassLoader(spi.ignite().configuration()));
-
-                        lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
-                            msg.topologyVersion(),
-                            node,
-                            snapshot,
-                            hist,
-                            msgObj);
-
-                        if (msgObj.isMutable())
-                            msg.message(msgObj, U.marshal(spi.marshaller(), msgObj));
+                        msg.message(msgObj, U.marshal(spi.marshaller(), msgObj));
                     }
-                    catch (Throwable e) {
-                        U.error(log, "Failed to unmarshal discovery custom message.", e);
+                    catch (Throwable t) {
+                        throw new IgniteException("Failed to marshal mutable discovery message: " + msgObj, t);
                     }
                 }
             }
@@ -5762,8 +5787,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @throws IgniteSpiException In case of error.
          */
         TcpServer(IgniteLogger log) throws IgniteSpiException {
-            super(spi.ignite().name(), "tcp-disco-srvr", log,
-                spi.ignite() instanceof IgniteEx ? ((IgniteEx)spi.ignite()).context().workersRegistry() : null);
+            super(spi.ignite().name(), "tcp-disco-srvr", log, getWorkerRegistry(spi));
 
             int lastPort = spi.locPortRange == 0 ? spi.locPort : spi.locPort + spi.locPortRange - 1;
 
@@ -5805,13 +5829,22 @@ class ServerImpl extends TcpDiscoveryImpl {
                 ", addr=" + spi.locHost + ']');
         }
 
-        /** {@inheritDoc} */
+        /** */
         @Override protected void body() {
             Throwable err = null;
 
             try {
                 while (!isCancelled()) {
-                    Socket sock = srvrSock.accept();
+                    Socket sock;
+
+                    blockingSectionBegin();
+
+                    try {
+                        sock = srvrSock.accept();
+                    }
+                    finally {
+                        blockingSectionEnd();
+                    }
 
                     long tstamp = U.currentTimeMillis();
 
@@ -5832,6 +5865,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     reader.start();
 
                     spi.stats.onServerSocketInitialized(U.currentTimeMillis() - tstamp);
+
+                    onIdle();
                 }
             }
             catch (IOException e) {
@@ -7033,15 +7068,11 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** */
-    private class MessageWorkerThreadWithCleanup<T> extends MessageWorkerThread {
-        /** */
-        private final MessageWorker worker;
+    private class MessageWorkerThreadWithCleanup<T> extends MessageWorkerThread<MessageWorker<T>> {
 
         /** {@inheritDoc} */
         private MessageWorkerThreadWithCleanup(MessageWorker<T> worker, IgniteLogger log) {
             super(worker, log);
-
-            this.worker = worker;
         }
 
         /** {@inheritDoc} */
@@ -7063,17 +7094,17 @@ class ServerImpl extends TcpDiscoveryImpl {
     /**
      * Slightly modified {@link IgniteSpiThread} intended to use with message workers.
      */
-    private class MessageWorkerThread extends IgniteSpiThread {
+    private class MessageWorkerThread<W extends GridWorker> extends IgniteSpiThread {
         /**
          * Backed interrupted flag, once set, it is not affected by further {@link Thread#interrupted()} calls.
          */
         private volatile boolean interrupted;
 
         /** */
-        private final GridWorker worker;
+        protected final W worker;
 
         /** {@inheritDoc} */
-        private MessageWorkerThread(GridWorker worker, IgniteLogger log) {
+        private MessageWorkerThread(W worker, IgniteLogger log) {
             super(worker.igniteInstanceName(), worker.name(), log);
 
             this.worker = worker;
@@ -7111,6 +7142,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Polling timeout. */
         private final long pollingTimeout;
 
+        /** */
+        private Runnable beforeEachPoll;
+
         /**
          * @param name Worker name.
          * @param log Logger.
@@ -7128,12 +7162,22 @@ class ServerImpl extends TcpDiscoveryImpl {
             this.pollingTimeout = pollingTimeout;
         }
 
+        /**
+         * @param act action to be executed before each timed queue poll.
+         */
+        void setBeforeEachPollAction(Runnable act) {
+            beforeEachPoll = act;
+        }
+
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
             if (log.isDebugEnabled())
                 log.debug("Message worker started [locNodeId=" + getConfiguredNodeId() + ']');
 
             while (!isCancelled()) {
+                if (beforeEachPoll != null)
+                    beforeEachPoll.run();
+
                 T msg = queue.poll(pollingTimeout, TimeUnit.MILLISECONDS);
 
                 if (msg == null)

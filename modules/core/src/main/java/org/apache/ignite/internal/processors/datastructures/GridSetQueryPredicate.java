@@ -98,7 +98,7 @@ public class GridSetQueryPredicate<K, V> implements IgniteBiPredicate<K, V>, Ext
      */
     private boolean filterKeys() {
         return !collocated && !(ctx.isLocal() || ctx.isReplicated()) &&
-            (ctx.config().getBackups() > 0 || CU.isNearEnabled(ctx));
+                (CU.isNearEnabled(ctx) || ctx.isPartitioned());
     }
 
     /** {@inheritDoc} */

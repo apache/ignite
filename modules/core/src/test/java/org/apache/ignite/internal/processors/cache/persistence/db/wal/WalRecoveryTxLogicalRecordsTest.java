@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -50,11 +49,10 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
@@ -469,50 +467,6 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
             stopAllGrids();
 
             System.clearProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
-        }
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    public void testCheckpointHistory() throws Exception {
-        Ignite ignite = startGrid();
-
-        ignite.cluster().active(true);
-
-        try {
-            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
-                .cache().context().database();
-
-            dbMgr.waitForCheckpoint("test");
-
-            // This number depends on wal history size.
-            int entries = WAL_HIST_SIZE * 2;
-
-            IgniteCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
-
-            for (int i = 0; i < entries; i++) {
-                // Put to partition 0.
-                cache.put(i * PARTS, i * PARTS);
-
-                // Put to partition 1.
-                cache.put(i * PARTS + 1, i * PARTS + 1);
-
-                dbMgr.waitForCheckpoint("test");
-            }
-
-            CheckpointHistory hist = dbMgr.checkpointHistory();
-
-            assertTrue(hist.checkpoints().size() <= WAL_HIST_SIZE);
-
-            File cpDir = dbMgr.checkpointDirectory();
-
-            File[] cpFiles = cpDir.listFiles();
-
-            assertTrue(cpFiles.length <= WAL_HIST_SIZE * 2 + 1); // starts & ends + node_start
-        }
-        finally {
-            stopAllGrids();
         }
     }
 
