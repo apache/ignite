@@ -76,7 +76,6 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -93,7 +92,9 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         dfltCacheCfg.setRebalanceMode(ASYNC);
         dfltCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         dfltCacheCfg.setAffinity(new RendezvousAffinityFunction());
-        dfltCacheCfg.setIndexedTypes(Integer.class, String.class);
+        dfltCacheCfg.setIndexedTypes(
+            Integer.class, String.class
+        );
 
         // Non-default cache configuration.
         CacheConfiguration namedCacheCfg = defaultCacheConfiguration();
@@ -134,8 +135,10 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
 
     /**
      * This test method does not require remote nodes.
+     *
+     * @throws Exception If failed.
      */
-    public void testDuplicateCacheConfigurations() {
+    public void testDuplicateCacheConfigurations() throws Exception {
         // This grid should not start.
         startInvalidGrid(DUP_CACHES_IGNITE_INSTANCE_NAME);
 
