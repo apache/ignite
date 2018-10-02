@@ -17,14 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import java.util.UUID;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -76,6 +81,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -92,9 +98,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         dfltCacheCfg.setRebalanceMode(ASYNC);
         dfltCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         dfltCacheCfg.setAffinity(new RendezvousAffinityFunction());
-        dfltCacheCfg.setIndexedTypes(
-            Integer.class, String.class
-        );
+        dfltCacheCfg.setIndexedTypes(Integer.class, String.class);
 
         // Non-default cache configuration.
         CacheConfiguration namedCacheCfg = defaultCacheConfiguration();
@@ -135,10 +139,8 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
 
     /**
      * This test method does not require remote nodes.
-     *
-     * @throws Exception If failed.
      */
-    public void testDuplicateCacheConfigurations() throws Exception {
+    public void testDuplicateCacheConfigurations() {
         // This grid should not start.
         startInvalidGrid(DUP_CACHES_IGNITE_INSTANCE_NAME);
 
@@ -177,6 +179,71 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         finally {
             stopAllGrids();
         }
+    }
+
+    /**
+     * Test TRANSACTIONAL_SNAPSHOT and near cache.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public void testTransactionalSnapshotLimitations() throws Exception {
+        assertCannotStart(
+            mvccCacheConfig().setNearConfiguration(new NearCacheConfiguration<>()),
+            "near cache cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+
+        assertCannotStart(
+            mvccCacheConfig().setReadThrough(true),
+            "readThrough cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+
+        assertCannotStart(
+            mvccCacheConfig().setWriteThrough(true),
+            "writeThrough cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+
+        assertCannotStart(
+            mvccCacheConfig().setWriteBehindEnabled(true),
+            "writeBehindEnabled cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+    }
+
+    /**
+     * Make sure cache cannot be started with the given configuration.
+     *
+     * @param ccfg Cache configuration.
+     * @param msg Message.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private void assertCannotStart(CacheConfiguration ccfg, String msg) throws Exception {
+        Ignite node = startGrid(0);
+
+        try {
+            try {
+                node.getOrCreateCache(ccfg);
+
+                fail();
+            }
+            catch (Exception e) {
+                if (msg != null) {
+                    assert e.getMessage() != null;
+                    assert e.getMessage().contains(msg);
+                }
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @return MVCC-enabled cache configuration.
+     */
+    private static CacheConfiguration mvccCacheConfig() {
+        return new CacheConfiguration().setName(DEFAULT_CACHE_NAME + UUID.randomUUID())
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
     }
 
     /**
