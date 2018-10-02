@@ -108,7 +108,7 @@ public class FullPageIdTableTest  {
             }
         }
         finally {
-            prov.shutdown();
+            prov.shutdown(true);
         }
     }
 
@@ -225,7 +225,7 @@ public class FullPageIdTableTest  {
         finally {
             long msPassed = U.currentTimeMillis() - seed;
             System.err.println("Seed used [" + seed + "] duration ["+ msPassed+ "] ms");
-            prov.shutdown();
+            prov.shutdown(true);
         }
     }
 

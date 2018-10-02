@@ -15,28 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.mem;
+package org.apache.ignite.internal.processors.cache.persistence.db.wal;
+
+import org.apache.ignite.configuration.WALMode;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * Direct memory provider interface. Not thread-safe.
+ *
  */
-public interface DirectMemoryProvider {
-    /**
-     * @param chunkSizes Initializes provider with the chunk sizes.
-     */
-    public void initialize(long[] chunkSizes);
+public class WalRolloverRecordLoggingLogOnlyTest extends WalRolloverRecordLoggingTest {
 
-    /**
-     * Shuts down the provider.
-     *
-     * @param deallocate {@code True} to deallocate memory, {@code false} to allow memory reuse.
-     */
-    public void shutdown(boolean deallocate);
-
-    /**
-     * Attempts to allocate next memory region. Will return {@code null} if no more regions are available.
-     *
-     * @return Next memory region.
-     */
-    public DirectMemoryRegion nextRegion();
+    /** {@inheritDoc} */
+    @NotNull @Override public WALMode walMode() {
+        return WALMode.LOG_ONLY;
+    }
 }
