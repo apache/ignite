@@ -812,8 +812,6 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         Ignite srv0 = ignite(0);
         Ignite srv1 = ignite(1);
 
-        List<Integer> keys = primaryKeys(srv0.cache(TEST_CACHE), putAll ? 3 : 1);
-
         ccfg = null;
 
         client = true;
@@ -826,6 +824,8 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
 
         IgniteCache<Object, Object> cache2 = updateNearEnabled ?
             client2.createNearCache(TEST_CACHE, new NearCacheConfiguration<>()) : client2.cache(TEST_CACHE);
+
+        List<Integer> keys = primaryKeys(srv0.cache(TEST_CACHE), putAll ? 3 : 1);
 
         if (putAll) {
             Map<Integer, Integer> map = new HashMap<>();
