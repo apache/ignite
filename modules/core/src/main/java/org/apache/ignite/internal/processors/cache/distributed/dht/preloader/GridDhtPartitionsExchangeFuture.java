@@ -842,8 +842,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (cctx.wal() != null)
                 cctx.wal().cleanupWalDirectories();
 
-            // Create node recovery record from scratch.
-            cctx.database().nodeStart(null);
+            // Perform node recovery from scratch.
+            cctx.database().restoreBinaryMemory(Collections.emptySet());
         }
 
         cctx.activate();
