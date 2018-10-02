@@ -54,6 +54,19 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testManyRequests() throws Exception {
+        for (int i = 0; i < 1000; i++) {
+            try (Jedis jedis = pool.getResource()) {
+                jedis.incr("key1");
+
+                jedis.get("nonExistKey");
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetSet() throws Exception {
         try (Jedis jedis = pool.getResource()) {
             jcache().put("getSetKey1", "1");
