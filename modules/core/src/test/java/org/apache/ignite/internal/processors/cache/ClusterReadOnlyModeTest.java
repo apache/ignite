@@ -128,41 +128,6 @@ public class ClusterReadOnlyModeTest extends GridCommonAbstractTest {
         assertDataStreamerReadOnlyMode(false);
     }
 
-
-    /**
-     *
-     */
-    public void testDestroyReadOnlyCache() throws Exception {
-        changeClusterReadOnlyMode(true);
-
-        try {
-            grid(0).cache(PART_ATOMIC_CACHE).destroy();
-
-            fail("Destroy must fail");
-        }
-        catch (Exception ex) {
-            // No-op.
-        }
-
-        try {
-            grid(0).destroyCache(REPL_ATOMIC_CACHE);
-
-            fail("Destroy must fail");
-        }
-        catch (Exception ex) {
-            // No-op.
-        }
-
-        try {
-            grid(0).destroyCaches(F.asList(PART_TX_CACHE, REPL_TX_CACHE));
-
-            fail("Destroy must fail");
-        }
-        catch (Exception ex) {
-            // No-op.
-        }
-    }
-
     /**
      * Change read only mode on all nodes.
      *
