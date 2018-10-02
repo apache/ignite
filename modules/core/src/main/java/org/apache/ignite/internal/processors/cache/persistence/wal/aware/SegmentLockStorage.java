@@ -58,7 +58,11 @@ public class SegmentLockStorage extends SegmentObservable {
      */
     @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
     void releaseWorkSegment(long absIdx) {
-        locked.compute(absIdx, (idx, count) -> count == 1 ? null : count - 1);
+        locked.compute(absIdx, (idx, count) -> {
+            assert count != null && count >= 1 : "cur=" + count + ", absIdx=" + absIdx;
+
+            return count == 1 ? null : count - 1;
+        });
 
         notifyObservers(absIdx);
     }
