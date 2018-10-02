@@ -686,6 +686,14 @@ class ClusterCachesInfo {
                         continue;
                     }
 
+                    if (req.destroy() && ctx.cache().context().readOnlyMode()) {
+                        ctx.cache().completeCacheStartFuture(req, false,
+                            new IgniteCheckedException("Failed to destroy cache, cluster is in read-only mode, " +
+                                "[cacheName=" + req.cacheName() + ']'));
+
+                        continue;
+                    }
+
                     DynamicCacheDescriptor old = registeredCaches.remove(req.cacheName());
 
                     if (req.restart())
