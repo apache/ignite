@@ -100,10 +100,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker.
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
-/**
- * TODO IGNITE-6739: tests reload
- * TODO IGNITE-6739: extend tests to use single/mutiple nodes, all tx types.
- * TODO IGNITE-6739: test with cache groups.
+/**GridPartitionedGetFuture
  */
 @SuppressWarnings("unchecked")
 public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
@@ -2384,8 +2381,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testMvccCoordinatorChangeSimple() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9722");
-
         Ignite srv0 = startGrid(0);
 
         final List<String> cacheNames = new ArrayList<>();
@@ -2398,12 +2393,14 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             srv0.createCache(ccfg);
         }
 
-        checkPutGet(cacheNames);
+        int valCtr = 0;
+
+        checkPutGet(cacheNames, ++valCtr);
 
         for (int i = 0; i < 3; i++) {
             startGrid(i + 1);
 
-            checkPutGet(cacheNames);
+            checkPutGet(cacheNames, ++valCtr);
 
             checkCoordinatorsConsistency(null);
         }
@@ -2417,7 +2414,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             for (String cacheName : cacheNames)
                 node.cache(cacheName);
 
-            checkPutGet(cacheNames);
+            checkPutGet(cacheNames, ++valCtr);
 
             checkCoordinatorsConsistency(null);
         }
@@ -2427,7 +2424,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
             awaitPartitionMapExchange();
 
-            checkPutGet(cacheNames);
+            checkPutGet(cacheNames, ++valCtr);
 
             checkCoordinatorsConsistency(null);
         }
@@ -2436,7 +2433,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @param cacheNames Cache names.
      */
-    private void checkPutGet(List<String> cacheNames) {
+    private void checkPutGet(List<String> cacheNames, int val) {
         List<Ignite> nodes = G.allGrids();
 
         assertFalse(nodes.isEmpty());
@@ -2444,8 +2441,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         Ignite putNode = nodes.get(ThreadLocalRandom.current().nextInt(nodes.size()));
 
         Map<Integer, Integer> vals = new HashMap();
-
-        Integer val = ThreadLocalRandom.current().nextInt();
 
         for (int i = 0; i < 10; i++)
             vals.put(i, val);
@@ -2638,9 +2633,9 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         try (IgniteDataStreamer<Integer, Integer> streamer = node.dataStreamer(cache.getName())) {
             for (int i = 0; i < KEYS; i++) {
-                streamer.addData(i, i);
+                streamer.addData(i, 1);
 
-                data.put(i, i);
+                data.put(i, 1);
             }
         }
 
@@ -2648,7 +2643,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         checkCacheData(data, cache.getName());
 
-        checkPutGet(F.asList(cache.getName()));
+        checkPutGet(F.asList(cache.getName()), 2);
     }
 
     /**
@@ -3418,19 +3413,42 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         Map prevVal = null;
 
+        Map<ReadMode, Map> readModeVals = new HashMap<>();
+
         for (int i = 0; i < readModes.length; i++) {
             ReadMode readMode = readModes[i];
+            prevVal = getAllByReadMode(inTx, cache, keys, readMode);
 
-            Map curVal = getAllByReadMode(inTx, cache, keys, readMode);
+            readModeVals.put(readMode, prevVal);
+        }
 
-            if (i == 0)
-                prevVal = curVal;
+        boolean equal = true;
+
+        Map compareVals = null;
+
+        for (Map vals : readModeVals.values()) {
+            if (compareVals == null)
+                compareVals = vals;
             else {
-                assertEquals("Different results on read modes " + readModes[i - 1] + " and " +
-                    readMode.name(), prevVal, curVal);
+                if (!F.eq(compareVals, vals)) {
+                    equal = false;
 
-                prevVal = curVal;
+                    break;
+                }
             }
+        }
+
+        if (!equal) {
+            StringBuilder errMsg = new StringBuilder("Different results on read modes:");
+
+            for (Map.Entry<ReadMode, Map> readModeValsEntry : readModeVals.entrySet()) {
+                ReadMode readMode = readModeValsEntry.getKey();
+                Map vals = readModeValsEntry.getValue();
+
+                errMsg.append("\n>>> " + readMode + ": " + vals);
+            }
+
+            fail(errMsg.toString());
         }
 
         return prevVal;
