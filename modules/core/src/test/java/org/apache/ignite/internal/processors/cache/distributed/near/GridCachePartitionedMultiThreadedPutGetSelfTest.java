@@ -175,7 +175,6 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      * @param isolation Isolation.
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"PointlessBooleanExpression"})
     private void doTest(final TransactionConcurrency concurrency, final TransactionIsolation isolation)
         throws Exception {
         final AtomicInteger cntr = new AtomicInteger();

@@ -401,7 +401,6 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     /**
      * Test that {@code ADD COLUMN} fails for dynamic table that has flat value.
      */
-    @SuppressWarnings({"ThrowFromFinallyBlock"})
     public void testTestAlterTableOnFlatValueDynamicTable() {
         try {
             run("CREATE TABLE TEST (id int primary key, x varchar) with \"wrap_value=false\"");

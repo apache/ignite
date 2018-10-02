@@ -346,7 +346,6 @@ public class GridSpiTestContext implements IgniteSpiContext {
      * @param topic Listener's topic.
      * @param lsnr Listener to add.
      */
-    @SuppressWarnings({"deprecation"})
     public void addMessageListener(GridTopic topic, GridMessageListener lsnr) {
         addMessageListener(lsnr, ((Object)topic).toString());
     }
@@ -675,8 +674,8 @@ public class GridSpiTestContext implements IgniteSpiContext {
 
         /** {@inheritDoc} */
         @SuppressWarnings({
-                "ConstantConditions",
-            "OverlyStrongTypeCast"})
+                "ConstantConditions"
+        })
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             GridIoUserMessage ioMsg = (GridIoUserMessage)msg;
 

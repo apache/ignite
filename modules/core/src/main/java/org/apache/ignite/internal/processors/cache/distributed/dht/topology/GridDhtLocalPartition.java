@@ -180,7 +180,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param grp Cache group.
      * @param id Partition ID.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public GridDhtLocalPartition(GridCacheSharedContext ctx,
         CacheGroupContext grp,
         int id) {

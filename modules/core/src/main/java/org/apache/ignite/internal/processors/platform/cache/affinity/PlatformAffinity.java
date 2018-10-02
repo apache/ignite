@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Native cache wrapper implementation.
  */
-@SuppressWarnings({"UnusedDeclaration", "TryFinallyCanBeTryWithResources"})
+@SuppressWarnings({"TryFinallyCanBeTryWithResources"})
 public class PlatformAffinity extends PlatformAbstractTarget {
     /** */
     public static final int OP_AFFINITY_KEY = 1;

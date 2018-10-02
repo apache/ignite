@@ -551,7 +551,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CatchGenericClass"})
     @Override public final void userCommit() throws IgniteCheckedException {
         TransactionState state = state();
 

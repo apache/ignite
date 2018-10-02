@@ -364,7 +364,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     private long reconDelay = DFLT_RECONNECT_DELAY;
 
     /** Statistics print frequency. */
-    @SuppressWarnings({"RedundantFieldInitialization"})
     protected long statsPrintFreq = DFLT_STATS_PRINT_FREQ;
 
     /** Maximum message acknowledgement timeout. */

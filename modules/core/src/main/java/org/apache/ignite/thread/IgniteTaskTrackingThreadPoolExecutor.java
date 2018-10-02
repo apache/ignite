@@ -131,7 +131,6 @@ public class IgniteTaskTrackingThreadPoolExecutor extends IgniteThreadPoolExecut
      *
      * @return {@code True} if any task execution resulted in error.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public final boolean isError() {
         return err.get() != null;
     }

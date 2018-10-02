@@ -46,7 +46,6 @@ public class SegmentLockStorage extends SegmentObservable {
      * @return <ul><li>{@code True} if can read, no lock is held, </li><li>{@code false} if work segment, need release
      * segment later, use {@link #releaseWorkSegment} for unlock</li> </ul>
      */
-    @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
     synchronized boolean lockWorkSegment(long absIdx) {
         Integer cur = locked.get(absIdx);
 
@@ -60,7 +59,6 @@ public class SegmentLockStorage extends SegmentObservable {
     /**
      * @param absIdx Segment absolute index.
      */
-    @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
     synchronized void releaseWorkSegment(long absIdx) {
         Integer cur = locked.get(absIdx);
 

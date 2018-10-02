@@ -80,7 +80,6 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
      * @param igniteInstanceName Ignite instance name (can be {@code null} for default grid).
      * @param id8 Node ID.
      */
-    @SuppressWarnings({"SimplifiableIfStatement"})
     public GridLoggerProxy(IgniteLogger impl, @Nullable Object ctgr, @Nullable String igniteInstanceName, String id8) {
         assert impl != null;
 

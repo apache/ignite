@@ -376,7 +376,6 @@ public class GridMetadataAwareAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"OverriddenMethodCallDuringObjectConstruction"})
     @Override public Object clone() {
         try {
             GridMetadataAwareAdapter clone = (GridMetadataAwareAdapter)super.clone();

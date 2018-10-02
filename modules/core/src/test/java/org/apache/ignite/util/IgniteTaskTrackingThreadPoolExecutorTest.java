@@ -59,7 +59,6 @@ public class IgniteTaskTrackingThreadPoolExecutorTest extends TestCase {
     }
 
     /** */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testWithException() throws IgniteCheckedException {
         int fail = 5555;
 

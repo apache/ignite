@@ -161,7 +161,6 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored"})
     public void testSingleAddress() throws Exception {
         try {
             // Don't use REST_PORT to test connection fails if the only this port is configured

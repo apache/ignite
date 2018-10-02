@@ -61,7 +61,6 @@ public abstract class PlatformAbstractTask implements ComputeTask<Object, Void> 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         assert rcvd.isEmpty() : "Should not cache result in Java for interop task";
 

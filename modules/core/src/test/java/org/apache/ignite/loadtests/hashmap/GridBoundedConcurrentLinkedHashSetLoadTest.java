@@ -92,7 +92,6 @@ public class GridBoundedConcurrentLinkedHashSetLoadTest {
 
         for (int i = 0; i < threadCnt; i++)
             producers.add(new Callable<Object>() {
-                @SuppressWarnings({"InfiniteLoopStatement"})
                 @Override public Object call() throws Exception {
                     UUID id = UUID.randomUUID();
 

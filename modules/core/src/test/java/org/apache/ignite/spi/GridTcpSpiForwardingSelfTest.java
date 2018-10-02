@@ -76,7 +76,6 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     private boolean ipFinderUseLocPorts;
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"deprecation"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
 

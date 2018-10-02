@@ -112,7 +112,6 @@ public class GridDsiClient implements Callable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"InfiniteLoopStatement"})
     @Nullable @Override public Object call() throws Exception {
         IgniteCompute comp = g.compute(g.cluster().forPredicate(serverNode()));
 

@@ -58,7 +58,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Checks basic multi-node transactional operations.
  */
-@SuppressWarnings({"ConstantConditions", "PointlessArithmeticExpression"})
+@SuppressWarnings({"PointlessArithmeticExpression"})
 public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTest {
     /** Debug flag. */
     private static final boolean DEBUG = false;

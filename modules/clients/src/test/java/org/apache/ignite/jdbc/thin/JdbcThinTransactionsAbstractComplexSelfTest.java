@@ -271,7 +271,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testBatchDmlStatementsIntermediateFailure() throws SQLException {
         insertPerson(6, "John", "Doe", 2, 2);
 
@@ -688,7 +687,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      *     (must yield an exception).
      * @throws Exception if failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void doTestRepeatableRead(final IgniteInClosure<Connection> concurrentWriteClo,
         final IgniteInClosure<Connection> afterReadClo) throws Exception {
         final CountDownLatch repeatableReadLatch = new CountDownLatch(1);

@@ -84,7 +84,6 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     private final ConcurrentMap<String, Class> cacheMap = new ConcurrentHashMap<>();
 
     /** Diagnostic name of this class loader. */
-    @SuppressWarnings({"UnusedDeclaration"})
     private final String name;
 
     /** Igfs Helper. */

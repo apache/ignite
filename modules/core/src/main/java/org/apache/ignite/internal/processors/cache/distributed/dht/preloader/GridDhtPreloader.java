@@ -513,7 +513,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * @param keys Keys to request.
      * @return Future for request.
      */
-    @SuppressWarnings({"RedundantCast"})
     @Override public GridDhtFuture<Object> request(GridCacheContext cctx,
         Collection<KeyCacheObject> keys,
         AffinityTopologyVersion topVer) {

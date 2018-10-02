@@ -557,7 +557,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param c Handler closure.
      * @param plc Message policy.
      */
-    @SuppressWarnings({"ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
+    @SuppressWarnings({"ConstantConditions"})
     private void onMessage0(final UUID nodeId, final GridCacheMessage cacheMsg,
         final IgniteBiInClosure<UUID, GridCacheMessage> c, byte plc) {
         try {
@@ -1596,7 +1596,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings({"unchecked"})
         @Override public void onMessage(final UUID nodeId, Object msg, byte plc) {
             if (log.isDebugEnabled())
                 log.debug("Received cache ordered message [nodeId=" + nodeId + ", msg=" + msg + ']');

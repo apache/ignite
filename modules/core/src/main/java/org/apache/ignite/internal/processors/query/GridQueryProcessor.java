@@ -583,7 +583,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param schemaOp Schema operation.
      */
-    @SuppressWarnings({"ThrowableInstanceNeverThrown"})
     private void startSchemaChange(SchemaOperation schemaOp) {
         assert Thread.holdsLock(stateMux);
         assert !schemaOp.started();
@@ -678,7 +677,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param schema Initial schema.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored"})
     public void onCacheStart0(GridCacheContext<?, ?> cctx, QuerySchema schema)
         throws IgniteCheckedException {
 
@@ -1833,7 +1831,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param prevRow Previous row.
      * @throws IgniteCheckedException In case of error.
      */
-    @SuppressWarnings({"ConstantConditions"})
     public void store(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
         boolean prevRowAvailable)
         throws IgniteCheckedException {

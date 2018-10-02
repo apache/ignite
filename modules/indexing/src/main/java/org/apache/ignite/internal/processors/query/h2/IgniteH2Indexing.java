@@ -1044,7 +1044,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public GridQueryFieldsResult queryLocalSqlFields(String schemaName, String qry, @Nullable Collection<Object> params,
         IndexingQueryFilter filter, boolean enforceJoinOrder, boolean startTx, int timeout,
         GridQueryCancel cancel) throws IgniteCheckedException {
@@ -1066,7 +1065,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     GridQueryFieldsResult queryLocalSqlFields(final String schemaName, String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder,
         boolean startTx, int qryTimeout, final GridQueryCancel cancel,
@@ -1897,7 +1895,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param cliCtx Client context, or {@code null} if not applicable.
      * @return Result or {@code null} if cannot parse/process this query.
      */
-    @SuppressWarnings({"ConstantConditions", "StatementWithEmptyBody"})
+    @SuppressWarnings({"ConstantConditions"})
     private List<FieldsQueryCursor<List<?>>> tryQueryDistributedSqlFieldsNative(String schemaName, SqlFieldsQuery qry,
         @Nullable SqlClientContext cliCtx) {
         // Heuristic check for fast return.
@@ -2061,7 +2059,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param tx Transaction.
      * @throws IgniteCheckedException if failed.
      */
-    @SuppressWarnings("ThrowFromFinallyBlock")
     private void doCommit(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
         try {
             if (!tx.isRollbackOnly())
@@ -2077,7 +2074,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param tx Transaction.
      * @throws IgniteCheckedException if failed.
      */
-    @SuppressWarnings("ThrowFromFinallyBlock")
     private void doRollback(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
         try {
             tx.rollback();

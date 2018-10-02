@@ -2789,7 +2789,6 @@ public abstract class IgniteUtils {
      * @return Byte value.
      * @throws IllegalArgumentException If input character differ from certain hex characters.
      */
-    @SuppressWarnings({"fallthrough"})
     private static byte hexCharToByte(char ch) throws IllegalArgumentException {
         switch (ch) {
             case '0':

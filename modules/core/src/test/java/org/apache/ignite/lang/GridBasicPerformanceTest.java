@@ -74,11 +74,9 @@ public class GridBasicPerformanceTest {
     private static final ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
     /** Test variable. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private static int n;
 
     /** Volatile variable. */
-    @SuppressWarnings({"UnusedDeclaration"})
     private static volatile int v;
 
     /** Atomic integer. */

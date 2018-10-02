@@ -49,7 +49,6 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
         this.embedded = embedded;
 
         embedded.listen(new AL1() {
-            @SuppressWarnings({"CatchGenericClass"})
             @Override public void applyx(IgniteInternalFuture<B> embedded) {
                 try {
                     onDone(c.apply(embedded.get(), null));

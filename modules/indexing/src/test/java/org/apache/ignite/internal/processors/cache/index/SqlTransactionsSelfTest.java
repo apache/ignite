@@ -181,7 +181,6 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that attempting to perform a cache API operation from within an SQL transaction fails.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void checkCacheOperationThrows(final String opName, final Object... args) {
         execute(node(), "BEGIN");
 
@@ -264,7 +263,6 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that attempting to perform a cache PUT operation from within an SQL transaction fails.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCacheOperationsFromSqlTransaction() {
         checkCacheOperationThrows("get", 1);
 

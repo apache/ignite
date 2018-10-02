@@ -527,7 +527,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"IfMayBeConditional", "unchecked"})
+    @SuppressWarnings({"unchecked"})
     @Override public GridCloseableIterator executeScanQuery() throws IgniteCheckedException {
         assert type == SCAN : "Wrong processing of query: " + type;
 

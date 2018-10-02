@@ -975,7 +975,6 @@ class OptimizedClassDescriptor {
      * @param cls Class.
      * @return Type.
      */
-    @SuppressWarnings("IfMayBeConditional")
     private OptimizedFieldType fieldType(Class<?> cls) {
         OptimizedFieldType type;
 

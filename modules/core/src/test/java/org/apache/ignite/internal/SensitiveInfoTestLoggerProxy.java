@@ -137,7 +137,6 @@ public class SensitiveInfoTestLoggerProxy implements IgniteLogger, LifecycleAwar
      * @param gridName Grid name (can be {@code null} for default grid).
      * @param id8 Node ID.
      */
-    @SuppressWarnings({"SimplifiableIfStatement"})
     public SensitiveInfoTestLoggerProxy(IgniteLogger impl,
         @Nullable Object ctgr,
         @Nullable String gridName,
