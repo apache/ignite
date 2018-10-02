@@ -67,7 +67,9 @@ public class IndexStoragePageMemoryImplTest extends IndexStorageSelfTest {
 
         DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), allocationPath);
 
-        IgniteConfiguration cfg = new IgniteConfiguration().setEncryptionSpi(new NoopEncryptionSpi());
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setEncryptionSpi(new NoopEncryptionSpi());
 
         GridTestKernalContext cctx = new GridTestKernalContext(log, cfg);
 

@@ -52,7 +52,9 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
 
         DirectMemoryProvider provider = new UnsafeMemoryProvider(log);
 
-        IgniteConfiguration cfg = new IgniteConfiguration().setEncryptionSpi(new NoopEncryptionSpi());
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setEncryptionSpi(new NoopEncryptionSpi());
 
         GridTestKernalContext cctx = new GridTestKernalContext(log, cfg);
 

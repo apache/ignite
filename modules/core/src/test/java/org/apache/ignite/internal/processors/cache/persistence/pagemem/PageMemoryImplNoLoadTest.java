@@ -57,7 +57,9 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
 
         DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), memDir);
 
-        IgniteConfiguration cfg = new IgniteConfiguration().setEncryptionSpi(new NoopEncryptionSpi());
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setEncryptionSpi(new NoopEncryptionSpi());
 
         GridTestKernalContext cctx = new GridTestKernalContext(log, cfg);
 
