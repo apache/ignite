@@ -2265,6 +2265,17 @@
                     <xs:documentation>Whether user authentication is enabled for the cluster.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="mvccVacuumFrequency" type="xs:long">
+                <xs:annotation>
+                    <xs:documentation>Time interval between MVCC vacuum runs in milliseconds.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+
+            <xs:attribute name="mvccVacuumThreadCount" type="xs:int">
+                <xs:annotation>
+                    <xs:documentation>Number of MVCC vacuum threads.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="clientConnectorConfigurationEnabled" type="xs:boolean">
                 <xs:annotation>
                     <xs:documentation>Whether client connector should be enabled (allow thin clients, ODBC and JDBC drivers to work with Ignite).</xs:documentation>
