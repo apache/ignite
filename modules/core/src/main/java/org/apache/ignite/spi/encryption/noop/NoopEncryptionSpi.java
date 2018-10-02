@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
 public class NoopEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi {
     /** {@inheritDoc} */
     @Override public byte[] masterKeyDigest() {
-        return new byte[0];
+        return null;
     }
 
     /** {@inheritDoc} */
