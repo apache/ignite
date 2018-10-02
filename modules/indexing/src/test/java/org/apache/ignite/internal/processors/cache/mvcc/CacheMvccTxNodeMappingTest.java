@@ -48,7 +48,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Test checks that transactions started on nodes collect all nodes participating in distributed transaction.
  */
-// t0d0 cover local backups in tests <=> near node is server
 public class CacheMvccTxNodeMappingTest extends CacheMvccAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
@@ -58,14 +57,34 @@ public class CacheMvccTxNodeMappingTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    public void testAllTxNodesAreTracked() throws Exception {
+    public void testAllTxNodesAreTrackedCli() throws Exception {
+        checkAllTxNodesAreTracked(false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testAllTxNodesAreTrackedSrv() throws Exception {
+        checkAllTxNodesAreTracked(true);
+    }
+
+    /**
+     * @param nearSrv {@code true} specifies that node initiated tx is server, otherwise it is client.
+     */
+    private void checkAllTxNodesAreTracked(boolean nearSrv) throws Exception {
         int srvCnt = 4;
 
         startGridsMultiThreaded(srvCnt);
 
-        client = true;
+        IgniteEx ign;
 
-        IgniteEx ign = startGrid(srvCnt);
+        if (nearSrv)
+            ign = grid(0);
+        else {
+            client = true;
+
+            ign = startGrid(srvCnt);
+        }
 
         IgniteCache<Object, Object> cache = ign.createCache(basicCcfg().setBackups(2));
 
@@ -105,25 +124,25 @@ public class CacheMvccTxNodeMappingTest extends CacheMvccAbstractTest {
         );
 
         // cache put
-        checkScenario(srvCnt, txNodes, () -> {
+        checkScenario(ign, srvCnt, txNodes, () -> {
             cache.put(key1, 42);
             cache.put(key2, 42);
         });
 
         // fast update
-        checkScenario(srvCnt, txNodes, () -> {
+        checkScenario(ign, srvCnt, txNodes, () -> {
             cache.query(new SqlFieldsQuery("merge into Integer(_key, _val) values(?, 42)").setArgs(key1));
             cache.query(new SqlFieldsQuery("merge into Integer(_key, _val) values(?, 42)").setArgs(key2));
         });
 
         // cursor update
-        checkScenario(srvCnt, txNodes, () -> {
+        checkScenario(ign, srvCnt, txNodes, () -> {
             cache.query(new SqlFieldsQuery("update Integer set _val = _val + 1 where _key = ?").setArgs(key1));
             cache.query(new SqlFieldsQuery("update Integer set _val = _val + 1 where _key = ?").setArgs(key2));
         });
 
         // broadcast update
-        checkScenario(srvCnt, txNodes, () -> {
+        checkScenario(ign, srvCnt, txNodes, () -> {
             cache.query(new SqlFieldsQuery("update Integer set _val = _val + 1").setArgs(key1));
         });
 
@@ -134,21 +153,20 @@ public class CacheMvccTxNodeMappingTest extends CacheMvccAbstractTest {
         );
 
         // cursor select for update
-        checkScenario(srvCnt, sfuTxNodes, () -> {
+        checkScenario(ign, srvCnt, sfuTxNodes, () -> {
             cache.query(new SqlFieldsQuery("select _val from Integer where _key = ? for update").setArgs(key1)).getAll();
             cache.query(new SqlFieldsQuery("select _val from Integer where _key = ? for update").setArgs(key2)).getAll();
         });
 
         // broadcast select for update
-        checkScenario(srvCnt, sfuTxNodes, () -> {
+        checkScenario(ign, srvCnt, sfuTxNodes, () -> {
             cache.query(new SqlFieldsQuery("select _val from Integer for update").setArgs(key1)).getAll();
         });
     }
 
     /** */
-    private void checkScenario(int srvCnt, ImmutableMap<UUID, Set<UUID>> txNodes, Runnable r) throws Exception {
-        IgniteEx ign = grid(srvCnt);
-
+    private void checkScenario(IgniteEx ign, int srvCnt, ImmutableMap<UUID, Set<UUID>> txNodes, Runnable r)
+        throws Exception {
         try (Transaction userTx = ign.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             r.run();
 
