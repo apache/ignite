@@ -31,6 +31,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
+ * Tests to check encryption of entry bigger then page size.
  */
 public class EncryptedCacheBigEntryTest extends AbstractEncryptionTest {
     /** {@inheritDoc} */

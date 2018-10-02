@@ -49,6 +49,7 @@ import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.CI
 import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
 
 /**
+ * Abstract encryption test.
  */
 public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
     /** */
