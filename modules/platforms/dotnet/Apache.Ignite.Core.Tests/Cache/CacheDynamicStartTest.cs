@@ -132,7 +132,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         private static void Check(string cacheName)
         {
             var cacheData = Ignition.GetIgnite(GridData).GetCache<DynamicTestKey, DynamicTestValue>(cacheName);
-
+            
             var cacheDataNoCfg = 
                 Ignition.GetIgnite(GridDataNoCfg).GetCache<DynamicTestKey, DynamicTestValue>(cacheName);
 
