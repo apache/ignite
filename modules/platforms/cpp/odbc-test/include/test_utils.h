@@ -110,6 +110,14 @@ namespace ignite_test
     ignite::Ignite StartNode(const char* cfgFile, const char* name);
 
     /**
+     * Start node with the config for the current platform.
+     *
+     * @param cfg Basic config path. Changed to platform config if needed.
+     * @param name Instance name.
+     */
+    ignite::Ignite StartPlatformNode(const char* cfg, const char* name);
+
+    /**
      * Remove all the LFS artifacts.
      */
     void ClearLfs();

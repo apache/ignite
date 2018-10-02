@@ -42,8 +42,8 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccMarkUpdat
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateNewTxStateHintRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateTxStateHintRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteHistoricalIterator;
@@ -106,10 +106,12 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.INITIAL_VERSION;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_BIT_OFF;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_MASK;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compare;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compareNewVersion;
@@ -119,8 +121,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.state;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.unexpectedStateException;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager.EMPTY_CURSOR;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.MVCC_HINTS_BIT_OFF;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.MVCC_HINTS_MASK;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.NOOP;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.PUT;
 
@@ -514,7 +514,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         MvccSnapshot mvccSnapshot,
         boolean primary,
         boolean needHistory,
-        boolean noCreate) throws IgniteCheckedException {
+        boolean noCreate,
+        @Nullable CacheEntryPredicate filter,
+        boolean retVal) throws IgniteCheckedException {
         if (entry.detached() || entry.isNear())
             return null;
 
@@ -526,9 +528,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             ver,
             expireTime,
             mvccSnapshot,
+            filter,
             primary,
             needHistory,
-            noCreate);
+            noCreate,
+            retVal);
     }
 
     /** {@inheritDoc} */
@@ -536,7 +540,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         GridCacheMapEntry entry,
         MvccSnapshot mvccSnapshot,
         boolean primary,
-        boolean needHistory) throws IgniteCheckedException {
+        boolean needHistory,
+        @Nullable CacheEntryPredicate filter,
+        boolean retVal) throws IgniteCheckedException {
         if (entry.detached() || entry.isNear())
             return null;
 
@@ -545,8 +551,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         return dataStore(entry.localPartition()).mvccRemove(entry.context(),
             entry.key(),
             mvccSnapshot,
+            filter,
             primary,
-            needHistory);
+            needHistory,
+            retVal);
     }
 
     /** {@inheritDoc} */
@@ -1401,23 +1409,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         private final CacheDataTree dataTree;
 
         /** Update counter. */
-        protected final AtomicLong cntr = new AtomicLong();
-
-        /**
-         * Mvcc update counter. This counter is used for an mvcc-style entries updates where this counter is
-         * incremented on each entry write (which happens before commit), but main update counter is updated
-         * on commit phase only.
-         */
-        protected final AtomicLong mvccUpdCntr = new AtomicLong();
+        protected final PartitionUpdateCounter pCntr = new PartitionUpdateCounter(log);
 
         /** Partition size. */
         private final AtomicLong storageSize = new AtomicLong();
 
         /** */
         private final ConcurrentMap<Integer, AtomicLong> cacheSizes = new ConcurrentHashMap<>();
-
-        /** Initial update counter. */
-        protected long initCntr;
 
         /** Mvcc remove handler. */
         private final PageHandler<MvccVersion, Boolean> mvccUpdateMarker = new MvccMarkUpdatedHandler();
@@ -1514,35 +1512,37 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public long nextUpdateCounter() {
-            return cntr.incrementAndGet();
+            return pCntr.next();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long initialUpdateCounter() {
+            return pCntr.initial();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void updateInitialCounter(long cntr) {
+            pCntr.updateInitial(cntr);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getAndIncrementUpdateCounter(long delta) {
+            return pCntr.getAndAdd(delta);
         }
 
         /** {@inheritDoc} */
         @Override public long updateCounter() {
-            return cntr.get();
+            return pCntr.get();
         }
 
         /** {@inheritDoc} */
         @Override public void updateCounter(long val) {
-            while (true) {
-                long val0 = cntr.get();
-
-                if (val0 >= val)
-                    break;
-
-                if (cntr.compareAndSet(val0, val))
-                    break;
-            }
+            pCntr.update(val);
         }
 
         /** {@inheritDoc} */
-        @Override public long nextMvccUpdateCounter() {
-            return mvccUpdCntr.incrementAndGet();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long mvccUpdateCounter() {
-            return mvccUpdCntr.get();
+        @Override public void updateCounter(long start, long delta) {
+            pCntr.update(start, delta);
         }
 
         /** {@inheritDoc} */
@@ -1856,9 +1856,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             GridCacheVersion ver,
             long expireTime,
             MvccSnapshot mvccSnapshot,
+            @Nullable CacheEntryPredicate filter,
             boolean primary,
             boolean needHistory,
-            boolean noCreate) throws IgniteCheckedException {
+            boolean noCreate,
+            boolean retVal) throws IgniteCheckedException {
             assert mvccSnapshot != null;
             assert primary || !needHistory;
 
@@ -1874,7 +1876,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 key.valueBytes(coCtx);
                 val.valueBytes(coCtx);
 
-                MvccUpdateDataRow updateRow = new MvccUpdateDataRow(
+                 MvccUpdateDataRow updateRow = new MvccUpdateDataRow(
                     cctx,
                     key,
                     val,
@@ -1883,11 +1885,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     expireTime,
                     mvccSnapshot,
                     null,
+                    filter,
                     primary,
                     false,
                     needHistory,
                     // we follow fast update visit flow here if row cannot be created by current operation
-                    noCreate);
+                    noCreate,
+                    retVal);
 
                 assert cctx.shared().database().checkpointLockIsHeldByThread();
 
@@ -1898,13 +1902,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 if (res == ResultType.LOCKED // cannot update locked
                     || res == ResultType.VERSION_MISMATCH) // cannot update on write conflict
                     return updateRow;
-                else if (res == ResultType.VERSION_FOUND) {
+                else if (res == ResultType.VERSION_FOUND || // exceptional case
+                        res == ResultType.FILTERED || // Operation should be skipped.
+                        (res == ResultType.PREV_NULL && noCreate)  // No op.
+                    ) {
                     // Do nothing, except cleaning up not needed versions
-                    cleanup(cctx, updateRow.cleanupRows());
-
-                    return updateRow;
-                }
-                else if (res == ResultType.PREV_NULL && noCreate) {
                     cleanup(cctx, updateRow.cleanupRows());
 
                     return updateRow;
@@ -1969,8 +1971,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         @Override public MvccUpdateResult mvccRemove(GridCacheContext cctx,
             KeyCacheObject key,
             MvccSnapshot mvccSnapshot,
+            @Nullable CacheEntryPredicate filter,
             boolean primary,
-            boolean needHistory) throws IgniteCheckedException {
+            boolean needHistory,
+            boolean retVal) throws IgniteCheckedException {
             assert mvccSnapshot != null;
             assert primary || mvccSnapshot.activeTransactions().size() == 0 : mvccSnapshot;
             assert primary || !needHistory;
@@ -1995,10 +1999,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     0,
                     mvccSnapshot,
                     null,
+                    filter,
                     primary,
                     false,
                     needHistory,
-                    true);
+                    true,
+                    retVal);
 
                 assert cctx.shared().database().checkpointLockIsHeldByThread();
 
@@ -2009,7 +2015,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 if (res == ResultType.LOCKED // cannot update locked
                     || res == ResultType.VERSION_MISMATCH) // cannot update on write conflict
                     return updateRow;
-                else if (res == ResultType.VERSION_FOUND) {
+                else if (res == ResultType.VERSION_FOUND || res == ResultType.FILTERED) {
                     // Do nothing, except cleaning up not needed versions
                     cleanup(cctx, updateRow.cleanupRows());
 
@@ -2059,8 +2065,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     0,
                     mvccSnapshot,
                     null,
+                    null,
                     true,
                     true,
+                    false,
                     false,
                     false);
 
@@ -2771,29 +2779,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public long initialUpdateCounter() {
-            return initCntr;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void updateInitialCounter(long cntr) {
-            if (updateCounter() < cntr)
-                updateCounter(cntr);
-
-            initCntr = cntr;
-        }
-
-        /** {@inheritDoc} */
         @Override public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner) {
             rowStore().setRowCacheCleaner(rowCacheCleaner);
         }
 
         /** {@inheritDoc} */
         @Override public void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes) {
-            initCntr = updCntr;
-            storageSize.set(size);
+            pCntr.init(updCntr);
 
-            cntr.set(updCntr);
+            storageSize.set(size);
 
             if (cacheSizes != null) {
                 for (Map.Entry<Integer, Long> e : cacheSizes.entrySet())
@@ -3143,13 +3137,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             long crd = iox.mvccCoordinator(pageAddr, offset);
             long cntr = iox.mvccCounter(pageAddr, offset);
             int opCntrAndHint = iox.mvccOperationCounter(pageAddr, offset);
-            int opCntr = opCntrAndHint & ~MVCC_HINTS_MASK;
+            int opCntr = opCntrAndHint & ~MVCC_OP_COUNTER_MASK;
             byte txState = (byte)(opCntrAndHint >>> MVCC_HINTS_BIT_OFF);
 
             long newCrd = iox.newMvccCoordinator(pageAddr, offset);
             long newCntr = iox.newMvccCounter(pageAddr, offset);
             int newOpCntrAndHint = iox.newMvccOperationCounter(pageAddr, offset);
-            int newOpCntr = newOpCntrAndHint & ~MVCC_HINTS_MASK;
+            int newOpCntr = newOpCntrAndHint & ~MVCC_OP_COUNTER_MASK;
             byte newTxState = (byte)(newOpCntrAndHint >>> MVCC_HINTS_BIT_OFF);
 
             assert crd == newRow.mvccCoordinatorVersion();

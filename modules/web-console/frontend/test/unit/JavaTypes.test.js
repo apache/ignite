@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import JavaTypes from '../../app/services/JavaTypes.service.js';
+import JavaTypes from '../../app/services/JavaTypes.service';
 
 import ClusterDflts from '../../app/modules/configuration/generator/defaults/Cluster.service';
 import CacheDflts from '../../app/modules/configuration/generator/defaults/Cache.service';
