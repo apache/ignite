@@ -97,7 +97,6 @@ import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -158,8 +157,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
-import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteTaskTrackingThreadPoolExecutor;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
@@ -854,6 +853,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
         finally {
             checkpointReadUnlock();
+
+            U.log(log, "Resume logging performed in " + (System.currentTimeMillis() - time) + " ms.");
         }
     }
 
@@ -875,32 +876,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             // First, bring memory to the last consistent checkpoint state if needed.
             // This method should return a pointer to the last valid record in the WAL.
-            WALPointer restore = restoreMemory(status,
+            WALPointer tailWalPtr = restoreMemory(status,
                 false,
                 (PageMemoryEx)dataRegionMap.get(METASTORE_DATA_REGION_NAME).pageMemory(),
                 cacheGrps);
 
-            if (restore == null && !status.endPtr.equals(CheckpointStatus.NULL_PTR)) {
-                throw new StorageException("Restore wal pointer = " + restore + ", while status.endPtr = " +
+            if (tailWalPtr == null && !status.endPtr.equals(CheckpointStatus.NULL_PTR)) {
+                throw new StorageException("Restore wal pointer = " + tailWalPtr + ", while status.endPtr = " +
                     status.endPtr + ". Can't restore memory - critical part of WAL archive is missing.");
             }
 
-            // Temporary activate manager to be used for writing memory restore record.
-            cctx.wal().onActivate(cctx.kernalContext());
+            nodeStart(tailWalPtr);
 
-            cctx.wal().resumeLogging(restore);
+            cctx.wal().tailWalPointer(tailWalPtr);
 
-            WALPointer ptr = cctx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
-
-            if (ptr != null) {
-                cctx.wal().flush(ptr, true);
-
-                nodeStart(ptr);
-            }
-
-            cctx.wal().onDeActivate(cctx.kernalContext());
-
-            return restore;
+            return tailWalPtr;
         }
         catch (IgniteCheckedException e) {
             if (X.hasCause(e, StorageException.class, IOException.class))
@@ -916,14 +906,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
-    /**
-     * Creates file with current timestamp and specific "node-started.bin" suffix
-     * and writes into memory recovery pointer.
-     *
-     * @param ptr Memory recovery wal pointer.
-     */
-    private void nodeStart(WALPointer ptr) throws IgniteCheckedException {
-        FileWALPointer p = (FileWALPointer)ptr;
+    /** {@inheritDoc} */
+    @Override public void nodeStart(@Nullable WALPointer ptr) throws IgniteCheckedException {
+        FileWALPointer p = ptr == null ? new FileWALPointer(0, 0, 0) : (FileWALPointer)ptr;
 
         String fileName = U.currentTimeMillis() + NODE_STARTED_FILE_NAME_SUFFIX;
         String tmpFileName = fileName + FilePageStoreManager.TMP_SUFFIX;
