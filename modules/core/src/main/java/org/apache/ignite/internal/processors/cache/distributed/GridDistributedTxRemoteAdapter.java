@@ -841,6 +841,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                 throw new IgniteCheckedException("Invalid transaction state for commit [state=" + state + ", tx=" + this + ']');
 
             rollbackRemoteTx();
+
+            return;
         }
 
         commitIfLocked();

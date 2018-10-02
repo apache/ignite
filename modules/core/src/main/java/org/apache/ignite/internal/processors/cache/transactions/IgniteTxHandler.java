@@ -1401,6 +1401,14 @@ public class IgniteTxHandler {
             }
         }
         catch (Throwable e) {
+            try {
+                if (req.commit())
+                    tx.rollbackRemoteTx();
+            }
+            catch (Throwable e0) {
+                e.addSuppressed(e0);
+            }
+
             ((IgniteTxAdapter)tx).logTxFinishErrorSafe(log, req.commit(), e);
 
             ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
