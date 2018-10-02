@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  *
  * @deprecated Previously, used to track node started\stopped states. But in fact only
  * mark files created by method GridCacheDatabaseSharedManager#nodeStart(WALPointer)
- * used. Should be removed in 3.0 relese.
+ * used. Should be removed in 3.0 release.
  */
 @Deprecated
 public class MemoryRecoveryRecord extends WALRecord {
