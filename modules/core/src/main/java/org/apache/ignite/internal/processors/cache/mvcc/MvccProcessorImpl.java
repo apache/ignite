@@ -265,11 +265,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 throw new IgniteException("Cannot start MVCC transactional cache. " +
                     "MVCC is unsupported by the cluster.");
 
-            if (ccfg.getCacheStoreFactory() != null) {
-                throw new IgniteCheckedException("Transactional cache may not have a third party cache store when " +
-                    "MVCC is enabled.");
-            }
-
             if (ccfg.getExpiryPolicyFactory() != null && !(ccfg.getExpiryPolicyFactory().create() instanceof
                 EternalExpiryPolicy)) {
                 throw new IgniteCheckedException("Transactional cache may not have expiry policy when " +

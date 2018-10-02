@@ -19,18 +19,27 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
+import javax.cache.Cache;
+import javax.cache.configuration.Factory;
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.ExpiryPolicy;
+import java.io.Serializable;
 import java.util.UUID;
 
+import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
@@ -189,6 +198,11 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
     @SuppressWarnings("unchecked")
     public void testTransactionalSnapshotLimitations() throws Exception {
         assertCannotStart(
+            mvccCacheConfig().setCacheMode(LOCAL),
+            "LOCAL cache mode cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+
+        assertCannotStart(
             mvccCacheConfig().setNearConfiguration(new NearCacheConfiguration<>()),
             "near cache cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
         );
@@ -207,6 +221,56 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
             mvccCacheConfig().setWriteBehindEnabled(true),
             "writeBehindEnabled cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
         );
+
+        assertCannotStart(
+            mvccCacheConfig().setExpiryPolicyFactory(new TestExpiryPolicyFactory()),
+            "expiry policy cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+
+        assertCannotStart(
+            mvccCacheConfig().setInterceptor(new TestCacheInterceptor()),
+            "interceptor cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+    }
+
+    /**
+     * Test expiry policy.
+     */
+    private static class TestExpiryPolicyFactory implements Factory<ExpiryPolicy>, Serializable {
+        /** {@inheritDoc} */
+        @Override public ExpiryPolicy create() {
+            return null;
+        }
+    }
+
+    /**
+     * Test cache interceptor.
+     */
+    private static class TestCacheInterceptor implements CacheInterceptor, Serializable {
+        /** {@inheritDoc} */
+        @Nullable @Override public Object onGet(Object key, @Nullable Object val) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onAfterPut(Cache.Entry entry) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onAfterRemove(Cache.Entry entry) {
+            // No-op.
+        }
     }
 
     /**
@@ -224,12 +288,12 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
             try {
                 node.getOrCreateCache(ccfg);
 
-                fail();
+                fail("Cache should not start.");
             }
             catch (Exception e) {
                 if (msg != null) {
-                    assert e.getMessage() != null;
-                    assert e.getMessage().contains(msg);
+                    assert e.getMessage() != null : "Error message is null";
+                    assert e.getMessage().contains(msg) : "Wrong error message: " + e.getMessage();
                 }
             }
         }
