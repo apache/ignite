@@ -106,6 +106,30 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
         verifyKeys(ig, KEYS_CNT, KEY_PREFIX, UPDATED_VAL_PREFIX);
     }
 
+    /**
+     * @throws Exception If fails.
+     */
+    public void testRecoveryOfMetastorageWhenNodeNotInBaseline() throws Exception {
+        IgniteEx ig = startGrid(0);
+
+        ig.cluster().active(true);
+
+        final byte KEYS_CNT = 100;
+        final String KEY_PREFIX = "test.key.";
+        final String NEW_VAL_PREFIX = "new.val.";
+        final String UPDATED_VAL_PREFIX = "updated.val.";
+
+        startGrid(1);
+
+        loadKeys(grid(1), KEYS_CNT, KEY_PREFIX, NEW_VAL_PREFIX, UPDATED_VAL_PREFIX);
+
+        stopGrid(1, true);
+
+        startGrid(1);
+
+        verifyKeys(grid(1), KEYS_CNT, KEY_PREFIX, UPDATED_VAL_PREFIX);
+    }
+
     /** */
     private void loadKeys(IgniteEx ig,
         byte keysCnt,
