@@ -2330,19 +2330,22 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     private abstract static class FileHandle {
         /** I/O interface for read/write operations with file */
         protected SegmentIO fileIO;
+        /** Segment idx corresponded to fileIo*/
+        final long segmentIdx;
 
         /**
          * @param fileIO I/O interface for read/write operations of FileHandle.
          */
-        private FileHandle(SegmentIO fileIO) {
+        private FileHandle(@NotNull SegmentIO fileIO) {
             this.fileIO = fileIO;
+            this.segmentIdx = fileIO.getSegmentId();
         }
 
         /**
          * @return Current segment id.
          */
         public long getSegmentId(){
-            return fileIO.getSegmentId();
+            return segmentIdx;
         }
     }
 
