@@ -218,7 +218,7 @@ public class IgniteConfiguration {
     public static final int DFLT_MVCC_VACUUM_THREAD_CNT = 2;
 
     /** Default time interval between vacuum process runs (ms). */
-    public static final int DFLT_MVCC_VACUUM_FREQUENCY = 5000;
+    public static final long DFLT_MVCC_VACUUM_FREQUENCY = 5000;
 
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
@@ -497,7 +497,7 @@ public class IgniteConfiguration {
     private int mvccVacuumThreadCnt = DFLT_MVCC_VACUUM_THREAD_CNT;
 
     /** Time interval between vacuum process runs (ms). */
-    private int mvccVacuumFreq = DFLT_MVCC_VACUUM_FREQUENCY;
+    private long mvccVacuumFreq = DFLT_MVCC_VACUUM_FREQUENCY;
 
     /** User authentication enabled. */
     private boolean authEnabled;
@@ -3023,7 +3023,7 @@ public class IgniteConfiguration {
      *
      * @return Time interval between vacuum runs.
      */
-    public int getMvccVacuumFrequency() {
+    public long getMvccVacuumFrequency() {
         return mvccVacuumFreq;
     }
 
@@ -3033,7 +3033,7 @@ public class IgniteConfiguration {
      * @param mvccVacuumFreq Time interval between vacuum runs.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setMvccVacuumFrequency(int mvccVacuumFreq) {
+    public IgniteConfiguration setMvccVacuumFrequency(long mvccVacuumFreq) {
         this.mvccVacuumFreq = mvccVacuumFreq;
 
         return this;
