@@ -212,13 +212,13 @@ public class GridMapQueryExecutor {
         if (!stopGuard.compareAndSet(false, true))
             return;
 
-        lazyWorkerBusyLock.block();
-
         for (MapNodeResults res : qryRess.values())
             res.cancelAll();
 
         for (MapQueryLazyWorker w : lazyWorkers.values())
             w.stop(true);
+
+        lazyWorkerBusyLock.block();
 
         assert lazyWorkers.isEmpty() : "Not cleaned lazy workers: " + lazyWorkers.size();
     }
@@ -261,7 +261,7 @@ public class GridMapQueryExecutor {
      * @return Busy lock for lazy workers to guard their operations with.
      */
     GridSpinBusyLock busyLock() {
-        return busyLock;
+        return lazyWorkerBusyLock;
     }
 
     /**

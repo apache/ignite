@@ -155,6 +155,8 @@ public class MapQueryLazyWorker extends GridWorker {
 
         ACTIVE_CNT.increment();
 
+        boolean lockBusy = false;
+
         try {
             if (qctx != null)
                 GridH2QueryContext.set(qctx);
@@ -175,14 +177,19 @@ public class MapQueryLazyWorker extends GridWorker {
                 }
                 else {
                     try {
+                        lockBusy = false;
+
                         if (!exec.busyLock().enterBusy()) {
                             log.info("Stop lazy worker [key=" + key + ']');
 
                             return;
                         }
+
+                        lockBusy = true;
                     }
                     finally {
-                        exec.busyLock().leaveBusy();
+                        if (lockBusy)
+                            exec.busyLock().leaveBusy();
                     }
                 }
             }
@@ -211,19 +218,6 @@ public class MapQueryLazyWorker extends GridWorker {
     }
 
     /**
-     * @param task Stop task.
-     * @param nodeStop Node stop flag.
-     */
-    public void submitStopTask(Runnable task, boolean nodeStop) {
-        synchronized (mux) {
-            if (LAZY_WORKER.get() != null)
-                task.run();
-            else
-                submit(task);
-        }
-    }
-
-    /**
      * @return Worker key.
      */
     public MapQueryLazyWorkerKey key() {
@@ -248,6 +242,19 @@ public class MapQueryLazyWorker extends GridWorker {
             isCancelled = true;
 
             mux.notifyAll();
+        }
+    }
+
+    /**
+     * @param task Stop task.
+     * @param nodeStop Node stop flag.
+     */
+    public void submitStopTask(Runnable task, boolean nodeStop) {
+        synchronized (mux) {
+            if (LAZY_WORKER.get() != null)
+                task.run();
+            else
+                submit(task);
         }
     }
 
