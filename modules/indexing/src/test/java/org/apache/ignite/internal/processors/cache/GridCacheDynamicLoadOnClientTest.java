@@ -104,11 +104,10 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
      * @throws Exception If failure.
      */
     public void testBatchMerge() throws Exception {
-        Connection con = connect(clientNode);
-
         final int BATCH_SIZE = 7;
 
-        try (Statement stmt = con.createStatement()) {
+        try (Connection con = connect(clientNode);
+             Statement stmt = con.createStatement()) {
             for (int idx = 0, i = 0; i < BATCH_SIZE; ++i, idx += i) {
                 stmt.addBatch("merge into " + FULL_TABLE_NAME + " (_key, name, orgId) values (" +
                     (100 + idx) + "," +
@@ -129,9 +128,8 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
      * @throws Exception If failure.
      */
     public void testClientJdbcDelete() throws Exception {
-        Connection con = connect(clientNode);
-
-        try (Statement stmt = con.createStatement()) {
+        try (Connection con = connect(clientNode);
+             Statement stmt = con.createStatement()) {
             int cnt = stmt.executeUpdate(("DELETE " + FULL_TABLE_NAME + " WHERE _key=1"));
 
             Assert.assertEquals(1, cnt);
@@ -148,9 +146,8 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
      * @throws Exception If failure.
      */
     public void testClientJdbcInsert() throws Exception {
-        Connection con = connect(clientNode);
-
-        try (Statement stmt = con.createStatement()) {
+        try (Connection con = connect(clientNode);
+             Statement stmt = con.createStatement()) {
             int cnt = stmt.executeUpdate(
                 "INSERT INTO " + FULL_TABLE_NAME + "(_key, name, orgId) VALUES(1000,'new_name', 10000)");
 
@@ -168,9 +165,8 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
      * @throws Exception If failure.
      */
     public void testClientJdbcUpdate() throws Exception {
-        Connection con = connect(clientNode);
-
-        try (Statement stmt = con.createStatement()) {
+        try (Connection con = connect(clientNode);
+             Statement stmt = con.createStatement()) {
             int cnt = stmt.executeUpdate(("UPDATE " + FULL_TABLE_NAME + " SET name = 'new_name'"));
 
             Assert.assertEquals(CACHE_ELEMENT_COUNT, cnt);
@@ -187,8 +183,8 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
      * @throws Exception If failure.
      */
     public void testClientJdbc() throws Exception {
-        Connection con = connect(clientNode);
-        try (Statement st = con.createStatement()) {
+        try (Connection con = connect(clientNode);
+             Statement st = con.createStatement()) {
             ResultSet rs = st.executeQuery("SELECT count(*) FROM " + FULL_TABLE_NAME);
 
             rs.next();
