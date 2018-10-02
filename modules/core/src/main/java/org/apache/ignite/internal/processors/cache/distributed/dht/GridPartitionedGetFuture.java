@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -533,6 +534,12 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     CacheDataRow row = cctx.mvccEnabled() ?
                         cctx.offheap().mvccRead(cctx, key, mvccSnapshot()) :
                         cctx.offheap().read(cctx, key);
+
+                    if (GridCacheMapEntry.DEBUG) {
+                        Object val0 = row.value().value(cctx.cacheObjectContext(), true);
+
+                        System.out.println(">>> LOCAL VALUE: " + val0);
+                    }
 
                     if (row != null) {
                         long expireTime = row.expireTime();

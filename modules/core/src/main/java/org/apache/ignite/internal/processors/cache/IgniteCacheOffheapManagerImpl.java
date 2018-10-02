@@ -653,6 +653,17 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         CacheDataRow row = dataStore != null ? dataStore.mvccFind(cctx, key, ver) : null;
 
+        if (GridCacheMapEntry.DEBUG) {
+            if (row == null)
+                System.out.println(">>> MVCC_READ " + key + ": null");
+            else {
+                Object val0 = row.value().value(cctx.cacheObjectContext(), true);
+
+                if (val0 != Integer.valueOf(3))
+                    System.out.println(">>> MVCC_READ " + key + ": " + val0);
+            }
+        }
+
         assert row == null || row.value() != null : row;
 
         return row;

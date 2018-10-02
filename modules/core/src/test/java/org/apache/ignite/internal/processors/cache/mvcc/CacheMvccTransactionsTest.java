@@ -2400,7 +2400,14 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         for (int i = 0; i < 3; i++) {
             startGrid(i + 1);
 
-            checkPutGet(cacheNames, ++valCtr);
+            // TODO: Remove after debug.
+            if (i == 1) {
+                GridCacheMapEntry.DEBUG = true;
+
+                checkPutGet(cacheNames, ++valCtr);
+            }
+            else
+                checkPutGet(cacheNames, ++valCtr);
 
             checkCoordinatorsConsistency(null);
         }
@@ -3567,5 +3574,10 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         @Override public String toString() {
             return "TestKey [k=" + key + ", payloadLen=" + payload.length + ']';
         }
+    }
+
+    @Override
+    protected long getTestTimeout() {
+        return Long.MAX_VALUE;
     }
 }

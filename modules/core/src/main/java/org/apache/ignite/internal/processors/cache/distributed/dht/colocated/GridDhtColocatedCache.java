@@ -469,7 +469,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             expiryPlc = expiryPolicy(null);
 
         // Optimization: try to resolve value locally and escape 'get future' creation.
-        if (!forcePrimary && ctx.affinityNode() && (!ctx.mvccEnabled() || mvccSnapshot != null)) {
+        if (false) { // TODO: Remove later
+        //if (!forcePrimary && ctx.affinityNode() && (!ctx.mvccEnabled() || mvccSnapshot != null)) {
             try {
                 Map<K, V> locVals = null;
 

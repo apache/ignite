@@ -127,6 +127,9 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
  */
 @SuppressWarnings({"TooBroadScope"})
 public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter implements GridCacheEntryEx {
+
+    public static volatile boolean DEBUG = false;
+
     /** */
     private static final byte IS_DELETED_MASK = 0x01;
 

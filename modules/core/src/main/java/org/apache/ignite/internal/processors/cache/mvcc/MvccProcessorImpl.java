@@ -968,6 +968,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         res.init(futId, crdVer, ver, MVCC_START_OP_CNTR, cleanup, tracking);
 
+        System.out.println(">>> Assigned TX snapshot [" + crdVer + ", " + ver + ']');
+
         return res;
     }
 
@@ -1609,6 +1611,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 minQry = tracking;
 
             res.init(futId, crdVer, ver, MVCC_READ_OP_CNTR, MVCC_COUNTER_NA, tracking);
+
+            System.out.println(">>> Assigned query snapshot [" + crdVer + ", " + ver + ']');
 
             return res;
         }
