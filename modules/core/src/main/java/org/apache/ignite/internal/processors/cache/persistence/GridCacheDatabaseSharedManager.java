@@ -908,7 +908,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void nodeStart(@Nullable WALPointer ptr) throws IgniteCheckedException {
-        FileWALPointer p = ptr == null ? new FileWALPointer(0, 0, 0) : (FileWALPointer)ptr;
+        FileWALPointer p = (FileWALPointer)(ptr == null ? CheckpointStatus.NULL_PTR : ptr);
 
         String fileName = U.currentTimeMillis() + NODE_STARTED_FILE_NAME_SUFFIX;
         String tmpFileName = fileName + FilePageStoreManager.TMP_SUFFIX;
