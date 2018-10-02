@@ -205,6 +205,12 @@ namespace Apache.Ignite.Core
         /** Map from user-defined listener to it's id. */
         private Dictionary<object, int> _localEventListenerIds;
 
+        /** MVCC vacuum frequency. */
+        private long? _mvccVacuumFreq;
+
+        /** MVCC vacuum thread count. */
+        private int? _mvccVacuumThreadCnt;
+
         /// <summary>
         /// Default network retry count.
         /// </summary>
@@ -229,6 +235,16 @@ namespace Apache.Ignite.Core
         /// Default value for <see cref="AuthenticationEnabled"/> property.
         /// </summary>
         public const bool DefaultAuthenticationEnabled = false;
+
+        /// <summary>
+        /// Default value for <see cref="MvccVacuumFrequency"/> property.
+        /// </summary>
+        public const long DefaultMvccVacuumFrequency = 5000;
+
+        /// <summary>
+        /// Default value for <see cref="MvccVacuumThreadCount"/> property.
+        /// </summary>
+        public const int DefaultMvccVacuumThreadCount = 2;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
@@ -309,6 +325,8 @@ namespace Apache.Ignite.Core
             writer.WriteTimeSpanAsLongNullable(_longQueryWarningTimeout);
             writer.WriteBooleanNullable(_isActiveOnStart);
             writer.WriteBooleanNullable(_authenticationEnabled);
+            writer.WriteLongNullable(_mvccVacuumFreq);
+            writer.WriteIntNullable(_mvccVacuumThreadCnt);
 
             if (SqlSchemas == null)
                 writer.WriteInt(-1);
@@ -675,6 +693,8 @@ namespace Apache.Ignite.Core
             _longQueryWarningTimeout = r.ReadTimeSpanNullable();
             _isActiveOnStart = r.ReadBooleanNullable();
             _authenticationEnabled = r.ReadBooleanNullable();
+            _mvccVacuumFreq = r.ReadLongNullable();
+            _mvccVacuumThreadCnt = r.ReadIntNullable();
 
             int sqlSchemasCnt = r.ReadInt();
 
@@ -1547,6 +1567,26 @@ namespace Apache.Ignite.Core
         {
             get { return _authenticationEnabled ?? DefaultAuthenticationEnabled; }
             set { _authenticationEnabled = value; }
+        }
+
+        /// <summary>
+        /// Time interval between MVCC vacuum runs in milliseconds.
+        /// </summary>
+        [DefaultValue(DefaultMvccVacuumFrequency)]
+        public long MvccVacuumFrequency
+        {
+            get { return _mvccVacuumFreq ?? DefaultMvccVacuumFrequency; }
+            set { _mvccVacuumFreq = value; }
+        }
+
+        /// <summary>
+        /// Number of MVCC vacuum threads.
+        /// </summary>
+        [DefaultValue(DefaultMvccVacuumThreadCount)]
+        public int MvccVacuumThreadCount
+        {
+            get { return _mvccVacuumThreadCnt ?? DefaultMvccVacuumThreadCount; }
+            set { _mvccVacuumThreadCnt = value; }
         }
 
         /// <summary>
