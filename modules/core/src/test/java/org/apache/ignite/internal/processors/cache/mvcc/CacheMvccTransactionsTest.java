@@ -1456,6 +1456,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testPutAllGetAll_ClientServer_Backups1_Restart_Scan() throws Exception {
+        fail("Am I troublemaker?");
+
         putAllGetAll(RestartMode.RESTART_RND_SRV, 4, 2, 1, 64, null, SCAN, PUT);
     }
 
