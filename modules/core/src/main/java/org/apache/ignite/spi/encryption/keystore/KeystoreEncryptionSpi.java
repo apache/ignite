@@ -269,7 +269,6 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
      */
     private void doEncryption(ByteBuffer data, Cipher cipher, Serializable key, ByteBuffer res) {
         assert key instanceof KeystoreEncryptionKey;
-        //assert start >= 0 && length + start <= data.length;
 
         ensureStarted();
 
