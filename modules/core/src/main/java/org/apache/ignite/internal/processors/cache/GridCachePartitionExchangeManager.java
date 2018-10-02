@@ -2548,6 +2548,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
                 else if (err != null)
                     cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
+                else
+                    // In case of reconnectNeeded == true, prevent general-case termination handling.
+                    cancel();
             }
         }
 

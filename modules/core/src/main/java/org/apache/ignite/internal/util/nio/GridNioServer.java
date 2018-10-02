@@ -1830,6 +1830,9 @@ public class GridNioServer<T> {
                 }
                 else if (err != null)
                     lsnr.onFailure(SYSTEM_WORKER_TERMINATION, err);
+                else
+                    // In case of closed == true, prevent general-case termination handling.
+                    cancel();
             }
         }
 
