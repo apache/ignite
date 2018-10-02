@@ -2449,7 +2449,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         Map<Integer, Integer> vals = new HashMap();
 
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 1; i++) // TODO: Was 10
             vals.put(i, val);
 
         try (Transaction tx = putNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {

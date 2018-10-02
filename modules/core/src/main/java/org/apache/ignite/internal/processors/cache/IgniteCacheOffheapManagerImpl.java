@@ -2628,7 +2628,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 debugClo.debug();
 
                 dataTree.iterate(
-                    debugClo,
+                    new MvccMaxSearchRow(cacheId, key),
                     new MvccMinSearchRow(cacheId, key),
                     debugClo
                 );

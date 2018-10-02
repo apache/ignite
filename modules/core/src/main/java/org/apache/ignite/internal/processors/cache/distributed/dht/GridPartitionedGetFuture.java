@@ -543,9 +543,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         if (val0 != Integer.valueOf(3)) {
                             System.out.println(">>> LOCAL VALUE       : " + key0 + ": " + val0);
 
-                            CacheDataRow row2 = cctx.offheap().mvccRead(cctx, key, mvccSnapshot());
-
                             GridCacheMapEntry.TREE_DEBUG = true;
+
+                            CacheDataRow row2 = cctx.offheap().mvccRead(cctx, key, mvccSnapshot());
 
                             val0 = row2.value().value(cctx.cacheObjectContext(), true);
 
