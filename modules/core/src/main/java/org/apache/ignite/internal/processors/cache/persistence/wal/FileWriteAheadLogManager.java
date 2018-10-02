@@ -1473,6 +1473,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         catch (IOException e) {
             throw new IgniteCheckedException("Failed to cleanup wal work directory: " + walWorkDir, e);
         }
+        finally {
+            tailWalPointer(null);
+        }
 
         try {
             try (DirectoryStream<Path> files = Files.newDirectoryStream(walArchiveDir.toPath())) {
