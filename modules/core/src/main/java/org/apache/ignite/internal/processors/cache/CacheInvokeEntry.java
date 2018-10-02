@@ -96,19 +96,27 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
 
     /** {@inheritDoc} */
     @Override public void remove() {
-        if (op == Operation.CREATE) {
-            assert ! hadVal;
-
-            op = Operation.NONE;
+        if (!entry.isMvcc()) {
+            if (op == Operation.CREATE)
+                op = Operation.NONE;
+            else
+                op = Operation.REMOVE;
         }
-        else if (exists()) {
-            assert hadVal;
+        else {
+            if (op == Operation.CREATE) {
+                assert !hadVal;
 
-            op = Operation.REMOVE;
+                op = Operation.NONE;
+            }
+            else if (exists()) {
+                assert hadVal;
+
+                op = Operation.REMOVE;
+            }
+
+            if (hadVal && oldVal == null)
+                oldVal = val;
         }
-
-        if(hadVal && oldVal == null)
-            oldVal = val;
 
         val = null;
         valObj = null;
@@ -119,8 +127,12 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
         if (val == null)
             throw new NullPointerException();
 
-        if(hadVal && oldVal == null)
+        if (!entry.isMvcc())
             this.oldVal = this.val;
+        else {
+            if (hadVal && oldVal == null)
+                this.oldVal = this.val;
+        }
 
         this.val = val;
 

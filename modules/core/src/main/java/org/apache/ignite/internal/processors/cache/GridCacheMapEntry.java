@@ -280,6 +280,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isMvcc() {
+        return cctx.mvccEnabled();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isNear() {
         return false;
     }
