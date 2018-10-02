@@ -109,7 +109,9 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
 
     /**
      * @throws Exception If failed.
+     *
      */
+    // commented out before the end of the ticket https://issues.apache.org/jira/browse/IGNITE-9759
     public void testAsyncFailover() throws Exception {
         /*
         IgniteCache<TestKey, TestValue> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
