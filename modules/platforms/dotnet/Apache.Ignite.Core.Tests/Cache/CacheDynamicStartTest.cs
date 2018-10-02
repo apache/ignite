@@ -132,12 +132,12 @@ namespace Apache.Ignite.Core.Tests.Cache
         private static void Check(string cacheName)
         {
             var cacheData = Ignition.GetIgnite(GridData).GetCache<DynamicTestKey, DynamicTestValue>(cacheName);
-            
+
             var cacheDataNoCfg = 
                 Ignition.GetIgnite(GridDataNoCfg).GetCache<DynamicTestKey, DynamicTestValue>(cacheName);
 
             var cacheClient = Ignition.GetIgnite(GridClient).GetCache<DynamicTestKey, DynamicTestValue>(cacheName);
-            
+
             DynamicTestKey key1 = new DynamicTestKey(1);
             DynamicTestKey key2 = new DynamicTestKey(2);
             DynamicTestKey key3 = new DynamicTestKey(3);
