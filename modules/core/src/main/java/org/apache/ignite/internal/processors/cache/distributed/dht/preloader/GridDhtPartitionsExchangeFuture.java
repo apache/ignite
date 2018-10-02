@@ -1828,6 +1828,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable AffinityTopologyVersion res, @Nullable Throwable err) {
+        assert res != null || err != null : "TopVer=" + res + ", err=" + err;
+
         if (isDone() || !done.compareAndSet(false, true))
             return false;
 
