@@ -325,7 +325,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private final SegmentFileInputFactory segmentFileInputFactory;
 
     /** Holder of actual information of latest manipulation on WAL segments. */
-    private final SegmentAware segmentAware;
+    private volatile SegmentAware segmentAware;
 
     /** Updater for {@link #currHnd}, used for verify there are no concurrent update for current log segment handle */
     private static final AtomicReferenceFieldUpdater<FileWriteAheadLogManager, FileWriteHandle> CURR_HND_UPD =
@@ -424,7 +424,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         evt = ctx.event();
         failureProcessor = ctx.failure();
-        segmentAware = new SegmentAware(dsCfg.getWalSegments(), dsCfg.isWalCompactionEnabled());
     }
 
     /**
@@ -481,6 +480,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 });
 
             IgniteBiTuple<Long, Long> tup = scanMinMaxArchiveIndices();
+
+            segmentAware = new SegmentAware(dsCfg.getWalSegments(), dsCfg.isWalCompactionEnabled());
 
             segmentAware.lastTruncatedArchiveIdx(tup == null ? -1 : tup.get1() - 1);
 
@@ -2461,7 +2462,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private abstract static class FileHandle {
         /** I/O interface for read/write operations with file */
         SegmentIO fileIO;
-        
+
         /** Segment idx corresponded to fileIo*/
         final long segmentIdx;
 
