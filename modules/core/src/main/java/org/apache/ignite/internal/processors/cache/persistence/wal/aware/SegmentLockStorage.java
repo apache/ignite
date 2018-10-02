@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 
 /**
@@ -29,7 +29,7 @@ public class SegmentLockStorage extends SegmentObservable {
      * Maps absolute segment index to locks counter. Lock on segment protects from archiving segment and may come from
      * {@link FileWriteAheadLogManager.RecordsIterator} during WAL replay. Map itself is guarded by <code>this</code>.
      */
-    private Map<Long, Integer> locked = new HashMap<>();
+    private Map<Long, Integer> locked = new ConcurrentHashMap<>();
 
     /**
      * Check if WAL segment locked (protected from move to archive)
@@ -37,7 +37,7 @@ public class SegmentLockStorage extends SegmentObservable {
      * @param absIdx Index for check reservation.
      * @return {@code True} if index is locked.
      */
-    public synchronized boolean locked(long absIdx) {
+    public boolean locked(long absIdx) {
         return locked.containsKey(absIdx);
     }
 
@@ -47,12 +47,8 @@ public class SegmentLockStorage extends SegmentObservable {
      * segment later, use {@link #releaseWorkSegment} for unlock</li> </ul>
      */
     @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
-    synchronized boolean lockWorkSegment(long absIdx) {
-        Integer cur = locked.get(absIdx);
-
-        cur = cur == null ? 1 : cur + 1;
-
-        locked.put(absIdx, cur);
+    boolean lockWorkSegment(long absIdx) {
+        locked.compute(absIdx, (idx, count) -> count == null ? 1 : count + 1);
 
         return false;
     }
@@ -61,15 +57,12 @@ public class SegmentLockStorage extends SegmentObservable {
      * @param absIdx Segment absolute index.
      */
     @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
-    synchronized void releaseWorkSegment(long absIdx) {
-        Integer cur = locked.get(absIdx);
+    void releaseWorkSegment(long absIdx) {
+        locked.compute(absIdx, (idx, count) -> {
+            assert count != null && count >= 1 : "cur=" + count + ", absIdx=" + absIdx;
 
-        assert cur != null && cur >= 1 : "cur=" + cur + ", absIdx=" + absIdx;
-
-        if (cur == 1)
-            locked.remove(absIdx);
-        else
-            locked.put(absIdx, cur - 1);
+            return count == 1 ? null : count - 1;
+        });
 
         notifyObservers(absIdx);
     }
