@@ -49,7 +49,7 @@ public class IgniteProvider {
 
     // This constants are set by maven-ant-plugin.
     /** */
-    private static final String DOWNLOAD_URL_PATTERN = "https://archive.apache.org/dist/ignite/%s/apache-ignite-fabric-%s-bin.zip";
+    private static final String DOWNLOAD_URL_PATTERN = "https://archive.apache.org/dist/ignite/%s/apache-ignite-%s-bin.zip";
 
     /** URL for request Ignite latest version. */
     private final static String IGNITE_LATEST_VERSION_URL = "https://ignite.apache.org/latest";
