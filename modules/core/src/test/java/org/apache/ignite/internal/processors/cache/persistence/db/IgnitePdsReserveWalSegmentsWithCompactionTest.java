@@ -15,28 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.mem;
+package org.apache.ignite.internal.processors.cache.persistence.db;
+
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
- * Direct memory provider interface. Not thread-safe.
+ *
  */
-public interface DirectMemoryProvider {
-    /**
-     * @param chunkSizes Initializes provider with the chunk sizes.
-     */
-    public void initialize(long[] chunkSizes);
+public class IgnitePdsReserveWalSegmentsWithCompactionTest extends IgnitePdsReserveWalSegmentsTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-    /**
-     * Shuts down the provider.
-     *
-     * @param deallocate {@code True} to deallocate memory, {@code false} to allow memory reuse.
-     */
-    public void shutdown(boolean deallocate);
+        cfg.getDataStorageConfiguration().setWalCompactionEnabled(true);
 
-    /**
-     * Attempts to allocate next memory region. Will return {@code null} if no more regions are available.
-     *
-     * @return Next memory region.
-     */
-    public DirectMemoryRegion nextRegion();
+        return cfg;
+    }
 }

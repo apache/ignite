@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteOf
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteOnlineNodeOutOfBaselineFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsRebalancingOnNotStableTopologyTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsReserveWalSegmentsTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsReserveWalSegmentsWithCompactionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWholeClusterRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.SlowHistoricalRebalanceSmallHistoryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.IgniteCheckpointDirtyPagesForLowLoadTest;
@@ -156,6 +157,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgnitePdsExchangeDuringCheckpointTest.class);
 
         suite.addTestSuite(IgnitePdsReserveWalSegmentsTest.class);
+        suite.addTestSuite(IgnitePdsReserveWalSegmentsWithCompactionTest.class);
 
         // new style folders with generated consistent ID test
         suite.addTestSuite(IgniteUidAsConsistentIdMigrationTest.class);

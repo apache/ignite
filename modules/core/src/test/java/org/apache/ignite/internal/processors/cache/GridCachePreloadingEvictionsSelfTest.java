@@ -29,7 +29,6 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
@@ -58,7 +57,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String VALUE = createValue();
-    public static final CachePeekMode[] ALL_PEEK_MODES = new CachePeekMode[]{CachePeekMode.ALL};
+    public static final CachePeekMode[] ALL_PEEK_MODES = new CachePeekMode[] {CachePeekMode.ALL};
 
     /** */
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -219,22 +218,14 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     private void checkCachesConsistency(Ignite ignite1, Ignite ignite2) throws Exception {
-        IgniteKernal g1 = (IgniteKernal) ignite1;
-        IgniteKernal g2 = (IgniteKernal) ignite2;
+        IgniteKernal g1 = (IgniteKernal)ignite1;
+        IgniteKernal g2 = (IgniteKernal)ignite2;
 
         GridCacheAdapter<Integer, Object> cache1 = g1.internalCache(DEFAULT_CACHE_NAME);
         GridCacheAdapter<Integer, Object> cache2 = g2.internalCache(DEFAULT_CACHE_NAME);
 
-        for (int i = 0; i < 3; i++) {
-            if (cache1.size(ALL_PEEK_MODES) != cache2.size(ALL_PEEK_MODES)) {
-                U.warn(log, "Sizes do not match (will retry in 1000 ms) [s1=" + cache1.size(ALL_PEEK_MODES) +
-                    ", s2=" + cache2.size(ALL_PEEK_MODES) + ']');
-
-                U.sleep(1000);
-            }
-            else
-                break;
-        }
+        // Sleeping to allow the cache sizes to settle down.
+        U.sleep(3000);
 
         info("Cache1 size: " + cache1.size(ALL_PEEK_MODES));
         info("Cache2 size: " + cache2.size(ALL_PEEK_MODES));

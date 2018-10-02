@@ -655,7 +655,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             metaStorage = null;
 
-            storePageMem.stop();
+            storePageMem.stop(true);
         }
         catch (StorageException e) {
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
@@ -1122,8 +1122,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 checkPointBufferIdxCnt.set(chunkSizes.length);
             }
 
-            @Override public void shutdown() {
-                memProvider.shutdown();
+            @Override public void shutdown(boolean deallocate) {
+                memProvider.shutdown(deallocate);
             }
 
             @Override public DirectMemoryRegion nextRegion() {
@@ -1758,16 +1758,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (ptr == null)
             return false;
 
-        boolean reserved;
-
-        try {
-            reserved = cctx.wal().reserve(ptr);
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Error while trying to reserve history", e);
-
-            reserved = false;
-        }
+        boolean reserved = cctx.wal().reserve(ptr);
 
         if (reserved)
             reservedForPreloading.put(new T2<>(grpId, partId), new T2<>(cntr, ptr));
