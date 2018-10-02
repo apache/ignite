@@ -36,7 +36,7 @@ public class GridDhtPartitionSupplyMessageV2 extends GridDhtPartitionSupplyMessa
     private static final long serialVersionUID = 0L;
 
     /** Available since. */
-    public static final IgniteProductVersion AVAILABLE_SINCE = IgniteProductVersion.fromString("2.7.0");
+    public static final IgniteProductVersion AVAILABLE_SINCE = IgniteProductVersion.fromString("2.5.0");
 
     /** Supplying process error. */
     @GridDirectTransient
