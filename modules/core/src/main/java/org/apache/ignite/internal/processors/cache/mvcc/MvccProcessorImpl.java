@@ -946,7 +946,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /**
      * @param txCntr Counter assigned to transaction.
      */
-    private void onTxDone(Long txCntr, boolean committed) {
+    private void onTxDone(long txCntr, boolean committed) {
         assert initFut.isDone();
 
         GridFutureAdapter fut;
