@@ -735,7 +735,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
-        onDeActivate(true);
+        onDeActivate0(true);
     }
 
     /**
@@ -789,6 +789,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public void cleanupCheckpointDirectory() throws IgniteCheckedException {
         // No-op.
+    }
+
+    /**
+     * Perform cleanup preloaded memory regions on node start.
+     *
+     * @throws IgniteCheckedException If fails.
+     */
+    public void cleanupDatabaseManagerState() throws IgniteCheckedException {
+        onDeActivate0(true);
     }
 
     /**
@@ -1186,19 +1195,19 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        onDeActivate(!reuseMemory);
+        onDeActivate0(!reuseMemory);
     }
 
     /**
-     * @param shutdown Shutdown.
+     * @param force {@code True} to force memory regions shutdown.
      */
-    private void onDeActivate(boolean shutdown) {
+    protected void onDeActivate0(boolean force) {
         for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
             lsnr.beforeStop(this);
 
         if (dataRegionMap != null) {
             for (DataRegion memPlc : dataRegionMap.values()) {
-                memPlc.pageMemory().stop(shutdown);
+                memPlc.pageMemory().stop(force);
 
                 memPlc.evictionTracker().stop();
 
@@ -1209,7 +1218,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             dataRegionMap = null;
 
-            if (shutdown && memProviderMap != null) {
+            if (force && memProviderMap != null) {
                 memProviderMap.clear();
 
                 memProviderMap = null;

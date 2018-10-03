@@ -527,6 +527,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void cleanupDatabaseManagerState() throws IgniteCheckedException {
+        onDeActivate0(true);
+    }
+
     /**
      * Retreives checkpoint history form specified {@code dir}.
      *
@@ -710,13 +715,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
+        onDeActivate0(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onDeActivate0(boolean force) {
         if (log.isDebugEnabled())
             log.debug("DeActivate database manager [id=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
 
         onKernalStop0(false);
 
-        super.onDeActivate(kctx);
+        if (force)
+            super.onDeActivate0(true);
+        else
+            super.onDeActivate(cctx.kernalContext());
 
         /* Must be here, because after deactivate we can invoke activate and file lock must be already configured */
         stopping = false;
