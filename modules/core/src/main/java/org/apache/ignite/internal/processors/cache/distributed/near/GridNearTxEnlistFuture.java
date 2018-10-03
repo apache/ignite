@@ -338,7 +338,11 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
                 keys.add(cctx.toCacheKeyObject(row));
             else {
                 keys.add(cctx.toCacheKeyObject(((IgniteBiTuple)row).getKey()));
-                vals.add(cctx.toCacheObject(((IgniteBiTuple)row).getValue()));
+
+                if (op.isInvoke())
+                    vals.add((Message)((IgniteBiTuple)row).getValue());
+                else
+                    vals.add(cctx.toCacheObject(((IgniteBiTuple)row).getValue()));
             }
         }
 
@@ -583,9 +587,18 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
         assert res != null;
 
-        this.res = res.result();
+        if (res.result().invokeResult()) {
+            if(this.res == null)
+                this.res = new GridCacheReturn(true, true);
 
-        assert this.res != null && (this.res.emptyResult() || needRes || !this.res.success());
+            this.res.success(this.res.success() && err == null && res.result().success());
+
+            this.res.mergeEntryProcessResults(res.result());
+        }
+        else
+            this.res = res.result();
+
+        assert this.res != null && (this.res.emptyResult() || needRes || this.res.invokeResult() || !this.res.success());
 
         return true;
     }
