@@ -35,6 +35,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
+import javax.cache.configuration.FactoryBuilder;
+import javax.cache.expiry.EternalExpiryPolicy;
+import javax.cache.expiry.ExpiryPolicy;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -486,6 +489,36 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             throw new IgniteCheckedException("Affinity function must return at most " +
                 CacheConfiguration.MAX_PARTITIONS_COUNT + " partitions [actual=" + cc.getAffinity().partitions() +
                 ", affFunction=" + cc.getAffinity() + ", cacheName=" + cc.getName() + ']');
+
+        if (cc.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
+            assertParameter(cc.getCacheMode() != LOCAL,
+                "LOCAL cache mode cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode");
+
+            assertParameter(cc.getNearConfiguration() == null,
+                "near cache cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode");
+
+            assertParameter(!cc.isReadThrough(),
+                "readThrough cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode");
+
+            assertParameter(!cc.isWriteThrough(),
+                "writeThrough cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode");
+
+            assertParameter(!cc.isWriteBehindEnabled(),
+                "writeBehindEnabled cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode");
+
+            ExpiryPolicy expPlc = null;
+
+            if (cc.getExpiryPolicyFactory() instanceof FactoryBuilder.SingletonFactory)
+                expPlc = (ExpiryPolicy)cc.getExpiryPolicyFactory().create();
+
+            if (!(expPlc instanceof EternalExpiryPolicy)) {
+                assertParameter(cc.getExpiryPolicyFactory() == null,
+                    "expiry policy cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode");
+            }
+
+            assertParameter(cc.getInterceptor() == null,
+                "interceptor cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode");
+        }
 
         if (cc.isWriteBehindEnabled()) {
             if (cfgStore == null)
