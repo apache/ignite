@@ -25,9 +25,18 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.util.Collections;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -72,5 +81,50 @@ public class ClientConfigurationTest {
         Object desTarget = in.readObject();
 
         assertTrue(Comparers.equal(target, desTarget));
+    }
+
+    /**
+     * Test check the case when {@link IgniteConfiguration#getRebalanceThreadPoolSize()} is equal
+     * to {@link IgniteConfiguration#getSystemThreadPoolSize()}
+     */
+    @Test
+    public void testRebalanceThreadPoolSize() {
+        IgniteConfiguration cci = Config.getServerConfiguration().setClientMode(true);
+        cci.setRebalanceThreadPoolSize(cci.getSystemThreadPoolSize());
+        try (
+                Ignite si = Ignition.start(Config.getServerConfiguration());
+                Ignite ci = Ignition.start(cci);) {
+            Set<ClusterNode> collect = si.cluster().nodes().stream().filter(new Predicate<ClusterNode>() {
+                @Override
+                public boolean test(ClusterNode clusterNode) {
+                    return clusterNode.isClient();
+                }
+            }).collect(Collectors.toSet());
+            Assert.assertEquals(1, collect.size());
+        } catch (Exception e) {
+            Assert.fail();
+        }
+    }
+
+    /**
+     * Test check the case when {@link IgniteConfiguration#getRebalanceThreadPoolSize()} set to 0
+     */
+    @Test
+    public void testRebalanceThreadPoolSizeZeroValue() {
+        IgniteConfiguration cci = Config.getServerConfiguration().setClientMode(true);
+        cci.setRebalanceThreadPoolSize(0);
+        try (
+                Ignite si = Ignition.start(Config.getServerConfiguration());
+                Ignite ci = Ignition.start(cci);) {
+            Set<ClusterNode> collect = si.cluster().nodes().stream().filter(new Predicate<ClusterNode>() {
+                @Override
+                public boolean test(ClusterNode clusterNode) {
+                    return clusterNode.isClient();
+                }
+            }).collect(Collectors.toSet());
+            Assert.assertEquals(1, collect.size());
+        } catch (Exception e) {
+            Assert.fail();
+        }
     }
 }
