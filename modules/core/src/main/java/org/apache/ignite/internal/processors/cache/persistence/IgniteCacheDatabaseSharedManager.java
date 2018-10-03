@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationVersion;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -908,6 +909,19 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     public void removeCacheConfiguration(CacheConfiguration<?, ?> cacheConfig) throws IgniteCheckedException {
         //No-op
     }
+
+    /**
+     * Store cache configuration version.
+     *
+     * @param version Cache configuration version.
+     * @param overwrite Overwrite.
+     *
+     * @throws IgniteCheckedException if store was failed.
+     */
+    public void storeCacheConfigurationVersion(GridCacheConfigurationVersion version, boolean overwrite) throws IgniteCheckedException {
+        // No-op
+    }
+
 
     /**
      * See {@link GridCacheMapEntry#ensureFreeSpace()}

@@ -22,6 +22,7 @@ import java.util.Collection;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
+import org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -48,6 +49,7 @@ public class StoredCacheData implements Serializable {
     /** SQL flag - {@code true} if cache was created with {@code CREATE TABLE}. */
     private boolean sql;
 
+    private GridCacheConfigurationVersion version;
     /**
      * Constructor.
      *
@@ -58,6 +60,14 @@ public class StoredCacheData implements Serializable {
 
         this.ccfg = ccfg;
         this.qryEntities = ccfg.getQueryEntities();
+    }
+
+    public GridCacheConfigurationVersion version(){ return version; }
+
+    public StoredCacheData version(GridCacheConfigurationVersion version){
+        this.version = version;
+
+        return this;
     }
 
     /**

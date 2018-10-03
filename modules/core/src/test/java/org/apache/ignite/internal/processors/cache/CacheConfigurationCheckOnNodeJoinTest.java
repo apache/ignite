@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -36,8 +37,9 @@ import static java.util.Comparator.comparingLong;
  * Check's correct node behavior on join in case caches were changed.
  */
 public class CacheConfigurationCheckOnNodeJoinTest extends GridCommonAbstractTest {
+    private static final String CACHE_NAME = DEFAULT_CACHE_NAME + "-test";
     /** Second cache name. */
-    private static final String SECOND_CACHE_NAME = DEFAULT_CACHE_NAME + "-2";
+    private static final String SECOND_CACHE_NAME = CACHE_NAME + "-2";
 
     /** Cache group name. */
     private static final String CACHE_GROUP_NAME = "test-group";
@@ -180,6 +182,52 @@ public class CacheConfigurationCheckOnNodeJoinTest extends GridCommonAbstractTes
         restoreClusterAfterCacheCreate(NODES_COUNT, true, LAST_NODE);
     }
 
+    public void test() throws Exception{
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
+        cfg.setCacheConfiguration(new CacheConfiguration().setName(CACHE_NAME));
+        startGrid(cfg).cluster().active(true);
+        populateData(grid(0).cache(CACHE_NAME));
+        stopGrid(0);
+        startGrid(0).cluster().active(true);
+    }
+
+    public void testRemoveCacheFromCacheGroupAndCreateCacheWithoutCacheGroup() throws Exception{
+        startGrids(2);
+
+        grid(0).cluster().active(true);
+
+        CacheConfiguration cacheCfg1 = new CacheConfiguration().setName(CACHE_NAME).setGroupName(CACHE_GROUP_NAME).setBackups(1);
+        CacheConfiguration cacheCfg2 = new CacheConfiguration().setName(SECOND_CACHE_NAME).setGroupName(CACHE_GROUP_NAME).setBackups(1);
+
+        grid(0).getOrCreateCache(cacheCfg1);
+        grid(0).getOrCreateCache(cacheCfg2);
+
+        populateData(grid(0).cache(CACHE_NAME));
+        populateData(grid(0).cache(SECOND_CACHE_NAME));
+
+        stopGrid(1);
+
+        grid(0).cache(CACHE_NAME).destroy();
+
+        CacheConfiguration cacheCfgWithoutGroup = new CacheConfiguration().setName(CACHE_NAME).setBackups(1);
+
+        grid(0).getOrCreateCache(cacheCfgWithoutGroup);
+
+        populateData(grid(0).cache(CACHE_NAME));
+
+        boolean joinFailed = false;
+
+        try {
+            startGrid(1);
+        }
+        catch(IgniteCheckedException e){
+            log.error("Node join failed", e);
+            joinFailed = true;
+        }
+
+        assertTrue("Node join must be rejected because of cache group was changed!", joinFailed);
+    }
+
     /**
      * @param nodesCnt Size of cluster.
      * @param fullStop Flag for full cluster restart.
@@ -200,7 +248,7 @@ public class CacheConfigurationCheckOnNodeJoinTest extends GridCommonAbstractTes
         stopSecondHalfNodes();
 
         CacheConfiguration<Long, Long> cacheCfg =
-            new CacheConfiguration<Long, Long>(DEFAULT_CACHE_NAME)
+            new CacheConfiguration<Long, Long>(CACHE_NAME)
                 .setBackups((nodesCnt + 1) / 2)
                 .setGroupName(CACHE_GROUP_NAME);
 
@@ -227,7 +275,7 @@ public class CacheConfigurationCheckOnNodeJoinTest extends GridCommonAbstractTes
 
         awaitPartitionMapExchange();
 
-        IgniteCache<Long, Long> cache = grid(nodeActivator).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Long, Long> cache = grid(nodeActivator).cache(CACHE_NAME);
 
         checkDataPresent(cache);
     }
@@ -252,7 +300,7 @@ public class CacheConfigurationCheckOnNodeJoinTest extends GridCommonAbstractTes
         grid(finder.getActivateNode(grid(0).cluster().nodes())).cluster().active(true);
 
         CacheConfiguration<Long, Long> cacheCfg =
-            new CacheConfiguration<Long, Long>(DEFAULT_CACHE_NAME)
+            new CacheConfiguration<Long, Long>(CACHE_NAME)
                 .setBackups(nodesCnt / 2)
                 .setGroupName(CACHE_GROUP_NAME);
 

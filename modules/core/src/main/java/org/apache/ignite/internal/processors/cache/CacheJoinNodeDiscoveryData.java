@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.Map;
+import org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -117,6 +118,8 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
         /** Statically configured flag */
         private boolean staticallyConfigured;
 
+        private GridCacheConfigurationVersion version;
+
         /**
          * @param cacheData Cache data.
          * @param cacheType Cache type.
@@ -132,6 +135,10 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
             this.flags = flags;
             this.staticallyConfigured = staticallyConfigured;
         }
+
+        public GridCacheConfigurationVersion version(){ return version; }
+
+        public void version(GridCacheConfigurationVersion version){ this.version = version; }
 
         /**
          * @return Cache data.

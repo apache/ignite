@@ -280,22 +280,9 @@ public class CachesRegistry {
      */
     private IgniteInternalFuture<?> persistCacheConfigurations(List<DynamicCacheDescriptor> cacheDescriptors) {
         List<StoredCacheData> cacheConfigsToPersist = cacheDescriptors.stream()
-            .map(cacheDesc -> new StoredCacheData(cacheDesc.cacheConfiguration()).sql(cacheDesc.sql()))
-            .collect(Collectors.toList());
-
-        // Pre-create cache work directories if they don't exist.
-        for (StoredCacheData data : cacheConfigsToPersist) {
-            try {
-                cctx.pageStore().checkAndInitCacheWorkDir(data.config());
-            }
-            catch (IgniteCheckedException e) {
-                if (!cctx.kernalContext().isStopping()) {
-                    cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-
-                    U.error(log, "Failed to initialize cache work directory for " + data.config(), e);
-                }
-            }
-        }
+            .map(cacheDesc ->
+                new StoredCacheData(cacheDesc.cacheConfiguration()).sql(cacheDesc.sql()).version(cacheDesc.version())
+            ).collect(Collectors.toList());
 
         return cctx.kernalContext().closure().runLocalSafe(() -> {
             try {

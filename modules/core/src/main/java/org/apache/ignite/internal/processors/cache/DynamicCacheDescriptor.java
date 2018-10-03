@@ -25,6 +25,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
@@ -95,6 +96,8 @@ public class DynamicCacheDescriptor {
     /** */
     private final CacheGroupDescriptor grpDesc;
 
+    private GridCacheConfigurationVersion version;
+
     /**
      * @param ctx Context.
      * @param cacheCfg Cache configuration.
@@ -143,6 +146,10 @@ public class DynamicCacheDescriptor {
             this.schema = schema.copy();
         }
     }
+
+    public GridCacheConfigurationVersion version(){ return version; }
+
+    public void version(GridCacheConfigurationVersion version){ this.version = version; }
 
     /**
      * @return Cache group ID.

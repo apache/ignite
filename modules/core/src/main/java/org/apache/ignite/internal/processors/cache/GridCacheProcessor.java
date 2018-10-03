@@ -112,6 +112,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTransactionsImpl;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
+import org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationChangeAction;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
@@ -182,6 +183,7 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 import static org.apache.ignite.internal.IgniteComponentType.JTA;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.boolReducer;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
 
@@ -1960,6 +1962,12 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         CacheConfiguration ccfg = new CacheConfiguration(startCfg);
 
         CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
+
+        if(desc.cacheType()==CacheType.USER && desc.version().isNeedUpdateVersion(GridCacheConfigurationChangeAction.START)) {
+            desc.version(desc.version().nextVersion(GridCacheConfigurationChangeAction.START));
+
+            sharedCtx.database().storeCacheConfigurationVersion(desc.version(),true);
+        }
 
         boolean affNode;
 
@@ -4081,11 +4089,6 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     public Map<Integer, CacheGroupDescriptor> cacheGroupDescriptors() {
         return cachesInfo.registeredCacheGroups();
     }
-
-    /**
-     * @return Cache groups were removed in time when node was off.
-     */
-    public Map<Integer, CacheGroupDescriptor> missingCacheGroupDescriptors() { return cachesInfo.missingCacheGroups(); }
 
     /**
      * @param cacheId Cache ID.

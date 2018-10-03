@@ -46,6 +46,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationChangeAction;
+import org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
@@ -84,9 +86,6 @@ class ClusterCachesInfo {
 
     /** */
     private final GridKernalContext ctx;
-
-    /** Cache groups were removed in time when node was off. */
-    private final ConcurrentMap<Integer, CacheGroupDescriptor> missingCacheGroups = new ConcurrentHashMap<>();
 
     /** Dynamic caches. */
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredCaches = new ConcurrentHashMap<>();
@@ -1240,10 +1239,7 @@ class ClusterCachesInfo {
                 grpData.config().getCacheMode());
         }
 
-        for (Integer locCacheGroupId : locCacheGrps.keySet()) {
-            if (!cachesData.cacheGroups().containsKey(locCacheGroupId))
-                missingCacheGroups.put(locCacheGroupId, locCacheGrps.get(locCacheGroupId));
-        }
+        // TODO: version for cache group.
     }
 
     /**
@@ -1252,7 +1248,6 @@ class ClusterCachesInfo {
     private void cleanCachesAndGroups() {
         registeredCaches.clear();
         registeredCacheGrps.clear();
-        missingCacheGroups.clear();
         ctx.discovery().cleanCachesAndGroups();
     }
 
@@ -1390,6 +1385,10 @@ class ClusterCachesInfo {
         if (msg.activate()) {
             for (DynamicCacheDescriptor desc : orderedCaches(CacheComparators.DIRECT)) {
                 desc.startTopologyVersion(topVer);
+
+                if(desc.version()==null)
+                     desc.version(new GridCacheConfigurationVersion(desc.cacheName(),desc.groupDescriptor().groupName()));
+
 
                 DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(msg.requestId(),
                     desc.cacheName(),
@@ -1963,13 +1962,6 @@ class ClusterCachesInfo {
     }
 
     /**
-     * @return Cache groups were removed in time when node was off.
-     */
-    ConcurrentMap<Integer, CacheGroupDescriptor> missingCacheGroups() {
-        return missingCacheGroups;
-    }
-
-    /**
      * Returns registered cache descriptors ordered by {@code comparator}
      * @param comparator Comparator (DIRECT, REVERSE or custom) to order cache descriptors.
      * @return Ordered by comparator cache descriptors.
@@ -1994,7 +1986,6 @@ class ClusterCachesInfo {
         registeredCacheGrps.clear();
         registeredCaches.clear();
         registeredTemplates.clear();
-        missingCacheGroups.clear();
 
         clientReconnectReqs = null;
     }

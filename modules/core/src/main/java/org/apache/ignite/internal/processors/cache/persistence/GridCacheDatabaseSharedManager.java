@@ -107,6 +107,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecor
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -136,6 +137,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
+import org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationVersion;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -240,6 +242,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** Prefix for meta store records which means that checkpoint entry for some group is not applicable for WAL rebalance. */
     private static final String CHECKPOINT_INAPPLICABLE_FOR_REBALANCE = "cp-wal-rebalance-inapplicable-";
+
+    /** Prefix for cache configuration version. */
+    private static final String CACHE_CONFIGURATION_VERSION_PREFIX = "cache-cfg-ver-";
 
     /** WAL marker predicate for meta store. */
     private static final IgnitePredicate<String> WAL_KEY_PREFIX_PRED = new IgnitePredicate<String>() {
@@ -360,7 +365,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private final GridFutureAdapter<Map<String, StoredCacheData>> readStoredCacheConfigFut = new GridFutureAdapter<>();
 
     /** Map of futures that will be done, when new stored caches configuration were write to metastore. */
-    private final Map<CacheConfiguration<?,?>,IgniteInternalFuture<?>> saveCacheConfigurationFuts = new ConcurrentHashMap<>();
+    private final Map<Object,IgniteInternalFuture<?>> saveCacheConfigurationFuts = new ConcurrentHashMap<>();
 
     /** Barrier for notification that metastore ready for write. */
     private final CountDownLatch metaStorageReadyForWriteLatch = new CountDownLatch(1);
@@ -653,7 +658,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             checkpointReadLock();
 
             try {
-                restoreMemory(status, true, storePageMem, Collections.emptySet());
+                restoreMemory(status, true, storePageMem);
 
                 metaStorage = new MetaStorage(cctx, regCfg, memMetrics, true);
 
@@ -855,9 +860,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME)
             );
 
-            Map<Integer, CacheGroupDescriptor> missingCacheGroups = cctx.cache().missingCacheGroupDescriptors();
-
-            WALPointer restore = restoreMemory(status, missingCacheGroups.keySet());
+            WALPointer restore = restoreMemory(status);
 
             if (restore == null && !status.endPtr.equals(CheckpointStatus.NULL_PTR)) {
                 throw new StorageException("Restore wal pointer = " + restore + ", while status.endPtr = " +
@@ -1505,8 +1508,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             (IgnitePredicate<String>)key -> key != null && key.startsWith(STORE_CACHE_PREFIX)
         );
 
-        for (StoredCacheData cacheData : readCacheData.values())
+        for (StoredCacheData cacheData : readCacheData.values()) {
+            GridCacheConfigurationVersion version =
+                (GridCacheConfigurationVersion) metaStorage.read(getCacheConfigVersionMetasoreKey(cacheData.config()));
+
+            cacheData.version(version);
+
             storedCaches.put(cacheData.config().getName(), cacheData);
+        }
+
+        log.error("readStoredCacheConfiguration0() " + readCacheData);
 
         return storedCaches;
     }
@@ -1532,6 +1543,52 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
+    @Override public void storeCacheConfigurationVersion(GridCacheConfigurationVersion version, boolean overwrite)
+        throws IgniteCheckedException {
+        if (metaStorageReadyForWriteLatch.getCount() == 0L)
+            storeCacheConfigurationVersion0(version,overwrite);
+        else {
+            IgniteInternalFuture<?> fut = cctx.kernalContext().closure().runLocalSafe(() -> {
+                try {
+                    metaStorageReadyForWriteLatch.await();
+
+                    storeCacheConfigurationVersion0(version, overwrite);
+                }
+                catch (IgniteCheckedException | InterruptedException e) {
+                    U.error(log, "Failed to store cache configuration version! " + version, e);
+                }
+            });
+
+            saveCacheConfigurationFuts.put(version,fut);
+        }
+    }
+
+    /**
+     * Store cache configuration version routine.
+     */
+    private void storeCacheConfigurationVersion0(@NotNull GridCacheConfigurationVersion version, boolean overwrite)
+        throws IgniteCheckedException{
+        this.context().database().checkpointReadLock();
+
+        try {
+            String versionKey = getCacheConfigVersionMetasoreKey(version);
+
+            GridCacheConfigurationVersion oldVersion = (GridCacheConfigurationVersion)metaStorage.read(versionKey);
+
+            log.error("storeCacheConfigurationVersion0() " + version + " overwrite: " + overwrite + " old: " + (oldVersion==null ? "null" : oldVersion));
+
+            if (oldVersion == null || overwrite) {
+                assert oldVersion == null || oldVersion.id() <= version.id();
+
+                metaStorage.write(versionKey, version);
+            }
+        }
+        finally {
+            this.context().database().checkpointReadUnlock();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void removeCacheConfiguration(CacheConfiguration<?, ?> cacheConfig) throws IgniteCheckedException {
         this.context().database().checkpointReadLock();
 
@@ -1550,27 +1607,30 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * Store cache configuration routine.
      */
-    private void storeCacheConfiguration0(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException {
+   private void storeCacheConfiguration0(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException {
         context().database().checkpointReadLock();
 
         try {
             String key = getCacheConfigMetastoreKey(cacheData.config());
 
+            log.error("storeCacheConfiguration0() " + cacheData + " overwrite: " + overwrite);
+
             if (metaStorage.read(key) == null || overwrite)
                 metaStorage.write(key, cacheData);
+
+            storeCacheConfigurationVersion0(cacheData.version(),overwrite);
         }
         finally {
             context().database().checkpointReadUnlock();
         }
 
     }
-
     /**
      * Method waits for new cache configurations persisting to disk.
      */
     private void waitNewCachesConfigurationAreSaved() {
         try {
-            for (Map.Entry<CacheConfiguration<?, ?>, IgniteInternalFuture<?>> e : saveCacheConfigurationFuts.entrySet()) {
+            for (Map.Entry<Object, IgniteInternalFuture<?>> e : saveCacheConfigurationFuts.entrySet()) {
                 if (!e.getValue().isDone()) {
                     final long timeout = 10_000L;
 
@@ -1605,6 +1665,38 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             cacheConfig.getGroupName() : cacheName;
 
         return STORE_CACHE_PREFIX + cacheGroupName + "." + cacheName;
+    }
+
+    /**
+     * Creates metastore key for cache configuration version.
+     *
+     * @param cacheConfig cache configuration.
+     * @return metastore key.
+     */
+    private String getCacheConfigVersionMetasoreKey(CacheConfiguration<?, ?> cacheConfig){
+        return getCacheConfigVersionMetasoreKey(cacheConfig.getName(), cacheConfig.getGroupName());
+    }
+
+    /**
+     * Creates metastore key for cache configuration version.
+     *
+     * @param version cache configuration version.
+     * @return metastore key.
+     */
+    private String getCacheConfigVersionMetasoreKey(@NotNull GridCacheConfigurationVersion version){
+        return getCacheConfigVersionMetasoreKey(version.name(),version.groupName());
+    }
+
+    /**
+     * Creates metastore key for cache configuration version.
+     *
+     * @param cacheName cache name.
+     * @param cacheGroupName cache group name.
+     * @return metastore key.
+     */
+    private String getCacheConfigVersionMetasoreKey(@NotNull  String cacheName,@Nullable String cacheGroupName){
+        return CACHE_CONFIGURATION_VERSION_PREFIX + (cacheGroupName==null ? cacheName : cacheGroupName) +
+            "." + cacheName;
     }
 
     /**
@@ -2115,23 +2207,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @throws IgniteCheckedException If failed.
      * @throws StorageException In case I/O error occurred during operations with storage.
      */
-    @Nullable private WALPointer restoreMemory(CheckpointStatus status, Collection<Integer> missingCacheGrpIds) throws IgniteCheckedException {
-        return restoreMemory(status, false, (PageMemoryEx)metaStorage.pageMemory(), missingCacheGrpIds);
+    @Nullable private WALPointer restoreMemory(CheckpointStatus status) throws IgniteCheckedException {
+        return restoreMemory(status, false, (PageMemoryEx)metaStorage.pageMemory());
     }
 
     /**
      * @param status Checkpoint status.
      * @param metastoreOnly If {@code True} restores Metastorage only.
      * @param storePageMem Metastore page memory.
-     * @param missingCacheGrpIds Group ids for skipping.
      * @throws IgniteCheckedException If failed.
      * @throws StorageException In case I/O error occurred during operations with storage.
      */
     @Nullable private WALPointer restoreMemory(
         CheckpointStatus status,
         boolean metastoreOnly,
-        PageMemoryEx storePageMem,
-        Collection<Integer> missingCacheGrpIds
+        PageMemoryEx storePageMem
     ) throws IgniteCheckedException {
         assert !metastoreOnly || storePageMem != null;
 
@@ -2157,9 +2247,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         RestoreBinaryState restoreBinaryState = new RestoreBinaryState(status, lastArchivedSegment, log);
 
         Collection<Integer> ignoreGrps = metastoreOnly ? Collections.emptySet() :
-            F.concat(false,
-                missingCacheGrpIds,
-                F.concat(false, initiallyGlobalWalDisabledGrps, initiallyLocalWalDisabledGrps));
+                F.concat(false, initiallyGlobalWalDisabledGrps, initiallyLocalWalDisabledGrps);
 
         int applied = 0;
 
