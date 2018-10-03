@@ -725,7 +725,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 keys.add(new KeyCacheObjectWrapper(e.getKey()));
         }
 
-        load0(entries, fut, keys, 0);
+        load0(entries, fut, keys, 0, null, null);
     }
 
     /** {@inheritDoc} */
@@ -798,13 +798,18 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * @param resFut Result future.
      * @param activeKeys Active keys.
      * @param remaps Remaps count.
+     * @param remapNode Node for remap. In case update with {@code allowOverride() == false} fails on one node,
+     * we don't need to send update request to all affinity nodes again, if topology version does not changed.
+     * @param remapTopVer Topology version.
      */
     private void load0(
         Collection<? extends DataStreamerEntry> entries,
         final GridFutureAdapter<Object> resFut,
         @Nullable final Collection<KeyCacheObjectWrapper> activeKeys,
-        final int remaps
-    ) {
+        final int remaps,
+        ClusterNode remapNode,
+        AffinityTopologyVersion remapTopVer
+        ) {
         try {
             assert entries != null;
 
@@ -876,7 +881,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         if (key.partition() == -1)
                             key.partition(cctx.affinity().partition(key, false));
 
-                        nodes = nodes(key, topVer, cctx);
+                        if (!allowOverwrite() && remapNode != null && F.eq(topVer, remapTopVer))
+                            nodes = Collections.singletonList(remapNode);
+                        else
+                            nodes = nodes(key, topVer, cctx);
                     }
                     catch (IgniteCheckedException e) {
                         resFut.onDone(e);
@@ -903,6 +911,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 }
 
                 for (final Map.Entry<ClusterNode, Collection<DataStreamerEntry>> e : mappings.entrySet()) {
+                    final ClusterNode node = e.getKey();
                     final UUID nodeId = e.getKey().id();
 
                     Buffer buf = bufMappings.get(nodeId);
@@ -964,7 +973,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                                                     if (cancelled)
                                                         closedException();
 
-                                                    load0(entriesForNode, resFut, activeKeys, remaps + 1);
+                                                    load0(entriesForNode, resFut, activeKeys, remaps + 1, node, topVer);
                                                 }
                                                 catch (Throwable ex) {
                                                     resFut.onDone(
@@ -2197,9 +2206,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             GridCacheContext cctx = internalCache.context();
 
+            GridDhtTopologyFuture topFut = cctx.isLocal() ? null : cctx.shared().exchange().lastFinishedFuture();
+
             AffinityTopologyVersion topVer = cctx.isLocal() ?
                 cctx.affinity().affinityTopologyVersion() :
-                cctx.shared().exchange().readyAffinityVersion();
+                topFut.topologyVersion();
 
             GridCacheVersion ver = cctx.versions().isolatedStreamerVersion();
 
@@ -2258,6 +2269,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                                 ttl = 0;
 
                             expiryTime = CU.toExpireTime(ttl);
+                        }
+
+                        if (topFut != null) {
+                            Throwable err = topFut.validateCache(cctx, false, false, entry.key(), null);
+
+                            if (err != null)
+                                throw new IgniteCheckedException(err);
                         }
 
                         boolean primary = cctx.affinity().primaryByKey(cctx.localNode(), entry.key(), topVer);
