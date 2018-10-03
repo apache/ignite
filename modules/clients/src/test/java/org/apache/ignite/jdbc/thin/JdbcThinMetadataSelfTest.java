@@ -102,7 +102,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         startGridsMultiThreaded(3);
 
         Map<String, Integer> orgPrecision = new HashMap<>();
-        
+
         orgPrecision.put("name", 42);
 
         IgniteCache<String, Organization> orgCache = jcache(grid(0),
@@ -143,7 +143,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         personCache.put(new AffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
         personCache.put(new AffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
 
-        IgniteCache<Integer, Department> departmentCache = jcache(grid(0), 
+        IgniteCache<Integer, Department> departmentCache = jcache(grid(0),
             defaultCacheConfiguration().setIndexedTypes(Integer.class, Department.class), "dep");
 
         try (Connection conn = DriverManager.getConnection(URL)) {
@@ -555,7 +555,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "PUBLIC.TEST.PK_PUBLIC_TEST.ID",
                 "PUBLIC.TEST.PK_PUBLIC_TEST.NAME",
                 "PUBLIC.Quoted.PK_PUBLIC_Quoted.Id",
-                "PUBLIC.TEST_DECIMAL_COLUMN.ID._KEY"));
+                "PUBLIC.TEST_DECIMAL_COLUMN.ID.ID"));
 
             Set<String> actualPks = new HashSet<>(expectedPks.size());
 
