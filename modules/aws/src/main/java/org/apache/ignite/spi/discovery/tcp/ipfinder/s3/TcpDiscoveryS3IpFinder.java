@@ -70,7 +70,6 @@ import java.util.regex.Pattern;
  *      <li>Client configuration (see {@link #setClientConfiguration(ClientConfiguration)})</li>
  *      <li>Shared flag (see {@link #setShared(boolean)})</li>
  *      <li>Bucket endpoint (see {@link #setBucketEndpoint(String)})</li>
- *      <li>Region (see {@link #setRegion(String)})</li>
  *      <li>Server side encryption algorithm (see {@link #setSSEAlgorithm(String)})</li>
  *      <li>Server side encryption algorithm (see {@link #setKeyPrefix(String)})</li>
  * </ul>
