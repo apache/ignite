@@ -407,6 +407,9 @@ public class IgniteConfiguration {
     /** Failure detection timeout. */
     private Long failureDetectionTimeout = DFLT_FAILURE_DETECTION_TIMEOUT;
 
+    /** Timeout for blocked system workers detection. */
+    private Long systemWorkerBlockedTimeout;
+
     /** Failure detection timeout for client nodes. */
     private Long clientFailureDetectionTimeout = DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT;
 
@@ -1972,6 +1975,34 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setFailureDetectionTimeout(long failureDetectionTimeout) {
         this.failureDetectionTimeout = failureDetectionTimeout;
+
+        return this;
+    }
+
+    /**
+     * Returns timeout for blocked system workers detection.
+     * <p>
+     * Default is {@link #getFailureDetectionTimeout()}.
+     *
+     * @see #setSystemWorkerBlockedTimeout(long)
+     * @return Returns timeout for blocked system workers detection in milliseconds.
+     */
+    public Long getSystemWorkerBlockedTimeout() {
+        return systemWorkerBlockedTimeout != null ? systemWorkerBlockedTimeout : getFailureDetectionTimeout();
+    }
+
+    /**
+     * Sets timeout for blocked system workers detection.
+     * <p>
+     * When a blocking operation in some system-critical worker lasts more than this timeout, then critical failure
+     * handler is being called.
+     *
+     * @see #setFailureHandler(FailureHandler)
+     * @param systemWorkerBlockedTimeout Timeout for blocked system workers detection in milliseconds.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setSystemWorkerBlockedTimeout(long systemWorkerBlockedTimeout) {
+        this.systemWorkerBlockedTimeout = systemWorkerBlockedTimeout;
 
         return this;
     }

@@ -54,6 +54,13 @@ public interface WorkersControlMXBean {
     /** */
     public void setHealthMonitoringEnabled(boolean val);
 
+    /** */
+    @MXBeanDescription("Timeout for blocked system workers detection.")
+    public long getSystemWorkerBlockedTimeout();
+
+    /** */
+    public void setSystemWorkerBlockedTimeout(long val);
+
     /**
      * Stops thread by {@code name}, if exists and unique.
      *

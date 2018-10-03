@@ -62,7 +62,7 @@ public class WorkersRegistry implements GridWorkerListener {
     private final IgniteBiInClosure<GridWorker, FailureType> workerFailedHnd;
 
     /** Worker heartbeat timeout in milliseconds, when exceeded, worker is considered as blocked. */
-    private final long heartbeatTimeout;
+    private volatile long heartbeatTimeout;
 
     /** Time in milliseconds between successive workers checks. */
     private final long checkInterval;
@@ -72,14 +72,15 @@ public class WorkersRegistry implements GridWorkerListener {
 
     /**
      * @param workerFailedHnd Closure to invoke on worker failure.
-     * @param heartbeatTimeout Maximum allowed worker heartbeat interval in milliseconds, should be positive.
+     * @param heartbeatTimeout Maximum allowed worker heartbeat interval in milliseconds, non-positive value denotes
+     * infinite interval.
      */
     public WorkersRegistry(
         @NotNull IgniteBiInClosure<GridWorker, FailureType> workerFailedHnd,
         long heartbeatTimeout,
         IgniteLogger log) {
         this.workerFailedHnd = workerFailedHnd;
-        this.heartbeatTimeout = heartbeatTimeout;
+        this.heartbeatTimeout = heartbeatTimeout <= 0 ? Long.MAX_VALUE : heartbeatTimeout;
         this.checkInterval = Math.min(DFLT_CHECK_INTERVAL, heartbeatTimeout);
         this.log = log;
     }
@@ -134,6 +135,16 @@ public class WorkersRegistry implements GridWorkerListener {
     /** */
     void livenessCheckEnabled(boolean val) {
         livenessCheckEnabled = val;
+    }
+
+    /** */
+    long getHeartbeatTimeout() {
+        return heartbeatTimeout == Long.MAX_VALUE ? 0 : heartbeatTimeout;
+    }
+
+    /** */
+    void setHeartbeatTimeout(long val) {
+        heartbeatTimeout = val <= 0 ? Long.MAX_VALUE : val;
     }
 
     /** {@inheritDoc} */
