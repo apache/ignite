@@ -64,7 +64,6 @@ public class IgnitePdsWithIndexingCoreTestSuite extends TestSuite {
         suite.addTestSuite(WalRecoveryTxLogicalRecordsTest.class);
         suite.addTestSuite(WalRolloverRecordLoggingFsyncTest.class);
         suite.addTestSuite(WalRolloverRecordLoggingLogOnlyTest.class);
-        suite.addTestSuite(WalRolloverRecordLoggingTest.class);
 
         suite.addTestSuite(IgniteWalRecoveryTest.class);
         suite.addTestSuite(IgniteWalRecoveryWithCompactionTest.class);
