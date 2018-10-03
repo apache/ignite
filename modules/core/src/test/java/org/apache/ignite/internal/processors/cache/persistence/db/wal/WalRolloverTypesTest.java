@@ -16,9 +16,6 @@
 */
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -29,14 +26,11 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
-import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -49,6 +43,7 @@ import static org.apache.ignite.configuration.WALMode.FSYNC;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.internal.pagemem.wal.record.RolloverType.CURRENT_SEGMENT;
 import static org.apache.ignite.internal.pagemem.wal.record.RolloverType.NEXT_SEGMENT;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
 
 /**
  *
@@ -207,12 +202,10 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
             () -> {
                 ThreadLocalRandom random = ThreadLocalRandom.current();
 
-                while (U.currentTimeMillis() - startTime < 30_000)
+                while (U.currentTimeMillis() - startTime < testDuration)
                     cache.put(random.nextInt(100), random.nextInt(100_000));
             },
             8, "cache-put-thread");
-
-        List<Long> forcedRolloverSegs = new ArrayList<>();
 
         IgniteWriteAheadLogManager walMgr = ig.context().cache().context().wal();
 
@@ -230,14 +223,13 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
 
                 try {
                     ptr = walMgr.log(markerRecord, NEXT_SEGMENT);
-
-                    assert ptr instanceof FileWALPointer;
-
-                    forcedRolloverSegs.add(((FileWALPointer)ptr).index());
                 }
                 finally {
                     dbMgr.checkpointReadUnlock();
                 }
+
+                assertTrue(ptr instanceof FileWALPointer);
+                assertEquals(HEADER_RECORD_SIZE, ((FileWALPointer)ptr).fileOffset());
             }
             catch (IgniteCheckedException e) {
                 log.error(e.getMessage(), e);
@@ -246,41 +238,5 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
         while (U.currentTimeMillis() - startTime < testDuration);
 
         fut.get();
-
-        dbMgr.checkpointReadLock();
-
-        try {
-            ptr = walMgr.log(new CheckpointRecord(null), NEXT_SEGMENT);
-        }
-        finally {
-            dbMgr.checkpointReadUnlock();
-        }
-
-        walMgr.flush(ptr, true);
-
-        WALIterator walIter = walMgr.replay(null);
-
-        Iterator<Long> segIter = forcedRolloverSegs.iterator();
-
-        while (walIter.hasNext() && segIter.hasNext()) {
-            long idx = segIter.next();
-
-            IgniteBiTuple<WALPointer, WALRecord> walEntry;
-
-            do {
-                assertTrue(walIter.hasNext());
-
-                walEntry = walIter.next();
-
-                assertTrue(walEntry.getKey() instanceof FileWALPointer);
-            }
-            while (((FileWALPointer)walEntry.getKey()).index() < idx);
-
-            WALRecord rec = walEntry.getValue();
-
-            assertTrue(rec instanceof CheckpointRecord);
-
-            assertEquals(markerRecord.checkpointId(), ((CheckpointRecord)rec).checkpointId());
-        }
     }
 }
