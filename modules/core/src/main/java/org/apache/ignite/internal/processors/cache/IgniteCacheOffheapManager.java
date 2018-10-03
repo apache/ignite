@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.List;
 import java.util.Map;
 import javax.cache.Cache;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -278,6 +279,8 @@ public interface IgniteCacheOffheapManager {
      * @param noCreate Flag indicating that row should not be created if absent.
      * @param filter Filter.
      * @param retVal Flag to return previous value.
+     * @param entryProc Entry processor.
+     * @param invokeArgs Entry processor invoke arguments.
      * @return Update result.
      * @throws IgniteCheckedException If failed.
      */
@@ -291,7 +294,9 @@ public interface IgniteCacheOffheapManager {
         boolean needHistory,
         boolean noCreate,
         @Nullable CacheEntryPredicate filter,
-        boolean retVal) throws IgniteCheckedException;
+        boolean retVal,
+        EntryProcessor entryProc,
+        Object[] invokeArgs) throws IgniteCheckedException;
 
     /**
      * @param entry Entry.
@@ -797,6 +802,8 @@ public interface IgniteCacheOffheapManager {
          * @param expireTime Expire time.
          * @param mvccSnapshot MVCC snapshot.
          * @param filter Filter.
+         * @param entryProc Entry processor.
+         * @param invokeArgs Entry processor invoke arguments.
          * @param primary {@code True} if update is executed on primary node.
          * @param needHistory Flag to collect history.
          * @param noCreate Flag indicating that row should not be created if absent.
@@ -812,6 +819,8 @@ public interface IgniteCacheOffheapManager {
             long expireTime,
             MvccSnapshot mvccSnapshot,
             @Nullable CacheEntryPredicate filter,
+            EntryProcessor entryProc,
+            Object[] invokeArgs,
             boolean primary,
             boolean needHistory,
             boolean noCreate,

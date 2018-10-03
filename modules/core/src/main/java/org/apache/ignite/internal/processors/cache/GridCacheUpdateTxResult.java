@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
  * Cache entry transactional update result.
  */
 public class GridCacheUpdateTxResult {
-    /** Success flag.*/
+    /** Success flag. */
     private final boolean success;
 
     /** Partition update counter. */
@@ -50,6 +50,9 @@ public class GridCacheUpdateTxResult {
 
     /** Previous value. */
     private CacheObject prevVal;
+
+    /** Invoke result. */
+    private CacheInvokeResult invokeRes;
 
     /**
      * Constructor.
@@ -146,7 +149,6 @@ public class GridCacheUpdateTxResult {
     }
 
     /**
-     *
      * @return Mvcc history rows.
      */
     @Nullable public List<MvccLinkAwareSearchRow> mvccHistory() {
@@ -154,7 +156,6 @@ public class GridCacheUpdateTxResult {
     }
 
     /**
-     *
      * @param mvccHistory Mvcc history rows.
      */
     public void mvccHistory(List<MvccLinkAwareSearchRow> mvccHistory) {
@@ -162,19 +163,31 @@ public class GridCacheUpdateTxResult {
     }
 
     /**
-     *
      * @return Previous value.
      */
-    @Nullable  public CacheObject prevValue() {
+    @Nullable public CacheObject prevValue() {
         return prevVal;
     }
 
     /**
-     *
      * @param prevVal Previous value.
      */
-    public void prevValue( @Nullable  CacheObject prevVal) {
+    public void prevValue(@Nullable CacheObject prevVal) {
         this.prevVal = prevVal;
+    }
+
+    /**
+     * @param result Entry processor invoke result.
+     */
+    public void invokeResult(CacheInvokeResult result) {
+        invokeRes = result;
+    }
+
+    /**
+     * @return Invoke result.
+     */
+    public CacheInvokeResult invokeResult() {
+        return invokeRes;
     }
 
     /** {@inheritDoc} */

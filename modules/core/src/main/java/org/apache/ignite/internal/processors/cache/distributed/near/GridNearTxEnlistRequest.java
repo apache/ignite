@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridInvokeValue;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -95,7 +97,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
 
     /** Serialized rows values. */
     @GridToStringExclude
-    private CacheObject[] values;
+    private Message[] values;
 
     /** Enlist operation. */
     private EnlistOperation op;
@@ -286,7 +288,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
 
             boolean keysOnly = op.isDeleteOrLock();
 
-            values = keysOnly ? null : new CacheObject[keys.length];
+            values = keysOnly ? null : new Message[keys.length];
 
             for (Object row : rows) {
                 Object key, val = null;
@@ -309,13 +311,24 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
                 keys[i] = key0;
 
                 if (!keysOnly) {
-                    CacheObject val0 = cctx.toCacheObject(val);
+                    if (op.isInvoke()) {
+                        GridInvokeValue val0 = (GridInvokeValue)val;
 
-                    assert val0 != null;
+                        assert val0 != null;
 
-                    val0.prepareMarshal(objCtx);
+                        val0.prepareMarshal(cctx);
 
-                    values[i] = val0;
+                        values[i] = val0;
+                    }
+                    else {
+                        CacheObject val0 = cctx.toCacheObject(val);
+
+                        assert val0 != null;
+
+                        val0.prepareMarshal(objCtx);
+
+                        values[i] = val0;
+                    }
                 }
 
                 i++;
@@ -341,8 +354,12 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
                 if (op.isDeleteOrLock())
                     rows.add(keys[i]);
                 else {
-                    if (values[i] != null)
-                        values[i].finishUnmarshal(objCtx, ldr);
+                    if (values[i] != null) {
+                        if(op.isInvoke())
+                            ((GridInvokeValue)values[i]).finishUnmarshal(ctx, ldr);
+                        else
+                            ((CacheObject)values[i]).finishUnmarshal(objCtx, ldr);
+                    }
 
                     rows.add(new IgniteBiTuple<>(keys[i], values[i]));
                 }
@@ -608,7 +625,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
                 reader.incrementState();
 
             case 18:
-                values = reader.readObjectArray("values", MessageCollectionItemType.MSG, CacheObject.class);
+                values = reader.readObjectArray("values", MessageCollectionItemType.MSG, Message.class);
 
                 if (!reader.isLastRead())
                     return false;

@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
@@ -114,10 +115,23 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
 
     /** {@inheritDoc} */
     @Override protected void onEntryProcessed(KeyCacheObject key, GridCacheUpdateTxResult txRes) {
-        if (needRes && txRes.success())
-            res.set(cctx, txRes.prevValue(), txRes.success(), true);
-        else
-            res.success(txRes.success());
+        assert txRes.invokeResult() == null || needRes;
+
+        res.success(txRes.success());
+
+        if(txRes.invokeResult() != null)
+            res.invokeResult(true);
+
+        if (needRes && txRes.success()) {
+            CacheInvokeResult invokeRes = txRes.invokeResult();
+
+            if (invokeRes != null) {
+                if(invokeRes.result() != null || invokeRes.error() != null)
+                    res.addEntryProcessResult(cctx, key, null, invokeRes.result(), invokeRes.error(), cctx.keepBinary());
+            }
+            else
+                res.set(cctx, txRes.prevValue(), txRes.success(), true);
+        }
     }
 
     /** {@inheritDoc} */
