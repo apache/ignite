@@ -97,7 +97,7 @@ public class QueryUtils {
     private static final int DISCO_HIST_SIZE = getInteger(IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE, 1000);
 
     /** */
-    private static final Class<?> GEOMETRY_CLASS = U.classForName("com.vividsolutions.jts.geom.Geometry", null);
+    private static final Class<?> GEOMETRY_CLASS = U.classForName("org.locationtech.jts.geom.Geometry", null);
 
     /** */
     private static final Set<Class<?>> SQL_TYPES = createSqlTypes();

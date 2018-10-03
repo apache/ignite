@@ -890,6 +890,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
             case CLUSTER_ACTIVE:
             case CLUSTER_INACTIVE:
+            case CLUSTER_ACTIVATE:
+            case CLUSTER_DEACTIVATE:
                 perm = SecurityPermission.ADMIN_OPS;
 
                 break;

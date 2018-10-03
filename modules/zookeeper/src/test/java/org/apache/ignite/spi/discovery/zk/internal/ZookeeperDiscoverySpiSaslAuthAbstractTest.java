@@ -20,10 +20,12 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Paths;
+import javax.security.auth.login.Configuration;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.zookeeper.client.ZooKeeperSaslClient;
 import org.apache.zookeeper.server.ServerCnxnFactory;
@@ -109,6 +111,8 @@ public abstract class ZookeeperDiscoverySpiSaslAuthAbstractTest extends GridComm
 
     /** */
     protected void clearSaslSystemProperties() {
+        resetSaslStaticFields();
+
         System.clearProperty(AUTH_PROVIDER);
 
         System.clearProperty(SASL_CONFIG);
@@ -137,9 +141,19 @@ public abstract class ZookeeperDiscoverySpiSaslAuthAbstractTest extends GridComm
 
     /** */
     private void prepareSaslSystemProperties() {
+        resetSaslStaticFields();
+
         System.setProperty(SASL_CONFIG, Paths.get(tmpDir.getPath().toString(), JAAS_CONF_FILE).toString());
 
         System.setProperty(AUTH_PROVIDER, "org.apache.zookeeper.server.auth.SASLAuthenticationProvider");
+    }
+
+    /** */
+    private void resetSaslStaticFields() {
+        Configuration.setConfiguration(null);
+
+        GridTestUtils.setFieldValue(ZooKeeperSaslClient.class, "initializedLogin", false);
+        GridTestUtils.setFieldValue(ZooKeeperSaslClient.class, "login", null);
     }
 
     /** */
