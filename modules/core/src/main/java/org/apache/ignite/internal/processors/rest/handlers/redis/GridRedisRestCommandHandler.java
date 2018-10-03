@@ -31,8 +31,9 @@ import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridR
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.nio.GridNioSession;
-import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.internal.util.typedef.CX1;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -66,26 +67,30 @@ public abstract class GridRedisRestCommandHandler implements GridRedisCommandHan
         final GridRedisMessage msg) {
         assert msg != null;
 
-        return ctx.closure().callLocalSafe(new IgniteCallable<GridRedisMessage>() {
-            @Override public GridRedisMessage call() {
-                try {
-                    GridRestResponse restRes = hnd.handleAsync(asRestRequest(msg)).get();
+        try {
+            return hnd.handleAsync(asRestRequest(msg))
+                .chain(new CX1<IgniteInternalFuture<GridRestResponse>, GridRedisMessage>() {
+                    @Override public GridRedisMessage applyx(IgniteInternalFuture<GridRestResponse> f)
+                        throws IgniteCheckedException {
+                        GridRestResponse restRes = f.get();
 
-                    if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS)
-                        msg.setResponse(makeResponse(restRes, msg.auxMKeys()));
-                    else
-                        msg.setResponse(GridRedisProtocolParser.toGenericError("Operation error"));
-                }
-                catch (IgniteCheckedException e) {
-                    if (e instanceof GridRedisTypeException)
-                        msg.setResponse(GridRedisProtocolParser.toTypeError(e.getMessage()));
-                    else
-                        msg.setResponse(GridRedisProtocolParser.toGenericError(e.getMessage()));
-                }
+                        if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS)
+                            msg.setResponse(makeResponse(restRes, msg.auxMKeys()));
+                        else
+                            msg.setResponse(GridRedisProtocolParser.toGenericError("Operation error"));
 
-                return msg;
-            }
-        });
+                        return msg;
+                    }
+                }, ctx.getSystemExecutorService());
+        }
+        catch (IgniteCheckedException e) {
+            if (e instanceof GridRedisTypeException)
+                msg.setResponse(GridRedisProtocolParser.toTypeError(e.getMessage()));
+            else
+                msg.setResponse(GridRedisProtocolParser.toGenericError(e.getMessage()));
+
+            return new GridFinishedFuture<>(msg);
+        }
     }
 
     /**
