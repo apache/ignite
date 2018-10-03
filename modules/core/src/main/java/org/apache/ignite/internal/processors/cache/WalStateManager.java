@@ -122,7 +122,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     /** */
     private volatile WALDisableContext walDisableContext;
 
-    /** */
+    /** Denies or allows WAL disabling. */
     private volatile boolean prohibitDisabling;
 
     /**
