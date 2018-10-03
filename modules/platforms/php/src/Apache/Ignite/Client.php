@@ -55,7 +55,6 @@ class Client
     {
         $this->socket = new ClientFailoverSocket();
         $this->communicator = new BinaryCommunicator($this->socket);
-        error_reporting(E_ALL ^ E_WARNING);
     }
     
     /**
