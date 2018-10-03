@@ -1614,12 +1614,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         cctx.kernalContext().authentication().onActivate();
 
-        if (exchActions != null && err == null)
-            exchActions.completeRequestFutures(cctx);
-
-        if (stateChangeExchange() && err == null)
-            cctx.kernalContext().state().onStateChangeExchangeDone(exchActions.stateChangeRequest());
-
         Map<T2<Integer, Integer>, Long> localReserved = partHistSuppliers.getReservations(cctx.localNodeId());
 
         if (localReserved != null) {
