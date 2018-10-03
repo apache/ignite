@@ -344,7 +344,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             return null;
         }
 
-        boolean fastLocGet = (!forcePrimary || affNodes.get(0).isLocal()) &&
+        boolean fastLocGet = mvccSnapshot == null && (!forcePrimary || affNodes.get(0).isLocal()) &&
             cctx.reserveForFastLocalGet(part, topVer);
 
         if (fastLocGet) {
