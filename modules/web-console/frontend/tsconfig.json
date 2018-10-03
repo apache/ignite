@@ -3,6 +3,7 @@
         "allowSyntheticDefaultImports": true,
         "target": "ES2017",
         "moduleResolution": "Node",
+        "noEmit": true,
         "allowJs": true,
         "checkJs": true,
         "baseUrl": "."

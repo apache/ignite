@@ -15,12 +15,22 @@
  * limitations under the License.
  */
 
-export interface ISiginData {
-    email: string,
-    password: string
-}
+package org.apache.ignite.internal.processors.cache.distributed.near;
 
-export interface ISigninFormController extends ng.IFormController {
-    email: ng.INgModelController,
-    password: ng.INgModelController
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+
+/**
+ *
+ */
+public abstract class GridNearTxQueryAbstractEnlistFuture extends GridNearTxAbstractEnlistFuture<Long> {
+    /**
+     * @param cctx Cache context.
+     * @param tx Transaction.
+     * @param timeout Timeout.
+     */
+    public GridNearTxQueryAbstractEnlistFuture(
+        GridCacheContext<?, ?> cctx, GridNearTxLocal tx, long timeout) {
+        super(cctx, tx, timeout, CU.longReducer());
+    }
 }

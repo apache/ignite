@@ -15,17 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc.jdbc;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.apache.ignite.IgniteSystemProperties;
 
 /**
- * JDBC response result sender.
+ *
  */
-public interface JdbcResponseSender {
-    /**
-     * Send response to the client. Used for asynchronous result send.
-     * @param resp JDBC response.
-     */
-    public void send(ClientListenerResponse resp);
+public class IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse extends
+    IgniteClusterActivateDeactivateTestWithPersistence {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE, "true");
+
+        super.beforeTest();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE);
+    }
 }
