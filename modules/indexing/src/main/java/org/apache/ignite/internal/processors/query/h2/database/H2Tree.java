@@ -81,6 +81,8 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     /** */
     private final String cacheName;
 
+    // TODO: Table name.
+
     /** */
     private final String idxName;
 
@@ -95,9 +97,10 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     private final H2RowCache rowCache;
 
     /** How often real invocation of inline size calculation will be skipped. */
-    private static final int THROTTLE_INLINE_SIZE_CALCULATION = 500;
+    private static final int THROTTLE_INLINE_SIZE_CALCULATION = 1_000;
 
     /** Counter of inline size calculation for throttling real invocations. */
+    // TODO: Change to Long.
     private final ThreadLocal<AtomicLong> inlineSizeCalculationCounter = ThreadLocal.withInitial(AtomicLong::new);
 
     /** Keep max calculated inline size for current index. */
@@ -281,8 +284,6 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override protected int compare(BPlusIO<GridH2SearchRow> io, long pageAddr, int idx,
         GridH2SearchRow row) throws IgniteCheckedException {
-        inlineSizeRecomendation(row);
-
         if (inlineSize() == 0)
             return compareRows(getRow(io, pageAddr, idx), row);
         else {
@@ -318,6 +319,8 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
 
             if (lastIdxUsed == cols.length)
                 return mvccCompare((H2RowLinkIO)io, pageAddr, idx, row);
+
+            inlineSizeRecomendation(row);
 
             SearchRow rowData = getRow(io, pageAddr, idx);
 
@@ -434,6 +437,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
 
         String typeOfIdx = pk ? " (Primary Key) " : affinityKey ? " (Affinity Key) " : " (Secondary) ";
 
+        // TODO: Remove?
         //Special case when for PK or Affinity key use only unsupported inline index types (e.g. complex java object).
         if (inlineIdxs.isEmpty()) {
             assert pk || affinityKey;
