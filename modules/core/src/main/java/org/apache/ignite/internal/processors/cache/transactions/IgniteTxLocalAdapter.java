@@ -1726,7 +1726,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 mvccSnapshot = ver;
 
             if(dht())
-                cctx.coordinators().registerLocalTransaction(mvccSnapshot.coordinatorVersion(), mvccSnapshot.counter());
+                cctx.coordinators().registerLocalTx(mvccSnapshot.coordinatorVersion(), mvccSnapshot.counter());
 
             qryEnlisted = true;
         }

@@ -124,14 +124,14 @@ public interface MvccProcessor extends GridProcessor {
      * @param crd Mvcc coordinator version.
      * @param cntr Mvcc counter.
      */
-    void registerLocalTransaction(long crd, long cntr);
+    void registerLocalTx(long crd, long cntr);
 
     /**
      * @param crd Mvcc coordinator version.
      * @param cntr Mvcc counter.
      * @return {@code True} if there is an active local transaction with given version.
      */
-    boolean hasLocalTransaction(long crd, long cntr);
+    boolean hasLocalTx(long crd, long cntr);
 
     /**
      * @param cctx Cache context.
@@ -139,7 +139,7 @@ public interface MvccProcessor extends GridProcessor {
      * @return Future, which is completed as soon as the lock is released.
      * @throws IgniteCheckedException If failed.
      */
-    IgniteInternalFuture<Void> waitFor(GridCacheContext cctx, MvccVersion locked) throws IgniteCheckedException;
+    IgniteInternalFuture<Void> waitForLocalTx(GridCacheContext cctx, MvccVersion locked) throws IgniteCheckedException;
 
     /**
      * @param tracker Query tracker.

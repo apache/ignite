@@ -136,9 +136,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /** */
     private static final IgniteProductVersion MVCC_SUPPORTED_SINCE = IgniteProductVersion.fromString("2.7.0");
 
-    /** */
-    private static final Waiter LOCAL_TRANSACTION_MARKER = new LocalTransactionMarker();
-
     /** Dummy tx for vacuum. */
     private static final IgniteInternalTx DUMMY_TX = new GridNearTxLocal();
 
@@ -204,8 +201,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /** */
     private final Map<Long, GridFutureAdapter> waitTxFuts = new ConcurrentHashMap<>();
 
-    /** */
-    private final Map<TxKey, Waiter> waitMap = new ConcurrentHashMap<>();
+    /** Transaction wait map. */
+    private final ConcurrentHashMap<TxKey, WaitList> waitMap = new ConcurrentHashMap<>();
 
     /** */
     private final ActiveQueries activeQueries = new ActiveQueries();
@@ -442,40 +439,41 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         // Release the next transaction waiting for a lock.
         if (primary && (state == TxState.ABORTED || state == TxState.COMMITTED)) {
-            Waiter waiter = waitMap.remove(key);
+            WaitList waitList = waitMap.remove(key);
 
-            if (waiter != null)
-                waiter.run(ctx);
+            if (waitList != null) {
+                List<Runnable> waiters = waitList.complete();
+
+                if (waiters != null) {
+                    for (Runnable waiter : waiters)
+                        waiter.run();
+                }
+            }
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void registerLocalTransaction(long crd, long cntr) {
-        Waiter old = waitMap.putIfAbsent(new TxKey(crd, cntr), LOCAL_TRANSACTION_MARKER);
-
-        assert old == null || old.hasLocalTransaction();
+    @Override public void registerLocalTx(long crd, long cntr) {
+        waitMap.putIfAbsent(new TxKey(crd, cntr), new WaitList());
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasLocalTransaction(long crd, long cntr) {
-        Waiter waiter = waitMap.get(new TxKey(crd, cntr));
-
-        return waiter != null && waiter.hasLocalTransaction();
+    @Override public boolean hasLocalTx(long crd, long cntr) {
+        return waitMap.containsKey(new TxKey(crd, cntr));
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Void> waitFor(GridCacheContext cctx, MvccVersion locked) throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<Void> waitForLocalTx(GridCacheContext cctx, MvccVersion locked) {
         TxKey key = new TxKey(locked.coordinatorVersion(), locked.counter());
 
         LockFuture fut = new LockFuture(cctx.ioPolicy());
 
-        Waiter waiter = waitMap.merge(key, fut, Waiter::concat);
+        WaitList waitList = waitMap.get(key);
 
-        byte state = txLog.get(key);
+        boolean enqueued = waitList != null && waitList.addWaiter(fut);
 
-        if ((state == TxState.ABORTED || state == TxState.COMMITTED)
-            && !waiter.hasLocalTransaction() && (waiter = waitMap.remove(key)) != null)
-            waiter.run(ctx);
+        if (!enqueued)
+            fut.run();
 
         return fut;
     }
@@ -497,6 +495,54 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /** {@inheritDoc} */
     @Override public MvccSnapshot tryRequestSnapshotLocal() throws ClusterTopologyCheckedException {
         return tryRequestSnapshotLocal(null);
+    }
+
+    /**
+     * Wait list for specific transaction..
+     */
+    private static class WaitList {
+        /** Waiters. */
+        private ArrayList<Runnable> waiters;
+
+        /** Completed flag. */
+        private boolean completed;
+
+        /**
+         * Add waiter if possible.
+         *
+         * @param waiter Waiter.
+         * @return {@code True} if waiter was added, {@code false} if wait list is already completed and cannot be used
+         *     any more.
+         */
+        private boolean addWaiter(Runnable waiter) {
+            synchronized (this) {
+                if (completed)
+                    return false;
+
+                if (waiters == null)
+                    waiters = new ArrayList<>(2);
+
+                waiters.add(waiter);
+
+                return true;
+            }
+        }
+
+        /**
+         * Complete
+         *
+         * @return Waiters available at the time of completion.
+         */
+        private List<Runnable> complete() {
+            synchronized (this) {
+                if (completed)
+                    return null;
+
+                completed = true;
+
+                return waiters;
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -1764,32 +1810,10 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         }
     }
 
-    /** */
-    private interface Waiter {
-        /**
-         * @param ctx Grid kernal context.
-         */
-        void run(GridKernalContext ctx);
-
-        /**
-         * @param other Another waiter.
-         * @return New compound waiter.
-         */
-        Waiter concat(Waiter other);
-
-        /**
-         * @return {@code True} if there is an active local transaction
-         */
-        boolean hasLocalTransaction();
-
-        /**
-         * @return {@code True} if it is a compound waiter.
-         */
-        boolean compound();
-    }
-
-    /** */
-    private static class LockFuture extends GridFutureAdapter<Void> implements Waiter, Runnable {
+    /**
+     * Lock future.
+     */
+    private class LockFuture extends GridFutureAdapter<Void> implements Runnable {
         /** */
         private final byte plc;
 
@@ -1802,139 +1826,12 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         /** {@inheritDoc} */
         @Override public void run() {
-            onDone();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run(GridKernalContext ctx) {
             try {
-                ctx.pools().poolForPolicy(plc).execute(this);
+                ctx.pools().poolForPolicy(plc).execute(this::onDone);
             }
             catch (IgniteCheckedException e) {
                 U.error(ctx.log(LockFuture.class), e);
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override public Waiter concat(Waiter other) {
-            return new CompoundWaiterNoLocal(this, other);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean hasLocalTransaction() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean compound() {
-            return false;
-        }
-    }
-
-    /** */
-    private static class LocalTransactionMarker implements Waiter {
-        /** {@inheritDoc} */
-        @Override public void run(GridKernalContext ctx) {
-            // No-op
-        }
-
-        /** {@inheritDoc} */
-        @Override public Waiter concat(Waiter other) {
-            return new CompoundWaiter(other);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean hasLocalTransaction() {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean compound() {
-            return false;
-        }
-    }
-
-    /** */
-    @SuppressWarnings("unchecked")
-    private static class CompoundWaiter implements Waiter {
-        /** */
-        private final Object inner;
-
-        /**
-         * @param waiter Waiter to wrap.
-         */
-        private CompoundWaiter(Waiter waiter) {
-            inner = waiter.compound() ? ((CompoundWaiter)waiter).inner : waiter;
-        }
-
-        /**
-         * @param first First waiter.
-         * @param second Second waiter.
-         */
-        private CompoundWaiter(Waiter first, Waiter second) {
-            ArrayList<Waiter> list = new ArrayList<>();
-
-            add(list, first);
-            add(list, second);
-
-            inner = list;
-        }
-
-        /** */
-        private void add(List<Waiter> to, Waiter waiter) {
-            if (!waiter.compound())
-                to.add(waiter);
-            else if (((CompoundWaiter)waiter).inner.getClass() == ArrayList.class)
-                to.addAll((List<Waiter>)((CompoundWaiter)waiter).inner);
-            else
-                to.add((Waiter)((CompoundWaiter)waiter).inner);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run(GridKernalContext ctx) {
-            if (inner.getClass() == ArrayList.class) {
-                for (Waiter waiter : (List<Waiter>)inner) {
-                    waiter.run(ctx);
-                }
-            }
-            else
-                ((Waiter)inner).run(ctx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Waiter concat(Waiter other) {
-            return new CompoundWaiter(this, other);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean hasLocalTransaction() {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean compound() {
-            return true;
-        }
-    }
-
-    /** */
-    private static class CompoundWaiterNoLocal extends CompoundWaiter {
-        /**
-         * @param first First waiter.
-         * @param second Second waiter.
-         */
-        private CompoundWaiterNoLocal(Waiter first, Waiter second) {
-            super(first, second);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Waiter concat(Waiter other) {
-            return new CompoundWaiterNoLocal(this, other);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean hasLocalTransaction() {
-            return false;
         }
     }
 

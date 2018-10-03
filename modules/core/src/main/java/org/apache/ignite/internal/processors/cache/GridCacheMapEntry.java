@@ -1131,7 +1131,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 GridFutureAdapter<GridCacheUpdateTxResult> resFut = new GridFutureAdapter<>();
 
-                IgniteInternalFuture<?> lockFut = cctx.kernalContext().coordinators().waitFor(cctx, lockVer);
+                IgniteInternalFuture<?> lockFut = cctx.kernalContext().coordinators().waitForLocalTx(cctx, lockVer);
 
                 lockFut.listen(new MvccUpdateLockListener(tx, this, affNodeId, topVer, val, ttl0, mvccVer,
                     op, needHistory, noCreate, filter, retVal, resFut, entryProc, invokeArgs));
@@ -1271,7 +1271,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 GridFutureAdapter<GridCacheUpdateTxResult> resFut = new GridFutureAdapter<>();
 
-                IgniteInternalFuture<?> lockFut = cctx.kernalContext().coordinators().waitFor(cctx, lockVer);
+                IgniteInternalFuture<?> lockFut = cctx.kernalContext().coordinators().waitForLocalTx(cctx, lockVer);
 
                 lockFut.listen(new MvccRemoveLockListener(tx, this, affNodeId, topVer, mvccVer, needHistory,
                     resFut, retVal, filter));
@@ -1366,7 +1366,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 GridFutureAdapter<GridCacheUpdateTxResult> resFut = new GridFutureAdapter<>();
 
-                IgniteInternalFuture<?> lockFut = cctx.kernalContext().coordinators().waitFor(cctx, lockVer);
+                IgniteInternalFuture<?> lockFut = cctx.kernalContext().coordinators().waitForLocalTx(cctx, lockVer);
 
                 lockFut.listen(new MvccAcquireLockListener(tx, this, mvccVer, resFut));
 
@@ -5081,7 +5081,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 else if (res.resultType() == ResultType.LOCKED) {
                     entry.unlockEntry();
 
-                    IgniteInternalFuture<?> lockFuture = cctx.kernalContext().coordinators().waitFor(cctx, res.resultVersion());
+                    IgniteInternalFuture<?> lockFuture = cctx.kernalContext().coordinators().waitForLocalTx(cctx, res.resultVersion());
 
                     lockFuture.listen(this);
 
@@ -5219,7 +5219,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 else if (res.resultType() == ResultType.LOCKED) {
                     entry.unlockEntry();
 
-                    cctx.kernalContext().coordinators().waitFor(cctx, res.resultVersion()).listen(this);
+                    cctx.kernalContext().coordinators().waitForLocalTx(cctx, res.resultVersion()).listen(this);
 
                     return;
                 }
@@ -5389,7 +5389,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 else if (res.resultType() == ResultType.LOCKED) {
                     entry.unlockEntry();
 
-                    cctx.kernalContext().coordinators().waitFor(cctx, res.resultVersion()).listen(this);
+                    cctx.kernalContext().coordinators().waitForLocalTx(cctx, res.resultVersion()).listen(this);
 
                     return;
                 }

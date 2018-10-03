@@ -136,7 +136,7 @@ public class MvccUtils {
         byte state = state(cctx, mvccCrd, mvccCntr, 0);
 
         return state != TxState.COMMITTED && state != TxState.ABORTED
-            || cctx.kernalContext().coordinators().hasLocalTransaction(mvccCrd, mvccCntr);
+            || cctx.kernalContext().coordinators().hasLocalTx(mvccCrd, mvccCntr);
     }
 
     /**
