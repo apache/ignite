@@ -118,8 +118,6 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
         /** Statically configured flag */
         private boolean staticallyConfigured;
 
-        private GridCacheConfigurationVersion version;
-
         /**
          * @param cacheData Cache data.
          * @param cacheType Cache type.
@@ -135,10 +133,6 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
             this.flags = flags;
             this.staticallyConfigured = staticallyConfigured;
         }
-
-        public GridCacheConfigurationVersion version(){ return version; }
-
-        public void version(GridCacheConfigurationVersion version){ this.version = version; }
 
         /**
          * @return Cache data.

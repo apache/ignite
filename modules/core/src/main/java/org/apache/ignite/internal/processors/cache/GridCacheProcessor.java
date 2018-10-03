@@ -113,6 +113,7 @@ import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTransactionsImpl;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationChangeAction;
+import org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
@@ -847,6 +848,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                         CacheConfiguration cfgFromStore = storedCacheData.config();
 
                         validateCacheConfigurationOnRestore(cfg, cfgFromStore);
+
+                        caches.get(cacheName).cacheData().version(storedCacheData.version());
                     }
                 }
             }
@@ -1941,6 +1944,26 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         return started;
     }
 
+    private void checkCacheConfigurationVersion(DynamicCacheDescriptor desc, GridCacheConfigurationChangeAction action)
+        throws IgniteCheckedException
+    {
+        if(desc.cacheType()==CacheType.USER){
+            GridCacheConfigurationVersion version = desc.version();
+
+            if(version==null) {
+                version = new GridCacheConfigurationVersion(desc.cacheName(), desc.groupDescriptor().groupName());
+
+                desc.version(version);
+            }
+
+            if(version.isNeedUpdateVersion(action)) {
+                desc.version(desc.version().nextVersion(action));
+
+                sharedCtx.database().storeCacheConfigurationVersion(desc.version(), true);
+            }
+        }
+    }
+
     /**
      * @param startCfg Cache configuration to use.
      * @param desc Cache descriptor.
@@ -1963,11 +1986,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
         CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
 
-        if(desc.cacheType()==CacheType.USER && desc.version().isNeedUpdateVersion(GridCacheConfigurationChangeAction.START)) {
-            desc.version(desc.version().nextVersion(GridCacheConfigurationChangeAction.START));
-
-            sharedCtx.database().storeCacheConfigurationVersion(desc.version(),true);
-        }
+        checkCacheConfigurationVersion(desc,GridCacheConfigurationChangeAction.START);
 
         boolean affNode;
 

@@ -187,8 +187,11 @@ public class CacheConfigurationCheckOnNodeJoinTest extends GridCommonAbstractTes
         cfg.setCacheConfiguration(new CacheConfiguration().setName(CACHE_NAME));
         startGrid(cfg).cluster().active(true);
         populateData(grid(0).cache(CACHE_NAME));
+        grid(0).getOrCreateCache(new CacheConfiguration<>().setName(SECOND_CACHE_NAME));
         stopGrid(0);
         startGrid(0).cluster().active(true);
+        IgniteCache<?,?> cache = grid(0).cache(CACHE_NAME);
+        cache.destroy();
     }
 
     public void testRemoveCacheFromCacheGroupAndCreateCacheWithoutCacheGroup() throws Exception{
