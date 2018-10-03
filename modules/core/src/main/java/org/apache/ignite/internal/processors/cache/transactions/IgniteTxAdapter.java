@@ -1177,22 +1177,39 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                         try {
                             if (!cctx.localNode().isClient()) {
-                                if (dht() && remote())
-                                    cctx.coordinators().updateState(mvccSnapshot, txState, false);
+                                if (dht() && remote()) {
+                                    cctx.coordinators().updateTxState(
+                                        mvccSnapshot.coordinatorVersion(),
+                                        mvccSnapshot.counter(),
+                                        txState,
+                                        false
+                                    );
+                                }
                                 else if (local()) {
                                     IgniteInternalFuture<?> rollbackFut = rollbackFuture();
 
                                     boolean syncUpdate = txState == TxState.PREPARED || txState == TxState.COMMITTED ||
                                         rollbackFut == null || rollbackFut.isDone();
 
-                                    if (syncUpdate)
-                                        cctx.coordinators().updateState(mvccSnapshot, txState);
+                                    if (syncUpdate) {
+                                        cctx.coordinators().updateTxState(
+                                            mvccSnapshot.coordinatorVersion(),
+                                            mvccSnapshot.counter(),
+                                            txState,
+                                            true
+                                        );
+                                    }
                                     else {
                                         // If tx was aborted, we need to wait tx log is updated on all backups.
                                         rollbackFut.listen(new IgniteInClosure<IgniteInternalFuture>() {
                                             @Override public void apply(IgniteInternalFuture fut) {
                                                 try {
-                                                    cctx.coordinators().updateState(mvccSnapshot, txState);
+                                                    cctx.coordinators().updateTxState(
+                                                        mvccSnapshot.coordinatorVersion(),
+                                                        mvccSnapshot.counter(),
+                                                        txState,
+                                                        true
+                                                    );
                                                 }
                                                 catch (IgniteCheckedException e) {
                                                     U.error(log, "Failed to log TxState: " + txState, e);

@@ -429,35 +429,24 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public byte state(long crdVer, long cntr) throws IgniteCheckedException {
+    @Override public byte txState(long crdVer, long cntr) throws IgniteCheckedException {
         return txLog.get(crdVer, cntr);
     }
 
     /** {@inheritDoc} */
-    @Override public byte state(MvccVersion ver) throws IgniteCheckedException {
-        assert txLog != null && mvccEnabled;
-
-        return txLog.get(ver.coordinatorVersion(), ver.counter());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void updateState(MvccVersion ver, byte state) throws IgniteCheckedException {
-        updateState(ver, state, true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void updateState(MvccVersion ver, byte state, boolean primary) throws IgniteCheckedException {
-        assert txLog != null && mvccEnabled;
-
-        TxKey key = new TxKey(ver.coordinatorVersion(), ver.counter());
+    @Override public void updateTxState(long crdVer, long cntr, byte state, boolean primary)
+        throws IgniteCheckedException {
+        TxKey key = new TxKey(crdVer, cntr);
 
         txLog.put(key, state, primary);
 
-        Waiter waiter;
+        // Release the next transaction waiting for a lock.
+        if (primary && (state == TxState.ABORTED || state == TxState.COMMITTED)) {
+            Waiter waiter = waitMap.remove(key);
 
-        if (primary && (state == TxState.ABORTED || state == TxState.COMMITTED)
-            && (waiter = waitMap.remove(key)) != null)
-            waiter.run(ctx);
+            if (waiter != null)
+                waiter.run(ctx);
+        }
     }
 
     /** {@inheritDoc} */

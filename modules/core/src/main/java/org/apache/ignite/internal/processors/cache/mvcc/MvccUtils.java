@@ -105,10 +105,6 @@ public class MvccUtils {
         mvccVersion(MVCC_CRD_START_CNTR, MVCC_INITIAL_CNTR, MVCC_START_OP_CNTR);
 
     /** */
-    public static final MvccVersion MVCC_VERSION_NA =
-        mvccVersion(MVCC_CRD_COUNTER_NA, MVCC_COUNTER_NA, MVCC_OP_COUNTER_NA);
-
-    /** */
     private static final MvccClosure<Integer> getVisibleState = new GetVisibleState();
 
     /** */
@@ -184,7 +180,7 @@ public class MvccUtils {
         if ((mvccOpCntr & MVCC_HINTS_MASK) != 0)
             return (byte)(mvccOpCntr >>> MVCC_HINTS_BIT_OFF);
 
-        return proc.state(mvccCrd, mvccCntr);
+        return proc.txState(mvccCrd, mvccCntr);
     }
 
     /**
