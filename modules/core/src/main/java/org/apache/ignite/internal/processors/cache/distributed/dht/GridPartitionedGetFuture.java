@@ -462,10 +462,11 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             return false;
         }
 
-        boolean fastLocGet = (!forcePrimary || affNodes.get(0).isLocal()) &&
+        boolean fastLocGet = mvccSnapshot == null && (!forcePrimary || affNodes.get(0).isLocal()) &&
             cctx.reserveForFastLocalGet(part, topVer);
 
-        if (fastLocGet) {
+        if (fastLocGet) { // TODO: Revert
+        //if (false) {
             try {
                 if (localGet(topVer, key, part, locVals))
                     return false;

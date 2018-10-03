@@ -3420,7 +3420,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         Map prevVal = null;
 
-        Map<ReadMode, Map> readModeVals = new HashMap<>();
+        Map<ReadMode, Map> readModeVals = new LinkedHashMap<>();
 
         for (int i = 0; i < readModes.length; i++) {
             ReadMode readMode = readModes[i];
