@@ -661,6 +661,19 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(5L, execSql(ignite3, "SELECT COUNT(*) FROM IGNITE.CACHES WHERE NAME like 'cache%'")
             .get(0).get(0));
+
+        // Check cache groups.
+        resAll = execSql("SELECT ID, GROUP_NAME, CACHE_OR_GROUP_NAME, CACHES_COUNT, " +
+            "CACHE_MODE, ATOMICITY_MODE, AFFINITY, PARTITIONS_COUNT, " +
+            "NODE_FILTER, DATA_REGION_NAME, TOPOLOGY_VALIDATOR, PARTITION_LOSS_POLICY, " +
+            "REBALANCE_MODE, REBALANCE_DELAY, REBALANCE_ORDER, BACKUPS " +
+            "FROM IGNITE.CACHE_GROUPS");
+
+        assertColumnTypes(resAll.get(0),
+            Integer.class, String.class, String.class, Integer.class,
+            String.class, String.class, String.class, Integer.class,
+            String.class, String.class, String.class, String.class,
+            String.class, Long.class, Integer.class, Integer.class);
     }
 
     /**
