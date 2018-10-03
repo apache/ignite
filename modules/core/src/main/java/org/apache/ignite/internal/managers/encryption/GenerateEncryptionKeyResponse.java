@@ -128,7 +128,7 @@ public class GenerateEncryptionKeyResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 162;
+        return 163;
     }
 
     /** {@inheritDoc} */
