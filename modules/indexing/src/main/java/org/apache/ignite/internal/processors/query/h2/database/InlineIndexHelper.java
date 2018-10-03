@@ -1074,6 +1074,10 @@ public class InlineIndexHelper {
         return sortType == SortOrder.ASCENDING ? c : -c;
     }
 
+    /**
+     * @param typeCode Type code.
+     * @return Name.
+     */
     public static String nameTypeBycode(int typeCode) {
         switch (typeCode) {
             case Value.UNKNOWN:

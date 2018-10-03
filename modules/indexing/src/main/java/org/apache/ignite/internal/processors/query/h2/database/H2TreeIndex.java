@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
@@ -75,6 +76,9 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /** Cache context. */
     private final GridCacheContext<?, ?> cctx;
+
+    /** Table name/ */
+    private final String tblName;
 
     /** */
     private final boolean pk;
@@ -121,6 +125,7 @@ public class H2TreeIndex extends GridH2IndexBase {
         this.pk = pk;
         this.affinityKey = affinityKey;
 
+        this.tblName = tbl.getName();
         this.idxName = idxName;
 
         IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
@@ -151,6 +156,7 @@ public class H2TreeIndex extends GridH2IndexBase {
                 try {
                     RootPage page = getMetaPage(treeName, i);
 
+                    // TODO: Pass tbl name
                     segments[i] = new H2Tree(
                         treeName,
                         idxName,
@@ -192,8 +198,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         initDistributedJoinMessaging(tbl);
     }
 
-
-
     /**
      * @param cols Columns array.
      * @return List of {@link InlineIndexHelper} objects.
@@ -203,16 +207,17 @@ public class H2TreeIndex extends GridH2IndexBase {
 
         for (IndexColumn col : cols) {
             if (!InlineIndexHelper.AVAILABLE_TYPES.contains(col.column.getType())) {
-                String typeOfIdx = pk ? " (Primary Key) " : affinityKey ? " (Affinity Key) " : " (Secondary) ";
+                String idxType = pk ? "PRIMARY KEY" : affinityKey ? "AFFINITY KEY (implicit)" : "SECONDARY";
 
-                String supportedTypes = InlineIndexHelper.AVAILABLE_TYPES.stream()
-                    .map(InlineIndexHelper::nameTypeBycode)
-                    .collect(Collectors.joining(", ", "(", ")"));
-
-                log.warning("Please be aware for index " + idxName + typeOfIdx + " column " + col.columnName +
-                    " has unsupported type " + InlineIndexHelper.nameTypeBycode(col.column.getType()) +
-                    " and can't be used for indexing. It can lead to performance degradation. To fix it need to change" +
-                    " type of column to one of supported types" + supportedTypes);
+                U.warn(log, "Column cannot be inlined into index pages because it's type doesn't support inlining, " +
+                    "index access may be slow due to additional page reads (change column type if possible) " +
+                    "[cacheName=" + cctx.name() +
+                    ", tableName=" + tblName +
+                    ", idxName=" + idxName +
+                    ", idxType=" + idxType +
+                    ", colName=" + col.columnName +
+                    ", columnType=" + InlineIndexHelper.nameTypeBycode(col.column.getType()) + ']'
+                );
 
                 break;
             }
