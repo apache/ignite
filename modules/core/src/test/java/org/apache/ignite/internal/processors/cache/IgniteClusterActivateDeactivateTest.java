@@ -76,6 +76,9 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     private static final int DEFAULT_CACHES_COUNT = 2;
 
     /** */
+    private static final int DEFAULT_CACHES_COUNT = 2;
+
+    /** */
     boolean client;
 
     /** */

@@ -422,6 +422,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         evt = ctx.event();
         failureProcessor = ctx.failure();
+        segmentAware = new SegmentAware(dsCfg.getWalSegments(), dsCfg.isWalCompactionEnabled());
     }
 
     /**
