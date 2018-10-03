@@ -76,22 +76,22 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
         // string commands.
         addCommandHandler(new GridRedisGetCommandHandler(log, hnd, ctx));
         addCommandHandler(new GridRedisSetCommandHandler(log, hnd, ctx));
-        addCommandHandler(new GridRedisMSetCommandHandler(log, hnd));
-        addCommandHandler(new GridRedisMGetCommandHandler(log, hnd));
-        addCommandHandler(new GridRedisIncrDecrCommandHandler(log, hnd));
-        addCommandHandler(new GridRedisAppendCommandHandler(log, hnd));
-        addCommandHandler(new GridRedisGetSetCommandHandler(log, hnd));
-        addCommandHandler(new GridRedisStrlenCommandHandler(log, hnd));
-        addCommandHandler(new GridRedisSetRangeCommandHandler(log, hnd));
-        addCommandHandler(new GridRedisGetRangeCommandHandler(log, hnd));
+        addCommandHandler(new GridRedisMSetCommandHandler(log, hnd, ctx));
+        addCommandHandler(new GridRedisMGetCommandHandler(log, hnd, ctx));
+        addCommandHandler(new GridRedisIncrDecrCommandHandler(log, hnd, ctx));
+        addCommandHandler(new GridRedisAppendCommandHandler(log, hnd, ctx));
+        addCommandHandler(new GridRedisGetSetCommandHandler(log, hnd, ctx));
+        addCommandHandler(new GridRedisStrlenCommandHandler(log, hnd, ctx));
+        addCommandHandler(new GridRedisSetRangeCommandHandler(log, hnd, ctx));
+        addCommandHandler(new GridRedisGetRangeCommandHandler(log, hnd, ctx));
 
         // key commands.
-        addCommandHandler(new GridRedisDelCommandHandler(log, hnd));
-        addCommandHandler(new GridRedisExistsCommandHandler(log, hnd));
-        addCommandHandler(new GridRedisExpireCommandHandler(log, hnd));
+        addCommandHandler(new GridRedisDelCommandHandler(log, hnd, ctx));
+        addCommandHandler(new GridRedisExistsCommandHandler(log, hnd, ctx));
+        addCommandHandler(new GridRedisExpireCommandHandler(log, hnd, ctx));
 
         // server commands.
-        addCommandHandler(new GridRedisDbSizeCommandHandler(log, hnd));
+        addCommandHandler(new GridRedisDbSizeCommandHandler(log, hnd, ctx));
         addCommandHandler(new GridRedisFlushCommandHandler(log, hnd, ctx));
     }
 

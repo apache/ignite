@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
@@ -30,9 +31,8 @@ import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridR
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.nio.GridNioSession;
-import org.apache.ignite.internal.util.typedef.CX1;
+import org.apache.ignite.lang.IgniteCallable;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -45,15 +45,20 @@ public abstract class GridRedisRestCommandHandler implements GridRedisCommandHan
     /** REST protocol handler. */
     protected final GridRestProtocolHandler hnd;
 
+    /** Kernel context. */
+    protected final GridKernalContext ctx;
+
     /**
      * Constructor.
      *
      * @param log Logger.
      * @param hnd REST protocol handler.
+     * @param ctx Kernal context.
      */
-    public GridRedisRestCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
+    protected GridRedisRestCommandHandler(IgniteLogger log, GridRestProtocolHandler hnd, GridKernalContext ctx) {
         this.log = log;
         this.hnd = hnd;
+        this.ctx = ctx;
     }
 
     /** {@inheritDoc} */
@@ -61,30 +66,26 @@ public abstract class GridRedisRestCommandHandler implements GridRedisCommandHan
         final GridRedisMessage msg) {
         assert msg != null;
 
-        try {
-            return hnd.handleAsync(asRestRequest(msg))
-                .chain(new CX1<IgniteInternalFuture<GridRestResponse>, GridRedisMessage>() {
-                    @Override public GridRedisMessage applyx(IgniteInternalFuture<GridRestResponse> f)
-                        throws IgniteCheckedException {
-                        GridRestResponse restRes = f.get();
+        return ctx.closure().callLocalSafe(new IgniteCallable<GridRedisMessage>() {
+            @Override public GridRedisMessage call() {
+                try {
+                    GridRestResponse restRes = hnd.handleAsync(asRestRequest(msg)).get();
 
-                        if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS)
-                            msg.setResponse(makeResponse(restRes, msg.auxMKeys()));
-                        else
-                            msg.setResponse(GridRedisProtocolParser.toGenericError("Operation error"));
+                    if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS)
+                        msg.setResponse(makeResponse(restRes, msg.auxMKeys()));
+                    else
+                        msg.setResponse(GridRedisProtocolParser.toGenericError("Operation error"));
+                }
+                catch (IgniteCheckedException e) {
+                    if (e instanceof GridRedisTypeException)
+                        msg.setResponse(GridRedisProtocolParser.toTypeError(e.getMessage()));
+                    else
+                        msg.setResponse(GridRedisProtocolParser.toGenericError(e.getMessage()));
+                }
 
-                        return msg;
-                    }
-                });
-        }
-        catch (IgniteCheckedException e) {
-            if (e instanceof GridRedisTypeException)
-                msg.setResponse(GridRedisProtocolParser.toTypeError(e.getMessage()));
-            else
-                msg.setResponse(GridRedisProtocolParser.toGenericError(e.getMessage()));
-
-            return new GridFinishedFuture<>(msg);
-        }
+                return msg;
+            }
+        });
     }
 
     /**
