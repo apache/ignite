@@ -1972,7 +1972,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return;
 
         // Preform early regions startup before restoring state.
-        initAndStartRegions(cctx.kernalContext().config().getDataStorageConfiguration());
+        startDataRegions(cctx.kernalContext().config().getDataStorageConfiguration());
 
         // Only presistence caches to start.
         for (DynamicCacheDescriptor desc : cctx.cache().cacheDescriptors().values()) {

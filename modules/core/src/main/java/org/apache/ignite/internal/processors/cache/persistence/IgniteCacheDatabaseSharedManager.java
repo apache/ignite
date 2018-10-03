@@ -1152,31 +1152,36 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (cctx.kernalContext().clientNode() && cctx.kernalContext().config().getDataStorageConfiguration() == null)
             return;
 
-        initAndStartRegions(cctx.kernalContext().config().getDataStorageConfiguration());
+        DataStorageConfiguration memCfg = cctx.kernalContext().config().getDataStorageConfiguration();
+
+        assert memCfg != null;
+
+        initDataRegions(memCfg);
+
+        startDataRegions(memCfg);
+
+        for (DatabaseLifecycleListener lsnr : getDatabaseListeners(kctx))
+            lsnr.afterInitialise(this);
     }
 
     /**
-     * Initialize and start CacheDatabaseSharedManager data regions.
+     * Start data regions and init memory structures.
      *
      * @param cfg Regions configuration.
      */
-    protected void initAndStartRegions(DataStorageConfiguration cfg) throws IgniteCheckedException {
+    protected void startDataRegions(DataStorageConfiguration cfg) throws IgniteCheckedException {
+        if (dataRegionsStarted)
+            return;
+
         assert cfg != null;
 
-        if (!dataRegionsStarted) {
-            initDataRegions(cfg);
+        registerMetricsMBeans();
 
-            registerMetricsMBeans();
+        startMemoryPolicies();
 
-            startMemoryPolicies();
+        initPageMemoryDataStructures(cfg);
 
-            initPageMemoryDataStructures(cfg);
-
-            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
-                lsnr.afterInitialise(this);
-
-            dataRegionsStarted = true;
-        }
+        dataRegionsStarted = true;
     }
 
     /** {@inheritDoc} */
@@ -1211,9 +1216,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             }
 
             dataRegionsInitialized = false;
-        }
 
-        dataRegionsStarted = false;
+            dataRegionsStarted = false;
+        }
     }
 
     /**
