@@ -1331,8 +1331,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         ownerIds.add(owner.id());
                 }
 
-                if (ownerIds.size() <= cctx.gridConfig().getExchangeTimeoutMinOwners() && ownerIds.contains(nodeId))
+                if (ownerIds.size() <= cctx.gridConfig().getExchangeTimeoutMinOwners() && ownerIds.contains(nodeId)) {
+                    log.warning("Kicking of pending node " + nodeId + " would reduce amount of owners for partition" +
+                        "[grp=" + grp.cacheOrGroupName() + ", partId=" + p + "] below configured minimum " +
+                        cctx.gridConfig().getExchangeTimeoutMinOwners());
+
                     return false;
+                }
             }
         }
 
