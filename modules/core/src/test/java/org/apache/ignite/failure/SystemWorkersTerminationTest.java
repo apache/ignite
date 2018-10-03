@@ -85,6 +85,8 @@ public class SystemWorkersTerminationTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTermination() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9744");
+
         Ignite ignite = ignite(0);
 
         ignite.cluster().active(true);
@@ -120,6 +122,8 @@ public class SystemWorkersTerminationTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSyntheticWorkerTermination() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9744");
+
         hndLatch = new CountDownLatch(1);
 
         IgniteEx ignite = grid(0);
