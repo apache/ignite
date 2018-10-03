@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.UUID;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictableEntry;
@@ -78,6 +79,11 @@ public interface GridCacheEntryEx {
      * @return {@code True} if local.
      */
     public boolean isLocal();
+
+    /**
+     * @return {@code True} if this is n entry from MVCC cache.
+     */
+    public boolean isMvcc();
 
     /**
      * @return {@code False} if entry belongs to cache map, {@code true} if this entry was created in colocated
@@ -346,6 +352,8 @@ public interface GridCacheEntryEx {
      * @param tx Cache transaction.
      * @param affNodeId Partitioned node iD.
      * @param val Value to set.
+     * @param entryProc Entry processor.
+     * @param invokeArgs Entry processor invoke arguments.
      * @param ttl0 TTL.
      * @param topVer Topology version.
      * @param mvccVer Mvcc version.
@@ -363,6 +371,8 @@ public interface GridCacheEntryEx {
         @Nullable IgniteInternalTx tx,
         UUID affNodeId,
         CacheObject val,
+        EntryProcessor entryProc,
+        Object[] invokeArgs,
         long ttl0,
         AffinityTopologyVersion topVer,
         MvccSnapshot mvccVer,
