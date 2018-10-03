@@ -28,24 +28,24 @@ public class GridCacheConfigurationVersion implements Serializable {
 
     private final GridCacheConfigurationChangeAction lastAction;
 
-    private final String name;
+    private final String cacheName;
 
-    private final String groupName;
+    private final String cacheGroupName;
 
-    public GridCacheConfigurationVersion(String name, String groupName) {
-        this(0, null, name, groupName);
+    public GridCacheConfigurationVersion(String cacheName, String cacheGroupName) {
+        this(0, null, cacheName, cacheGroupName);
     }
 
     private GridCacheConfigurationVersion(
         int id,
         GridCacheConfigurationChangeAction action,
-        String name,
-        String groupName
+        String cacheName,
+        String cacheGroupName
     ) {
         this.id = id;
         this.lastAction = action;
-        this.name = name;
-        this.groupName = groupName;
+        this.cacheName = cacheName;
+        this.cacheGroupName = cacheGroupName;
     }
 
     public int id() {
@@ -57,7 +57,7 @@ public class GridCacheConfigurationVersion implements Serializable {
     }
 
     public GridCacheConfigurationVersion nextVersion(@NotNull GridCacheConfigurationChangeAction action) {
-            return new GridCacheConfigurationVersion(id + 1, action, name, groupName);
+            return new GridCacheConfigurationVersion(id + 1, action, cacheName, cacheGroupName);
     }
 
     public boolean isNeedUpdateVersion(@NotNull GridCacheConfigurationChangeAction action){
@@ -67,9 +67,9 @@ public class GridCacheConfigurationVersion implements Serializable {
         return lastAction != action;
     }
 
-    public String groupName(){ return groupName; }
+    public String cacheGroupName(){ return cacheGroupName; }
 
-    public String name(){ return name; }
+    public String cacheName(){ return cacheName; }
 
      /** {@inheritDoc} */
     @Override public String toString() {

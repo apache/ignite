@@ -107,7 +107,6 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecor
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
-import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -258,6 +257,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** */
     private static final String CHECKPOINT_RUNNER_THREAD_PREFIX = "checkpoint-runner";
+
+    private static final String CACHE_GROUP_CACHE_NAME_METASTORE_KEY_DELIMITER = ".";
 
     /** Checkpoint thread. Needs to be volatile because it is created in exchange worker. */
     private volatile Checkpointer checkpointer;
@@ -1664,7 +1665,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         String cacheGroupName = cacheConfig.getGroupName() != null ?
             cacheConfig.getGroupName() : cacheName;
 
-        return STORE_CACHE_PREFIX + cacheGroupName + "." + cacheName;
+        return STORE_CACHE_PREFIX + cacheGroupName + CACHE_GROUP_CACHE_NAME_METASTORE_KEY_DELIMITER + cacheName;
     }
 
     /**
@@ -1684,7 +1685,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @return metastore key.
      */
     private String getCacheConfigVersionMetasoreKey(@NotNull GridCacheConfigurationVersion version){
-        return getCacheConfigVersionMetasoreKey(version.name(),version.groupName());
+        return getCacheConfigVersionMetasoreKey(version.cacheName(),version.cacheGroupName());
     }
 
     /**
@@ -1696,7 +1697,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private String getCacheConfigVersionMetasoreKey(@NotNull  String cacheName,@Nullable String cacheGroupName){
         return CACHE_CONFIGURATION_VERSION_PREFIX + (cacheGroupName==null ? cacheName : cacheGroupName) +
-            "." + cacheName;
+            CACHE_GROUP_CACHE_NAME_METASTORE_KEY_DELIMITER + cacheName;
     }
 
     /**
@@ -1708,7 +1709,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try {
             Map<String, StoredCacheData> cacheData = (Map<String, StoredCacheData>)metaStorage.readForPredicate(new IgnitePredicate<String>() {
                 @Override public boolean apply(String key) {
-                    return key != null && key.startsWith(STORE_CACHE_PREFIX + grp.cacheOrGroupName());
+                    return key != null && key.startsWith(
+                        STORE_CACHE_PREFIX + grp.cacheOrGroupName() + CACHE_GROUP_CACHE_NAME_METASTORE_KEY_DELIMITER);
                 }
             });
 
