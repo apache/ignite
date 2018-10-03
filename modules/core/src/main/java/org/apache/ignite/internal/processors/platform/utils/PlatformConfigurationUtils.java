@@ -654,6 +654,10 @@ public class PlatformConfigurationUtils {
             cfg.setActiveOnStart(in.readBoolean());
         if (in.readBoolean())
             cfg.setAuthenticationEnabled(in.readBoolean());
+        if (in.readBoolean())
+            cfg.setMvccVacuumFrequency(in.readLong());
+        if (in.readBoolean())
+            cfg.setMvccVacuumThreadCount(in.readInt());
 
         int sqlSchemasCnt = in.readInt();
 
@@ -1201,6 +1205,10 @@ public class PlatformConfigurationUtils {
         w.writeBoolean(cfg.isActiveOnStart());
         w.writeBoolean(true);
         w.writeBoolean(cfg.isAuthenticationEnabled());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getMvccVacuumFrequency());
+        w.writeBoolean(true);
+        w.writeInt(cfg.getMvccVacuumThreadCount());
 
         if (cfg.getSqlSchemas() == null)
             w.writeInt(-1);

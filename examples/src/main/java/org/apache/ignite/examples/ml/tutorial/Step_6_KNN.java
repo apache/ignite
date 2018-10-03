@@ -49,7 +49,7 @@ import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
  */
 public class Step_6_KNN {
     /** Run example. */
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 6 (kNN) example started.");
 
