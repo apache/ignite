@@ -653,21 +653,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         CacheDataRow row = dataStore != null ? dataStore.mvccFind(cctx, key, ver) : null;
 
-        if (GridCacheMapEntry.DEBUG) {
-            if (row == null)
-                System.out.println(">>> MVCC_NULL_READ " + key + ": null");
-            else {
-                Object key0 = row.key().value(cctx.cacheObjectContext(), true);
-                Object val0 = row.value().value(cctx.cacheObjectContext(), true);
-
-                if (val0 != Integer.valueOf(3)) {
-                    long primaryOrd = cctx.affinity().primaryByKey(0, AffinityTopologyVersion.NONE).order();
-
-                    System.out.println(">>> MVCC_READ: " + primaryOrd + " " + cctx.localNode().order() + " " + key0 + " " + val0);
-                }
-            }
-        }
-
         assert row == null || row.value() != null : row;
 
         return row;
@@ -2626,26 +2611,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 clo
             );
 
-            if (GridCacheMapEntry.TREE_DEBUG) {
-                MvccSnapshotSearchRow debugClo = new MvccSnapshotSearchRow(cctx, key, snapshot);
-
-                debugClo.debug();
-
-                dataTree.iterate(
-                    new MvccMaxSearchRow(cacheId, key),
-                    new MvccMinSearchRow(cacheId, key),
-                    debugClo
-                );
-
-                CacheDataRow debugRow = debugClo.row();
-
-//                while (allRows.next()) {
-//                    CacheDataRow debugRow = allRows.get();
-//
-//                    System.out.println(">>> DEBUG ROW: " + debugRow);
-//                }
-            }
-
             CacheDataRow row = clo.row();
 
             afterRowFound(row, key);
@@ -2735,21 +2700,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 GridCacheContext cctx =
                     grp.sharedGroup() ? grp.shared().cacheContext(cacheId) : grp.singleCacheContext();
-
-                if (GridCacheMapEntry.DEBUG) {
-                    GridCursor<CacheDataRow> debugIt = dataTree.find(lowerRow, upperRow, new MvccFirstVisibleRowTreeClosure(cctx, snapshot), x);
-
-                    while (debugIt.next()) {
-                        CacheDataRow debugRow = debugIt.get();
-
-                        CacheObject key = debugRow.key();
-                        CacheObject val = debugRow.value();
-
-                        long primaryOrd = cctx.affinity().primaryByKey(0, AffinityTopologyVersion.NONE).order();
-
-                        System.out.println(">>> MVCC_SCAN: " + primaryOrd + " " + cctx.localNode().order() + " " + key.value(cctx.cacheObjectContext(), true) + " " + val.value(cctx.cacheObjectContext(), true));
-                    }
-                }
 
                 return dataTree.find(lowerRow, upperRow, new MvccFirstVisibleRowTreeClosure(cctx, snapshot), x);
             }

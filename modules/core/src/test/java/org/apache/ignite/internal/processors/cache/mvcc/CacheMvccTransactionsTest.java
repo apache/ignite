@@ -100,7 +100,10 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker.
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
-/**GridPartitionedGetFuture
+/**
+ * TODO IGNITE-6739: tests reload
+ * TODO IGNITE-6739: extend tests to use single/mutiple nodes, all tx types.
+ * TODO IGNITE-6739: test with cache groups.
  */
 @SuppressWarnings("unchecked")
 public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
@@ -2393,21 +2396,12 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             srv0.createCache(ccfg);
         }
 
-        int valCtr = 0;
-
-        checkPutGet(cacheNames, ++valCtr);
+        checkPutGet(cacheNames);
 
         for (int i = 0; i < 3; i++) {
             startGrid(i + 1);
 
-            // TODO: Remove after debug.
-            if (i == 1) {
-                GridCacheMapEntry.DEBUG = true;
-
-                checkPutGet(cacheNames, ++valCtr);
-            }
-            else
-                checkPutGet(cacheNames, ++valCtr);
+            checkPutGet(cacheNames);
 
             checkCoordinatorsConsistency(null);
         }
@@ -2421,7 +2415,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             for (String cacheName : cacheNames)
                 node.cache(cacheName);
 
-            checkPutGet(cacheNames, ++valCtr);
+            checkPutGet(cacheNames);
 
             checkCoordinatorsConsistency(null);
         }
@@ -2431,7 +2425,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
             awaitPartitionMapExchange();
 
-            checkPutGet(cacheNames, ++valCtr);
+            checkPutGet(cacheNames);
 
             checkCoordinatorsConsistency(null);
         }
@@ -2440,7 +2434,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @param cacheNames Cache names.
      */
-    private void checkPutGet(List<String> cacheNames, int val) {
+    private void checkPutGet(List<String> cacheNames) {
         List<Ignite> nodes = G.allGrids();
 
         assertFalse(nodes.isEmpty());
@@ -2449,7 +2443,9 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         Map<Integer, Integer> vals = new HashMap();
 
-        for (int i = 0; i < 1; i++) // TODO: Was 10
+        Integer val = ThreadLocalRandom.current().nextInt();
+
+        for (int i = 0; i < 10; i++)
             vals.put(i, val);
 
         try (Transaction tx = putNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -2640,9 +2636,9 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         try (IgniteDataStreamer<Integer, Integer> streamer = node.dataStreamer(cache.getName())) {
             for (int i = 0; i < KEYS; i++) {
-                streamer.addData(i, 1);
+                streamer.addData(i, i);
 
-                data.put(i, 1);
+                data.put(i, i);
             }
         }
 
@@ -2650,7 +2646,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         checkCacheData(data, cache.getName());
 
-        checkPutGet(F.asList(cache.getName()), 2);
+        checkPutGet(F.asList(cache.getName()));
     }
 
     /**
@@ -3420,42 +3416,19 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         Map prevVal = null;
 
-        Map<ReadMode, Map> readModeVals = new LinkedHashMap<>();
-
         for (int i = 0; i < readModes.length; i++) {
             ReadMode readMode = readModes[i];
-            prevVal = getAllByReadMode(inTx, cache, keys, readMode);
 
-            readModeVals.put(readMode, prevVal);
-        }
+            Map curVal = getAllByReadMode(inTx, cache, keys, readMode);
 
-        boolean equal = true;
-
-        Map compareVals = null;
-
-        for (Map vals : readModeVals.values()) {
-            if (compareVals == null)
-                compareVals = vals;
+            if (i == 0)
+                prevVal = curVal;
             else {
-                if (!F.eq(compareVals, vals)) {
-                    equal = false;
+                assertEquals("Different results on read modes " + readModes[i - 1] + " and " +
+                    readMode.name(), prevVal, curVal);
 
-                    break;
-                }
+                prevVal = curVal;
             }
-        }
-
-        if (!equal) {
-            StringBuilder errMsg = new StringBuilder("Different results on read modes:");
-
-            for (Map.Entry<ReadMode, Map> readModeValsEntry : readModeVals.entrySet()) {
-                ReadMode readMode = readModeValsEntry.getKey();
-                Map vals = readModeValsEntry.getValue();
-
-                errMsg.append("\n>>> " + readMode + ": " + vals);
-            }
-
-            fail(errMsg.toString());
         }
 
         return prevVal;
@@ -3574,10 +3547,5 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         @Override public String toString() {
             return "TestKey [k=" + key + ", payloadLen=" + payload.length + ']';
         }
-    }
-
-    @Override
-    protected long getTestTimeout() {
-        return Long.MAX_VALUE;
     }
 }

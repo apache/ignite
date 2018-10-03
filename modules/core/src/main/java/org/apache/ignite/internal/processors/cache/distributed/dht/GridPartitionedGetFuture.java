@@ -465,8 +465,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         boolean fastLocGet = mvccSnapshot == null && (!forcePrimary || affNodes.get(0).isLocal()) &&
             cctx.reserveForFastLocalGet(part, topVer);
 
-        if (fastLocGet) { // TODO: Revert
-        //if (false) {
+        if (fastLocGet) {
             try {
                 if (localGet(topVer, key, part, locVals))
                     return false;
@@ -535,24 +534,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     CacheDataRow row = cctx.mvccEnabled() ?
                         cctx.offheap().mvccRead(cctx, key, mvccSnapshot()) :
                         cctx.offheap().read(cctx, key);
-
-                    if (GridCacheMapEntry.DEBUG) {
-                        Object key0 = key.value(cctx.cacheObjectContext(), true);
-
-                        Object val0 = row.value().value(cctx.cacheObjectContext(), true);
-
-                        if (val0 != Integer.valueOf(3)) {
-                            System.out.println(">>> LOCAL VALUE       : " + key0 + ": " + val0);
-
-                            GridCacheMapEntry.TREE_DEBUG = true;
-
-                            CacheDataRow row2 = cctx.offheap().mvccRead(cctx, key, mvccSnapshot());
-
-                            val0 = row2.value().value(cctx.cacheObjectContext(), true);
-
-                            System.out.println(">>> LOCAL VALUE REREAD: " + key0 + ": " + val0);
-                        }
-                    }
 
                     if (row != null) {
                         long expireTime = row.expireTime();

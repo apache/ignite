@@ -34,8 +34,6 @@ public interface PreparedStatementEx extends PreparedStatement {
     /** First mvcc cache id of the involved caches. */
     static final int MVCC_CACHE_ID = metaIdGenerator.getAndIncrement();
 
-
-
     /**
      * @param id Metadata key.
      * @return Attached metadata.
