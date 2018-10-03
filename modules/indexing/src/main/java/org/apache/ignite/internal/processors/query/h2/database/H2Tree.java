@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -81,7 +80,8 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     /** */
     private final String cacheName;
 
-    // TODO: Table name.
+    /** */
+    private final String tblName;
 
     /** */
     private final String idxName;
@@ -100,8 +100,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     private static final int THROTTLE_INLINE_SIZE_CALCULATION = 1_000;
 
     /** Counter of inline size calculation for throttling real invocations. */
-    // TODO: Change to Long.
-    private final ThreadLocal<AtomicLong> inlineSizeCalculationCounter = ThreadLocal.withInitial(AtomicLong::new);
+    private final ThreadLocal<Long> inlineSizeCalculationCntr = ThreadLocal.withInitial(() -> new Long(0));
 
     /** Keep max calculated inline size for current index. */
     private final AtomicInteger maxCalculatedInlineSize;
@@ -115,6 +114,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      * @param name Tree name.
      * @param idxName Name of index.
      * @param cacheName Cache name.
+     * @param tblName Table name.
      * @param reuseList Reuse list.
      * @param grpId Cache group ID.
      * @param pageMem Page memory.
@@ -134,6 +134,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         String name,
         String idxName,
         String cacheName,
+        String tblName,
         ReuseList reuseList,
         int grpId,
         PageMemory pageMem,
@@ -162,6 +163,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
 
         this.idxName = idxName;
         this.cacheName = cacheName;
+        this.tblName = tblName;
 
         this.inlineSize = inlineSize;
         this.maxCalculatedInlineSize = maxCalculatedInlineSize;
@@ -430,37 +432,14 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         if(!(row instanceof GridH2KeyValueRowOnheap))
             return;
 
-        boolean throttle = inlineSizeCalculationCounter.get().incrementAndGet() % THROTTLE_INLINE_SIZE_CALCULATION != 0;
+        Long invokeCnt = inlineSizeCalculationCntr.get();
+
+        inlineSizeCalculationCntr.set(++invokeCnt);
+
+        boolean throttle = invokeCnt % THROTTLE_INLINE_SIZE_CALCULATION != 0;
 
         if (throttle)
             return;
-
-        String typeOfIdx = pk ? " (Primary Key) " : affinityKey ? " (Affinity Key) " : " (Secondary) ";
-
-        // TODO: Remove?
-        //Special case when for PK or Affinity key use only unsupported inline index types (e.g. complex java object).
-        if (inlineIdxs.isEmpty()) {
-            assert pk || affinityKey;
-
-            if (maxCalculatedInlineSize.get() == 0) {
-                maxCalculatedInlineSize.set(-1);
-
-                String colNames = Stream.of(cols).map(col -> col.columnName).collect(Collectors.joining(", ", "(", ")"));
-
-                String warn = "Inline index can't be used at all for index " + idxName +
-                    typeOfIdx + " created for " + cacheName + colNames +
-                    ". It can lead to performance degradation." +
-                    " To avoid it please use only supported types for index columns And set non zero inline size for the index." +
-                    " For set up inline index size for primary and affinity columns by set ENV property " +
-                    IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE +
-                    " (Be aware it will use by default for all inline indexes without explicit setting of inline size)." +
-                    " For secondary indexes column use explicit settings by CACHE API or SQL CREATE INDEX syntax.";
-
-                log.warning(warn);
-            }
-
-            return;
-        }
 
         int fullSize = 0;
 
@@ -484,16 +463,29 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
             if (recomendedSize > prevSize) {
                 String cols = colNames.stream().collect(Collectors.joining(", ", "(", ")"));
 
-                String warn = "Inline index size is not enough to keep all indexed column for " + idxName + typeOfIdx +
-                    " index created for " + cacheName + cols +
-                    ". It can lead to performance degradation." +
-                    " To increase inline Index size for primary and affinity columns need to set ENV property " +
-                    IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE +
-                    " (Be aware it will use by default for all inline indexes without explicit setting of inline size)." +
-                    " For secondary indexes column use explicit settings by CACHE API or SQL CREATE INDEX syntax." +
-                    " Calculated inline index size is " + recomendedSize;
+                String idxType = pk ? "PRIMARY KEY" : affinityKey ? "AFFINITY KEY (implicit)" : "SECONDARY";
 
-                log.warning(warn);
+                String pkOrAffinityRecommendation = "for PRIMARY and AFFINITY columns set ENV property "
+                    + IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE + " with recomended size " +
+                    "(Be aware it will use by default for all inline indexes without explicit setting of inline size)";
+
+                String secondaryRecommendation = "For secondary indexes column use explicit settings: " +
+                    "for CACHE API by QueryIndex.setInlineSize() or inlineSize param on QuerySqlField annotation, " +
+                    "in case DDL use SQL CREATE INDEX syntax with param INLINE_SIZE";
+
+                String recommendation = (pk || affinityKey) ? pkOrAffinityRecommendation : secondaryRecommendation;
+
+                String warn = "Indexed columns of a row cannot be fully inlined into index page what may lead to " +
+                    "slowdown due to additional data page reads (" + recommendation + ")" +
+                    "[cacheName=" + cacheName +
+                    ", tableName=" + tblName +
+                    ", idxName=" + idxName +
+                    ", idxCols=" + cols +
+                    ", idxType=" + idxType +
+                    ", curSize=" + inlineSize() +
+                    ", recomendedSize=" + recomendedSize + "]";
+
+                U.warn(log, warn);
             }
         }
     }

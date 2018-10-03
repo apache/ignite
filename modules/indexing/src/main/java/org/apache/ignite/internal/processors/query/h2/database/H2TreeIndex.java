@@ -156,10 +156,10 @@ public class H2TreeIndex extends GridH2IndexBase {
                 try {
                     RootPage page = getMetaPage(treeName, i);
 
-                    // TODO: Pass tbl name
                     segments[i] = new H2Tree(
                         treeName,
                         idxName,
+                        tblName,
                         tbl.cacheName(),
                         cctx.offheap().reuseListForIndex(treeName),
                         cctx.groupId(),
