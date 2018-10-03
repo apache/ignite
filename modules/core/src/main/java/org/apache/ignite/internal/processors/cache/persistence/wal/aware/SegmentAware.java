@@ -220,6 +220,15 @@ public class SegmentAware {
     }
 
     /**
+     * Visible for test.
+     *
+     * @param absIdx Segment absolute index. segment later, use {@link #releaseWorkSegment} for unlock</li> </ul>
+     */
+    void lockWorkSegment(long absIdx) {
+        segmentLockStorage.lockWorkSegment(absIdx);
+    }
+
+    /**
      * @param absIdx Segment absolute index.
      */
     public void releaseWorkSegment(long absIdx) {

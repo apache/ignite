@@ -55,11 +55,11 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     private GridStringLogger log;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "unchecked"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME));
+        cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME).setNearConfiguration(null));
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 

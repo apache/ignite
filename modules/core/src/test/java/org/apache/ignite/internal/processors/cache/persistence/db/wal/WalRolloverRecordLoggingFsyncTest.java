@@ -15,24 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.tree.mvcc.data;
+package org.apache.ignite.internal.processors.cache.persistence.db.wal;
+
+import org.apache.ignite.configuration.WALMode;
+import org.jetbrains.annotations.NotNull;
 
 /**
  *
  */
-public enum ResultType {
-    /** */
-    VERSION_FOUND,
-    /** */
-    PREV_NULL,
-    /** */
-    PREV_NOT_NULL,
-    /** */
-    LOCKED,
-    /** */
-    VERSION_MISMATCH,
-    /** */
-    FILTERED,
-    /** */
-    REMOVED_NOT_NULL,
+public class WalRolloverRecordLoggingFsyncTest extends WalRolloverRecordLoggingTest {
+
+    /** {@inheritDoc} */
+    @NotNull @Override public WALMode walMode() {
+        return WALMode.FSYNC;
+    }
 }
