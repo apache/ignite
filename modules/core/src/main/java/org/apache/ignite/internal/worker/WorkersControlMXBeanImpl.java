@@ -77,16 +77,6 @@ public class WorkersControlMXBeanImpl implements WorkersControlMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public long getSystemWorkerBlockedTimeout() {
-        return workerRegistry.getHeartbeatTimeout();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setSystemWorkerBlockedTimeout(long val) {
-        workerRegistry.setHeartbeatTimeout(val);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean stopThreadByUniqueName(String name) {
         Thread[] threads = Thread.getAllStackTraces().keySet().stream()
             .filter(t -> Objects.equals(t.getName(), name))
