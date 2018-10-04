@@ -57,6 +57,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.management.ObjectName;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
@@ -2343,8 +2344,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         RestoreBinaryState restoreBinaryState = new RestoreBinaryState(status, lastArchivedSegment, log);
 
-        Collection<Integer> ignoreGrps = metastoreOnly ? Collections.emptySet() :
-                F.concat(false, initiallyGlobalWalDisabledGrps, initiallyLocalWalDisabledGrps);
+         Collection<Integer> ignoreGrps = metastoreOnly ? Collections.emptySet() :
+            Stream.of(initiallyGlobalWalDisabledGrps, initiallyLocalWalDisabledGrps, cctx.cache().missingCacheGroups())
+                .flatMap(x -> x.stream())
+                .collect(Collectors.toSet());
 
         int applied = 0;
 

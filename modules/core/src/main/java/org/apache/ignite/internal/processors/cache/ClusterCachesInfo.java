@@ -100,6 +100,8 @@ class ClusterCachesInfo {
     /** Caches configuration version. */
     private final ConcurrentMap<String, GridCacheConfigurationVersion> cachesConfigurationVersion = new ConcurrentHashMap<>();
 
+    private final ConcurrentMap<Integer, CacheGroupDescriptor> missingCacheGroups = new ConcurrentHashMap<>();
+
     /** Caches currently being restarted. */
     private final Collection<String> restartingCaches = new GridConcurrentHashSet<>();
 
@@ -1248,7 +1250,10 @@ class ClusterCachesInfo {
                 grpData.config().getCacheMode());
         }
 
-        // TODO: version for cache group.
+        for (Integer locCacheGroupId : locCacheGrps.keySet()) {
+            if (!cachesData.cacheGroups().containsKey(locCacheGroupId))
+                missingCacheGroups.put(locCacheGroupId, locCacheGrps.get(locCacheGroupId));
+        }
     }
 
     /**
@@ -1257,6 +1262,7 @@ class ClusterCachesInfo {
     private void cleanCachesAndGroups() {
         registeredCaches.clear();
         registeredCacheGrps.clear();
+        missingCacheGroups.clear();
         ctx.discovery().cleanCachesAndGroups();
     }
 
@@ -1512,6 +1518,8 @@ class ClusterCachesInfo {
         assert old == version || old == null || old.id() < version.id() : version + " old: " +
             (old == null ? "null" : old);
     }
+
+    Collection<Integer> missingCacheGroups() { return missingCacheGroups.keySet(); }
 
     /**
      * @param data Joining node data.
@@ -2027,6 +2035,7 @@ class ClusterCachesInfo {
         registeredCaches.clear();
         registeredTemplates.clear();
         cachesConfigurationVersion.clear();
+        missingCacheGroups.clear();
 
         clientReconnectReqs = null;
     }

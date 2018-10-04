@@ -913,6 +913,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         return cacheGrps.values();
     }
 
+    public Collection<Integer> missingCacheGroups(){ return cachesInfo.missingCacheGroups(); }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
