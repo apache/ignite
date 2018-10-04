@@ -411,8 +411,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         synchronized (this) {
             for (Map.Entry<Long, ActiveTx> entry : activeTxs.entrySet()) {
-                // t0d0 thead safety for multiple failures
-                // If node started transaction is not known as live then remove such transaction from active list
+                // If node started tx is not known as live then remove such tx from active list
                 ActiveTx activeTx = entry.getValue();
 
                 if (activeTx instanceof ActiveServerTx && !ids.contains(activeTx.nearNodeId))
@@ -421,8 +420,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         }
 
         for (Long txCntr : forRmv)
-            // t0d0 figure out how committed counter should be processed
-            onTxDone(txCntr, true);
+            // Committed counter is not increased because here we do not know whether tx was committed or not
+            onTxDone(txCntr, false);
     }
 
     /** {@inheritDoc} */
@@ -939,7 +938,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** */
-    // t0d0 ensure that only near node could request a snapshot
     private MvccSnapshotResponse assignTxSnapshot(long futId, UUID nearId, boolean srv) {
         assert initFut.isDone();
         assert crdVer != 0;
