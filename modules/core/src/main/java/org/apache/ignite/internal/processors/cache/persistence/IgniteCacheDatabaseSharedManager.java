@@ -931,7 +931,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public Map<String, GridCacheConfigurationVersion> readStoredCachesConfigurationVersion() throws IgniteCheckedException {
         // No-op
-        return null;
+        return Collections.emptyMap();
     }
 
     /**

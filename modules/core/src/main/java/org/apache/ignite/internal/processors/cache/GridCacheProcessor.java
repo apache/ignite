@@ -2668,7 +2668,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 DynamicCacheDescriptor localDesc = cacheDescriptor(cacheInfo.cacheData().config().getName());
 
                 if (localDesc == null) {
-                    cachesForRmv.add(e.getKey());
+                    if(isNeedsRemoveCacheDescr(cacheInfo))
+                        cachesForRmv.add(e.getKey());
 
                     continue;
                 }
@@ -2698,6 +2699,17 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         }
 
         return null;
+    }
+
+     private boolean isNeedsRemoveCacheDescr(CacheInfo cacheInfo) {
+        StoredCacheData cacheData = cacheInfo.cacheData();
+
+        GridCacheConfigurationVersion locVersion =
+            cachesInfo.getVersion(cacheData.config().getName(), cacheData.config().getGroupName());
+
+        assert cacheData.version() != null : cacheInfo;
+
+        return locVersion == null || locVersion.id() > cacheData.version().id();
     }
 
     /**
