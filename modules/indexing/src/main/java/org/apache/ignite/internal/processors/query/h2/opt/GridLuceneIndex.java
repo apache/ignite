@@ -23,9 +23,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.FullTextLucene;
-import org.apache.ignite.cache.FullTextLucene.IndexAccess;
 import org.apache.ignite.cache.FullTextQueryIndex;
 import org.apache.ignite.cache.LuceneConfiguration;
+import org.apache.ignite.cache.LuceneIndexAccess;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -100,7 +100,7 @@ public class GridLuceneIndex implements AutoCloseable {
     
     private FullTextQueryIndex textIdx;
     
-    private IndexAccess indexAccess;
+    private LuceneIndexAccess indexAccess;
 
     /**
      * Constructor.
@@ -115,16 +115,17 @@ public class GridLuceneIndex implements AutoCloseable {
         this.ctx = ctx;
         this.cacheName = cacheName;
         this.type = type;
-        this.config = LuceneConfiguration.getInstance(cacheName);
+        this.config = LuceneConfiguration.getConfiguration(ctx,type.schemaName(),type.tableName());        
         
-        this.config.setType(type);
         
         //if no ctx use lucene to store val.
         if(ctx==null){
         	this.config.setStoreValue(true);
         }
         else{
-        	FullTextLucene.ctx = ctx;
+        	FullTextLucene.ctx = ctx;    
+        	this.config.cacheName(cacheName);
+        	this.config.type(type);
         }        
         
         QueryIndex qtextIdx = ((QueryIndexDescriptorImpl)type.textIndex()).getQueryIndex();  
@@ -135,7 +136,7 @@ public class GridLuceneIndex implements AutoCloseable {
         }         
 
         try {
-        	 indexAccess = FullTextLucene.getIndexAccess(null, type.schemaName(), type.name());
+        	 indexAccess = FullTextLucene.getIndexAccess(null, type.schemaName(), type.tableName());        	 
         }
         catch (Exception e) {
             throw new IgniteCheckedException(e);

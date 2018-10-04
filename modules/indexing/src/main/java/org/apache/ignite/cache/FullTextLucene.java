@@ -15,20 +15,31 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.H2TableEngine;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneDirectory;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -83,6 +94,18 @@ import org.apache.lucene.index.IndexWriter;
  * Most methods can be called using SQL statements as well.
  */
 public class FullTextLucene {
+	
+    public static class FullTextIndexKey implements java.io.Serializable{
+    	public String schema;
+    	public String table;    
+    };
+    
+    
+    public static class FullTextIndex implements java.io.Serializable{
+    	public String schema;
+    	public String table;
+    	public String columns;
+    };
 
 	 /**
      * A column name of the result set returned by the searchData method.
@@ -110,9 +133,9 @@ public class FullTextLucene {
     public static final String FIELD_SCORE = "_SCORE";
    
 
-    private static final HashMap<String, IndexAccess> INDEX_ACCESS = new HashMap<>();
+    private static final HashMap<String, LuceneIndexAccess> INDEX_ACCESS = new HashMap<>();
     private static final String TRIGGER_PREFIX = "FTL_";
-    private static final String SCHEMA = "FTL";
+    private static final String SCHEMA = "\"FTL\"";
    
     public static final String LUCENE_FIELD_MODIFIED = "_modified";
     
@@ -123,26 +146,20 @@ public class FullTextLucene {
      * The prefix for a in-memory path. This prefix is only used internally
      * within this class and not related to the database URL.
      */
-    private static final String IN_MEMORY_PREFIX = "mem:";
+    public static final String IN_MEMORY_PREFIX = "mem:";
     
    
-    public static GridKernalContext ctx = null;
-    
-    /**
-     * @return Cache object context.
-     */
-    private static CacheObjectContext objectContext(String cacheName) {
-        if (ctx == null)
-            return null;
-
-        return ctx.cache().internalCache(cacheName).context().cacheObjectContext();
-    }
+    public static GridKernalContext ctx = null;    
+   
     
     private static String cacheName(String schema,String table){
-    	if(schema.equalsIgnoreCase(QueryUtils.DFLT_SCHEMA)){
-    		return "SQL_PUBLIC_"+table;
+    	if(schema==null || schema.isEmpty()){
+    		return table;
     	}
-    	return schema;
+    	//if(ctx.cache().cache(schema)!=null){
+    	//	return schema;
+    	//};
+    	return "SQL_"+schema+"_"+table.toUpperCase();
     }   
   
 
@@ -159,6 +176,10 @@ public class FullTextLucene {
 
         return (Z)ctx.cacheObjects().unmarshal(coctx, bytes, ldr);
     }
+    
+    
+    
+
     
     /**
      * Initializes full text search functionality for this database. This adds
@@ -184,32 +205,95 @@ public class FullTextLucene {
      */
     static boolean inited = false;
     
-    @QuerySqlFunction
-    public static void init(Connection conn) throws SQLException {
-    	if (ctx == null)
-    		throw throwException("GridKernalContext is null. ignite index maybe not start. ");
+    @QuerySqlFunction(alias="ftl_init")
+    public static void init(Connection conn) throws SQLException {    	
     	if(inited) return;
-    	inited = true;
-        Statement stat = conn.createStatement();
-        stat.execute("CREATE SCHEMA IF NOT EXISTS " + SCHEMA);
-        stat.execute("CREATE TABLE IF NOT EXISTS " + SCHEMA +
-                ".INDEXES(SCHEMA VARCHAR, TABLE VARCHAR, " +
-                "COLUMNS VARCHAR, PRIMARY KEY(SCHEMA, TABLE))");
-        stat.execute("CREATE ALIAS IF NOT EXISTS FTL_CREATE_INDEX FOR \"" +
+    	
+    	if (ctx == null){ //not init ctx.
+    		execute("CREATE SCHEMA IF NOT EXISTS " + SCHEMA);
+            
+            String sql = "CREATE TABLE IF NOT EXISTS " + SCHEMA +
+                    ".INDEXES(SCHEMA VARCHAR, TABLE VARCHAR,COLUMNS VARCHAR," +
+                    "PRIMARY KEY(SCHEMA, TABLE))"; //+ " engine \"" + H2TableEngine.class.getName() + "\"";        
+                   	
+            execute(sql);
+            
+    		throw throwException("GridKernalContext is null. ignite index maybe not start. ");
+    	}
+        
+        // table create by config.
+        
+        IgniteH2Indexing idxing = (IgniteH2Indexing)ctx.query().getIndexing();
+        //idxing.registerType(cctx, type)
+        	
+        execute("CREATE ALIAS IF NOT EXISTS FTL_CREATE_INDEX FOR \"" +
                 FullTextLucene.class.getName() + ".createIndex\"");
-        stat.execute("CREATE ALIAS IF NOT EXISTS FTL_DROP_INDEX FOR \"" +
+        execute("CREATE ALIAS IF NOT EXISTS FTL_DROP_INDEX FOR \"" +
                 FullTextLucene.class.getName() + ".dropIndex\"");
-        stat.execute("CREATE ALIAS IF NOT EXISTS FTL_SEARCH FOR \"" +
+        execute("CREATE ALIAS IF NOT EXISTS FTL_SEARCH FOR \"" +
                 FullTextLucene.class.getName() + ".search\"");
-        stat.execute("CREATE ALIAS IF NOT EXISTS FTL_SEARCH_DATA FOR \"" +
+        execute("CREATE ALIAS IF NOT EXISTS FTL_SEARCH_DATA FOR \"" +
                 FullTextLucene.class.getName() + ".searchData\"");
-        stat.execute("CREATE ALIAS IF NOT EXISTS FTL_REINDEX FOR \"" +
+        execute("CREATE ALIAS IF NOT EXISTS FTL_REINDEX FOR \"" +
                 FullTextLucene.class.getName() + ".reindex\"");
-        stat.execute("CREATE ALIAS IF NOT EXISTS FTL_DROP_ALL FOR \"" +
-                FullTextLucene.class.getName() + ".dropAll\"");
+        execute("CREATE ALIAS IF NOT EXISTS FTL_DROP_ALL FOR \"" +
+                FullTextLucene.class.getName() + ".dropAll\"");  
+        
+        
+        inited = true;
         
     }
 
+    
+    /**
+     * Create cache type metadata for {@link index}.
+     *
+     * @return Cache type metadata.
+     */
+    private static QueryEntity createIndexQueryEntity() {
+        QueryEntity indexEntity = new QueryEntity();
+
+        indexEntity.setValueType(FullTextIndex.class.getName());
+        indexEntity.setKeyType(FullTextIndexKey.class.getName());
+        indexEntity.setKeyFields(new HashSet<>());
+        indexEntity.getKeyFields().add("schema");
+        indexEntity.getKeyFields().add("table");
+        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
+
+        
+        fields.put("schema", String.class.getName());       
+        fields.put("table", String.class.getName());
+        fields.put("columns", String.class.getName());
+        indexEntity.setFields(fields);
+        return indexEntity;
+    }
+
+    public static void execute(String sql) throws SQLException{
+    	
+    	 try {
+    		IgniteH2Indexing idxing = (IgniteH2Indexing)ctx.query().getIndexing();
+			idxing.executeStatement("PUBLIC", sql);			
+			
+		} catch (IgniteCheckedException e) {
+			// TODO Auto-generated catch block
+			throwException(e.getMessage());
+		}   
+    }
+    
+    public static List<List<?>> querySql(String sql) throws SQLException{
+    	
+   	 try {
+   		 	SqlFieldsQuery qry = new SqlFieldsQuery(sql);			
+			
+			return ctx.query().querySqlFields(qry, true).getAll();
+			
+		} catch (IgniteException e) {
+			// TODO Auto-generated catch block
+			throwException(e.getMessage());
+		}  
+   	 	return null;
+   }
+    
     /**
      * Create a new full text index for a table and column list. Each table may
      * only have one index at any time.
@@ -221,16 +305,16 @@ public class FullTextLucene {
      * 
      * @return index_name also equals cachename
      */
-    @QuerySqlFunction
+    @QuerySqlFunction(alias="FTL_CREATE_INDEX")
     public static String createIndex(Connection conn, String schema,
             String table, String columnList) throws SQLException {
     	init(conn);
-        PreparedStatement prep = conn.prepareStatement("INSERT INTO " + SCHEMA
-                + ".INDEXES(SCHEMA, TABLE, COLUMNS) VALUES(?, ?, ?)");
-        prep.setString(1, schema);
-        prep.setString(2, table);
-        prep.setString(3, columnList);
-        prep.execute();
+    	//TODO@byron use ignite sql api
+        String prep = String.format("INSERT INTO " + SCHEMA
+                + ".INDEXES(SCHEMA, TABLE, COLUMNS) VALUES('%s', '%s', '%s')",schema,table,columnList);
+       
+        querySql(prep);
+        
         createTrigger(conn, schema, table);
         indexExistingRows(conn, schema, table);
         
@@ -248,15 +332,21 @@ public class FullTextLucene {
      * 
      * @return index_name also equals cachename
      */
-    @QuerySqlFunction
+    @QuerySqlFunction(alias="FTL_DROP_INDEX")
     public static void dropIndex(Connection conn, String schema, String table)
             throws SQLException {       
 
-        PreparedStatement prep = conn.prepareStatement("DELETE FROM " + SCHEMA
-                + ".INDEXES WHERE SCHEMA=? AND TABLE=?");
-        prep.setString(1, schema);
-        prep.setString(2, table);
-        int rowCount = prep.executeUpdate();
+        //PreparedStatement prep = conn.prepareStatement("DELETE FROM " + SCHEMA
+        //        + ".INDEXES WHERE SCHEMA=? AND TABLE=?");
+        //prep.setString(1, schema);
+        //prep.setString(2, table);
+        
+        String prep = String.format("DELETE FROM " + SCHEMA
+                + ".INDEXES WHERE SCHEMA='%s' AND TABLE='%s'",schema,table);
+       
+        
+        
+        int rowCount = querySql(prep).size();
         if (rowCount == 0) {
             return;
         }
@@ -270,7 +360,7 @@ public class FullTextLucene {
      *
      * @param conn the connection
      */
-    @QuerySqlFunction
+    @QuerySqlFunction(alias="FTL_REINDEX")
     public static void reindex(Connection conn,String forschema,String table) throws SQLException {
     	init(conn);
         removeAllTriggers(conn, TRIGGER_PREFIX,forschema,table);
@@ -285,7 +375,7 @@ public class FullTextLucene {
      *
      * @param conn the connection
      */
-    @QuerySqlFunction
+    @QuerySqlFunction(alias="FTL_REINDEX_ALL")
     public static void reindex(Connection conn,String forschema) throws SQLException {
     	init(conn);
         removeAllTriggers(conn, TRIGGER_PREFIX,forschema,null);
@@ -307,11 +397,10 @@ public class FullTextLucene {
      *
      * @param conn the connection
      */
-    @QuerySqlFunction
+    @QuerySqlFunction(alias="FTL_DROP_ALL")
     public static void dropAll(Connection conn,String forschema) throws SQLException {
     	init(conn);
-    	PreparedStatement prep = conn.prepareStatement("DELETE FROM " + SCHEMA
-                + ".INDEXES WHERE SCHEMA=?");
+    	PreparedStatement prep = conn.prepareStatement("DELETE FROM " + SCHEMA + ".INDEXES WHERE SCHEMA=?");
         prep.setString(1, forschema);
       
         int rowCount = prep.executeUpdate();
@@ -427,7 +516,9 @@ public class FullTextLucene {
      */
     protected static void createTrigger(Connection conn, String schema,
             String table) throws SQLException {
-        createOrDropTrigger(conn, schema, table, true);
+    	if(ctx==null){ //only run not in ignite.
+    		createOrDropTrigger(conn, schema, table, true);
+    	}
     }
 
     private static void createOrDropTrigger(Connection conn,
@@ -485,55 +576,18 @@ public class FullTextLucene {
      * @param conn the connection
      * @return the index access wrapper
      */
-    public static IndexAccess getIndexAccess(Connection conn,String schema,String table)
+    public static LuceneIndexAccess getIndexAccess(Connection conn,String schema,String table)
             throws SQLException {
         String path = getIndexPath(conn,schema,table);
-        String cacheName = cacheName(schema,table);
-        
-        LuceneConfiguration idxConfig = LuceneConfiguration.getInstance(cacheName); 
+       
+        LuceneConfiguration idxConfig = LuceneConfiguration.getConfiguration(ctx,schema,table); 
         
         synchronized (INDEX_ACCESS) {
-            IndexAccess access = INDEX_ACCESS.get(path);
+            LuceneIndexAccess access = INDEX_ACCESS.get(path);
            
-            if (access == null || !access.writer.isOpen()) {
+            if (access == null) {
                 try {
-                	access = new IndexAccess();
-                	access.config = idxConfig;    
-                	
-                    Directory indexDir =  null;
-                          
-                    if(path.startsWith(IN_MEMORY_PREFIX)){
-                    	indexDir = new RAMDirectory();
-                    }
-                    else if(idxConfig.isOffHeapStore()){ // offheap store
-                    	indexDir = new GridLuceneDirectory(new GridUnsafeMemory(0));
-                    }
-                    else{
-                    	indexDir = FSDirectory.open(new File(path).toPath());
-                    }                   
-
-                    Analyzer analyzer = new StandardAnalyzer();                  
-            		
-            		if(access.config.getIndexAnalyzer()!=null){
-            			analyzer = access.config.getIndexAnalyzer();
-            		}
-            		
-                    IndexWriterConfig conf = new IndexWriterConfig(analyzer);
-                    conf.setCommitOnClose(false); // we by default don't commit on close   
-                    if(ctx.config().getDataStorageConfiguration().getDefaultDataRegionConfiguration().isPersistenceEnabled()){
-                    	conf.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);   
-                    }else{
-                    	conf.setOpenMode(IndexWriterConfig.OpenMode.CREATE);   
-                    }
-                   
-                    IndexWriter writer = new IndexWriter(indexDir, conf);
-                    //see http://wiki.apache.org/lucene-java/NearRealtimeSearch
-                    IndexReader reader = DirectoryReader.open(writer);
-                   
-                    access.writer = writer;
-                    access.reader = reader;
-                    access.searcher = new IndexSearcher(reader);                   
-                    
+                	access = new LuceneIndexAccess(idxConfig,path);                 
                     
                 } catch (IOException e) {
                     throw convertException(e);
@@ -541,17 +595,26 @@ public class FullTextLucene {
                 INDEX_ACCESS.put(path, access);
             }
             
+            if (!access.writer.isOpen()) {
+                try {
+                	access.open(idxConfig,path);                 
+                    
+                } catch (IOException e) {
+                    throw convertException(e);
+                }               
+            }
+            
+            //fill indexed fields
             if(access.fields.isEmpty()){
             	access.config = idxConfig;      
-                if(access.config.getType()!=null && access.config.getType().textIndex()!=null){
-                	access.fields.addAll(access.config.getType().textIndex().fields());
+            	if(idxConfig.type()!=null && idxConfig.type().textIndex()!=null){
+            		access.fields.addAll(idxConfig.type().textIndex().fields());
                 }
                 // read index desc form FTL.INDEXES
                 if(conn!=null){
                 	ArrayList<String> indexList = New.arrayList();
 	                PreparedStatement prep = conn.prepareStatement(
-	                        "SELECT COLUMNS FROM " + SCHEMA
-	                        + ".INDEXES WHERE SCHEMA=? AND TABLE=?");
+	                        "SELECT COLUMNS FROM " + SCHEMA+ ".INDEXES WHERE SCHEMA=? AND TABLE=?");
 	                prep.setString(1, schema);
 	                prep.setString(2, table);
 	                
@@ -564,8 +627,8 @@ public class FullTextLucene {
 	                        }
 	                        access.fields.addAll(indexList);
 	                    }
-	                    else if(access.config.getType()!=null){
-	                    	for(String f: access.config.getType().fields().keySet()){
+	                    else if(access.type()!=null){ //add all field to fulltext indexs
+	                    	for(String f: access.type().fields().keySet()){
 	                    		if(!f.isEmpty() && f.charAt(0)!='_'){
 	                    			access.fields.add(f);
 	                    		}
@@ -599,20 +662,7 @@ public class FullTextLucene {
 			}    		
     		
     	}
-        Statement stat = conn.createStatement();
-        ResultSet rs = stat.executeQuery("CALL DATABASE_PATH()");
-        rs.next();
-        String path = rs.getString(1);
-        if (path == null) {
-            return IN_MEMORY_PREFIX + conn.getCatalog()+'/'+cacheName;
-        }
-        int index = path.lastIndexOf(':');
-        // position 1 means a windows drive letter is used, ignore that
-        if (index > 1) {
-            path = path.substring(index + 1);
-        }
-        rs.close();
-        return path+'/'+cacheName;
+    	return IN_MEMORY_PREFIX + conn.getCatalog()+'/'+cacheName;
     }
 
     /**
@@ -639,7 +689,7 @@ public class FullTextLucene {
         }
         
         String path = getIndexPath(conn,schema,table);
-        IndexAccess access = INDEX_ACCESS.get(path);
+        LuceneIndexAccess access = INDEX_ACCESS.get(path);
         try{
         	access.commitIndex();
         }
@@ -650,7 +700,7 @@ public class FullTextLucene {
 
     private static void removeIndexFiles(Connection conn,String schema,String table) throws SQLException {
         String path = getIndexPath(conn,schema,table);
-        IndexAccess access = INDEX_ACCESS.get(path);
+        LuceneIndexAccess access = INDEX_ACCESS.get(path);
         if (access != null) {
             removeIndexAccess(access, path);
         }
@@ -666,7 +716,7 @@ public class FullTextLucene {
      * @param access the index writer/searcher wrapper
      * @param indexPath the index path
      */
-    protected static void removeIndexAccess(IndexAccess access, String indexPath)
+    protected static void removeIndexAccess(LuceneIndexAccess access, String indexPath)
             throws SQLException {
         synchronized (INDEX_ACCESS) {
             try {
@@ -775,9 +825,9 @@ public class FullTextLucene {
     protected static ResultSet search(Connection conn, String forschema, String table, String text,
             int limit, int offset, boolean data) throws SQLException {   
     	
-    	IndexAccess access = getIndexAccess(conn,forschema,table);
+    	LuceneIndexAccess access = getIndexAccess(conn,forschema,table);
     	
-        SimpleResultSet result = createResultSet(data,access.config.getType()==null? null: access.config.getType().fields());
+        SimpleResultSet result = createResultSet(data,access.type()==null? null: access.type().fields());
         
         if (conn.getMetaData().getURL().startsWith("jdbc:columnlist:")) {
             // this is just to query the result set columns
@@ -787,12 +837,12 @@ public class FullTextLucene {
             return result;
         }
         try {
-        	String cacheName = cacheName(forschema,table);
+        	String cacheName = access.cacheName();
         	ClassLoader ldr = null;
             
             GridCacheAdapter cache = null;
             if (ctx != null){
-            	cache = ctx.cache().internalCache(cacheName);
+            	cache = ctx.cache().internalCache(cacheName);            	
             }
             if (cache != null && ctx.deploy().enabled())
                 ldr = cache.context().deploy().globalLoader();
@@ -892,7 +942,7 @@ public class FullTextLucene {
         protected String[] columns;
         protected int[] columnTypes;
         protected String indexPath;
-        protected IndexAccess indexAccess;
+        protected LuceneIndexAccess indexAccess;
 
         /**
          * INTERNAL
@@ -1124,68 +1174,6 @@ public class FullTextLucene {
        
     }
 
-    /**
-     * A wrapper for the Lucene writer and searcher.
-     */
-    static public class IndexAccess {   
-    	 /** */
-        private final AtomicLong updateCntr = new GridAtomicLong();   
-
-        /**
-         * The index writer.
-         */
-    	public IndexWriter writer;
-
-        /**
-         * The index reader.
-         */
-    	public IndexReader reader;
-
-        /**
-         * The index searcher.
-         */
-    	public IndexSearcher searcher;
-        
-    	public Set<String> fields = new HashSet<>();
-        
-    	public LuceneConfiguration config;
-        
-        /**
-         * Commit all changes to the Lucene index.
-         */
-        public void commitIndex() throws IOException {        
-            writer.commit();
-            // recreate Searcher with the IndexWriter's reader.               
-            reader.close();
-            reader = DirectoryReader.open(writer);
-            searcher = new IndexSearcher(reader);            
-        }
-        
-        public void close() throws IOException{        	
-        	 reader.close();
-        	 writer.close();
-        }
-        
-        public void increment(){
-        	updateCntr.incrementAndGet();
-        }
-        
-        public void flush() throws IgniteCheckedException{
-        	  try {
-                  long updates = updateCntr.get();
-
-                  if (updates != 0) {
-                  	  commitIndex();
-
-                      updateCntr.addAndGet(-updates);
-                  }
-              }
-              catch (Exception e) {
-                  throw new IgniteCheckedException(e);
-              }
-        }
-    }
-    
     /**
      * Throw a SQLException with the given message.
      *

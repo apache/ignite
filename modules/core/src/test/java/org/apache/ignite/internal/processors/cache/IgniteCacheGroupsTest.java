@@ -565,7 +565,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         final AtomicInteger cntr1 = new AtomicInteger();
         final AtomicInteger cntr2 = new AtomicInteger();
 
-        CacheEntryUpdatedListener lsnr1 = new CacheEntryUpdatedListener<Integer, Integer>() {
+        CacheEntryUpdatedListener<Integer, Integer> lsnr1 = new CacheEntryUpdatedListener<Integer, Integer>() {
             @Override public void onUpdated(
                 Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
                 for (CacheEntryEvent<? extends Integer, ? extends Integer> ignored : evts)
@@ -573,7 +573,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             }
         };
 
-        CacheEntryUpdatedListener lsnr2 = new CacheEntryUpdatedListener<Integer, Integer>() {
+        CacheEntryUpdatedListener<Integer, Integer> lsnr2 = new CacheEntryUpdatedListener<Integer, Integer>() {
             @Override public void onUpdated(
                 Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
                 for (CacheEntryEvent<? extends Integer, ? extends Integer> ignored : evts)
@@ -581,8 +581,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             }
         };
 
-        QueryCursor qry1 = ignite(loc ? 0 : 2).cache(CACHE1).query(new ContinuousQuery<>().setLocalListener(lsnr1));
-        QueryCursor qry2 = ignite(loc ? 0 : 3).cache(CACHE2).query(new ContinuousQuery<>().setLocalListener(lsnr2));
+        QueryCursor qry1 = ignite(loc ? 0 : 2).cache(CACHE1).query(new ContinuousQuery<Integer, Integer>().setLocalListener(lsnr1));
+        QueryCursor qry2 = ignite(loc ? 0 : 3).cache(CACHE2).query(new ContinuousQuery<Integer, Integer>().setLocalListener(lsnr2));
 
         if (atomicityMode == TRANSACTIONAL) {
             Ignite ignite = ignite(loc ? 0 : 1);
