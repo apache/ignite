@@ -52,15 +52,21 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
     }
 
     /**
+     * Test that threads with datastructures commands wasn't deadlocked when PME happens.
+     *
      * @throws Exception If failed.
      */
-    public void testManyRequests() throws Exception {
-        for (int i = 0; i < 1000; i++) {
-            try (Jedis jedis = pool.getResource()) {
-                jedis.incr("key1");
+    public void testAtomicCommandsTopologyChange() throws Exception {
+        try (Jedis jedis = pool.getResource()) {
+            int size = grid(0).cachesx().size();
 
+            jedis.incr("key1");
+
+            // Expect that datastructures cache was created and init PME.
+            assertTrue("Topology wasn't changed.", grid(0).cachesx().size() > size);
+
+            for (int i = 0; i < 1000; i++)
                 jedis.get("nonExistKey");
-            }
         }
     }
 
