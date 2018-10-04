@@ -113,27 +113,6 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
     /**
      * @throws Exception If failed.
      */
-    public void testCoordinatorFailureSimpleSerializableTxPutGet() throws Exception {
-        coordinatorFailureSimple(OPTIMISTIC, SERIALIZABLE, GET, PUT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCoordinatorFailureSimpleOptimisticTxPutGet() throws Exception {
-        coordinatorFailureSimple(OPTIMISTIC, REPEATABLE_READ, GET, PUT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxInProgressCoordinatorChangeSimple_ReadonlyPutGet() throws Exception {
-        txInProgressCoordinatorChangeSimple(OPTIMISTIC, SERIALIZABLE, null, GET, PUT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testReadInProgressCoordinatorFailsSimple_FromClientPutGet() throws Exception {
         readInProgressCoordinatorFailsSimple(true, null, GET, PUT);
     }

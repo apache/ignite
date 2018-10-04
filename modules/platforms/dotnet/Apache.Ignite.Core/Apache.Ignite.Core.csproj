@@ -78,6 +78,7 @@
     <Compile Include="Failure\StopNodeFailureHandler.cs" />
     <Compile Include="Failure\StopNodeOrHaltFailureHandler.cs" />
     <Compile Include="Impl\Cache\QueryMetricsImpl.cs" />
+    <Compile Include="Impl\Client\Endpoint.cs" />
     <Compile Include="Impl\Common\TaskRunner.cs" />
     <Compile Include="Impl\Transactions\TransactionCollectionImpl.cs" />
     <Compile Include="Ssl\ISslContextFactory.cs" />
@@ -103,6 +104,8 @@
     <Compile Include="Impl\Client\Cache\Query\StatementType.cs" />
     <Compile Include="Client\ClientStatusCode.cs" />
     <Compile Include="Events\LocalEventListener.cs" />
+    <Compile Include="Impl\Client\ClientFailoverSocket.cs" />
+    <Compile Include="Impl\Client\IClientSocket.cs" />
     <Compile Include="Impl\Cluster\BaselineNode.cs" />
     <Compile Include="Ssl\SslContextFactory.cs" />
     <Compile Include="Impl\Ssl\SslFactorySerializer.cs" />

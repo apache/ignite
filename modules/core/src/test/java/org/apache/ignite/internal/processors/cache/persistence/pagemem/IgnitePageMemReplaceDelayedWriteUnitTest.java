@@ -127,7 +127,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         assert totalEvicted.get() > 0;
 
-        memory.stop();
+        memory.stop(true);
     }
 
     /**
@@ -182,7 +182,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         assert totalEvicted.get() > 0;
 
-        memory.stop();
+        memory.stop(true);
     }
 
     /**
