@@ -18,9 +18,9 @@
 #pragma warning disable 1587   // invalid XML comment
 
 /// <summary>
-/// AES encryption API.
+/// Encryption API based on standart java keystore.
 /// </summary>
-namespace Apache.Ignite.Core.Encryption.Aes
+namespace Apache.Ignite.Core.Encryption.Keystore
 {
     // No-op.
 }
