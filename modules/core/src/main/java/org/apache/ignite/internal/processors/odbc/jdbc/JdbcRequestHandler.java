@@ -404,41 +404,32 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * or due to {@code IOException} during network operations.
      */
     public void onDisconnect() {
-        if (busyLock.enterBusy())
-        {
-            if (worker != null) {
-                worker.cancel();
+        if (worker != null) {
+            worker.cancel();
 
-                try {
-                    worker.join();
-                }
-                catch (InterruptedException e) {
-                    // No-op.
-                }
+            try {
+                worker.join();
             }
-
-            try
-            {
-                for (JdbcQueryCursor cursor : qryCursors.values())
-                    cursor.close();
-
-                for (JdbcBulkLoadProcessor processor : bulkLoadRequests.values()) {
-                    try {
-                        processor.close();
-                    }
-                    catch (Exception e) {
-                        U.error(null, "Error closing JDBC bulk load processor.", e);
-                    }
-                }
-
-                bulkLoadRequests.clear();
-
-                U.close(cliCtx, log);
-            }
-            finally {
-                busyLock.leaveBusy();
+            catch (InterruptedException e) {
+                // No-op.
             }
         }
+
+        for (JdbcQueryCursor cursor : qryCursors.values())
+            cursor.close();
+
+        for (JdbcBulkLoadProcessor processor : bulkLoadRequests.values()) {
+            try {
+                processor.close();
+            }
+            catch (Exception e) {
+                U.error(null, "Error closing JDBC bulk load processor.", e);
+            }
+        }
+
+        bulkLoadRequests.clear();
+
+        U.close(cliCtx, log);
     }
 
     /**
