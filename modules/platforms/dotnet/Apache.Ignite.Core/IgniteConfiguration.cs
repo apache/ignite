@@ -164,6 +164,12 @@ namespace Apache.Ignite.Core
         private TimeSpan? _clientFailureDetectionTimeout;
 
         /** */
+        private TimeSpan? _systemWorkerBlockedTimeout;
+
+        /** */
+        private TimeSpan? _checkpointReadLockTimeout;
+
+        /** */
         private int? _publicThreadPoolSize;
 
         /** */
@@ -327,6 +333,8 @@ namespace Apache.Ignite.Core
             writer.WriteBooleanNullable(_authenticationEnabled);
             writer.WriteLongNullable(_mvccVacuumFreq);
             writer.WriteIntNullable(_mvccVacuumThreadCnt);
+            writer.WriteTimeSpanAsLongNullable(_systemWorkerBlockedTimeout);
+            writer.WriteTimeSpanAsLongNullable(_checkpointReadLockTimeout);
 
             if (SqlSchemas == null)
                 writer.WriteInt(-1);
@@ -695,6 +703,8 @@ namespace Apache.Ignite.Core
             _authenticationEnabled = r.ReadBooleanNullable();
             _mvccVacuumFreq = r.ReadLongNullable();
             _mvccVacuumThreadCnt = r.ReadIntNullable();
+            _systemWorkerBlockedTimeout = r.ReadTimeSpanNullable();
+            _checkpointReadLockTimeout = r.ReadTimeSpanNullable();
 
             int sqlSchemasCnt = r.ReadInt();
 
@@ -1341,6 +1351,24 @@ namespace Apache.Ignite.Core
         {
             get { return _failureDetectionTimeout ?? DefaultFailureDetectionTimeout; }
             set { _failureDetectionTimeout = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the timeout for blocked system workers detection.
+        /// </summary>
+        public TimeSpan SystemWorkerBlockedTimeout
+        {
+            get { return _systemWorkerBlockedTimeout ?? FailureDetectionTimeout; }
+            set { _systemWorkerBlockedTimeout = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the timeout for checkpoint read lock acquisition.
+        /// </summary>
+        public TimeSpan CheckpointReadLockTimeout
+        {
+            get { return _checkpointReadLockTimeout ?? FailureDetectionTimeout; }
+            set { _checkpointReadLockTimeout = value; }
         }
 
         /// <summary>

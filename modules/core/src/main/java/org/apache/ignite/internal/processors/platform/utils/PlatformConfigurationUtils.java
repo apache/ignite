@@ -658,6 +658,10 @@ public class PlatformConfigurationUtils {
             cfg.setMvccVacuumFrequency(in.readLong());
         if (in.readBoolean())
             cfg.setMvccVacuumThreadCount(in.readInt());
+        if (in.readBoolean())
+            cfg.setSystemWorkerBlockedTimeout(in.readLong());
+        if (in.readBoolean())
+            cfg.setCheckpointReadLockTimeout(in.readLong());
 
         int sqlSchemasCnt = in.readInt();
 
@@ -1209,6 +1213,10 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getMvccVacuumFrequency());
         w.writeBoolean(true);
         w.writeInt(cfg.getMvccVacuumThreadCount());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getSystemWorkerBlockedTimeout());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getCheckpointReadLockTimeout());
 
         if (cfg.getSqlSchemas() == null)
             w.writeInt(-1);
