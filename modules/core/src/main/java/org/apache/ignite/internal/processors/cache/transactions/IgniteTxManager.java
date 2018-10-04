@@ -2022,7 +2022,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public void finishTxOnRecovery(final IgniteInternalTx tx, boolean commit) {
         if (log.isInfoEnabled())
-            log.info("Finishing prepared transaction [tx=" + tx + ", commit=" + commit + ']');
+            log.info("Finishing prepared transaction [commit=" + commit + ", tx=" + tx + ']');
 
         if (!tx.markFinalizing(RECOVERY_FINISH)) {
             if (log.isInfoEnabled())
