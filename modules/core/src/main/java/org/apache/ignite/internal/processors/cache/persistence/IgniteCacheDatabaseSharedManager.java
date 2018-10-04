@@ -1201,7 +1201,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @param shutdown {@code True} to force memory regions shutdown.
      */
-    protected void onDeActivate0(boolean shutdown) {
+    private void onDeActivate0(boolean shutdown) {
         for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
             lsnr.beforeStop(this);
 

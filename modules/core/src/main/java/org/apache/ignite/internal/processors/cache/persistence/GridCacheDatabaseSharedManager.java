@@ -529,7 +529,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void cleanupDatabaseManagerState() throws IgniteCheckedException {
-        onDeActivate0(true);
+        super.cleanupDatabaseManagerState();
 
         cctx.pageStore().onDeActivate(cctx.kernalContext());
     }
