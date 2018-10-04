@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -210,7 +211,8 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                         ArrayList<Index> indexes = gridH2Tbl.getIndexes();
 
                         for (Index idx : indexes)
-                            idxArgs.add(new T2<>(ctx, idx));
+                            if (idx instanceof H2TreeIndex)
+                                idxArgs.add(new T2<>(ctx, idx));
                     }
                 }
             }
@@ -220,14 +222,14 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
         Collections.shuffle(partArgs);
         Collections.shuffle(idxArgs);
 
+        totalPartitions = partArgs.size();
+        totalIndexes = idxArgs.size();
+
         for (T2<CacheGroupContext, GridDhtLocalPartition> t2 : partArgs)
             procPartFutures.add(processPartitionAsync(t2.get1(), t2.get2()));
 
         for (T2<GridCacheContext, Index> t2 : idxArgs)
             procIdxFutures.add(processIndexAsync(t2.get1(), t2.get2()));
-
-        totalPartitions = procPartFutures.size();
-        totalIndexes = procIdxFutures.size();
 
         Map<PartitionKey, ValidateIndexesPartitionResult> partResults = new HashMap<>();
         Map<String, ValidateIndexesPartitionResult> idxResults = new HashMap<>();
@@ -250,6 +252,9 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
                 idxResults.putAll(idxRes);
             }
+
+            log.warning("ValidateIndexesClosure finished: processed " + totalPartitions + " partitions and"
+                    + totalIndexes + " indices.");
         }
         catch (InterruptedException | ExecutionException e) {
             for (int j = curPart; j < procPartFutures.size(); j++)
@@ -371,6 +376,12 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                 if (cacheCtx == null)
                     throw new IgniteException("Unknown cacheId of CacheDataRow: " + cacheId);
 
+                if (row.link() == 0L) {
+                    log.error("Invalid partition row, possibly deleted " + row + ", skipping.");
+
+                    continue;
+                }
+
                 try {
                     QueryTypeDescriptorImpl res = (QueryTypeDescriptorImpl)m.invoke(
                         qryProcessor, cacheCtx.name(), cacheCtx.cacheObjectContext(), row.key(), row.value(), true);
@@ -392,6 +403,9 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                     ArrayList<Index> indexes = gridH2Tbl.getIndexes();
 
                     for (Index idx : indexes) {
+                        if (!(idx instanceof H2TreeIndex))
+                            continue;
+
                         try {
                             Cursor cursor = idx.find((Session) null, h2Row, h2Row);
 
@@ -546,10 +560,14 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
                 h2key = h2Row.key();
 
-                CacheDataRow cacheDataStoreRow = ctx.group().offheap().read(ctx, h2key);
+                if (h2Row.link() != 0L) {
+                    CacheDataRow cacheDataStoreRow = ctx.group().offheap().read(ctx, h2key);
 
-                if (cacheDataStoreRow == null)
-                    throw new IgniteCheckedException("Key is present in SQL index, but can't be found in CacheDataTree.");
+                    if (cacheDataStoreRow == null)
+                        throw new IgniteCheckedException("Key is present in SQL index, but can't be found in CacheDataTree.");
+                }
+                else
+                    log.error("Invalid index row, possibly deleted " + h2Row + ", skipping.");
 
                 previousKey = h2key;
             }
