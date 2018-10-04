@@ -48,6 +48,7 @@ import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
+import org.apache.ignite.internal.processors.security.NearNodeContextSecurityProcessor;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
@@ -546,7 +547,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof GridCollisionManager)
             colMgr = (GridCollisionManager)comp;
         else if (comp instanceof GridSecurityProcessor)
-            securityProc = (GridSecurityProcessor)comp;
+            securityProc = new NearNodeContextSecurityProcessor(this,(GridSecurityProcessor)comp);
         else if (comp instanceof GridLoadBalancerManager)
             loadMgr = (GridLoadBalancerManager)comp;
         else if (comp instanceof GridIndexingManager)

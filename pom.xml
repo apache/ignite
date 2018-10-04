@@ -58,6 +58,7 @@
         <module>modules/extdata/uri</module>
         <module>modules/extdata/platform</module>
         <module>modules/clients</module>
+        <module>modules/security</module>
         <module>modules/spring</module>
         <module>modules/spring-data</module>
         <module>modules/spring-data-2.0</module>

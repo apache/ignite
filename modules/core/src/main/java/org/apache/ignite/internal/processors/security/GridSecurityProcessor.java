@@ -84,7 +84,7 @@ public interface GridSecurityProcessor extends GridProcessor {
      * @param securityCtx Optional security context.
      * @throws SecurityException If security check failed.
      */
-    public void authorize(String name, SecurityPermission perm, @Nullable SecurityContext securityCtx)
+    public void authorize(String name, SecurityPermission perm, SecurityContext securityCtx)
         throws SecurityException;
 
     /**

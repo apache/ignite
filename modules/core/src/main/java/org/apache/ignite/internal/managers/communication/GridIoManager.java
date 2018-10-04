@@ -70,6 +70,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccMessage;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
+import org.apache.ignite.internal.processors.security.NearNodeContextSecurityProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
@@ -1565,12 +1566,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (change)
             CUR_PLC.set(plc);
 
+        ((NearNodeContextSecurityProcessor)ctx.security()).nearNodeId(nodeId);
+
         try {
             lsnr.onMessage(nodeId, msg, plc);
         }
         finally {
             if (change)
                 CUR_PLC.set(oldPlc);
+
+            ((NearNodeContextSecurityProcessor)ctx.security()).removeNearNodeId();
         }
     }
 
