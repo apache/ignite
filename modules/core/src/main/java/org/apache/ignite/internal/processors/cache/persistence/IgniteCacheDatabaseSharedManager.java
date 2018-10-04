@@ -735,7 +735,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
-        onDeActivate0(true);
+        onDeActivate(true);
     }
 
     /**
@@ -797,7 +797,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If fails.
      */
     public void cleanupDatabaseManagerState() throws IgniteCheckedException {
-        onDeActivate0(true);
+        onDeActivate(true);
     }
 
     /**
@@ -1195,13 +1195,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        onDeActivate0(!reuseMemory);
+        onDeActivate(!reuseMemory);
     }
 
     /**
      * @param shutdown {@code True} to force memory regions shutdown.
      */
-    private void onDeActivate0(boolean shutdown) {
+    private void onDeActivate(boolean shutdown) {
         for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
             lsnr.beforeStop(this);
 
