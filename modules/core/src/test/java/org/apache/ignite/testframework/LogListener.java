@@ -23,7 +23,9 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -91,7 +93,21 @@ public abstract class LogListener implements Consumer<String> {
          * @return current builder instance.
          */
         public Builder andMatches(String substr) {
-            addLast(new Node(substr, msg -> msg.contains(substr)));
+            addLast(new Node(substr, msg -> {
+                if (substr.isEmpty())
+                    return msg.isEmpty() ? 1 : 0;
+
+                int idx = 0;
+                int cnt = 0;
+
+                while ((idx = msg.indexOf(substr, idx)) != -1) {
+                    ++cnt;
+
+                    idx += substr.length();
+                }
+
+                return cnt;
+            }));
 
             return this;
         }
@@ -99,11 +115,20 @@ public abstract class LogListener implements Consumer<String> {
         /**
          * Add new regular expression predicate.
          *
-         * @param regexp Regular expressiuo.
+         * @param regexp Regular expression.
          * @return current builder instance.
          */
         public Builder andMatches(Pattern regexp) {
-            addLast(new Node(regexp.toString(), msg -> regexp.matcher(msg).find()));
+            addLast(new Node(regexp.toString(), msg -> {
+                int cnt = 0;
+
+                Matcher matcher = regexp.matcher(msg);
+
+                while (matcher.find())
+                    ++cnt;
+
+                return cnt;
+            }));
 
             return this;
         }
@@ -111,17 +136,19 @@ public abstract class LogListener implements Consumer<String> {
         /**
          * Add new log message predicate.
          *
-         * @param pred Log message predcate.
+         * @param pred Log message predicate.
          * @return current builder instance.
          */
         public Builder andMatches(Predicate<String> pred) {
-            addLast(new Node(null, pred));
+            addLast(new Node(null, msg -> pred.test(msg) ? 1 : 0));
 
             return this;
         }
 
         /**
-         * Set expected number of matches.
+         * Set expected number of matches.<br>
+         * Each log message may contain several matches that will be counted,
+         * except {@code Predicate} which can have only one match for message.
          *
          * @param n Expected number of matches.
          * @return current builder instance.
@@ -134,7 +161,9 @@ public abstract class LogListener implements Consumer<String> {
         }
 
         /**
-         * Set expected minimum number of matches.
+         * Set expected minimum number of matches.<br>
+         * Each log message may contain several matches that will be counted,
+         * except {@code Predicate} which can have only one match for message.
          *
          * @param n Expected number of matches.
          * @return current builder instance.
@@ -150,7 +179,9 @@ public abstract class LogListener implements Consumer<String> {
         }
 
         /**
-         * Set expected maximum number of matches.
+         * Set expected maximum number of matches.<br>
+         * Each log message may contain several matches that will be counted,
+         * except {@code Predicate} which can have only one match for message.
          *
          * @param n Expected number of matches.
          * @return current builder instance.
@@ -200,7 +231,7 @@ public abstract class LogListener implements Consumer<String> {
         }
 
         /** */
-        private Builder() {};
+        private Builder() {}
 
         /**
          * Mutable attributes for log listener.
@@ -210,7 +241,7 @@ public abstract class LogListener implements Consumer<String> {
             final String subj;
 
             /** */
-            final Predicate<String> pred;
+            final Function<String, Integer> func;
 
             /** */
             String msg;
@@ -225,9 +256,9 @@ public abstract class LogListener implements Consumer<String> {
             Integer cnt;
 
             /** */
-            Node(String subj, Predicate<String> pred) {
+            Node(String subj, Function<String, Integer> func) {
                 this.subj = subj;
-                this.pred = pred;
+                this.func = func;
             }
 
             /** */
@@ -241,7 +272,7 @@ public abstract class LogListener implements Consumer<String> {
                 else
                     range = ValueRange.of(min == null ? 0 : min, max == null ? Integer.MAX_VALUE : max);
 
-                return new LogMessageListener(pred, range, subj, msg);
+                return new LogMessageListener(func, range, subj, msg);
             }
         }
     }
@@ -249,7 +280,7 @@ public abstract class LogListener implements Consumer<String> {
     /** */
     private static class LogMessageListener extends LogListener {
         /** */
-        private final Predicate<String> pred;
+        private final Function<String, Integer> func;
 
         /** */
         private final AtomicReference<Throwable> err = new AtomicReference<>();
@@ -269,18 +300,18 @@ public abstract class LogListener implements Consumer<String> {
         /**
          * @param subj Search subject.
          * @param exp Expected occurrences.
-         * @param pred Search predicate.
+         * @param func Function of counting matches in the message.
          * @param errMsg Custom error message.
          */
         private LogMessageListener(
-            @NotNull Predicate<String> pred,
+            @NotNull Function<String, Integer> func,
             @NotNull ValueRange exp,
             @Nullable String subj,
             @Nullable String errMsg
         ) {
-            this.pred = pred;
+            this.func = func;
             this.exp = exp;
-            this.subj = subj == null ? pred.toString() : subj;
+            this.subj = subj == null ? func.toString() : subj;
             this.errMsg = errMsg;
         }
 
@@ -290,8 +321,10 @@ public abstract class LogListener implements Consumer<String> {
                 return;
 
             try {
-                if (pred.test(msg))
-                    matches.incrementAndGet();
+                int cnt = func.apply(msg);
+
+                if (cnt > 0)
+                    matches.addAndGet(cnt);
             } catch (Throwable t) {
                 err.compareAndSet(null, t);
 

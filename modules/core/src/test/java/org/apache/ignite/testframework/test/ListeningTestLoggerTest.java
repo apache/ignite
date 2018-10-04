@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testframework.test;
 
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteLogger;
@@ -27,11 +28,14 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  * Test.
  */
+@SuppressWarnings("ThrowableNotThrown")
 public class ListeningTestLoggerTest extends GridCommonAbstractTest {
     /** */
     private ListeningTestLogger log = new ListeningTestLogger(false, super.log);
@@ -50,8 +54,9 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
         log.clearListeners();
     }
 
-
     /**
+     * Basic example of using listening logger - checks that all running instances of Ignite print product version.
+     *
      * @throws Exception If failed.
      */
     public void testIgniteVersionLogging() throws Exception {
@@ -91,9 +96,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
         lsnr1.check();
         lsnr2.check();
 
-        log.clearListeners();
-
-        // Retry this steps to make sure that the state was reset.
+        // Repeat these steps to ensure that the state is cleared during registration.
         log.registerListener(lsnr1);
         log.registerListener(lsnr2);
 
@@ -105,8 +108,12 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
 
         lsnr1.check();
         lsnr2.check();
+    }
 
-        // Ensures that listener will be re-registered only once.
+    /**
+     * Ensures that listener will be re-registered only once.
+     */
+    public void testRegister() {
         AtomicInteger cntr = new AtomicInteger();
 
         LogListener lsnr3 = LogListener.matches(m -> cntr.incrementAndGet() > 0).build();
@@ -120,9 +127,8 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check basic API.
+     * Checks basic API.
      */
-    @SuppressWarnings("ThrowableNotThrown")
     public void testBasicApi() {
         String errMsg = "Word started with \"a\" not found.";
 
@@ -133,15 +139,31 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
 
         log.info("Something new.");
 
-        assertThrows(lsnr::check, AssertionError.class, errMsg);
+        assertThrows(log(), () -> {
+            lsnr.check();
+
+            return null;
+        }, AssertionError.class, errMsg);
 
         log.error("There was an error.", new RuntimeException("Exception message."));
 
         lsnr.check();
     }
 
+    /**
+     * Checks blank lines matching.
+     */
+    public void testEmptyLine() {
+        LogListener emptyLineLsnr = LogListener.matches("").build();
+
+        log.registerListener(emptyLineLsnr);
+
+        log.info("");
+
+        emptyLineLsnr.check();
+    }
+
     /** */
-    @SuppressWarnings("ThrowableNotThrown")
     public void testPredicateExceptions() {
         LogListener lsnr = LogListener.matches(msg -> {
             assertFalse(msg.contains("Target"));
@@ -154,51 +176,56 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
         log.info("Ignored message.");
         log.info("Target message.");
 
-        assertThrows(lsnr::check, AssertionError.class, null);
+        assertThrowsWithCause(lsnr::check, AssertionError.class);
 
         // Check custom exception.
         LogListener lsnr2 = LogListener.matches(msg -> {
             throw new IllegalStateException("Illegal state");
-        }).orError("blah-blah").build();
+        }).orError("ignored blah-blah").build();
 
         log.registerListener(lsnr2);
 
         log.info("1");
         log.info("2");
 
-        assertThrows(lsnr2::check, IllegalStateException.class, "Illegal state");
+        assertThrowsWithCause(lsnr2::check, IllegalStateException.class);
     }
 
     /**
      * Validates listener range definition.
      */
-    @SuppressWarnings("ThrowableNotThrown")
     public void testRange() {
-        String msg = "test message";
+        String msg = "range";
 
         LogListener lsnr2 = LogListener.matches(msg).times(2).build();
-        LogListener lsnr23 = LogListener.matches(msg).atLeast(2).atMost(3).build();
+        LogListener lsnr2_3 = LogListener.matches(msg).atLeast(2).atMost(3).build();
 
         log.registerListener(lsnr2);
-        log.registerListener(lsnr23);
+        log.registerListener(lsnr2_3);
 
         log.info(msg);
         log.info(msg);
 
         lsnr2.check();
-        lsnr23.check();
+        lsnr2_3.check();
 
         log.info(msg);
 
-        assertThrows(lsnr2::check, AssertionError.class, null);
+        assertThrowsWithCause(lsnr2::check, AssertionError.class);
 
-        lsnr23.check();
+        lsnr2_3.check();
 
         log.info(msg);
 
-        assertThrows(lsnr23::check, AssertionError.class, null);
+        assertThrowsWithCause(lsnr2_3::check, AssertionError.class);
+    }
 
-        // Check that susbtring was not found in log messages.
+    /**
+     * Checks that substring was not found in the log messages.
+     */
+    public void testNotPresent() {
+        String msg = "vacuum";
+
         LogListener notPresent = LogListener.matches(msg).times(0).build();
 
         log.registerListener(notPresent);
@@ -209,22 +236,34 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
 
         log.info(msg);
 
-        assertThrows(notPresent::check, AssertionError.class, null);
+        assertThrowsWithCause(notPresent::check, AssertionError.class);
+    }
 
-        // Check that the substring is found at least twice.
+    /**
+     * Checks that the substring is found at least twice.
+     */
+    public void testAtLeast() {
+        String msg = "at least";
+
         LogListener atLeast2 = LogListener.matches(msg).atLeast(2).build();
 
         log.registerListener(atLeast2);
 
         log.info(msg);
 
-        assertThrows(atLeast2::check, AssertionError.class, null);
+        assertThrowsWithCause(atLeast2::check, AssertionError.class);
 
         log.info(msg);
 
         atLeast2.check();
+    }
 
-        // Check that the substring is found no more than twice.
+    /**
+     * Checks that the substring is found no more than twice.
+     */
+    public void testAtMost() {
+        String msg = "at most";
+
         LogListener atMost2 = LogListener.matches(msg).atMost(2).build();
 
         log.registerListener(atMost2);
@@ -238,9 +277,15 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
 
         log.info(msg);
 
-        assertThrows(atMost2::check, AssertionError.class, null);
+        assertThrowsWithCause(atMost2::check, AssertionError.class);
+    }
 
-        // Check that only last value is taken into account.
+    /**
+     * Checks that only last value is taken into account.
+     */
+    public void testMultiRange() {
+        String msg = "multi range";
+
         LogListener atMost3 = LogListener.matches(msg).times(1).times(2).atMost(3).build();
 
         log.registerListener(atMost3);
@@ -249,7 +294,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
             if (i < 4)
                 atMost3.check();
             else
-                assertThrows(atMost3::check, AssertionError.class, null);
+                assertThrowsWithCause(atMost3::check, AssertionError.class);
 
             log.info(msg);
         }
@@ -264,12 +309,45 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
             if (i == 4)
                 lsnr4.check();
             else
-                assertThrows(lsnr4::check, AssertionError.class, null);
+                assertThrowsWithCause(lsnr4::check, AssertionError.class);
         }
     }
 
     /**
-     * CHeck thread safety.
+     * Checks that matches are counted for each message.
+     */
+    public void testMatchesPerMessage() {
+        log.clearListeners();
+
+        LogListener lsnr = LogListener.matches("ab").times(4).build();
+
+        log.registerListener(lsnr);
+
+        log.info("aabaab");
+        log.info("abaaab");
+
+        lsnr.check();
+
+        LogListener newLineLsnr = LogListener.matches("\n").times(5).build();
+
+        log.registerListener(newLineLsnr);
+
+        log.info("\n1\n2\n\n3\n");
+
+        newLineLsnr.check();
+
+        LogListener regexpLsnr = LogListener.matches(Pattern.compile("(?i)hi|hello")).times(3).build();
+
+        log.registerListener(regexpLsnr);
+
+        log.info("Hi! Hello!");
+        log.info("Hi folks");
+
+        regexpLsnr.check();
+    }
+
+    /**
+     * Check thread safety.
      *
      * @throws Exception If failed.
      */
@@ -277,51 +355,36 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
         int iterCnt = 50_000;
         int threadCnt = 6;
         int total = threadCnt * iterCnt;
-
-        ListeningTestLogger log = new ListeningTestLogger();
+        int rndNum = ThreadLocalRandom.current().nextInt(iterCnt);
 
         LogListener lsnr = LogListener.matches("abba").times(total)
+            .andMatches(Pattern.compile("(?i)abba")).times(total * 2)
             .andMatches("ab").times(total)
             .andMatches("ba").times(total)
             .build();
 
+        LogListener mtLsnr = LogListener.matches("abba").build();
+
         log.registerListener(lsnr);
 
         GridTestUtils.runMultiThreaded(() -> {
-            for (int i = 0; i < iterCnt; i++)
-                log.info("It is the abba message.");
-        }, threadCnt, "thread-");
+            for (int i = 0; i < iterCnt; i++) {
+                if (rndNum == i)
+                    log.registerListener(mtLsnr);
+
+                log.info("It is the abba(ABBA) message.");
+            }
+        }, threadCnt, "test-listening-log");
 
         lsnr.check();
+        mtLsnr.check();
     }
 
     /**
      * Check "echo" logger.
      */
     public void testEchoLogger() {
-        StringBuilder buf = new StringBuilder();
-
-        IgniteLogger echo = new NullLogger() {
-            @Override public void trace(String msg) {
-                buf.append(msg);
-            }
-
-            @Override public void debug(String msg) {
-                buf.append(msg);
-            }
-
-            @Override public void info(String msg) {
-                buf.append(msg);
-            }
-
-            @Override public void warning(String msg, Throwable t) {
-                buf.append(msg);
-            }
-
-            @Override public void error(String msg, Throwable t) {
-                buf.append(msg);
-            }
-        };
+        IgniteLogger echo = new StringLogger();
 
         ListeningTestLogger log = new ListeningTestLogger(true, echo);
 
@@ -331,27 +394,42 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
         log.debug("4");
         log.trace("5");
 
-        assertEquals("12345", buf.toString());
+        assertEquals("12345", echo.toString());
     }
 
-    /**
-     * Checks whether callable throws expected exception or not.
-     *
-     * @param runnable Runnable..
-     * @param cls Exception class.
-     * @param msg Exception message (optional). If provided exception message
-     *      and this message should be equal.
-     */
-    @SuppressWarnings("ThrowableNotThrown")
-    private void assertThrows(
-        Runnable runnable,
-        Class<? extends Throwable> cls,
-        @Nullable String msg
-    ) throws AssertionError {
-        GridTestUtils.assertThrows(log(), () -> {
-            runnable.run();
+    /** */
+    private static class StringLogger extends NullLogger {
+        /** */
+        private final StringBuilder buf = new StringBuilder();
 
-            return null;
-        }, cls, msg);
+        /** {@inheritDoc} */
+        @Override public void trace(String msg) {
+            buf.append(msg);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void debug(String msg) {
+            buf.append(msg);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void info(String msg) {
+            buf.append(msg);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void warning(String msg, Throwable t) {
+            buf.append(msg);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void error(String msg, Throwable t) {
+            buf.append(msg);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return buf.toString();
+        }
     }
 }
