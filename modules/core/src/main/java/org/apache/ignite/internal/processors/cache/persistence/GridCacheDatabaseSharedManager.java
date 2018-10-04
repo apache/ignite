@@ -527,6 +527,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void cleanupDatabaseManagerState() throws IgniteCheckedException {
+        onDeActivate0(true);
+
+        cctx.pageStore().onDeActivate(cctx.kernalContext());
+    }
+
     /**
      * Retreives checkpoint history form specified {@code dir}.
      *
@@ -1971,14 +1978,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (cctx.kernalContext().clientNode())
             return;
 
-        // Preform early regions startup before restoring state.
-        startDataRegions(cctx.kernalContext().config().getDataStorageConfiguration());
-
         // Only presistence caches to start.
         for (DynamicCacheDescriptor desc : cctx.cache().cacheDescriptors().values()) {
             if (CU.isPersistentCache(desc.cacheConfiguration(), cctx.gridConfig().getDataStorageConfiguration()))
                 storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
         }
+
+        // Preform early regions startup before restoring state.
+        startDataRegions(cctx.kernalContext().config().getDataStorageConfiguration());
 
         WALPointer restoredPtr = restoreBinaryMemory(cctx.cache().cacheGroupDescriptors().keySet());
 

@@ -1199,15 +1199,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param force {@code True} to force memory regions shutdown.
+     * @param shutdown {@code True} to force memory regions shutdown.
      */
-    protected void onDeActivate0(boolean force) {
+    protected void onDeActivate0(boolean shutdown) {
         for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
             lsnr.beforeStop(this);
 
         if (dataRegionMap != null) {
             for (DataRegion memPlc : dataRegionMap.values()) {
-                memPlc.pageMemory().stop(force);
+                memPlc.pageMemory().stop(shutdown);
 
                 memPlc.evictionTracker().stop();
 
@@ -1218,7 +1218,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             dataRegionMap = null;
 
-            if (force && memProviderMap != null) {
+            if (shutdown && memProviderMap != null) {
                 memProviderMap.clear();
 
                 memProviderMap = null;
