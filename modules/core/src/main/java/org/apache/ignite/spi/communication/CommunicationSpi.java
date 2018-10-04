@@ -18,6 +18,8 @@
 package org.apache.ignite.spi.communication;
 
 import java.io.Serializable;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.spi.IgniteSpi;
@@ -109,4 +111,19 @@ public interface CommunicationSpi<T extends Serializable> extends IgniteSpi {
      * @param lsnr Listener to set or {@code null} to unset the listener.
      */
     public void setListener(@Nullable CommunicationListener<T> lsnr);
+
+    /** */
+    public default boolean sendFileSupported() {
+        return false;
+    }
+
+    /** */
+    public default ReadableByteChannel getRemotePipe(ClusterNode src) throws IgniteSpiException {
+        throw new UnsupportedOperationException();
+    }
+
+    /** */
+    public default void sendFile(ClusterNode dest, FileChannel ch) throws IgniteSpiException {
+        throw new UnsupportedOperationException();
+    }
 }

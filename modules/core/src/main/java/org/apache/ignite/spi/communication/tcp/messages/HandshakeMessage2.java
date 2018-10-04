@@ -28,10 +28,19 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class HandshakeMessage2 extends HandshakeMessage {
     /** */
+    private static final byte PIPE_DATA_TRANSFER_MASK = 0x01;
+
+    /** */
+    public static final int HANDSHAKE2_MSG_FULL_SIZE = MESSAGE_FULL_SIZE + 5;
+
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** */
     private int connIdx;
+
+    /** */
+    private byte flags;
 
     /**
      *
@@ -62,6 +71,20 @@ public class HandshakeMessage2 extends HandshakeMessage {
         return connIdx;
     }
 
+    /**
+     * @return If socket will be used to transfer raw files.
+     */
+    public boolean usePipeTransfer() {
+        return (flags & PIPE_DATA_TRANSFER_MASK) != 0;
+    }
+
+    /**
+     * @param usePipeTransfer {@code True} if socket should be used to transfer raw files.
+     */
+    public final void usePipeTransfer(boolean usePipeTransfer) {
+        flags = usePipeTransfer ? (byte)(flags | PIPE_DATA_TRANSFER_MASK) : (byte)(flags & ~PIPE_DATA_TRANSFER_MASK);
+    }
+
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         if (!super.writeTo(buf, writer))
@@ -71,6 +94,8 @@ public class HandshakeMessage2 extends HandshakeMessage {
             return false;
 
         buf.putInt(connIdx);
+
+        buf.put(flags);
 
         return true;
     }
@@ -84,6 +109,8 @@ public class HandshakeMessage2 extends HandshakeMessage {
             return false;
 
         connIdx = buf.getInt();
+
+        flags = buf.get();
 
         return true;
     }

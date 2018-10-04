@@ -3048,6 +3048,9 @@ public class GridNioServer<T> {
         /** Pause read. */
         PAUSE_READ,
 
+        /** Change worker state to direct file IO */
+        REQUIRE_RAW,
+
         /** Resume read. */
         RESUME_READ,
 
