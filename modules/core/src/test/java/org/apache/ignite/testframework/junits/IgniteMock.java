@@ -65,7 +65,9 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.processors.cacheobject.NoOpBinary;
+import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshaller;
@@ -460,6 +462,11 @@ public class IgniteMock implements Ignite {
     /** {@inheritDoc} */
     @Override public boolean active() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> activeAsync() {
+        return new IgniteFinishedFutureImpl<>(active());
     }
 
     /** {@inheritDoc} */

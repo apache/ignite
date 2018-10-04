@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
@@ -663,6 +664,15 @@ public interface Ignite extends AutoCloseable {
      */
     @Deprecated
     public boolean active();
+
+    /**
+     * Asynchronously checks Ignite grid is active or not active.
+     *
+     * @return {@code True} if grid is active. {@code False} If grid is not active.
+     * @deprecated Use {@link IgniteCluster#active()} instead.
+     */
+    @Deprecated
+    public IgniteFuture<Boolean> activeAsync();
 
     /**
      * Changes Ignite grid state to active or inactive.

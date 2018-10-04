@@ -28,6 +28,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -69,6 +70,7 @@ import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -187,7 +189,18 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     /** {@inheritDoc} */
     @SuppressWarnings("TooBroadScope")
     @Override public void onKernalStop(boolean cancel) {
-        lock.writeLock();
+        while(true) {
+            try {
+                if (lock.tryWriteLock(1, TimeUnit.SECONDS)) {
+                    break;
+                } else {
+                    LT.warn(log, "Await on lock while node stopping");
+                    Thread.sleep(1000);
+                }
+            } catch (InterruptedException e) {
+                LT.warn(log, "Await for lock on node stop was interrupted");
+            }
+        }
 
         try {
             stopping = true;
