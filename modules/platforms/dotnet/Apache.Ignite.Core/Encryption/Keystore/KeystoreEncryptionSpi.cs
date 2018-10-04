@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#pragma warning disable CA1819   // Properties Should Not Return Arrays
+
 namespace Apache.Ignite.Core.Encryption.Keystore
 {
     using System.ComponentModel;
