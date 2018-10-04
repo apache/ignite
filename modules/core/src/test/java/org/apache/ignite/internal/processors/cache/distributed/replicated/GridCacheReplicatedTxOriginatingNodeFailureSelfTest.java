@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxOriginatingNodeFailureAbstractSelfTest;
 
@@ -34,5 +35,9 @@ public class GridCacheReplicatedTxOriginatingNodeFailureSelfTest extends
     /** {@inheritDoc} */
     @Override protected Class<?> ignoreMessageClass() {
         return GridDistributedTxPrepareRequest.class;
+    }
+
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 }
