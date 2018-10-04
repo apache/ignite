@@ -17,96 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collections;
 import java.util.Random;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
- *
+ * Tests cache get/put/remove and data streaming in read-only cluster mode.
  */
-public class ClusterReadOnlyModeTest extends GridCommonAbstractTest {
-    /** */
-    private static final int SRVS = 3;
-
-    /** Replicated atomic cache. */
-    private static final String REPL_ATOMIC_CACHE = "repl_atomic_cache";
-
-    /** Replicated transactional cache. */
-    private static final String REPL_TX_CACHE = "repl_tx_cache";
-
-    /** Partitioned atomic cache. */
-    private static final String PART_ATOMIC_CACHE = "part_atomic_cache";
-
-    /** Partitioned transactional cache. */
-    private static final String PART_TX_CACHE = "part_tx_cache";
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        startGridsMultiThreaded(SRVS);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        changeClusterReadOnlyMode(false);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setCacheConfiguration(
-            cacheConfiguration(REPL_ATOMIC_CACHE, REPLICATED, ATOMIC, null),
-            cacheConfiguration(REPL_TX_CACHE, REPLICATED, TRANSACTIONAL, null),
-            cacheConfiguration(PART_ATOMIC_CACHE, PARTITIONED, ATOMIC, "part_grp"),
-            cacheConfiguration(PART_TX_CACHE, PARTITIONED, TRANSACTIONAL, "part_grp")
-        );
-
-        return cfg;
-    }
-
+public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
     /**
-     * @param cacheMode Cache mode.
-     * @param atomicityMode Atomicity mode.
-     * @param grpName Cache group name.
+     * Tests cache get/put/remove.
      */
-    private CacheConfiguration<Integer, Integer> cacheConfiguration(String name, CacheMode cacheMode,
-        CacheAtomicityMode atomicityMode, String grpName) {
-        return new CacheConfiguration<Integer, Integer>()
-            .setName(name)
-            .setCacheMode(cacheMode)
-            .setAtomicityMode(atomicityMode)
-            .setGroupName(grpName)
-            .setQueryEntities(Collections.singletonList(new QueryEntity(Integer.class, Integer.class)));
-    }
-
-    /**
-     *
-     */
-    public void testCachePutRemove() {
+    public void testCacheGetPutRemove() {
         assertCachesReadOnlyMode(false);
 
         changeClusterReadOnlyMode(true);
@@ -119,7 +45,7 @@ public class ClusterReadOnlyModeTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Tests data streamer.
      */
     public void testDataStreamerReadOnly() {
         assertDataStreamerReadOnlyMode(false);
@@ -134,34 +60,6 @@ public class ClusterReadOnlyModeTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
-     */
-    public void testSqlReadOnly() {
-        assertSqlReadOnlyMode(false);
-
-        changeClusterReadOnlyMode(true);
-
-        assertSqlReadOnlyMode(true);
-
-        changeClusterReadOnlyMode(false);
-
-        assertSqlReadOnlyMode(false);
-    }
-
-    /**
-     * Change read only mode on all nodes.
-     *
-     * @param readOnly Read only.
-     */
-    private void changeClusterReadOnlyMode(boolean readOnly) {
-        for (int idx = 0; idx < SRVS; idx++) {
-            IgniteEx ignite = grid(idx);
-
-            ignite.context().cache().context().readOnlyMode(readOnly);
-        }
-    }
-
-    /**
      * Asserts that all caches in read-only or in read/write mode on all nodes.
      *
      * @param readOnly If {@code true} then cache must be in read only mode, else in read/write mode.
@@ -170,7 +68,7 @@ public class ClusterReadOnlyModeTest extends GridCommonAbstractTest {
         Random rnd = new Random();
 
         for (Ignite ignite : G.allGrids()) {
-            for(String cacheName : F.asList(REPL_ATOMIC_CACHE, REPL_TX_CACHE, PART_ATOMIC_CACHE, PART_TX_CACHE)) {
+            for (String cacheName : CACHE_NAMES) {
                 IgniteCache<Integer, Integer> cache = ignite.cache(cacheName);
 
                 for (int i = 0; i < 10; i++) {
@@ -214,7 +112,7 @@ public class ClusterReadOnlyModeTest extends GridCommonAbstractTest {
         Random rnd = new Random();
 
         for (Ignite ignite : G.allGrids()) {
-            for(String cacheName : F.asList(REPL_ATOMIC_CACHE, REPL_TX_CACHE, PART_ATOMIC_CACHE, PART_TX_CACHE)) {
+            for (String cacheName : CACHE_NAMES) {
                 boolean failed = false;
 
                 try (IgniteDataStreamer<Integer, Integer> streamer = ignite.dataStreamer(cacheName)) {
@@ -230,54 +128,6 @@ public class ClusterReadOnlyModeTest extends GridCommonAbstractTest {
 
                 if (failed != readOnly)
                     fail("Streaming to " + cacheName + " must " + (readOnly ? "fail" : "succeed"));
-            }
-        }
-    }
-
-    /**
-     * @param readOnly If {@code true} then data modification SQL queries must fail, else succeed.
-     */
-    private void assertSqlReadOnlyMode(boolean readOnly) {
-        Random rnd = new Random();
-
-        for (Ignite ignite : G.allGrids()) {
-            for(String cacheName : F.asList(REPL_ATOMIC_CACHE, REPL_TX_CACHE, PART_ATOMIC_CACHE, PART_TX_CACHE)) {
-                IgniteCache<Integer, Integer> cache = ignite.cache(cacheName);
-
-                try (FieldsQueryCursor<?> cur = cache.query(new SqlFieldsQuery("SELECT * FROM Integer"))) {
-                    cur.getAll();
-                }
-
-                boolean failed = false;
-
-                try (FieldsQueryCursor<?> cur = cache.query(new SqlFieldsQuery("DELETE FROM Integer"))) {
-                    cur.getAll();
-                }
-                catch (CacheException ex) {
-                    if (!readOnly)
-                        log.error("Failed to delete data", ex);
-
-                    failed = true;
-                }
-
-                if (failed != readOnly)
-                    fail("SQL delete from " + cacheName + " must " + (readOnly ? "fail" : "succeed"));
-
-                failed = false;
-
-                try (FieldsQueryCursor<?> cur = cache.query(new SqlFieldsQuery(
-                    "INSERT INTO Integer(_KEY, _VAL) VALUES (?, ?)").setArgs(rnd.nextInt(1000), rnd.nextInt()))) {
-                    cur.getAll();
-                }
-                catch (CacheException ex) {
-                    if (!readOnly)
-                        log.error("Failed to insert data", ex);
-
-                    failed = true;
-                }
-
-                if (failed != readOnly)
-                    fail("SQL insert into " + cacheName + " must " + (readOnly ? "fail" : "succeed"));
             }
         }
     }
