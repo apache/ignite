@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.cache.version;
 
 import java.io.Serializable;
+import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
@@ -76,4 +77,21 @@ public class GridCacheConfigurationVersion implements Serializable {
         return S.toString(GridCacheConfigurationVersion.class, this);
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        GridCacheConfigurationVersion version = (GridCacheConfigurationVersion)o;
+        return id == version.id &&
+            lastAction == version.lastAction &&
+            Objects.equals(cacheName, version.cacheName) &&
+            Objects.equals(cacheGroupName, version.cacheGroupName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(id, lastAction, cacheName, cacheGroupName);
+    }
 }

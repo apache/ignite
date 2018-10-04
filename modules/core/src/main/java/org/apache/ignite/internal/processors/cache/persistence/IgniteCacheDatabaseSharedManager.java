@@ -883,8 +883,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         // No-op
     }
 
-    /*
-     * Return stored cache configurations.
+    /**
+     * @return stored cache configurations.
+     * @throws IgniteCheckedException if read failed.
      */
     public Map<String, StoredCacheData> readStoredCacheConfiguration() throws IgniteCheckedException {
         // No-op
@@ -922,6 +923,18 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         // No-op
     }
 
+    /**
+     * Read stored cache configuration version.
+     *
+     * @param cacheName cache name.
+     * @param cacheGroupName cache group name.
+     * @return stored cache configuration version.
+     * @throws IgniteCheckedException if read failed.
+     */
+    public GridCacheConfigurationVersion readStoredCacheConfigurationVersion(String cacheName,String cacheGroupName) throws IgniteCheckedException {
+        // No-op
+        return null;
+    }
 
     /**
      * See {@link GridCacheMapEntry#ensureFreeSpace()}

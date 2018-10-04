@@ -1951,7 +1951,11 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             GridCacheConfigurationVersion version = desc.version();
 
             if(version==null) {
-                version = new GridCacheConfigurationVersion(desc.cacheName(), desc.groupDescriptor().groupName());
+                version = sharedCtx.database()
+                    .readStoredCacheConfigurationVersion(desc.cacheName(), desc.groupDescriptor().groupName());
+
+                if(version==null)
+                    version = new GridCacheConfigurationVersion(desc.cacheName(), desc.groupDescriptor().groupName());
 
                 desc.version(version);
             }
