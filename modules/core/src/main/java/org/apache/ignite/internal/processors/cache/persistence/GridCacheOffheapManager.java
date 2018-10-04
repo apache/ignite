@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.failure.FailureContext;
@@ -170,11 +171,23 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         Executor execSvc = ctx.executor();
 
+        if (ctx.nextSnapshot() && ctx.needToSnapshot(grp.cacheOrGroupName())) {
+            if (execSvc == null)
+                updateSnapshotTag(ctx);
+            else {
+                execSvc.execute(() -> {
+                    try {
+                        updateSnapshotTag(ctx);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                });
+            }
+        }
+
         if (execSvc == null) {
             reuseList.saveMetadata();
-
-            if (ctx.nextSnapshot())
-                updateSnapshotTag(ctx);
 
             for (CacheDataStore store : partDataStores.values())
                 saveStoreMetadata(store, ctx, false);
@@ -188,17 +201,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     throw new IgniteException(e);
                 }
             });
-
-            if (ctx.nextSnapshot()) {
-                execSvc.execute(() -> {
-                    try {
-                        updateSnapshotTag(ctx);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-                });
-            }
 
             for (CacheDataStore store : partDataStores.values())
                 execSvc.execute(() -> {
@@ -1797,6 +1799,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             long expireTime,
             MvccSnapshot mvccVer,
             CacheEntryPredicate filter,
+            EntryProcessor entryProc,
+            Object[] invokeArgs,
             boolean primary,
             boolean needHistory,
             boolean noCreate,
@@ -1804,7 +1808,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             boolean retVal) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            return delegate.mvccUpdate(cctx, key, val, ver, expireTime, mvccVer, filter, primary, needHistory, noCreate, needOldVal, retVal);
+            return delegate.mvccUpdate(cctx, key, val, ver, expireTime, mvccVer, filter, entryProc, invokeArgs, primary,
+                needHistory, noCreate, needOldVal, retVal);
         }
 
         /** {@inheritDoc} */

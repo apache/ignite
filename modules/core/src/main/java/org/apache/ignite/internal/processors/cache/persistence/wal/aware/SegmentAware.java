@@ -36,15 +36,17 @@ public class SegmentAware {
     /** Manages last archived index, emulates archivation in no-archiver mode. */
     private final SegmentArchivedStorage segmentArchivedStorage = buildArchivedStorage(segmentLockStorage);
     /** Storage of actual information about current index of compressed segments. */
-    private final SegmentCompressStorage segmentCompressStorage = buildCompressStorage(segmentArchivedStorage);
+    private final SegmentCompressStorage segmentCompressStorage;
     /** Storage of absolute current segment index. */
     private final SegmentCurrentStateStorage segmentCurrStateStorage;
 
     /**
      * @param walSegmentsCnt Total WAL segments count.
+     * @param compactionEnabled Is wal compaction enabled.
      */
-    public SegmentAware(int walSegmentsCnt) {
+    public SegmentAware(int walSegmentsCnt, boolean compactionEnabled) {
         segmentCurrStateStorage = buildCurrentStateStorage(walSegmentsCnt, segmentArchivedStorage);
+        segmentCompressStorage = buildCompressStorage(segmentArchivedStorage, compactionEnabled);
     }
 
     /**
@@ -108,12 +110,12 @@ public class SegmentAware {
     }
 
     /**
-     * Force set last compressed segment.
+     * Callback after segment compression finish.
      *
-     * @param lastCompressedIdx Segment which was last compressed.
+     * @param compressedIdx Index of compressed segment.
      */
-    public void lastCompressedIdx(long lastCompressedIdx) {
-        segmentCompressStorage.lastCompressedIdx(lastCompressedIdx);
+    public void onSegmentCompressed(long compressedIdx) {
+        segmentCompressStorage.onSegmentCompressed(compressedIdx);
     }
 
     /**
@@ -121,6 +123,20 @@ public class SegmentAware {
      */
     public long lastCompressedIdx() {
         return segmentCompressStorage.lastCompressedIdx();
+    }
+
+    /**
+     * @param idx Minimum raw segment index that should be preserved from deletion.
+     */
+    public void keepUncompressedIdxFrom(long idx) {
+        segmentCompressStorage.keepUncompressedIdxFrom(idx);
+    }
+
+    /**
+     * @return  Minimum raw segment index that should be preserved from deletion.
+     */
+    public long keepUncompressedIdxFrom() {
+        return segmentCompressStorage.keepUncompressedIdxFrom();
     }
 
     /**
@@ -201,6 +217,15 @@ public class SegmentAware {
      */
     public boolean checkCanReadArchiveOrReserveWorkSegment(long absIdx) {
         return lastArchivedAbsoluteIndex() >= absIdx || segmentLockStorage.lockWorkSegment(absIdx);
+    }
+
+    /**
+     * Visible for test.
+     *
+     * @param absIdx Segment absolute index. segment later, use {@link #releaseWorkSegment} for unlock</li> </ul>
+     */
+    void lockWorkSegment(long absIdx) {
+        segmentLockStorage.lockWorkSegment(absIdx);
     }
 
     /**

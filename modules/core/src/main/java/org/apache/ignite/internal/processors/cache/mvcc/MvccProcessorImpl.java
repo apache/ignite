@@ -28,11 +28,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.expiry.EternalExpiryPolicy;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -258,31 +256,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public void validateCacheConfiguration(CacheConfiguration ccfg) throws IgniteCheckedException {
+    @Override public void validateCacheConfiguration(CacheConfiguration ccfg) {
         if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
             if (!mvccSupported)
                 throw new IgniteException("Cannot start MVCC transactional cache. " +
                     "MVCC is unsupported by the cluster.");
-
-            if (ccfg.getCacheStoreFactory() != null) {
-                throw new IgniteCheckedException("Transactional cache may not have a third party cache store when " +
-                    "MVCC is enabled.");
-            }
-
-            if (ccfg.getExpiryPolicyFactory() != null && !(ccfg.getExpiryPolicyFactory().create() instanceof
-                EternalExpiryPolicy)) {
-                throw new IgniteCheckedException("Transactional cache may not have expiry policy when " +
-                    "MVCC is enabled.");
-            }
-
-            if (ccfg.getInterceptor() != null) {
-                throw new IgniteCheckedException("Transactional cache may not have an interceptor when " +
-                    "MVCC is enabled.");
-            }
-
-            if (ccfg.getCacheMode() == CacheMode.LOCAL)
-                throw new IgniteCheckedException("Local caches are not supported by MVCC engine. Use " +
-                    "CacheAtomicityMode.TRANSACTIONAL for local caches.");
 
             mvccEnabled = true;
         }
@@ -332,7 +310,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public void afterInitialise(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
+    @Override public void afterInitialise(IgniteCacheDatabaseSharedManager mgr) {
         // No-op.
     }
 
@@ -347,7 +325,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public void afterMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
+    @Override public void afterMemoryRestore(IgniteCacheDatabaseSharedManager mgr) {
         // No-op.
     }
 
@@ -2136,8 +2114,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                         prevKey = row.key();
 
                     if (cctx == null) {
-                        assert shared;
-
                         cctx = part.group().shared().cacheContext(curCacheId = row.cacheId());
 
                         if (cctx == null)
