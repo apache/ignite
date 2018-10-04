@@ -19,6 +19,8 @@ package org.apache.ignite.ml.dataset;
 
 import java.io.Serializable;
 import java.util.Iterator;
+import java.util.stream.Stream;
+
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
@@ -43,6 +45,11 @@ public interface PartitionContextBuilder<K, V, C extends Serializable> extends S
      * @return Partition {@code context}.
      */
     public C build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize);
+
+
+    default public C build(Stream<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize) {
+        return build(upstreamData.iterator(), upstreamDataSize);
+    }
 
     /**
      * Makes a composed partition {@code context} builder that first builds a {@code context} and then applies the

@@ -19,6 +19,8 @@ package org.apache.ignite.ml.dataset;
 
 import java.io.Serializable;
 import java.util.Iterator;
+import java.util.stream.Stream;
+
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleDatasetDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -47,6 +49,10 @@ public interface PartitionDataBuilder<K, V, C extends Serializable, D extends Au
      * @return Partition {@code data}.
      */
     public D build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize, C ctx);
+
+    default public D build(Stream<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize, C ctx) {
+        return build(upstreamData.iterator(), upstreamDataSize, ctx);
+    }
 
     /**
      * Makes a composed partition {@code data} builder that first builds a {@code data} and then applies the specified

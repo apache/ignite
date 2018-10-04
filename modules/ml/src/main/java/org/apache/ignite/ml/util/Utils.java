@@ -22,7 +22,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Iterator;
 import java.util.Random;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
 import org.apache.ignite.IgniteException;
 
 /**
@@ -97,5 +103,17 @@ public class Utils {
      */
     public static int[] selectKDistinct(int n, int k) {
         return selectKDistinct(n, k, new Random());
+    }
+
+    public static <T> Stream<T> asStream(Iterator<T> iter, long cnt) {
+        return StreamSupport.stream(
+                Spliterators.spliterator(iter, cnt, Spliterator.ORDERED),
+                false);
+    }
+
+    public static <T> Stream<T> asStream(Iterator<T> iter) {
+        return StreamSupport.stream(
+                Spliterators.spliteratorUnknownSize(iter, Spliterator.ORDERED),
+                false);
     }
 }

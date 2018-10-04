@@ -23,12 +23,16 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Stream;
+
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.util.Utils;
 
 /**
  * A dataset builder that makes {@link LocalDataset}. Encapsulate logic of building local dataset such as allocation
@@ -46,6 +50,8 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
 
     /** Filter for {@code upstream} data. */
     private final IgniteBiPredicate<K, V> filter;
+
+    private IgniteFunction<Stream<UpstreamEntry<K, V>>, Stream<UpstreamEntry<K, V>>> transformer;
 
     /**
      * Constructs a new instance of local dataset builder that makes {@link LocalDataset} with default predicate that
@@ -69,6 +75,7 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         this.upstreamMap = upstreamMap;
         this.filter = filter;
         this.partitions = partitions;
+        this.transformer = x -> x;
     }
 
     /** {@inheritDoc} */
@@ -93,13 +100,18 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         for (int part = 0; part < partitions; part++) {
             int cnt = part == partitions - 1 ? filteredMap.size() - ptr : Math.min(partSize, filteredMap.size() - ptr);
 
+            IteratorWindow<K, UpstreamEntry<K, V>> iter = new IteratorWindow<>(
+                    firstKeysIter, k -> new UpstreamEntry<>(k, filteredMap.get(k)), cnt);
             C ctx = cnt > 0 ? partCtxBuilder.build(
-                new IteratorWindow<>(firstKeysIter, k -> new UpstreamEntry<>(k, filteredMap.get(k)), cnt),
+                    transformer.apply(Utils.asStream(iter)),
                 cnt
             ) : null;
 
+            Iterator<UpstreamEntry<K, V>> iter1 = new IteratorWindow<>(
+                    secondKeysIter, k -> new UpstreamEntry<>(k, filteredMap.get(k)), cnt);
+            Stream<UpstreamEntry<K, V>> tStream = transformer.apply(Utils.asStream(iter1));
             D data = cnt > 0 ? partDataBuilder.build(
-                new IteratorWindow<>(secondKeysIter, k -> new UpstreamEntry<>(k, filteredMap.get(k)), cnt),
+                    tStream,
                 cnt,
                 ctx
             ) : null;
@@ -111,6 +123,14 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         }
 
         return new LocalDataset<>(ctxList, dataList);
+    }
+
+    @Override
+    public DatasetBuilder<K, V> withStreamTransformer(IgniteFunction<Stream<UpstreamEntry<K, V>>, Stream<UpstreamEntry<K, V>>> t) {
+        IgniteFunction<Stream<UpstreamEntry<K, V>>, Stream<UpstreamEntry<K, V>>> oldTrans = transformer;
+        transformer = s -> oldTrans.andThen(t).apply(s);
+
+        return this;
     }
 
     /** {@inheritDoc} */

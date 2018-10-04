@@ -21,12 +21,15 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.stream.Stream;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.impl.cache.util.ComputeUtils;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
@@ -59,6 +62,8 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
     /** Filter for {@code upstream} data. */
     private final IgniteBiPredicate<K, V> filter;
 
+    private IgniteFunction<Stream<UpstreamEntry<K, V>>, Stream<UpstreamEntry<K, V>>> transformer;
+
     /** Ignite Cache with partition {@code context}. */
     private final IgniteCache<Integer, C> datasetCache;
 
@@ -80,11 +85,13 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
      * @param datasetId Dataset ID.
      */
     public CacheBasedDataset(Ignite ignite, IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter,
+                             IgniteFunction<Stream<UpstreamEntry<K, V>>, Stream<UpstreamEntry<K, V>>> transformer,
         IgniteCache<Integer, C> datasetCache, PartitionDataBuilder<K, V, C, D> partDataBuilder,
         UUID datasetId) {
         this.ignite = ignite;
         this.upstreamCache = upstreamCache;
         this.filter = filter;
+        this.transformer = transformer;
         this.datasetCache = datasetCache;
         this.partDataBuilder = partDataBuilder;
         this.datasetId = datasetId;
@@ -102,6 +109,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
                 Ignition.localIgnite(),
                 upstreamCacheName,
                 filter,
+                transformer,
                 datasetCacheName,
                 datasetId,
                 part,
@@ -131,6 +139,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
                 Ignition.localIgnite(),
                 upstreamCacheName,
                 filter,
+                transformer,
                 datasetCacheName,
                 datasetId,
                 part,

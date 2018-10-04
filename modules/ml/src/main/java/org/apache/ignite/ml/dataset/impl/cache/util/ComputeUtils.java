@@ -18,15 +18,11 @@
 package org.apache.ignite.ml.dataset.impl.cache.util;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.locks.LockSupport;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -147,7 +143,7 @@ public class ComputeUtils {
      * @return Partition {@code data}.
      */
     public static <K, V, C extends Serializable, D extends AutoCloseable> D getData(Ignite ignite,
-        String upstreamCacheName, IgniteBiPredicate<K, V> filter, String datasetCacheName, UUID datasetId, int part,
+        String upstreamCacheName, IgniteBiPredicate<K, V> filter, IgniteFunction<Stream<UpstreamEntry<K, V>>, Stream<UpstreamEntry<K, V>>> transformer, String datasetCacheName, UUID datasetId, int part,
         PartitionDataBuilder<K, V, C, D> partDataBuilder) {
 
         PartitionDataStorage dataStorage = (PartitionDataStorage)ignite
@@ -175,7 +171,13 @@ public class ComputeUtils {
                     Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(cursor.iterator(), cnt,
                         "Cache expected to be not modified during dataset data building [partition=" + part + ']');
 
-                    return partDataBuilder.build(iter, cnt, ctx);
+                    Stream<UpstreamEntry<K, V>> initialStream = StreamSupport.stream(
+                            Spliterators.spliterator(iter, cnt, Spliterator.ORDERED),
+                            false);
+
+                    Stream<UpstreamEntry<K, V>> transformedStream = transformer.apply(initialStream);
+
+                    return partDataBuilder.build(transformedStream, cnt, ctx);
                 }
             }
 
@@ -207,7 +209,7 @@ public class ComputeUtils {
      * @param <C> Type of a partition {@code context}.
      */
     public static <K, V, C extends Serializable> void initContext(Ignite ignite, String upstreamCacheName,
-        IgniteBiPredicate<K, V> filter, String datasetCacheName, PartitionContextBuilder<K, V, C> ctxBuilder, int retries,
+        IgniteBiPredicate<K, V> filter, IgniteFunction<Stream<UpstreamEntry<K, V>>, Stream<UpstreamEntry<K, V>>> transformer, String datasetCacheName, PartitionContextBuilder<K, V, C> ctxBuilder, int retries,
         int interval) {
         affinityCallWithRetries(ignite, Arrays.asList(datasetCacheName, upstreamCacheName), part -> {
             Ignite locIgnite = Ignition.localIgnite();
@@ -228,7 +230,13 @@ public class ComputeUtils {
                 Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(cursor.iterator(), cnt,
                     "Cache expected to be not modified during dataset data building [partition=" + part + ']');
 
-                ctx = ctxBuilder.build(iter, cnt);
+                Stream<UpstreamEntry<K, V>> initialStream = StreamSupport.stream(
+                        Spliterators.spliterator(iter, cnt, Spliterator.ORDERED),
+                        false);
+
+                Stream<UpstreamEntry<K, V>> transformedStream = transformer.apply(initialStream);
+
+                ctx = ctxBuilder.build(transformedStream, cnt);
             }
 
             IgniteCache<Integer, C> datasetCache = locIgnite.cache(datasetCacheName);
@@ -253,9 +261,9 @@ public class ComputeUtils {
      * @param <C> Type of a partition {@code context}.
      */
     public static <K, V, C extends Serializable> void initContext(Ignite ignite, String upstreamCacheName,
-        IgniteBiPredicate<K, V> filter, String datasetCacheName, PartitionContextBuilder<K, V, C> ctxBuilder,
+        IgniteBiPredicate<K, V> filter, IgniteFunction<Stream<UpstreamEntry<K, V>>, Stream<UpstreamEntry<K, V>>> transformer, String datasetCacheName, PartitionContextBuilder<K, V, C> ctxBuilder,
         int retries) {
-        initContext(ignite, upstreamCacheName, filter, datasetCacheName, ctxBuilder, retries, 0);
+        initContext(ignite, upstreamCacheName, filter, transformer, datasetCacheName, ctxBuilder, retries, 0);
     }
 
     /**

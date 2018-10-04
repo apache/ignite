@@ -28,6 +28,7 @@ import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 
@@ -296,6 +297,10 @@ public abstract class DatasetTrainer<M extends Model, L> {
         this.environment = environment;
     }
 
+    public <M1 extends Model> DatasetTrainer<M1, L> transform(IgniteFunction<DatasetTrainer<M, L>, DatasetTrainer<M1, L>> transformer) {
+        return transformer.apply(this);
+    }
+
     /**
      * EmptyDataset exception.
      */
@@ -310,4 +315,5 @@ public abstract class DatasetTrainer<M extends Model, L> {
             super("Cannot train model on empty dataset");
         }
     }
+
 }

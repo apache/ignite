@@ -18,9 +18,12 @@
 package org.apache.ignite.ml.dataset;
 
 import java.io.Serializable;
+import java.util.stream.Stream;
+
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
  * A builder constructing instances of a {@link Dataset}. Implementations of this interface encapsulate logic of
@@ -48,6 +51,7 @@ public interface DatasetBuilder<K, V> {
     public <C extends Serializable, D extends AutoCloseable> Dataset<C, D> build(
         PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder);
 
+    public DatasetBuilder<K, V> withStreamTransformer(IgniteFunction<Stream<UpstreamEntry<K, V>>, Stream<UpstreamEntry<K, V>>> t);
 
     /**
      * Returns new instance of DatasetBuilder using conjunction of internal filter and {@code filterToAdd}.

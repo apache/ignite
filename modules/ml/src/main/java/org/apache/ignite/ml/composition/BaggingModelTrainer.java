@@ -26,7 +26,12 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
+import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedDatasetBuilder;
+import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedDatasetPartition;
+import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.environment.parallelism.Promise;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -124,20 +129,24 @@ public abstract class BaggingModelTrainer extends DatasetTrainer<ModelsCompositi
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
         Random rnd = new Random();
-        SHA256UniformMapper<K, V> sampleFilter = new SHA256UniformMapper<>(rnd);
         long featureExtractorSeed = rnd.nextLong();
         Map<Integer, Integer> featuresMapping = createFeaturesMapping(featureExtractorSeed, featureVectorSize);
 
-        //TODO: IGNITE-8867 Need to implement bootstrapping algorithm
         Long startTs = System.currentTimeMillis();
-        Model<Vector, Double> mdl = buildDatasetTrainerForModel().fit(
-            datasetBuilder.withFilter((features, answer) -> sampleFilter.map(features, answer) < samplePartSizePerMdl),
-            wrapFeatureExtractor(featureExtractor, featuresMapping),
-            lbExtractor);
-        double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
-        environment.logger(getClass()).log(MLLogger.VerboseLevel.HIGH, "One model training time was %.2fs", learningTime);
 
-        return new ModelOnFeaturesSubspace(featuresMapping, mdl);
+        try(Dataset<EmptyContext, BootstrappedDatasetPartition> dataset = datasetBuilder.build(
+                new EmptyContextBuilder<>(),
+                new BootstrappedDatasetBuilder<>(wrapFeatureExtractor(featureExtractor, featuresMapping),
+                        lbExtractor, ensembleSize, samplePartSizePerMdl)
+        )) {
+            Model<Vector, Double> mdl = doTrainOneModel(dataset);
+            double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
+            environment.logger(getClass()).log(MLLogger.VerboseLevel.HIGH, "One model training time was %.2fs", learningTime);
+
+            return new ModelOnFeaturesSubspace(featuresMapping, mdl);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -156,10 +165,8 @@ public abstract class BaggingModelTrainer extends DatasetTrainer<ModelsCompositi
         return locFeaturesMapping;
     }
 
-    /**
-     * Creates trainer specific to ensemble.
-     */
-    protected abstract DatasetTrainer<? extends Model<Vector, Double>, Double> buildDatasetTrainerForModel();
+    // TODO: Check if we should pass here a sample index.
+    protected abstract Model<Vector, Double> doTrainOneModel(Dataset<EmptyContext, BootstrappedDatasetPartition> ds);
 
     /**
      * Wraps the original feature extractor with features subspace mapping applying.
