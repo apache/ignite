@@ -1546,9 +1546,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private void failCheckpointReadLock() throws IgniteException {
         IgniteException e = new IgniteException("Checkpoint read lock acquisition has been timed out.");
 
-        cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
-
-        throw e;
+        if (cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e)))
+            throw e;
     }
 
     /** {@inheritDoc} */
