@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-#pragma warning disable 1819   // Properties Should Not Return Arrays
-
 namespace Apache.Ignite.Core.Encryption.Keystore
 {
     using System.ComponentModel;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// IEncryptionSPI implementation base on JDK provided cipher algorithm implementations.
     /// </summary>
+    [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
     public class KeystoreEncryptionSpi : IEncryptionSpi
     {
         /// <summary>
