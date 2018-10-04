@@ -1082,6 +1082,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 // First of all, write page to disk.
                 storeMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag);
 
+                pageBuf.rewind();
+
                 // Only after write we can write page into snapshot.
                 snapshotMgr.flushDirtyPageHandler(fullId, pageBuf, tag);
 
