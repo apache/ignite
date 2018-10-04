@@ -25,9 +25,9 @@ public class GridCacheConfigurationVersion implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    private final int id;
+    private volatile int id;
 
-    private final GridCacheConfigurationChangeAction lastAction;
+    private volatile GridCacheConfigurationChangeAction lastAction;
 
     private final String cacheName;
 
@@ -57,8 +57,13 @@ public class GridCacheConfigurationVersion implements Serializable {
         return lastAction;
     }
 
-    public GridCacheConfigurationVersion nextVersion(@NotNull GridCacheConfigurationChangeAction action) {
-            return new GridCacheConfigurationVersion(id + 1, action, cacheName, cacheGroupName);
+    public void updateVersion(@NotNull GridCacheConfigurationChangeAction action) {
+        synchronized (this){
+            if(isNeedUpdateVersion(action)){
+                this.id = id + 1;
+                this.lastAction = action;
+            }
+        }
     }
 
     public boolean isNeedUpdateVersion(@NotNull GridCacheConfigurationChangeAction action){

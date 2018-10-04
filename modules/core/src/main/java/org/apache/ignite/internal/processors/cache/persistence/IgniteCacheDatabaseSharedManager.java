@@ -924,14 +924,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Read stored cache configuration version.
+     * Read stored caches configuration version.
      *
-     * @param cacheName cache name.
-     * @param cacheGroupName cache group name.
-     * @return stored cache configuration version.
+     * @return stored caches configuration version.
      * @throws IgniteCheckedException if read failed.
      */
-    public GridCacheConfigurationVersion readStoredCacheConfigurationVersion(String cacheName,String cacheGroupName) throws IgniteCheckedException {
+    public Map<String, GridCacheConfigurationVersion> readStoredCachesConfigurationVersion() throws IgniteCheckedException {
         // No-op
         return null;
     }

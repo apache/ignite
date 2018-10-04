@@ -366,6 +366,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Future that will be done when stored cache configurations from metastore were read. */
     private final GridFutureAdapter<Map<String, StoredCacheData>> readStoredCacheConfigFut = new GridFutureAdapter<>();
 
+    /** Future that will be done when stored cache configurations version from metastore were read. */
+    private final GridFutureAdapter<Map<String, GridCacheConfigurationVersion>> readStoredCacheConfigVersionFut =
+        new GridFutureAdapter<>();
+
     /** Map of futures that will be done, when new stored caches configuration were write to metastore. */
     private final Map<Object,IgniteInternalFuture<?>> saveCacheConfigurationFuts = new ConcurrentHashMap<>();
 
@@ -669,6 +673,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 applyLastUpdates(status, true);
 
                 fillWalDisabledGroups();
+
+                readStoredCacheConfigVersionFut.onDone(readStoredCachesConfigurationVersion0());
 
                 readStoredCacheConfigFut.onDone(readStoredCacheConfiguration0());
 
@@ -1510,7 +1516,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if(version.id()>0){
                 assert version.isNeedUpdateVersion(GridCacheConfigurationChangeAction.DESTROY) : version;
 
-                storeCacheConfigurationVersion0(version.nextVersion(GridCacheConfigurationChangeAction.DESTROY), true);
+                version.updateVersion(GridCacheConfigurationChangeAction.DESTROY);
+
+                cctx.cache().updateCacheVersion(version);
+
+                storeCacheConfigurationVersion0(version, true);
             }
         }
         catch(IgniteCheckedException e){
@@ -1526,6 +1536,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         return readStoredCacheConfigFut.get();
     }
 
+    @Override
+    public Map<String, GridCacheConfigurationVersion> readStoredCachesConfigurationVersion() throws IgniteCheckedException {
+        return readStoredCacheConfigVersionFut.get();
+    }
+
     /**
      * Read stored caches configurations from metastore.
      *
@@ -1539,16 +1554,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             (IgnitePredicate<String>)key -> key != null && key.startsWith(STORE_CACHE_PREFIX)
         );
 
-        for (StoredCacheData cacheData : readCacheData.values()) {
-            GridCacheConfigurationVersion version =
-                readStoredCacheConfigurationVersion(getCacheConfigVersionMetasoreKey(cacheData.config()));
-
-            cacheData.version(version);
-
+        for (StoredCacheData cacheData : readCacheData.values())
             storedCaches.put(cacheData.config().getName(), cacheData);
-
-            log.error("readStoredCacheConfiguration0() version " + version);
-        }
 
         log.error("readStoredCacheConfiguration0() " + readCacheData);
 
@@ -1575,13 +1582,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public GridCacheConfigurationVersion readStoredCacheConfigurationVersion(
-        String cacheName,
-        String cacheGroupName
-    ) throws IgniteCheckedException {
-        return readStoredCacheConfigurationVersion(getCacheConfigVersionMetasoreKey(cacheName, cacheGroupName));
-    }
+
 
     private GridCacheConfigurationVersion readStoredCacheConfigurationVersion(String key) throws IgniteCheckedException {
         this.context().database().checkpointReadLock();
@@ -1592,6 +1593,31 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         finally {
             this.context().database().checkpointReadUnlock();
         }
+    }
+
+     /**
+     * Read stored caches configurations version from metastore.
+     *
+     * @return readed caches configurations version.
+     * @throws IgniteCheckedException if read failed.
+     */
+    private Map<String, GridCacheConfigurationVersion> readStoredCachesConfigurationVersion0() throws IgniteCheckedException {
+        Map<String, GridCacheConfigurationVersion> storedVersions = new HashMap<>();
+
+        Map<String, GridCacheConfigurationVersion> readVersions =
+            (Map<String, GridCacheConfigurationVersion>)metaStorage.readForPredicate(
+                (IgnitePredicate<String>)key -> key != null && key.startsWith(CACHE_CONFIGURATION_VERSION_PREFIX)
+            );
+
+        for (GridCacheConfigurationVersion version : readVersions.values()) {
+            storedVersions.put(version.cacheName(), version);
+
+            log.error("readStoredCachesConfigurationVersion0() version " + version);
+        }
+
+        log.error("readStoredCachesConfigurationVersion0() " + readVersions);
+
+        return storedVersions;
     }
 
     /** {@inheritDoc} */

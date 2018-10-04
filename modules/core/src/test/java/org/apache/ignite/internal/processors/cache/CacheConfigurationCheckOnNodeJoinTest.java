@@ -186,6 +186,7 @@ public class CacheConfigurationCheckOnNodeJoinTest extends GridCommonAbstractTes
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
         cfg.setCacheConfiguration(new CacheConfiguration().setName(CACHE_NAME));
         startGrid(cfg).cluster().active(true);
+
         populateData(grid(0).cache(CACHE_NAME));
         grid(0).getOrCreateCache(new CacheConfiguration<>().setName(SECOND_CACHE_NAME));
         stopGrid(0);

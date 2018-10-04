@@ -184,7 +184,6 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 import static org.apache.ignite.internal.IgniteComponentType.JTA;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.boolReducer;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
 
@@ -708,7 +707,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 startAllCachesOnClientStart()
             );
 
-            cachesInfo.onStart(discoData);
+            cachesInfo.onStart(discoData, sharedCtx.database().readStoredCachesConfigurationVersion());
         }
     }
 
@@ -834,11 +833,16 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         }
 
         if (CU.isPersistenceEnabled(ctx.config())) {
+            Map<String, GridCacheConfigurationVersion> versions =
+                ctx.cache().context().database().readStoredCachesConfigurationVersion();
+
             Map<String, StoredCacheData> storedCaches = ctx.cache().context().database().readStoredCacheConfiguration();
 
             if (!F.isEmpty(storedCaches)) {
                 for (StoredCacheData storedCacheData : storedCaches.values()) {
                     String cacheName = storedCacheData.config().getName();
+
+                    storedCacheData.version(versions.get(cacheName));
 
                     //Ignore stored caches if it already added by static config(static config has higher priority).
                     if (!caches.containsKey(cacheName))
@@ -1951,22 +1955,22 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             GridCacheConfigurationVersion version = desc.version();
 
             if(version==null) {
-                version = sharedCtx.database()
-                    .readStoredCacheConfigurationVersion(desc.cacheName(), desc.groupDescriptor().groupName());
-
-                if(version==null)
-                    version = new GridCacheConfigurationVersion(desc.cacheName(), desc.groupDescriptor().groupName());
+                version = cachesInfo.getVersion(desc.cacheName(), desc.groupDescriptor().groupName());
 
                 desc.version(version);
             }
 
             if(version.isNeedUpdateVersion(action)) {
-                desc.version(desc.version().nextVersion(action));
+                desc.version().updateVersion(action);
+
+                cachesInfo.updateVersion(desc.version());
 
                 sharedCtx.database().storeCacheConfigurationVersion(desc.version(), true);
             }
         }
     }
+
+    public void updateCacheVersion(@NotNull GridCacheConfigurationVersion version){ cachesInfo.updateVersion(version); }
 
     /**
      * @param startCfg Cache configuration to use.

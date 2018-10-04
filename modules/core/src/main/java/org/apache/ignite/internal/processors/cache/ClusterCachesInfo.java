@@ -69,6 +69,7 @@ import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
@@ -95,6 +96,9 @@ class ClusterCachesInfo {
 
     /** Cache templates. */
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredTemplates = new ConcurrentHashMap<>();
+
+    /** Caches configuration version. */
+    private final ConcurrentMap<String, GridCacheConfigurationVersion> cachesConfigurationVersion = new ConcurrentHashMap<>();
 
     /** Caches currently being restarted. */
     private final Collection<String> restartingCaches = new GridConcurrentHashSet<>();
@@ -132,11 +136,14 @@ class ClusterCachesInfo {
         log = ctx.log(getClass());
     }
 
+    //TODO: javadoc
     /**
      * @param joinDiscoData Information about configured caches and templates.
      * @throws IgniteCheckedException If configuration validation failed.
      */
-    public void onStart(CacheJoinNodeDiscoveryData joinDiscoData) throws IgniteCheckedException {
+    public void onStart(CacheJoinNodeDiscoveryData joinDiscoData,Map<String, GridCacheConfigurationVersion> versions)
+        throws IgniteCheckedException
+    {
         this.joinDiscoData = joinDiscoData;
 
         Map<String, CacheConfiguration> grpCfgs = new HashMap<>();
@@ -157,6 +164,8 @@ class ClusterCachesInfo {
 
         if (conflictErr != null)
             throw new IgniteCheckedException("Failed to start configured cache. " + conflictErr);
+
+        this.cachesConfigurationVersion.putAll(versions);
     }
 
     /**
@@ -1386,9 +1395,19 @@ class ClusterCachesInfo {
             for (DynamicCacheDescriptor desc : orderedCaches(CacheComparators.DIRECT)) {
                 desc.startTopologyVersion(topVer);
 
-                if(desc.version()==null)
-                     desc.version(new GridCacheConfigurationVersion(desc.cacheName(),desc.groupDescriptor().groupName()));
+                if(desc.version()==null) {
+                    GridCacheConfigurationVersion version = cachesConfigurationVersion.get(desc.cacheName());
 
+                    if(version==null) {
+                        version = new GridCacheConfigurationVersion(desc.cacheName(), desc.groupDescriptor().groupName());
+
+                        GridCacheConfigurationVersion old = cachesConfigurationVersion.put(desc.cacheName(), version);
+
+                        assert old == null;
+                    }
+
+                    desc.version(version);
+                }
 
                 DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(msg.requestId(),
                     desc.cacheName(),
@@ -1471,6 +1490,27 @@ class ClusterCachesInfo {
         }
 
         return exchangeActions;
+    }
+
+     GridCacheConfigurationVersion getVersion(@NotNull String cacheName, String cacheGroupName) {
+        GridCacheConfigurationVersion version = cachesConfigurationVersion.get(cacheName);
+
+        if (version == null) {
+            version = new GridCacheConfigurationVersion(cacheName, cacheGroupName);
+
+            GridCacheConfigurationVersion old = cachesConfigurationVersion.put(cacheName, version);
+
+            assert old == null;
+        }
+
+        return version;
+    }
+
+    void updateVersion(@NotNull GridCacheConfigurationVersion version) {
+        GridCacheConfigurationVersion old = cachesConfigurationVersion.put(version.cacheName(), version);
+
+        assert old == version || old == null || old.id() < version.id() : version + " old: " +
+            (old == null ? "null" : old);
     }
 
     /**
@@ -1986,6 +2026,7 @@ class ClusterCachesInfo {
         registeredCacheGrps.clear();
         registeredCaches.clear();
         registeredTemplates.clear();
+        cachesConfigurationVersion.clear();
 
         clientReconnectReqs = null;
     }
