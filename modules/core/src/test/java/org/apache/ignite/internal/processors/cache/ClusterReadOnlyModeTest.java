@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import java.util.Random;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
@@ -24,6 +25,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -95,7 +99,8 @@ public class ClusterReadOnlyModeTest extends GridCommonAbstractTest {
             .setName(name)
             .setCacheMode(cacheMode)
             .setAtomicityMode(atomicityMode)
-            .setGroupName(grpName);
+            .setGroupName(grpName)
+            .setQueryEntities(Collections.singletonList(new QueryEntity(Integer.class, Integer.class)));
     }
 
     /**
@@ -126,6 +131,21 @@ public class ClusterReadOnlyModeTest extends GridCommonAbstractTest {
         changeClusterReadOnlyMode(false);
 
         assertDataStreamerReadOnlyMode(false);
+    }
+
+    /**
+     *
+     */
+    public void testSqlReadOnly() {
+        assertSqlReadOnlyMode(false);
+
+        changeClusterReadOnlyMode(true);
+
+        assertSqlReadOnlyMode(true);
+
+        changeClusterReadOnlyMode(false);
+
+        assertSqlReadOnlyMode(false);
     }
 
     /**
@@ -210,6 +230,54 @@ public class ClusterReadOnlyModeTest extends GridCommonAbstractTest {
 
                 if (failed != readOnly)
                     fail("Streaming to " + cacheName + " must " + (readOnly ? "fail" : "succeed"));
+            }
+        }
+    }
+
+    /**
+     * @param readOnly If {@code true} then data modification SQL queries must fail, else succeed.
+     */
+    private void assertSqlReadOnlyMode(boolean readOnly) {
+        Random rnd = new Random();
+
+        for (Ignite ignite : G.allGrids()) {
+            for(String cacheName : F.asList(REPL_ATOMIC_CACHE, REPL_TX_CACHE, PART_ATOMIC_CACHE, PART_TX_CACHE)) {
+                IgniteCache<Integer, Integer> cache = ignite.cache(cacheName);
+
+                try (FieldsQueryCursor<?> cur = cache.query(new SqlFieldsQuery("SELECT * FROM Integer"))) {
+                    cur.getAll();
+                }
+
+                boolean failed = false;
+
+                try (FieldsQueryCursor<?> cur = cache.query(new SqlFieldsQuery("DELETE FROM Integer"))) {
+                    cur.getAll();
+                }
+                catch (CacheException ex) {
+                    if (!readOnly)
+                        log.error("Failed to delete data", ex);
+
+                    failed = true;
+                }
+
+                if (failed != readOnly)
+                    fail("SQL delete from " + cacheName + " must " + (readOnly ? "fail" : "succeed"));
+
+                failed = false;
+
+                try (FieldsQueryCursor<?> cur = cache.query(new SqlFieldsQuery(
+                    "INSERT INTO Integer(_KEY, _VAL) VALUES (?, ?)").setArgs(rnd.nextInt(1000), rnd.nextInt()))) {
+                    cur.getAll();
+                }
+                catch (CacheException ex) {
+                    if (!readOnly)
+                        log.error("Failed to insert data", ex);
+
+                    failed = true;
+                }
+
+                if (failed != readOnly)
+                    fail("SQL insert into " + cacheName + " must " + (readOnly ? "fail" : "succeed"));
             }
         }
     }
