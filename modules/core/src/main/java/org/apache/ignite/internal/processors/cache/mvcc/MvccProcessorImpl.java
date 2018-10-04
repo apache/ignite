@@ -368,7 +368,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /** {@inheritDoc} */
     @Override public void onExchangeDone(boolean newCrd, DiscoCache discoCache, Map<UUID, GridLongList> activeQueries) {
         if (!newCrd) {
-            if (ctx.localNodeId().equals(curCrd.nodeId()))
+            if (ctx.localNodeId().equals(curCrd.nodeId()) && discoCache != null)
                 cleanupOrphanedServerTransactions(discoCache.serverNodes());
 
             return;
