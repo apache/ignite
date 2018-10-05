@@ -25,6 +25,8 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 /**
  * Preprocessing function that makes encoding.
  *
+ * This a base abstract class that keeps the common fields for all child encoding preprocessors.
+ *
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */

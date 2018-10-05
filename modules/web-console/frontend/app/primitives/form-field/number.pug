@@ -15,7 +15,7 @@
     limitations under the License.
 
 mixin form-field__number({ label, model, name, disabled, required, placeholder, tip, min, max, step = '1', postfix })
-    -var errLbl = label.substring(0, label.length - 1)
+    -var errLbl = label[label.length - 1] === ':' ? label.substring(0, label.length - 1) : label
 
     .form-field.ignite-form-field
         +form-field__label({ label, name, required, disabled })
