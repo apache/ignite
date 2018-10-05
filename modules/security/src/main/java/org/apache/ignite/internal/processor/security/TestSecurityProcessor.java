@@ -53,6 +53,13 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
         this.authorize = authorize;
     }
 
+    /**
+     * Remove all consumers.
+     */
+    public void clear() {
+        authorize = null;
+    }
+
     /** {@inheritDoc} */
     @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
         return new TestSecurityContext(
@@ -100,7 +107,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     /** {@inheritDoc} */
     @Override public boolean enabled() {
         //todo нужно посмотреть как в ГГ происходит обработка
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */

@@ -141,6 +141,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** Current IO policy. */
     private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
 
+    /** Current near node. */
+    private static final ThreadLocal<UUID> CUR_NEAR_NODE = new ThreadLocal<>();
+
     /** Listeners by topic. */
     private final ConcurrentMap<Object, GridMessageListener> lsnrMap = new ConcurrentHashMap<>();
 
@@ -1566,7 +1569,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (change)
             CUR_PLC.set(plc);
 
-        ((NearNodeContextSecurityProcessor)ctx.security()).nearNodeId(nodeId);
+        CUR_NEAR_NODE.set(nodeId);
 
         try {
             lsnr.onMessage(nodeId, msg, plc);
@@ -1575,7 +1578,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             if (change)
                 CUR_PLC.set(oldPlc);
 
-            ((NearNodeContextSecurityProcessor)ctx.security()).removeNearNodeId();
+            CUR_NEAR_NODE.remove();
         }
     }
 
@@ -1584,6 +1587,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      */
     @Nullable public static Byte currentPolicy() {
         return CUR_PLC.get();
+    }
+
+    /**
+     * @return Current near node's id.
+     */
+    @Nullable public static UUID currentNearNode(){
+        return CUR_NEAR_NODE.get();
     }
 
     /**

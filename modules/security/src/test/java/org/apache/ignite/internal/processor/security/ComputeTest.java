@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processor.security;
 
 import java.lang.reflect.Field;
-import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -26,10 +26,15 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessorWrp;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.hamcrest.core.Is.is;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -39,8 +44,16 @@ public class ComputeTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "TEST_CACHE";
 
+    /** Test key. */
+    private static final String TEST_KEY = "key";
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(
+            TestSecurityProcessorProvider.TEST_SECURITY_PROCESSOR_CLS,
+            "org.apache.ignite.internal.processor.security.TestSecurityProcessor"
+        );
+
         super.beforeTestsStarted();
 
         startGrids(2).cluster().active(true);
@@ -50,9 +63,21 @@ public class ComputeTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
+        System.clearProperty(TestSecurityProcessorProvider.TEST_SECURITY_PROCESSOR_CLS);
+
         stopAllGrids();
 
         cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        for (Ignite i : G.allGrids())
+            processor((IgniteEx)i).clear();
+
+        grid(0).cache(CACHE_NAME).remove(TEST_KEY);
     }
 
     /** {@inheritDoc} */
@@ -70,62 +95,126 @@ public class ComputeTest extends GridCommonAbstractTest {
             );
     }
 
-    /**
-     * вызов опреции в лямбде для локального узла. будет передан контекст локального узла
-     */
-    public void testSecProcShouldGetLocalSecCtxWhenCallOnLocalNode() throws Exception {
+    /** */
+    public void testSecProcShouldGetLocalSecCtxWhenCallOnLocalNode() {
         IgniteEx ignite = grid(0);
-//        IgniteEx ignite = startGrid(getConfiguration("client-node").setClientMode(true));
 
-        TestSecurityProcessor secProc = processor(ignite);
-
-        AtomicBoolean call = new AtomicBoolean(false);
-
-        secProc.authorizeConsumer(
+        processor(ignite).authorizeConsumer(
             (name, perm, secCtx) -> {
-                if (CACHE_NAME.equals(name) && SecurityPermission.CACHE_PUT == perm) {
-                    assertThat(secCtx.subject().id(), is(ignite.context().localNodeId()));
-                    call.set(true);
-                }
-                else
-                    System.out.println(
-                        "MY_DEBUG name=" + name + ", perm=" + perm + ", secCtx=" + secCtx
-                    );
+                if (CACHE_NAME.equals(name) && SecurityPermission.CACHE_PUT == perm &&
+                    ignite.context().localNodeId().equals(secCtx.subject().id()))
+                    throw new SecurityException("Test security exception.");
             }
         );
 
-        ignite.compute(ignite.cluster().forLocal())
-            .broadcast(() ->
-                Ignition.localIgnite().cache(CACHE_NAME).put("key", "value")
-            );
+        Throwable throwable = GridTestUtils.assertThrowsWithCause(
+            () -> ignite.compute(ignite.cluster().forLocal())
+                .broadcast(() ->
+                    Ignition.localIgnite().cache(CACHE_NAME).put(TEST_KEY, "value")
+                )
+            , SecurityException.class
+        );
 
-        assertThat(call.get(), is(true));
+        assertThat(ignite.cache(CACHE_NAME).get(TEST_KEY), nullValue());
+
+        assertCauseMessage(throwable, SecurityException.class, "Test security exception.");
     }
 
-    private TestSecurityProcessor processor(IgniteEx ignite) {
-        GridSecurityProcessorWrp wrp = (GridSecurityProcessorWrp)ignite.context().security();
-        try {
-            Field fld = GridSecurityProcessorWrp.class.getDeclaredField("original");
-            boolean accessible = fld.isAccessible();
-            try {
-                fld.setAccessible(true);
+    /** */
+    public void testSecProcShouldGetServerNearNodeSecCtxWhenCallOnRemoteNode() {
+        IgniteEx remote = grid(0);
 
-                return (TestSecurityProcessor)fld.get(wrp);
+        IgniteEx near = grid(1);
+
+        processor(remote).authorizeConsumer(
+            (name, perm, secCtx) -> {
+                if (CACHE_NAME.equals(name) && SecurityPermission.CACHE_PUT == perm &&
+                    near.context().localNodeId().equals(secCtx.subject().id()))
+                    throw new SecurityException("Test security exception.");
             }
-            finally {
-                fld.setAccessible(accessible);
+        );
+
+        Throwable throwable = GridTestUtils.assertThrowsWithCause(
+            () -> near.compute(near.cluster().forNode(remote.localNode()))
+                .broadcast(() ->
+                    Ignition.localIgnite().cache(CACHE_NAME).put(TEST_KEY, "value")
+                )
+            , SecurityException.class
+        );
+
+        assertThat(remote.cache(CACHE_NAME).get(TEST_KEY), nullValue());
+
+        assertCauseMessage(throwable, SecurityException.class, "Test security exception.");
+    }
+
+    /** */
+    public void testSecProcShouldGetClientNearNodeSecCtxWhenCallOnRemoteNode() throws Exception {
+        IgniteEx client = startGrid(getConfiguration("client-node").setClientMode(true));
+
+        IgniteEx remote = grid(0);
+
+        processor(remote).authorizeConsumer(
+            (name, perm, secCtx) -> {
+                if (CACHE_NAME.equals(name) && SecurityPermission.CACHE_PUT == perm &&
+                    client.context().localNodeId().equals(secCtx.subject().id()))
+                    throw new SecurityException("Test security exception.");
             }
-        }
-        catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        );
+
+        Throwable throwable = GridTestUtils.assertThrowsWithCause(
+            () -> client.compute(client.cluster().forNode(remote.localNode()))
+                .broadcast(() ->
+                    Ignition.localIgnite().cache(CACHE_NAME).put("key", "value")
+                )
+            , SecurityException.class
+        );
+
+        assertThat(remote.cache(CACHE_NAME).get("key"), nullValue());
+
+        assertCauseMessage(throwable, SecurityException.class, "Test security exception.");
     }
 
     /**
-     * вызов опреции в лямбде для удалннного узла. будет передан контекст узла инициатора
+     * Assert that the passed throwable contains a cause exception with given type and message.
+     *
+     * @param throwable Throwable.
+     * @param type Type.
+     * @param msg Message.
      */
-    public void testSecProcShouldGetNearNodeSecCtxWhenCallOnRemoteNode() {
+    private <T extends Throwable> void assertCauseMessage(Throwable throwable, Class<T> type, String msg) {
+        T cause = X.cause(throwable, type);
 
+        assertThat(cause, notNullValue());
+        assertThat(cause.getMessage(), is(msg));
     }
 
+    /**
+     * Getting of {@link TestSecurityProcessor} for the passed ignite instanse.
+     *
+     * @param ignite Ignite.
+     */
+    private TestSecurityProcessor processor(IgniteEx ignite) {
+        if (ignite.context().security() instanceof GridSecurityProcessorWrp) {
+            GridSecurityProcessorWrp wrp = (GridSecurityProcessorWrp)ignite.context().security();
+
+            try {
+                Field fld = GridSecurityProcessorWrp.class.getDeclaredField("original");
+
+                boolean accessible = fld.isAccessible();
+                try {
+                    fld.setAccessible(true);
+
+                    return (TestSecurityProcessor)fld.get(wrp);
+                }
+                finally {
+                    fld.setAccessible(accessible);
+                }
+            }
+            catch (NoSuchFieldException | IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        return (TestSecurityProcessor)ignite.context().security();
+    }
 }

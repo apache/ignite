@@ -17,32 +17,41 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+
 /**
- * Wrapper that provides getting current security
- * context for the {@link GridSecurityProcessor#authorize(String, SecurityPermission, SecurityContext)} method.
+ * Wrapper that provides getting current security context for the {@link GridSecurityProcessor#authorize(String,
+ * SecurityPermission, SecurityContext)} method.
  */
 public class NearNodeContextSecurityProcessor extends GridSecurityProcessorWrp {
-    /** Near node's id. */
-    private final ThreadLocal<UUID> nearNodeId = new ThreadLocal<>();
-    //todo сюда нужно ещё мапу воткнуть для сохранения контекста удаленной ноды.
-    //чистить его по событию покидания узлом топологии.
     /** Local node's security context. */
     private SecurityContext locSecCtx;
 
     /** Must use JDK marshaller for Security Subject. */
     private final JdkMarshaller marsh;
+
+    /** Map of security contexts. Key is node's id. */
+    private final Map<UUID, SecurityContext> secCtxs = new ConcurrentHashMap<>();
 
     /**
      * @param ctx Grid kernal context.
@@ -57,16 +66,27 @@ public class NearNodeContextSecurityProcessor extends GridSecurityProcessorWrp {
     /** {@inheritDoc} */
     @Override public void authorize(String name, SecurityPermission perm, SecurityContext securityCtx)
         throws SecurityException {
-        original.authorize(name, perm, securityCtx(securityCtx));
+        if(enabled()) {
+            SecurityContext curSecCtx = securityCtx(securityCtx);
+
+            if (log.isDebugEnabled())
+                log.debug("Authorize [name=" + name + ", perm=" + perm + "secCtx=" + curSecCtx + ']');
+
+            original.authorize(name, perm, curSecCtx);
+        }
     }
 
-    /**
-     * Set near node's id.
-     *
-     * @param id Near node's id.
-     */
-    public void nearNodeId(UUID id) {
-        nearNodeId.set(id);
+    /** {@inheritDoc} */
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        super.onKernalStart(active);
+
+        if (enabled()) {
+            ctx.event().addDiscoveryEventListener(new DiscoveryEventListener() {
+                @Override public void onEvent(DiscoveryEvent evt, DiscoCache discoCache) {
+                    secCtxs.remove(evt.eventNode().id());
+                }
+            }, EVT_NODE_FAILED, EVT_NODE_LEFT);
+        }
     }
 
     /**
@@ -74,15 +94,8 @@ public class NearNodeContextSecurityProcessor extends GridSecurityProcessorWrp {
      *
      * @return Near node's id.
      */
-    public UUID nearNodeId() {
-        return nearNodeId.get();
-    }
-
-    /**
-     * Remove near node's id.
-     */
-    public void removeNearNodeId() {
-        nearNodeId.remove();
+    private UUID nearNodeId() {
+        return GridIoManager.currentNearNode();
     }
 
     /**
@@ -94,17 +107,15 @@ public class NearNodeContextSecurityProcessor extends GridSecurityProcessorWrp {
      */
     private SecurityContext securityCtx(SecurityContext passed) {
         SecurityContext res = passed;
-        try {
-            if (res == null) {
-                res = nearNodeSecurityCtx();
 
-                if (res == null)
-                    res = localSecurityCtx();
-            }
+        if (res == null) {
+            res = nearNodeSecurityCtx();
+
+            if (res == null)
+                res = localSecurityCtx();
         }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to get security context.", e);
-        }
+
+        assert res != null;
 
         return res;
     }
@@ -114,13 +125,20 @@ public class NearNodeContextSecurityProcessor extends GridSecurityProcessorWrp {
      *
      * @return Security context of near node.
      */
-    private SecurityContext nearNodeSecurityCtx() throws IgniteCheckedException {
+    private SecurityContext nearNodeSecurityCtx() {
         SecurityContext secCtx = null;
 
-        UUID nodeId = nearNodeId();
+        final UUID nodeId = nearNodeId();
 
-        if (nodeId != null)
-            secCtx = nodeSecurityCtx(ctx.discovery().node(nodeId));
+        if (nodeId != null) {
+            secCtx = secCtxs.computeIfAbsent(nodeId,
+                new Function<UUID, SecurityContext>() {
+                    @Override public SecurityContext apply(UUID uuid) {
+                        return nodeSecurityCtx(ctx.discovery().node(nodeId));
+
+                    }
+                });
+        }
 
         return secCtx;
     }
@@ -129,9 +147,8 @@ public class NearNodeContextSecurityProcessor extends GridSecurityProcessorWrp {
      * Getting local node's security context.
      *
      * @return Security context of local node.
-     * @throws IgniteCheckedException If error occurred.
      */
-    private SecurityContext localSecurityCtx() throws IgniteCheckedException {
+    private SecurityContext localSecurityCtx() {
         SecurityContext res = locSecCtx;
 
         if (res == null) {
@@ -139,8 +156,6 @@ public class NearNodeContextSecurityProcessor extends GridSecurityProcessorWrp {
 
             locSecCtx = res;
         }
-
-        assert res != null;
 
         return res;
     }
@@ -150,26 +165,30 @@ public class NearNodeContextSecurityProcessor extends GridSecurityProcessorWrp {
      *
      * @param node Node.
      * @return Node's security context.
-     * @throws IgniteCheckedException If failed.
      */
-    private SecurityContext nodeSecurityCtx(ClusterNode node) throws IgniteCheckedException {
+    private SecurityContext nodeSecurityCtx(ClusterNode node) {
         byte[] subjBytes = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
 
         byte[] subjBytesV2 = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
 
         if (subjBytes == null && subjBytesV2 == null)
-             throw new SecurityException("Local security context isn't certain.");
-
-        if (subjBytesV2 != null)
-            return U.unmarshal(marsh, subjBytesV2, U.resolveClassLoader(ctx.config()));
+            throw new SecurityException("Security context isn't certain.");
 
         try {
-            SecurityUtils.serializeVersion(1);
+            if (subjBytesV2 != null)
+                return U.unmarshal(marsh, subjBytesV2, U.resolveClassLoader(ctx.config()));
 
-            return U.unmarshal(marsh, subjBytes, U.resolveClassLoader(ctx.config()));
+            try {
+                SecurityUtils.serializeVersion(1);
+
+                return U.unmarshal(marsh, subjBytes, U.resolveClassLoader(ctx.config()));
+            }
+            finally {
+                SecurityUtils.restoreDefaultSerializeVersion();
+            }
         }
-        finally {
-            SecurityUtils.restoreDefaultSerializeVersion();
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to get security context.", e);
         }
     }
 }

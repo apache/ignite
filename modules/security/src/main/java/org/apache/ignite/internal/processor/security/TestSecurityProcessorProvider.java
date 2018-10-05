@@ -17,9 +17,14 @@
 
 package org.apache.ignite.internal.processor.security;
 
+import java.io.Serializable;
+import java.lang.reflect.Constructor;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
@@ -30,13 +35,17 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.PluginValidationException;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.Serializable;
-import java.util.UUID;
-
 /**
  * Security processor provider for tests.
  */
 public class TestSecurityProcessorProvider implements PluginProvider {
+    /** System property to get test security processor class name. */
+    public static String TEST_SECURITY_PROCESSOR_CLS = "TEST_SECURITY_PROVIDER_CLASS";
+
+    /** Default test security processor class name. */
+    public static String DFLT_TEST_SECURITY_PROCESSOR_CLS_NAME =
+        "org.apache.ignite.internal.processors.security.os.GridOsSecurityProcessor";
+
     /** {@inheritDoc} */
     @Override public String name() {
         return "TestSecurityProcessorProvider";
@@ -54,7 +63,8 @@ public class TestSecurityProcessorProvider implements PluginProvider {
 
     /** {@inheritDoc} */
     @Override public IgnitePlugin plugin() {
-        return new IgnitePlugin() {};
+        return new IgnitePlugin() {
+        };
     }
 
     /** {@inheritDoc} */
@@ -64,11 +74,43 @@ public class TestSecurityProcessorProvider implements PluginProvider {
 
     /** {@inheritDoc} */
     @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
-        //todo MY_TODO вот тут нужно прописать логику получения класса процессора
-        //из системных свойств.
-        return cls.isAssignableFrom(GridSecurityProcessor.class)
-            ? new TestSecurityProcessor(((IgniteKernal)ctx.grid()).context())
-            : null;
+        if (cls.isAssignableFrom(GridSecurityProcessor.class)) {
+            String secProcClsName = System.getProperty(
+                TEST_SECURITY_PROCESSOR_CLS, DFLT_TEST_SECURITY_PROCESSOR_CLS_NAME
+            );
+
+            try {
+                Class implCls = Class.forName(secProcClsName);
+
+                if (implCls == null)
+                    throw new IgniteException("Failed to find component implementation: " + cls.getName());
+
+                if (!GridSecurityProcessor.class.isAssignableFrom(implCls))
+                    throw new IgniteException("Component implementation does not implement component interface " +
+                        "[component=" + cls.getName() + ", implementation=" + implCls.getName() + ']');
+
+                Constructor constructor;
+
+                try {
+                    constructor = implCls.getConstructor(GridKernalContext.class);
+                }
+                catch (NoSuchMethodException e) {
+                    throw new IgniteException("Component does not have expected constructor: " + implCls.getName(), e);
+                }
+
+                try {
+                    return constructor.newInstance(((IgniteEx)ctx.grid()).context());
+                }
+                catch (ReflectiveOperationException e) {
+                    throw new IgniteException("Failed to create component [component=" + cls.getName() +
+                        ", implementation=" + implCls.getName() + ']', e);
+                }
+            }
+            catch (ClassNotFoundException e) {
+                throw new IgniteException("Failed to load class [cls=" + secProcClsName + "]", e);
+            }
+        }
+        return null;
     }
 
     /** {@inheritDoc} */

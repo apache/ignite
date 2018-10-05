@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.security;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
@@ -37,6 +39,10 @@ import org.jetbrains.annotations.Nullable;
  * Wrapper class for implementation of {@link GridSecurityProcessor}.
  */
 public class GridSecurityProcessorWrp implements GridSecurityProcessor {
+    /** Logger. */
+    @GridToStringExclude
+    protected final IgniteLogger log;
+
     /** Kernal context. */
     protected final GridKernalContext ctx;
 
@@ -48,8 +54,13 @@ public class GridSecurityProcessorWrp implements GridSecurityProcessor {
      * @param original Original grid security processor.
      */
     public GridSecurityProcessorWrp(GridKernalContext ctx, GridSecurityProcessor original) {
+        assert ctx != null;
+        assert original != null;
+
         this.ctx = ctx;
         this.original = original;
+
+        log = ctx.log(original.getClass());
     }
 
     /** {@inheritDoc} */
