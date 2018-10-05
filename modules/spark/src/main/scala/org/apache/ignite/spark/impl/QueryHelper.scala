@@ -72,6 +72,11 @@ private[apache] object QueryHelper {
         if (!params.contains(OPTION_TABLE) && !params.contains("path"))
             throw new IgniteException("'table' must be specified.")
 
+        if (params.contains(OPTION_SCHEMA) &&
+            !params(OPTION_SCHEMA).equalsIgnoreCase(org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA))
+            throw new IgniteException("Creating new tables in schema " + params(OPTION_SCHEMA) + " is not valid, tables"
+                + " must only be created in " + org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA)
+
         params.get(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS)
             .map(_.split(','))
             .getOrElse(throw new IgniteException("Can't create table! Primary key fields has to be specified."))

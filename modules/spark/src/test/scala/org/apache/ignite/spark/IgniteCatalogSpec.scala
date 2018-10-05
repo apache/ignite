@@ -45,13 +45,18 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
             tables.map(_.name).sorted should equal(Array("CITY", "EMPLOYEE", "PERSON"))
         }
 
-        it("Should use the database context when providing tables")
-        {
+        it("Should use the database context when providing tables") {
+            igniteSession.catalog.setCurrentDatabase("employeeSchema")
+
+            val employeeSchemaTables = igniteSession.catalog.listTables().collect()
+
+            employeeSchemaTables.map(_.name).sorted should equal(Array("EMPLOYEE"))
+
             igniteSession.catalog.setCurrentDatabase("PUBLIC")
 
-            val tables = igniteSession.catalog.listTables().collect()
+            val publicSchemaTables = igniteSession.catalog.listTables().collect()
 
-            tables.map(_.name).sorted should equal(Array("CITY", "PERSON"))
+            publicSchemaTables.map(_.name).sorted should equal(Array("CITY", "PERSON"))
         }
 
         it("Should provide table names given the PUBLIC schema") {

@@ -332,6 +332,22 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
                     .save()
             }
         }
+
+        it("Should throw exception if saving data frame as a new table with non-PUBLIC schema") {
+            val ex = intercept[IgniteException] {
+                personDataFrame.write
+                    .format(FORMAT_IGNITE)
+                    .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+                    .option(OPTION_TABLE, "nonexistant-table-name")
+                    .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id")
+                    .option(OPTION_SCHEMA, "mySchema")
+                    .save()
+            }
+
+            assert(ex.getMessage ==
+                "Creating new tables in schema mySchema is not valid, tables must only be created in " +
+                org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA)
+        }
     }
 
     override protected def beforeAll(): Unit = {
