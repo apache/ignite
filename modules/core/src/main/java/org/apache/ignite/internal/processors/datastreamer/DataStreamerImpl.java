@@ -2220,7 +2220,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 it.hasPrevious();) {
                 GridDhtTopologyFuture fut = it.previous();
 
-                if (F.eq(topVer, fut.topologyVersion())) {
+                if (fut.exchangeDone() && F.eq(topVer, fut.topologyVersion())) {
                     topFut = fut;
 
                     break;
