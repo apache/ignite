@@ -1507,7 +1507,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try {
             String key = getCacheConfigVersionMetasoreKey(data.config());
 
-            GridCacheConfigurationVersion version = (GridCacheConfigurationVersion)metaStorage.read(key);
+            GridCacheConfigurationVersion version = readStoredCacheConfigurationVersion(key);
 
             assert version!=null : data;
 
@@ -1583,7 +1583,42 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void clearStoredCachesConfigurationVersion() throws IgniteCheckedException {
+        if (metaStorageReadyForWriteLatch.getCount() == 0L)
+            clearStoredCachesConfigurationVersion0();
+        else {
+            IgniteInternalFuture<?> fut = cctx.kernalContext().closure().runLocalSafe(() -> {
+                try {
+                    metaStorageReadyForWriteLatch.await();
 
+                    clearStoredCachesConfigurationVersion0();
+                }
+                catch (IgniteCheckedException | InterruptedException e) {
+                    U.error(log, "Failed to clear caches configuration! ", e);
+                }
+            });
+
+            saveCacheConfigurationFuts.put("clearStoredCachesConfigurationVersion", fut);
+        }
+    }
+
+    private void clearStoredCachesConfigurationVersion0() throws IgniteCheckedException {
+        this.context().database().checkpointReadLock();
+
+        try {
+            Map<String, GridCacheConfigurationVersion> data = (Map<String, GridCacheConfigurationVersion>)
+                metaStorage.readForPredicate(
+                    (IgnitePredicate<String>)key -> key != null && key.startsWith(CACHE_CONFIGURATION_VERSION_PREFIX)
+                );
+
+            for (String key : data.keySet())
+                metaStorage.remove(key);
+        }
+        finally {
+            this.context().database().checkpointReadUnlock();
+        }
+    }
 
     private GridCacheConfigurationVersion readStoredCacheConfigurationVersion(String key) throws IgniteCheckedException {
         this.context().database().checkpointReadLock();

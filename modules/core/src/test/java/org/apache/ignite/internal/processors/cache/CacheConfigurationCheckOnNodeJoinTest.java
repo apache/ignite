@@ -182,23 +182,6 @@ public class CacheConfigurationCheckOnNodeJoinTest extends GridCommonAbstractTes
         restoreClusterAfterCacheCreate(NODES_COUNT, true, LAST_NODE);
     }
 
-    public void test() throws Exception{
-        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
-        cfg.setCacheConfiguration(new CacheConfiguration().setName(CACHE_NAME));
-        startGrid(cfg).cluster().active(true);
-
-        populateData(grid(0).cache(CACHE_NAME));
-        grid(0).getOrCreateCache(new CacheConfiguration<>().setName(SECOND_CACHE_NAME));
-        stopGrid(0);
-        startGrid(0).cluster().active(true);
-        IgniteCache<?,?> cache = grid(0).cache(CACHE_NAME);
-        cache.destroy();
-        grid(0).getOrCreateCache(new CacheConfiguration<>().setName(SECOND_CACHE_NAME)).destroy();
-        stopGrid(0);
-        startGrid(cfg.getIgniteInstanceName()).cluster().active(true);
-        grid(0).getOrCreateCache(new CacheConfiguration<>().setName(SECOND_CACHE_NAME));
-    }
-
     public void testRemoveCacheFromCacheGroupAndCreateCacheWithoutCacheGroup() throws Exception{
         startGrids(2);
 

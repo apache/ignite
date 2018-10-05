@@ -138,12 +138,11 @@ class ClusterCachesInfo {
         log = ctx.log(getClass());
     }
 
-    //TODO: javadoc
     /**
      * @param joinDiscoData Information about configured caches and templates.
      * @throws IgniteCheckedException If configuration validation failed.
      */
-    public void onStart(CacheJoinNodeDiscoveryData joinDiscoData,Map<String, GridCacheConfigurationVersion> versions)
+    public void onStart(CacheJoinNodeDiscoveryData joinDiscoData)
         throws IgniteCheckedException
     {
         this.joinDiscoData = joinDiscoData;
@@ -167,7 +166,7 @@ class ClusterCachesInfo {
         if (conflictErr != null)
             throw new IgniteCheckedException("Failed to start configured cache. " + conflictErr);
 
-        this.cachesConfigurationVersion.putAll(versions);
+        this.cachesConfigurationVersion.putAll(joinDiscoData.cachesConfigurationVersion());
     }
 
     /**
@@ -1015,13 +1014,16 @@ class ClusterCachesInfo {
             templates.put(desc.cacheName(), cacheData);
         }
 
+        Map<String, GridCacheConfigurationVersion> cacheVers = new HashMap<>(cachesConfigurationVersion);
+
         Collection<String> restarting = new HashSet<>(restartingCaches);
 
         return new CacheNodeCommonDiscoveryData(caches,
             templates,
             cacheGrps,
             ctx.discovery().clientNodesMap(),
-            restarting);
+            restarting,
+            cacheVers);
     }
 
     /**
@@ -1039,8 +1041,12 @@ class ClusterCachesInfo {
         // CacheGroup configurations that were created from local node configuration.
         Map<Integer, CacheGroupDescriptor> locCacheGrps = new HashMap<>(registeredCacheGroups());
 
+        checkCachesConfigurationVersion(cachesData.cachesConfigurationVersion());
+
         //Replace locally registered data with actual data received from cluster.
         cleanCachesAndGroups();
+
+        registerReceivedCacheConfigurationVersions(cachesData);
 
         registerReceivedCacheGroups(cachesData, locCacheGrps);
 
@@ -1082,6 +1088,16 @@ class ClusterCachesInfo {
         }
 
         return conflictErr;
+    }
+
+    private void checkCachesConfigurationVersion(Map<String, GridCacheConfigurationVersion> fromGrid) {
+        for (String key : cachesConfigurationVersion.keySet()) {
+            GridCacheConfigurationVersion localVersion = cachesConfigurationVersion.get(key);
+            GridCacheConfigurationVersion fromGridVersion = fromGrid.get(key);
+
+            assert fromGridVersion == null || fromGridVersion.id() > localVersion.id() || localVersion.equals(fromGridVersion) :
+                key + " local: " + cachesConfigurationVersion + " fromGrid: " + fromGrid;
+        }
     }
 
     /**
@@ -1214,6 +1230,10 @@ class ClusterCachesInfo {
         }
     }
 
+    private void registerReceivedCacheConfigurationVersions(CacheNodeCommonDiscoveryData cachesData){
+        cachesConfigurationVersion.putAll(cachesData.cachesConfigurationVersion());
+    }
+
     /**
      * Register cache groups received from cluster.
      *
@@ -1263,6 +1283,7 @@ class ClusterCachesInfo {
         registeredCaches.clear();
         registeredCacheGrps.clear();
         missingCacheGroups.clear();
+        cachesConfigurationVersion.clear();
         ctx.discovery().cleanCachesAndGroups();
     }
 
@@ -1405,7 +1426,7 @@ class ClusterCachesInfo {
                     GridCacheConfigurationVersion version = cachesConfigurationVersion.get(desc.cacheName());
 
                     if(version==null) {
-                        version = new GridCacheConfigurationVersion(desc.cacheName(), desc.groupDescriptor().groupName());
+                        version = new GridCacheConfigurationVersion(desc.cacheName(), desc.groupDescriptor().groupName(), desc.staticallyConfigured());
 
                         GridCacheConfigurationVersion old = cachesConfigurationVersion.put(desc.cacheName(), version);
 
@@ -1498,16 +1519,28 @@ class ClusterCachesInfo {
         return exchangeActions;
     }
 
-     GridCacheConfigurationVersion getVersion(@NotNull String cacheName, String cacheGroupName) {
+
+    GridCacheConfigurationVersion getVersion(@NotNull String cacheName){
         GridCacheConfigurationVersion version = cachesConfigurationVersion.get(cacheName);
 
+        log.error("getOrCreateVersion() name: " + cacheName + " version: " + (version==null ? "null" : version));
+
+        return version;
+    }
+
+    GridCacheConfigurationVersion getOrCreateVersion(@NotNull String cacheName, String cacheGroupName,
+         boolean staticlyConfigured) {
+        GridCacheConfigurationVersion version = getVersion(cacheName);
+
         if (version == null) {
-            version = new GridCacheConfigurationVersion(cacheName, cacheGroupName);
+            version = new GridCacheConfigurationVersion(cacheName, cacheGroupName, staticlyConfigured);
 
             GridCacheConfigurationVersion old = cachesConfigurationVersion.put(cacheName, version);
 
             assert old == null;
         }
+
+        log.error("getOrCreateVersion() name: " + cacheName + " version: " + version);
 
         return version;
     }
@@ -1517,9 +1550,13 @@ class ClusterCachesInfo {
 
         assert old == version || old == null || old.id() < version.id() : version + " old: " +
             (old == null ? "null" : old);
+
+        log.error("updateVersion() version: " + version + " old: " + old);
     }
 
     Collection<Integer> missingCacheGroups() { return missingCacheGroups.keySet(); }
+
+    Map<String,GridCacheConfigurationVersion> cachesVersion() { return cachesConfigurationVersion; }
 
     /**
      * @param data Joining node data.

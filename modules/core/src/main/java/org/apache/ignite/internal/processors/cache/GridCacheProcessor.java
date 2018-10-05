@@ -698,16 +698,19 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
             Map<String, CacheInfo> templates = new HashMap<>();
 
-            addCacheOnJoinFromConfig(caches, templates);
+            Map<String,GridCacheConfigurationVersion> cacheVersions = new HashMap<>();
+
+            addCacheOnJoinFromConfig(caches, templates, cacheVersions);
 
             CacheJoinNodeDiscoveryData discoData = new CacheJoinNodeDiscoveryData(
                 IgniteUuid.randomUuid(),
                 caches,
                 templates,
+                cacheVersions,
                 startAllCachesOnClientStart()
             );
 
-            cachesInfo.onStart(discoData, sharedCtx.database().readStoredCachesConfigurationVersion());
+            cachesInfo.onStart(discoData);
         }
     }
 
@@ -754,11 +757,13 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      * @param sql SQL flag.
      * @param caches Caches map.
      * @param templates Templates map.
+     * @param versions Caches version map.
      * @throws IgniteCheckedException If failed.
      */
     private void addCacheOnJoin(CacheConfiguration<?, ?> cfg, boolean sql,
         Map<String, CacheInfo> caches,
-        Map<String, CacheInfo> templates) throws IgniteCheckedException {
+        Map<String, CacheInfo> templates,
+        Map<String,GridCacheConfigurationVersion> versions) throws IgniteCheckedException {
         String cacheName = cfg.getName();
 
         CU.validateCacheName(cacheName);
@@ -813,11 +818,13 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     /**
      * @param caches Caches map.
      * @param templates Templates map.
+     * @param versions Caches configuration version.
      * @throws IgniteCheckedException If failed.
      */
     private void addCacheOnJoinFromConfig(
         Map<String, CacheInfo> caches,
-        Map<String, CacheInfo> templates
+        Map<String, CacheInfo> templates,
+        Map<String,GridCacheConfigurationVersion> versions
     ) throws IgniteCheckedException {
         assert !ctx.config().isDaemon();
 
@@ -829,20 +836,17 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             // Replace original configuration value.
             cfgs[i] = cfg;
 
-            addCacheOnJoin(cfg, false, caches, templates);
+            addCacheOnJoin(cfg, false, caches, templates, versions);
         }
 
         if (CU.isPersistenceEnabled(ctx.config())) {
-            Map<String, GridCacheConfigurationVersion> versions =
-                ctx.cache().context().database().readStoredCachesConfigurationVersion();
+            versions.putAll(ctx.cache().context().database().readStoredCachesConfigurationVersion());
 
             Map<String, StoredCacheData> storedCaches = ctx.cache().context().database().readStoredCacheConfiguration();
 
             if (!F.isEmpty(storedCaches)) {
                 for (StoredCacheData storedCacheData : storedCaches.values()) {
                     String cacheName = storedCacheData.config().getName();
-
-                    storedCacheData.version(versions.get(cacheName));
 
                     //Ignore stored caches if it already added by static config(static config has higher priority).
                     if (!caches.containsKey(cacheName))
@@ -852,9 +856,18 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                         CacheConfiguration cfgFromStore = storedCacheData.config();
 
                         validateCacheConfigurationOnRestore(cfg, cfgFromStore);
-
-                        caches.get(cacheName).cacheData().version(storedCacheData.version());
                     }
+
+                    GridCacheConfigurationVersion version = versions.get(cacheName);
+
+                    if(version==null){
+                        version = new GridCacheConfigurationVersion(cacheName,
+                            storedCacheData.config().getGroupName(),caches.get(cacheName).isStaticallyConfigured());
+
+                        versions.put(cacheName,version);
+                    }
+
+                    caches.get(cacheName).cacheData().version(version);
                 }
             }
         }
@@ -913,7 +926,15 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         return cacheGrps.values();
     }
 
-    public Collection<Integer> missingCacheGroups(){ return cachesInfo.missingCacheGroups(); }
+    public Collection<Integer> missingCacheGroups() { return cachesInfo.missingCacheGroups(); }
+
+    public GridCacheConfigurationVersion cacheVersion(String cacheName) { return cachesInfo.getVersion(cacheName); }
+
+    public GridCacheConfigurationVersion getOrCreateCacheVersion(String cacheName, String cacheGroupName,
+        boolean staticlyConfigured) {
+        return cachesInfo.getOrCreateVersion(cacheName, cacheGroupName, staticlyConfigured);
+    }
+
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -1957,7 +1978,12 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             GridCacheConfigurationVersion version = desc.version();
 
             if(version==null) {
-                version = cachesInfo.getVersion(desc.cacheName(), desc.groupDescriptor().groupName());
+                version = cachesInfo.getVersion(desc.cacheName());
+
+                if(version==null) {
+                    version = cachesInfo.getOrCreateVersion(desc.cacheName(),
+                        desc.groupDescriptor().groupName(), desc.staticallyConfigured());
+                }
 
                 desc.version(version);
             }
@@ -2629,6 +2655,16 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     @Override public void onGridDataReceived(GridDiscoveryData data) {
         cachesInfo.onGridDataReceived(data);
 
+        try {
+            sharedCtx.database().clearStoredCachesConfigurationVersion();
+
+            for(GridCacheConfigurationVersion version : cachesInfo.cachesVersion().values())
+                sharedCtx.database().storeCacheConfigurationVersion(version, true);
+        }
+        catch (IgniteCheckedException e) {
+            log.error("Can't save received grid data.", e);
+        }
+
         sharedCtx.walState().onCachesInfoCollected();
     }
 
@@ -2670,7 +2706,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 DynamicCacheDescriptor localDesc = cacheDescriptor(cacheInfo.cacheData().config().getName());
 
                 if (localDesc == null) {
-                    if(isNeedsRemoveCacheDescr(cacheInfo))
+                    if(!cacheInfo.isStaticallyConfigured() && isNeedsRemoveCacheDescr(cacheInfo))
                         cachesForRmv.add(e.getKey());
 
                     continue;
@@ -2698,20 +2734,32 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
             for (String cacheName : cachesForRmv)
                 nodeData.caches().remove(cacheName);
+
+            Map<String, GridCacheConfigurationVersion>  remoteNodeCfgs = new HashMap<>(nodeData.cachesConfigurationVersion());
+
+            for (String verKey: cachesInfo.cachesVersion().keySet()){
+                GridCacheConfigurationVersion remoteVersion = remoteNodeCfgs.get(verKey);
+                GridCacheConfigurationVersion locVersion = cachesInfo.cachesVersion().get(verKey);
+
+                if(remoteVersion==null || remoteVersion.id()<locVersion.id())
+                    remoteNodeCfgs.put(verKey,locVersion);
+            }
+
+            nodeData.cachesConfigurationVersion(remoteNodeCfgs);
+
         }
 
         return null;
     }
 
-     private boolean isNeedsRemoveCacheDescr(CacheInfo cacheInfo) {
+    private boolean isNeedsRemoveCacheDescr(CacheInfo cacheInfo) {
         StoredCacheData cacheData = cacheInfo.cacheData();
 
-        GridCacheConfigurationVersion locVersion =
-            cachesInfo.getVersion(cacheData.config().getName(), cacheData.config().getGroupName());
+        GridCacheConfigurationVersion locVersion = cachesInfo.getVersion(cacheData.config().getName());
 
         assert cacheData.version() != null : cacheInfo;
 
-        return locVersion == null || locVersion.id() > cacheData.version().id();
+        return locVersion!=null && locVersion.id() > cacheData.version().id();
     }
 
     /**

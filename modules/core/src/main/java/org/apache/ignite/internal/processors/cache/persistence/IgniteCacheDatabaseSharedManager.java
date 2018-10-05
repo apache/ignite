@@ -935,6 +935,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Remove all stored caches configuration version.
+     *
+     * @throws IgniteCheckedException if clear failed.
+     */
+    public void clearStoredCachesConfigurationVersion() throws IgniteCheckedException {
+        // No-op
+    }
+
+    /**
      * See {@link GridCacheMapEntry#ensureFreeSpace()}
      *
      * @param memPlc data region.

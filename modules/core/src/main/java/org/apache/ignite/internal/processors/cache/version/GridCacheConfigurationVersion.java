@@ -33,20 +33,24 @@ public class GridCacheConfigurationVersion implements Serializable {
 
     private final String cacheGroupName;
 
-    public GridCacheConfigurationVersion(String cacheName, String cacheGroupName) {
-        this(0, null, cacheName, cacheGroupName);
+    private final boolean staticlyConfigured;
+
+    public GridCacheConfigurationVersion(String cacheName, String cacheGroupName, boolean staticlyConfigured) {
+        this(0, null, cacheName, cacheGroupName, staticlyConfigured);
     }
 
     private GridCacheConfigurationVersion(
         int id,
         GridCacheConfigurationChangeAction action,
         String cacheName,
-        String cacheGroupName
+        String cacheGroupName,
+        boolean staticlyConfigured
     ) {
         this.id = id;
         this.lastAction = action;
         this.cacheName = cacheName;
         this.cacheGroupName = cacheGroupName;
+        this.staticlyConfigured = staticlyConfigured;
     }
 
     public int id() {
@@ -67,6 +71,9 @@ public class GridCacheConfigurationVersion implements Serializable {
     }
 
     public boolean isNeedUpdateVersion(@NotNull GridCacheConfigurationChangeAction action){
+        if(staticlyConfigured)
+            return false;
+
         if(action == GridCacheConfigurationChangeAction.META_CHANGED)
             return true;
 
@@ -77,12 +84,13 @@ public class GridCacheConfigurationVersion implements Serializable {
 
     public String cacheName(){ return cacheName; }
 
+    public boolean staticlyConfigured(){ return staticlyConfigured; }
+
      /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheConfigurationVersion.class, this);
     }
 
-    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -90,13 +98,13 @@ public class GridCacheConfigurationVersion implements Serializable {
             return false;
         GridCacheConfigurationVersion version = (GridCacheConfigurationVersion)o;
         return id == version.id &&
+            staticlyConfigured == version.staticlyConfigured &&
             lastAction == version.lastAction &&
             Objects.equals(cacheName, version.cacheName) &&
             Objects.equals(cacheGroupName, version.cacheGroupName);
     }
 
-    /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(id, lastAction, cacheName, cacheGroupName);
+        return Objects.hash(cacheName, cacheGroupName, staticlyConfigured);
     }
 }

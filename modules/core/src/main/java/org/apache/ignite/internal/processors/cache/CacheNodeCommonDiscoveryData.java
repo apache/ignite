@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -49,6 +50,9 @@ public class CacheNodeCommonDiscoveryData implements Serializable {
     /** */
     private Collection<String> restartingCaches;
 
+    @GridToStringInclude
+    private final Map<String, GridCacheConfigurationVersion> cacheVers;
+
     /**
      * @param caches Started caches.
      * @param templates Configured templates.
@@ -59,7 +63,8 @@ public class CacheNodeCommonDiscoveryData implements Serializable {
         Map<String, CacheData> templates,
         Map<Integer, CacheGroupData> cacheGrps,
         Map<String, Map<UUID, Boolean>> clientNodesMap,
-        Collection<String> restartingCaches
+        Collection<String> restartingCaches,
+        Map<String, GridCacheConfigurationVersion> cacheVers
     ) {
         assert caches != null;
         assert templates != null;
@@ -71,6 +76,7 @@ public class CacheNodeCommonDiscoveryData implements Serializable {
         this.cacheGrps = cacheGrps;
         this.clientNodesMap = clientNodesMap;
         this.restartingCaches = restartingCaches;
+        this.cacheVers = cacheVers;
     }
 
     /**
@@ -93,6 +99,8 @@ public class CacheNodeCommonDiscoveryData implements Serializable {
     public Map<String, CacheData> templates() {
         return templates;
     }
+
+    public Map<String, GridCacheConfigurationVersion> cachesConfigurationVersion() { return cacheVers; }
 
     /**
      * @return Information about cache client nodes.

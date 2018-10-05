@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.Map;
+import org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -44,6 +45,9 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
     @GridToStringInclude
     private final IgniteUuid cacheDeploymentId;
 
+    @GridToStringInclude
+    private Map<String, GridCacheConfigurationVersion> cachesVer;
+
     /** */
     private final boolean startCaches;
 
@@ -57,10 +61,12 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
         IgniteUuid cacheDeploymentId,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates,
+        Map<String, GridCacheConfigurationVersion> cachesVer,
         boolean startCaches) {
         this.cacheDeploymentId = cacheDeploymentId;
         this.caches = caches;
         this.templates = templates;
+        this.cachesVer = cachesVer;
         this.startCaches = startCaches;
     }
 
@@ -91,6 +97,10 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
     public Map<String, CacheInfo> caches() {
         return caches;
     }
+
+    public Map<String, GridCacheConfigurationVersion> cachesConfigurationVersion() { return cachesVer; }
+
+    public void cachesConfigurationVersion(Map<String, GridCacheConfigurationVersion> cachesVer) { this.cachesVer = cachesVer; }
 
     /**
      *
