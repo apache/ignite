@@ -59,8 +59,11 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadW
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
@@ -173,6 +176,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public boolean publicApiActiveState(boolean waitForTransition) {
+        return publicApiActiveStateAsync(waitForTransition).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> publicApiActiveStateAsync(boolean asyncWaitForTransition) {
         if (ctx.isDaemon())
             return sendComputeCheckGlobalState();
 
@@ -184,32 +192,34 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             Boolean transitionRes = globalState.transitionResult();
 
             if (transitionRes != null)
-                return transitionRes;
+                return new IgniteFinishedFutureImpl<>(transitionRes);
             else {
-                if (waitForTransition) {
-                    GridFutureAdapter<Void> fut = transitionFuts.get(globalState.transitionRequestId());
+                GridFutureAdapter<Void> fut = transitionFuts.get(globalState.transitionRequestId());
+                if (fut != null) {
+                    if (asyncWaitForTransition) {
+                         return new IgniteFutureImpl<>(fut.chain(new C1<IgniteInternalFuture<Void>, Boolean>() {
+                            @Override public Boolean apply(IgniteInternalFuture<Void> fut) {
+                                Boolean res = globalState.transitionResult();
 
-                    if (fut != null) {
-                        try {
-                            fut.get();
-                        }
-                        catch (IgniteCheckedException ex) {
-                            throw new IgniteException(ex);
-                        }
+                                assert res != null;
+
+                                return res;
+                            }
+                        }));
                     }
-
-                    transitionRes = globalState.transitionResult();
-
-                    assert transitionRes != null;
-
-                    return transitionRes;
+                    else
+                        return new IgniteFinishedFutureImpl<>(false);
                 }
-                else
-                    return false;
+
+                transitionRes = globalState.transitionResult();
+
+                assert transitionRes != null;
+
+                return new IgniteFinishedFutureImpl<>(transitionRes);
             }
         }
         else
-            return globalState.active();
+            return new IgniteFinishedFutureImpl<>(globalState.active());
     }
 
     /** {@inheritDoc} */
@@ -1066,7 +1076,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
      *
      *  @return Cluster state, {@code True} if cluster active, {@code False} if inactive.
      */
-    private boolean sendComputeCheckGlobalState() {
+    private IgniteFuture<Boolean> sendComputeCheckGlobalState() {
         AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
 
         if (log.isInfoEnabled()) {
@@ -1079,11 +1089,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         ClusterGroupAdapter clusterGroupAdapter = (ClusterGroupAdapter)ctx.cluster().get().forServers();
 
         if (F.isEmpty(clusterGroupAdapter.nodes()))
-            return false;
+            return new IgniteFinishedFutureImpl<>(false);
 
         IgniteCompute comp = clusterGroupAdapter.compute();
 
-        return comp.call(new IgniteCallable<Boolean>() {
+        return comp.callAsync(new IgniteCallable<Boolean>() {
             @IgniteInstanceResource
             private Ignite ig;
 
