@@ -42,8 +42,8 @@ public class IgniteCacheTxRecoverySelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache tx recovery test suite");
 
-        // depends on invoke
-//        suite.addTestSuite(IgniteCacheCommitDelayTxRecoveryTest.class);
+        // uses invoke
+        suite.addTestSuite(IgniteCacheCommitDelayTxRecoveryTest.class);
 
         {
 //        suite.addTestSuite(IgniteCachePartitionedPrimaryNodeFailureRecoveryTest.class);
