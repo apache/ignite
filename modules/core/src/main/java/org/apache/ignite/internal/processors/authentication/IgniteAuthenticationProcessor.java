@@ -34,7 +34,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -44,7 +43,6 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -104,7 +102,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private final Object mux = new Object();
 
     /** Active operations. Collects to send on joining node. */
-    private Map<IgniteUuid, UserManagementOperation> activeOps =  Collections.synchronizedMap(new LinkedHashMap<>());
+    private final Map<IgniteUuid, UserManagementOperation> activeOps = Collections.synchronizedMap(new LinkedHashMap<>());
 
     /** User map. */
     private ConcurrentMap<String, User> users;
@@ -141,7 +139,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private DiscoveryEventListener discoLsnr;
 
     /** Node activate future. */
-    private GridFutureAdapter<Void> activateFut = new GridFutureAdapter<>();
+    private final GridFutureAdapter<Void> activateFut = new GridFutureAdapter<>();
 
     /** Validate error. */
     private String validateErr;
@@ -151,15 +149,13 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      */
     public IgniteAuthenticationProcessor(GridKernalContext ctx) {
         super(ctx);
-
-        isEnabled = ctx.config().isAuthenticationEnabled();
-
-        ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         super.start();
+
+        isEnabled = ctx.config().isAuthenticationEnabled();
 
         if (isEnabled && !GridCacheUtils.isPersistenceEnabled(ctx.config())) {
             isEnabled = false;
@@ -167,6 +163,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             throw new IgniteCheckedException("Authentication can be enabled only for cluster with enabled persistence."
                 + " Check the DataRegionConfiguration");
         }
+
+        ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
 
         ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_AUTHENTICATION_ENABLED, isEnabled);
 
@@ -178,38 +176,34 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         discoMgr.setCustomEventListener(UserAcceptedMessage.class, new UserAcceptedListener());
 
-        discoLsnr = new DiscoveryEventListener() {
-            @Override public void onEvent(DiscoveryEvent evt, DiscoCache discoCache) {
-                if (!isEnabled || ctx.isStopping())
-                    return;
+        discoLsnr = (evt, discoCache) -> {
+            if (!isEnabled || ctx.isStopping())
+                return;
 
-                switch (evt.type()) {
-                    case EVT_NODE_LEFT:
-                    case EVT_NODE_FAILED:
-                        onNodeLeft(evt.eventNode().id());
-                        break;
+            switch (evt.type()) {
+                case EVT_NODE_LEFT:
+                case EVT_NODE_FAILED:
+                    onNodeLeft(evt.eventNode().id());
+                    break;
 
-                    case EVT_NODE_JOINED:
-                        onNodeJoin(evt.eventNode());
-                        break;
-                }
+                case EVT_NODE_JOINED:
+                    onNodeJoin(evt.eventNode());
+                    break;
             }
         };
 
         ctx.event().addDiscoveryEventListener(discoLsnr, DISCO_EVT_TYPES);
 
-        ioLsnr = new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-                if (!isEnabled || ctx.isStopping())
-                    return;
+        ioLsnr = (nodeId, msg, plc) -> {
+            if (!isEnabled || ctx.isStopping())
+                return;
 
-                if (msg instanceof UserManagementOperationFinishedMessage)
-                    onFinishMessage(nodeId, (UserManagementOperationFinishedMessage)msg);
-                else if (msg instanceof UserAuthenticateRequestMessage)
-                    onAuthenticateRequestMessage(nodeId, (UserAuthenticateRequestMessage)msg);
-                else if (msg instanceof UserAuthenticateResponseMessage)
-                    onAuthenticateResponseMessage((UserAuthenticateResponseMessage)msg);
-            }
+            if (msg instanceof UserManagementOperationFinishedMessage)
+                onFinishMessage(nodeId, (UserManagementOperationFinishedMessage)msg);
+            else if (msg instanceof UserAuthenticateRequestMessage)
+                onAuthenticateRequestMessage(nodeId, (UserAuthenticateRequestMessage)msg);
+            else if (msg instanceof UserAuthenticateResponseMessage)
+                onAuthenticateResponseMessage((UserAuthenticateResponseMessage)msg);
         };
 
         ioMgr.addMessageListener(GridTopic.TOPIC_AUTH, ioLsnr);
@@ -409,11 +403,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         if (!ctx.clientNode()) {
             users = new ConcurrentHashMap<>();
 
-            Map<String, User> readUsers = (Map<String, User>)metastorage.readForPredicate(new IgnitePredicate<String>() {
-                @Override public boolean apply(String key) {
-                    return key != null && key.startsWith(STORE_USER_PREFIX);
-                }
-            });
+            Map<String, User> readUsers = (Map<String, User>)metastorage.readForPredicate(
+                (IgnitePredicate<String>)key -> key != null && key.startsWith(STORE_USER_PREFIX));
 
             for (User u : readUsers.values())
                 users.put(u.name(), u);
@@ -1318,6 +1309,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * Initial users set worker.
      */
     private class RefreshUsersStorageWorker extends GridWorker {
+        /** */
         private final ArrayList<User> newUsrs;
 
         /**
@@ -1343,11 +1335,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 sharedCtx.database().checkpointReadLock();
 
             try {
-                Map<String, User> existUsrs = (Map<String, User>)metastorage.readForPredicate(new IgnitePredicate<String>() {
-                    @Override public boolean apply(String key) {
-                        return key != null && key.startsWith(STORE_USER_PREFIX);
-                    }
-                });
+                Map<String, User> existUsrs = (Map<String, User>)metastorage.readForPredicate(
+                    (IgnitePredicate<String>)key -> key != null && key.startsWith(STORE_USER_PREFIX));
 
                 for (String key : existUsrs.keySet())
                     metastorage.remove(key);
