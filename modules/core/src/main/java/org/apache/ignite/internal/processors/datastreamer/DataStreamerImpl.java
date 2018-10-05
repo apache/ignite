@@ -2208,7 +2208,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             GridDhtTopologyFuture topFut = cctx.shared().exchange().lastFinishedFuture();
 
-            AffinityTopologyVersion topVer = topFut.topologyVersion();
+            AffinityTopologyVersion topVer = topFut.initialVersion();
 
             GridCacheVersion ver = cctx.versions().isolatedStreamerVersion();
 
