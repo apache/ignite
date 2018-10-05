@@ -22,6 +22,9 @@ import java.util.Random;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.jetbrains.annotations.NotNull;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+
 /**
  *
  */
@@ -40,5 +43,17 @@ public class CacheBlockOnScanTest extends CacheBlockOnReadAbstractTest {
                 cache().query(new ScanQuery<>((k, v) -> Objects.equals(k, idx))).getAll();
             }
         };
+    }
+
+    /** {@inheritDoc} */
+    @Params(baseline = 9, timeout = 3000L, atomicityMode = ATOMIC, allowException = true)
+    @Override public void testStopBaselineAtomic() throws Exception {
+        super.testStopBaselineAtomic();
+    }
+
+    /** {@inheritDoc} */
+    @Params(baseline = 9, timeout = 3000L, atomicityMode = TRANSACTIONAL, allowException = true)
+    @Override public void testStopBaselineTransactional() throws Exception {
+        super.testStopBaselineTransactional();
     }
 }

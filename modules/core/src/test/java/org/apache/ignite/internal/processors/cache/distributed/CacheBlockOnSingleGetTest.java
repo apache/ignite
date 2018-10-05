@@ -33,7 +33,8 @@ public class CacheBlockOnSingleGetTest extends CacheBlockOnReadAbstractTest {
 
             /** {@inheritDoc} */
             @Override public void doRead() {
-                cache().get(random.nextInt(entriesCount()));
+                for (int i = 0; i < 500; i++)
+                    cache().get(random.nextInt(entriesCount()));
             }
         };
     }

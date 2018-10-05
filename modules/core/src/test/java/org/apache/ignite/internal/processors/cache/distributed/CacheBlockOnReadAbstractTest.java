@@ -24,10 +24,14 @@ import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
@@ -37,6 +41,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -97,6 +102,9 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /** Latch that is used to wait until all required messages are blocked. */
     private volatile CountDownLatch cntFinishedReadOperations;
 
+    /** Custom ip finder. */
+    private volatile TcpDiscoveryIpFinder customIpFinder;
+
     /**
      * Number of baseline servers to start before test.
      *
@@ -152,12 +160,12 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     }
 
     /**
-     * Whether the test should hang or not.
+     * Whether allowing {@link ClusterTopologyCheckedException} as the valid reading result or not.
      *
-     * @see Params#shouldHang()
+     * @see Params#allowException()
      */
-    protected boolean shouldHang() {
-        return currentTestParams().shouldHang();
+    protected boolean allowException() {
+        return currentTestParams().allowException();
     }
 
     /**
@@ -192,17 +200,17 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         /**
          * Number of baseline servers to start before test.
          */
-        int baseline();
+        int baseline() default 3;
 
         /**
          * Number of non-baseline servers to start before test.
          */
-        int servers() default 0;
+        int servers() default 1;
 
         /**
          * Number of clients to start before test.
          */
-        int clients() default 0;
+        int clients() default 1;
 
         /**
          * Number of milliseconds to warmup reading process. Used to lower fluctuations in run time. Might be 0.
@@ -220,9 +228,9 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         CacheAtomicityMode atomicityMode();
 
         /**
-         * Whether the test should hang or not.
+         * Whether allowing {@link ClusterTopologyCheckedException} as the valid reading result or not.
          */
-        boolean shouldHang() default false;
+        boolean allowException() default false;
     }
 
 
@@ -232,7 +240,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
         cfg.setConsistentId(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(customIpFinder == null ? IP_FINDER : customIpFinder);
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
@@ -297,7 +305,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(baseline = 3, servers = 1, clients = 1, atomicityMode = ATOMIC)
+    @Params(atomicityMode = ATOMIC)
     public void testCreateCacheAtomic() throws Exception {
         testCreateCacheTransactional();
     }
@@ -305,7 +313,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(baseline = 3, servers = 1, clients = 1, atomicityMode = TRANSACTIONAL)
+    @Params(atomicityMode = TRANSACTIONAL)
     public void testCreateCacheTransactional() throws Exception {
         doTest(
             CacheBlockOnReadAbstractTest::createCachePredicate,
@@ -316,7 +324,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(baseline = 3, servers = 1, clients = 1, atomicityMode = ATOMIC)
+    @Params(atomicityMode = ATOMIC)
     public void testDestroyCacheAtomic() throws Exception {
         testDestroyCacheTransactional();
     }
@@ -324,7 +332,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(baseline = 3, servers = 1, clients = 1, atomicityMode = TRANSACTIONAL)
+    @Params(atomicityMode = TRANSACTIONAL)
     public void testDestroyCacheTransactional() throws Exception {
         List<String> cacheNames = new ArrayList<>(Arrays.asList(
             UUID.randomUUID().toString(),
@@ -341,51 +349,79 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         );
     }
 
-    // No event :(
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    @Params(baseline = 3, servers = 1, clients = 1, atomicityMode = ATOMIC)
-//    public void testStartClientAtomic() throws Exception {
-//        testStartClientTransactional();
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    @Params(baseline = 3, servers = 1, clients = 1, atomicityMode = TRANSACTIONAL)
-//    public void testStartClientTransactional() throws Exception {
-//        startNodesInClientMode(true);
-//
-//        doTest(
-//            discoEvt -> discoEvt.type() == EventType.EVT_NODE_JOINED,
-//            () -> startGrid(UUID.randomUUID().toString())
-//        );
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    @Params(baseline = 3, servers = 1, clients = 4, atomicityMode = ATOMIC)
-//    public void testStopClientAtomic() throws Exception {
-//        testStopClientTransactional();
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    @Params(baseline = 3, servers = 1, clients = 4, atomicityMode = TRANSACTIONAL)
-//    public void testStopClientTransactional() throws Exception {
-//        doTest(
-//            discoEvt -> discoEvt.type() == EventType.EVT_NODE_LEFT,
-//            () -> stopGrid(clients.remove(clients.size() - 1).name())
-//        );
-//    }
+    /**
+     * @throws Exception If failed.
+     */
+    @Params(atomicityMode = ATOMIC)
+    public void testStartClientAtomic() throws Exception {
+        testStartClientTransactional();
+    }
 
     /**
      * @throws Exception If failed.
      */
-    @Params(baseline = 3, servers = 1, clients = 1, atomicityMode = ATOMIC)
+    @Params(atomicityMode = TRANSACTIONAL)
+    public void testStartClientTransactional() throws Exception {
+        startNodesInClientMode(true);
+
+        doTest(
+            discoEvt -> discoEvt.type() == EventType.EVT_NODE_JOINED,
+            () -> {
+                for (int i = 0, cnt = baselineServersCount() - 2; i < cnt; i++)
+                    cntFinishedReadOperations.countDown();
+
+                customIpFinder = new TcpDiscoveryVmIpFinder(false)
+                    .setAddresses(
+                        Collections.singletonList("127.0.0.1:47500")
+                    );
+
+                startGrid(UUID.randomUUID().toString());
+
+                customIpFinder = null;
+            }
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Params(atomicityMode = ATOMIC)
+    public void testStopClientAtomic() throws Exception {
+        testStopClientTransactional();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Params(atomicityMode = TRANSACTIONAL)
+    public void testStopClientTransactional() throws Exception {
+        customIpFinder = new TcpDiscoveryVmIpFinder(false)
+            .setAddresses(
+                Collections.singletonList("127.0.0.1:47500")
+            );
+
+        startNodesInClientMode(true);
+
+        for (int i = 0; i < 3; i++)
+            clients.add((IgniteEx)startGrid(UUID.randomUUID().toString()));
+
+        customIpFinder = null;
+
+        doTest(
+            discoEvt -> discoEvt.type() == EventType.EVT_NODE_LEFT,
+            () -> {
+                for (int i = 0, cnt = baselineServersCount() - 2; i < cnt; i++)
+                    cntFinishedReadOperations.countDown();
+
+                stopGrid(clients.remove(clients.size() - 1).name());
+            }
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Params(atomicityMode = ATOMIC)
     public void testStartServerAtomic() throws Exception {
         testStartServerTransactional();
     }
@@ -393,7 +429,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(baseline = 3, servers = 1, clients = 1, atomicityMode = TRANSACTIONAL)
+    @Params(atomicityMode = TRANSACTIONAL)
     public void testStartServerTransactional() throws Exception {
         startNodesInClientMode(false);
 
@@ -406,7 +442,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(baseline = 3, servers = 4, clients = 1, atomicityMode = ATOMIC)
+    @Params(servers = 4, atomicityMode = ATOMIC)
     public void testStopServerAtomic() throws Exception {
         testStopServerTransactional();
     }
@@ -414,7 +450,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(baseline = 3, servers = 4, clients = 1, atomicityMode = TRANSACTIONAL)
+    @Params(servers = 4, atomicityMode = TRANSACTIONAL)
     public void testStopServerTransactional() throws Exception {
         doTest(
             discoEvt -> discoEvt.type() == EventType.EVT_NODE_LEFT,
@@ -422,41 +458,41 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         );
     }
 
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    @Params(baseline = 6, servers = 1, clients = 1, timeout = 3000L, atomicityMode = ATOMIC)
-//    public void testRestartBaselineAtomic() throws Exception {
-//        testRestartBaselineTransactional();
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    @Params(baseline = 6, servers = 1, clients = 1, timeout = 3000L, atomicityMode = TRANSACTIONAL)
-//    public void testRestartBaselineTransactional() throws Exception {
-//        AtomicInteger baselineIdx = new AtomicInteger(baselineServersCount() - 3);
-//
-//        doTest(
-//            discoEvt -> discoEvt.type() == EventType.EVT_NODE_JOINED,
-//            () -> {
-//                IgniteEx node = baseline.get(baselineIdx.getAndIncrement());
-//
-//                TestRecordingCommunicationSpi.spi(node).stopBlock();
-//
-//                stopGrid(node.name());
-//
-//                cntFinishedReadOperations.countDown();
-//
-//                startGrid(node.name());
-//            }
-//        );
-//    }
+    /**
+     * @throws Exception If failed.
+     */
+    @Params(baseline = 4, timeout = 3000L, atomicityMode = ATOMIC)
+    public void testRestartBaselineAtomic() throws Exception {
+        testRestartBaselineTransactional();
+    }
 
     /**
      * @throws Exception If failed.
      */
-    @Params(baseline = 3, servers = 1, clients = 1, timeout = 3000L, atomicityMode = ATOMIC)
+    @Params(baseline = 4, timeout = 3000L, atomicityMode = TRANSACTIONAL)
+    public void testRestartBaselineTransactional() throws Exception {
+        doTest(
+            discoEvt -> discoEvt.type() == EventType.EVT_NODE_JOINED,
+            () -> {
+                IgniteEx node = baseline.get(baseline.size() - 1);
+
+                TestRecordingCommunicationSpi.spi(node).stopBlock();
+
+                stopGrid(node.name());
+
+                for (int i = 0, cnt = baselineServersCount() - 2; i < cnt; i++)
+                    cntFinishedReadOperations.countDown();
+
+                System.out.println("<<<STARTING>>> " + node.name());
+                startGrid(node.name());
+            }
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Params(timeout = 5000L, atomicityMode = ATOMIC)
     public void testUpdateBaselineTopologyAtomic() throws Exception {
         testUpdateBaselineTopologyTransactional();
     }
@@ -464,7 +500,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(baseline = 3, servers = 1, clients = 1, timeout = 3000L, atomicityMode = TRANSACTIONAL)
+    @Params(timeout = 5000L, atomicityMode = TRANSACTIONAL)
     public void testUpdateBaselineTopologyTransactional() throws Exception {
         doTest(
             discoEvt -> {
@@ -491,7 +527,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(baseline = 9, servers = 1, clients = 1, timeout = 3000L, atomicityMode = ATOMIC)
+    @Params(baseline = 9, timeout = 3000L, atomicityMode = ATOMIC)
     public void testStopBaselineAtomic() throws Exception {
         testStopBaselineTransactional();
     }
@@ -499,19 +535,20 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(baseline = 9, servers = 1, clients = 1, timeout = 3000L, atomicityMode = TRANSACTIONAL)
+    @Params(baseline = 9, timeout = 3000L, atomicityMode = TRANSACTIONAL)
     public void testStopBaselineTransactional() throws Exception {
-        AtomicInteger baselineIdx = new AtomicInteger(baselineServersCount());
         AtomicInteger cntDownCntr = new AtomicInteger(0);
 
         doTest(
             discoEvt -> discoEvt.type() == EventType.EVT_NODE_LEFT,
             () -> {
-                IgniteEx node = baseline.get(baselineIdx.decrementAndGet());
+                IgniteEx node = baseline.get(baseline.size() - cntDownCntr.get() - 1);
 
                 TestRecordingCommunicationSpi.spi(node).stopBlock();
 
-                for (int i = 0, cnt = cntDownCntr.incrementAndGet(); i < cnt; i++)
+                cntDownCntr.incrementAndGet();
+
+                for (int i = 0; i < cntDownCntr.get(); i++)
                     cntFinishedReadOperations.countDown(); // This node and previously stopped nodes as well.
 
                 stopGrid(node.name());
@@ -577,8 +614,8 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     @NotNull protected abstract CacheReadBackgroundOperation getReadOperation();
 
     /**
-     * Checks that {@code block} closure blocks or doesn't block read operation
-     * (depending on {@link Params#shouldHang()} value). Does it for client, baseline and regular server node.
+     * Checks that {@code block} closure doesn't block read operation.
+     * Does it for client, baseline and regular server node.
      *
      * @param blockMsg Predicate that check whether the message corresponds to the {@code block} or not.
      * @param block Blocking operation.
@@ -653,7 +690,8 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
         // Read while potentially blocking operation is executing.
         try (AutoCloseable block = backgroundOperation.start()) {
-            cntFinishedReadOperations.await();
+            // Interruption is possible if test itself is wrong.
+            cntFinishedReadOperations.await(timeout(), TimeUnit.MILLISECONDS);
 
             try (AutoCloseable read = readOperation.start()) {
                 Thread.sleep(timeout());
@@ -673,30 +711,18 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
             readOperation.readOperationsFailed()
         );
 
-        if (shouldHang()) {
-            assertEquals(
-                readOperation.readOperationsFinishedUnderBlock() + " successfully finished operations found.",
-                0,
-                readOperation.readOperationsFinishedUnderBlock()
-            );
+        assertTrue(
+            "No read operations were finished during timeout.",
+            readOperation.readOperationsFinishedUnderBlock() > 0
+        );
 
-            // One of read operations lasted about as long as blocking timeout.
-            assertAlmostEqual(timeout(), readOperation.maxReadDuration());
-        }
-        else {
-            assertTrue(
-                "No read operations were finished during timeout.",
-                readOperation.readOperationsFinishedUnderBlock() > 0
-            );
+        // There were no operations as long as blocking timeout.
+        assertNotAlmostEqual(timeout(), readOperation.maxReadDuration());
 
-            // There were no operations as long as blocking timeout.
-            assertNotAlmostEqual(timeout(), readOperation.maxReadDuration());
+        // On average every read operation was much faster then blocking timeout.
+        double avgDuration = (double)timeout() / readOperation.readOperationsFinishedUnderBlock();
 
-            // On average every read operation was much faster then blocking timeout.
-            double avgDuration = (double)timeout() / readOperation.readOperationsFinishedUnderBlock();
-
-            assertTrue(avgDuration < timeout() * 0.1);
-        }
+        assertTrue(avgDuration < timeout() * 0.1);
     }
 
     /**
@@ -791,7 +817,6 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      * operation is stopped.
      */
     protected class BlockMessageOnBaselineBackgroundOperation extends BackgroundOperation {
-
         /** */
         private final RunnableX block;
 
@@ -799,8 +824,10 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         private final Predicate<DiscoveryEvent> blockMsg;
 
         /**
-         * @param block
-         * @param blockMsg
+         * @param block Blocking operation.
+         * @param blockMsg Predicate that checks whether to block message or not.
+         *
+         * @see BlockMessageOnBaselineBackgroundOperation#blockMessage(ClusterNode, Message)
          */
         protected BlockMessageOnBaselineBackgroundOperation(
             RunnableX block,
@@ -919,6 +946,8 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
         /** {@inheritDoc} */
         @Override protected void execute() {
+            Set<String> loggedMessages = new HashSet<>();
+
             while (!Thread.currentThread().isInterrupted()) {
                 long prevTs = System.currentTimeMillis();
 
@@ -936,10 +965,13 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
                     if (threadInterrupted)
                         Thread.currentThread().interrupt();
-                    else if (!X.hasCause(e, ClusterTopologyCheckedException.class)) {
+                    else if (allowException() && X.hasCause(e, ClusterTopologyCheckedException.class))
+                        readOperationsFinishedUnderBlock.incrementAndGet();
+                    else {
                         readOperationsFailed.incrementAndGet();
 
-                        log.error("Error during read operation execution", e);
+                        if (loggedMessages.add(e.getMessage()))
+                            log.error("Error during read operation execution", e);
 
                         continue;
                     }
@@ -987,7 +1019,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         private IgniteCache<KeyType, ValueType> cache;
 
         /**
-         * Reinit internal cache using passed ignite node and fill it with data if required.
+         * Reinit internal cache using passed ignite instance and fill it with data if required.
          *
          * @param ignite Node to get or create cache from.
          * @param fillData Whether the cache should be filled with new data or not.
@@ -1010,7 +1042,11 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
          */
         protected CacheConfiguration<KeyType, ValueType> createCacheConfiguration() {
             return new CacheConfiguration<KeyType, ValueType>(DEFAULT_CACHE_NAME)
-                .setBackups(1);
+                .setBackups(1)
+                .setAffinity(
+                    new RendezvousAffinityFunction()
+                        .setPartitions(32)
+                );
         }
 
         /**
