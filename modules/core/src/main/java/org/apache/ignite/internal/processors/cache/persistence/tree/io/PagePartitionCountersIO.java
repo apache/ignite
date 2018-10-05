@@ -107,7 +107,7 @@ public class PagePartitionCountersIO extends PageIO {
     }
 
     /**
-     * @param pageSize Page size.
+     * @param pageSize Page size without encryption overhead.
      * @param pageAddr Page address.
      * @param cacheSizes Serialized cache size items (pairs of cache ID and its size).
      * @return Number of written pairs.

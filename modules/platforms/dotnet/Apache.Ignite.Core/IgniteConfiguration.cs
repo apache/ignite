@@ -39,6 +39,8 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Deployment;
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
+    using Apache.Ignite.Core.Encryption;
+    using Apache.Ignite.Core.Encryption.Keystore;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Failure;
     using Apache.Ignite.Core.Impl;
@@ -369,6 +371,26 @@ namespace Apache.Ignite.Core
                     throw new InvalidOperationException("Unsupported discovery SPI: " + disco.GetType());
 
                 tcpDisco.Write(writer);
+            }
+            else
+                writer.WriteBoolean(false);
+
+            var enc = EncryptionSpi;
+
+            if (enc != null)
+            {
+                writer.WriteBoolean(true);
+
+                var keystoreEnc = enc as KeystoreEncryptionSpi;
+                
+                if (keystoreEnc == null)
+                    throw new InvalidOperationException("Unsupported encryption SPI: " + enc.GetType());
+
+                writer.WriteString(keystoreEnc.MasterKeyName);
+                writer.WriteInt(keystoreEnc.KeySize);
+                writer.WriteString(keystoreEnc.KeyStorePath);
+                writer.WriteCharArray(
+                    keystoreEnc.KeyStorePassword == null ? null : keystoreEnc.KeyStorePassword.ToCharArray());
             }
             else
                 writer.WriteBoolean(false);
@@ -727,6 +749,9 @@ namespace Apache.Ignite.Core
             // Discovery config
             DiscoverySpi = r.ReadBoolean() ? new TcpDiscoverySpi(r) : null;
 
+            EncryptionSpi = (srvVer.CompareTo(ClientSocket.Ver120) >= 0 && r.ReadBoolean()) ? 
+                new KeystoreEncryptionSpi(r) : null;
+
             // Communication config
             CommunicationSpi = r.ReadBoolean() ? new TcpCommunicationSpi(r) : null;
 
@@ -1055,6 +1080,12 @@ namespace Apache.Ignite.Core
         /// Null for default communication.
         /// </summary>
         public ICommunicationSpi CommunicationSpi { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the encryption service provider.
+        /// Null for disabled encryption.
+        /// </summary>
+        public IEncryptionSpi EncryptionSpi { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether node should start in client mode.

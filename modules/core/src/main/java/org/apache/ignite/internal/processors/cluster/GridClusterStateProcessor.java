@@ -1170,6 +1170,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                     ctx.task().onActivate(ctx);
 
+                    ctx.encryption().onActivate(ctx);
+
                     if (log.isInfoEnabled())
                         log.info("Successfully performed final activation steps [nodeId="
                             + ctx.localNodeId() + ", client=" + client + ", topVer=" + req.topologyVersion() + "]");
