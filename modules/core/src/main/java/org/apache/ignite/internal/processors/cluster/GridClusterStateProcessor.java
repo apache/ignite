@@ -205,7 +205,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     return transitionRes;
                 }
                 else
-                    return false;
+                    return globalState.baselineChanged();
             }
         }
         else
