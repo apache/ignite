@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
@@ -85,6 +86,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteCacheFutureImpl;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
@@ -2204,13 +2206,26 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             if (internalCache.isNear())
                 internalCache = internalCache.context().near().dht();
 
-            GridCacheContext cctx = internalCache.context();
-
-            GridDhtTopologyFuture topFut = cctx.isLocal() ? null : cctx.shared().exchange().lastFinishedFuture();
+            GridCacheContext<?, ?> cctx = internalCache.context();
 
             AffinityTopologyVersion topVer = cctx.isLocal() ?
                 cctx.affinity().affinityTopologyVersion() :
-                topFut.topologyVersion();
+                cctx.shared().exchange().readyAffinityVersion();
+
+            GridDhtTopologyFuture topFut = null;
+
+            List<GridDhtPartitionsExchangeFuture> exchFuts = cctx.shared().exchange().exchangeFutures();
+
+            for (ListIterator<GridDhtPartitionsExchangeFuture> it = exchFuts.listIterator(exchFuts.size());
+                it.hasPrevious();) {
+                GridDhtTopologyFuture fut = it.previous();
+
+                if (F.eq(topVer, fut.topologyVersion())) {
+                    topFut = fut;
+
+                    break;
+                }
+            }
 
             GridCacheVersion ver = cctx.versions().isolatedStreamerVersion();
 
