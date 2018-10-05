@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core.Encryption.Keystore
     /// <summary>
     /// IEncryptionSPI implementation base on JDK provided cipher algorithm implementations.
     /// </summary>
-    [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
     public class KeystoreEncryptionSpi : IEncryptionSpi
     {
         /// <summary>
@@ -53,12 +52,13 @@ namespace Apache.Ignite.Core.Encryption.Keystore
         /// Path to key store.
         /// </summary>
         public string KeyStorePath { get; set; }
-        
+
         /// <summary>
         /// Key store password.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public char[] KeyStorePassword { get; set; }
-        
+
         /// <summary>
         /// Empty constructor.
         /// </summary>
