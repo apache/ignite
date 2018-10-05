@@ -1356,6 +1356,7 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets or sets the timeout for blocked system workers detection.
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:10")]
         public TimeSpan SystemWorkerBlockedTimeout
         {
             get { return _systemWorkerBlockedTimeout ?? FailureDetectionTimeout; }
@@ -1365,6 +1366,7 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets or sets the timeout for checkpoint read lock acquisition.
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:10")]
         public TimeSpan CheckpointReadLockTimeout
         {
             get { return _checkpointReadLockTimeout ?? FailureDetectionTimeout; }
