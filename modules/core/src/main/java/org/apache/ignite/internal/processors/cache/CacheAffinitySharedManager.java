@@ -567,7 +567,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         cctx.cache().initCacheProxies(topVer, null);
 
-        cctx.cache().finishedAll(null, null);
+        cctx.cache().finishedAll(null, null, null);
 
         cctx.cache().completeClientCacheChangeFuture(msg.requestId(), null);
 
@@ -617,7 +617,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
         }
 
-        cctx.cache().finishedAll(null, null);
+        cctx.cache().finishedAll(null, null, null);
 
         cctx.cache().completeClientCacheChangeFuture(msg.requestId(), null);
 
@@ -877,7 +877,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 assert cctx.cacheContext(cacheDesc.cacheId()) == null
                     : "Starting cache has not null context: " + cacheDesc.cacheName();
 
-                IgniteCacheProxyImpl cacheProxy = (IgniteCacheProxyImpl)cctx.cache().jcacheProxy(req.cacheName());
+                IgniteCacheProxyImpl cacheProxy = cctx.cache().jcacheProxy(req.cacheName(), false);
 
                 // If it has proxy then try to start it
                 if (cacheProxy != null) {
@@ -915,7 +915,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 cctx.cache().closeCaches(Collections.singleton(req.cacheName()), false);
 
-                cctx.cache().finishedAll(null, null);
+                cctx.cache().finishedAll(null, null, null);
 
                 cctx.cache().completeCacheStartFuture(req, false, e);
             }

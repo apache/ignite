@@ -688,7 +688,6 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     }
 
     /**
-     *
      * @throws IgniteCheckedException If failed.
      */
     private void startCachesOnStart() throws IgniteCheckedException {
@@ -1282,7 +1281,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 ", mode=" + cfg.getCacheMode() +
                 ", atomicity=" + cfg.getAtomicityMode() +
                 ", backups=" + cfg.getBackups() +
-                ", mvcc=" + cacheCtx.mvccEnabled() +']');
+                ", mvcc=" + cacheCtx.mvccEnabled() + ']');
         }
     }
 
@@ -1356,9 +1355,10 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             if (destroy && (pageStore = sharedCtx.pageStore()) != null) {
                 try {
                     pageStore.removeCacheData(new StoredCacheData(ctx.config()));
-                } catch (IgniteCheckedException e) {
+                }
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to delete cache configuration data while destroying cache" +
-                            "[cache=" + ctx.name() + "]", e);
+                        "[cache=" + ctx.name() + "]", e);
                 }
             }
 
@@ -1761,14 +1761,27 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     /**
      * Finish all proxy latches.
      */
-    public void finishedAll(AffinityTopologyVersion topVer, Map<String, DynamicCacheChangeRequest> reqs) {
+    public void finishedAll(
+        AffinityTopologyVersion initVer,
+        AffinityTopologyVersion doneVer,
+        Map<String, DynamicCacheChangeRequest> reqs
+    ) {
         for (GridCacheAdapter<?, ?> cache : caches.values()) {
             GridCacheContext<?, ?> cacheCtx = cache.context();
 
-            if (topVer == null) {
+            if (log.isInfoEnabled())
+                log.info("Finish proxy initialization, cacheName=" + cacheCtx.name() +
+                    ", topVer=" + doneVer + ", startVer=" + cacheCtx.startTopologyVersion() +
+                    ", localNodeId=" + ctx.localNodeId()
+                );
+
+            if (initVer == null || doneVer == null) {
                 finishInit(cache, cacheCtx, reqs);
             }
-            else if (cacheCtx.startTopologyVersion().equals(topVer)) {
+            else if (
+                cacheCtx.startTopologyVersion().compareTo(initVer) >= 0 &&
+                    cacheCtx.startTopologyVersion().compareTo(doneVer) <= 0
+            ) {
                 finishInit(cache, cacheCtx, reqs);
             }
         }
@@ -1819,8 +1832,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     }
 
     /**
-     * Gets public cache that can be used for query execution.
-     * If cache isn't created on current node it will be started.
+     * Gets public cache that can be used for query execution. If cache isn't created on current node it will be
+     * started.
      *
      * @param start Start cache.
      * @param inclLoc Include local caches.
@@ -1996,8 +2009,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      * @param desc Cache descriptor.
      * @param reqNearCfg Near configuration if specified for client cache start request.
      * @param exchTopVer Current exchange version.
-     * @param disabledAfterStart If true, then we will discard restarting state from proxies. If false then we will change
-     *  state of proxies to restarting
+     * @param disabledAfterStart If true, then we will discard restarting state from proxies. If false then we will
+     * change state of proxies to restarting
      * @throws IgniteCheckedException If failed.
      */
     void prepareCacheStart(
@@ -2087,8 +2100,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     }
 
     /**
-     * Restarts proxies of caches if they was marked as restarting.
-     * Requires external synchronization - shouldn't be called concurrently with another caches restart.
+     * Restarts proxies of caches if they was marked as restarting. Requires external synchronization - shouldn't be
+     * called concurrently with another caches restart.
      */
     public void restartProxies() {
         for (IgniteCacheProxyImpl<?, ?> proxy : jCacheProxies.values()) {
@@ -2162,7 +2175,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
         CacheGroupContext old = cacheGrps.put(desc.groupId(), grp);
 
-        if (!grp.systemCache()  && !U.IGNITE_MBEANS_DISABLED) {
+        if (!grp.systemCache() && !U.IGNITE_MBEANS_DISABLED) {
             try {
                 U.registerMBean(ctx.config().getMBeanServer(), ctx.igniteInstanceName(), CACHE_GRP_METRICS_MBEAN_GRP,
                     grp.cacheOrGroupName(), grp.mxBean(), CacheGroupMetricsMXBean.class);
@@ -2184,7 +2197,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      */
     void blockGateway(String cacheName, boolean stop, boolean restart) {
         // Break the proxy before exchange future is done.
-        IgniteCacheProxyImpl<?, ?> proxy = jcacheProxy(cacheName);
+        IgniteCacheProxyImpl<?, ?> proxy = jcacheProxy(cacheName, false);
 
         if (restart) {
             GridCacheAdapter<?, ?> cache = caches.get(cacheName);
@@ -2273,7 +2286,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
             if (cacheCtx.startTopologyVersion().equals(startTopVer)) {
                 if (!jCacheProxies.containsKey(cacheCtx.name())) {
-                    IgniteCacheProxyImpl<?,?> newProxy = new IgniteCacheProxyImpl(cache.context(), cache, false);
+                    IgniteCacheProxyImpl<?, ?> newProxy = new IgniteCacheProxyImpl(cache.context(), cache, false);
 
                     if (!cache.active())
                         newProxy.restart();
@@ -2362,8 +2375,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     }
 
     /**
-     * Called during the rollback of the exchange partitions procedure
-     * in order to stop the given cache even if it's not fully initialized (e.g. failed on cache init stage).
+     * Called during the rollback of the exchange partitions procedure in order to stop the given cache even if it's not
+     * fully initialized (e.g. failed on cache init stage).
      *
      * @param exchActions Stop requests.
      */
@@ -2421,8 +2434,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 CacheGroupContext grp = cacheGrps.get(groupId);
 
                 if (grp != null && grp.persistenceEnabled() && sharedCtx.database() instanceof GridCacheDatabaseSharedManager) {
-                    GridCacheDatabaseSharedManager mngr = (GridCacheDatabaseSharedManager) sharedCtx.database();
-                    mngr.removeCheckpointListener((DbCheckpointListener) grp.offheap());
+                    GridCacheDatabaseSharedManager mngr = (GridCacheDatabaseSharedManager)sharedCtx.database();
+                    mngr.removeCheckpointListener((DbCheckpointListener)grp.offheap());
                 }
             }
         }
@@ -2649,7 +2662,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     @Nullable @Override public IgniteNodeValidationResult validateNode(
         ClusterNode node, JoiningNodeDiscoveryData discoData
     ) {
-        if(!cachesInfo.isMergeConfigSupports(node))
+        if (!cachesInfo.isMergeConfigSupports(node))
             return null;
 
         if (discoData.hasJoiningNodeData() && discoData.joiningNodeData() instanceof CacheJoinNodeDiscoveryData) {
@@ -3404,7 +3417,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     IgniteInternalFuture<?> dynamicCloseCache(String cacheName) {
         assert cacheName != null;
 
-        IgniteCacheProxy<?, ?> proxy = jcacheProxy(cacheName);
+        IgniteCacheProxy<?, ?> proxy = jcacheProxy(cacheName, false);
 
         if (proxy == null || proxy.isProxyClosed())
             return new GridFinishedFuture<>(); // No-op.
@@ -3577,6 +3590,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
     /**
      * Authorize creating cache.
+     *
      * @param cfg Cache configuration.
      * @param secCtx Optional security context.
      */
@@ -3590,6 +3604,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
     /**
      * Authorize dynamic cache management for this node.
+     *
      * @param req start/stop cache request.
      */
     private void authorizeCacheChange(DynamicCacheChangeRequest req) {
@@ -3672,7 +3687,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             return cachesInfo.onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
 
         if (msg instanceof DynamicCacheChangeFailureMessage)
-            cachesInfo.onCacheChangeRequested((DynamicCacheChangeFailureMessage) msg, topVer);
+            cachesInfo.onCacheChangeRequested((DynamicCacheChangeFailureMessage)msg, topVer);
 
         if (msg instanceof ClientCacheChangeDiscoveryMessage)
             cachesInfo.onClientCacheChange((ClientCacheChangeDiscoveryMessage)msg, node);
@@ -3915,7 +3930,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         if (log.isDebugEnabled())
             log.debug("Getting cache for name: " + name);
 
-        IgniteCacheProxy<K, V> jcache = (IgniteCacheProxy<K, V>)jcacheProxy(name);
+        IgniteCacheProxy<K, V> jcache = (IgniteCacheProxy<K, V>)jcacheProxy(name, true);
 
         return jcache == null ? null : jcache.internalProxy();
     }
@@ -3933,8 +3948,9 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 while (initLatch.getCount() > 0) {
                     initLatch.await(2000, TimeUnit.MILLISECONDS);
 
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to wait init latch cache proxy completed, cache=" + jcache.getName());
+                    if (log.isInfoEnabled())
+                        log.info("Failed to wait proxy initialization, cache=" + jcache.getName() +
+                            ", localNodeId=" + ctx.localNodeId());
                 }
             }
             catch (InterruptedException e) {
@@ -3946,14 +3962,22 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     }
 
     /**
-     *
      * @param name Cache name.
      */
     public void initFinished(String name) {
         IgniteCacheProxy<?, ?> jcache = jCacheProxies.get(name);
 
-        if (jcache != null){
+        if (jcache != null) {
+            if (log.isInfoEnabled())
+                log.info("Fnish proxy initialization, cacheName=" + name +
+                    ", localNodeId=" + ctx.localNodeId());
+
             ((IgniteCacheProxyImpl<?, ?>)jcache).getInitLatch().countDown();
+        }
+        else {
+            if (log.isInfoEnabled())
+                log.info("Can not finish proxy initialization because proxy does not exist, cacheName=" + name +
+                    ", localNodeId=" + ctx.localNodeId());
         }
     }
 
@@ -3973,19 +3997,22 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> IgniteInternalCache<K, V> getOrStartCache(String name, CacheConfiguration ccfg) throws IgniteCheckedException {
+    public <K, V> IgniteInternalCache<K, V> getOrStartCache(String name,
+        CacheConfiguration ccfg) throws IgniteCheckedException {
         assert name != null;
 
         if (log.isDebugEnabled())
             log.debug("Getting cache for name: " + name);
 
-        IgniteCacheProxy<?, ?> cache = jcacheProxy(name);
+        IgniteCacheProxy<?, ?> cache = jcacheProxy(name, false);
 
         if (cache == null) {
             dynamicStartCache(ccfg, name, null, false, ccfg == null, true).get();
 
-            cache = jcacheProxy(name);
+            cache = jcacheProxy(name, true);
         }
+
+        awaitInitProxy(cache);
 
         return cache == null ? null : (IgniteInternalCache<K, V>)cache.internalProxy();
     }
@@ -4028,7 +4055,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      */
     private <K, V> IgniteInternalCache<K, V> internalCacheEx(String name) {
         if (ctx.discovery().localNode().isClient()) {
-            IgniteCacheProxy<K, V> proxy = (IgniteCacheProxy<K, V>)jcacheProxy(name);
+            IgniteCacheProxy<K, V> proxy = (IgniteCacheProxy<K, V>)jcacheProxy(name, false);
 
             if (proxy == null) {
                 GridCacheAdapter<?, ?> cacheAdapter = caches.get(name);
@@ -4040,6 +4067,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
                     if (prev != null)
                         proxy = (IgniteCacheProxy<K, V>)prev;
+
+                    initFinished(proxy.getName());
                 }
             }
 
@@ -4072,7 +4101,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         if (!desc.cacheType().userCache())
             throw new IllegalStateException("Failed to get cache because it is a system cache: " + name);
 
-        IgniteCacheProxy<K, V> jcache = (IgniteCacheProxy<K, V>)jcacheProxy(name);
+        IgniteCacheProxy<K, V> jcache = (IgniteCacheProxy<K, V>)jcacheProxy(name, true);
 
         if (jcache == null)
             throw new IllegalArgumentException("Cache is not started: " + name);
@@ -4113,16 +4142,18 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         if (desc != null && !desc.cacheType().userCache())
             throw new IllegalStateException("Failed to get cache because it is a system cache: " + cacheName);
 
-        IgniteCacheProxyImpl<?, ?> cache = jcacheProxy(cacheName);
+        IgniteCacheProxyImpl<?, ?> proxy = jcacheProxy(cacheName, false);
 
         // Try to start cache, there is no guarantee that cache will be instantiated.
-        if (cache == null) {
+        if (proxy == null) {
             dynamicStartCache(null, cacheName, null, false, failIfNotStarted, checkThreadTx).get();
 
-            cache = jcacheProxy(cacheName);
+            proxy = jcacheProxy(cacheName, true);
         }
 
-        return cache != null ? (IgniteCacheProxy<K, V>)cache.gatewayWrapper() : null;
+        awaitInitProxy(proxy);
+
+        return proxy != null ? (IgniteCacheProxy<K, V>)proxy.gatewayWrapper() : null;
     }
 
     /**
@@ -4239,7 +4270,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     public <K, V> IgniteCacheProxy<K, V> jcache(String name) {
         assert name != null;
 
-        IgniteCacheProxy<K, V> cache = (IgniteCacheProxy<K, V>)jcacheProxy(name);
+        IgniteCacheProxy<K, V> cache = (IgniteCacheProxy<K, V>)jcacheProxy(name, false);
 
         if (cache == null) {
             GridCacheAdapter<?, ?> cacheAdapter = caches.get(name);
@@ -4251,10 +4282,12 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
                 if (prev != null)
                     cache = (IgniteCacheProxy<K, V>)prev;
-            }
 
-            awaitInitProxy(cache);
+                initFinished(cache.getName());
+            }
         }
+
+        awaitInitProxy(cache);
 
         if (cache == null)
             throw new IllegalArgumentException("Cache is not configured: " + name);
@@ -4266,10 +4299,11 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      * @param name Cache name.
      * @return Cache proxy.
      */
-    @Nullable public IgniteCacheProxyImpl<?, ?> jcacheProxy(String name) {
+    @Nullable public IgniteCacheProxyImpl<?, ?> jcacheProxy(String name, boolean awaitInit) {
         IgniteCacheProxyImpl<?, ?> cache = jCacheProxies.get(name);
 
-        awaitInitProxy(cache);
+        if (awaitInit)
+            awaitInitProxy(cache);
 
         return cache;
     }

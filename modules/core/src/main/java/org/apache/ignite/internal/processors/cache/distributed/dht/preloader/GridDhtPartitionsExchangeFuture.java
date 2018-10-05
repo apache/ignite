@@ -1951,12 +1951,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             // Complete any affReady futures and update last exchange done version.
             cctx.exchange().onExchangeDone(res, initialVersion(), err0);
 
-            Map<String, DynamicCacheChangeRequest> reqs = exchActions.cacheStartRequests()
-                .stream()
-                .map(ExchangeActions.CacheActionData::request)
-                .collect(Collectors.toMap(DynamicCacheChangeRequest::cacheName, r -> r));
+            Map<String, DynamicCacheChangeRequest> reqs = null;
 
-            cctx.cache().finishedAll(res, reqs);
+            if (exchActions != null)
+                reqs = exchActions.cacheStartRequests()
+                    .stream()
+                    .map(ExchangeActions.CacheActionData::request)
+                    .collect(Collectors.toMap(DynamicCacheChangeRequest::cacheName, r -> r));
+
+            cctx.cache().finishedAll(exchId.topologyVersion(), res, reqs);
 
             if (exchActions != null && err0 == null)
                 exchActions.completeRequestFutures(cctx, null);
