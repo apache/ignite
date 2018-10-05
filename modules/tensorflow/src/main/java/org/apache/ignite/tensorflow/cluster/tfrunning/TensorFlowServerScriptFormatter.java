@@ -66,7 +66,8 @@ public class TensorFlowServerScriptFormatter {
         builder.append("\n");
 
         builder.append("import tensorflow as tf").append('\n');
-        builder.append("fto_import_contrib_ops = tf.contrib.resampler").append("\n");
+        builder.append("to_import_contrib_ops = tf.contrib.resampler").append("\n");
+        builder.append("from tensorflow.contrib.ignite import IgniteDataset").append("\n");
         builder.append("import tensorflow.contrib.igfs.python.ops.igfs_ops").append("\n");
 
         builder.append("print('job:%s task:%d' % ('")

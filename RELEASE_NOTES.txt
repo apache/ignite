@@ -1,8 +1,8 @@
 Apache Ignite Release Notes
 ===========================
 
-Apache Ignite In-Memory Data Fabric 2.6
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 2.6
+---------------------------------------------------------
 Ignite:
 * Fixed incorrect calculation of client affinity assignment with baseline.
 * Fixed incorrect calculation of switch segment record in WAL.
@@ -11,8 +11,8 @@ Ignite:
 REST:
 * Fixed serialization of BinaryObjects to JSON.
 
-Apache Ignite In-Memory Data Fabric 2.5
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 2.5
+---------------------------------------------------------
 Ignite:
 * Implemented Zookeeper discovery SPI.
 * Added Java thin client.
@@ -127,8 +127,8 @@ ML:
 * Implemented Linear SVM for binary classification.
 * Implemented distributed version of SVM (support vector machine) algoritm.
 
-Apache Ignite In-Memory Data Fabric 2.4
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 2.4
+---------------------------------------------------------
 Ignite:
 * Introduced Baseline Affinity Topology
 * Ability to disable WAL for cache in runtime through IgniteCluster API or ALTER TABLE command
@@ -221,8 +221,8 @@ Visor:
 * Fixed reading last command line in batch mode
 * Updated eviction policy factory in configs
 
-Apache Ignite In-Memory Data Fabric 2.3
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 2.3
+---------------------------------------------------------
 Ignite:
 * Ability to enable persistence per data region.
 * Default page size is changed to 4KB.
@@ -319,8 +319,8 @@ Visor:
 * Added missing configuration properties to "config" command.
 * Fixed script execution after alert throttling interval.
 
-Apache Ignite In-Memory Data Fabric 2.2
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 2.2
+---------------------------------------------------------
 Ignite:
 * Checkpointing algorithm optimized
 * Default max memory size changed from 80% to 20%
@@ -329,8 +329,8 @@ Ignite CPP:
 * Now possible to start node with persistent store
 * Ignite.setActive method added to C++ API
 
-Apache Ignite In-Memory Data Fabric 2.1
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 2.1
+---------------------------------------------------------
 Ignite:
 * Persistent cache store
 * Added IgniteFuture.listenAsync() and IgniteFuture.chainAsync() mehtods
@@ -362,8 +362,8 @@ Web Console:
 * Added option to show full stack trace on Queries screen
 * Added PK alias generation on Models screen.
 
-Apache Ignite In-Memory Data Fabric 2.0
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 2.0
+---------------------------------------------------------
 Ignite:
 * Introduced new page memory architecture
 * Machine Learning beta: distributed algebra support for dense and sparse data sets
@@ -398,8 +398,8 @@ Web Console:
 * Possibility to configure Kubernetes IP finder
 * EnforceJoinOrder option on Queries screen
 
-Apache Ignite In-Memory Data Fabric 1.9
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 1.9
+---------------------------------------------------------
 Ignite:
 * Added Data streamer mode for DML
 * Added Discovery SPI Implementation for Ignite Kubernetes Pods
@@ -418,8 +418,8 @@ Ignite CPP:
 * Implemented LoadCache
 * ContinuousQuery support
 
-Apache Ignite In-Memory Data Fabric 1.8
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 1.8
+---------------------------------------------------------
 Ignite:
 * SQL: Added DML operations support (INSERT, UPDATE, DELETE, MERGE)
 * SQL: Improved DISTINCT keyword handling in aggregates
@@ -440,8 +440,8 @@ ODBC driver:
 * Added DSN support
 * Performance improvements
 
-Apache Ignite In-Memory Data Fabric 1.7
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 1.7
+---------------------------------------------------------
 Ignite:
 * Added distributed SQL JOIN.
 * Node can be assigned as primary only after preloading is finished.
@@ -459,8 +459,8 @@ Ignite.NET:
 Ignite CPP:
 * Marshalling performance improvements.
 
-Apache Ignite In-Memory Data Fabric 1.6
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 1.6
+---------------------------------------------------------
 Ignite .NET:
 * Added LINQ Provider for cache SQL queries
 * Added native configuration mechanism (C#, app.config, web.config - instead of Spring XML)
@@ -548,8 +548,8 @@ Ignite:
 * Web sessions: user session classes are no longer needed on server nodes.
 * A lot of stability and fault-tolerance fixes.
 
-Apache Ignite In-Memory Data Fabric 1.5
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 1.5
+---------------------------------------------------------
 * Ignite.NET: Initial Release.
 * Ignite C++: Initial Release.
 * Massive performance improvements for cache operations and SQL.
@@ -571,8 +571,8 @@ Apache Ignite In-Memory Data Fabric 1.5
 
 Complete list of closed issues: https://issues.apache.org/jira/issues/?jql=project%20%3D%20IGNITE%20AND%20fixVersion%20%3D%201.5%20AND%20status%20%3D%20closed
 
-Apache Ignite In-Memory Data Fabric 1.4
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 1.4
+---------------------------------------------------------
 * Added SSL support to communication and discovery.
 * Added support for log4j2.
 * Added versioned entry to cache API.
@@ -589,8 +589,8 @@ Apache Ignite In-Memory Data Fabric 1.4
 * Fixed affinity routing in compute grid.
 * Many stability and fault-tolerance fixes.
 
-Apache Ignite In-Memory Data Fabric 1.3
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 1.3
+---------------------------------------------------------
 
 * Added auto-retries for cache operations in recoverable cases.
 * Added integration with Apache YARN.
@@ -603,8 +603,8 @@ Apache Ignite In-Memory Data Fabric 1.3
 * Bug fixes in In-Memory Accelerator For Apache Hadoop.
 * Many stability and fault-tolerance fixes.
 
-Apache Ignite In-Memory Data Fabric 1.2
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 1.2
+---------------------------------------------------------
 
 * Added client mode to TCP discovery SPI.
 * Added memory based evictions.
@@ -615,8 +615,8 @@ Apache Ignite In-Memory Data Fabric 1.2
 * Bug fixes in In-Memory Accelerator For Apache Hadoop.
 * Many stability and fault-tolerance fixes.
 
-Apache Ignite In-Memory Data Fabric 1.1
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 1.1
+---------------------------------------------------------
 
 * Added Google Compute Engine TCP discovery IP finder.
 * Added generic cloud TCP discovery IP finder (based on jclouds).
@@ -635,8 +635,8 @@ Apache Ignite In-Memory Data Fabric 1.1
 * Made deployment scanners for URI-based deployment pluggable.
 * Many stability and fault-tolerance fixes.
 
-Apache Ignite In-Memory Data Fabric 1.0
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 1.0
+---------------------------------------------------------
 
 * Simplified query API.
 * Added automatic aggregation, grouping, and sorting support to SQL queries.
@@ -651,14 +651,14 @@ Apache Ignite In-Memory Data Fabric 1.0
 * Added ability to automatically exclude LGPL optional dependencies during build.
 
 
-Apache Ignite In-Memory Data Fabric 1.0 RC3
--------------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 1.0 RC3
+-------------------------------------------------------------
 
 This is the first release of Apache Ignite project. The source code in large part is based
-on the 7 year old GridGain In-Memory Data Fabric, open source edition, v. 6.6.2, which was
+on the 7 year old GridGain In-Memory Database and Caching Platform, open source edition, v. 6.6.2, which was
 donated to Apache Software Foundation in September 2014.
 
-The main feature set of Ignite In-Memory Data Fabric includes:
+The main feature set of Ignite In-Memory Database and Caching Platform includes:
 * Advanced Clustering
 * Compute Grid
 * Data Grid

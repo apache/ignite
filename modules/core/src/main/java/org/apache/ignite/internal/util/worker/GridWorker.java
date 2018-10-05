@@ -99,11 +99,11 @@ public abstract class GridWorker implements Runnable {
 
     /** {@inheritDoc} */
     @Override public final void run() {
+        updateHeartbeat();
+
         // Runner thread must be recorded first as other operations
         // may depend on it being present.
         runner = Thread.currentThread();
-
-        updateHeartbeat();
 
         if (log.isDebugEnabled())
             log.debug("Grid runnable started: " + name);
