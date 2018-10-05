@@ -831,6 +831,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     WALPointer pos = rec.position();
 
                     do {
+                        // This will change rec.position() unless concurrent rollover happened.
                         currWrHandle = closeBufAndRollover(currWrHandle, rec, rolloverType);
                     } while (Objects.equals(pos, rec.position()));
 

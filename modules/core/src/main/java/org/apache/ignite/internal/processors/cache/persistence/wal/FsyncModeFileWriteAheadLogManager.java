@@ -723,6 +723,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     WALPointer pos = record.position();
 
                     do {
+                        // This will change record.position() unless concurrent rollover happened.
                         currWrHandle = rollOver(currWrHandle, record);
                     } while (Objects.equals(pos, record.position()));
 
