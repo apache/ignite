@@ -27,6 +27,11 @@ namespace Apache.Ignite.Core.Encryption.Keystore
     public class KeystoreEncryptionSpi : IEncryptionSpi
     {
         /// <summary>
+        /// Key store password.
+        /// </summary>
+        private char[] _keyStorePassword;
+        
+        /// <summary>
         /// Default master key name.
         /// </summary>
         public const string DefaultMasterKeyName = "ignite.master.key";
@@ -56,8 +61,12 @@ namespace Apache.Ignite.Core.Encryption.Keystore
         /// <summary>
         /// Key store password.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public char[] KeyStorePassword { get; set; }
+        public char[] KeyStorePassword
+        {
+            get => (char[]) _keyStorePassword?.Clone();
+
+            set => _keyStorePassword = (char[]) value?.Clone();
+        }
 
         /// <summary>
         /// Empty constructor.
