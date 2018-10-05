@@ -1783,7 +1783,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     ) {
         IgniteCacheProxyImpl<?, ?> proxy = jCacheProxies.get(cache.name());
 
-        if (proxy.isRestarting()) {
+        if (proxy != null && proxy.isRestarting()) {
             proxy.onRestarted(cacheCtx, cache);
 
             if (cacheCtx.dataStructuresCache())
