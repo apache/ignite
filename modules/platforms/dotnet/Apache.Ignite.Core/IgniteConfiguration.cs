@@ -389,7 +389,11 @@ namespace Apache.Ignite.Core
                 writer.WriteString(keystoreEnc.MasterKeyName);
                 writer.WriteInt(keystoreEnc.KeySize);
                 writer.WriteString(keystoreEnc.KeyStorePath);
-                writer.WriteCharArray(keystoreEnc.KeyStorePassword);
+
+                if (keystoreEnc.KeyStorePassword == null)
+                    writer.WriteCharArray(null);
+                else
+                    writer.WriteCharArray(keystoreEnc.KeyStorePassword.ToCharArray());
             }
             else
                 writer.WriteBoolean(false);

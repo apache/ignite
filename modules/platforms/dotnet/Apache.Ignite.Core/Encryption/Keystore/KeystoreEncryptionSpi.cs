@@ -26,11 +26,6 @@ namespace Apache.Ignite.Core.Encryption.Keystore
     public class KeystoreEncryptionSpi : IEncryptionSpi
     {
         /// <summary>
-        /// Key store password.
-        /// </summary>
-        private char[] _keyStorePassword;
-        
-        /// <summary>
         /// Default master key name.
         /// </summary>
         public const string DefaultMasterKeyName = "ignite.master.key";
@@ -60,24 +55,7 @@ namespace Apache.Ignite.Core.Encryption.Keystore
         /// <summary>
         /// Key store password.
         /// </summary>
-        public char[] KeyStorePassword
-        {
-            get
-            {
-                if (_keyStorePassword == null)
-                    return null;
-                
-                return (char[]) _keyStorePassword.Clone();
-            }
-
-            set
-            {
-                if (value == null)
-                    _keyStorePassword = null;
-                else
-                    _keyStorePassword = (char[]) value.Clone();               
-            }
-        }
+        public string KeyStorePassword { get; set; }
 
         /// <summary>
         /// Empty constructor.
@@ -97,7 +75,13 @@ namespace Apache.Ignite.Core.Encryption.Keystore
             MasterKeyName = reader.ReadString();
             KeySize = reader.ReadInt();
             KeyStorePath = reader.ReadString();
-            KeyStorePassword = reader.ReadCharArray();
+
+            var keyStorePassword = reader.ReadCharArray();
+
+            if (keyStorePassword == null)
+                KeyStorePassword = null;
+            else
+                KeyStorePassword = new string(keyStorePassword);
         }
     }
 }
