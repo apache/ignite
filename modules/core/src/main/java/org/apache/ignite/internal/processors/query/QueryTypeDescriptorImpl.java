@@ -561,13 +561,16 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
             boolean isKey = false;
 
-            if (F.eq(prop.name(), keyFieldName) || (keyFieldName == null && F.eq(prop.name(), KEY_FIELD_NAME))) {
+            String normKfn = QueryUtils.normalizeObjectName(keyFieldName, false);
+            String normVFN = QueryUtils.normalizeObjectName(valFieldName, false);
+
+            if (F.eq(prop.name(), normKfn) || (keyFieldName == null && F.eq(prop.name(), KEY_FIELD_NAME))) {
                 propVal = key instanceof KeyCacheObject && coCtx != null ?
                     ((KeyCacheObject)key).value(coCtx, true) : key;
 
                 isKey = true;
             }
-            else if (F.eq(prop.name(), valFieldName) || (valFieldName == null && F.eq(prop.name(), VAL_FIELD_NAME))) {
+            else if (F.eq(prop.name(), normVFN) || (valFieldName == null && F.eq(prop.name(), VAL_FIELD_NAME))) {
                 propVal = val instanceof CacheObject && coCtx != null ?
                     ((CacheObject)val).value(coCtx, true) : val;
             }
