@@ -603,8 +603,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
         }
 
-        cctx.cache().finishedAll();
-
         cctx.cache().completeClientCacheChangeFuture(msg.requestId(), null);
 
         return closed;
@@ -808,8 +806,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     "[cacheName=" + req.cacheName() + ']', e);
 
                 cctx.cache().closeCaches(Collections.singleton(req.cacheName()), false);
-
-                cctx.cache().finishedAll();
 
                 cctx.cache().completeCacheStartFuture(req, false, e);
             }
