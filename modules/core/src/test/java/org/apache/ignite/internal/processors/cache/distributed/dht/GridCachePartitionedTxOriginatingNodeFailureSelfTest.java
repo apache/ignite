@@ -45,6 +45,7 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
+        ccfg.setReadFromBackup(false);
         ccfg.setBackups(BACKUP_CNT);
 
         return ccfg;

@@ -107,6 +107,7 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void testRecovery1() throws Exception {
+        fail("hangs sometimes");
         checkRecovery(1, false);
     }
 
@@ -114,6 +115,7 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void testRecovery2() throws Exception {
+        fail("hangs sometimes");
         checkRecovery(2, false);
     }
 

@@ -227,31 +227,34 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
 
         info("Transactions finished.");
 
-        for (Map.Entry<Integer, Collection<ClusterNode>> e : nodeMap.entrySet()) {
-            final Integer key = e.getKey();
-
-            final String val = map.get(key);
-
-            assertFalse(e.getValue().isEmpty());
-
-            for (ClusterNode node : e.getValue()) {
-                compute(G.ignite(node.id()).cluster().forNode(node)).call(new IgniteCallable<Void>() {
-                    /** */
-                    @IgniteInstanceResource
-                    private Ignite ignite;
-
-                    @Override public Void call() throws Exception {
-                        IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
-
-                        assertNotNull(cache);
-
+//        for (Map.Entry<Integer, Collection<ClusterNode>> e : nodeMap.entrySet()) {
+//            final Integer key = e.getKey();
+//
+//            final String val = map.get(key);
+//
+//            assertFalse(e.getValue().isEmpty());
+//
+//            for (ClusterNode node : e.getValue()) {
+//                compute(G.ignite(node.id()).cluster().forNode(node)).call(new IgniteCallable<Void>() {
+//                    /** */
+//                    @IgniteInstanceResource
+//                    private Ignite ignite;
+//
+//                    @Override public Void call() throws Exception {
+//                        IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
+//
+//                        assertNotNull(cache);
+//
 //                        assertEquals(partial ? initVal : val, cache.localPeek(key));
+//
+//                        return null;
+//                    }
+//                });
+//            }
+//        }
 
-                        return null;
-                    }
-                });
-            }
-        }
+        awaitPartitionMapExchange();
+        TimeUnit.SECONDS.sleep(1);
 
         for (Map.Entry<Integer, String> e : map.entrySet()) {
             for (Ignite g : G.allGrids()) {
