@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Encryption.Keystore
 {
     using System.ComponentModel;
-    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
 
     /// <summary>
@@ -63,9 +62,15 @@ namespace Apache.Ignite.Core.Encryption.Keystore
         /// </summary>
         public char[] KeyStorePassword
         {
-            get => (char[]) _keyStorePassword?.Clone();
+            get
+            {
+                return (char[]) _keyStorePassword?.Clone();
+            }
 
-            set => _keyStorePassword = (char[]) value?.Clone();
+            set
+            {
+                _keyStorePassword = (char[]) value?.Clone();               
+            }
         }
 
         /// <summary>
