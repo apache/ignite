@@ -21,28 +21,21 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -52,12 +45,6 @@ import org.apache.ignite.internal.processors.cache.transactions.TransactionProxy
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
@@ -80,7 +67,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setCommunicationSpi(new TestCommunicationSpi());
+        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         return cfg;
     }
@@ -165,10 +152,10 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
 
         assert keys.size() == 2;
 
-        TestCommunicationSpi nearComm = (TestCommunicationSpi)nearNode.configuration().getCommunicationSpi();
+        TestRecordingCommunicationSpi nearComm = (TestRecordingCommunicationSpi)nearNode.configuration().getCommunicationSpi();
 
         if (!commit)
-            nearComm.blockNearPrepare(grid(1).localNode().id());
+            nearComm.blockMessages(GridNearTxPrepareRequest.class, grid(1).name());
 
         GridNearTxLocal nearTx
             = ((TransactionProxyImpl)nearNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)).tx();
@@ -273,12 +260,12 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
             victimBackup = 2;
         }
 
-        TestCommunicationSpi victimComm = (TestCommunicationSpi)grid(victim).configuration().getCommunicationSpi();
+        TestRecordingCommunicationSpi victimComm = (TestRecordingCommunicationSpi)grid(victim).configuration().getCommunicationSpi();
 
         if (commit)
-            victimComm.blockNearFinishResponse(nearNode.localNode().id());
+            victimComm.blockMessages(GridNearTxFinishResponse.class, nearNode.name());
         else
-            victimComm.blockDhtPrepare(grid(victimBackup).localNode().id());
+            victimComm.blockMessages(GridDhtTxPrepareRequest.class, grid(victimBackup).name());
 
         GridNearTxLocal nearTx
             = ((TransactionProxyImpl)nearNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)).tx();
@@ -304,7 +291,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
 
         assertConditionEventually(() -> txs.stream().allMatch(tx -> tx.state() == (commit ? COMMITTED : ROLLED_BACK)));
 
-        assert !victimComm.blockedMessages().isEmpty();
+        assert victimComm.hasBlockedMessages();
 
         if (commit) {
             assertConditionEventually(() -> {
@@ -583,86 +570,5 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
         return StreamSupport.stream(offheap.cacheDataStores().spliterator(), false)
             .filter(ds -> ds.partId() == p)
             .findFirst();
-    }
-
-    /** */
-    private static class TestCommunicationSpi extends TcpCommunicationSpi {
-        /** */
-        @LoggerResource
-        private IgniteLogger log;
-        /** */
-        private T2<UUID, Class<?>> blockDesc;
-        /** */
-        private List<T2<ClusterNode, GridIoMessage>> blockedMsgs = new ArrayList<>();
-
-        /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClo)
-            throws IgniteSpiException {
-            if (msg instanceof GridIoMessage) {
-                Object msg0 = ((GridIoMessage)msg).message();
-
-                if (msg0 instanceof GridNearTxPrepareRequest || msg0 instanceof GridDhtTxPrepareRequest)
-                    log.info("PREPARE MSG " + msg0.getClass().getSimpleName() + " for " + node.consistentId());
-
-                if (msg0 instanceof GridDistributedTxPrepareRequest
-                    || msg0 instanceof GridDistributedTxFinishResponse) {
-                    synchronized (this) {
-                        if (blockDesc != null && node.id().equals(blockDesc.get1()) && blockDesc.get2().isInstance(msg0)) {
-                            log.info("Block message: " + msg0);
-
-                            blockedMsgs.add(new T2<>(node, (GridIoMessage)msg));
-
-                            return;
-                        }
-                    }
-                }
-            }
-
-            super.sendMessage(node, msg, ackClo);
-        }
-
-        /** */
-        synchronized List<?> blockedMessages() {
-            return new ArrayList<>(blockedMsgs);
-        }
-
-        /** */
-        synchronized void blockNearPrepare(UUID nodeId) {
-            assert blockDesc == null;
-
-            blockDesc = new T2<>(nodeId, GridNearTxPrepareRequest.class);
-        }
-
-        /** */
-        synchronized void blockDhtPrepare(UUID nodeId) {
-            assert blockDesc == null;
-
-            blockDesc = new T2<>(nodeId, GridDhtTxPrepareRequest.class);
-        }
-
-        /** */
-        synchronized void blockDhtFinish(UUID nodeId) {
-            assert blockDesc == null;
-
-            blockDesc = new T2<>(nodeId, GridDhtTxFinishRequest.class);
-        }
-
-        /** */
-        synchronized void blockNearFinishResponse(UUID nodeId) {
-            assert blockDesc == null;
-
-            blockDesc = new T2<>(nodeId, GridNearTxFinishResponse.class);
-        }
-
-        /** */
-        synchronized void flushBlocked() {
-            blockDesc = null;
-
-            for (T2<ClusterNode, GridIoMessage> msg : blockedMsgs) {
-                log.info("Send blocked message: " + msg.get2().message());
-
-                sendMessage(msg.get1(), msg.get2());
-            }
-        }
     }
 }
