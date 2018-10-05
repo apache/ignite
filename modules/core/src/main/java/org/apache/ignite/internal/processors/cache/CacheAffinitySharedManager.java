@@ -567,7 +567,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         cctx.cache().initCacheProxies(topVer, null);
 
-        cctx.cache().finishedAll(null);
+        cctx.cache().finishedAll(null, null);
 
         cctx.cache().completeClientCacheChangeFuture(msg.requestId(), null);
 
@@ -617,7 +617,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
         }
 
-        cctx.cache().finishedAll(null);
+        cctx.cache().finishedAll(null, null);
 
         cctx.cache().completeClientCacheChangeFuture(msg.requestId(), null);
 
@@ -915,7 +915,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 cctx.cache().closeCaches(Collections.singleton(req.cacheName()), false);
 
-                cctx.cache().finishedAll(null);
+                cctx.cache().finishedAll(null, null);
 
                 cctx.cache().completeCacheStartFuture(req, false, e);
             }

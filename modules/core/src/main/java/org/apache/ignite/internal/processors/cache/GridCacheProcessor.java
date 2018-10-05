@@ -1761,15 +1761,15 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     /**
      * Finish all proxy latches.
      */
-    public void finishedAll(AffinityTopologyVersion topVer) {
+    public void finishedAll(AffinityTopologyVersion topVer, Map<String, DynamicCacheChangeRequest> reqs) {
         for (GridCacheAdapter<?, ?> cache : caches.values()) {
             GridCacheContext<?, ?> cacheCtx = cache.context();
 
             if (topVer == null) {
-                finishInit(cache, cacheCtx);
+                finishInit(cache, cacheCtx, reqs);
             }
             else if (cacheCtx.startTopologyVersion().equals(topVer)) {
-                finishInit(cache, cacheCtx);
+                finishInit(cache, cacheCtx, reqs);
             }
         }
     }
@@ -1779,11 +1779,22 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      */
     private void finishInit(
         GridCacheAdapter<?, ?> cache,
-        GridCacheContext<?, ?> cacheCtx
+        GridCacheContext<?, ?> cacheCtx,
+        Map<String, DynamicCacheChangeRequest> reqs
     ) {
         IgniteCacheProxyImpl<?, ?> proxy = jCacheProxies.get(cache.name());
 
-        if (proxy != null && proxy.isRestarting()) {
+        boolean canRestart = true;
+
+        if (!F.isEmpty(reqs)) {
+            DynamicCacheChangeRequest req = reqs.get(cache.name());
+
+            if (req != null) {
+                canRestart = !req.disabledAfterStart();
+            }
+        }
+
+        if (proxy != null && proxy.isRestarting() && canRestart) {
             proxy.onRestarted(cacheCtx, cache);
 
             if (cacheCtx.dataStructuresCache())
