@@ -34,11 +34,11 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheMode;
@@ -2214,8 +2214,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             assert cache != null : cctx.name();
 
             jCacheProxies.put(cctx.name(), new IgniteCacheProxyImpl(cache.context(), cache, false));
-
-            initFinished(cctx.name());
         }
         else {
             cctx.gate().onStopped();
@@ -3647,17 +3645,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             CountDownLatch initLatch = ((IgniteCacheProxyImpl<?, ?>)jcache).getInitLatch();
 
             try {
-                while (initLatch.getCount() > 0) {
-                    initLatch.await(2000, TimeUnit.MILLISECONDS);
-
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to wait init latch cache proxy completed, cache=" + jcache.getName());
-                }
+                initLatch.await();
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                // Skip intterupt.
-                //  throw new IgniteInterruptedException(e);
+
+              //  throw new IgniteInterruptedException(e);
             }
         }
     }
@@ -3963,14 +3956,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cache == null) {
             GridCacheAdapter<?, ?> cacheAdapter = caches.get(name);
 
-            if (cacheAdapter != null) {
+            if (cacheAdapter != null)
                 cache = new IgniteCacheProxyImpl(cacheAdapter.context(), cacheAdapter, false);
-
-                IgniteCacheProxyImpl<?, ?> prev = jCacheProxies.putIfAbsent(name, (IgniteCacheProxyImpl<?, ?>)cache);
-
-                if (prev != null)
-                    cache = (IgniteCacheProxy<K, V>)prev;
-            }
         }
 
         awaitInitProxy(cache);
