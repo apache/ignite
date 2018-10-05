@@ -626,6 +626,7 @@ public class IgniteConfiguration {
         svcCfgs = cfg.getServiceConfiguration();
         svcPoolSize = cfg.getServiceThreadPoolSize();
         sysPoolSize = cfg.getSystemThreadPoolSize();
+        systemWorkerBlockedTimeout = cfg.getSystemWorkerBlockedTimeout();
         timeSrvPortBase = cfg.getTimeServerPortBase();
         timeSrvPortRange = cfg.getTimeServerPortRange();
         txCfg = cfg.getTransactionConfiguration();
