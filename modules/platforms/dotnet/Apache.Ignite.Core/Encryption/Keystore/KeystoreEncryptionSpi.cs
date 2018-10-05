@@ -64,12 +64,18 @@ namespace Apache.Ignite.Core.Encryption.Keystore
         {
             get
             {
-                return (char[]) _keyStorePassword?.Clone();
+                if (_keyStorePassword == null)
+                    return null;
+                
+                return (char[]) _keyStorePassword.Clone();
             }
 
             set
             {
-                _keyStorePassword = (char[]) value?.Clone();               
+                if (value == null)
+                    _keyStorePassword = null;
+                else
+                    _keyStorePassword = (char[]) value.Clone();               
             }
         }
 
