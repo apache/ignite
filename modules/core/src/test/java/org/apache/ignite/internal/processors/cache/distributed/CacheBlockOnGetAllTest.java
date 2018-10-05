@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -36,9 +35,10 @@ public class CacheBlockOnGetAllTest extends CacheBlockOnReadAbstractTest {
 
             /** {@inheritDoc} */
             @Override public void doRead() {
-                int idx = random.nextInt(entriesCount());
+                Set<Integer> keys = new HashSet<>();
 
-                Set<Integer> keys = IntStream.range(idx, idx + 500).boxed().collect(Collectors.toSet());
+                for (int i = 0; i < 500; i++)
+                    keys.add(random.nextInt(entriesCount()));
 
                 cache().getAll(keys);
             }
