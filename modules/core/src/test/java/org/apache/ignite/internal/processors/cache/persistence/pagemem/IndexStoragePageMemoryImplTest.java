@@ -18,18 +18,26 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.io.File;
+import java.util.Collections;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
+import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
+import org.mockito.Mockito;
 
 /**
  *
@@ -59,8 +67,18 @@ public class IndexStoragePageMemoryImplTest extends IndexStorageSelfTest {
 
         DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), allocationPath);
 
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setEncryptionSpi(new NoopEncryptionSpi());
+
+        GridTestKernalContext cctx = new GridTestKernalContext(log, cfg);
+
+        cctx.add(new IgnitePluginProcessor(cctx, cfg, Collections.emptyList()));
+        cctx.add(new GridInternalSubscriptionProcessor(cctx));
+        cctx.add(new GridEncryptionManager(cctx));
+
         GridCacheSharedContext<Object, Object> sharedCtx = new GridCacheSharedContext<>(
-            new GridTestKernalContext(log),
+            cctx,
             null,
             null,
             null,
@@ -93,7 +111,7 @@ public class IndexStoragePageMemoryImplTest extends IndexStorageSelfTest {
             () -> true,
             new DataRegionMetricsImpl(new DataRegionConfiguration()),
             PageMemoryImpl.ThrottlingPolicy.DISABLED,
-            null
+            Mockito.mock(CheckpointWriteProgressSupplier.class)
         );
     }
 }
