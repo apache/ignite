@@ -919,7 +919,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (log.isTraceEnabled())
                 log.trace("Return finished future for topology ready future [ver=" + ver + ", topVer=" + topVer + ']');
 
-            return new GridFinishedFuture<>();
+            return new GridFinishedFuture<>(topVer);
         }
 
         GridFutureAdapter<AffinityTopologyVersion> fut = F.addIfAbsent(readyFuts, ver,

@@ -1959,7 +1959,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     .map(ExchangeActions.CacheActionData::request)
                     .collect(Collectors.toMap(DynamicCacheChangeRequest::cacheName, r -> r));
 
-            cctx.cache().finishedAll(exchId.topologyVersion(), res, reqs);
+            cctx.cache().finishedAll(initialVersion(), res, reqs);
 
             if (exchActions != null && err0 == null)
                 exchActions.completeRequestFutures(cctx, null);
