@@ -98,6 +98,11 @@ public class MvccTransactionEnlistCachingManager extends GridCacheSharedManagerA
         assert mvccVer != null;
         assert tx != null;
 
+        if (log.isDebugEnabled()) {
+            log.debug("Added entry to mvcc cache: [key=" + key + ", val=" + val + ", oldVal=" + oldVal +
+                ", primary=" + primary + ", mvccVer=" + mvccVer + ", cacheId=" + cacheId + ", ver=" + ver +']');
+        }
+
         GridCacheContext ctx0 = cctx.cacheContext(cacheId);
 
         // Do not cache updates if there is no DR or CQ enabled.
@@ -126,6 +131,9 @@ public class MvccTransactionEnlistCachingManager extends GridCacheSharedManagerA
      * @param commit {@code True} if commit.
      */
     public void onTxFinished(IgniteInternalTx tx, boolean commit) throws IgniteCheckedException {
+        if (log.isDebugEnabled())
+            log.debug("Transaction finished: [commit=" + commit + ", tx=" + tx  + ']');
+
         if (tx.system() || tx.internal() || tx.mvccSnapshot() == null)
             return;
 
@@ -188,6 +196,9 @@ public class MvccTransactionEnlistCachingManager extends GridCacheSharedManagerA
                 ctx0.group().onPartitionCounterUpdate(ctx0.cacheId(), e.key().partition(), resCntr,
                     tx.topologyVersion(), tx.local());
             }
+
+            if (log.isDebugEnabled())
+                log.debug("Process cached entry:" + e);
 
             // DR
             if (ctx0.isDrEnabled()) {

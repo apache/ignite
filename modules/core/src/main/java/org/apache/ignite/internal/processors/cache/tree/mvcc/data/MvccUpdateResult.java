@@ -43,6 +43,11 @@ public interface MvccUpdateResult {
     public List<MvccLinkAwareSearchRow> history();
 
     /**
+     * @return New value of updated entry.
+     */
+    public CacheObject newValue();
+
+    /**
      * @return Old value of updated entry.
      */
     public CacheObject oldValue();

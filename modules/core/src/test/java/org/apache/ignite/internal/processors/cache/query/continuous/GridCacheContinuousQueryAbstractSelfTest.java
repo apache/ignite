@@ -116,9 +116,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             cacheCfg.setLoadPreviousValue(true);
             cacheCfg.setRebalanceMode(ASYNC);
             cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
+            cacheCfg.setNearConfiguration(nearConfiguration());
 
             if (atomicityMode() != TRANSACTIONAL_SNAPSHOT) {
-                cacheCfg.setNearConfiguration(nearConfiguration()); // TODO IGNITE-7187 enable for tx snapshot.
                 cacheCfg.setCacheStoreFactory(new StoreFactory()); // TODO IGNITE-8582 enable for tx snapshot.
                 cacheCfg.setReadThrough(true); // TODO IGNITE-8582 enable for tx snapshot.
                 cacheCfg.setWriteThrough(true); // TODO IGNITE-8582 enable for tx snapshot.

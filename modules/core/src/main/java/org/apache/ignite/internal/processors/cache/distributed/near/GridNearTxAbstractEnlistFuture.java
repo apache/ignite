@@ -328,8 +328,6 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
 
                 if (this.topVer == null)
                     this.topVer = topVer;
-
-                map(false);
             }
             else {
                 fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
@@ -347,11 +345,15 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
                         }
                     }
                 });
+
+                return;
             }
         }
         finally {
             cctx.topology().readUnlock();
         }
+
+        map(false);
     }
 
     /** {@inheritDoc} */

@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheCon
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
 /**
- * TODO: Add class description.
+ *
  */
 public abstract class CacheMvccAbstractContinuousQuerySelfTest extends GridCacheContinuousQueryAbstractSelfTest {
     /** {@inheritDoc} */

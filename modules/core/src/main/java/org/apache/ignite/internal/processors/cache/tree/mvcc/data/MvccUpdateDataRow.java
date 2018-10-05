@@ -574,6 +574,11 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     }
 
     /** {@inheritDoc} */
+    @Override public CacheObject newValue() {
+        return val;
+    }
+
+    /** {@inheritDoc} */
     @Override public CacheObject oldValue() {
         return oldVal;
     }

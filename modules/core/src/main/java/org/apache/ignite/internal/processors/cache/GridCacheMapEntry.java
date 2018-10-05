@@ -1194,7 +1194,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             update(val, expireTime, ttl, newVer, true);
 
-            cctx.shared().mvccCaching().addEnlisted(key, val, ttl, expireTime, ver, res.oldValue(), tx.local(),
+            cctx.shared().mvccCaching().addEnlisted(key, res.newValue(), ttl, expireTime, ver, res.oldValue(), tx.local(),
                 topVer, mvccVer, cctx.cacheId(), tx, futId, batchNum);
 
             recordNodeId(affNodeId, topVer);
@@ -5483,7 +5483,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 entry.update(val, expireTime, ttl, newVer, true);
 
-                cctx.shared().mvccCaching().addEnlisted(entry.key(), val, ttl, expireTime, tx.xidVersion(),
+                cctx.shared().mvccCaching().addEnlisted(entry.key(), res.newValue(), ttl, expireTime, tx.xidVersion(),
                     res.oldValue(), tx.local(), topVer, mvccVer, cctx.cacheId(), tx, futId, batchNum);
 
                 //entry.mvccDrReplicate(tx.local() ? DR_PRIMARY : DR_BACKUP, val, newVer, topVer, mvccVer);
@@ -6682,8 +6682,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             cctx.shared().mvccCaching().addEnlisted(key, val, ttl, expireTime, ver, oldVal, tx.local(),
                 topVer, mvccVer, cctx.cacheId(), tx, futId, batchNum);
-
-            //mvccDrReplicate(DR_BACKUP, val, ver, topVer, mvccVer);
 
             recordNodeId(affNodeId, topVer);
         }

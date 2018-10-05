@@ -2052,6 +2052,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 }
             }
             catch (Exception e) {
+                log.error("Exception was thrown during entry processing.", e);
+
                 err = e;
             }
 
