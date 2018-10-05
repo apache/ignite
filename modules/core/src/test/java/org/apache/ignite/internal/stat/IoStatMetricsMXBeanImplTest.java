@@ -29,23 +29,20 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.IoStatMetricsMXBean;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.internal.stat.AggregatePageType.DATA;
+import static org.apache.ignite.internal.stat.AggregatePageType.INDEX;
+import static org.apache.ignite.internal.stat.PageType.T_DATA;
+import static org.apache.ignite.internal.stat.PageType.T_DATA_REF_LEAF;
+
 /**
- *
+ * Test of IO statistics MX bean.
  */
 public class IoStatMetricsMXBeanImplTest extends GridCommonAbstractTest {
+
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids();
-
-        super.afterTest();
-    }
+    private static IgniteEx ignite;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
@@ -59,92 +56,98 @@ public class IoStatMetricsMXBeanImplTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        ignite = startGrid(0);
+    }
+
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        stopAllGrids();
+    }
+
     /**
      * Check that JMX bean exposed and works.
      *
-     * @throws Exception in case of failure.
+     * @throws Exception In case of failure.
      */
     public void testBasic() throws Exception {
-        IgniteEx ignite = startGrid(0);
-
         IoStatMetricsMXBean bean = ioStatMXBean(0);
 
         Assert.assertNotNull(bean.getStartGatheringStatistics());
-
-        checkAllTypesIOStatisticsPresent(bean);
 
         bean.resetStatistics();
 
         Assert.assertNotNull(bean.getStartGatheringStatistics());
 
-        checkAggregatedStatIsEmpty(bean.getAggregatedLogicalReads());
-        checkAggregatedStatIsEmpty(bean.getAggregatedPhysicalReads());
-        checkAggregatedStatIsEmpty(bean.getAggregatedPhysicalWrites());
+        checkAggregatedStatIsEmpty(bean.getAggregatedLogicalReadsGlobal());
+        checkAggregatedStatIsEmpty(bean.getAggregatedPhysicalReadsGlobal());
+        checkAggregatedStatIsEmpty(bean.getAggregatedPhysicalWritesGlobal());
 
-        for (int i = 0; i < 100; i++)
+        populateCache(ignite, 100);
+
+        checkAggregatedStatIsNotEmpty(bean.getAggregatedLogicalReadsGlobal());
+    }
+
+    /**
+     * Check JMX universal statistics methods.
+     *
+     * @throws Exception In case of failure.
+     */
+    public void testUniversalStatisticMethods() throws Exception {
+        IoStatMetricsMXBean bean = ioStatMXBean(0);
+
+        int cnt = 300;
+
+        bean.resetStatistics();
+
+        populateCache(ignite, cnt);
+
+        Map<String, Long> globalAggregated = bean.getLogicalReadStatistics(StatType.GLOBAL.name(), null, true);
+
+        checkAggregatedStatIsNotEmpty(globalAggregated);
+
+        Assert.assertEquals(Long.valueOf(cnt), globalAggregated.get(INDEX.name()));
+
+        Map<String, Long> globalPlain = bean.getLogicalReadStatistics(StatType.GLOBAL.name(), null, false);
+
+        Assert.assertEquals(globalAggregated.get(DATA.name()), globalPlain.get(T_DATA.name()));
+
+        Assert.assertEquals(globalAggregated.get(INDEX.name()), globalPlain.get(T_DATA_REF_LEAF.name()));
+    }
+
+    /**
+     * @param ignite Ignite instance.
+     * @param cnt Number of inserting elements.
+     */
+    private void populateCache(IgniteEx ignite, int cnt) {
+        for (int i = 0; i < cnt; i++)
             ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
-
-        checkAggregatedStatIsNotEmpty(bean.getAggregatedLogicalReads());
-
     }
 
     /**
      * @param aggregatedStat Aggregated IO statistics.
      */
     private void checkAggregatedStatIsNotEmpty(Map<String, Long> aggregatedStat) {
-        long aggregatedReadIdx = aggregatedStat.get(AggregatePageType.INDEX.name());
+        for (AggregatePageType type : AggregatePageType.values()) {
+            long val = aggregatedStat.get(type.name());
 
-        Assert.assertTrue(aggregatedReadIdx > 0);
-
-        long aggregatedReadOther = aggregatedStat.get(AggregatePageType.OTHER.name());
-
-        Assert.assertTrue(aggregatedReadOther > 0);
-
-        long aggregatedReadData = aggregatedStat.get(AggregatePageType.DATA.name());
-
-        Assert.assertTrue(aggregatedReadData > 0);
+            Assert.assertTrue(val > 0);
+        }
     }
 
     /**
      * @param aggregatedStat Aggregated IO statistics.
      */
     private void checkAggregatedStatIsEmpty(Map<String, Long> aggregatedStat) {
-        long aggregatedReadIdx = aggregatedStat.get(AggregatePageType.INDEX.name());
+        for (AggregatePageType type : AggregatePageType.values()) {
+            long val = aggregatedStat.get(type.name());
 
-        Assert.assertEquals(0, aggregatedReadIdx);
-
-        long aggregatedReadOther = aggregatedStat.get(AggregatePageType.OTHER.name());
-
-        Assert.assertEquals(0, aggregatedReadOther);
-
-        long aggregatedReadData = aggregatedStat.get(AggregatePageType.DATA.name());
-
-        Assert.assertEquals(0, aggregatedReadData);
-    }
-
-    /**
-     * @param bean IO statistics MX bean.
-     */
-    private void checkAllTypesIOStatisticsPresent(IoStatMetricsMXBean bean) {
-        Map<String, Long> logicalReads = bean.getLogicalReads();
-
-        int pageTypesCnt = PageType.values().length;
-
-        assertEquals(pageTypesCnt, logicalReads.size());
-
-        Map<String, Long> physicalReads = bean.getPhysicalReads();
-
-        assertEquals(pageTypesCnt, physicalReads.size());
-
-        Map<String, Long> physicalWrites = bean.getPhysicalWrites();
-
-        assertEquals(pageTypesCnt, physicalWrites.size());
-
-        int aggPageTypesCnt = AggregatePageType.values().length;
-
-        Map<String, Long> aggReads = bean.getAggregatedLogicalReads();
-
-        assertEquals(aggPageTypesCnt, aggReads.size());
+            Assert.assertEquals(0, val);
+        }
     }
 
     /**

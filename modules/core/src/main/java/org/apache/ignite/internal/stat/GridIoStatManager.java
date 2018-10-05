@@ -19,48 +19,118 @@
 package org.apache.ignite.internal.stat;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.stream.Stream;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 
 /**
  * IO statistics manager.
  */
 public class GridIoStatManager {
-    /** Map to track physical reads of memory pages by type. */
-    private final Map<PageType, LongAdder> TRACK_PHYSICAL_READS = new HashMap<>();
+    /** Context to gathering specific IO statistics. */
+    private static final ThreadLocal<List<StatOperationType>> currentOperationType = ThreadLocal.withInitial(ArrayList::new);
 
-    /** Map to track physical writes of memory pages by type. */
-    private final Map<PageType, LongAdder> TRACK_PHYSICAL_WRITES = new HashMap<>();
+    /** Complex map to track physical reads of memory pages */
+    private final Map<StatType, Map<PageType, Map<Object, LongAdder>>> TRACK_PHYSICAL_READS = new EnumMap<>(StatType.class);
 
-    /** Map to track physical reads of memory pages by type. */
-    private final Map<PageType, LongAdder> TRACK_LOGICAL_READS = new HashMap<>();
+    /** Complex map to track physical writes of memory pages */
+    private final Map<StatType, Map<PageType, Map<Object, LongAdder>>> TRACK_PHYSICAL_WRITES = new EnumMap<>(StatType.class);
+
+    /** Complex map to track logical reads of memory pages */
+    private final Map<StatType, Map<PageType, Map<Object, LongAdder>>> TRACK_LOGICAL_READS = new EnumMap<>(StatType.class);
 
     {
-        for (PageType pageType : PageType.values()) {
-            TRACK_LOGICAL_READS.put(pageType, new LongAdder());
-            TRACK_PHYSICAL_READS.put(pageType, new LongAdder());
-            TRACK_PHYSICAL_WRITES.put(pageType, new LongAdder());
+        for (StatType statType : StatType.values()) {
+            Map<PageType, Map<Object, LongAdder>> logReadMap = new EnumMap<>(PageType.class);
+
+            Map<PageType, Map<Object, LongAdder>> physReadMap = new EnumMap<>(PageType.class);
+
+            Map<PageType, Map<Object, LongAdder>> physWriteMap = new EnumMap<>(PageType.class);
+
+            for (PageType pageType : PageType.values()) {
+                if (statType == StatType.GLOBAL) {
+                    logReadMap.put(pageType, new HashMap<>(2));
+
+                    physReadMap.put(pageType, new HashMap<>(2));
+
+                    physWriteMap.put(pageType, new HashMap<>(2));
+
+                    //Predefined values for global statistics.
+                    {
+                        logReadMap.get(pageType).put(KEY_FOR_GLOBAL_STAT, new LongAdder());
+
+                        physReadMap.get(pageType).put(KEY_FOR_GLOBAL_STAT, new LongAdder());
+
+                        physWriteMap.get(pageType).put(KEY_FOR_GLOBAL_STAT, new LongAdder());
+                    }
+                }
+                else {
+                    logReadMap.put(pageType, new ConcurrentHashMap<>());
+
+                    physReadMap.put(pageType, new ConcurrentHashMap<>());
+
+                    physWriteMap.put(pageType, new ConcurrentHashMap<>());
+                }
+            }
+
+            TRACK_LOGICAL_READS.put(statType, logReadMap);
+
+            TRACK_PHYSICAL_READS.put(statType, physReadMap);
+
+            TRACK_PHYSICAL_WRITES.put(statType, physWriteMap);
         }
     }
+
+    /** Key for GLOBAL statistics. */
+    public static Object KEY_FOR_GLOBAL_STAT = StatType.GLOBAL;
 
     /** Time of since statistics start gathering. */
     private volatile LocalDateTime statsSince = LocalDateTime.now();
 
     /**
+     * Add operation type statistics context for current thread.
+     *
+     * @param statType Statistic operation type.
+     */
+    public static void addCurrentOperationType(StatOperationType statType) {
+        currentOperationType.get().add(statType);
+    }
+
+    /**
+     * Remove operation type statistics context for current thread.
+     *
+     * @param statType Statistic operation type.
+     */
+    public static void removeCurrentOperationType(StatOperationType statType) {
+        currentOperationType.get().remove(statType);
+    }
+
+    /**
      * Reset statistics
      */
     public void resetStats() {
-        for (LongAdder value : TRACK_LOGICAL_READS.values())
-            value.reset();
-
-        for (LongAdder value : TRACK_PHYSICAL_READS.values())
-            value.reset();
-
-        for (LongAdder value : TRACK_PHYSICAL_WRITES.values())
-            value.reset();
+        Stream.of(TRACK_LOGICAL_READS, TRACK_PHYSICAL_READS, TRACK_PHYSICAL_WRITES).forEach(stat -> {
+                for (Map.Entry<StatType, Map<PageType, Map<Object, LongAdder>>> entry : stat.entrySet()) {
+                    if (entry.getKey() == StatType.GLOBAL) {
+                        for (Map<Object, LongAdder> value : entry.getValue().values())
+                            value.get(KEY_FOR_GLOBAL_STAT).reset();
+                    }
+                    else {
+                        for (Map<Object, LongAdder> value : entry.getValue().values())
+                            value.clear();
+                    }
+                }
+            }
+        );
 
         statsSince = LocalDateTime.now();
     }
@@ -107,7 +177,7 @@ public class GridIoStatManager {
      * @param pageAddr Address of page.
      * @param mapToTrack Map to track access to the given page.
      */
-    private void trackByPageAddress(long pageAddr, Map<PageType, LongAdder> mapToTrack) {
+    private void trackByPageAddress(long pageAddr, Map<StatType, Map<PageType, Map<Object, LongAdder>>> mapToTrack) {
         int pageIoType = PageIO.getType(pageAddr);
 
         trackByPageIoType(pageIoType, mapToTrack);
@@ -119,33 +189,21 @@ public class GridIoStatManager {
      * @param pageIoType Page IO type.
      * @param mapToTrack Map to track access to page.
      */
-    private void trackByPageIoType(int pageIoType, Map<PageType, LongAdder> mapToTrack) {
+    private void trackByPageIoType(int pageIoType, Map<StatType, Map<PageType, Map<Object, LongAdder>>> mapToTrack) {
         if (pageIoType > 0) { // To skip not set type.
             PageType pageType = PageType.derivePageType(pageIoType);
 
-            mapToTrack.get(pageType).increment();
+            mapToTrack.get(StatType.GLOBAL).get(pageType).get(KEY_FOR_GLOBAL_STAT).increment();
+
+            List<StatOperationType> statOpTypes = currentOperationType.get();
+            new HashSet<>(statOpTypes);
+
+            if (!statOpTypes.isEmpty())
+                for (StatOperationType opType : statOpTypes)
+                    mapToTrack.get(opType.type()).get(pageType)
+                        .computeIfAbsent(opType.subType(), k -> new LongAdder())
+                        .increment();
         }
-    }
-
-    /**
-     * @return Tracked physical reads by types since last reset statistics.
-     */
-    public Map<PageType, Long> physicalReads() {
-        return deepCopyOfStat(TRACK_PHYSICAL_READS);
-    }
-
-    /**
-     * @return Tracked physical writes by types since last reset statistics.
-     */
-    public Map<PageType, Long> physicalWrites() {
-        return deepCopyOfStat(TRACK_PHYSICAL_WRITES);
-    }
-
-    /**
-     * @return Tracked logical reads by types since last reset statistics.
-     */
-    public Map<PageType, Long> logicalReads() {
-        return deepCopyOfStat(TRACK_LOGICAL_READS);
     }
 
     /**
@@ -164,13 +222,104 @@ public class GridIoStatManager {
     }
 
     /**
-     * @param map Map to create deep copy
-     * @return deep copy of statistics.
+     * @return Tracked physical reads by types since last reset statistics.
      */
-    private Map<PageType, Long> deepCopyOfStat(Map<PageType, LongAdder> map) {
+    public Map<PageType, Long> physicalReadsGlobal() {
+        return extractStat(TRACK_PHYSICAL_READS, StatType.GLOBAL, KEY_FOR_GLOBAL_STAT);
+    }
+
+    /**
+     * @return Tracked physical writes by types since last reset statistics.
+     */
+    public Map<PageType, Long> physicalWritesGlobal() {
+        return extractStat(TRACK_PHYSICAL_WRITES, StatType.GLOBAL, KEY_FOR_GLOBAL_STAT);
+    }
+
+    /**
+     * @return Tracked global logical reads by types since last reset statistics.
+     */
+    public Map<PageType, Long> logicalReadsGlobal() {
+        return extractStat(TRACK_LOGICAL_READS, StatType.GLOBAL, KEY_FOR_GLOBAL_STAT);
+    }
+
+    /**
+     * @param statType Type of statistics which need to take.
+     * @param subType Subtype of statistics which need to take.
+     * @return Tracked logical reads by types since last reset statistics.
+     */
+    public Map<PageType, Long> logicalReads(StatType statType, Object subType) {
+        return extractStat(TRACK_LOGICAL_READS, statType, subType);
+    }
+
+    /**
+     * @param statType Type of statistics which need to take.
+     * @param subType Subtype of statistics which need to take.
+     * @return Tracked phisycal reads by types since last reset statistics.
+     */
+    public Map<PageType, Long> physicalReads(StatType statType, Object subType) {
+        return extractStat(TRACK_PHYSICAL_READS, statType, subType);
+    }
+
+    /**
+     * Extract all logical reads subtypes.
+     *
+     * @param statType Type of statistics which subtypes need to extract.
+     * @param <T> Type of subTypes.
+     * @return Set of present subtypes for given statType.
+     */
+    public <T> Set<T> subTypesLogicalReads(StatType statType) {
+        return extractSubTypes(TRACK_LOGICAL_READS, statType);
+    }
+
+    /**
+     * Extract all physical reads subtypes.
+     *
+     * @param statType Type of statistics which subtypes need to extract.
+     * @param <T> Type of subTypes.
+     * @return Set of present subtypes for given statType.
+     */
+    public <T> Set<T> subTypesPhysicalReads(StatType statType) {
+        return extractSubTypes(TRACK_PHYSICAL_READS, statType);
+    }
+
+    /**
+     * Extract all present subtypes.
+     *
+     * @param statMap Map with full statistics.
+     * @param statType Type of statistics which subtypes need to extract.
+     * @return Set of present subtypes for given statType
+     */
+    @SuppressWarnings({"unchecked"})
+    private <T> Set<T> extractSubTypes(Map<StatType, Map<PageType, Map<Object, LongAdder>>> statMap,
+        StatType statType) {
+        assert statType != null;
+
+        Set<Object> res = new HashSet<>();
+
+        for (Map<Object, LongAdder> value : statMap.get(statType).values())
+            res.addAll(value.keySet());
+
+        return (Set<T>)res;
+    }
+
+    /**
+     * Extract statistics.
+     *
+     * @param statMap Map with full statistics.
+     * @param statType Type of statistics which need to be extracted.
+     * @param subtype Subtype of statistics which need to be extracted.
+     * @return Extracted statistics.
+     */
+    private Map<PageType, Long> extractStat(Map<StatType, Map<PageType, Map<Object, LongAdder>>> statMap,
+        StatType statType, Object subtype) {
         Map<PageType, Long> stat = new HashMap<>();
 
-        map.forEach((k,v)-> stat.put(k, v.longValue()));
+        for (Map.Entry<PageType, Map<Object, LongAdder>> entry : statMap.get(statType).entrySet()) {
+            LongAdder cntr = entry.getValue().get(subtype);
+
+            if (cntr != null)
+                stat.put(entry.getKey(), cntr.longValue());
+        }
 
         return stat;
     }

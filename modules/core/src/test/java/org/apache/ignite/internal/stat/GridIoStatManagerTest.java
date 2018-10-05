@@ -75,8 +75,8 @@ public class GridIoStatManagerTest extends GridCommonAbstractTest {
     public void ioStatPageTrackEnabledTest(boolean isPersistent) throws Exception {
         GridIoStatManager ioStatMgr = prepareData(isPersistent);
 
-        long physicalReadsCnt = ioStatMgr.physicalReads().values().stream().reduce(Long::sum).get();
-        long physicalWritesCnt = ioStatMgr.physicalWrites().values().stream().reduce(Long::sum).get();
+        long physicalReadsCnt = ioStatMgr.physicalReadsGlobal().values().stream().reduce(Long::sum).get();
+        long physicalWritesCnt = ioStatMgr.physicalWritesGlobal().values().stream().reduce(Long::sum).get();
         if (isPersistent) {
             Assert.assertTrue(physicalReadsCnt>0);
 
@@ -88,7 +88,7 @@ public class GridIoStatManagerTest extends GridCommonAbstractTest {
             Assert.assertEquals(0, physicalWritesCnt);
         }
 
-        Map<AggregatePageType, AtomicLong> aggLogReads = ioStatMgr.aggregate(ioStatMgr.logicalReads());
+        Map<AggregatePageType, AtomicLong> aggLogReads = ioStatMgr.aggregate(ioStatMgr.logicalReadsGlobal());
 
         Assert.assertTrue(aggLogReads.containsKey(AggregatePageType.INDEX));
         Assert.assertEquals(RECORD_COUNT, aggLogReads.get(AggregatePageType.INDEX).longValue());

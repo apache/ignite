@@ -21,9 +21,13 @@ package org.apache.ignite.internal.stat;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiFunction;
 import org.apache.ignite.mxbean.IoStatMetricsMXBean;
 import org.jetbrains.annotations.NotNull;
+
+import static org.apache.ignite.internal.stat.GridIoStatManager.KEY_FOR_GLOBAL_STAT;
 
 /**
  * JMX bean to expose local node IO statistics.
@@ -45,44 +49,111 @@ public class IoStatMetricsLocalMXBeanImpl implements IoStatMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Long> getPhysicalReads() {
-        return convertStat(statMgr.physicalReads());
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<String, Long> getPhysicalWrites() {
-        return convertStat(statMgr.physicalWrites());
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<String, Long> getLogicalReads() {
-        return convertStat(statMgr.logicalReads());
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<String, Long> getAggregatedPhysicalReads() {
-        Map<AggregatePageType, AtomicLong> aggregatedStat = statMgr.aggregate(statMgr.physicalReads());
-
-        return convertAggregatedStat(aggregatedStat);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<String, Long> getAggregatedPhysicalWrites() {
-        Map<AggregatePageType, AtomicLong> aggregatedStat = statMgr.aggregate(statMgr.physicalWrites());
-
-        return convertAggregatedStat(aggregatedStat);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<String, Long> getAggregatedLogicalReads() {
-        Map<AggregatePageType, AtomicLong> aggregatedStat = statMgr.aggregate(statMgr.logicalReads());
-
-        return convertAggregatedStat(aggregatedStat);
-    }
-
-    /** {@inheritDoc} */
     @Override public void resetStatistics() {
         statMgr.resetStats();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Long> getPhysicalReadsGlobal() {
+        return convertStat(statMgr.physicalReadsGlobal());
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Long> getPhysicalWritesGlobal() {
+        return convertStat(statMgr.physicalWritesGlobal());
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Long> getLogicalReadsGlobal() {
+        return convertStat(statMgr.logicalReadsGlobal());
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Long> getAggregatedPhysicalReadsGlobal() {
+        Map<AggregatePageType, AtomicLong> aggregatedStat = statMgr.aggregate(statMgr.physicalReadsGlobal());
+
+        return convertAggregatedStat(aggregatedStat);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Long> getAggregatedPhysicalWritesGlobal() {
+        Map<AggregatePageType, AtomicLong> aggregatedStat = statMgr.aggregate(statMgr.physicalWritesGlobal());
+
+        return convertAggregatedStat(aggregatedStat);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Long> getAggregatedLogicalReadsGlobal() {
+        Map<AggregatePageType, AtomicLong> aggregatedStat = statMgr.aggregate(statMgr.logicalReadsGlobal());
+
+        return convertAggregatedStat(aggregatedStat);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<String> getLogicalReadsStatIndexesNames() {
+        return statMgr.subTypesLogicalReads(StatType.INDEX);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<String> getPhysicalReadsStatIndexesNames() {
+        return statMgr.subTypesPhysicalReads(StatType.INDEX);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Long> getPhysicalReadsIndex(String idxName) {
+        return convertStat(statMgr.physicalReads(StatType.INDEX, idxName));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Long> getLogicalReadsIndex(String idxName) {
+        return convertStat(statMgr.logicalReads(StatType.INDEX, idxName));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Long> getLogicalReadStatistics(String statTypeName, String subTypeFilter,
+        boolean aggregate) {
+        return getStatistics(statTypeName, subTypeFilter, aggregate, statMgr::logicalReads);
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Long> getPhysicalReadStatistics(String statTypeName, String subTypeFilter,
+        boolean aggregate) {
+        return getStatistics(statTypeName, subTypeFilter, aggregate, statMgr::physicalReads);
+
+    }
+
+    /**
+     * @param statTypeName String representation of {@code StatType}.
+     * @param subTypeFilter Subtype of statistics. In case value can be parsed as int will be used as Integer.
+     * @param aggregate {@code true} in case statistics should be aggregated.
+     * @param statFunction Function to retrieve statistics.
+     * @return Requested statistics.
+     */
+    private Map<String, Long> getStatistics(String statTypeName, String subTypeFilter, boolean aggregate,
+        BiFunction<StatType, Object, Map<PageType, Long>> statFunction) {
+        StatType type = StatType.valueOf(statTypeName);
+
+        Object subType;
+
+        if (type == StatType.GLOBAL)
+            subType = KEY_FOR_GLOBAL_STAT;
+        else {
+            subType = subTypeFilter;
+            try {
+                subType = Integer.valueOf(subTypeFilter);
+            }
+            catch (NumberFormatException nfe) {
+                //ignore.
+            }
+        }
+
+        Map<PageType, Long> stat = statFunction.apply(type, subType);
+
+        if (aggregate)
+            return convertAggregatedStat(statMgr.aggregate(stat));
+        else
+            return convertStat(stat);
     }
 
     /**
@@ -94,7 +165,10 @@ public class IoStatMetricsLocalMXBeanImpl implements IoStatMetricsMXBean {
     @NotNull private Map<String, Long> convertStat(Map<PageType, Long> stat) {
         Map<String, Long> res = new HashMap<>(stat.size());
 
-        stat.forEach((k, v) -> res.put(k.name(), v));
+        stat.forEach((k, v) -> {
+            if (v != 0)
+                res.put(k.name(), v);
+        });
 
         return res;
     }
