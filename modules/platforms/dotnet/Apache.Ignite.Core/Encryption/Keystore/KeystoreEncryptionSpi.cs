@@ -78,10 +78,7 @@ namespace Apache.Ignite.Core.Encryption.Keystore
 
             var keyStorePassword = reader.ReadCharArray();
 
-            if (keyStorePassword == null)
-                KeyStorePassword = null;
-            else
-                KeyStorePassword = new string(keyStorePassword);
+            KeyStorePassword = keyStorePassword == null ? null : new string(keyStorePassword);
         }
     }
 }
