@@ -4120,7 +4120,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                             assert topVer != null && topVer.topologyVersion() > 0 : tx;
 
-                            ctx.shared().exchange().affinityReadyFuture(new AffinityTopologyVersion(topVer.topologyVersion() + 1,0)).get();
+                            ctx.affinity().affinityReadyFuture(topVer.topologyVersion() + 1).get();
 
                             continue;
                         }
@@ -4883,7 +4883,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 assert topVer != null && topVer.topologyVersion() > 0 : tx;
 
                                 IgniteInternalFuture<?> topFut =
-                                    ctx.shared().exchange().affinityReadyFuture(new AffinityTopologyVersion(topVer.topologyVersion() + 1, 0));
+                                    ctx.affinity().affinityReadyFuture(topVer.topologyVersion() + 1);
 
                                 topFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
                                     @Override public void apply(IgniteInternalFuture<?> topFut) {
