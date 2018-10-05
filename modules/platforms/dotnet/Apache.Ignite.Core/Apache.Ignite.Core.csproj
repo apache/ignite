@@ -161,6 +161,10 @@
     <Compile Include="Discovery\Tcp\Multicast\Package-Info.cs" />
     <Compile Include="Discovery\Tcp\Package-Info.cs" />
     <Compile Include="Discovery\Tcp\Static\Package-Info.cs" />
+    <Compile Include="Encryption\Package-Info.cs" />
+    <Compile Include="Encryption\IEncryptionSpi.cs" />
+    <Compile Include="Encryption\Keystore\Package-Info.cs" />
+    <Compile Include="Encryption\Keystore\KeystoreEncryptionSpi.cs" />
     <Compile Include="Impl\Binary\BinaryArrayEqualityComparer.cs" />
     <Compile Include="Impl\Binary\BinaryProcessor.cs" />
     <Compile Include="Impl\Binary\BinaryReflectiveSerializerInternal.cs" />
