@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -28,8 +29,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -261,7 +264,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     UUID nodeId = discoEvt.eventNode().id();
 
                     // Wait some time in case there are some unprocessed messages from failed node.
-                    cctx.time().addTimeoutObject(new NodeFailureTimeoutObject(nodeId));
+                    cctx.time().addTimeoutObject(discoEvt.eventNode().isClient()
+                        ? new NodeFailureTimeoutObject(nodeId)
+                        : new ServerFailureTimeoutObject(nodeId));
 
                     if (txFinishSync != null)
                         txFinishSync.onNodeLeft(nodeId);
@@ -2052,8 +2057,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      *
      * @param tx Transaction.
      * @param failedNodeIds Failed nodes IDs.
+     * @return t0d0
      */
-    public void commitIfPrepared(IgniteInternalTx tx, Set<UUID> failedNodeIds) {
+    public GridCacheTxRecoveryFuture commitIfPrepared(IgniteInternalTx tx, Set<UUID> failedNodeIds) {
         assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote  : tx;
         assert !F.isEmpty(tx.transactionNodes()) : tx;
         assert tx.nearXidVersion() != null : tx;
@@ -2070,6 +2076,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             log.info("Checking optimistic transaction state on remote nodes [tx=" + tx + ", fut=" + fut + ']');
 
         fut.prepare();
+
+        return fut;
     }
 
     /**
@@ -2396,10 +2404,23 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         return logTxRecords;
     }
 
+    private static class TxRecoveredFuture extends CompletableFuture<Boolean> {
+        final long txCntr;
+
+        TxRecoveredFuture(long cntr) {
+            txCntr = cntr;
+        }
+    }
+
+    private class ServerFailureTimeoutObject extends NodeFailureTimeoutObject {
+        private ServerFailureTimeoutObject(UUID evtNodeId) {
+            super(evtNodeId);
+        }
+    }
     /**
      * Timeout object for node failure handler.
      */
-    private final class NodeFailureTimeoutObject extends GridTimeoutObjectAdapter {
+    private class NodeFailureTimeoutObject extends GridTimeoutObjectAdapter {
         /** Left or failed node. */
         private final UUID evtNodeId;
 
@@ -2431,38 +2452,121 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     log.debug("Processing node failed event [locNodeId=" + cctx.localNodeId() +
                         ", failedNodeId=" + evtNodeId + ']');
 
-                for (final IgniteInternalTx tx : activeTransactions()) {
+                ArrayList<TxRecoveredFuture> pendingRecovery = new ArrayList<>();
+
+                Collection<IgniteInternalTx> txs = new ArrayList<>(activeTransactions());
+                System.err.println("ACTIVE TXS " + txs.stream().map(IgniteInternalTx::state).map(Object::toString).collect(Collectors.joining(":")));
+//                LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
+                for (final IgniteInternalTx tx : txs) {
+                    if ("127.0.0.1:47500".equals(cctx.localNode().consistentId()))
+                        System.err.println();
                     if ((tx.near() && !tx.local()) || (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId))) {
                         // Invalidate transactions.
                         salvageTx(tx, RECOVERY_FINISH);
                     }
                     else {
                         // Check prepare only if originating node ID failed. Otherwise parent node will finish this tx.
+                        // t0d0 ensure that all nodes will vote!
                         if (tx.originatingNodeId().equals(evtNodeId)) {
-                            if (tx.state() == PREPARED)
-                                commitIfPrepared(tx, Collections.singleton(evtNodeId));
+                            // t0d0 handle additional left nodes during recovery
+                            if (tx.state() == PREPARED) {
+                                GridCacheTxRecoveryFuture recoveryFut = commitIfPrepared(tx, Collections.singleton(evtNodeId));
+                                // t0d0 separate mvcc and old flow
+                                if (!recoveryFut.nearTxCheck() && tx.mvccSnapshot() != null) {
+                                    TxRecoveredFuture rec = new TxRecoveredFuture(tx.mvccSnapshot().counter());
+                                    pendingRecovery.add(rec);
+                                    recoveryFut.listen(fut -> {
+                                        try {
+                                            // t0d0 send vote to coordinator only AFTER finishing recovered txs locally
+                                            rec.complete(fut.get());
+                                        }
+                                        catch (IgniteCheckedException e) { throw new RuntimeException(e); }
+                                    });
+                                }
+                            }
                             else {
                                 IgniteInternalFuture<?> prepFut = tx.currentPrepareFuture();
 
                                 if (prepFut != null) {
+                                    TxRecoveredFuture rec = tx.mvccSnapshot() != null ? new TxRecoveredFuture(tx.mvccSnapshot().counter()) : null;
+                                    if (rec != null) {
+                                        pendingRecovery.add(rec);
+                                    }
+
                                     prepFut.listen(new CI1<IgniteInternalFuture<?>>() {
                                         @Override public void apply(IgniteInternalFuture<?> fut) {
-                                            if (tx.state() == PREPARED)
-                                                commitIfPrepared(tx, Collections.singleton(evtNodeId));
-                                            else if (tx.setRollbackOnly())
+                                            if (tx.state() == PREPARED) {
+                                                GridCacheTxRecoveryFuture recoveryFut = commitIfPrepared(tx, Collections.singleton(evtNodeId));
+                                                // t0d0 separate mvcc and old flow
+                                                if (!recoveryFut.nearTxCheck() && rec != null) {
+                                                    recoveryFut.listen(fut0 -> {
+                                                        try {
+                                                            // t0d0 send vote to coordinator only AFTER finishing recovered txs locally
+                                                            rec.complete(fut0.get());
+                                                        }
+                                                        catch (IgniteCheckedException e) { throw new RuntimeException(e); }
+                                                    });
+                                                }
+                                                else {
+                                                    // t0d0 empty txs should be reported as recovered
+                                                    if (rec != null)
+                                                        rec.complete(true);
+                                                }
+                                            }
+                                            else if (tx.setRollbackOnly()) {
                                                 tx.rollbackAsync();
+
+//                                                rec.complete(false);
+                                            }
                                         }
                                     });
                                 }
                                 else {
                                     // If we could not mark tx as rollback, it means that transaction is being committed.
-                                    if (tx.setRollbackOnly())
+                                    System.err.format("ROLLING BACK %s ON %s %s%n", tx.getClass().getSimpleName(), cctx.localNode().consistentId(), cctx.localNodeId());
+                                    if (tx.setRollbackOnly()) {
                                         tx.rollbackAsync();
+
+                                        // t0d0 vote here
+                                    }
                                 }
                             }
                         }
                     }
                 }
+
+                System.err.format("RECOVERY (%d) %s %s%n", pendingRecovery.size(), cctx.localNode().consistentId(), cctx.localNodeId());
+
+                if (this instanceof ServerFailureTimeoutObject) {
+                    // do not vote for failed servers
+                }
+                else if (pendingRecovery.isEmpty()) {
+                    // t0d0 empty vote is possible, should be handled by coordinator
+                    cctx.coordinators().ackRecoveryFinished(evtNodeId, Collections.emptyMap());
+                }
+                else {
+                    TxRecoveredFuture firstFut = pendingRecovery.get(0);
+                    CompletableFuture<Map<Long, Boolean>> allFuts = firstFut.thenApply(decision -> {
+                        System.err.format("VOTE %d FROM %s %s%n", 0, cctx.localNode().consistentId(), cctx.localNode().id());
+                        HashMap<Long, Boolean> res = new HashMap<>();
+                        res.put(firstFut.txCntr, decision);
+                        return res;
+                    });
+                    for (int i = 1; i < pendingRecovery.size(); i++) {
+                        TxRecoveredFuture fut = pendingRecovery.get(i);
+                        final int i0 = i;
+                        allFuts = allFuts.thenCombine(fut, (map, decision) -> {
+                            System.err.format("VOTE %d FROM %s%n", i0, cctx.localNodeId());
+                            map.put(fut.txCntr, decision);
+                            return map;
+                        });
+                    }
+
+                    allFuts.thenAccept(votes -> cctx.coordinators().ackRecoveryFinished(evtNodeId, votes));
+                }
+            }
+            catch (Exception e) {
+                throw e;
             }
             finally {
                 cctx.kernalContext().gateway().readUnlock();

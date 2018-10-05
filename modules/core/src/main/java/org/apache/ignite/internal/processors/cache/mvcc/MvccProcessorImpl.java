@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccActiveQueriesMes
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccFutureResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccQuerySnapshotRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinishedMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccTxSnapshotRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccWaitTxsRequest;
@@ -731,6 +732,16 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             crd = currentCoordinator();
         }
         while (!sendQueryDone(crd, msg));
+    }
+
+    @Override public void ackRecoveryFinished(UUID failedNodeId, Map<Long, Boolean> recoveryResolution) {
+        // t0d0 do all necessary checks and preparations
+        try {
+            sendMessage(curCrd.nodeId(), new MvccRecoveryFinishedMessage(failedNodeId, recoveryResolution));
+        }
+        catch (IgniteCheckedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1739,6 +1750,22 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             activeQueries.onNodeFailed(nodeId);
 
             prevCrdQueries.onNodeFailed(nodeId);
+
+            // Remove failed node from pending voters list
+            recoveryBallotBoxes.forEach((nearNodeId, ballotBox) -> {
+                ballotBox.excludeVoter(nodeId);
+                tryFinishRecoveryVoting(nearNodeId, ballotBox);
+            });
+
+            if (discoEvt.eventNode().isClient()) {
+                RecoveryBallotBox ballotBox = recoveryBallotBoxes.computeIfAbsent(nodeId, uuid -> new RecoveryBallotBox());
+
+                // t0d0 handle case when voting node fails during recovery
+                ballotBox
+                    .voters(discoEvt.topologyNodes().stream().map(ClusterNode::id).collect(Collectors.toList()));
+
+                tryFinishRecoveryVoting(nodeId, ballotBox);
+            }
         }
 
         /** {@inheritDoc} */
@@ -1793,6 +1820,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 processNewCoordinatorQueryAckRequest(nodeId, (MvccAckRequestQueryId)msg);
             else if (msg instanceof MvccActiveQueriesMessage)
                 processCoordinatorActiveQueriesMessage(nodeId, (MvccActiveQueriesMessage)msg);
+            else if (msg instanceof MvccRecoveryFinishedMessage)
+                processRecoveryFinishedMessage(nodeId, ((MvccRecoveryFinishedMessage)msg));
             else
                 U.warn(log, "Unexpected message received [node=" + nodeId + ", msg=" + msg + ']');
         }
@@ -1800,6 +1829,76 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         /** {@inheritDoc} */
         @Override public String toString() {
             return "CoordinatorMessageListener[]";
+        }
+    }
+
+    // near node -> remote node -> remote note voting result for all txs
+    private final ConcurrentHashMap<UUID, RecoveryBallotBox> recoveryBallotBoxes = new ConcurrentHashMap<>();
+
+    private static class RecoveryBallotBox {
+        List<UUID> voters;
+        final Map<UUID, Map<Long, Boolean>> box = new HashMap<>();
+
+        synchronized void voters(List<UUID> voters) {
+            this.voters = voters;
+        }
+
+        synchronized void excludeVoter(UUID voter) {
+            voters.remove(voter);
+        }
+
+        synchronized void vote(UUID nodeId, Map<Long, Boolean> vote) {
+            // t0d0 merge votes from different nodes? remove duplicates?
+            box.put(nodeId, vote);
+        }
+
+        synchronized boolean isVotingDone() {
+            if (voters == null)
+                return false;
+
+            return box.keySet().containsAll(voters);
+        }
+
+        synchronized boolean committed(Long txCntr) {
+            // t0d0 map to resolution faster?
+            // t0d0 voting done with zero replies?
+            return box.values().stream()
+                .filter(m -> m.containsKey(txCntr))
+                .map(m -> m.get(txCntr))
+                .findAny()
+                .orElse(false);
+        }
+    }
+
+    private void processRecoveryFinishedMessage(UUID nodeId, MvccRecoveryFinishedMessage msg) {
+        UUID nearNodeId = msg.nearNodeId();
+
+        RecoveryBallotBox ballotBox = recoveryBallotBoxes.computeIfAbsent(nearNodeId, uuid -> new RecoveryBallotBox());
+
+        ballotBox.vote(nodeId, msg.recoveryResolution());
+
+        System.err.format("VOTING: near=%s voter=%s (%d)%n", nearNodeId, nodeId, ballotBox.voters.size());
+
+        tryFinishRecoveryVoting(nearNodeId, ballotBox);
+    }
+
+    private void tryFinishRecoveryVoting(UUID nearNodeId, RecoveryBallotBox ballotBox) {
+        if (ballotBox.isVotingDone()) {
+            // t0d0 voting for multiple transaction and same node
+
+            List<Long> recoveredTxs;
+
+            synchronized (this) {
+                recoveredTxs = activeTxs.entrySet().stream()
+                    .filter(e -> e.getValue().nearNodeId.equals(nearNodeId))
+                    .map(Map.Entry::getKey)
+                    .collect(Collectors.toList());
+            }
+
+            // t0d0 finish queries as well
+            recoveredTxs.forEach(txCntr -> onTxDone(txCntr, ballotBox.committed(txCntr)));
+
+            recoveryBallotBoxes.remove(nearNodeId);
         }
     }
 

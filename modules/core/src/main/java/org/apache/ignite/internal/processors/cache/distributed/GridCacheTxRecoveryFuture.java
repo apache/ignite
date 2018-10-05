@@ -86,6 +86,10 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
     /** */
     private final boolean nearTxCheck;
 
+    public boolean nearTxCheck() {
+        return nearTxCheck;
+    }
+
     /**
      * @param cctx Context.
      * @param tx Transaction.
