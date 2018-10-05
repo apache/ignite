@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
@@ -86,11 +85,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteCacheFutureImpl;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.dr.GridDrType;
@@ -2212,18 +2211,19 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 cctx.affinity().affinityTopologyVersion() :
                 cctx.shared().exchange().readyAffinityVersion();
 
-            GridDhtTopologyFuture topFut = null;
+            GridDhtTopologyFuture topFut = cctx.shared().exchange().lastFinishedFuture();
 
-            List<GridDhtPartitionsExchangeFuture> exchFuts = cctx.shared().exchange().exchangeFutures();
+            if (!topFut.exchangeDone() || !F.eq(topVer, topFut.topologyVersion())) {
+                topFut = null;
 
-            for (ListIterator<GridDhtPartitionsExchangeFuture> it = exchFuts.listIterator(exchFuts.size());
-                it.hasPrevious();) {
-                GridDhtTopologyFuture fut = it.previous();
+                List<GridDhtPartitionsExchangeFuture> exchFuts = cctx.shared().exchange().exchangeFutures();
 
-                if (fut.exchangeDone() && F.eq(topVer, fut.topologyVersion())) {
-                    topFut = fut;
+                for (GridDhtTopologyFuture fut : exchFuts) {
+                    if (fut.exchangeDone() && F.eq(topVer, fut.topologyVersion())) {
+                        topFut = fut;
 
-                    break;
+                        break;
+                    }
                 }
             }
 
