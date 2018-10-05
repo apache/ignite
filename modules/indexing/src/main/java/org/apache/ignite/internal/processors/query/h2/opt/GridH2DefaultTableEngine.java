@@ -28,10 +28,12 @@ import org.h2.table.Table;
 public class GridH2DefaultTableEngine implements TableEngine {
     /** {@inheritDoc} */
     @Override public Table createTable(CreateTableData data) {
-        assert !data.persistData && !data.persistIndexes;
-
         if (data.isHidden && data.id == 0 && "SYS".equals(data.tableName))
             return new GridH2MetaTable(data);
+
+        // Used to create shadow table view used by CTE.
+        data.persistData = false;
+        data.persistIndexes = false;
 
         return new RegularTable(data);
     }
