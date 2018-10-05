@@ -86,7 +86,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheFutureImpl;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
@@ -2207,25 +2206,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             GridCacheContext<?, ?> cctx = internalCache.context();
 
-            AffinityTopologyVersion topVer = cctx.isLocal() ?
-                cctx.affinity().affinityTopologyVersion() :
-                cctx.shared().exchange().readyAffinityVersion();
-
             GridDhtTopologyFuture topFut = cctx.shared().exchange().lastFinishedFuture();
 
-            if (!topFut.exchangeDone() || !F.eq(topVer, topFut.topologyVersion())) {
-                topFut = null;
-
-                List<GridDhtPartitionsExchangeFuture> exchFuts = cctx.shared().exchange().exchangeFutures();
-
-                for (GridDhtTopologyFuture fut : exchFuts) {
-                    if (fut.exchangeDone() && F.eq(topVer, fut.topologyVersion())) {
-                        topFut = fut;
-
-                        break;
-                    }
-                }
-            }
+            AffinityTopologyVersion topVer = topFut.topologyVersion();
 
             GridCacheVersion ver = cctx.versions().isolatedStreamerVersion();
 
