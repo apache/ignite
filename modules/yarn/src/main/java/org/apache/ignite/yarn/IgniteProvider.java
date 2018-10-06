@@ -118,7 +118,7 @@ public class IgniteProvider {
 
         if (files != null) {
             for (String fileName : files) {
-                if (fileName.contains("gridgain-community-fabric-") && fileName.endsWith(".zip"))
+                if (fileName.contains("gridgain-professional-") && fileName.endsWith(".zip"))
                     ignites.add(fileName);
             }
         }
@@ -167,7 +167,7 @@ public class IgniteProvider {
             for (FileStatus file : fileStatuses) {
                 String fileName = file.getPath().getName();
 
-                if (fileName.contains("gridgain-community-fabric-") && fileName.endsWith(".zip"))
+                if (fileName.contains("gridgain-professional-") && fileName.endsWith(".zip"))
                     ignites.add(fileName);
             }
         }
@@ -199,7 +199,7 @@ public class IgniteProvider {
      * @return Path
      */
     private static String formatPath(String folder, String version) {
-        return folder + File.separator + "gridgain-community-fabric-" + version + ".zip";
+        return folder + File.separator + "gridgain-professional-" + version + ".zip";
     }
 
     /**
