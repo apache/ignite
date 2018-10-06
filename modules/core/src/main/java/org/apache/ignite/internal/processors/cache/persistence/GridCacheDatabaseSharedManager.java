@@ -536,9 +536,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         super.cleanupDatabaseManagerState();
 
-        storeMgr.onDeActivate(cctx.kernalContext());
-
-        storeMgr.cleanupPersistentSpace();
+        storeMgr.cleanupCacheStores();
 
         stopping = false;
 
