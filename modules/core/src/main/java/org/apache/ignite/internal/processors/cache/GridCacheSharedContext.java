@@ -1108,4 +1108,13 @@ public class GridCacheSharedContext<K, V> {
     private int dhtAtomicUpdateIndex(GridCacheVersion ver) {
         return U.safeAbs(ver.hashCode()) % dhtAtomicUpdCnt.length();
     }
+
+    /**
+     * For test purposes.
+     * @param txMgr Tx manager.
+     */
+    public void setTxManager(IgniteTxManager txMgr) {
+        this.txMgr = txMgr;
+    }
+
 }

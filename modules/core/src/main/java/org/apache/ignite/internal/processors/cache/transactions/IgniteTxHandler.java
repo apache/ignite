@@ -1378,12 +1378,10 @@ public class IgniteTxHandler {
         req.txState(tx.txState());
 
         try {
-            if (req.isInvalidate() || req.isSystemInvalidate())
-                throw new IgniteCheckedException("Parent transaction has failed abnormally, " +
-                    "backup node will be stopped to prevent data inconsistency");
-
-            if (req.commit()) {
+            if (req.commit() || req.isSystemInvalidate()) {
                 tx.commitVersion(req.commitVersion());
+                tx.invalidate(req.isInvalidate());
+                tx.systemInvalidate(req.isSystemInvalidate());
                 tx.mvccSnapshot(req.mvccSnapshot());
 
                 // Complete remote candidates.
@@ -1401,17 +1399,23 @@ public class IgniteTxHandler {
             }
         }
         catch (Throwable e) {
-            try {
-                if (req.commit())
-                    tx.rollbackRemoteTx();
-            }
-            catch (Throwable e0) {
-                e.addSuppressed(e0);
-            }
-
             ((IgniteTxAdapter)tx).logTxFinishErrorSafe(log, req.commit(), e);
 
             ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+            // Mark transaction for invalidate.
+            tx.invalidate(true);
+            tx.systemInvalidate(true);
+
+            try {
+                tx.commitRemoteTx();
+            }
+            catch (IgniteCheckedException ex) {
+                U.error(log, "Failed to invalidate transaction: " + tx, ex);
+            }
+
+            if (e instanceof Error)
+                throw (Error)e;
         }
     }
 

@@ -785,7 +785,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     catch (Throwable ex) {
                         state(UNKNOWN);
 
-                        // TODO Node should not stop (gracefully) until all pending transactions are processed.
                         if (X.hasCause(ex, NodeStoppingException.class)) {
                             U.warn(log, "Failed to commit transaction, node is stopping [tx=" + CU.txString(this) +
                                 ", err=" + ex + ']');
