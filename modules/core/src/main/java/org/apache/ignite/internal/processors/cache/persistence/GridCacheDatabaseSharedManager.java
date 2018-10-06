@@ -340,7 +340,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * MetaStorage instance. Value {@code null} means storage not initialized yet.
      * Guarded by {@link GridCacheDatabaseSharedManager#checkpointReadLock()}
      */
-    private volatile MetaStorage metaStorage;
+    private MetaStorage metaStorage;
 
     /** */
     private List<MetastorageLifecycleListener> metastorageLifecycleLsnrs;
@@ -668,12 +668,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 notifyMetastorageReadyForRead();
             }
             finally {
+                metaStorage = null;
+
+                storePageMem.stop(true);
+
                 checkpointReadUnlock();
             }
-
-            metaStorage = null;
-
-            storePageMem.stop(true);
         }
         catch (StorageException e) {
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
