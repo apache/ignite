@@ -529,7 +529,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void cleanupDatabaseManagerState() throws IgniteCheckedException {
-        U.log(log, "Shutdown and clenup all database manager services.");
+        U.log(log, "Shutdown and clenup database manager services.");
 
         // Need to shutdown checkpointer first.
         onKernalStop0(true);

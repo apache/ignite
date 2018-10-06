@@ -792,7 +792,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Perform cleanup preloaded memory regions on node start.
+     * Perform shutdown and cleanup database manager services and state.
      *
      * @throws IgniteCheckedException If fails.
      */
