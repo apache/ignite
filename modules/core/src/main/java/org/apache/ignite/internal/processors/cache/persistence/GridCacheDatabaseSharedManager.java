@@ -538,6 +538,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         storeMgr.cleanupCacheStores();
 
+        storeMgr.cleanupPersistentSpace();
+
         stopping = false;
 
         cleanupCheckpointDirectory();
