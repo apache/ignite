@@ -286,7 +286,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private final Collection<DbCheckpointListener> lsnrs = new CopyOnWriteArrayList<>();
 
     /** */
-    private boolean stopping;
+    private volatile boolean stopping;
 
     /** Checkpoint runner thread pool. If null tasks are to be run in single thread */
     @Nullable private IgniteTaskTrackingThreadPoolExecutor asyncRunner;
@@ -529,7 +529,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void cleanupDatabaseManagerState() throws IgniteCheckedException {
-        U.log(log, "Shutdown and clenup database manager services.");
+        U.log(log, "Shutdown database manager services and cleanup dirs.");
 
         // Need to shutdown checkpointer first.
         onKernalStop0(true);
@@ -541,6 +541,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         storeMgr.cleanupPersistentSpace();
 
         stopping = false;
+
+        cleanupCheckpointDirectory();
     }
 
     /**
