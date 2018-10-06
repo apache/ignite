@@ -741,7 +741,24 @@ public class GridDhtPartitionDemander {
                 int p = e.getKey();
 
                 if (aff.get(p).contains(ctx.localNode())) {
-                    GridDhtLocalPartition part = top.localPartition(p, topVer, true);
+                    GridDhtLocalPartition part;
+
+                    try {
+                        part = top.localPartition(p, topVer, true);
+                    }
+                    catch (GridDhtInvalidPartitionException err) {
+                        assert !topVer.equals(top.lastTopologyChangeVersion());
+
+                        if (log.isDebugEnabled()) {
+                            log.debug("Failed to get partition for rebalancing [" +
+                                "grp=" + grp.cacheOrGroupName() +
+                                ", p=" + p +
+                                ", topVer=" + topVer +
+                                ", lastTopVer=" + top.lastTopologyChangeVersion() + ']');
+                        }
+
+                        continue;
+                    }
 
                     assert part != null;
 
