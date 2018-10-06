@@ -26,6 +26,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 public class MvccRecoveryFinishedMessage implements MvccMessage {
+    private static final long serialVersionUID = -505062368078979867L;
+
     private UUID nearNodeId;
     @GridDirectMap(keyType = Long.class, valueType = Boolean.class)
     private Map<Long, Boolean> resolution;
