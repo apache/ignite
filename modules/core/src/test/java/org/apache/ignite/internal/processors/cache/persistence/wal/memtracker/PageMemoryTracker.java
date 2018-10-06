@@ -32,6 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
@@ -222,9 +223,21 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         pageSize = ctx.igniteConfiguration().getDataStorageConfiguration().getPageSize();
 
+        EncryptionSpi encSpi = ctx.igniteConfiguration().getEncryptionSpi();
+
         pageMemoryMock = Mockito.mock(PageMemory.class);
 
         Mockito.doReturn(pageSize).when(pageMemoryMock).pageSize();
+        Mockito.when(pageMemoryMock.realPageSize(Mockito.anyInt())).then(mock -> {
+            int grpId = (Integer) mock.getArguments()[0];
+
+            if (gridCtx.encryption().groupKey(grpId) == null)
+                return pageSize;
+
+            return pageSize
+                - (encSpi.encryptedSizeNoPadding(pageSize) - pageSize)
+                - encSpi.blockSize() /* For CRC. */;
+        });
 
         GridCacheSharedContext sharedCtx = gridCtx.cache().context();
 
