@@ -226,6 +226,19 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         }
     }
 
+    /** */
+    public void cleanupStoreManager() {
+        if (log.isInfoEnabled())
+            log.info("Cleanup page store manager.");
+
+        IgniteCheckedException ex = shutdown(true);
+
+        if (ex != null)
+            U.error(log, "Failed to gracefully stop page store manager", ex);
+
+        idxCacheStores.clear();
+    }
+
     /** {@inheritDoc} */
     @Override public void stop0(boolean cancel) {
         if (log.isDebugEnabled())
