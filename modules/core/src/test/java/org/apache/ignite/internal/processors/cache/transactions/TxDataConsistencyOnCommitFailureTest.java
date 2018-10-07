@@ -103,7 +103,7 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
     }
 
     /** */
-    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-590", forceFailure = false)
+    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-9806", forceFailure = false)
     public void testCommitErrorOnColocatedNode2PC() throws Exception {
         nodesCnt = 3;
 
