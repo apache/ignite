@@ -63,6 +63,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     /** Next time of show eviction progress. */
     private long nextShowProgressTime;
 
+    /** */
     private final Map<Integer, GroupEvictionContext> evictionGroupsMap = new ConcurrentHashMap<>();
 
     /** Flag indicates that eviction process has stopped. */
@@ -177,7 +178,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
                     // Print current eviction progress.
                     showProgress();
 
-                    GroupEvictionContext groupEvictionContext = evictionTask.groupEvictionContext;
+                    GroupEvictionContext groupEvictionContext = evictionTask.groupEvictionCtx;
 
                     // Check that group or node stopping.
                     if (groupEvictionContext.shouldStop())
@@ -390,37 +391,39 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         /** Partition to evict. */
         private final GridDhtLocalPartition part;
 
+        /** */
         private final long size;
 
         /** Eviction context. */
-        private final GroupEvictionContext groupEvictionContext;
+        private final GroupEvictionContext groupEvictionCtx;
 
         /** */
         private final GridFutureAdapter<?> finishFut = new GridFutureAdapter<>();
 
         /**
          * @param part Partition.
+         * @param groupEvictionCtx Eviction context.
          */
         private PartitionEvictionTask(
             GridDhtLocalPartition part,
-            GroupEvictionContext groupEvictionContext
+            GroupEvictionContext groupEvictionCtx
         ) {
             this.part = part;
-            this.groupEvictionContext = groupEvictionContext;
+            this.groupEvictionCtx = groupEvictionCtx;
 
             size = part.fullSize();
         }
 
         /** {@inheritDoc} */
         @Override public void run() {
-            if (groupEvictionContext.shouldStop()) {
+            if (groupEvictionCtx.shouldStop()) {
                 finishFut.onDone();
 
                 return;
             }
 
             try {
-                boolean success = part.tryClear(groupEvictionContext);
+                boolean success = part.tryClear(groupEvictionCtx);
 
                 if (success) {
                     if (part.state() == GridDhtPartitionState.EVICTED && part.markForDestroy())
@@ -502,6 +505,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         /**
          * Offer task to queue.
          *
+         * @param task Eviction task.
          * @return Bucket index.
          */
         int offer(PartitionEvictionTask task) {
