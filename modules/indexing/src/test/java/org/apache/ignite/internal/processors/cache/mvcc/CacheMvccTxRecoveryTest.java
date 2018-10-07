@@ -416,14 +416,16 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
         int missedPrepare = 1;
 
         for (int i = 0; i < 100; i++) {
-            if (aff.isPrimary(grid(victim).localNode(), i) && aff.isBackup(grid(missedPrepare).localNode(), i)) {
+            if (aff.isPrimary(grid(victim).localNode(), i)) {
                 keys.add(i);
                 break;
             }
         }
 
-        // t0d0 choose node visely and messages to block
-        // t0d0 check problem with visibility inconsistense on different nodes in various cases
+        assert keys.size() == 1;
+
+        // t0d0 choose node wisely and messages to block
+        // t0d0 check problem with visibility inconsistency on different nodes in various cases
         ((TestRecordingCommunicationSpi)grid(victim).configuration().getCommunicationSpi())
             .blockMessages(GridDhtTxPrepareRequest.class, grid(missedPrepare).name());
 
@@ -440,10 +442,11 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
         ((TransactionProxyImpl)nearTx).tx().prepareNearTxLocal();
 
         // drop near
-        stopGrid(srvCnt, true);
+        ign.close();
+        // t0d0 delay between multiple failures makes sense (check possible commit + rollback problem)
         // drop primary
         // t0d0 update started voting on mvcc coordinator
-        stopGrid(victim, true);
+        grid(victim).close();
 
         for (int i = 0; i < srvCnt; i++) {
             if (i == victim) continue;
@@ -510,7 +513,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
 
         TestRecordingCommunicationSpi comm = (TestRecordingCommunicationSpi)ign.configuration().getCommunicationSpi();
 
-        // t0d0 choose node visely and messages to block
+        // t0d0 choose node wisely and messages to block
         comm.blockMessages(GridNearTxPrepareRequest.class, grid(1).name());
 
         Transaction nearTx = ign.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
