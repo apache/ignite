@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.UUID;
+import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
@@ -28,12 +29,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -44,12 +42,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 /**
- * Tests data integrity in two scenarios:
- *
- * <ul>
- *     <li> Tx system invalidation on commit. </li>
- *     <li> {@link GridCacheEntryEx#invalidate(GridCacheVersion)}. </li>
- * </ul>
+ * Tests data consistency if transaction is failed due to heuristic exception on originating node.
  */
 public class TxDataLossOnCommitFailureTest extends GridCommonAbstractTest {
     /** */
@@ -58,8 +51,10 @@ public class TxDataLossOnCommitFailureTest extends GridCommonAbstractTest {
     /** */
     public static final String CLIENT = "client";
 
+    /** */
     private int nodesCnt;
 
+    /** */
     private int backups;
 
     /** {@inheritDoc} */
@@ -84,21 +79,53 @@ public class TxDataLossOnCommitFailureTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    public void testCommitErrorOnColocatedNode() throws Exception {
+    /** */
+    public void testCommitErrorOnNearNode2PC() throws Exception {
         nodesCnt = 3;
+
         backups = 2;
 
+        Ignite ignite = startGrid("client");
+
+        doTestCommitError(() -> ignite);
+    }
+
+    /** */
+    public void testCommitErrorOnNearNode1PC() throws Exception {
+        nodesCnt = 2;
+
+        backups = 1;
+
+        Ignite ignite = startGrid("client");
+
+        doTestCommitError(() -> ignite);
+    }
+
+    /** */
+    public void testCommitErrorOnColocatedNode2PC() throws Exception {
+        nodesCnt = 3;
+
+        backups = 2;
+
+        doTestCommitError(() -> primaryNode(KEY, DEFAULT_CACHE_NAME));
+    }
+
+    /**
+     * @param ignite Ignite.
+     */
+    private void doTestCommitError(Supplier<Ignite> factory) throws Exception {
         Ignite crd = startGridsMultiThreaded(nodesCnt);
 
         crd.cache(DEFAULT_CACHE_NAME).put(KEY, KEY);
 
-        IgniteEx client = startGrid("client");
+        Ignite ignite = factory.get();
 
-        assertNotNull(client.cache(DEFAULT_CACHE_NAME));
+        if (ignite == null)
+            ignite = startGrid("client");
 
-        Ignite ignite = nearNode();
+        assertNotNull(ignite.cache(DEFAULT_CACHE_NAME));
 
-        injectFail(ignite);
+        injectMockedTxManager(ignite);
 
         checkKey();
 
@@ -122,64 +149,74 @@ public class TxDataLossOnCommitFailureTest extends GridCommonAbstractTest {
         checkFutures();
     }
 
-    protected Ignite nearNode() {
-        return primaryNode(KEY, DEFAULT_CACHE_NAME);
-        //return grid("client");
-    }
-
-    private void injectFail(Ignite ignite) {
+    /**
+     * @param ignite Ignite.
+     */
+    private void injectMockedTxManager(Ignite ignite) {
         IgniteEx igniteEx = (IgniteEx)ignite;
 
         GridCacheSharedContext<Object, Object> ctx = igniteEx.context().cache().context();
+
         IgniteTxManager tm = ctx.tm();
 
-        IgniteTxManager spyingTm = Mockito.spy(tm);
+        IgniteTxManager mockTm = Mockito.spy(tm);
 
-        MyTx locTx = new MyTx(ctx, false, false, false, GridIoPolicy.SYSTEM_POOL,
+        MockGridNearTxLocal locTx = new MockGridNearTxLocal(ctx, false, false, false, GridIoPolicy.SYSTEM_POOL,
             TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, 0, true, null, 1, null, 0, null);
 
         Mockito.doAnswer(new Answer<GridNearTxLocal>() {
             @Override public GridNearTxLocal answer(InvocationOnMock invocation) throws Throwable {
-                spyingTm.onCreated(null, locTx);
+                mockTm.onCreated(null, locTx);
 
                 return locTx;
             }
-        }).when(spyingTm).
+        }).when(mockTm).
             newTx(locTx.implicit(), locTx.implicitSingle(), null, locTx.concurrency(),
                 locTx.isolation(), locTx.timeout(), locTx.storeEnabled(), null, locTx.size(), locTx.label());
 
-        ctx.setTxManager(spyingTm);
+        ctx.setTxManager(mockTm);
     }
 
-    public void testCommitErrorOnPrimaryNode() throws Exception {
-
-    }
-
-    public void testCommitErrorOnBackupNode() throws Exception {
-
-    }
-
-    public void checkKey() {
+    /** */
+    private void checkKey() {
         for (Ignite ignite : G.allGrids()) {
             if (!ignite.configuration().isClientMode())
                 assertNotNull(ignite.cache(DEFAULT_CACHE_NAME).localPeek(KEY));
         }
     }
 
-    private static class MyTx extends GridNearTxLocal {
-        public MyTx() {
+    /** */
+    private static class MockGridNearTxLocal extends GridNearTxLocal {
+        /** Empty constructor. */
+        public MockGridNearTxLocal() {
         }
 
-        public MyTx(GridCacheSharedContext ctx, boolean implicit, boolean implicitSingle, boolean sys, byte plc,
-            TransactionConcurrency concurrency, TransactionIsolation isolation, long timeout, boolean storeEnabled,
-            Boolean mvccOp, int txSize, @Nullable UUID subjId, int taskNameHash, @Nullable String lb) {
-            super(ctx, implicit, implicitSingle, sys, plc, concurrency, isolation, timeout, storeEnabled, mvccOp, txSize, subjId, taskNameHash, lb);
+        /**
+         * @param ctx Context.
+         * @param implicit Implicit.
+         * @param implicitSingle Implicit single.
+         * @param sys System.
+         * @param plc Policy.
+         * @param concurrency Concurrency.
+         * @param isolation Isolation.
+         * @param timeout Timeout.
+         * @param storeEnabled Store enabled.
+         * @param mvccOp Mvcc op.
+         * @param txSize Tx size.
+         * @param subjId Subj id.
+         * @param taskNameHash Task name hash.
+         * @param lb Label.
+         */
+        public MockGridNearTxLocal(GridCacheSharedContext ctx, boolean implicit, boolean implicitSingle, boolean sys,
+            byte plc, TransactionConcurrency concurrency, TransactionIsolation isolation, long timeout,
+            boolean storeEnabled, Boolean mvccOp, int txSize, @Nullable UUID subjId, int taskNameHash, @Nullable String lb) {
+            super(ctx, implicit, implicitSingle, sys, plc, concurrency, isolation, timeout, storeEnabled, mvccOp,
+                txSize, subjId, taskNameHash, lb);
         }
 
         /** {@inheritDoc} */
         @Override public void userCommit() throws IgniteCheckedException {
             throw new IgniteCheckedException("Force failure");
-            //super.userCommit();
         }
     }
 }
