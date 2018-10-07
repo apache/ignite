@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
+import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
@@ -794,16 +795,17 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                         err = heuristicException(ex);
 
+                        try {
+                            uncommit();
+                        }
+                        catch (Throwable e) {
+                            err.addSuppressed(e);
+                        }
+
                         throw err;
                     }
                     finally {
                         cctx.database().checkpointReadUnlock();
-
-                        if (err != null) {
-                            logTxFinishErrorSafe(log, true, err);
-
-                            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, err));
-                        }
 
                         notifyDrManager(state() == COMMITTING && err == null);
 
@@ -844,7 +846,15 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             return;
         }
 
-        commitIfLocked();
+        try {
+            commitIfLocked();
+        }
+        catch (IgniteTxHeuristicCheckedException e) {
+            // Treat heuristic exception as critical.
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+            throw e;
+        }
     }
 
     /**

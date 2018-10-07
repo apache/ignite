@@ -78,15 +78,6 @@ public class TxDataLossOnCommitFailureTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        Ignite crd = startGridsMultiThreaded(nodesCnt);
-
-        crd.cache(DEFAULT_CACHE_NAME).put(KEY, KEY);
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
@@ -94,7 +85,15 @@ public class TxDataLossOnCommitFailureTest extends GridCommonAbstractTest {
     }
 
     public void testCommitErrorOnColocatedNode() throws Exception {
+        nodesCnt = 3;
+        backups = 2;
+
+        Ignite crd = startGridsMultiThreaded(nodesCnt);
+
+        crd.cache(DEFAULT_CACHE_NAME).put(KEY, KEY);
+
         IgniteEx client = startGrid("client");
+
         assertNotNull(client.cache(DEFAULT_CACHE_NAME));
 
         Ignite ignite = nearNode();
@@ -119,12 +118,13 @@ public class TxDataLossOnCommitFailureTest extends GridCommonAbstractTest {
         }
 
         checkKey();
+
         checkFutures();
     }
 
     protected Ignite nearNode() {
-        //return primaryNode(KEY, DEFAULT_CACHE_NAME);
-        return grid("client");
+        return primaryNode(KEY, DEFAULT_CACHE_NAME);
+        //return grid("client");
     }
 
     private void injectFail(Ignite ignite) {

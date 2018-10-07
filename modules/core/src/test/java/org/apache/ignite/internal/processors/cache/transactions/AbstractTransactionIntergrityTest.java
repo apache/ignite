@@ -145,6 +145,7 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
                     .setPersistenceEnabled(persistent())
                     .setMaxSize(50 * 1024 * 1024)
             )
+            .setWalSegmentSize(16 * 1024 * 1024)
             .setPageSize(1024)
             .setWalMode(WALMode.LOG_ONLY));
 

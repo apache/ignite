@@ -1398,11 +1398,10 @@ public class IgniteTxHandler {
                 tx.rollbackRemoteTx();
             }
         }
+        catch (IgniteTxHeuristicCheckedException e) {
+            // Already uncommitted.
+        }
         catch (Throwable e) {
-            ((IgniteTxAdapter)tx).logTxFinishErrorSafe(log, req.commit(), e);
-
-            ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-
             // Mark transaction for invalidate.
             tx.invalidate(true);
             tx.systemInvalidate(true);
@@ -1420,6 +1419,8 @@ public class IgniteTxHandler {
     }
 
     /**
+     * Finish for one-phase distributed tx.
+     *
      * @param tx Transaction.
      * @param req Request.
      */

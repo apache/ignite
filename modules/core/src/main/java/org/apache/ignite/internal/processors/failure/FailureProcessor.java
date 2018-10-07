@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -76,6 +77,13 @@ public class FailureProcessor extends GridProcessorAdapter {
         this.hnd = hnd;
 
         U.quietAndInfo(log, "Configured failure handler: [hnd=" + hnd + ']');
+    }
+
+    /**
+     * @return @{code True} if a node will be stopped by current handler in near time.
+     */
+    public boolean nodeStopping() {
+        return failureCtx != null && !(hnd instanceof NoOpFailureHandler);
     }
 
     /**

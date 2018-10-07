@@ -953,16 +953,17 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 state(UNKNOWN);
 
+                try {
+                    uncommit();
+                }
+                catch (Throwable e) {
+                    err.addSuppressed(e);
+                }
+
                 throw err;
             }
             finally {
                 cctx.database().checkpointReadUnlock();
-
-                if (err != null) {
-                    logTxFinishErrorSafe(log, true, err);
-
-                    cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, err));
-                }
 
                 notifyDrManager(state() == COMMITTING && err == null);
 

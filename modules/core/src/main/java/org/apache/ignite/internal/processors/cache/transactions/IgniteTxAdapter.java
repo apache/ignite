@@ -770,8 +770,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @param ex Root cause.
      */
     public final IgniteCheckedException heuristicException(Throwable ex) {
-        return new IgniteTxHeuristicCheckedException("Commit produced a runtime exception " +
-            "(this is a critical situation and will be handled according to configured policy)", ex);
+        return new IgniteTxHeuristicCheckedException("Committing a transaction has produced runtime exception", ex);
     }
 
     /**
