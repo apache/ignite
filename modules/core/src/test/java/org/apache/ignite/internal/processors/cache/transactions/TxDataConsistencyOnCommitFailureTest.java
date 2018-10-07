@@ -113,7 +113,7 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
     }
 
     /**
-     * @param ignite Ignite.
+     * @param factory Factory.
      */
     private void doTestCommitError(Supplier<Ignite> factory) throws Exception {
         Ignite crd = startGridsMultiThreaded(nodesCnt);
