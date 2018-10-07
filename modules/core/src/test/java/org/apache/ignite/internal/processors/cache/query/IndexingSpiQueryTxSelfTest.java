@@ -114,6 +114,8 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
                         return null;
                     }
                 }, IgniteTxHeuristicCheckedException.class);
+
+                checkFutures();
             }
         }
     }

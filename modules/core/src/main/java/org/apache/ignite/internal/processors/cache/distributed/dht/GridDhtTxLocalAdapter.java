@@ -806,10 +806,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         catch (IgniteCheckedException e) {
             err = e;
 
-            logTxFinishErrorSafe(log, commit, err);
-
-            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, err));
-
             commit = false;
 
             // If heuristic error.

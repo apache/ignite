@@ -467,7 +467,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
                     ", tx=" + CU.txString(this) + ']');
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to finish transaction [commit=" + commit + ", tx=" + this + ']', e);
+            U.error(log, "Failed to finish transaction [commit=" + commit + ", tx=" + CU.txString(this) + ']', e);
 
             err = e;
         }

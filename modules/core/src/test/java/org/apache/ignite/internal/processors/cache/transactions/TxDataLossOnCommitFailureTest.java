@@ -58,6 +58,10 @@ public class TxDataLossOnCommitFailureTest extends GridCommonAbstractTest {
     /** */
     public static final String CLIENT = "client";
 
+    private int nodesCnt;
+
+    private int backups;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -67,25 +71,17 @@ public class TxDataLossOnCommitFailureTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME).
             setCacheMode(CacheMode.PARTITIONED).
             setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL).
-            setBackups(backups()).
+            setBackups(backups).
             setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC));
 
         return cfg;
-    }
-
-    protected int nodesCount() {
-        return 3;
-    }
-
-    protected int backups() {
-        return 2;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        Ignite crd = startGridsMultiThreaded(nodesCount());
+        Ignite crd = startGridsMultiThreaded(nodesCnt);
 
         crd.cache(DEFAULT_CACHE_NAME).put(KEY, KEY);
     }
@@ -114,7 +110,9 @@ public class TxDataLossOnCommitFailureTest extends GridCommonAbstractTest {
 
             ignite.cache(DEFAULT_CACHE_NAME).put(KEY, KEY + 1);
 
-            tx.rollback();
+            tx.commit();
+
+            fail();
         }
         catch (Exception t) {
             // No-op.
