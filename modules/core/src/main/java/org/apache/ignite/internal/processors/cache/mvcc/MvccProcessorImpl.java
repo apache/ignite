@@ -735,7 +735,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     @Override public void ackRecoveryFinished(UUID failedNodeId, Map<Long, Boolean> recoveryResolution) {
-        // t0d0 do all necessary checks and preparations
+        // t0d0 handle exceptions properly
+        // t0d0 consider coordinator change
         try {
             sendMessage(curCrd.nodeId(), new MvccRecoveryFinishedMessage(failedNodeId, recoveryResolution));
         }
@@ -990,7 +991,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** */
-    private void onTxDone(Long txCntr, boolean increaseCommitedCntr) {
+    private void onTxDone(Long txCntr, boolean increaseCommittedCntr) {
         assert initFut.isDone();
 
         GridFutureAdapter fut;
@@ -998,7 +999,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         synchronized (this) {
             activeTxs.remove(txCntr);
 
-            if (increaseCommitedCntr)
+            if (increaseCommittedCntr)
                 committedCntr.setIfGreater(txCntr);
         }
 
@@ -1753,14 +1754,13 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
             // Remove failed node from pending voters list
             recoveryBallotBoxes.forEach((nearNodeId, ballotBox) -> {
-                ballotBox.excludeVoter(nodeId);
-                tryFinishRecoveryVoting(nearNodeId, ballotBox);
+                if (ballotBox.excludeVoter(nodeId))
+                    tryFinishRecoveryVoting(nearNodeId, ballotBox);
             });
 
             if (discoEvt.eventNode().isClient()) {
                 RecoveryBallotBox ballotBox = recoveryBallotBoxes.computeIfAbsent(nodeId, uuid -> new RecoveryBallotBox());
 
-                // t0d0 handle case when voting node fails during recovery
                 ballotBox
                     .voters(discoEvt.topologyNodes().stream().map(ClusterNode::id).collect(Collectors.toList()));
 
@@ -1837,32 +1837,31 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     private static class RecoveryBallotBox {
         List<UUID> voters;
-        final Map<UUID, Map<Long, Boolean>> box = new HashMap<>();
+        final Map<UUID, Map<Long, Boolean>> ballots = new HashMap<>();
 
         synchronized void voters(List<UUID> voters) {
             this.voters = voters;
         }
 
-        synchronized void excludeVoter(UUID voter) {
-            voters.remove(voter);
+        synchronized boolean excludeVoter(UUID voter) {
+            return voters.remove(voter);
         }
 
         synchronized void vote(UUID nodeId, Map<Long, Boolean> vote) {
             // t0d0 merge votes from different nodes? remove duplicates?
-            box.put(nodeId, vote);
+            ballots.put(nodeId, vote);
         }
 
         synchronized boolean isVotingDone() {
             if (voters == null)
                 return false;
 
-            return box.keySet().containsAll(voters);
+            return ballots.keySet().containsAll(voters);
         }
 
         synchronized boolean committed(Long txCntr) {
-            // t0d0 map to resolution faster?
-            // t0d0 voting done with zero replies?
-            return box.values().stream()
+            // t0d0 check and log related invariants
+            return ballots.values().stream()
                 .filter(m -> m.containsKey(txCntr))
                 .map(m -> m.get(txCntr))
                 .findAny()
@@ -1877,15 +1876,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         ballotBox.vote(nodeId, msg.recoveryResolution());
 
-        System.err.format("VOTING: near=%s voter=%s (%d)%n", nearNodeId, nodeId, ballotBox.voters.size());
-
         tryFinishRecoveryVoting(nearNodeId, ballotBox);
     }
 
     private void tryFinishRecoveryVoting(UUID nearNodeId, RecoveryBallotBox ballotBox) {
         if (ballotBox.isVotingDone()) {
-            // t0d0 voting for multiple transaction and same node
-
             List<Long> recoveredTxs;
 
             synchronized (this) {
@@ -1895,7 +1890,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                     .collect(Collectors.toList());
             }
 
-            // t0d0 finish queries as well
+            // t0d0 finish queries as well?
             recoveredTxs.forEach(txCntr -> onTxDone(txCntr, ballotBox.committed(txCntr)));
 
             recoveryBallotBoxes.remove(nearNodeId);
