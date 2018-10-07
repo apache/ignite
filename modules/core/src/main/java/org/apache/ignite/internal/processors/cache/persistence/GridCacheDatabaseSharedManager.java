@@ -53,6 +53,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -428,6 +429,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * Create metastorage data region configuration with enabled persistence by default.
+     *
      * @param storageCfg Data storage configuration.
      * @return Data region configuration.
      */
@@ -525,24 +528,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         catch (IOException e) {
             throw new IgniteCheckedException("Failed to cleanup checkpoint directory: " + cpDir, e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void cleanupDatabaseManagerState() throws IgniteCheckedException {
-        U.log(log, "Shutdown database manager services and cleanup dirs.");
-
-        // Need to shutdown checkpointer first.
-        onKernalStop0(true);
-
-        super.cleanupDatabaseManagerState();
-
-        storeMgr.cleanupCacheStores();
-
-        storeMgr.cleanupPersistentSpace();
-
-        stopping = false;
-
-        cleanupCheckpointDirectory();
     }
 
     /**
@@ -671,6 +656,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 metaStorage = null;
 
                 storePageMem.stop(true);
+
+                cctx.pageStore().cleanupPageStoreIfMatch(new Predicate<Integer>() {
+                    @Override public boolean test(Integer grpId) {
+                        return MetaStorage.METASTORAGE_CACHE_ID == grpId;
+                    }
+                }, false);
 
                 checkpointReadUnlock();
             }

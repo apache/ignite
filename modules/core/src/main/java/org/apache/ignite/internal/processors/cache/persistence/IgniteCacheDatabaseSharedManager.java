@@ -792,15 +792,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Perform shutdown and cleanup database manager services and state.
-     *
-     * @throws IgniteCheckedException If fails.
-     */
-    public void cleanupDatabaseManagerState() throws IgniteCheckedException {
-        onDeActivate(true);
-    }
-
-    /**
      * No-op for non-persistent storage.
      */
     public void cleanupTempCheckpointDirectory() throws IgniteCheckedException{

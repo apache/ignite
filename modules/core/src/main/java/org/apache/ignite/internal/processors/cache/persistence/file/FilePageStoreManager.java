@@ -32,11 +32,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -227,13 +230,19 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void cleanupCacheStores() throws IgniteCheckedException {
-        IgniteCheckedException ex = shutdown(true);
+    @Override public void cleanupPageStoreIfMatch(Predicate<Integer> cacheGrpPred, boolean cleanFiles) {
+        Map<Integer, CacheStoreHolder> filteredStores = idxCacheStores.entrySet().stream()
+            .filter(e -> cacheGrpPred.test(e.getKey()))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        U.log(log, "Cleanup page store manager for cache stores [grps=" + filteredStores.keySet() + ']');
+
+        IgniteCheckedException ex = shutdown(filteredStores.values(), cleanFiles);
 
         if (ex != null)
-            U.error(log, "Failed to gracefully stop page store manager", ex);
+            U.error(log, "Failed to gracefully stop page store managers", ex);
 
-        idxCacheStores.clear();
+        idxCacheStores.entrySet().removeIf(e -> cacheGrpPred.test(e.getKey()));
     }
 
     /** {@inheritDoc} */
@@ -241,10 +250,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         if (log.isDebugEnabled())
             log.debug("Stopping page store manager.");
 
-        IgniteCheckedException ex = shutdown(false);
-
-        if (ex != null)
-            U.error(log, "Failed to gracefully stop page store manager", ex);
+        cleanupPageStoreIfMatch(p -> true, false);
     }
 
     /** {@inheritDoc} */
@@ -263,8 +269,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
 
         stop0(true);
-
-        idxCacheStores.clear();
     }
 
     /** {@inheritDoc} */
@@ -908,10 +912,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /**
      * @param cleanFiles {@code True} if the stores should delete it's files upon close.
      */
-    private IgniteCheckedException shutdown(boolean cleanFiles) {
+    private IgniteCheckedException shutdown(Collection<CacheStoreHolder> holders, boolean cleanFiles) {
         IgniteCheckedException ex = null;
 
-        for (CacheStoreHolder holder : idxCacheStores.values())
+        for (CacheStoreHolder holder : holders)
             ex = shutdown(holder, cleanFiles, ex);
 
         return ex;

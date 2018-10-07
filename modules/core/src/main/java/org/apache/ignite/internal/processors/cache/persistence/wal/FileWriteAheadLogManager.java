@@ -674,7 +674,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         stop0(true);
 
-        tailWalPointer(currHnd.position());
+        if (currHnd != null)
+            tailWalPointer(currHnd.position());
 
         currHnd = null;
     }

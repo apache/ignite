@@ -525,7 +525,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         stop0(true);
 
-        tailWalPointer(currentHnd.position());
+        if (currentHnd != null)
+            tailWalPointer(currentHnd.position());
 
         currentHnd = null;
     }
