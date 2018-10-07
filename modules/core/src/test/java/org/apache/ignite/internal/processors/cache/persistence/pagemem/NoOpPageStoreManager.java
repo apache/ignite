@@ -233,4 +233,9 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     @Override public void cleanupPersistentSpace() throws IgniteCheckedException {
         // No-op.
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean checkAndInitCacheWorkDir(CacheConfiguration cacheCfg) throws IgniteCheckedException {
+        return false;
+    }
 }
