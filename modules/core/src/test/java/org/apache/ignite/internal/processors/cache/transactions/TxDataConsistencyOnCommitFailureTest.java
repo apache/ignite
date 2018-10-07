@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testsuites.IgniteIgnore;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -44,7 +45,7 @@ import org.mockito.stubbing.Answer;
 /**
  * Tests data consistency if transaction is failed due to heuristic exception on originating node.
  */
-public class TxDataLossOnCommitFailureTest extends GridCommonAbstractTest {
+public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest {
     /** */
     public static final int KEY = 0;
 
@@ -102,6 +103,7 @@ public class TxDataLossOnCommitFailureTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-590", forceFailure = false)
     public void testCommitErrorOnColocatedNode2PC() throws Exception {
         nodesCnt = 3;
 
