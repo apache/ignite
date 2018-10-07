@@ -235,7 +235,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             .filter(e -> cacheGrpPred.test(e.getKey()))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        U.log(log, "Cleanup page store manager for cache stores [grps=" + filteredStores.keySet() + ']');
+        U.log(log, "Cleanup provided cache store holders by predicate [grps=" + filteredStores.keySet() + ']');
 
         IgniteCheckedException ex = shutdown(filteredStores.values(), cleanFiles);
 
