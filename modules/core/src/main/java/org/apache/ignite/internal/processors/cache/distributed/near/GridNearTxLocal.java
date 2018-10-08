@@ -740,11 +740,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if(invokeMap != null)
                 MvccUtils.verifyMvccOperationSupport(cacheCtx, "invoke/invokeAll");
 
-            if (mvccSnapshot == null) {
-                MvccUtils.mvccTracker(cacheCtx, this);
-
-                assert mvccSnapshot != null;
-            }
+            MvccUtils.requestSnapshot(cacheCtx, this);
 
             beforePut(cacheCtx, retval, true);
         }
@@ -3913,7 +3909,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         NearTxFinishFuture fut = fast ? new GridNearTxFastFinishFuture(this, commit) :
             new GridNearTxFinishFuture<>(cctx, this, commit);
 
-        if (mvccQueryTracker() != null || mvccSnapshot != null || txState.mvccEnabled(cctx)) {
+        if (mvccQueryTracker() != null || mvccSnapshot != null || txState.mvccEnabled()) {
             if (commit)
                 fut = new GridNearTxFinishAndAckFuture(fut);
             else
@@ -4002,6 +3998,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @return {@code True} if 'fast finish' path can be used for transaction completion.
      */
     private boolean fastFinish() {
+        // t0d0
         return writeMap().isEmpty() && !queryEnlisted()
             && ((optimistic() && !serializable()) || readMap().isEmpty())
             && (mappings.single() || F.view(mappings.mappings(), CU.FILTER_QUERY_MAPPING).isEmpty());

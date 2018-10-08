@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -135,7 +136,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     protected final MvccSnapshot mvccSnapshot;
 
     /** New DHT nodes. */
-    protected Set<UUID> newDhtNodes = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    protected Set<UUID> newDhtNodes = new HashSet<>();
 
     /** Near node ID. */
     protected final UUID nearNodeId;

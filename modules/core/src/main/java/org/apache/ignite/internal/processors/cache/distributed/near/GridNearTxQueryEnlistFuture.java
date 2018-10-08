@@ -116,9 +116,8 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
             else {
                 primary = assignment.primaryPartitionNodes();
 
-                for (ClusterNode pNode : primary) {
+                for (ClusterNode pNode : primary)
                     updateMappings(pNode);
-                }
             }
 
             boolean locallyMapped = primary.contains(cctx.localNode());
