@@ -213,7 +213,87 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
 
         AdHocWALRecord markerRecord = new AdHocWALRecord();
 
-        WALPointer ptr;
+        WALPointer ptr0;
+        WALPointer ptr1;
+
+        do {
+            try {
+                U.sleep(1000);
+
+                ptr0 = walMgr.log(markerRecord);
+
+                dbMgr.checkpointReadLock();
+
+                try {
+                    ptr1 = walMgr.log(markerRecord, NEXT_SEGMENT);
+                }
+                finally {
+                    dbMgr.checkpointReadUnlock();
+                }
+
+                assertTrue(ptr0 instanceof FileWALPointer);
+                assertTrue(ptr1 instanceof FileWALPointer);
+
+                assertTrue(((FileWALPointer)ptr0).index() < ((FileWALPointer)ptr1).index());
+
+                assertEquals(HEADER_RECORD_SIZE, ((FileWALPointer)ptr1).fileOffset());
+            }
+            catch (IgniteCheckedException e) {
+                log.error(e.getMessage(), e);
+            }
+        }
+        while (U.currentTimeMillis() - startTime < testDuration);
+
+        fut.get();
+    }
+
+    /** */
+    public void testCurrentSegmentTypeWithCacheActivityLogOnlyMode() throws Exception {
+        walMode = LOG_ONLY;
+
+        checkCurrentSegmentTypeWithCacheActivity();
+    }
+
+    /** */
+    public void testCurrentSegmentTypeWithCacheActivityFsyncMode() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9776");
+
+        walMode = FSYNC;
+
+        checkCurrentSegmentTypeWithCacheActivity();
+    }
+
+    /**
+     * Under load, ensures the record gets into very beginning of the segment in {@code NEXT_SEGMENT} log mode.
+     */
+    private void checkCurrentSegmentTypeWithCacheActivity() throws Exception {
+        IgniteEx ig = startGrid(0);
+
+        ig.cluster().active(true);
+
+        IgniteCache<Integer, Integer> cache = ig.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        final long testDuration = 30_000;
+
+        long startTime = U.currentTimeMillis();
+
+        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(
+            () -> {
+                ThreadLocalRandom random = ThreadLocalRandom.current();
+
+                while (U.currentTimeMillis() - startTime < testDuration)
+                    cache.put(random.nextInt(100), random.nextInt(100_000));
+            },
+            8, "cache-put-thread");
+
+        IgniteWriteAheadLogManager walMgr = ig.context().cache().context().wal();
+
+        IgniteCacheDatabaseSharedManager dbMgr = ig.context().cache().context().database();
+
+        AdHocWALRecord markerRecord = new AdHocWALRecord();
+
+        WALPointer ptr0;
+        WALPointer ptr1;
 
         do {
             try {
@@ -222,14 +302,18 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
                 dbMgr.checkpointReadLock();
 
                 try {
-                    ptr = walMgr.log(markerRecord, NEXT_SEGMENT);
+                    ptr0 = walMgr.log(markerRecord, CURRENT_SEGMENT);
                 }
                 finally {
                     dbMgr.checkpointReadUnlock();
                 }
 
-                assertTrue(ptr instanceof FileWALPointer);
-                assertEquals(HEADER_RECORD_SIZE, ((FileWALPointer)ptr).fileOffset());
+                ptr1 = walMgr.log(markerRecord);
+
+                assertTrue(ptr0 instanceof FileWALPointer);
+                assertTrue(ptr1 instanceof FileWALPointer);
+
+                assertTrue(((FileWALPointer)ptr0).index() < ((FileWALPointer)ptr1).index());
             }
             catch (IgniteCheckedException e) {
                 log.error(e.getMessage(), e);
