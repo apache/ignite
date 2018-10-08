@@ -38,6 +38,10 @@ public enum CacheAtomicityMode {
      * <b>Note!</b> In this mode, transactional consistency is guaranteed for key-value API operations only.
      * To enable ACID capabilities for SQL transactions, use the {@code TRANSACTIONAL_SNAPSHOT} mode.
      * <p>
+     * <b>Note!</b> This atomicity mode is not compatible with the other modes within the same transaction.
+     * if a transaction is executed over multiple caches, all caches must have the same atomicity mode,
+     * either {@code TRANSACTIONAL_SNAPSHOT} or {@code TRANSACTIONAL}.
+     * <p>
      * See {@link Transaction} for more information about transactions.
      */
     TRANSACTIONAL,
@@ -109,9 +113,9 @@ public enum CacheAtomicityMode {
      * by the coordinator. This snapshot ensures that the transaction works with a consistent database state
      * during its execution period.
      * <p>
-     * Note! This atomicity mode is not compatible with the other modes within the same transaction.
-     * If a transaction is executed over multiple caches, all caches must have the same mode,
-     * either {@code TRANSACTIONAL_SNAPSHOT} or {@code TRANSACTIONAL}
+     * <b>Note!</b> This atomicity mode is not compatible with the other modes within the same transaction.
+     * If a transaction is executed over multiple caches, all caches must have the same atomicity mode,
+     * either {@code TRANSACTIONAL_SNAPSHOT} or {@code TRANSACTIONAL}.
      * <p>
      * See {@link Transaction} for more information about transactions.
      */

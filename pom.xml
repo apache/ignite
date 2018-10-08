@@ -30,17 +30,9 @@
         <relativePath>parent</relativePath>
     </parent>
 
-    <groupId>org.apache.ignite</groupId>
     <artifactId>apache-ignite</artifactId>
     <version>2.7.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-
-    <properties>
-        <!--fix <attachartifact>...< /> at apache-release profile if changed-->
-        <ignite.zip.pattern>${project.artifactId}-${ignite.edition}-${project.version}-bin</ignite.zip.pattern>
-		<maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-    </properties>
 
     <scm>
         <url>https://git-wip-us.apache.org/repos/asf/ignite</url>
@@ -55,8 +47,10 @@
         <module>modules/core</module>
         <module>modules/dev-utils</module>
         <module>modules/direct-io</module>
-        
-        
+        <module>modules/hadoop</module>
+        <module>modules/extdata/p2p</module>
+        <module>modules/extdata/uri</module>
+        <module>modules/extdata/platform</module>
         <module>modules/clients</module>
         <module>modules/spring</module>
         <module>modules/spring-data</module>
@@ -68,19 +62,35 @@
         <module>modules/ssh</module>
         <module>modules/rest-http</module>
         <module>modules/jta</module>
-        
+        <module>modules/aws</module>
         <module>modules/log4j</module>
         <module>modules/log4j2</module>
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
         <module>modules/codegen</module>
-       
+        <module>modules/gce</module>
+        <module>modules/cloud</module>
+        <module>modules/mesos</module>
+        <module>modules/kafka</module>
+        <module>modules/flume</module>
+        <module>modules/yarn</module>
         <module>modules/jms11</module>
-        
+        <module>modules/twitter</module>
         <module>modules/mqtt</module>
         <module>modules/zookeeper</module>
         <module>modules/hibernate-core</module>
-
+        <module>modules/camel</module>
+        <module>modules/storm</module>
+        <module>modules/osgi-paxlogging</module>
+        <module>modules/osgi-karaf</module>
+        <module>modules/osgi</module>
+        <module>modules/web/ignite-appserver-test</module>
+        <module>modules/web/ignite-websphere-test</module>
+        <module>modules/cassandra</module>
+        <module>modules/flink</module>
+        <module>modules/kubernetes</module>
+        <module>modules/zeromq</module>
+        <module>modules/rocketmq</module>
         <module>modules/sqlline</module>
         <module>modules/ml</module>
     </modules>
@@ -112,33 +122,6 @@
                 <module>modules/visor-plugins</module>
             </modules>
         </profile>
-		
-		<profile>
-            <id>all-interg</id><!-- used to update project versions and check all modules compilation -->
-            <modules><!-- sorted alphabetically -->
-						<module>modules/hadoop</module>
-						<module>modules/aws</module>
-						<module>modules/gce</module>
-						<module>modules/cloud</module>
-						<module>modules/mesos</module>
-						<module>modules/kafka</module>
-						<module>modules/flume</module>
-						<module>modules/yarn</module>
-						<module>modules/twitter</module>
-						
-                        <module>modules/camel</module>
-						<module>modules/storm</module>
-						<module>modules/osgi-paxlogging</module>
-						<module>modules/osgi-karaf</module>
-						<module>modules/osgi</module>
-						
-						<module>modules/cassandra</module>
-						<module>modules/flink</module>
-						<module>modules/kubernetes</module>
-						<module>modules/zeromq</module>
-						<module>modules/rocketmq</module>
-            </modules>
-        </profile>
 
         <profile>
             <id>all-other</id> <!-- used to update project versions and check all modules compilation -->
@@ -149,13 +132,6 @@
 
         <profile>
             <id>test</id>
-			 <modules><!-- sorted alphabetically -->
-				<module>modules/extdata/p2p</module>
-				<module>modules/extdata/uri</module>
-				<module>modules/extdata/platform</module>
-				<module>modules/web/ignite-appserver-test</module>
-				<module>modules/web/ignite-websphere-test</module>
-			</modules>
             <build>
                 <plugins>
                     <plugin>
@@ -414,15 +390,15 @@
                                             <include name="**/*.sh" />
                                         </fixcrlf>
 
-                                        <zip destfile="${basedir}/target/bin/${ignite.zip.pattern}.zip" encoding="UTF-8">
-                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}" prefix="${ignite.zip.pattern}" filemode="755">
+                                        <zip destfile="${basedir}/target/bin/${ignite.edition}-${project.version}-bin.zip" encoding="UTF-8">
+                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}" prefix="${ignite.edition}-${project.version}-bin" filemode="755">
                                                 <include name="**/*.sh" />
                                                 <include name="**/configure" />
                                                 <include name="**/install-sh" />
                                                 <include name="**/compile" />
                                                 <include name="**/missing" />
                                             </zipfileset>
-                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}" prefix="${ignite.zip.pattern}">
+                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}" prefix="${ignite.edition}-${project.version}-bin">
                                                 <exclude name="**/*.sh" />
                                                 <exclude name="**/configure" />
                                                 <exclude name="**/install-sh" />
@@ -472,7 +448,7 @@
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
                             </execution>
-							<!--
+
                             <execution>
                                 <id>dependencies-visor-console</id>
                                 <phase>validate</phase>
@@ -488,7 +464,7 @@
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
                             </execution>
-							-->
+
                             <execution>
                                 <id>dependencies-sqlline</id>
                                 <phase>validate</phase>
@@ -504,7 +480,7 @@
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
                             </execution>
-							<!--
+
                             <execution>
                                 <id>scala-scripts</id>
                                 <phase>validate</phase>
@@ -520,7 +496,6 @@
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
                             </execution>
-							-->
                         </executions>
                     </plugin>
 
@@ -590,35 +565,6 @@
             <modules>
                 <module>examples</module>
             </modules>
-        </profile>
-
-        <profile>
-            <id>release-sources</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>source-release-assembly-ignite</id>
-                                <phase>validate</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
-                                    <descriptors>
-                                        <descriptor>assembly/release-sources.xml</descriptor>
-                                    </descriptors>
-                                    <tarLongFileMode>gnu</tarLongFileMode>
-                                    <finalName>${project.artifactId}-${project.version}-src</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
 
         <profile>
@@ -782,14 +728,6 @@
 
     <build>
         <plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<configuration>
-					<source>1.8</source>
-					<target>1.8</target>
-				</configuration>
-			</plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-clean-plugin</artifactId>

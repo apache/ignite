@@ -32,5 +32,7 @@ public enum ResultType {
     /** */
     VERSION_MISMATCH,
     /** */
-    FILTERED
+    FILTERED,
+    /** */
+    REMOVED_NOT_NULL,
 }

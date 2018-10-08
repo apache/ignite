@@ -42,7 +42,7 @@ const config = {
     // Output system.
     output: {
         path: path.resolve('build'),
-        filename: '[name].[chunkhash].js',
+        filename: '[name].js',
         publicPath: '/'
     },
 

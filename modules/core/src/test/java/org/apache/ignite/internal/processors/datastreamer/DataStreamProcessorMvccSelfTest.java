@@ -28,13 +28,19 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
  */
 public class DataStreamProcessorMvccSelfTest extends DataStreamProcessorSelfTest {
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration igniteConfiguration = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration[] cacheConfigurations = igniteConfiguration.getCacheConfiguration();
+        CacheConfiguration[] ccfgs = igniteConfiguration.getCacheConfiguration();
 
-        assert cacheConfigurations == null || cacheConfigurations.length == 0
-                || (cacheConfigurations.length == 1 && cacheConfigurations[0].getAtomicityMode() == TRANSACTIONAL_SNAPSHOT);
+        if (ccfgs != null) {
+            for (CacheConfiguration ccfg : ccfgs)
+                ccfg.setNearConfiguration(null);
+        }
+
+        assert ccfgs == null || ccfgs.length == 0 ||
+            (ccfgs.length == 1 && ccfgs[0].getAtomicityMode() == TRANSACTIONAL_SNAPSHOT);
 
         return igniteConfiguration;
     }
@@ -45,30 +51,6 @@ public class DataStreamProcessorMvccSelfTest extends DataStreamProcessorSelfTest
     }
 
     /** {@inheritDoc} */
-    @Override public void testPartitioned() throws Exception {
-        // test uses batchedSorted StreamReceiver which depends on Cache.putAll, Cache.removeAll
-        fail("https://issues.apache.org/jira/browse/IGNITE-9451");
-
-        super.testPartitioned();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testColocated() throws Exception {
-        // test uses batchedSorted StreamReceiver which depends on Cache.putAll, Cache.removeAll
-        fail("https://issues.apache.org/jira/browse/IGNITE-9451");
-
-        super.testColocated();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testReplicated() throws Exception {
-        // test uses batchedSorted StreamReceiver which depends on Cache.putAll, Cache.removeAll
-        fail("https://issues.apache.org/jira/browse/IGNITE-9451");
-
-        super.testReplicated();
-    }
-
-    /** {@inheritDoc} */
     @Override public void testUpdateStore() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-8582");
 
@@ -76,12 +58,12 @@ public class DataStreamProcessorMvccSelfTest extends DataStreamProcessorSelfTest
     }
 
     /** {@inheritDoc} */
-    @Override public void testFlushTimeout() throws Exception {
+    @Override public void testFlushTimeout() {
         fail("https://issues.apache.org/jira/browse/IGNITE-9321");
     }
 
     /** {@inheritDoc} */
-    @Override public void testLocal() throws Exception {
+    @Override public void testLocal() {
         // Do not check local caches with MVCC enabled.
     }
 }
