@@ -255,7 +255,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
 
     /**
      * @param ignite Ignite instance.
-     * @return 3 pairs {@code {cacheName, tableName}} for further sql operations.
+     * @return 3 pairs {@code {cacheName, tableName, indexName}} for further sql operations.
      */
     @NotNull private List<T3<String, String, String>> createCaches(IgniteEx ignite) {
         List<T3<String, String, String>> caches = new ArrayList<>();
