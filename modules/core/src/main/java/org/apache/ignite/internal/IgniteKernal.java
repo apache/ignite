@@ -91,6 +91,7 @@ import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -190,6 +191,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersControlMXBeanImpl;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -1868,13 +1870,24 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ClusterNode locNode = localNode();
 
         if (log.isQuiet()) {
+            ackDataRegions(s -> {
+                U.quiet(false, s);
+
+                return null;
+            });
+
             U.quiet(false, "");
+
             U.quiet(false, "Ignite node started OK (id=" + U.id8(locNode.id()) +
                 (F.isEmpty(igniteInstanceName) ? "" : ", instance name=" + igniteInstanceName) + ')');
         }
 
         if (log.isInfoEnabled()) {
-            log.info("");
+            ackDataRegions(s -> {
+                log.info(s);
+
+                return null;
+            });
 
             String ack = "Ignite ver. " + VER_STR + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH_STR;
 
@@ -1909,6 +1922,48 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             U.quietAndInfo(log, ">>> Ignite cluster is not active (limited functionality available). " +
                 "Use control.(sh|bat) script or IgniteCluster interface to activate.");
         }
+    }
+
+    /**
+     * @param clo Message output closure.
+     */
+    public void ackDataRegions(IgniteClosure<String, Void> clo) {
+        DataStorageConfiguration memCfg = ctx.config().getDataStorageConfiguration();
+
+        if (memCfg == null)
+            return;
+
+        clo.apply("Data Regions Configured:");
+        clo.apply(dataRegionConfigurationMessage(memCfg.getDefaultDataRegionConfiguration()));
+
+        DataRegionConfiguration[] dataRegions = memCfg.getDataRegionConfigurations();
+
+        if (dataRegions != null) {
+            for (DataRegionConfiguration dataRegion : dataRegions) {
+                String msg = dataRegionConfigurationMessage(dataRegion);
+
+                if (msg != null)
+                    clo.apply(msg);
+            }
+        }
+    }
+
+    /**
+     * @param regCfg Data region configuration.
+     * @return Data region message.
+     */
+    private String dataRegionConfigurationMessage(DataRegionConfiguration regCfg) {
+        if (regCfg == null)
+            return null;
+
+        SB m = new SB();
+
+        m.a("  ^-- ").a(regCfg.getName()).a(" [");
+        m.a("initSize=").a(U.readableSize(regCfg.getInitialSize(), false));
+        m.a(", maxSize=").a(U.readableSize(regCfg.getMaxSize(), false));
+        m.a(", persistence=" + regCfg.isPersistenceEnabled()).a(']');
+
+        return m.toString();
     }
 
     /**

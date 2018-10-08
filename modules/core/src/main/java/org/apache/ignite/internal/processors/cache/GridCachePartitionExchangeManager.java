@@ -1109,8 +1109,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         m.topologyVersion(msgTopVer);
 
-        if (log.isInfoEnabled())
-            log.info("Full Message creating for " + msgTopVer + " performed in " + (System.currentTimeMillis() - time) + " ms.");
+        if (log.isInfoEnabled()) {
+            long latency = System.currentTimeMillis() - time;
+
+            if (latency > 100 || log.isDebugEnabled())
+                log.info("Full Message creating for " + msgTopVer + " performed in " + latency + " ms.");
+        }
 
         if (log.isTraceEnabled())
             log.trace("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", msg=" + m + ']');
