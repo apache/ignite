@@ -61,7 +61,8 @@ module.exports = {
             server: {
                 host: nconf.get('server:host') || dfltHost,
                 port: _normalizePort(nconf.get('server:port') || dfltPort),
-                SSLOptions: nconf.get('server:ssl') && {
+                // eslint-disable-next-line eqeqeq
+                SSLOptions: nconf.get('server:ssl') == 'true' && {
                     enable301Redirects: true,
                     trustXFPHeader: true,
                     key: fs.readFileSync(nconf.get('server:key')),
