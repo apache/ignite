@@ -69,6 +69,10 @@ public abstract class GridCacheMessage implements Message {
     private GridDeploymentInfoBean depInfo;
 
     /** */
+    @GridToStringInclude
+    @Nullable private AffinityTopologyVersion lastAffChangedTopVer;
+
+    /** */
     @GridDirectTransient
     protected boolean addDepInfo;
 
@@ -182,6 +186,20 @@ public abstract class GridCacheMessage implements Message {
      */
     public AffinityTopologyVersion topologyVersion() {
         return AffinityTopologyVersion.NONE;
+    }
+
+    /**
+     * @return
+     */
+    public AffinityTopologyVersion lastAffinityChangedTopologyVersion() {
+        if (lastAffChangedTopVer == null)
+            return topologyVersion();
+
+        return lastAffChangedTopVer;
+    }
+
+    public void lastAffinityChangedTopologyVersion(AffinityTopologyVersion topVer) {
+        lastAffChangedTopVer = topVer;
     }
 
     /**
@@ -637,7 +655,7 @@ public abstract class GridCacheMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 3;
     }
 
     /** {@inheritDoc} */
@@ -659,6 +677,12 @@ public abstract class GridCacheMessage implements Message {
                 writer.incrementState();
 
             case 1:
+                if (!writer.writeMessage("lastAffChangedTopVer", lastAffChangedTopVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
                 if (!writer.writeLong("msgId", msgId))
                     return false;
 
@@ -686,6 +710,14 @@ public abstract class GridCacheMessage implements Message {
                 reader.incrementState();
 
             case 1:
+                lastAffChangedTopVer = reader.readMessage("lastAffChangedTopVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
                 msgId = reader.readLong("msgId");
 
                 if (!reader.isLastRead())
