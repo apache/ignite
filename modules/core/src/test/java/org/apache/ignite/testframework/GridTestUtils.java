@@ -97,6 +97,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -160,7 +161,7 @@ public final class GridTestUtils {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot, @Nullable Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage spiCustomMsg) {
+        @Override public IgniteFuture<?> onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot, @Nullable Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage spiCustomMsg) {
             hook.handleDiscoveryMessage(spiCustomMsg);
 
             return delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
@@ -1554,51 +1555,58 @@ public final class GridTestUtils {
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     @Nullable public static <T> T invoke(Object obj, String mtd, Object... params) throws Exception {
-        // We cannot resolve method by parameter classes due to some of parameters can be null.
-        // Search correct method among all methods collection.
-        for (Method m : obj.getClass().getDeclaredMethods()) {
-            // Filter methods by name.
-            if (!m.getName().equals(mtd))
-                continue;
+        Class<?> cls = obj.getClass();
+        
+        do {
+            // We cannot resolve method by parameter classes due to some of parameters can be null.
+            // Search correct method among all methods collection.
+            for (Method m : cls.getDeclaredMethods()) {
+                // Filter methods by name.
+                if (!m.getName().equals(mtd))
+                    continue;
 
-            if (!areCompatible(params, m.getParameterTypes()))
-                continue;
+                if (!areCompatible(params, m.getParameterTypes()))
+                    continue;
 
-            try {
-                synchronized (m) {
-                    // Backup accessible field state.
-                    boolean accessible = m.isAccessible();
+                try {
+                    synchronized (m) {
+                        // Backup accessible field state.
+                        boolean accessible = m.isAccessible();
 
-                    try {
-                        if (!accessible)
-                            m.setAccessible(true);
+                        try {
+                            if (!accessible)
+                                m.setAccessible(true);
 
-                        return (T)m.invoke(obj, params);
-                    }
-                    finally {
-                        // Recover accessible field state.
-                        if (!accessible)
-                            m.setAccessible(false);
+                            return (T)m.invoke(obj, params);
+                        }
+                        finally {
+                            // Recover accessible field state.
+                            if (!accessible)
+                                m.setAccessible(false);
+                        }
                     }
                 }
-            }
-            catch (IllegalAccessException e) {
-                throw new RuntimeException("Failed to access method" +
-                    " [obj=" + obj + ", mtd=" + mtd + ", params=" + Arrays.toString(params) + ']', e);
-            }
-            catch (InvocationTargetException e) {
-                Throwable cause = e.getCause();
+                catch (IllegalAccessException e) {
+                    throw new RuntimeException("Failed to access method" +
+                        " [obj=" + obj + ", mtd=" + mtd + ", params=" + Arrays.toString(params) + ']', e);
+                }
+                catch (InvocationTargetException e) {
+                    Throwable cause = e.getCause();
 
-                if (cause instanceof Error)
-                    throw (Error) cause;
+                    if (cause instanceof Error)
+                        throw (Error) cause;
 
-                if (cause instanceof Exception)
-                    throw (Exception) cause;
+                    if (cause instanceof Exception)
+                        throw (Exception) cause;
 
-                throw new RuntimeException("Failed to invoke method)" +
-                    " [obj=" + obj + ", mtd=" + mtd + ", params=" + Arrays.toString(params) + ']', e);
+                    throw new RuntimeException("Failed to invoke method)" +
+                        " [obj=" + obj + ", mtd=" + mtd + ", params=" + Arrays.toString(params) + ']', e);
+                }
             }
-        }
+
+            cls = cls.getSuperclass();
+        } while (cls != Object.class);
+
 
         throw new RuntimeException("Failed to find method" +
             " [obj=" + obj + ", mtd=" + mtd + ", params=" + Arrays.toString(params) + ']');
