@@ -86,9 +86,14 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
 
         backups = 2;
 
-        Ignite ignite = startGrid("client");
-
-        doTestCommitError(() -> ignite);
+        doTestCommitError(() -> {
+            try {
+                return startGrid("client");
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     /** */
@@ -97,9 +102,14 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
 
         backups = 1;
 
-        Ignite ignite = startGrid("client");
-
-        doTestCommitError(() -> ignite);
+        doTestCommitError(() -> {
+            try {
+                return startGrid("client");
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     /** */
