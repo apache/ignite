@@ -456,10 +456,17 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         }
 
         if (newSize > inlineSize()) {
-            int oldSize = maxCalculatedInlineSize.get();
+            int oldSize;
 
-            if (oldSize >= newSize || !maxCalculatedInlineSize.compareAndSet(oldSize, newSize))
-                return;
+            while (true) {
+                oldSize = maxCalculatedInlineSize.get();
+
+                if (oldSize >= newSize)
+                    return;
+
+                if (maxCalculatedInlineSize.compareAndSet(oldSize, newSize))
+                    break;
+            }
 
             String cols = colNames.stream().collect(Collectors.joining(", ", "(", ")"));
 
