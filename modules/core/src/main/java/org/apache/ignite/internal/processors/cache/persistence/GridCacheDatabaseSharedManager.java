@@ -265,6 +265,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         key -> key != null && key.startsWith(CACHE_CONFIGURATION_VERSION_PREFIX);
 
 
+    /** Capacity for StringBuilder in metastore key creation.
+     * Evaluation: Max.of(prefix len) + delimiter + 2*(max len hash + sign) */
+    private static final int METASTORE_KEY_SB_CAPACITY = CACHE_GRP_CACHE_NAME_METASTORE_KEY_DELIMITER.length() +
+        Math.max(CACHE_CONFIGURATION_VERSION_PREFIX.length(), STORE_CACHE_PREFIX.length()) +
+        2 * String.valueOf(Integer.MIN_VALUE).length();
+
+
     /** Timeout between partition file destroy and checkpoint to handle it. */
     private static final long PARTITION_DESTROY_CHECKPOINT_TIMEOUT = 30 * 1000; // 30 Seconds.
 
@@ -1790,7 +1797,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         String cacheName = cacheCfg.getName();
         String cacheGrpName = cacheCfg.getGroupName() != null ? cacheCfg.getGroupName() : cacheName;
 
-        return STORE_CACHE_PREFIX + cacheGrpName + CACHE_GRP_CACHE_NAME_METASTORE_KEY_DELIMITER + cacheName;
+        return new StringBuilder(METASTORE_KEY_SB_CAPACITY)
+            .append(STORE_CACHE_PREFIX)
+            .append(cacheGrpName.hashCode())
+            .append(CACHE_GRP_CACHE_NAME_METASTORE_KEY_DELIMITER)
+            .append(cacheName.hashCode())
+            .toString();
     }
 
     /**
@@ -1821,8 +1833,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @return metastore key.
      */
     private String getCacheConfigVersionMetastoreKey(@NotNull  String cacheName,@Nullable String cacheGrpName){
-        return CACHE_CONFIGURATION_VERSION_PREFIX + (cacheGrpName ==null ? cacheName : cacheGrpName) +
-            CACHE_GRP_CACHE_NAME_METASTORE_KEY_DELIMITER + cacheName;
+        return new StringBuilder(METASTORE_KEY_SB_CAPACITY)
+            .append(CACHE_CONFIGURATION_VERSION_PREFIX)
+            .append((cacheGrpName ==null ? cacheName : cacheGrpName).hashCode())
+            .append(CACHE_GRP_CACHE_NAME_METASTORE_KEY_DELIMITER)
+            .append(cacheName.hashCode())
+            .toString();
     }
 
     /**
