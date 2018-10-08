@@ -316,7 +316,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     @Params(atomicityMode = TRANSACTIONAL)
     public void testCreateCacheTransactional() throws Exception {
         doTest(
-            CacheBlockOnReadAbstractTest::createCachePredicate,
+            discoveryEvent(CacheBlockOnReadAbstractTest::createCachePredicate),
             () -> baseline.get(0).createCache(UUID.randomUUID().toString())
         );
     }
@@ -344,7 +344,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
             baseline.get(0).createCache(cacheName);
 
         doTest(
-            CacheBlockOnReadAbstractTest::destroyCachePredicate,
+            discoveryEvent(CacheBlockOnReadAbstractTest::destroyCachePredicate),
             () -> baseline.get(0).destroyCache(cacheNames.remove(0))
         );
     }
@@ -365,9 +365,9 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         startNodesInClientMode(true);
 
         doTest(
-            discoEvt -> discoEvt.type() == EventType.EVT_NODE_JOINED,
+            discoveryEvent(discoEvt -> discoEvt.type() == EventType.EVT_NODE_JOINED),
             () -> {
-                for (int i = 0, cnt = baselineServersCount() - 2; i < cnt; i++)
+                for (int i = 0; i < baselineServersCount() - 2; i++)
                     cntFinishedReadOperations.countDown();
 
                 customIpFinder = new TcpDiscoveryVmIpFinder(false)
@@ -382,41 +382,41 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         );
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    @Params(atomicityMode = ATOMIC)
-    public void testStopClientAtomic() throws Exception {
-        testStopClientTransactional();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Params(atomicityMode = TRANSACTIONAL)
-    public void testStopClientTransactional() throws Exception {
-        customIpFinder = new TcpDiscoveryVmIpFinder(false)
-            .setAddresses(
-                Collections.singletonList("127.0.0.1:47500")
-            );
-
-        startNodesInClientMode(true);
-
-        for (int i = 0; i < 3; i++)
-            clients.add((IgniteEx)startGrid(UUID.randomUUID().toString()));
-
-        customIpFinder = null;
-
-        doTest(
-            discoEvt -> discoEvt.type() == EventType.EVT_NODE_LEFT,
-            () -> {
-                for (int i = 0, cnt = baselineServersCount() - 2; i < cnt; i++)
-                    cntFinishedReadOperations.countDown();
-
-                stopGrid(clients.remove(clients.size() - 1).name());
-            }
-        );
-    }
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    @Params(atomicityMode = ATOMIC)
+//    public void testStopClientAtomic() throws Exception {
+//        testStopClientTransactional();
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    @Params(atomicityMode = TRANSACTIONAL)
+//    public void testStopClientTransactional() throws Exception {
+//        customIpFinder = new TcpDiscoveryVmIpFinder(false)
+//            .setAddresses(
+//                Collections.singletonList("127.0.0.1:47500")
+//            );
+//
+//        startNodesInClientMode(true);
+//
+//        for (int i = 0; i < 3; i++)
+//            clients.add((IgniteEx)startGrid(UUID.randomUUID().toString()));
+//
+//        customIpFinder = null;
+//
+//        doTest(
+//            discoveryEvent(discoEvt -> discoEvt.type() == EventType.EVT_NODE_LEFT),
+//            () -> {
+//                for (int i = 0; i < baselineServersCount() - 2; i++)
+//                    cntFinishedReadOperations.countDown();
+//
+//                stopGrid(clients.remove(clients.size() - 1).name());
+//            }
+//        );
+//    }
 
     /**
      * @throws Exception If failed.
@@ -434,7 +434,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         startNodesInClientMode(false);
 
         doTest(
-            discoEvt -> discoEvt.type() == EventType.EVT_NODE_JOINED,
+            discoveryEvent(discoEvt -> discoEvt.type() == EventType.EVT_NODE_JOINED),
             () -> startGrid(UUID.randomUUID().toString())
         );
     }
@@ -453,7 +453,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     @Params(servers = 4, atomicityMode = TRANSACTIONAL)
     public void testStopServerTransactional() throws Exception {
         doTest(
-            discoEvt -> discoEvt.type() == EventType.EVT_NODE_LEFT,
+            discoveryEvent(discoEvt -> discoEvt.type() == EventType.EVT_NODE_LEFT),
             () -> stopGrid(srvs.remove(srvs.size() - 1).name())
         );
     }
@@ -472,7 +472,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     @Params(baseline = 4, timeout = 3000L, atomicityMode = TRANSACTIONAL)
     public void testRestartBaselineTransactional() throws Exception {
         doTest(
-            discoEvt -> discoEvt.type() == EventType.EVT_NODE_JOINED,
+            discoveryEvent(discoEvt -> discoEvt.type() == EventType.EVT_NODE_JOINED),
             () -> {
                 IgniteEx node = baseline.get(baseline.size() - 1);
 
@@ -480,10 +480,9 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
                 stopGrid(node.name());
 
-                for (int i = 0, cnt = baselineServersCount() - 2; i < cnt; i++)
+                for (int i = 0; i < baselineServersCount() - 2; i++)
                     cntFinishedReadOperations.countDown();
 
-                System.out.println("<<<STARTING>>> " + node.name());
                 startGrid(node.name());
             }
         );
@@ -503,7 +502,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     @Params(timeout = 5000L, atomicityMode = TRANSACTIONAL)
     public void testUpdateBaselineTopologyTransactional() throws Exception {
         doTest(
-            discoEvt -> {
+            discoveryEvent(discoEvt -> {
                 if (discoEvt instanceof DiscoveryCustomEvent) {
                     DiscoveryCustomEvent discoCustomEvt = (DiscoveryCustomEvent)discoEvt;
 
@@ -513,7 +512,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
                 }
 
                 return false;
-            },
+            }),
             () -> {
                 startNodesInClientMode(false);
 
@@ -540,7 +539,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         AtomicInteger cntDownCntr = new AtomicInteger(0);
 
         doTest(
-            discoEvt -> discoEvt.type() == EventType.EVT_NODE_LEFT,
+            discoveryEvent(discoEvt -> discoEvt.type() == EventType.EVT_NODE_LEFT),
             () -> {
                 IgniteEx node = baseline.get(baseline.size() - cntDownCntr.get() - 1);
 
@@ -621,7 +620,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      * @param block Blocking operation.
      * @throws Exception If failed.
      */
-    public void doTest(Predicate<DiscoveryEvent> blockMsg, RunnableX block) throws Exception {
+    public void doTest(Predicate<Message> blockMsg, RunnableX block) throws Exception {
         BackgroundOperation backgroundOperation = new BlockMessageOnBaselineBackgroundOperation(block, blockMsg);
 
         CacheReadBackgroundOperation<?, ?> readOperation = getReadOperation();
@@ -690,8 +689,10 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
         // Read while potentially blocking operation is executing.
         try (AutoCloseable block = backgroundOperation.start()) {
-            // Interruption is possible if test itself is wrong.
-            cntFinishedReadOperations.await(timeout(), TimeUnit.MILLISECONDS);
+            cntFinishedReadOperations.await(5 * timeout(), TimeUnit.MILLISECONDS);
+
+            // Possible if test itself is wrong.
+            assertEquals("Messages weren't blocked in time", 0, cntFinishedReadOperations.getCount());
 
             try (AutoCloseable read = readOperation.start()) {
                 Thread.sleep(timeout());
@@ -813,6 +814,25 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     }
 
     /**
+     * @param discoEvt Predicate that tests discovery events.
+     * @return New predicate that test any message based on {@code discoEvt} predicate.
+     */
+    public static Predicate<Message> discoveryEvent(Predicate<DiscoveryEvent> discoEvt) {
+        return msg -> {
+            if (msg instanceof GridDhtPartitionsAbstractMessage) {
+                GridDhtPartitionsAbstractMessage fullMsg = (GridDhtPartitionsAbstractMessage)msg;
+
+                GridDhtPartitionExchangeId exchangeId = fullMsg.exchangeId();
+
+                if (exchangeId != null)
+                    return discoEvt.test(U.field(exchangeId, "discoEvt"));
+            }
+
+            return false;
+        };
+    }
+
+    /**
      * Background operation that executes some node request and doesn't allow its messages to be fully processed until
      * operation is stopped.
      */
@@ -821,7 +841,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         private final RunnableX block;
 
         /** */
-        private final Predicate<DiscoveryEvent> blockMsg;
+        private final Predicate<Message> blockMsg;
 
         /**
          * @param block Blocking operation.
@@ -831,7 +851,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
          */
         protected BlockMessageOnBaselineBackgroundOperation(
             RunnableX block,
-            Predicate<DiscoveryEvent> blockMsg
+            Predicate<Message> blockMsg
         ) {
             this.block = block;
             this.blockMsg = blockMsg;
@@ -856,16 +876,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
          * @return Whether the given message should be blocked or not.
          */
         private boolean blockMessage(ClusterNode node, Message msg) {
-            boolean block = false;
-
-            if (msg instanceof GridDhtPartitionsAbstractMessage) {
-                GridDhtPartitionsAbstractMessage fullMsg = (GridDhtPartitionsAbstractMessage)msg;
-
-                GridDhtPartitionExchangeId exchangeId = fullMsg.exchangeId();
-
-                if (exchangeId != null)
-                    block = blockMsg.test(U.field(exchangeId, "discoEvt"));
-            }
+            boolean block = blockMsg.test(msg);
 
             if (block)
                 cntFinishedReadOperations.countDown();
