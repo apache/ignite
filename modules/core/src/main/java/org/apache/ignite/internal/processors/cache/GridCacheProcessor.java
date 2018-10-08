@@ -25,6 +25,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -36,6 +37,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import javax.cache.configuration.FactoryBuilder;
+import javax.cache.expiry.EternalExpiryPolicy;
+import javax.cache.expiry.ExpiryPolicy;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -59,6 +63,7 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -134,6 +139,7 @@ import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainClosure;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CIX1;
@@ -147,6 +153,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
@@ -488,6 +495,36 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 CacheConfiguration.MAX_PARTITIONS_COUNT + " partitions [actual=" + cc.getAffinity().partitions() +
                 ", affFunction=" + cc.getAffinity() + ", cacheName=" + cc.getName() + ']');
 
+        if (cc.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
+            assertParameter(cc.getCacheMode() != LOCAL,
+                "LOCAL cache mode cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode");
+
+            assertParameter(cc.getNearConfiguration() == null,
+                "near cache cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode");
+
+            assertParameter(!cc.isReadThrough(),
+                "readThrough cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode");
+
+            assertParameter(!cc.isWriteThrough(),
+                "writeThrough cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode");
+
+            assertParameter(!cc.isWriteBehindEnabled(),
+                "writeBehindEnabled cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode");
+
+            ExpiryPolicy expPlc = null;
+
+            if (cc.getExpiryPolicyFactory() instanceof FactoryBuilder.SingletonFactory)
+                expPlc = (ExpiryPolicy)cc.getExpiryPolicyFactory().create();
+
+            if (!(expPlc instanceof EternalExpiryPolicy)) {
+                assertParameter(cc.getExpiryPolicyFactory() == null,
+                    "expiry policy cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode");
+            }
+
+            assertParameter(cc.getInterceptor() == null,
+                "interceptor cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode");
+        }
+
         if (cc.isWriteBehindEnabled()) {
             if (cfgStore == null)
                 throw new IgniteCheckedException("Cannot enable write-behind (writer or store is not provided) " +
@@ -564,6 +601,22 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                     throw new IgniteCheckedException("SQL schema name is reserved (please choose another one) [" +
                         "cacheName=" + cc.getName() + ", schemaName=" + cc.getSqlSchema() + ']');
                 }
+            }
+        }
+
+        if (cc.isEncryptionEnabled() && !ctx.clientNode()) {
+            if (!CU.isPersistentCache(cc, c.getDataStorageConfiguration())) {
+                throw new IgniteCheckedException("Using encryption is not allowed" +
+                    " for not persistent cache  [cacheName=" + cc.getName() + ", groupName=" + cc.getGroupName() +
+                    ", cacheType=" + cacheType + "]");
+            }
+
+            EncryptionSpi encSpi = c.getEncryptionSpi();
+
+            if (encSpi == null) {
+                throw new IgniteCheckedException("EncryptionSpi should be configured to use encrypted cache " +
+                    "[cacheName=" + cc.getName() + ", groupName=" + cc.getGroupName() +
+                    ", cacheType=" + cacheType + "]");
             }
         }
     }
@@ -869,6 +922,15 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 "previously stored configuration. Please check your configuration: [cacheName=" + cfg.getName() +
                 ", configuredAtomicityMode=" + cfg.getAtomicityMode() +
                 ", storedAtomicityMode=" + cfgFromStore.getAtomicityMode() + "]");
+        }
+
+        boolean staticCfgVal = cfg.isEncryptionEnabled();
+
+        boolean storedVal = cfgFromStore.isEncryptionEnabled();
+
+        if (storedVal != staticCfgVal) {
+            throw new IgniteCheckedException("Encrypted flag value differs. Static config value is '" + staticCfgVal +
+                "' and value stored on the disk is '" + storedVal + "'");
         }
     }
 
@@ -1281,7 +1343,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 ", mode=" + cfg.getCacheMode() +
                 ", atomicity=" + cfg.getAtomicityMode() +
                 ", backups=" + cfg.getBackups() +
-                ", mvcc=" + cacheCtx.mvccEnabled() + ']');
+                ", mvcc=" + cacheCtx.mvccEnabled() +']' +
+                ", encryptionEnabled=" + cfg.isEncryptionEnabled() +']');
         }
     }
 
@@ -3135,7 +3198,9 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         if (checkThreadTx)
             checkEmptyTransactions();
 
-        try {
+        GridPlainClosure<Collection<byte[]>, IgniteInternalFuture<Boolean>> startCacheClsr = (grpKeys) -> {
+            assert ccfg == null || !ccfg.isEncryptionEnabled() || !grpKeys.isEmpty();
+
             DynamicCacheChangeRequest req = prepareCacheChangeRequest(
                 ccfg,
                 cacheName,
@@ -3145,7 +3210,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 failIfExists,
                 failIfNotStarted,
                 false,
-                null);
+                null,
+                ccfg != null && ccfg.isEncryptionEnabled() ? grpKeys.iterator().next() : null);
 
             if (req != null) {
                 if (req.clientStartOnly())
@@ -3155,10 +3221,62 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             }
             else
                 return new GridFinishedFuture<>();
+        };
+
+        try {
+            if (ccfg != null && ccfg.isEncryptionEnabled()) {
+                ctx.encryption().checkEncryptedCacheSupported();
+
+                return generateEncryptionKeysAndStartCacheAfter(1, startCacheClsr);
+            }
+
+            return startCacheClsr.apply(Collections.EMPTY_SET);
         }
         catch (Exception e) {
             return new GridFinishedFuture<>(e);
         }
+    }
+
+    /**
+     * Send {@code GenerateEncryptionKeyRequest} and execute {@code after} closure if succeed.
+     *
+     * @param keyCnt Count of keys to generate.
+     * @param after Closure to execute after encryption keys would be generated.
+     */
+    private IgniteInternalFuture<Boolean> generateEncryptionKeysAndStartCacheAfter(int keyCnt,
+        GridPlainClosure<Collection<byte[]>, IgniteInternalFuture<Boolean>> after) {
+        IgniteInternalFuture<Collection<byte[]>> genEncKeyFut = ctx.encryption().generateKeys(keyCnt);
+
+        GridFutureAdapter<Boolean> res = new GridFutureAdapter<>();
+
+        genEncKeyFut.listen(new IgniteInClosure<IgniteInternalFuture<Collection<byte[]>>>() {
+            @Override public void apply(IgniteInternalFuture<Collection<byte[]>> fut) {
+                try {
+                    Collection<byte[]> grpKeys = fut.result();
+
+                    if (F.size(grpKeys, F.alwaysTrue()) != keyCnt)
+                        res.onDone(false, fut.error());
+
+                    IgniteInternalFuture<Boolean> dynStartCacheFut = after.apply(grpKeys);
+
+                    dynStartCacheFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+                        @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                            try {
+                                res.onDone(fut.get(), fut.error());
+                            }
+                            catch (IgniteCheckedException e) {
+                                res.onDone(false, e);
+                            }
+                        }
+                    });
+                }
+                catch (Exception e) {
+                    res.onDone(false, e);
+                }
+            }
+        });
+
+        return res;
     }
 
     /**
@@ -3195,7 +3313,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @return Future that will be completed when all caches are deployed.
      */
-    public IgniteInternalFuture<?> dynamicStartCaches(Collection<CacheConfiguration> ccfgList, boolean failIfExists,
+    public IgniteInternalFuture<Boolean> dynamicStartCaches(Collection<CacheConfiguration> ccfgList, boolean failIfExists,
         boolean checkThreadTx, boolean disabledAfterStart) {
         return dynamicStartCachesByStoredConf(
             ccfgList.stream().map(StoredCacheData::new).collect(Collectors.toList()),
@@ -3214,7 +3332,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @return Future that will be completed when all caches are deployed.
      */
-    public IgniteInternalFuture<?> dynamicStartCachesByStoredConf(
+    public IgniteInternalFuture<Boolean> dynamicStartCachesByStoredConf(
         Collection<StoredCacheData> storedCacheDataList,
         boolean failIfExists,
         boolean checkThreadTx,
@@ -3222,11 +3340,15 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         if (checkThreadTx)
             checkEmptyTransactions();
 
-        List<DynamicCacheChangeRequest> srvReqs = null;
-        Map<String, DynamicCacheChangeRequest> clientReqs = null;
+        GridPlainClosure<Collection<byte[]>, IgniteInternalFuture<Boolean>> startCacheClsr = (grpKeys) -> {
+            List<DynamicCacheChangeRequest> srvReqs = null;
+            Map<String, DynamicCacheChangeRequest> clientReqs = null;
 
-        try {
+            Iterator<byte[]> grpKeysIter = grpKeys.iterator();
+
             for (StoredCacheData ccfg : storedCacheDataList) {
+                assert !ccfg.config().isEncryptionEnabled() || grpKeysIter.hasNext();
+
                 DynamicCacheChangeRequest req = prepareCacheChangeRequest(
                     ccfg.config(),
                     ccfg.config().getName(),
@@ -3236,7 +3358,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                     failIfExists,
                     true,
                     disabledAfterStart,
-                    ccfg.queryEntities());
+                    ccfg.queryEntities(),
+                    ccfg.config().isEncryptionEnabled() ? grpKeysIter.next() : null);
 
                 if (req != null) {
                     if (req.clientStartOnly()) {
@@ -3253,16 +3376,14 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                     }
                 }
             }
-        }
-        catch (Exception e) {
-            return new GridFinishedFuture<>(e);
-        }
 
-        if (srvReqs != null || clientReqs != null) {
+            if (srvReqs == null && clientReqs == null)
+                return new GridFinishedFuture<>();
+
             if (clientReqs != null && srvReqs == null)
                 return startClientCacheChange(clientReqs, null);
 
-            GridCompoundFuture<?, ?> compoundFut = new GridCompoundFuture<>();
+            GridCompoundFuture<?, Boolean> compoundFut = new GridCompoundFuture<>();
 
             for (DynamicCacheStartFuture fut : initiateCacheChanges(srvReqs))
                 compoundFut.add((IgniteInternalFuture)fut);
@@ -3276,9 +3397,16 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             compoundFut.markInitialized();
 
             return compoundFut;
+        };
+
+        int encGrpCnt = 0;
+
+        for (StoredCacheData ccfg : storedCacheDataList) {
+            if (ccfg.config().isEncryptionEnabled())
+                encGrpCnt++;
         }
-        else
-            return new GridFinishedFuture<>();
+
+        return generateEncryptionKeysAndStartCacheAfter(encGrpCnt, startCacheClsr);
     }
 
     /** Resolve cache type for input cacheType */
@@ -3997,8 +4125,10 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> IgniteInternalCache<K, V> getOrStartCache(String name,
-        CacheConfiguration ccfg) throws IgniteCheckedException {
+    public <K, V> IgniteInternalCache<K, V> getOrStartCache(
+        String name,
+        CacheConfiguration ccfg
+    ) throws IgniteCheckedException {
         assert name != null;
 
         if (log.isDebugEnabled())
@@ -4647,6 +4777,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      * @param failIfNotStarted If {@code true} fails if cache is not started.
      * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @param qryEntities Query entities.
+     * @param encKey Encryption key.
      * @return Request or {@code null} if cache already exists.
      * @throws IgniteCheckedException if some of pre-checks failed
      * @throws CacheExistsException if cache exists and failIfExists flag is {@code true}
@@ -4660,7 +4791,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         boolean failIfExists,
         boolean failIfNotStarted,
         boolean disabledAfterStart,
-        @Nullable Collection<QueryEntity> qryEntities
+        @Nullable Collection<QueryEntity> qryEntities,
+        @Nullable byte[] encKey
     ) throws IgniteCheckedException {
         DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
 
@@ -4671,6 +4803,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         req.failIfExists(failIfExists);
 
         req.disabledAfterStart(disabledAfterStart);
+
+        req.encryptionKey(encKey);
 
         if (ccfg != null) {
             cloneCheckSerializable(ccfg);

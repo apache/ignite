@@ -41,12 +41,15 @@ import java.util.stream.Collectors;
 import javax.cache.Cache;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.TouchedExpiryPolicy;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -273,6 +276,56 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
                         assertEquals(key, checkAndGet(false, cache, key, GET, SCAN));
                         assertEquals(key + 1, checkAndGet(false, cache, key + 1, GET, SCAN));
+                    }
+                }
+                catch (Exception e) {
+                    throw new IgniteException(e);
+                }
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPessimisticTx3() throws Exception {
+        checkTxWithAllCaches(new CI1<IgniteCache<Integer, Integer>>() {
+            @Override public void apply(IgniteCache<Integer, Integer> cache) {
+                try {
+                    IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
+
+                    List<Integer> keys = testKeys(cache);
+
+                    for (Integer key : keys) {
+                        log.info("Test key: " + key);
+
+                        try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            Integer val = cache.get(key);
+
+                            assertNull(val);
+
+                            Integer res = cache.invoke(key, new CacheEntryProcessor<Integer, Integer, Integer>() {
+                                @Override public Integer process(MutableEntry<Integer, Integer> entry,
+                                    Object... arguments) throws EntryProcessorException {
+
+                                    entry.setValue(key);
+
+                                    return -key;
+                                }
+                            });
+
+                            assertEquals(Integer.valueOf(-key), res);
+
+                            val = (Integer)checkAndGet(true, cache, key, GET, SCAN);
+
+                            assertEquals(key, val);
+
+                            tx.commit();
+                        }
+
+                        Integer val = (Integer)checkAndGet(false, cache, key, SCAN, GET);
+
+                        assertEquals(key, val);
                     }
                 }
                 catch (Exception e) {
@@ -2176,8 +2229,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testRebalanceSimple() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9451");
-
         Ignite srv0 = startGrid(0);
 
         IgniteCache<Integer, Integer> cache = (IgniteCache)srv0.createCache(
@@ -2257,8 +2308,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testRebalanceWithRemovedValuesSimple() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9451");
-
         Ignite node = startGrid(0);
 
         IgniteTransactions txs = node.transactions();
@@ -2384,8 +2433,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testMvccCoordinatorChangeSimple() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9722");
-
         Ignite srv0 = startGrid(0);
 
         final List<String> cacheNames = new ArrayList<>();
@@ -3025,6 +3072,34 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
                 assertEquals(size, cache.size());
             }
+        }
+
+        // Check rollback create.
+        for (int i = 0; i < KEYS; i++) {
+            if (i % 2 == 0) {
+                final Integer key = i;
+
+                try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    cache.put(key, i);
+
+                    tx.rollback();
+                }
+
+                assertEquals(size, cache.size());
+            }
+        }
+
+        // Check rollback update.
+        for (int i = 0; i < KEYS; i++) {
+            final Integer key = i;
+
+            try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                cache.put(key, -1);
+
+                tx.rollback();
+            }
+
+            assertEquals(size, cache.size());
         }
 
         // Check rollback create.
