@@ -53,6 +53,10 @@ import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTxRecoveryTest.NodeMode.CLIENT;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTxRecoveryTest.NodeMode.SERVER;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTxRecoveryTest.TxEndResult.COMMIT;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTxRecoveryTest.TxEndResult.ROLLBAK;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
@@ -60,8 +64,19 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 
 /** */
-// t0d0 near client node
 public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
+    /** */
+    public enum TxEndResult {
+        /** */ COMMIT,
+        /** */ ROLLBAK
+    }
+
+    /** */
+    public enum NodeMode {
+        /** */ SERVER,
+        /** */ CLIENT
+    }
+
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         throw new RuntimeException("Is not supposed to be used");
@@ -79,15 +94,29 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    public void testRecoveryCommitNearFailure() throws Exception {
-        checkRecoveryNearFailure(true);
+    public void testRecoveryCommitNearFailure1() throws Exception {
+        checkRecoveryNearFailure(COMMIT, CLIENT);
     }
 
     /**
      * @throws Exception if failed.
      */
-    public void testRecoveryRollbackNearFailure() throws Exception {
-        checkRecoveryNearFailure(false);
+    public void testRecoveryCommitNearFailure2() throws Exception {
+        checkRecoveryNearFailure(COMMIT, SERVER);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testRecoveryRollbackNearFailure1() throws Exception {
+        checkRecoveryNearFailure(ROLLBAK, CLIENT);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testRecoveryRollbackNearFailure2() throws Exception {
+        checkRecoveryNearFailure(ROLLBAK, SERVER);
     }
 
     /**
@@ -119,14 +148,16 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     }
 
     /** */
-    private void checkRecoveryNearFailure(boolean commit) throws Exception {
+    private void checkRecoveryNearFailure(TxEndResult endRes, NodeMode nearNodeMode) throws Exception {
         int gridCnt = 4;
         int baseCnt = gridCnt - 1;
+
+        boolean commit = endRes == COMMIT;
 
         startGridsMultiThreaded(baseCnt);
 
         // tweak client/server near
-        client = false;
+        client = nearNodeMode == CLIENT;
 
         IgniteEx nearNode = startGrid(baseCnt);
 
