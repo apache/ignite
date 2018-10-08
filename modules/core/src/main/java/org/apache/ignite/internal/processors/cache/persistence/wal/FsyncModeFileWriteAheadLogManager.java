@@ -725,23 +725,17 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     do {
                         // This will change record.position() unless concurrent rollover happened.
                         currWrHandle = rollOver(currWrHandle, record);
-                    } while (Objects.equals(pos, record.position()));
+                    }
+                    while (Objects.equals(pos, record.position()));
 
                     ptr = record.position();
                 }
-                else {
-                    assert rolloverType == RolloverType.CURRENT_SEGMENT;
-
-                    ptr = currWrHandle.addRecord(record);
-
-                    currWrHandle = rollOver(currWrHandle, null);
-
-                    if (ptr == null) {
-                        ptr = currWrHandle.addRecord(record);
-
-                        assert ptr != null;
-                    }
+                else if (rolloverType == RolloverType.CURRENT_SEGMENT) {
+                    if ((ptr = currWrHandle.addRecord(record)) != null)
+                        currWrHandle = rollOver(currWrHandle, null);
                 }
+                else
+                    throw new IgniteCheckedException("Unknown rollover type: " + rolloverType);
             }
 
             if (ptr != null) {

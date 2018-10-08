@@ -833,22 +833,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     do {
                         // This will change rec.position() unless concurrent rollover happened.
                         currWrHandle = closeBufAndRollover(currWrHandle, rec, rolloverType);
-                    } while (Objects.equals(pos, rec.position()));
+                    }
+                    while (Objects.equals(pos, rec.position()));
 
                     ptr = rec.position();
                 }
                 else if (rolloverType == RolloverType.CURRENT_SEGMENT) {
-                    FileWriteHandle h = currWrHandle;
-
-                    ptr = h.addRecord(rec);
-
-                    currWrHandle = closeBufAndRollover(h, rec, rolloverType);
-
-                    if (ptr == null) {
-                        ptr = currWrHandle.addRecord(rec);
-
-                        assert ptr != null;
-                    }
+                    if ((ptr = currWrHandle.addRecord(rec)) != null)
+                        currWrHandle = closeBufAndRollover(currWrHandle, rec, rolloverType);
                 }
                 else
                     throw new IgniteCheckedException("Unknown rollover type: " + rolloverType);
