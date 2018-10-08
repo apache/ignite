@@ -508,15 +508,9 @@ public class DmlStatementsProcessor {
             requestSnapshot(cctx, checkActive(tx));
 
             try (GridNearTxLocal toCommit = commit ? tx : null) {
-                long timeout;
-
-                if (implicit)
-                    timeout = tx.remainingTime();
-                else {
-                    long tm1 = tx.remainingTime(), tm2 = fieldsQry.getTimeout();
-
-                    timeout = tm1 > 0 && tm2 > 0 ? Math.min(tm1, tm2) : Math.max(tm1, tm2);
-                }
+                long timeout = implicit
+                    ? tx.remainingTime()
+                    : IgniteH2Indexing.operationTimeout(fieldsQry.getTimeout(), tx);
 
                 if (cctx.isReplicated() || distributedPlan == null || ((plan.mode() == UpdateMode.INSERT
                     || plan.mode() == UpdateMode.MERGE) && !plan.isLocalSubquery())) {

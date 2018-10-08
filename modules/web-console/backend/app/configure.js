@@ -56,10 +56,8 @@ module.exports.factory = function(settings, mongo, apis) {
                 saveUninitialized: true,
                 unset: 'destroy',
                 cookie: {
-                    domain: settings.cookie.domain,
-                    httpOnly: settings.cookie.httpOnly,
-                    expires: new Date(Date.now() + settings.cookie.ttl),
-                    maxAge: settings.cookie.ttl
+                    expires: new Date(Date.now() + settings.cookieTTL),
+                    maxAge: settings.cookieTTL
                 },
                 store: _sessionStore
             }));
@@ -68,11 +66,12 @@ module.exports.factory = function(settings, mongo, apis) {
             app.use(passport.session());
 
             passport.serializeUser((user, done) => done(null, user._id));
+
             passport.deserializeUser((id, done) => {
                 if (mongo.ObjectId.isValid(id))
                     return mongo.Account.findById(id, done);
 
-                // invalidates the existing login session.
+                // Invalidates the existing login session.
                 done(null, false);
             });
 

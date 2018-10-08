@@ -15,16 +15,18 @@
  * limitations under the License.
  */
 
-/**
- * Enables animation on ng-messages directive
- * @param {ng.animate.IAnimateService} $animate
- * @type {ng.IDirectiveFactory}
- */
-export function ngMessages($animate) {
+export default function factory(IgniteNavbar) {
+    function controller() {
+        const ctrl = this;
+
+        ctrl.items = IgniteNavbar;
+    }
+
     return {
         restrict: 'A',
-        link: (scope, el) => $animate.enabled(el, true)
+        controller,
+        controllerAs: 'navbar'
     };
 }
 
-ngMessages.$inject = ['$animate'];
+factory.$inject = ['IgniteNavbar'];

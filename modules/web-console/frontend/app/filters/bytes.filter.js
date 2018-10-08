@@ -18,9 +18,9 @@
 export default () => {
     /**
      * @param {number} bytes
-     * @param {number} precision
+     * @param {number} [precision]
      */
-    return (bytes, precision) => {
+    const filter = (bytes, precision) => {
         if (bytes === 0)
             return '0 bytes';
 
@@ -35,4 +35,6 @@ export default () => {
 
         return (bytes / Math.pow(1024, Math.floor(number))).toFixed(precision) + ' ' + units[number];
     };
+
+    return filter;
 };

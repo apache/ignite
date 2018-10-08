@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -146,12 +147,6 @@ public abstract class PageIO {
 
     /** */
     public static final int COMMON_HEADER_END = RESERVED_3_OFF + 8; // 40=type(2)+ver(2)+crc(4)+pageId(8)+rotatedIdPart(1)+reserved(1+2+4+2*8)
-
-    /** */
-    public static final int MVCC_HINTS_MASK = 0xC0000000;
-
-    /** */
-    public static final int MVCC_HINTS_BIT_OFF = 30;
 
     /* All the page types. */
 
@@ -299,7 +294,7 @@ public abstract class PageIO {
     }
 
     /**
-     * @param pageAddr Page addres.
+     * @param pageAddr Page address.
      * @return Page type.
      */
     public static int getType(long pageAddr) {
@@ -509,6 +504,8 @@ public abstract class PageIO {
      * @param pageAddr Page address.
      * @param pageId Page ID.
      * @param pageSize Page size.
+     *
+     * @see EncryptionSpi#encryptedSize(int)
      */
     public void initNewPage(long pageAddr, long pageId, int pageSize) {
         setType(pageAddr, getType());

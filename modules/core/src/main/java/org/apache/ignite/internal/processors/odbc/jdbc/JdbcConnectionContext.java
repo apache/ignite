@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -174,7 +175,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         parser = new JdbcMessageParser(ctx, ver);
 
-        JdbcResponseSender sender = new JdbcResponseSender() {
+        ClientListenerResponseSender sender = new ClientListenerResponseSender() {
             @Override public void send(ClientListenerResponse resp) {
                 if (resp != null) {
                     if (log.isDebugEnabled())

@@ -52,7 +52,7 @@ public class SVMLinearMultiClassClassificationTrainer
     private double lambda = 0.2;
 
     /** The seed number. */
-    private long seed;
+    private long seed = 1234L;
 
     /**
      * Trains model based on the specified data.
@@ -93,15 +93,16 @@ public class SVMLinearMultiClassClassificationTrainer
                 if (lb.equals(clsLb))
                     return 1.0;
                 else
-                    return -1.0;
+                    return 0.0;
             };
 
-            SVMLinearBinaryClassificationModel model;
+            SVMLinearBinaryClassificationModel updatedMdl;
+
             if (mdl == null)
-                model = learnNewModel(trainer, datasetBuilder, featureExtractor, lbTransformer);
+                updatedMdl = learnNewModel(trainer, datasetBuilder, featureExtractor, lbTransformer);
             else
-                model = updateModel(mdl, clsLb, trainer, datasetBuilder, featureExtractor, lbTransformer);
-            multiClsMdl.add(clsLb, model);
+                updatedMdl = updateModel(mdl, clsLb, trainer, datasetBuilder, featureExtractor, lbTransformer);
+            multiClsMdl.add(clsLb, updatedMdl);
         });
 
         return multiClsMdl;

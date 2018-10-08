@@ -75,6 +75,9 @@ public class ClusterListener implements AutoCloseable {
     /** */
     private static final IgniteProductVersion IGNITE_2_3 = IgniteProductVersion.fromString("2.3.0");
 
+    /** Optional Ignite cluster ID. */
+    public static final String IGNITE_CLUSTER_ID = "IGNITE_CLUSTER_ID";
+
     /** Unique Visor key to get events last order. */
     private static final String EVT_LAST_ORDER_KEY = "WEB_AGENT_" + UUID.randomUUID().toString();
 
@@ -247,7 +250,7 @@ public class ClusterListener implements AutoCloseable {
                 Map<String, Object> attrs = node.getAttributes();
 
                 if (F.isEmpty(clusterId))
-                    clusterId = attribute(attrs, "GRIDGAIN_CLOUD_ID");
+                    clusterId = attribute(attrs, IGNITE_CLUSTER_ID);
 
                 if (F.isEmpty(clusterName))
                     clusterName = attribute(attrs, IGNITE_CLUSTER_NAME);
@@ -276,7 +279,7 @@ public class ClusterListener implements AutoCloseable {
         }
 
         /**
-         * @return Cloud id.
+         * @return Cluster id.
          */
         public String getClusterId() {
             return clusterId;

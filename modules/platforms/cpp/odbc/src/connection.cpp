@@ -63,9 +63,10 @@ namespace ignite
             autoCommit(true),
             parser(),
             config(),
-            info(config)
+            info(config),
+            streamingContext()
         {
-            // No-op.
+            streamingContext.SetConnection(*this);
         }
 
         Connection::~Connection()
@@ -375,7 +376,7 @@ namespace ignite
             return config;
         }
 
-        bool Connection::IsAutoCommit()
+        bool Connection::IsAutoCommit() const
         {
             return autoCommit;
         }
