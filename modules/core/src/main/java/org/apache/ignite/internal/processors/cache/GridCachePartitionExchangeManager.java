@@ -97,7 +97,6 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
-import org.apache.ignite.internal.util.GridListSet;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -177,7 +176,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     @Nullable private volatile GridDhtPartitionsExchangeFuture lastInitializedFut;
 
     /** */
-    private final AtomicReference<GridDhtTopologyFuture> lastFinishedFut = new AtomicReference<>();
+    private final AtomicReference<GridDhtPartitionsExchangeFuture> lastFinishedFut = new AtomicReference<>();
 
     /** */
     private final ConcurrentMap<AffinityTopologyVersion, AffinityReadyFuture> readyFuts =
@@ -895,11 +894,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * @param fut Finished future.
      */
-    public void lastFinishedFuture(GridDhtTopologyFuture fut) {
+    public void lastFinishedFuture(GridDhtPartitionsExchangeFuture fut) {
         assert fut != null && fut.isDone() : fut;
 
         while (true) {
-            GridDhtTopologyFuture cur = lastFinishedFut.get();
+            GridDhtPartitionsExchangeFuture cur = lastFinishedFut.get();
 
             if (fut.topologyVersion() != null && (cur == null || fut.topologyVersion().compareTo(cur.topologyVersion()) > 0)) {
                 if (lastFinishedFut.compareAndSet(cur, fut))
@@ -915,6 +914,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return Future or {@code null} is future is already completed.
      */
     public IgniteInternalFuture<AffinityTopologyVersion> affinityReadyFuture(AffinityTopologyVersion ver) {
+        GridDhtPartitionsExchangeFuture lastInitializedFut0 = lastInitializedFut;
+
+        if (lastInitializedFut0 != null && lastInitializedFut0.initialVersion().compareTo(ver) == 0
+            && lastInitializedFut0.changedAffinity()) {
+            if (log.isTraceEnabled())
+                log.trace("Return lastInitializedFut for topology ready future " +
+                    "[ver=" + ver + ", fut=" + lastInitializedFut0 + ']');
+
+            return lastInitializedFut0;
+        }
+
         AffinityTopologyVersion topVer = exchFuts.readyTopVer();
 
         if (topVer.compareTo(ver) >= 0) {
@@ -977,6 +987,23 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     public boolean hasPendingExchange() {
         return exchWorker.hasPendingExchange();
+    }
+
+    /**
+     *
+     * @param topVer
+     * @return
+     */
+    public AffinityTopologyVersion lastAffinityChangedTopologyVersion(AffinityTopologyVersion topVer) {
+        if (topVer.topologyVersion() <= 0)
+            return topVer;
+
+        GridDhtPartitionsExchangeFuture exchFut = exchFuts.get(topVer);
+
+        if (exchFut == null || exchFut.firstEvent() == null || exchFut.changedAffinity())
+            return topVer;
+
+        return exchFut.lastAffinityChangeTopologyVersion();
     }
 
     /**
@@ -1515,7 +1542,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     ) {
         GridDhtPartitionsExchangeFuture fut;
 
-        GridDhtPartitionsExchangeFuture old = exchFuts.addx(
+        GridDhtPartitionsExchangeFuture old = exchFuts.putIfAbsent(exchId.topologyVersion(),
             fut = new GridDhtPartitionsExchangeFuture(cctx, busyLock, exchId, exchActions, affChangeMsg));
 
         if (old != null) {
@@ -1549,30 +1576,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (log.isDebugEnabled())
             log.debug("Exchange done [topVer=" + topVer + ", err=" + err + ']');
 
-        if (err == null) {
+        if (err == null)
             exchFuts.readyTopVer(topVer);
 
-            for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
-                if (entry.getKey().compareTo(topVer) <= 0) {
-                    if (log.isDebugEnabled())
-                        log.debug("Completing created topology ready future " +
-                            "[ver=" + topVer + ", fut=" + entry.getValue() + ']');
-
-                    entry.getValue().onDone(topVer);
-                }
-            }
-        }
-        else {
-            for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
-                if (entry.getKey().compareTo(initTopVer) <= 0) {
-                    if (log.isDebugEnabled())
-                        log.debug("Completing created topology ready future with error " +
-                            "[ver=" + entry.getKey() + ", fut=" + entry.getValue() + ']');
-
-                    entry.getValue().onDone(err);
-                }
-            }
-        }
+        completeAffReadyFuts(err == null ? topVer : initTopVer, err);
 
         ExchangeFutureSet exchFuts0 = exchFuts;
 
@@ -1587,6 +1594,28 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 if (skipped > 10)
                     fut.cleanUp();
+            }
+        }
+    }
+
+    /** */
+    private void completeAffReadyFuts(AffinityTopologyVersion topVer, @Nullable Throwable err) {
+        for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
+            if (entry.getKey().compareTo(topVer) <= 0) {
+                if (err == null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Completing created topology ready future " +
+                            "[ver=" + topVer + ", fut=" + entry.getValue() + ']');
+
+                    entry.getValue().onDone(topVer);
+                }
+                else {
+                    if (log.isDebugEnabled())
+                        log.debug("Completing created topology ready future with error " +
+                            "[ver=" + entry.getKey() + ", fut=" + entry.getValue() + ']');
+
+                    entry.getValue().onDone(err);
+                }
             }
         }
     }
@@ -2182,6 +2211,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         break;
                     }
 
+                    if (!fut.changedAffinity()) {
+                        if (log.isInfoEnabled())
+                            log.info("Stop merge, no-affinity exchange found: " + evt);
+
+                        break;
+                    }
+
                     ClusterNode node = evt.eventNode();
 
                     if (!curFut.context().supportsMergeExchanges(node)) {
@@ -2313,6 +2349,35 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
        }
 
         return false;
+    }
+
+    /** */
+    public boolean affinityChanged(AffinityTopologyVersion from, AffinityTopologyVersion to) {
+        Collection<GridDhtPartitionsExchangeFuture> history = exchFuts.values();
+
+        boolean fromFound = false;
+
+        for (GridDhtPartitionsExchangeFuture fut : history) {
+            if (!fromFound) {
+                int cmp = fut.initialVersion().compareTo(from);
+
+                if (cmp > 0) // We don't have history, so return true for safety
+                    return true;
+                else if (cmp == 0)
+                    fromFound = true;
+                else if (fut.isDone() && fut.topologyVersion().compareTo(from) >= 0)
+                    return true; // Temporary solution for merge exchange case
+            }
+            else {
+                if (fut.changedAffinity())
+                    return true;
+
+                if (fut.initialVersion().compareTo(to) >= 0)
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -2661,7 +2726,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 crd = newCrd = !srvNodes.isEmpty() && srvNodes.get(0).isLocal();
                             }
 
-                            exchFut.init(newCrd);
+                            exchFut.init(lastFinishedFut.get(), newCrd);
 
                             int dumpCnt = 0;
 
@@ -2956,7 +3021,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      *
      */
-    private static class ExchangeFutureSet extends GridListSet<GridDhtPartitionsExchangeFuture> {
+    private static class ExchangeFutureSet extends ConcurrentSkipListMap<AffinityTopologyVersion, GridDhtPartitionsExchangeFuture> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2973,21 +3038,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * @param histSize Max history size.
          */
         private ExchangeFutureSet(int histSize) {
-            super(new Comparator<GridDhtPartitionsExchangeFuture>() {
+            super(new Comparator<AffinityTopologyVersion>() {
                 @Override public int compare(
-                    GridDhtPartitionsExchangeFuture f1,
-                    GridDhtPartitionsExchangeFuture f2
+                    AffinityTopologyVersion t1,
+                    AffinityTopologyVersion t2
                 ) {
-                    AffinityTopologyVersion t1 = f1.exchangeId().topologyVersion();
-                    AffinityTopologyVersion t2 = f2.exchangeId().topologyVersion();
-
-                    assert t1.topologyVersion() > 0;
-                    assert t2.topologyVersion() > 0;
-
                     // Reverse order.
                     return t2.compareTo(t1);
                 }
-            }, /*not strict*/false);
+            });
 
             this.histSize = histSize;
         }
@@ -2996,17 +3055,20 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * @param fut Future to add.
          * @return {@code True} if added.
          */
-        @Override public synchronized GridDhtPartitionsExchangeFuture addx(
+        @Override public synchronized GridDhtPartitionsExchangeFuture putIfAbsent(
+            AffinityTopologyVersion topVer,
             GridDhtPartitionsExchangeFuture fut) {
-            GridDhtPartitionsExchangeFuture cur = super.addx(fut);
+            assert topVer.topologyVersion() > 0;
+
+            GridDhtPartitionsExchangeFuture cur = super.putIfAbsent(topVer, fut);
 
             while (size() > histSize) {
-                GridDhtPartitionsExchangeFuture last = last();
+                GridDhtPartitionsExchangeFuture last = lastEntry().getValue();
 
                 if (!last.isDone() || Objects.equals(last.initialVersion(), readyTopVer()))
                     break;
 
-                removeLast();
+                remove(last.initialVersion());
             }
 
             // Return the value in the set.
@@ -3037,17 +3099,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public synchronized GridDhtPartitionsExchangeFuture removex(
-            GridDhtPartitionsExchangeFuture val) {
-
-            return super.removex(val);
+        @Nullable @Override public synchronized GridDhtPartitionsExchangeFuture remove(
+            Object topVer) {
+            return super.remove(topVer);
         }
 
         /**
          * @return Values.
          */
         @Override public synchronized List<GridDhtPartitionsExchangeFuture> values() {
-            return super.values();
+            return new ArrayList<>(super.values());
         }
 
         /** {@inheritDoc} */

@@ -1229,25 +1229,29 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param curVer Current topology version.
      * @return {@code True} if cache affinity changed and operation should be remapped.
      */
-    protected final boolean needRemap(AffinityTopologyVersion expVer, AffinityTopologyVersion curVer) {
-        if (expVer.equals(curVer))
+    protected final boolean needRemap(AffinityTopologyVersion expVer, AffinityTopologyVersion curVer,
+        AffinityTopologyVersion lastAffChangedTopVer, Collection<KeyCacheObject> keys) {
+        if (curVer.compareTo(lastAffChangedTopVer) >= 0 && curVer.compareTo(expVer) <= 0)
             return false;
 
-        Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), expVer);
-        Collection<ClusterNode> cacheNodes1 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), curVer);
+        // TODO IGNITE-7164 check mvcc crd for mvcc enabled txs.
 
-        if (!cacheNodes0.equals(cacheNodes1) || ctx.affinity().affinityTopologyVersion().compareTo(curVer) < 0)
-            return true;
+        for (KeyCacheObject key : keys) {
+            assert key.partition() != -1;
 
-        try {
-            List<List<ClusterNode>> aff1 = ctx.affinity().assignments(expVer);
-            List<List<ClusterNode>> aff2 = ctx.affinity().assignments(curVer);
+            try {
+                List<ClusterNode> aff1 = ctx.affinity().assignments(expVer).get(key.partition());
+                List<ClusterNode> aff2 = ctx.affinity().assignments(curVer).get(key.partition());
 
-            return !aff1.equals(aff2);
+                if (!aff1.containsAll(aff2) || aff2.isEmpty() || !aff1.get(0).equals(aff2.get(0)))
+                    return true;
+            }
+            catch (IllegalStateException ignored) {
+                return true;
+            }
         }
-        catch (IllegalStateException ignored) {
-            return true;
-        }
+
+        return false;
     }
 
     /**

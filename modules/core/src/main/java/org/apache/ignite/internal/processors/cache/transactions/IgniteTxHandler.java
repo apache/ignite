@@ -655,23 +655,19 @@ public class IgniteTxHandler {
     private boolean needRemap(AffinityTopologyVersion expVer,
         AffinityTopologyVersion curVer,
         GridNearTxPrepareRequest req) {
-        if (expVer.equals(curVer))
+        if (curVer.compareTo(expVer) <= 0 && curVer.compareTo(req.lastAffinityChangedTopologyVersion()) >= 0)
             return false;
 
         for (IgniteTxEntry e : F.concat(false, req.reads(), req.writes())) {
             GridCacheContext ctx = e.context();
 
-            Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), expVer);
-            Collection<ClusterNode> cacheNodes1 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), curVer);
-
-            if (!cacheNodes0.equals(cacheNodes1) || ctx.affinity().affinityTopologyVersion().compareTo(curVer) < 0)
-                return true;
+            assert e.key().partition() != -1;
 
             try {
-                List<List<ClusterNode>> aff1 = ctx.affinity().assignments(expVer);
-                List<List<ClusterNode>> aff2 = ctx.affinity().assignments(curVer);
+                List<ClusterNode> aff1 = ctx.affinity().assignments(expVer).get(e.key().partition());
+                List<ClusterNode> aff2 = ctx.affinity().assignments(curVer).get(e.key().partition());
 
-                if (!aff1.equals(aff2))
+                if (!aff1.containsAll(aff2) || aff2.isEmpty() ||!aff1.get(0).equals(aff2.get(0)))
                     return true;
             }
             catch (IllegalStateException ignored) {

@@ -1738,7 +1738,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 // Can not wait for topology future since it will break
                                 // GridNearAtomicCheckUpdateRequest processing.
                                 remap = !top.topologyVersionFuture().exchangeDone() ||
-                                    needRemap(req.topologyVersion(), top.readyTopologyVersion());
+                                    needRemap(req.topologyVersion(), top.readyTopologyVersion(),
+                                        req.lastAffinityChangedTopologyVersion(), req.keys());
                             }
 
                             if (!remap) {
@@ -2426,7 +2427,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         boolean intercept = ctx.config().getInterceptor() != null;
 
-        AffinityAssignment affAssignment = ctx.affinity().assignment(topVer);
+        AffinityAssignment affAssignment = ctx.affinity().assignment(topVer, req.lastAffinityChangedTopologyVersion());
 
         // Avoid iterator creation.
         for (int i = dhtUpdRes.processedEntriesCount(); i < req.size(); i++) {
@@ -2678,7 +2679,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             boolean intercept = ctx.config().getInterceptor() != null;
 
-            AffinityAssignment affAssignment = ctx.affinity().assignment(topVer);
+            AffinityAssignment affAssignment = ctx.affinity().assignment(topVer, req.lastAffinityChangedTopologyVersion());
 
             final GridDhtAtomicAbstractUpdateFuture dhtFut = dhtUpdRes.dhtFuture();
 
