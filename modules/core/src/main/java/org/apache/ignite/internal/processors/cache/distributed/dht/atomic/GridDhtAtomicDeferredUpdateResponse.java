@@ -119,7 +119,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
         }
 
         switch (writer.state()) {
-            case 3:
+            case 4:
                 if (!writer.writeMessage("futIds", futIds))
                     return false;
 
@@ -141,7 +141,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
             return false;
 
         switch (reader.state()) {
-            case 3:
+            case 4:
                 futIds = reader.readMessage("futIds");
 
                 if (!reader.isLastRead())
@@ -161,7 +161,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 5;
     }
 
     /** {@inheritDoc} */
