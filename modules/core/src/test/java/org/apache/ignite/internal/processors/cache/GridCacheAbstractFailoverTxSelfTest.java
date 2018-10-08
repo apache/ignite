@@ -29,85 +29,90 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 public abstract class GridCacheAbstractFailoverTxSelfTest extends GridCacheAbstractFailoverSelfTest {
     /**
      * @throws Exception If failed.
-     */
+     *//*
     public void testOptimisticReadCommittedTxConstantTopologyChange() throws Exception {
         testConstantTopologyChange(OPTIMISTIC, READ_COMMITTED);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testOptimisticRepeatableReadTxConstantTopologyChange() throws Exception {
         testConstantTopologyChange(OPTIMISTIC, REPEATABLE_READ);
     }
-
+*/
     /**
      * @throws Exception If failed.
      */
     public void testOptimisticSerializableTxConstantTopologyChange() throws Exception {
-        testConstantTopologyChange(OPTIMISTIC, SERIALIZABLE);
+        afterTest();
+        for(int i = 0; i < 100; i++) {
+            beforeTest();
+            testConstantTopologyChange(OPTIMISTIC, SERIALIZABLE);
+            afterTest();
+        }
     }
 
     /**
      * @throws Exception If failed.
-     */
+     *//*
     public void testPessimisticReadCommittedTxConstantTopologyChange() throws Exception {
         testConstantTopologyChange(PESSIMISTIC, READ_COMMITTED);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testPessimisticRepeatableReadTxConstantTopologyChange() throws Exception {
         testConstantTopologyChange(PESSIMISTIC, REPEATABLE_READ);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testPessimisticSerializableTxConstantTopologyChange() throws Exception {
         testConstantTopologyChange(PESSIMISTIC, SERIALIZABLE);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testOptimisticReadCommittedTxTopologyChange() throws Exception {
         testTopologyChange(OPTIMISTIC, READ_COMMITTED);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testOptimisticRepeatableReadTxTopologyChange() throws Exception {
         testTopologyChange(OPTIMISTIC, REPEATABLE_READ);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testOptimisticSerializableTxTopologyChange() throws Exception {
         testTopologyChange(OPTIMISTIC, SERIALIZABLE);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testPessimisticReadCommittedTxTopologyChange() throws Exception {
         testTopologyChange(PESSIMISTIC, READ_COMMITTED);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testPessimisticRepeatableReadTxTopologyChange() throws Exception {
         testTopologyChange(PESSIMISTIC, REPEATABLE_READ);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testPessimisticSerializableTxTopologyChange() throws Exception {
         testTopologyChange(PESSIMISTIC, SERIALIZABLE);
-    }
+    }*/
 }
