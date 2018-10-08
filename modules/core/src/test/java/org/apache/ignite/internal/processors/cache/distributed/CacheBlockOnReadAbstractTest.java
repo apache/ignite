@@ -382,41 +382,41 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         );
     }
 
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    @Params(atomicityMode = ATOMIC)
-//    public void testStopClientAtomic() throws Exception {
-//        testStopClientTransactional();
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    @Params(atomicityMode = TRANSACTIONAL)
-//    public void testStopClientTransactional() throws Exception {
-//        customIpFinder = new TcpDiscoveryVmIpFinder(false)
-//            .setAddresses(
-//                Collections.singletonList("127.0.0.1:47500")
-//            );
-//
-//        startNodesInClientMode(true);
-//
-//        for (int i = 0; i < 3; i++)
-//            clients.add((IgniteEx)startGrid(UUID.randomUUID().toString()));
-//
-//        customIpFinder = null;
-//
-//        doTest(
-//            discoveryEvent(discoEvt -> discoEvt.type() == EventType.EVT_NODE_LEFT),
-//            () -> {
-//                for (int i = 0; i < baselineServersCount() - 2; i++)
-//                    cntFinishedReadOperations.countDown();
-//
-//                stopGrid(clients.remove(clients.size() - 1).name());
-//            }
-//        );
-//    }
+    /**
+     * @throws Exception If failed.
+     */
+    @Params(atomicityMode = ATOMIC)
+    public void _testStopClientAtomic() throws Exception {
+        _testStopClientTransactional();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Params(atomicityMode = TRANSACTIONAL)
+    public void _testStopClientTransactional() throws Exception {
+        customIpFinder = new TcpDiscoveryVmIpFinder(false)
+            .setAddresses(
+                Collections.singletonList("127.0.0.1:47500")
+            );
+
+        startNodesInClientMode(true);
+
+        for (int i = 0; i < 3; i++)
+            clients.add((IgniteEx)startGrid(UUID.randomUUID().toString()));
+
+        customIpFinder = null;
+
+        doTest(
+            discoveryEvent(discoEvt -> discoEvt.type() == EventType.EVT_NODE_LEFT),
+            () -> {
+                for (int i = 0; i < baselineServersCount() - 2; i++)
+                    cntFinishedReadOperations.countDown();
+
+                stopGrid(clients.remove(clients.size() - 1).name());
+            }
+        );
+    }
 
     /**
      * @throws Exception If failed.
