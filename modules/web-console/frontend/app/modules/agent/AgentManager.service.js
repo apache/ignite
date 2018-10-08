@@ -34,7 +34,7 @@ import {ClusterSecretsManager} from './types/ClusterSecretsManager';
 import ClusterLoginService from './components/cluster-login/service';
 
 const State = {
-    DISCONNECTED: 'DISCONNECTED',
+    INIT: 'INIT',
     AGENT_DISCONNECTED: 'AGENT_DISCONNECTED',
     CLUSTER_DISCONNECTED: 'CLUSTER_DISCONNECTED',
     CONNECTED: 'CONNECTED'
@@ -59,10 +59,9 @@ const SuccessStatus = {
 
 class ConnectionState {
     constructor(cluster) {
-        this.agents = [];
         this.cluster = cluster;
         this.clusters = [];
-        this.state = State.DISCONNECTED;
+        this.state = State.INIT;
     }
 
     updateCluster(cluster) {
@@ -103,13 +102,11 @@ class ConnectionState {
     }
 
     disconnect() {
-        this.agents = [];
-
         if (this.cluster)
             this.cluster.disconnect = true;
 
         this.clusters = [];
-        this.state = State.DISCONNECTED;
+        this.state = State.AGENT_DISCONNECTED;
     }
 }
 
@@ -385,7 +382,11 @@ export default class AgentManager {
             }
         });
 
-        this.$transitions.onExit({}, () => this.stopWatch());
+        const stopWatchUnsubscribe = this.$transitions.onExit({}, () => {
+            this.stopWatch();
+
+            stopWatchUnsubscribe();
+        });
 
         return this.awaitCluster();
     }
