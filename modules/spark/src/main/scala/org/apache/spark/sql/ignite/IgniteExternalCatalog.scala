@@ -19,6 +19,7 @@ package org.apache.spark.sql.ignite
 
 import java.net.URI
 
+import org.apache.ignite.internal.processors.query
 import org.apache.ignite.spark.IgniteDataFrameSettings.OPTION_TABLE
 import org.apache.ignite.spark.IgniteContext
 import org.apache.ignite.spark.IgniteDataFrameSettings._
@@ -264,6 +265,12 @@ private[ignite] class IgniteExternalCatalog(igniteContext: IgniteContext)
                 /* no-op */
 
             case None ⇒
+                val schema = tableDefinition.identifier.database
+
+                if(schema.isDefined &&
+                    !schema.contains(query.QueryUtils.DFLT_SCHEMA) && !schema.contains(DEFAULT_DATABASE))
+                    throw new IgniteException("Can only create new tables in PUBLIC schema, not " + schema.get)
+
                 val props = tableDefinition.storage.properties
 
                 QueryHelper.createTable(tableDefinition.schema,

@@ -19,6 +19,7 @@ package org.apache.ignite.spark
 
 import java.lang.{Long ⇒ JLong}
 
+import org.apache.ignite.IgniteException
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath
@@ -26,6 +27,7 @@ import org.apache.ignite.spark.AbstractDataFrameSpec.{DEFAULT_CACHE, EMPLOYEE_CA
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog
 import org.apache.spark.sql.ignite.IgniteSparkSession
 import org.apache.spark.sql.types.{LongType, StringType}
+import org.junit.Assert.assertEquals
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
@@ -170,6 +172,24 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
             val res = igniteSession.sql("SELECT id, name, salary FROM cache3.employee").rdd
 
             res.count should equal(3)
+        }
+
+        it("Should allow Spark SQL to create a table") {
+            igniteSession.sql(
+                "CREATE TABLE NEW_SPARK_TABLE(id LONG, name STRING) USING JSON OPTIONS ('primaryKeyFields' = 'id')")
+
+            val tables = igniteSession.catalog.listTables.collect()
+
+            tables.find(_.name == "NEW_SPARK_TABLE").map(_.name) should equal (Some("NEW_SPARK_TABLE"))
+        }
+
+        it("Should disallow creation of tables in non-PUBLIC schemas") {
+            val ex = intercept[IgniteException] {
+                igniteSession.sql(
+                    "CREATE TABLE cache3.NEW_SPARK_TABLE(id LONG, name STRING) USING JSON OPTIONS ('primaryKeyFields' = 'id')")
+            }
+
+            assertEquals(ex.getMessage, "Can only create new tables in PUBLIC schema, not cache3")
         }
     }
 
