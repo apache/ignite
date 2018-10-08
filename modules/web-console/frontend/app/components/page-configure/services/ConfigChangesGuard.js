@@ -52,7 +52,7 @@ export class IgniteObjectDiffer {
 }
 
 export default class ConfigChangesGuard {
-    static $inject = [Confirm.name, '$sce'];
+    static $inject = ['Confirm', '$sce'];
 
     /**
      * @param {Confirm} Confirm.
@@ -74,7 +74,7 @@ export default class ConfigChangesGuard {
             You have unsaved changes.
             Are you sure you want to discard them?
             </p>
-            <details>
+            <details class='config-changes-guard__details'>
                 <summary>Click here to see changes</summary>
                 <div style='max-height: 400px; overflow: auto;'>${html.format(changes)}</div>                
             </details>

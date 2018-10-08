@@ -40,7 +40,7 @@ export default class PageConfigureBasicController {
     form;
 
     static $inject = [
-        Confirm.name, '$uiRouter', ConfigureState.name, ConfigSelectors.name, Clusters.name, Caches.name, IgniteVersion.name, '$element', 'ConfigChangesGuard', 'IgniteFormUtils', '$scope'
+        'Confirm', '$uiRouter', 'ConfigureState', 'ConfigSelectors', 'Clusters', 'Caches', 'IgniteVersion', '$element', 'ConfigChangesGuard', 'IgniteFormUtils', '$scope'
     ];
 
     /**
@@ -81,7 +81,9 @@ export default class PageConfigureBasicController {
     }
 
     _uiCanExit($transition$) {
-        if ($transition$.options().custom.justIDUpdate)
+        const options = $transition$.options();
+
+        if (options.custom.justIDUpdate || options.redirectedFrom)
             return true;
 
         $transition$.onSuccess({}, () => this.reset());

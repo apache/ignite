@@ -28,7 +28,7 @@ import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
@@ -174,7 +174,7 @@ public class RecordV2Serializer implements RecordSerializer {
             ByteBuffer buf
         ) throws IgniteCheckedException {
             // Write record type.
-            RecordV1Serializer.putRecordType(buf, record);
+            RecordV1Serializer.putRecordType(buf, dataSerializer.recordType(record));
 
             // SWITCH_SEGMENT_RECORD should have only type, no need to write pointer.
             if (record.type() == SWITCH_SEGMENT_RECORD)

@@ -593,7 +593,6 @@ button.form-control {
 }
 
 .theme-line .panel-heading {
-    padding: 5px 10px;
     margin: 0;
     cursor: pointer;
     font-size: $font-size-large;
@@ -1752,7 +1751,20 @@ treecontrol.tree-classic {
 }
 
 .getting-started {
+    min-height: 240px;
     margin: 15px 15px 300px;
+
+    ul {
+        line-height: 20px;
+    }
+
+    [class*="col-"] {
+        align-self: flex-start !important;
+    }
+
+    .align-center {
+        justify-content: center !important;
+    }
 }
 
 .getting-started-demo {

@@ -45,12 +45,14 @@ import org.apache.ignite.internal.processors.authentication.AuthorizationContext
 import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryGetColumnsMetaRequest;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
@@ -126,7 +128,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private final Object orderedBatchesMux = new Object();
 
     /** Response sender. */
-    private final JdbcResponseSender sender;
+    private final ClientListenerResponseSender sender;
 
     /** Automatic close of cursors. */
     private final boolean autoCloseCursors;
@@ -157,7 +159,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param protocolVer Protocol version.
      */
     public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock,
-        JdbcResponseSender sender, int maxCursors,
+        ClientListenerResponseSender sender, int maxCursors,
         boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly,
         boolean autoCloseCursors, boolean lazy, boolean skipReducerOnUpdate, NestedTxMode nestedTxMode,
         AuthorizationContext actx, ClientListenerProtocolVersion protocolVer) {
@@ -190,10 +192,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
         log = ctx.log(getClass());
 
-        if (ctx.grid().configuration().isMvccEnabled())
-            worker = new JdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this, ctx);
-        else
-            worker = null;
+        // TODO IGNITE-9484 Do not create worker if there is a possibility to unbind TX from threads.
+        worker = new JdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this, ctx);
     }
 
     /** {@inheritDoc} */
@@ -204,7 +204,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
         JdbcRequest req = (JdbcRequest)req0;
 
-        if (worker == null)
+        if (!MvccUtils.mvccEnabled(ctx))
             return doHandle(req);
         else {
             GridFutureAdapter<ClientListenerResponse> fut = worker.process(req);
