@@ -215,7 +215,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         /**
          * Number of milliseconds to warmup reading process. Used to lower fluctuations in run time. Might be 0.
          */
-        long warmup() default 1000L;
+        long warmup() default 1500L;
 
         /**
          * Number of milliseconds to wait on the potentially blocking operation.
