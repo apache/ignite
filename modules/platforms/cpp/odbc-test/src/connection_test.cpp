@@ -85,8 +85,8 @@ struct ConnectionTestSuiteFixture: odbc::OdbcTestSuite
     /**
      * Extract code from ODBC error message.
      *
-     * @param err Error.
-     * @return Code.
+     * @param err Error message.
+     * @return Error code.
      */
     static std::string ExtractErrorCode(const std::string& err)
     {

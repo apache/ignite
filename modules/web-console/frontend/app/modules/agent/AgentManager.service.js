@@ -34,7 +34,7 @@ import {ClusterSecretsManager} from './types/ClusterSecretsManager';
 import ClusterLoginService from './components/cluster-login/service';
 
 const State = {
-    DISCONNECTED: 'DISCONNECTED',
+    INIT: 'INIT',
     AGENT_DISCONNECTED: 'AGENT_DISCONNECTED',
     CLUSTER_DISCONNECTED: 'CLUSTER_DISCONNECTED',
     CONNECTED: 'CONNECTED'
@@ -59,10 +59,9 @@ const SuccessStatus = {
 
 class ConnectionState {
     constructor(cluster) {
-        this.agents = [];
         this.cluster = cluster;
         this.clusters = [];
-        this.state = State.DISCONNECTED;
+        this.state = State.INIT;
     }
 
     updateCluster(cluster) {
@@ -73,10 +72,6 @@ class ConnectionState {
     }
 
     update(demo, count, clusters) {
-        _.forEach(clusters, (cluster) => {
-            cluster.name = cluster.id;
-        });
-
         this.clusters = clusters;
 
         if (_.isEmpty(this.clusters))
@@ -107,13 +102,11 @@ class ConnectionState {
     }
 
     disconnect() {
-        this.agents = [];
-
         if (this.cluster)
             this.cluster.disconnect = true;
 
         this.clusters = [];
-        this.state = State.DISCONNECTED;
+        this.state = State.AGENT_DISCONNECTED;
     }
 }
 
@@ -142,7 +135,7 @@ export default class AgentManager {
 
     pool = new SimpleWorkerPool('decompressor', Worker, 4);
 
-    /** @type {Set<ng.IDifferend>} */
+    /** @type {Set<ng.IPromise<unknown>>} */
     promises = new Set();
 
     socket = null;
@@ -159,8 +152,25 @@ export default class AgentManager {
         }
     }
 
+    /**
+     * @param {ng.IRootScopeService} $root
+     * @param {ng.IQService} $q
+     * @param {import('@uirouter/angularjs').TransitionService} $transitions
+     * @param {unknown} socketFactory
+     * @param {import('./AgentModal.service').default} agentModal
+     * @param {import('app/components/user-notifications/service').default} UserNotifications
+     * @param {import('app/services/Version.service').default} Version
+     * @param {import('./components/cluster-login/service').default} ClusterLoginSrv
+     */
     constructor($root, $q, $transitions, socketFactory, agentModal, UserNotifications, Version, ClusterLoginSrv) {
-        Object.assign(this, {$root, $q, $transitions, socketFactory, agentModal, UserNotifications, Version, ClusterLoginSrv});
+        this.$root = $root;
+        this.$q = $q;
+        this.$transitions = $transitions;
+        this.socketFactory = socketFactory;
+        this.agentModal = agentModal;
+        this.UserNotifications = UserNotifications;
+        this.Version = Version;
+        this.ClusterLoginSrv = ClusterLoginSrv;
 
         let prevCluster;
 
@@ -372,7 +382,11 @@ export default class AgentManager {
             }
         });
 
-        this.$transitions.onExit({}, () => this.stopWatch());
+        const stopWatchUnsubscribe = this.$transitions.onExit({}, () => {
+            this.stopWatch();
+
+            stopWatchUnsubscribe();
+        });
 
         return this.awaitCluster();
     }
