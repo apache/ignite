@@ -97,7 +97,7 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
         }
 
         switch (writer.state()) {
-            case 2:
+            case 3:
                 if (!writer.writeCollection("vers", vers, MessageCollectionItemType.MSG))
                     return false;
 
@@ -119,7 +119,7 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
             return false;
 
         switch (reader.state()) {
-            case 2:
+            case 3:
                 vers = reader.readCollection("vers", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -139,6 +139,6 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 4;
     }
 }
