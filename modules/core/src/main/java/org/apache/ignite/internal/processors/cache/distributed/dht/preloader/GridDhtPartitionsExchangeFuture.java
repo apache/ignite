@@ -839,8 +839,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             cctx.database().cleanupCheckpointDirectory();
 
-            if (cctx.wal() != null)
+            if (cctx.wal() != null) {
                 cctx.wal().cleanupWalDirectories();
+
+                cctx.wal().tailWalPointer(null);
+            }
 
             // Create node recovery record from scratch.
             cctx.database().nodeStart(null);
