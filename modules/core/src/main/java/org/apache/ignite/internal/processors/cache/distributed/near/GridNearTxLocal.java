@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLoca
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridInvokeValue;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearOptimisticTxPrepareFutureAdapter.KeyLockFuture;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -4750,6 +4751,23 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         assert trackTimeout;
 
         return cctx.time().removeTimeoutObject(this);
+    }
+
+    /**
+     * Waits all keys are locked.
+     */
+    public void waitKeysLocked() {
+        if (prepFut instanceof GridNearOptimisticTxPrepareFuture) {
+            try {
+                KeyLockFuture keyLockFut = ((GridNearOptimisticTxPrepareFuture)prepFut).keyLockFut();
+
+                if (keyLockFut != null)
+                    keyLockFut.get();
+            }
+            catch (IgniteCheckedException ignore) {
+                //No-op.
+            }
+        }
     }
 
     /** {@inheritDoc} */

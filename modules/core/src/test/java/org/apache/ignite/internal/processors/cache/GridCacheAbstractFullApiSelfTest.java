@@ -105,6 +105,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -129,9 +130,6 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTED;
  */
 @SuppressWarnings("TransientFieldInNonSerializableClass")
 public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstractSelfTest {
-    /** Test timeout */
-    private static final long TEST_TIMEOUT = 60 * 1000;
-
     /** Service name. */
     private static final String SERVICE_NAME1 = "testService1";
 
@@ -182,7 +180,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return TEST_TIMEOUT;
+        if (isMultiJvm())
+            return MINUTES.toMillis(2);
+        else
+            return super.getTestTimeout();
     }
 
     /** {@inheritDoc} */
@@ -273,19 +274,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * Checks that any invoke returns result.
      *
      * @throws Exception if something goes bad.
-     *
-     * TODO https://issues.apache.org/jira/browse/IGNITE-4380.
      */
-    public void _testInvokeAllMultithreaded() throws Exception {
+    public void testInvokeAllMultithreaded() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
         final int threadCnt = 4;
         final int cnt = 5000;
-
-        // Concurrent invoke can not be used for ATOMIC cache in CLOCK mode.
-        if (atomicityMode() == ATOMIC &&
-            cacheMode() != LOCAL &&
-            false)
-            return;
 
         final Set<String> keys = Collections.singleton("myKey");
 

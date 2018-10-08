@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMvcc;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -190,6 +191,9 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
 
         if (cand != null) {
             readyLocal(cand);
+
+            if (tx.implicitSingle())
+                ((GridNearTxLocal)tx).waitKeysLocked();
 
             return true;
         }
