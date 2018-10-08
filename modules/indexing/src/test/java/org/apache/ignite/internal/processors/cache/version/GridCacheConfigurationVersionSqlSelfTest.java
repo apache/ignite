@@ -46,6 +46,7 @@ public class GridCacheConfigurationVersionSqlSelfTest extends GridCacheConfigura
     /** Alter table sql. */
     private static final String ALTER_TABLE_SQL = "ALTER TABLE " + TABLE_NAME + " ADD COLUMN (id2 int)";
 
+    /** */
     public void testRestartNode() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -70,42 +71,7 @@ public class GridCacheConfigurationVersionSqlSelfTest extends GridCacheConfigura
         checkCacheVersion(ignite,SQL_CACHE_NAME,1,START);
     }
 
-    public void testSignleNode() throws Exception {
-        testSameVersionOnNodes(1, 0, 0, false, null);
-    }
-
-    public void testTwoNodes0() throws Exception {
-        testSameVersionOnNodes(2, 0, 0, false, null);
-    }
-
-    public void testTwoNodes1() throws Exception {
-        testSameVersionOnNodes(2, 1, 0, false, null);
-    }
-
-    public void testTwoNodesWithStopSecond1() throws Exception {
-        testSameVersionOnNodes(2, 0, 1, false, null);
-    }
-
-    public void testTwoNodesWithStopSecond2() throws Exception {
-        testSameVersionOnNodes(2, 0, 2, false, null);
-    }
-
-    public void testTwoNodesWithStopSecond1RestartNatural() throws Exception {
-        testSameVersionOnNodes(2, 0, 1, true, Comparator.naturalOrder());
-    }
-
-    public void testTwoNodesWithStopSecond1RestartReverse() throws Exception {
-        testSameVersionOnNodes(2, 0, 1, true, Comparator.reverseOrder());
-    }
-
-    public void testTwoNodesWithStopSecond2RestartNatural() throws Exception {
-        testSameVersionOnNodes(2, 0, 2, true, Comparator.naturalOrder());
-    }
-
-    public void testTwoNodesWithStopSecond2RestartReverse() throws Exception {
-        testSameVersionOnNodes(2, 0, 2, true, Comparator.reverseOrder());
-    }
-
+    /** {@inheritDoc} */
     @Override protected int performActionsOnCache(
         int firstNodeId,
         int lastNodeId,
@@ -142,6 +108,7 @@ public class GridCacheConfigurationVersionSqlSelfTest extends GridCacheConfigura
         return versionId;
     }
 
+    /** {@inheritDoc} */
     @Override protected void performActionOnStartTestAfterClusterActivate(IgniteEx ignite) throws Exception {
         super.performActionOnStartTestAfterClusterActivate(ignite);
 

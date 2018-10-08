@@ -16,16 +16,19 @@
  */
 package org.apache.ignite.internal.processors.cache.version;
 
-import java.util.Comparator;
 import org.apache.ignite.internal.IgniteEx;
 
 import static org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationChangeAction.DESTROY;
 import static org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationChangeAction.START;
 
+/**
+ *
+ */
 public class GridCacheConfigurationVersionSelfTest extends GridCacheConfigurationVersionAbstractSelfTest {
     /** Cache name. */
     private static final String CACHE_NAME = DEFAULT_CACHE_NAME + "-test";
 
+    /** */
     public void testRestartNode() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -45,42 +48,7 @@ public class GridCacheConfigurationVersionSelfTest extends GridCacheConfiguratio
 
     }
 
-    public void testSignleNode() throws Exception {
-        testSameVersionOnNodes(1, 0, 0, false, null);
-    }
-
-    public void testTwoNodes0() throws Exception {
-        testSameVersionOnNodes(2, 0, 0, false, null);
-    }
-
-    public void testTwoNodes1() throws Exception {
-        testSameVersionOnNodes(2, 1, 0, false, null);
-    }
-
-    public void testTwoNodesWithStopSecond1() throws Exception {
-        testSameVersionOnNodes(2, 0, 1, false, null);
-    }
-
-    public void testTwoNodesWithStopSecond2() throws Exception {
-        testSameVersionOnNodes(2, 0, 2, false, null);
-    }
-
-    public void testTwoNodesWithStopSecond1RestartNatural() throws Exception {
-        testSameVersionOnNodes(2, 0, 1, true, Comparator.naturalOrder());
-    }
-
-    public void testTwoNodesWithStopSecond1RestartReverse() throws Exception {
-        testSameVersionOnNodes(2, 0, 1, true, Comparator.reverseOrder());
-    }
-
-    public void testTwoNodesWithStopSecond2RestartNatural() throws Exception {
-        testSameVersionOnNodes(2, 0, 2, true, Comparator.naturalOrder());
-    }
-
-    public void testTwoNodesWithStopSecond2RestartReverse() throws Exception {
-        testSameVersionOnNodes(2, 0, 2, true, Comparator.reverseOrder());
-    }
-
+    /** {@inheritDoc} */
     @Override protected int performActionsOnCache(
         int firstNodeId,
         int lastNodeId,

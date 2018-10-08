@@ -63,7 +63,54 @@ public abstract class GridCacheConfigurationVersionAbstractSelfTest extends Grid
         cleanPersistenceDir();
     }
 
-    protected final void testSameVersionOnNodes(int nodesCnt,
+     /** */
+    public void testSingleNode() throws Exception {
+        testSameVersionOnNodes(1, 0, 0, false, null);
+    }
+
+    /** */
+    public void testTwoNodes0() throws Exception {
+        testSameVersionOnNodes(2, 0, 0, false, null);
+    }
+
+    /** */
+    public void testTwoNodes1() throws Exception {
+        testSameVersionOnNodes(2, 1, 0, false, null);
+    }
+
+    /** */
+    public void testTwoNodesWithStopSecond1() throws Exception {
+        testSameVersionOnNodes(2, 0, 1, false, null);
+    }
+
+    /** */
+    public void testTwoNodesWithStopSecond2() throws Exception {
+        testSameVersionOnNodes(2, 0, 2, false, null);
+    }
+
+    /** */
+    public void testTwoNodesWithStopSecond1RestartNatural() throws Exception {
+        testSameVersionOnNodes(2, 0, 1, true, Comparator.naturalOrder());
+    }
+
+    /** */
+    public void testTwoNodesWithStopSecond1RestartReverse() throws Exception {
+        testSameVersionOnNodes(2, 0, 1, true, Comparator.reverseOrder());
+    }
+
+    /** */
+    public void testTwoNodesWithStopSecond2RestartNatural() throws Exception {
+        testSameVersionOnNodes(2, 0, 2, true, Comparator.naturalOrder());
+    }
+
+    /** */
+    public void testTwoNodesWithStopSecond2RestartReverse() throws Exception {
+        testSameVersionOnNodes(2, 0, 2, true, Comparator.reverseOrder());
+    }
+
+    /** */
+    protected final void testSameVersionOnNodes(
+        int nodesCnt,
         int performNodeId,
         int skipRounds,
         boolean stopGrid,
@@ -121,14 +168,18 @@ public abstract class GridCacheConfigurationVersionAbstractSelfTest extends Grid
         versionCounter = performActionsOnCache(0, nodesCnt, versionCounter, ignite);
     }
 
+    /** */
     protected abstract int performActionsOnCache(int firstNodeId, int lastNodeId, int version,
         IgniteEx ignite) throws Exception;
 
+    /** */
     protected void performActionOnStartTestAfterClusterActivate(IgniteEx ignite) throws Exception {
         // No-op.
     }
 
-    protected final void checkCacheVersion(@NotNull IgniteEx ignite,
+    /** */
+    protected final void checkCacheVersion(
+        @NotNull IgniteEx ignite,
         String cacheName,
         int versionId,
         GridCacheConfigurationChangeAction action

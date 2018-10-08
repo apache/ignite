@@ -1044,7 +1044,7 @@ class ClusterCachesInfo {
         //Replace locally registered data with actual data received from cluster.
         cleanCachesAndGroups();
 
-        registerReceivedCacheConfigurationVersions(cachesData);
+        registerReceivedCachesConfigurationVersion(cachesData);
 
         registerReceivedCacheGroups(cachesData, locCacheGrps);
 
@@ -1238,7 +1238,7 @@ class ClusterCachesInfo {
      *
      * @param cachesData Data received from cluster.
      */
-    private void registerReceivedCacheConfigurationVersions(CacheNodeCommonDiscoveryData cachesData){
+    private void registerReceivedCachesConfigurationVersion(CacheNodeCommonDiscoveryData cachesData){
         cachesConfigurationVer.putAll(cachesData.cachesConfigurationVersion());
     }
 
@@ -1278,6 +1278,7 @@ class ClusterCachesInfo {
                 grpData.config().getCacheMode());
         }
 
+        // Missing cache groups must be skipped on restoring data from disk.
         for (Integer locCacheGrpId : locCacheGrps.keySet()) {
             if (!cachesData.cacheGroups().containsKey(locCacheGrpId))
                 missingCacheGrps.put(locCacheGrpId, locCacheGrps.get(locCacheGrpId));

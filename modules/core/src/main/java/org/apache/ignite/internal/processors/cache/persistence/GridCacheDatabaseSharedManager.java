@@ -188,7 +188,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     public static final String METASTORE_DATA_REGION_NAME = "metastoreMemPlc";
 
     /** Delimiter between cache group name and cache name in metastore key . */
-    private static final String CACHE_GROUP_NAME_CACHE_NAME_METASTORE_KEY_DELIMITER = ".";
+    private static final String CACHE_GRP_CACHE_NAME_METASTORE_KEY_DELIMITER = ".";
 
     /** */
     private static final long GB = 1024L * 1024 * 1024;
@@ -250,12 +250,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Prefix for cache configuration version. */
     private static final String CACHE_CONFIGURATION_VERSION_PREFIX = "cache-cfg-ver-";
 
+    /** Metastorage config prefix. */
+    private static final String STORE_CACHE_PREFIX = "cache.";
+
     /** WAL marker predicate for meta store. */
-    private static final IgnitePredicate<String> WAL_KEY_PREFIX_PRED = new IgnitePredicate<String>() {
-        @Override public boolean apply(String key) {
-            return key.startsWith(WAL_KEY_PREFIX);
-        }
-    };
+    private static final IgnitePredicate<String> WAL_KEY_PREFIX_PRED = key -> key.startsWith(WAL_KEY_PREFIX);
+
+    /** Cache prefix predicate for metastore key. */
+    private static final IgnitePredicate<String> CACHE_KEY_PREFIX_PRED =
+        key -> key != null && key.startsWith(STORE_CACHE_PREFIX);
+
+    /** Cache configuration version prefix predicate for metastore key. */
+    private static final IgnitePredicate<String> CACHE_CFG_VER_KEY_PREFIX_PRED =
+        key -> key != null && key.startsWith(CACHE_CONFIGURATION_VERSION_PREFIX);
+
 
     /** Timeout between partition file destroy and checkpoint to handle it. */
     private static final long PARTITION_DESTROY_CHECKPOINT_TIMEOUT = 30 * 1000; // 30 Seconds.
@@ -361,9 +369,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** File I/O factory for writing checkpoint markers. */
     private final FileIOFactory ioFactory;
-
-    /** Metastorage config prefix. */
-    private final String STORE_CACHE_PREFIX = "cache.";
 
     /** Future that will be done when stored cache configurations from metastore were read. */
     private final GridFutureAdapter<Map<String, StoredCacheData>> readStoredCacheCfgFut = new GridFutureAdapter<>();
@@ -1556,14 +1561,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private Map<String, StoredCacheData> readStoredCacheConfiguration0() throws IgniteCheckedException {
         Map<String, StoredCacheData> storedCaches = new HashMap<>();
 
-        Map<String, StoredCacheData> readCacheData = (Map<String, StoredCacheData>)metaStorage.readForPredicate(
-            (IgnitePredicate<String>)key -> key != null && key.startsWith(STORE_CACHE_PREFIX)
-        );
+        Map<String, StoredCacheData> readCacheData =
+            (Map<String, StoredCacheData>)metaStorage.readForPredicate(CACHE_KEY_PREFIX_PRED);
 
         for (StoredCacheData cacheData : readCacheData.values())
             storedCaches.put(cacheData.config().getName(), cacheData);
-
-        log.error("readStoredCacheConfiguration0() " + readCacheData);
 
         return storedCaches;
     }
@@ -1604,22 +1606,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
             });
 
-            saveCacheConfigurationFuts.put("clearStoredCachesConfigurationVersion", fut);
+            IgniteInternalFuture<?> old = saveCacheConfigurationFuts.put("clearStoredCachesConfigurationVersion", fut);
+
+            assert old == null : old;
         }
     }
 
     /**
      * Clearing stored caches configuration version routine.
+     *
      * @see GridCacheDatabaseSharedManager#clearStoredCachesConfigurationVersion()
      */
     private void clearStoredCachesConfigurationVersion0() throws IgniteCheckedException {
         this.context().database().checkpointReadLock();
 
         try {
-            Map<String, GridCacheConfigurationVersion> data = (Map<String, GridCacheConfigurationVersion>)
-                metaStorage.readForPredicate(
-                    (IgnitePredicate<String>)key -> key != null && key.startsWith(CACHE_CONFIGURATION_VERSION_PREFIX)
-                );
+            Map<String, GridCacheConfigurationVersion> data =
+                (Map<String, GridCacheConfigurationVersion>)metaStorage.readForPredicate(CACHE_CFG_VER_KEY_PREFIX_PRED);
 
             for (String key : data.keySet())
                 metaStorage.remove(key);
@@ -1659,17 +1662,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         Map<String, GridCacheConfigurationVersion> storedVersions = new HashMap<>();
 
         Map<String, GridCacheConfigurationVersion> readVersions =
-            (Map<String, GridCacheConfigurationVersion>)metaStorage.readForPredicate(
-                (IgnitePredicate<String>)key -> key != null && key.startsWith(CACHE_CONFIGURATION_VERSION_PREFIX)
-            );
+            (Map<String, GridCacheConfigurationVersion>)metaStorage.readForPredicate(CACHE_CFG_VER_KEY_PREFIX_PRED);
 
-        for (GridCacheConfigurationVersion version : readVersions.values()) {
+        for (GridCacheConfigurationVersion version : readVersions.values())
             storedVersions.put(version.cacheName(), version);
-
-            log.error("readStoredCachesConfigurationVersion0() version " + version);
-        }
-
-        log.error("readStoredCachesConfigurationVersion0() " + readVersions);
 
         return storedVersions;
     }
@@ -1730,11 +1726,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         this.context().database().checkpointReadLock();
 
         try {
-            String key = getCacheConfigMetastoreKey(cacheCfg);
-
-            log.error("Remove data " + key);
-
-            this.metaStorage.remove(key);
+            this.metaStorage.remove(getCacheConfigMetastoreKey(cacheCfg));
         }
         finally {
             this.context().database().checkpointReadUnlock();
@@ -1749,8 +1741,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         try {
             String key = getCacheConfigMetastoreKey(cacheData.config());
-
-            log.error("storeCacheConfiguration0() key: " + key + " data: " + cacheData + " overwrite: " + overwrite);
 
             if (metaStorage.read(key) == null || overwrite)
                 metaStorage.write(key, cacheData);
@@ -1800,7 +1790,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         String cacheName = cacheCfg.getName();
         String cacheGrpName = cacheCfg.getGroupName() != null ? cacheCfg.getGroupName() : cacheName;
 
-        return STORE_CACHE_PREFIX + cacheGrpName + CACHE_GROUP_NAME_CACHE_NAME_METASTORE_KEY_DELIMITER + cacheName;
+        return STORE_CACHE_PREFIX + cacheGrpName + CACHE_GRP_CACHE_NAME_METASTORE_KEY_DELIMITER + cacheName;
     }
 
     /**
@@ -1832,7 +1822,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private String getCacheConfigVersionMetastoreKey(@NotNull  String cacheName,@Nullable String cacheGrpName){
         return CACHE_CONFIGURATION_VERSION_PREFIX + (cacheGrpName ==null ? cacheName : cacheGrpName) +
-            CACHE_GROUP_NAME_CACHE_NAME_METASTORE_KEY_DELIMITER + cacheName;
+            CACHE_GRP_CACHE_NAME_METASTORE_KEY_DELIMITER + cacheName;
     }
 
     /**
@@ -1844,16 +1834,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         Collection<StoredCacheData> rmvCaches = Collections.emptySet();
 
         try {
-            Map<String, StoredCacheData> cacheData = (Map<String, StoredCacheData>)metaStorage.readForPredicate(new IgnitePredicate<String>() {
-                @Override public boolean apply(String key) {
-                    return key != null && key.startsWith(
-                        STORE_CACHE_PREFIX + grp.cacheOrGroupName() + CACHE_GROUP_NAME_CACHE_NAME_METASTORE_KEY_DELIMITER);
-                }
-            });
+            Map<String, StoredCacheData> cacheData = (Map<String, StoredCacheData>)metaStorage
+                .readForPredicate(
+                    key -> key != null &&
+                        key.startsWith(
+                            STORE_CACHE_PREFIX + grp.cacheOrGroupName() + CACHE_GRP_CACHE_NAME_METASTORE_KEY_DELIMITER
+                        )
+                );
 
             rmvCaches = cacheData.values();
-
-            log.error("removeCacheConfiguration caches: " + cacheData.keySet() + " grp: " + grp);
 
             for (String key : cacheData.keySet())
                 this.metaStorage.remove(key);
