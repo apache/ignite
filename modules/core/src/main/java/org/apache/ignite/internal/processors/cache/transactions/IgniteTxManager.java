@@ -2057,7 +2057,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      *
      * @param tx Transaction.
      * @param failedNodeIds Failed nodes IDs.
-     * @return t0d0
+     * @return Future representing given tx recovery.
      */
     public GridCacheTxRecoveryFuture commitIfPrepared(IgniteInternalTx tx, Set<UUID> failedNodeIds) {
         assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote  : tx;
@@ -2446,10 +2446,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                 MvccRecoveryVoter mvccRecoveryVoter = new MvccRecoveryVoter(evtNodeId);
 
-                Collection<IgniteInternalTx> txs = new ArrayList<>(activeTransactions());
-                System.err.println("ACTIVE TXS " + txs.stream().map(IgniteInternalTx::state).map(Object::toString).collect(Collectors.joining(":")));
-                // t0d0 ensure correctness in case of multiple node failures
-                for (final IgniteInternalTx tx : txs) {
+                for (final IgniteInternalTx tx : activeTransactions()) {
                     if ((tx.near() && !tx.local()) || (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId))) {
                         // Invalidate transactions.
                         salvageTx(tx, RECOVERY_FINISH);
@@ -2460,15 +2457,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                             // t0d0 vote properly when orphaned tx reached COMMITTED or ROLLED_BACK state
                             if (tx.state() == PREPARED) {
                                 GridCacheTxRecoveryFuture recoveryFut = commitIfPrepared(tx, Collections.singleton(evtNodeId));
-                                mvccRecoveryVoter.watchForTxRecovery(tx, recoveryFut.nearTxCheck(), recoveryFut);
+                                mvccRecoveryVoter.watchForTxRecovery(tx, recoveryFut);
                             }
                             else {
                                 IgniteInternalFuture<?> prepFut = tx.currentPrepareFuture();
 
                                 if (prepFut != null) {
                                     GridFutureAdapter<Boolean> fakeFut = new GridFutureAdapter<>();
-                                    // t0d0 pass near tx check flag properly
-                                    mvccRecoveryVoter.watchForTxRecovery(tx, false, fakeFut);
+                                    mvccRecoveryVoter.watchForTxRecovery(tx, fakeFut);
                                     prepFut.listen(new CI1<IgniteInternalFuture<?>>() {
                                         @Override public void apply(IgniteInternalFuture<?> fut) {
                                             if (tx.state() == PREPARED) {
@@ -2533,8 +2529,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             this.failedNodeId = failedNodeId;
         }
 
-        void watchForTxRecovery(IgniteInternalTx tx, boolean nearTxCheck, IgniteInternalFuture<Boolean> recFut) {
-            if (nearTxCheck)
+        void watchForTxRecovery(IgniteInternalTx tx, IgniteInternalFuture<Boolean> recFut) {
+            // vote only for failed near nodes
+            if (!tx.eventNodeId().equals(failedNodeId))
                 return;
 
             MvccSnapshot mvccSnapshot = tx.mvccSnapshot();
