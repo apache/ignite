@@ -31,7 +31,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -250,7 +250,8 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
             personCache.query(qry).getAll();
         }
         catch (CacheException e) {
-            assertTrue(e.getMessage().contains("Failed to reserve partitions for query (partition of PARTITIONED cache cannot be reserved) ["));
+            assertTrue(e.getMessage().contains("Failed to reserve partitions for query (partition of PARTITIONED " +
+                "cache is not found or not in OWNING state) "));
 
             return;
         }

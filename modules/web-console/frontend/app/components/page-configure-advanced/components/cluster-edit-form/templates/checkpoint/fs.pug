@@ -30,7 +30,13 @@ include /app/helpers/jade/mixins
                 tip: 'Paths to a shared directory where checkpoints will be stored'
             }]`
         )
-            +unique-feedback(_, 'Such path already exists!')
+            +form-field__error({ error: 'igniteUnique', message: 'Such path already exists!' })
 
 .pc-form-grid-col-60(ng-if-end)
-    +java-class('Listener:', '$checkpointSPI.FS.checkpointListener', '"checkpointFsListener"', 'true', 'false', 'Checkpoint listener implementation class name', '$checkpointSPI.kind === "FS"')
+    +form-field__java-class({
+        label: 'Listener:',
+        model: '$checkpointSPI.FS.checkpointListener',
+        name: '"checkpointFsListener"',
+        tip: 'Checkpoint listener implementation class name',
+        validationActive: '$checkpointSPI.kind === "FS"'
+    })

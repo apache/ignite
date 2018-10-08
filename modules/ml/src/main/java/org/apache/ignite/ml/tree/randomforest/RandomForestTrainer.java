@@ -73,10 +73,10 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     private static final double BUCKET_SIZE_FACTOR = (1 / 10.0);
 
     /** Count of trees. */
-    private int cntOfTrees = 1;
+    private int amountOfTrees = 1;
 
     /** Subsample size. */
-    private double subsampleSize = 1.0;
+    private double subSampleSize = 1.0;
 
     /** Max depth. */
     private int maxDepth = 5;
@@ -88,10 +88,10 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     private List<FeatureMeta> meta;
 
     /** Features per tree. */
-    private int featuresPerTree;
+    private int featuresPerTree = 5;
 
     /** Seed. */
-    private long seed = System.currentTimeMillis();
+    private long seed = 1234L;
 
     /** Random generator. */
     private Random random = new Random(seed);
@@ -115,7 +115,7 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
         List<TreeRoot> models = null;
         try (Dataset<EmptyContext, BootstrappedDatasetPartition> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
-            new BootstrappedDatasetBuilder<>(featureExtractor, lbExtractor, cntOfTrees, subsampleSize))) {
+            new BootstrappedDatasetBuilder<>(featureExtractor, lbExtractor, amountOfTrees, subSampleSize))) {
 
             if(!init(dataset))
                 return buildComposition(Collections.emptyList());
@@ -135,20 +135,20 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     protected abstract T instance();
 
     /**
-     * @param cntOfTrees Count of trees.
+     * @param amountOfTrees Count of trees.
      * @return an instance of current object with valid type in according to inheritance.
      */
-    public T withCountOfTrees(int cntOfTrees) {
-        this.cntOfTrees = cntOfTrees;
+    public T withAmountOfTrees(int amountOfTrees) {
+        this.amountOfTrees = amountOfTrees;
         return instance();
     }
 
     /**
-     * @param subsampleSize Subsample size.
+     * @param subSampleSize Subsample size.
      * @return an instance of current object with valid type in according to inheritance.
      */
-    public T withSubsampleSize(double subsampleSize) {
-        this.subsampleSize = subsampleSize;
+    public T withSubSampleSize(double subSampleSize) {
+        this.subSampleSize = subSampleSize;
         return instance();
     }
 
@@ -348,7 +348,7 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
      */
     private Queue<TreeNode> createRootsQueue() {
         Queue<TreeNode> roots = new LinkedList<>();
-        for (int i = 0; i < cntOfTrees; i++)
+        for (int i = 0; i < amountOfTrees; i++)
             roots.add(new TreeNode(1, i));
         return roots;
     }

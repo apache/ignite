@@ -54,7 +54,7 @@ public class PagesListAddPageRecord extends PageDeltaRecord {
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
         PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(pageAddr);
 
-        int cnt = io.addPage(pageAddr, dataPageId, pageMem.pageSize());
+        int cnt = io.addPage(pageAddr, dataPageId, pageMem.realPageSize(groupId()));
 
         assert cnt >= 0 : cnt;
     }

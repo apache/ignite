@@ -54,7 +54,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
     private final DecisionTreeLeafBuilder decisionTreeLeafBuilder;
 
     /** Use index structure instead of using sorting while learning. */
-    protected boolean useIndex = true;
+    protected boolean usingIdx = true;
 
     /**
      * Constructs a new distributed decision tree trainer.
@@ -77,7 +77,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
         try (Dataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
-            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, useIndex)
+            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, usingIdx)
         )) {
             return fit(dataset);
         }
@@ -164,7 +164,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
     private StepFunction<T>[] calculateImpurityForAllColumns(Dataset<EmptyContext, DecisionTreeData> dataset,
         TreeFilter filter, ImpurityMeasureCalculator<T> impurityCalc, int depth) {
 
-        StepFunction<T>[] result = dataset.compute(
+        return dataset.compute(
             part -> {
                 if (compressor != null)
                     return compressor.compress(impurityCalc.calculate(part, filter, depth));
@@ -172,8 +172,6 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
                     return impurityCalc.calculate(part, filter, depth);
             }, this::reduce
         );
-
-        return result;
     }
 
     /**
@@ -314,16 +312,16 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
                 .append(String.format("%.4f", leaf.getVal()));
         }
         else if (node instanceof DecisionTreeConditionalNode) {
-            DecisionTreeConditionalNode condition = (DecisionTreeConditionalNode)node;
+            DecisionTreeConditionalNode cond = (DecisionTreeConditionalNode)node;
             String prefix = depth == 0 ? "" : (isThen ? "then " : "else ");
             builder.append(String.format("%sif (x", prefix))
-                .append(condition.getCol())
+                .append(cond.getCol())
                 .append(" > ")
-                .append(String.format("%.4f", condition.getThreshold()))
+                .append(String.format("%.4f", cond.getThreshold()))
                 .append(pretty ? ")\n" : ") ");
-            printTree(condition.getThenNode(), depth + 1, builder, pretty, true);
+            printTree(cond.getThenNode(), depth + 1, builder, pretty, true);
             builder.append(pretty ? "\n" : " ");
-            printTree(condition.getElseNode(), depth + 1, builder, pretty, false);
+            printTree(cond.getElseNode(), depth + 1, builder, pretty, false);
         }
         else
             throw new IllegalArgumentException();

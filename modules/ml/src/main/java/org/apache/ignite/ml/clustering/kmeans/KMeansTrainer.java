@@ -106,7 +106,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
                 return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
 
             centers = Optional.ofNullable(mdl)
-                .map(KMeansModel::centers)
+                .map(KMeansModel::getCenters)
                 .orElseGet(() -> initClusterCentersRandomly(dataset, k));
 
             boolean converged = false;
@@ -143,7 +143,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
 
     /** {@inheritDoc} */
     @Override protected boolean checkState(KMeansModel mdl) {
-        return mdl.centers().length == k && mdl.distanceMeasure().equals(distance);
+        return mdl.getCenters().length == k && mdl.distanceMeasure().equals(distance);
     }
 
     /**
@@ -313,7 +313,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
      *
      * @return The parameter value.
      */
-    public int getK() {
+    public int getAmountOfClusters() {
         return k;
     }
 
@@ -323,7 +323,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
      * @param k The parameter value.
      * @return Model with new amount of clusters parameter value.
      */
-    public KMeansTrainer withK(int k) {
+    public KMeansTrainer withAmountOfClusters(int k) {
         this.k = k;
         return this;
     }

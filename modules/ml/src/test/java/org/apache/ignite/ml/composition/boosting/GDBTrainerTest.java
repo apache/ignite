@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
 import org.apache.ignite.ml.composition.boosting.convergence.simple.ConvergenceCheckerStubFactory;
@@ -38,7 +39,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /** */
-public class GDBTrainerTest {
+public class GDBTrainerTest extends TrainerTest {
     /** */
     @Test
     public void testFitRegression() {
@@ -57,7 +58,7 @@ public class GDBTrainerTest {
         }
 
         GDBTrainer trainer = new GDBRegressionOnTreesTrainer(1.0, 2000, 3, 0.0)
-            .withUseIndex(true);
+            .withUsingIdx(true);
 
         Model<Vector, Double> mdl = trainer.fit(
             learningSample, 1,
@@ -131,7 +132,7 @@ public class GDBTrainerTest {
             learningSample.put(i, new double[] {xs[i], ys[i]});
 
         GDBTrainer trainer = new GDBBinaryClassifierOnTreesTrainer(0.3, 500, 3, 0.0)
-            .withUseIndex(true)
+            .withUsingIdx(true)
             .withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.3));
 
         Model<Vector, Double> mdl = fitter.apply(trainer, learningSample);
@@ -177,10 +178,10 @@ public class GDBTrainerTest {
         IgniteBiFunction<Integer, double[], Double> lExtr = (k, v) -> v[1];
 
         GDBTrainer classifTrainer = new GDBBinaryClassifierOnTreesTrainer(0.3, 500, 3, 0.0)
-            .withUseIndex(true)
+            .withUsingIdx(true)
             .withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.3));
         GDBTrainer regressTrainer = new GDBRegressionOnTreesTrainer(0.3, 500, 3, 0.0)
-            .withUseIndex(true)
+            .withUsingIdx(true)
             .withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.3));
 
         testUpdate(learningSample, fExtr, lExtr, classifTrainer);

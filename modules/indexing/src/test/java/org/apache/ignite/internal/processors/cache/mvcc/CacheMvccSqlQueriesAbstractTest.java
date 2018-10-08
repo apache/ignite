@@ -151,6 +151,8 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
      * @throws Exception If failed.
      */
     private void updateSingleValue(boolean singleNode, final boolean locQry) throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
+
         final int VALS = 100;
 
         final int writers = 4;
@@ -377,6 +379,8 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
      * @throws Exception If failed.
      */
     private void joinTransactional(boolean singleNode, final boolean distributedJoin) throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
+
         final int KEYS = 100;
 
         final int writers = 4;
@@ -629,7 +633,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
      * @throws Exception If failed.
      */
     public void testDistributedJoinSimple() throws Exception {
-        disableScheduledVacuum = true; //TODO: IGNITE-9446: remove this after races in vacuum will be fixed.
+        fail("https://issues.apache.org/jira/browse/IGNITE-9446");
 
         startGridsMultiThreaded(4);
 
