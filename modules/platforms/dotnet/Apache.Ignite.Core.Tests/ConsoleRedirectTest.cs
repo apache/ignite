@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Tests
         {
             using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
-                Assert.IsTrue(_outSb.ToString().Contains("[ver=1, servers=1, clients=0,"));
+                Assert.AreEqual(1, Regex.Matches(_outSb.ToString(), "ver=1, locNode=[a-fA-F0-9]{8,8}, servers=1, clients=0,").Count);
 
                 // Run twice
                 RunInNewDomain();
