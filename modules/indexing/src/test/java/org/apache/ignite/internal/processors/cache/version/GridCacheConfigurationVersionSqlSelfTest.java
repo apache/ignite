@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.internal.processors.cache.version;
 
-import java.util.Comparator;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.Person;
@@ -27,6 +26,9 @@ import static org.apache.ignite.internal.processors.cache.version.GridCacheConfi
 import static org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationChangeAction.META_CHANGED;
 import static org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationChangeAction.START;
 
+/**
+ *
+ */
 public class GridCacheConfigurationVersionSqlSelfTest extends GridCacheConfigurationVersionAbstractSelfTest {
     /** Schema name. */
     private static final String SCHEMA_NAME = "PUBLIC";
@@ -75,7 +77,7 @@ public class GridCacheConfigurationVersionSqlSelfTest extends GridCacheConfigura
     @Override protected int performActionsOnCache(
         int firstNodeId,
         int lastNodeId,
-        int versionId,
+        int ver,
         IgniteEx ignite
     ) throws Exception {
         IgniteCache<Integer, Person> cache = ignite.cache(DEFAULT_CACHE_NAME);
@@ -84,28 +86,28 @@ public class GridCacheConfigurationVersionSqlSelfTest extends GridCacheConfigura
 
         cache.query(new SqlFieldsQuery(CREATE_TABLE_SQL).setSchema(SCHEMA_NAME)).getAll();
 
-        versionId++;
+        ver++;
 
         for (int i = firstNodeId; i < lastNodeId; i++)
-            checkCacheVersion(grid(i), SQL_CACHE_NAME, versionId, START);
+            checkCacheVersion(grid(i), SQL_CACHE_NAME, ver, START);
 
         cache.query(new SqlFieldsQuery(ALTER_TABLE_SQL).setSchema(SCHEMA_NAME)).getAll();
 
-        versionId++;
+        ver++;
 
         for (int i = firstNodeId; i < lastNodeId; i++)
-            checkCacheVersion(grid(i), SQL_CACHE_NAME, versionId, META_CHANGED);
+            checkCacheVersion(grid(i), SQL_CACHE_NAME, ver, META_CHANGED);
 
         cache.query(new SqlFieldsQuery(DROP_TABLE_SQL).setSchema(SCHEMA_NAME)).getAll();
 
         Thread.sleep(1000L);
 
-        versionId++;
+        ver++;
 
         for (int i = firstNodeId; i < lastNodeId; i++)
-            checkCacheVersion(grid(i), SQL_CACHE_NAME, versionId, DESTROY);
+            checkCacheVersion(grid(i), SQL_CACHE_NAME, ver, DESTROY);
 
-        return versionId;
+        return ver;
     }
 
     /** {@inheritDoc} */

@@ -30,6 +30,9 @@ import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationChangeAction.DESTROY;
 
+/**
+ *
+ */
 public abstract class GridCacheConfigurationVersionAbstractSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
@@ -124,7 +127,7 @@ public abstract class GridCacheConfigurationVersionAbstractSelfTest extends Grid
         assert skipRounds == 0 || performNodeId < nodesCnt / 2;
         assert !stopGrid || startOrder != null;
 
-        int versionCounter = 0;
+        int verCntr = 0;
 
         startGrids(nodesCnt);
 
@@ -134,21 +137,21 @@ public abstract class GridCacheConfigurationVersionAbstractSelfTest extends Grid
 
         performActionOnStartTestAfterClusterActivate(ignite);
 
-        versionCounter = performActionsOnCache(0, nodesCnt, versionCounter, ignite);
+        verCntr = performActionsOnCache(0, nodesCnt, verCntr, ignite);
 
         if (skipRounds > 0) {
             for (int i = nodesCnt / 2; i < nodesCnt; i++)
                 stopGrid(i);
 
             for (int i = 0; i < skipRounds; i++)
-                versionCounter = performActionsOnCache(0, nodesCnt / 2, versionCounter, ignite);
+                verCntr = performActionsOnCache(0, nodesCnt / 2, verCntr, ignite);
 
             if (stopGrid) {
                 for (int i = 0; i < nodesCnt / 2; i++)
                     stopGrid(i);
 
                 List<Integer> order = IntStream.range(0, nodesCnt)
-                    .mapToObj(Integer::valueOf)
+                    .boxed()
                     .sorted(startOrder)
                     .collect(Collectors.toList());
 
@@ -165,7 +168,7 @@ public abstract class GridCacheConfigurationVersionAbstractSelfTest extends Grid
             }
         }
 
-        versionCounter = performActionsOnCache(0, nodesCnt, versionCounter, ignite);
+        verCntr = performActionsOnCache(0, nodesCnt, verCntr, ignite);
     }
 
     /** */
@@ -181,21 +184,21 @@ public abstract class GridCacheConfigurationVersionAbstractSelfTest extends Grid
     protected final void checkCacheVersion(
         @NotNull IgniteEx ignite,
         String cacheName,
-        int versionId,
-        GridCacheConfigurationChangeAction action
+        int verId,
+        GridCacheConfigurationChangeAction act
     ) {
-        GridCacheConfigurationVersion version = ignite.context().cache().cacheVersion(cacheName);
+        GridCacheConfigurationVersion ver = ignite.context().cache().cacheVersion(cacheName);
 
-        assertEquals(versionId, version.id());
-        assertEquals(action, version.lastAction());
+        assertEquals(verId, ver.id());
+        assertEquals(act, ver.lastAction());
 
         DynamicCacheDescriptor desc = ignite.context().cache().cacheDescriptor(cacheName);
 
-        if (action == DESTROY)
+        if (act == DESTROY)
             assertNull(desc);
         else {
-            assertEquals(versionId, desc.version().id());
-            assertEquals(action, desc.version().lastAction());
+            assertEquals(verId, desc.version().id());
+            assertEquals(act, desc.version().lastAction());
         }
     }
 }
