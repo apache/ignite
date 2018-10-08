@@ -97,21 +97,25 @@ public class GridIoStatManager {
     private volatile LocalDateTime statsSince = LocalDateTime.now();
 
     /**
-     * Add operation type statistics context for current thread.
+     * Add operation types statistics context for current thread.
      *
-     * @param statType Statistic operation type.
+     * @param statTypes Statistic operation types.
      */
-    public static void addCurrentOperationType(StatOperationType statType) {
-        currentOperationType.get().add(statType);
+    public static void addCurrentOperationType(StatOperationType... statTypes) {
+        for (StatOperationType statType : statTypes) {
+            currentOperationType.get().add(statType);
+        }
     }
 
     /**
-     * Remove operation type statistics context for current thread.
+     * Remove operation types statistics context for current thread.
      *
-     * @param statType Statistic operation type.
+     * @param statTypes Statistic operation types.
      */
-    public static void removeCurrentOperationType(StatOperationType statType) {
-        currentOperationType.get().remove(statType);
+    public static void removeCurrentOperationType(StatOperationType... statTypes) {
+        for (StatOperationType statType : statTypes) {
+            currentOperationType.get().remove(statType);
+        }
     }
 
     /**
@@ -196,7 +200,6 @@ public class GridIoStatManager {
             mapToTrack.get(StatType.GLOBAL).get(pageType).get(KEY_FOR_GLOBAL_STAT).increment();
 
             List<StatOperationType> statOpTypes = currentOperationType.get();
-            new HashSet<>(statOpTypes);
 
             if (!statOpTypes.isEmpty())
                 for (StatOperationType opType : statOpTypes)
@@ -261,7 +264,7 @@ public class GridIoStatManager {
     }
 
     /**
-     * Extract all logical reads subtypes.
+     * Extract all tracked logical reads subtypes.
      *
      * @param statType Type of statistics which subtypes need to extract.
      * @param <T> Type of subTypes.
@@ -272,7 +275,7 @@ public class GridIoStatManager {
     }
 
     /**
-     * Extract all physical reads subtypes.
+     * Extract all tracked physical reads subtypes.
      *
      * @param statType Type of statistics which subtypes need to extract.
      * @param <T> Type of subTypes.
@@ -288,6 +291,7 @@ public class GridIoStatManager {
      * @param statMap Map with full statistics.
      * @param statType Type of statistics which subtypes need to extract.
      * @return Set of present subtypes for given statType
+     * @param <T> Type of subtype.
      */
     @SuppressWarnings({"unchecked"})
     private <T> Set<T> extractSubTypes(Map<StatType, Map<PageType, Map<Object, LongAdder>>> statMap,

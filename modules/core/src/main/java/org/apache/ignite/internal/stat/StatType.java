@@ -23,6 +23,8 @@ package org.apache.ignite.internal.stat;
  */
 public enum StatType {
     /** */
+    GLOBAL,
+    /** */
     INDEX,
     /** */
     CACHE,
@@ -31,7 +33,5 @@ public enum StatType {
     /** */
     TABLE,
     /** */
-    SQL,
-    /** */
-    GLOBAL
+    SQL
 }
