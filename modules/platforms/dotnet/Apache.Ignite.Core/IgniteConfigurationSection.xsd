@@ -2191,7 +2191,7 @@
                     </xs:documentation>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="systemWorkerBlockedTimeout" type="xs:string">
+            <xs:attribute name="sysWorkerBlockedTimeout" type="xs:string">
                 <xs:annotation>
                     <xs:documentation>
                         Timeout for blocked system workers detection.
