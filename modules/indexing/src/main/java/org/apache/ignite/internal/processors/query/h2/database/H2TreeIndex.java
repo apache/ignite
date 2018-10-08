@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -89,9 +88,6 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** */
     private final String idxName;
 
-    /** Keep max inline size per index. */
-    private final AtomicInteger maxCalculatedInlineSize = new AtomicInteger();
-
     /** */
     private final IgniteLogger log;
 
@@ -149,6 +145,8 @@ public class H2TreeIndex extends GridH2IndexBase {
             segments = new H2Tree[segmentsCnt];
 
             IgniteCacheDatabaseSharedManager db = cctx.shared().database();
+
+            AtomicInteger maxCalculatedInlineSize = new AtomicInteger();
 
             for (int i = 0; i < segments.length; i++) {
                 db.checkpointReadLock();
@@ -209,7 +207,7 @@ public class H2TreeIndex extends GridH2IndexBase {
             if (!InlineIndexHelper.AVAILABLE_TYPES.contains(col.column.getType())) {
                 String idxType = pk ? "PRIMARY KEY" : affinityKey ? "AFFINITY KEY (implicit)" : "SECONDARY";
 
-                U.warn(log, "Column cannot be inlined into index pages because it's type doesn't support inlining, " +
+                U.warn(log, "Column cannot be inlined into the index because it's type doesn't support inlining, " +
                     "index access may be slow due to additional page reads (change column type if possible) " +
                     "[cacheName=" + cctx.name() +
                     ", tableName=" + tblName +

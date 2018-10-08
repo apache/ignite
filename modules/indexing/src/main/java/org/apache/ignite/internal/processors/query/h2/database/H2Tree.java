@@ -100,7 +100,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     private static final int THROTTLE_INLINE_SIZE_CALCULATION = 1_000;
 
     /** Counter of inline size calculation for throttling real invocations. */
-    private final ThreadLocal<Long> inlineSizeCalculationCntr = ThreadLocal.withInitial(() -> new Long(0));
+    private final ThreadLocal<Long> inlineSizeCalculationCntr = ThreadLocal.withInitial(() -> 0L);
 
     /** Keep max calculated inline size for current index. */
     private final AtomicInteger maxCalculatedInlineSize;
@@ -221,7 +221,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      * Create row from link.
      *
      * @param link Link.
-     * @param mvccOpCntr
+     * @param mvccOpCntr MVCC operation counter.
      * @return Row.
      * @throws IgniteCheckedException if failed.
      */
@@ -441,7 +441,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         if (throttle)
             return;
 
-        int fullSize = 0;
+        int newSize = 0;
 
         InlineIndexHelper idx;
 
@@ -450,43 +450,46 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         for (InlineIndexHelper index : inlineIdxs) {
             idx = index;
 
-            fullSize += idx.inlineSizeOf(row.getValue(idx.columnIndex()));
+            newSize += idx.inlineSizeOf(row.getValue(idx.columnIndex()));
 
             colNames.add(index.colName());
         }
 
-        if (fullSize > inlineSize()) {
-            final int recomendedSize = fullSize;
+        if (newSize > inlineSize()) {
+            int oldSize = maxCalculatedInlineSize.get();
 
-            int prevSize = maxCalculatedInlineSize.getAndUpdate(prev -> Math.max(prev, recomendedSize));
+            if (oldSize >= newSize || !maxCalculatedInlineSize.compareAndSet(oldSize, newSize))
+                return;
 
-            if (recomendedSize > prevSize) {
-                String cols = colNames.stream().collect(Collectors.joining(", ", "(", ")"));
+            String cols = colNames.stream().collect(Collectors.joining(", ", "(", ")"));
 
-                String idxType = pk ? "PRIMARY KEY" : affinityKey ? "AFFINITY KEY (implicit)" : "SECONDARY";
+            String idxType = pk ? "PRIMARY KEY" : affinityKey ? "AFFINITY KEY (implicit)" : "SECONDARY";
 
-                String pkOrAffinityRecommendation = "for PRIMARY and AFFINITY columns set ENV property "
-                    + IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE + " with recomended size " +
-                    "(Be aware it will use by default for all inline indexes without explicit setting of inline size)";
+            String recommendation;
 
-                String secondaryRecommendation = "For secondary indexes column use explicit settings: " +
-                    "for CACHE API by QueryIndex.setInlineSize() or inlineSize param on QuerySqlField annotation, " +
-                    "in case DDL use SQL CREATE INDEX syntax with param INLINE_SIZE";
-
-                String recommendation = (pk || affinityKey) ? pkOrAffinityRecommendation : secondaryRecommendation;
-
-                String warn = "Indexed columns of a row cannot be fully inlined into index page what may lead to " +
-                    "slowdown due to additional data page reads (" + recommendation + ")" +
-                    "[cacheName=" + cacheName +
-                    ", tableName=" + tblName +
-                    ", idxName=" + idxName +
-                    ", idxCols=" + cols +
-                    ", idxType=" + idxType +
-                    ", curSize=" + inlineSize() +
-                    ", recomendedSize=" + recomendedSize + "]";
-
-                U.warn(log, warn);
+            if (pk || affinityKey) {
+                recommendation = "set system property "
+                    + IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE + " with recommended size " +
+                    "(be aware it will be used by default for all indexes without explicit inline size)";
             }
+            else {
+                recommendation = "use INLINE_SIZE option for CREATE INDEX command, " +
+                    "QuerySqlField.inlineSize for annotated classes, or QueryIndex.inlineSize for explicit " +
+                    "QueryEntity configuration";
+            }
+
+            String warn = "Indexed columns of a row cannot be fully inlined into index " +
+                "what may lead to slowdown due to additional data page reads, increase index inline size if needed " +
+                "(" + recommendation + ") " +
+                "[cacheName=" + cacheName +
+                ", tableName=" + tblName +
+                ", idxName=" + idxName +
+                ", idxCols=" + cols +
+                ", idxType=" + idxType +
+                ", curSize=" + inlineSize() +
+                ", recommendedInlineSize=" + newSize + "]";
+
+            U.warn(log, warn);
         }
     }
 
