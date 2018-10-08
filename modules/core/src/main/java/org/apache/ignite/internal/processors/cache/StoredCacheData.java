@@ -49,7 +49,9 @@ public class StoredCacheData implements Serializable {
     /** SQL flag - {@code true} if cache was created with {@code CREATE TABLE}. */
     private boolean sql;
 
-    private GridCacheConfigurationVersion version;
+    /** Cache configuration version. */
+    @GridToStringInclude
+    private GridCacheConfigurationVersion ver;
     /**
      * Constructor.
      *
@@ -62,10 +64,12 @@ public class StoredCacheData implements Serializable {
         this.qryEntities = ccfg.getQueryEntities();
     }
 
-    public GridCacheConfigurationVersion version(){ return version; }
+    /** */
+    public GridCacheConfigurationVersion version(){ return ver; }
 
-    public StoredCacheData version(GridCacheConfigurationVersion version){
-        this.version = version;
+    /** */
+    public StoredCacheData version(GridCacheConfigurationVersion ver){
+        this.ver = ver;
 
         return this;
     }

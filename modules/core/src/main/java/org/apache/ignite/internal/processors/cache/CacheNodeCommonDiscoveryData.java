@@ -50,21 +50,24 @@ public class CacheNodeCommonDiscoveryData implements Serializable {
     /** */
     private Collection<String> restartingCaches;
 
+    /** Caches configuration version. */
     @GridToStringInclude
-    private final Map<String, GridCacheConfigurationVersion> cacheVers;
+    private final Map<String, GridCacheConfigurationVersion> cachesVer;
 
     /**
      * @param caches Started caches.
      * @param templates Configured templates.
      * @param cacheGrps Started cache groups.
      * @param clientNodesMap Information about cache client nodes.
+     * @param restartingCaches Caches for restart.
+     * @param cachesVer Caches configuration version.
      */
     public CacheNodeCommonDiscoveryData(Map<String, CacheData> caches,
         Map<String, CacheData> templates,
         Map<Integer, CacheGroupData> cacheGrps,
         Map<String, Map<UUID, Boolean>> clientNodesMap,
         Collection<String> restartingCaches,
-        Map<String, GridCacheConfigurationVersion> cacheVers
+        Map<String, GridCacheConfigurationVersion> cachesVer
     ) {
         assert caches != null;
         assert templates != null;
@@ -76,7 +79,7 @@ public class CacheNodeCommonDiscoveryData implements Serializable {
         this.cacheGrps = cacheGrps;
         this.clientNodesMap = clientNodesMap;
         this.restartingCaches = restartingCaches;
-        this.cacheVers = cacheVers;
+        this.cachesVer = cachesVer;
     }
 
     /**
@@ -100,7 +103,10 @@ public class CacheNodeCommonDiscoveryData implements Serializable {
         return templates;
     }
 
-    public Map<String, GridCacheConfigurationVersion> cachesConfigurationVersion() { return cacheVers; }
+    /**
+     * @return Caches configuration version.
+     */
+    public Map<String, GridCacheConfigurationVersion> cachesConfigurationVersion() { return cachesVer; }
 
     /**
      * @return Information about cache client nodes.

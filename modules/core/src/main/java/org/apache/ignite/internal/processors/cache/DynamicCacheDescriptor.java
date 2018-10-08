@@ -96,7 +96,8 @@ public class DynamicCacheDescriptor {
     /** */
     private final CacheGroupDescriptor grpDesc;
 
-    private GridCacheConfigurationVersion version;
+    /** Cache configuration version. */
+    private GridCacheConfigurationVersion ver;
 
     /**
      * @param ctx Context.
@@ -147,9 +148,15 @@ public class DynamicCacheDescriptor {
         }
     }
 
-    public GridCacheConfigurationVersion version(){ return version; }
+    /**
+     * @return Cache configuration version.
+     */
+    public GridCacheConfigurationVersion version(){ return ver; }
 
-    public void version(GridCacheConfigurationVersion version){ this.version = version; }
+    /**
+     * @param ver New cache configuration version.
+     */
+    public void version(GridCacheConfigurationVersion ver){ this.ver = ver; }
 
     /**
      * @return Cache group ID.

@@ -16,6 +16,16 @@
  */
 package org.apache.ignite.internal.processors.cache.version;
 
+/**
+ * List of possible reasons for update {@link GridCacheConfigurationVersion}.
+ */
 public enum GridCacheConfigurationChangeAction {
-    START, DESTROY, META_CHANGED;
+    /** Cache was started. */
+    START,
+
+    /** Cache was destroyed */
+    DESTROY,
+
+    /** Cache structure was changed (for example, ALTER TABLE). Applicable only for SQL caches. */
+    META_CHANGED;
 }

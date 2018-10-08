@@ -526,11 +526,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     assert cacheDesc.version() != null;
 
-                    if (cacheDesc.cacheType() == CacheType.USER &&
-                        cacheDesc.version().isNeedUpdateVersion(META_CHANGED)) {
-                        cacheDesc.version().updateVersion(META_CHANGED);
+                    if (cacheDesc.cacheType() == CacheType.USER){
+                        if(cacheDesc.version().isNeedUpdateVersion(META_CHANGED)) {
+                            cacheDesc.version().updateVersion(META_CHANGED);
 
-                        ctx.cache().updateCacheVersion(cacheDesc.version());
+                            ctx.cache().updateCacheVersion(cacheDesc.version());
+                        }
                     }
 
                     try {

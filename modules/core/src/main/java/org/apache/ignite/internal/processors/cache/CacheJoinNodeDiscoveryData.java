@@ -45,6 +45,7 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
     @GridToStringInclude
     private final IgniteUuid cacheDeploymentId;
 
+    /** Caches configuration version. */
     @GridToStringInclude
     private Map<String, GridCacheConfigurationVersion> cachesVer;
 
@@ -55,6 +56,7 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
      * @param cacheDeploymentId Deployment ID for started caches.
      * @param caches Caches.
      * @param templates Templates.
+     * @param cachesVer Caches configuration version.
      * @param startCaches {@code True} if required to start all caches on joining node.
      */
     public CacheJoinNodeDiscoveryData(
@@ -62,7 +64,8 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates,
         Map<String, GridCacheConfigurationVersion> cachesVer,
-        boolean startCaches) {
+        boolean startCaches
+    ) {
         this.cacheDeploymentId = cacheDeploymentId;
         this.caches = caches;
         this.templates = templates;
@@ -98,9 +101,19 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
         return caches;
     }
 
+    /**
+     * @return Caches configuration version.
+     */
     public Map<String, GridCacheConfigurationVersion> cachesConfigurationVersion() { return cachesVer; }
 
-    public void cachesConfigurationVersion(Map<String, GridCacheConfigurationVersion> cachesVer) { this.cachesVer = cachesVer; }
+    /**
+     * Set new caches configuration version.
+     *
+     * @param cachesVer Caches configuration version.
+     */
+    public void cachesConfigurationVersion(Map<String, GridCacheConfigurationVersion> cachesVer) {
+        this.cachesVer = cachesVer;
+    }
 
     /**
      *

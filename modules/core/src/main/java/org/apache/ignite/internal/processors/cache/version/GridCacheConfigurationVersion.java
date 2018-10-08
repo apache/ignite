@@ -21,90 +21,119 @@ import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Grid cache configuration version. Used for correct merge cache configuration in moment joining of node. Make sense
+ * only for dynamically created user caches.
+ */
 public class GridCacheConfigurationVersion implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Version number. */
     private volatile int id;
 
-    private volatile GridCacheConfigurationChangeAction lastAction;
+    /** Reason for last update version number. */
+    private volatile GridCacheConfigurationChangeAction lastAct;
 
+    /** Cache name. */
     private final String cacheName;
 
-    private final String cacheGroupName;
+    /** Cache group name. */
+    private final String cacheGrpName;
 
-    private final boolean staticlyConfigured;
+    /** {@code true} if cache was statically configured. */
+    private final boolean staticallyConfigured;
 
-    public GridCacheConfigurationVersion(String cacheName, String cacheGroupName, boolean staticlyConfigured) {
-        this(0, null, cacheName, cacheGroupName, staticlyConfigured);
-    }
-
-    private GridCacheConfigurationVersion(
-        int id,
-        GridCacheConfigurationChangeAction action,
-        String cacheName,
-        String cacheGroupName,
-        boolean staticlyConfigured
-    ) {
-        this.id = id;
-        this.lastAction = action;
+    /**
+     * Creates initial version.
+     *
+     * @param cacheName Cache name.
+     * @param cacheGrpName Cache group name.
+     * @param staticallyConfigured Statically configured cache flag.
+     */
+    public GridCacheConfigurationVersion(String cacheName, String cacheGrpName, boolean staticallyConfigured) {
         this.cacheName = cacheName;
-        this.cacheGroupName = cacheGroupName;
-        this.staticlyConfigured = staticlyConfigured;
+        this.cacheGrpName = cacheGrpName;
+        this.staticallyConfigured = staticallyConfigured;
     }
 
-    public int id() {
-        return id;
-    }
-
-    public GridCacheConfigurationChangeAction lastAction() {
-        return lastAction;
-    }
-
+     /**
+     * Updates version.
+     *
+     * @param action Reason for update version.
+     */
     public void updateVersion(@NotNull GridCacheConfigurationChangeAction action) {
-        synchronized (this){
-            if(isNeedUpdateVersion(action)){
-                this.id = id + 1;
-                this.lastAction = action;
+        synchronized (this) {
+            if (isNeedUpdateVersion(action)) {
+                this.id++;
+
+                this.lastAct = action;
             }
         }
     }
 
-    public boolean isNeedUpdateVersion(@NotNull GridCacheConfigurationChangeAction action){
-        if(staticlyConfigured)
+    /**
+     * Checks, that version must be updated.
+     *
+     * @param act Reason for update version.
+     * @return {@code true} if version must be updated.
+     */
+    public boolean isNeedUpdateVersion(@NotNull GridCacheConfigurationChangeAction act) {
+        if (staticallyConfigured)
             return false;
 
-        if(action == GridCacheConfigurationChangeAction.META_CHANGED)
+        if (act == GridCacheConfigurationChangeAction.META_CHANGED)
             return true;
 
-        return lastAction != action;
+        return lastAct != act;
     }
 
-    public String cacheGroupName(){ return cacheGroupName; }
+    /**
+     * @return Version number.
+     */
+    public int id() { return id; }
 
-    public String cacheName(){ return cacheName; }
+    /**
+     * @return Reason for last update version number.
+     */
+    public GridCacheConfigurationChangeAction lastAction() { return lastAct; }
 
-    public boolean staticlyConfigured(){ return staticlyConfigured; }
+    /**
+     * @return Cache group name.
+     */
+    public String cacheGroupName() { return cacheGrpName; }
 
-     /** {@inheritDoc} */
+    /**
+     * @return Cache name.
+     */
+    public String cacheName() { return cacheName; }
+
+    /**
+     * @return {@code true} if cache was statically configured.
+     */
+    public boolean staticallyConfigured() { return staticallyConfigured; }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheConfigurationVersion.class, this);
     }
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        GridCacheConfigurationVersion version = (GridCacheConfigurationVersion)o;
-        return id == version.id &&
-            staticlyConfigured == version.staticlyConfigured &&
-            lastAction == version.lastAction &&
-            Objects.equals(cacheName, version.cacheName) &&
-            Objects.equals(cacheGroupName, version.cacheGroupName);
+        GridCacheConfigurationVersion ver = (GridCacheConfigurationVersion)o;
+        return id == ver.id &&
+            staticallyConfigured == ver.staticallyConfigured &&
+            lastAct == ver.lastAct &&
+            Objects.equals(cacheName, ver.cacheName) &&
+            Objects.equals(cacheGrpName, ver.cacheGrpName);
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(cacheName, cacheGroupName, staticlyConfigured);
+        return Objects.hash(cacheName, cacheGrpName, staticallyConfigured);
     }
 }

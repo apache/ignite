@@ -281,7 +281,9 @@ public class CachesRegistry {
     private IgniteInternalFuture<?> persistCacheConfigurations(List<DynamicCacheDescriptor> cacheDescriptors) {
         List<StoredCacheData> cacheConfigsToPersist = cacheDescriptors.stream()
             .map(cacheDesc ->
-                new StoredCacheData(cacheDesc.cacheConfiguration()).sql(cacheDesc.sql()).version(cacheDesc.version())
+                new StoredCacheData(cacheDesc.cacheConfiguration())
+                    .sql(cacheDesc.sql())
+                    .version(cacheDesc.version())
             ).collect(Collectors.toList());
 
         return cctx.kernalContext().closure().runLocalSafe(() -> {
