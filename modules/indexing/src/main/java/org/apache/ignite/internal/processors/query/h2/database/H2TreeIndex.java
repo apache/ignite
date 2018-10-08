@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.query.h2.database;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -41,6 +43,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
@@ -73,11 +76,27 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** Cache context. */
     private final GridCacheContext<?, ?> cctx;
 
+    /** Table name/ */
+    private final String tblName;
+
+    /** */
+    private final boolean pk;
+
+    /** */
+    private final boolean affinityKey;
+
+    /** */
+    private final String idxName;
+
+    /** */
+    private final IgniteLogger log;
+
     /**
      * @param cctx Cache context.
      * @param tbl Table.
-     * @param name Index name.
+     * @param idxName Index name.
      * @param pk Primary key.
+     * @param affinityKey {@code true} for affinity key.
      * @param colsList Index columns.
      * @param inlineSize Inline size.
      * @throws IgniteCheckedException If failed.
@@ -86,8 +105,9 @@ public class H2TreeIndex extends GridH2IndexBase {
         GridCacheContext<?, ?> cctx,
         @Nullable H2RowCache rowCache,
         GridH2Table tbl,
-        String name,
+        String idxName,
         boolean pk,
+        boolean affinityKey,
         List<IndexColumn> colsList,
         int inlineSize,
         int segmentsCnt
@@ -96,20 +116,28 @@ public class H2TreeIndex extends GridH2IndexBase {
 
         this.cctx = cctx;
 
+        this.log = cctx.logger(getClass().getName());
+
+        this.pk = pk;
+        this.affinityKey = affinityKey;
+
+        this.tblName = tbl.getName();
+        this.idxName = idxName;
+
         IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
 
         IndexColumn.mapColumns(cols, tbl);
 
-        initBaseIndex(tbl, 0, name, cols,
+        initBaseIndex(tbl, 0, idxName, cols,
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
         GridQueryTypeDescriptor typeDesc = tbl.rowDescriptor().type();
 
         int typeId = cctx.binaryMarshaller() ? typeDesc.typeId() : typeDesc.valueClass().hashCode();
 
-        name = (tbl.rowDescriptor() == null ? "" : typeId + "_") + name;
+        String treeName = (tbl.rowDescriptor() == null ? "" : typeId + "_") + idxName;
 
-        name = BPlusTree.treeName(name, "H2Tree");
+        treeName = BPlusTree.treeName(treeName, "H2Tree");
 
         if (cctx.affinityNode()) {
             inlineIdxs = getAvailableInlineColumns(cols);
@@ -118,15 +146,20 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             IgniteCacheDatabaseSharedManager db = cctx.shared().database();
 
+            AtomicInteger maxCalculatedInlineSize = new AtomicInteger();
+
             for (int i = 0; i < segments.length; i++) {
                 db.checkpointReadLock();
 
                 try {
-                    RootPage page = getMetaPage(name, i);
+                    RootPage page = getMetaPage(treeName, i);
 
                     segments[i] = new H2Tree(
-                        name,
-                        cctx.offheap().reuseListForIndex(name),
+                        treeName,
+                        idxName,
+                        tblName,
+                        tbl.cacheName(),
+                        cctx.offheap().reuseListForIndex(treeName),
                         cctx.groupId(),
                         cctx.dataRegion().pageMemory(),
                         cctx.shared().wal(),
@@ -137,9 +170,13 @@ public class H2TreeIndex extends GridH2IndexBase {
                         cols,
                         inlineIdxs,
                         computeInlineSize(inlineIdxs, inlineSize),
+                        maxCalculatedInlineSize,
+                        pk,
+                        affinityKey,
                         cctx.mvccEnabled(),
                         rowCache,
-                        cctx.kernalContext().failure()) {
+                        cctx.kernalContext().failure(),
+                        log) {
                         @Override public int compareValues(Value v1, Value v2) {
                             return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
                         }
@@ -167,10 +204,24 @@ public class H2TreeIndex extends GridH2IndexBase {
         List<InlineIndexHelper> res = new ArrayList<>();
 
         for (IndexColumn col : cols) {
-            if (!InlineIndexHelper.AVAILABLE_TYPES.contains(col.column.getType()))
+            if (!InlineIndexHelper.AVAILABLE_TYPES.contains(col.column.getType())) {
+                String idxType = pk ? "PRIMARY KEY" : affinityKey ? "AFFINITY KEY (implicit)" : "SECONDARY";
+
+                U.warn(log, "Column cannot be inlined into the index because it's type doesn't support inlining, " +
+                    "index access may be slow due to additional page reads (change column type if possible) " +
+                    "[cacheName=" + cctx.name() +
+                    ", tableName=" + tblName +
+                    ", idxName=" + idxName +
+                    ", idxType=" + idxType +
+                    ", colName=" + col.columnName +
+                    ", columnType=" + InlineIndexHelper.nameTypeBycode(col.column.getType()) + ']'
+                );
+
                 break;
+            }
 
             InlineIndexHelper idx = new InlineIndexHelper(
+                col.columnName,
                 col.column.getType(),
                 col.column.getColumnId(),
                 col.sortType,
