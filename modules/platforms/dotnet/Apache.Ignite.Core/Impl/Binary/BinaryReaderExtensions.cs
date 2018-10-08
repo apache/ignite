@@ -79,6 +79,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Reads the nullable long.
+        /// </summary>
+        public static long? ReadLongNullable(this IBinaryRawReader reader)
+        {
+            return reader.ReadBoolean() ? reader.ReadLong() : (long?) null;
+        }
+
+        /// <summary>
         /// Reads the nullable bool.
         /// </summary>
         public static bool? ReadBooleanNullable(this IBinaryRawReader reader)

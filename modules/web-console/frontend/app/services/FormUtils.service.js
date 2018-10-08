@@ -339,7 +339,7 @@ export default function service($window, Focus, $rootScope) {
                 return;
 
             const walk = (m) => {
-                if (!m.$error[e])
+                if (!m || !m.$error[e])
                     return;
 
                 if (m.$error[e] === true)

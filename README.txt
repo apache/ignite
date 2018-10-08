@@ -1,5 +1,5 @@
-Apache Ignite In-Memory Data Fabric
-===================================
+Apache Ignite In-Memory Database and Caching Platform
+=====================================================
 
 Ignite is a memory-centric distributed database, caching, and processing platform for transactional, analytical,
 and streaming workloads delivering in-memory speeds at petabyte scale.
