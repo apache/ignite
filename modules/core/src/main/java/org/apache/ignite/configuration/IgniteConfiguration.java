@@ -408,7 +408,7 @@ public class IgniteConfiguration {
     private Long failureDetectionTimeout = DFLT_FAILURE_DETECTION_TIMEOUT;
 
     /** Timeout for blocked system workers detection. */
-    private Long systemWorkerBlockedTimeout;
+    private Long sysWorkerBlockedTimeout;
 
     /** Timeout for checkpoint read lock acquisition. */
     private Long checkpointReadLockTimeout;
@@ -626,7 +626,7 @@ public class IgniteConfiguration {
         svcCfgs = cfg.getServiceConfiguration();
         svcPoolSize = cfg.getServiceThreadPoolSize();
         sysPoolSize = cfg.getSystemThreadPoolSize();
-        systemWorkerBlockedTimeout = cfg.getSystemWorkerBlockedTimeout();
+        sysWorkerBlockedTimeout = cfg.getSysWorkerBlockedTimeout();
         timeSrvPortBase = cfg.getTimeServerPortBase();
         timeSrvPortRange = cfg.getTimeServerPortRange();
         txCfg = cfg.getTransactionConfiguration();
@@ -1989,11 +1989,11 @@ public class IgniteConfiguration {
      * <p>
      * Default is {@link #getFailureDetectionTimeout()}.
      *
-     * @see #setSystemWorkerBlockedTimeout(long)
+     * @see #setSysWorkerBlockedTimeout(long)
      * @return Returns timeout for blocked system workers detection in milliseconds.
      */
-    public Long getSystemWorkerBlockedTimeout() {
-        return systemWorkerBlockedTimeout != null ? systemWorkerBlockedTimeout : getFailureDetectionTimeout();
+    public Long getSysWorkerBlockedTimeout() {
+        return sysWorkerBlockedTimeout != null ? sysWorkerBlockedTimeout : getFailureDetectionTimeout();
     }
 
     /**
@@ -2003,11 +2003,11 @@ public class IgniteConfiguration {
      * handler is being called.
      *
      * @see #setFailureHandler(FailureHandler)
-     * @param systemWorkerBlockedTimeout Timeout for blocked system workers detection in milliseconds.
+     * @param sysWorkerBlockedTimeout Timeout for blocked system workers detection in milliseconds.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setSystemWorkerBlockedTimeout(long systemWorkerBlockedTimeout) {
-        this.systemWorkerBlockedTimeout = systemWorkerBlockedTimeout;
+    public IgniteConfiguration setSysWorkerBlockedTimeout(long sysWorkerBlockedTimeout) {
+        this.sysWorkerBlockedTimeout = sysWorkerBlockedTimeout;
 
         return this;
     }

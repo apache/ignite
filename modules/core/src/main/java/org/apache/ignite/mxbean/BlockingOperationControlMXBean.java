@@ -24,10 +24,10 @@ package org.apache.ignite.mxbean;
 public interface BlockingOperationControlMXBean {
     /** */
     @MXBeanDescription("Timeout for blocked system workers detection. Critical failure handler fires is exceeded.")
-    public long getSystemWorkerBlockedTimeout();
+    public long getSysWorkerBlockedTimeout();
 
     /** */
-    public void setSystemWorkerBlockedTimeout(long val);
+    public void setSysWorkerBlockedTimeout(long val);
 
     /** */
     @MXBeanDescription("Timeout for checkpoint read lock acquisition. Critical failure handler fires is exceeded.")

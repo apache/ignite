@@ -62,7 +62,7 @@ public class WorkersRegistry implements GridWorkerListener {
     private final IgniteBiInClosure<GridWorker, FailureType> workerFailedHnd;
 
     /** Worker heartbeat timeout in milliseconds, when exceeded, worker is considered as blocked. */
-    private volatile long heartbeatTimeout;
+    private volatile long sysWorkerBlockedTimeout;
 
     /** Time in milliseconds between successive workers checks. */
     private final long checkInterval;
@@ -72,16 +72,16 @@ public class WorkersRegistry implements GridWorkerListener {
 
     /**
      * @param workerFailedHnd Closure to invoke on worker failure.
-     * @param heartbeatTimeout Maximum allowed worker heartbeat interval in milliseconds, non-positive value denotes
+     * @param sysWorkerBlockedTimeout Maximum allowed worker heartbeat interval in milliseconds, non-positive value denotes
      * infinite interval.
      */
     public WorkersRegistry(
         @NotNull IgniteBiInClosure<GridWorker, FailureType> workerFailedHnd,
-        long heartbeatTimeout,
+        long sysWorkerBlockedTimeout,
         IgniteLogger log) {
         this.workerFailedHnd = workerFailedHnd;
-        this.heartbeatTimeout = heartbeatTimeout <= 0 ? Long.MAX_VALUE : heartbeatTimeout;
-        this.checkInterval = Math.min(DFLT_CHECK_INTERVAL, heartbeatTimeout);
+        this.sysWorkerBlockedTimeout = sysWorkerBlockedTimeout <= 0 ? Long.MAX_VALUE : sysWorkerBlockedTimeout;
+        this.checkInterval = Math.min(DFLT_CHECK_INTERVAL, sysWorkerBlockedTimeout);
         this.log = log;
     }
 
@@ -138,13 +138,13 @@ public class WorkersRegistry implements GridWorkerListener {
     }
 
     /** */
-    long getHeartbeatTimeout() {
-        return heartbeatTimeout == Long.MAX_VALUE ? 0 : heartbeatTimeout;
+    long getSysWorkerBlockedTimeout() {
+        return sysWorkerBlockedTimeout == Long.MAX_VALUE ? 0 : sysWorkerBlockedTimeout;
     }
 
     /** */
-    void setHeartbeatTimeout(long val) {
-        heartbeatTimeout = val <= 0 ? Long.MAX_VALUE : val;
+    void setSysWorkerBlockedTimeout(long val) {
+        sysWorkerBlockedTimeout = val <= 0 ? Long.MAX_VALUE : val;
     }
 
     /** {@inheritDoc} */
@@ -172,7 +172,7 @@ public class WorkersRegistry implements GridWorkerListener {
         try {
             lastCheckTs = U.currentTimeMillis();
 
-            long workersToCheck = Math.max(registeredWorkers.size() * checkInterval / heartbeatTimeout, 1);
+            long workersToCheck = Math.max(registeredWorkers.size() * checkInterval / sysWorkerBlockedTimeout, 1);
 
             int workersChecked = 0;
 
@@ -206,7 +206,7 @@ public class WorkersRegistry implements GridWorkerListener {
 
                     long heartbeatDelay = U.currentTimeMillis() - worker.heartbeatTs();
 
-                    if (heartbeatDelay > heartbeatTimeout) {
+                    if (heartbeatDelay > sysWorkerBlockedTimeout) {
                         GridWorker worker0 = registeredWorkers.get(worker.runner().getName());
 
                         if (worker0 != null && worker0 == worker) {

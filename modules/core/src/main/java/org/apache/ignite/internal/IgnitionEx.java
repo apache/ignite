@@ -1830,8 +1830,7 @@ public class IgnitionEx {
                                 new IgniteException(S.toString(GridWorker.class, deadWorker))));
                     }
                 },
-                IgniteSystemProperties.getLong(IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT,
-                    cfg.getSystemWorkerBlockedTimeout()),
+                IgniteSystemProperties.getLong(IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT, cfg.getSysWorkerBlockedTimeout()),
                 log);
 
             stripedExecSvc = new StripedExecutor(

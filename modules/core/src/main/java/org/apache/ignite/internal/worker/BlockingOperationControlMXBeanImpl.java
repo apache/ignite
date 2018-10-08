@@ -43,13 +43,13 @@ public class BlockingOperationControlMXBeanImpl implements BlockingOperationCont
     }
 
     /** {@inheritDoc} */
-    @Override public long getSystemWorkerBlockedTimeout() {
-        return workerRegistry.getHeartbeatTimeout();
+    @Override public long getSysWorkerBlockedTimeout() {
+        return workerRegistry.getSysWorkerBlockedTimeout();
     }
 
     /** {@inheritDoc} */
-    @Override public void setSystemWorkerBlockedTimeout(long val) {
-        workerRegistry.setHeartbeatTimeout(val);
+    @Override public void setSysWorkerBlockedTimeout(long val) {
+        workerRegistry.setSysWorkerBlockedTimeout(val);
     }
 
     /** {@inheritDoc} */

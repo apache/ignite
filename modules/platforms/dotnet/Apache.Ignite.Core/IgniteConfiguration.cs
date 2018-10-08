@@ -164,7 +164,7 @@ namespace Apache.Ignite.Core
         private TimeSpan? _clientFailureDetectionTimeout;
 
         /** */
-        private TimeSpan? _systemWorkerBlockedTimeout;
+        private TimeSpan? _sysWorkerBlockedTimeout;
 
         /** */
         private TimeSpan? _checkpointReadLockTimeout;
@@ -333,7 +333,7 @@ namespace Apache.Ignite.Core
             writer.WriteBooleanNullable(_authenticationEnabled);
             writer.WriteLongNullable(_mvccVacuumFreq);
             writer.WriteIntNullable(_mvccVacuumThreadCnt);
-            writer.WriteTimeSpanAsLongNullable(_systemWorkerBlockedTimeout);
+            writer.WriteTimeSpanAsLongNullable(_sysWorkerBlockedTimeout);
             writer.WriteTimeSpanAsLongNullable(_checkpointReadLockTimeout);
 
             if (SqlSchemas == null)
@@ -703,7 +703,7 @@ namespace Apache.Ignite.Core
             _authenticationEnabled = r.ReadBooleanNullable();
             _mvccVacuumFreq = r.ReadLongNullable();
             _mvccVacuumThreadCnt = r.ReadIntNullable();
-            _systemWorkerBlockedTimeout = r.ReadTimeSpanNullable();
+            _sysWorkerBlockedTimeout = r.ReadTimeSpanNullable();
             _checkpointReadLockTimeout = r.ReadTimeSpanNullable();
 
             int sqlSchemasCnt = r.ReadInt();
@@ -1357,10 +1357,10 @@ namespace Apache.Ignite.Core
         /// Gets or sets the timeout for blocked system workers detection.
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:00:10")]
-        public TimeSpan SystemWorkerBlockedTimeout
+        public TimeSpan SysWorkerBlockedTimeout
         {
-            get { return _systemWorkerBlockedTimeout ?? FailureDetectionTimeout; }
-            set { _systemWorkerBlockedTimeout = value; }
+            get { return _sysWorkerBlockedTimeout ?? FailureDetectionTimeout; }
+            set { _sysWorkerBlockedTimeout = value; }
         }
 
         /// <summary>
