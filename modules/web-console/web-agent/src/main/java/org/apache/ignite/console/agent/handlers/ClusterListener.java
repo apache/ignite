@@ -74,6 +74,9 @@ public class ClusterListener implements AutoCloseable {
     /** */
     private static final IgniteProductVersion IGNITE_2_3 = IgniteProductVersion.fromString("2.3.0");
 
+    /** Optional Ignite cluster ID. */
+    public static final String IGNITE_CLUSTER_ID = "IGNITE_CLUSTER_ID";
+
     /** Unique Visor key to get events last order. */
     private static final String EVT_LAST_ORDER_KEY = "WEB_AGENT_" + UUID.randomUUID().toString();
 
@@ -189,6 +192,9 @@ public class ClusterListener implements AutoCloseable {
     /** */
     private static class TopologySnapshot {
         /** */
+        private String clusterId;
+
+        /** */
         private String clusterName;
 
         /** */
@@ -242,6 +248,9 @@ public class ClusterListener implements AutoCloseable {
 
                 Map<String, Object> attrs = node.getAttributes();
 
+                if (F.isEmpty(clusterId))
+                    clusterId = attribute(attrs, IGNITE_CLUSTER_ID);
+
                 if (F.isEmpty(clusterName))
                     clusterName = attribute(attrs, IGNITE_CLUSTER_NAME);
 
@@ -266,6 +275,13 @@ public class ClusterListener implements AutoCloseable {
                     clusterVerStr = nodeVerStr;
                 }
             }
+        }
+
+        /**
+         * @return Cluster id.
+         */
+        public String getClusterId() {
+            return clusterId;
         }
 
         /**
@@ -384,11 +400,11 @@ public class ClusterListener implements AutoCloseable {
                     sesTok = res.getSessionToken();
 
                     return res;
-                    
+
                 case STATUS_FAILED:
                     if (res.getError().startsWith(EXPIRED_SES_ERROR_MSG)) {
                         sesTok = null;
-                        
+
                         params.remove("sessionToken");
 
                         return restCommand(params);
