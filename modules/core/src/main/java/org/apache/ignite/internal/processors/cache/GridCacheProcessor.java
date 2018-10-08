@@ -1824,60 +1824,43 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     /**
      * Finish all proxy latches.
      */
-    public void finishedAll(
+    public void finishedAll() {
+        for (GridCacheAdapter<?, ?> cache : caches.values()) {
+            initFinished(cache.name());
+        }
+    }
+
+    public void finishedProxyRestart(
         AffinityTopologyVersion initVer,
         AffinityTopologyVersion doneVer,
         Map<String, DynamicCacheChangeRequest> reqs
     ) {
         for (GridCacheAdapter<?, ?> cache : caches.values()) {
             GridCacheContext<?, ?> cacheCtx = cache.context();
-
-            if (log.isInfoEnabled())
-                log.info("Finish proxy initialization, cacheName=" + cacheCtx.name() +
-                    ", topVer=" + doneVer + ", startVer=" + cacheCtx.startTopologyVersion() +
-                    ", localNodeId=" + ctx.localNodeId()
-                );
-
-            if (initVer == null || doneVer == null) {
-                finishInit(cache, cacheCtx, reqs);
-            }
-            else if (
+            if (
                 cacheCtx.startTopologyVersion().compareTo(initVer) >= 0 &&
                     cacheCtx.startTopologyVersion().compareTo(doneVer) <= 0
             ) {
-                finishInit(cache, cacheCtx, reqs);
+                IgniteCacheProxyImpl<?, ?> proxy = jCacheProxies.get(cache.name());
+
+                boolean canRestart = true;
+
+                if (!F.isEmpty(reqs)) {
+                    DynamicCacheChangeRequest req = reqs.get(cache.name());
+
+                    if (req != null) {
+                        canRestart = !req.disabledAfterStart();
+                    }
+                }
+
+                if (proxy != null && proxy.isRestarting() && canRestart) {
+                    proxy.onRestarted(cacheCtx, cache);
+
+                    if (cacheCtx.dataStructuresCache())
+                        ctx.dataStructures().restart(proxy.internalProxy());
+                }
             }
         }
-    }
-
-    /**
-     *
-     */
-    private void finishInit(
-        GridCacheAdapter<?, ?> cache,
-        GridCacheContext<?, ?> cacheCtx,
-        Map<String, DynamicCacheChangeRequest> reqs
-    ) {
-        IgniteCacheProxyImpl<?, ?> proxy = jCacheProxies.get(cache.name());
-
-        boolean canRestart = true;
-
-        if (!F.isEmpty(reqs)) {
-            DynamicCacheChangeRequest req = reqs.get(cache.name());
-
-            if (req != null) {
-                canRestart = !req.disabledAfterStart();
-            }
-        }
-
-        if (proxy != null && proxy.isRestarting() && canRestart) {
-            proxy.onRestarted(cacheCtx, cache);
-
-            if (cacheCtx.dataStructuresCache())
-                ctx.dataStructures().restart(proxy.internalProxy());
-        }
-
-        initFinished(cache.name());
     }
 
     /**
@@ -4097,7 +4080,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
         if (jcache != null) {
             if (log.isInfoEnabled())
-                log.info("Fnish proxy initialization, cacheName=" + name +
+                log.info("Finish proxy initialization, cacheName=" + name +
                     ", localNodeId=" + ctx.localNodeId());
 
             ((IgniteCacheProxyImpl<?, ?>)jcache).getInitLatch().countDown();

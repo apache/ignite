@@ -1950,9 +1950,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             // Update last finished future in the first.
             cctx.exchange().lastFinishedFuture(this);
 
-            // Complete any affReady futures and update last exchange done version.
-            cctx.exchange().onExchangeDone(res, initialVersion(), err0);
-
             Map<String, DynamicCacheChangeRequest> reqs = null;
 
             if (exchActions != null)
@@ -1961,7 +1958,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     .map(ExchangeActions.CacheActionData::request)
                     .collect(Collectors.toMap(DynamicCacheChangeRequest::cacheName, r -> r));
 
-            cctx.cache().finishedAll(initialVersion(), res, reqs);
+            cctx.cache().finishedProxyRestart(initialVersion(), res, reqs);
+
+            // Complete any affReady futures and update last exchange done version.
+            cctx.exchange().onExchangeDone(res, initialVersion(), err0);
+
+            cctx.cache().finishedAll();
 
             if (exchActions != null && err0 == null)
                 exchActions.completeRequestFutures(cctx, null);
