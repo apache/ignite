@@ -807,8 +807,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public void readCheckpointAndRestoreMemory(List<DynamicCacheDescriptor> cachesToStart,
-                                                         boolean restoreMetastorageOnly) throws IgniteCheckedException {
+    @Override public void readCheckpointAndRestoreMemory(
+            List<DynamicCacheDescriptor> cachesToStart,
+            boolean restoreMetastorageOnly
+    ) throws IgniteCheckedException {
         assert !cctx.localNode().isClient();
 
         long time = System.currentTimeMillis();

@@ -17,12 +17,14 @@
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
 import java.io.Serializable;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -110,9 +112,9 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     public void testRecoveryOfMetastorageWhenNodeNotInBaseline() throws Exception {
-        IgniteEx ig = startGrid(0);
+        IgniteEx ig0 = startGrid(0);
 
-        ig.cluster().active(true);
+        ig0.cluster().active(true);
 
         final byte KEYS_CNT = 100;
         final String KEY_PREFIX = "test.key.";
@@ -120,6 +122,10 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
         final String UPDATED_VAL_PREFIX = "updated.val.";
 
         startGrid(1);
+
+        // Disable checkpoints in order to check whether recovery works.
+        forceCheckpoint(grid(1));
+        disableCheckpoints(grid(1));
 
         loadKeys(grid(1), KEYS_CNT, KEY_PREFIX, NEW_VAL_PREFIX, UPDATED_VAL_PREFIX);
 
@@ -167,5 +173,20 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
 
             Assert.assertEquals(valPrefix + i, val);
         }
+    }
+
+    /**
+     * Disable checkpoints on a specific node.
+     *
+     * @param node Ignite node.h
+     * @throws IgniteCheckedException If failed.
+     */
+    private void disableCheckpoints(Ignite node) throws IgniteCheckedException {
+        assert !node.cluster().localNode().isClient();
+
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)node).context()
+                .cache().context().database();
+
+        dbMgr.enableCheckpoints(false).get();
     }
 }

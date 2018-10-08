@@ -652,8 +652,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param restoreMetastorageOnly Apply updates only for metastorage.
      * @throws IgniteCheckedException If failed.
      */
-    public void readCheckpointAndRestoreMemory(List<DynamicCacheDescriptor> cachesToStart,
-                                               boolean restoreMetastorageOnly) throws IgniteCheckedException {
+    public void readCheckpointAndRestoreMemory(
+            List<DynamicCacheDescriptor> cachesToStart,
+            boolean restoreMetastorageOnly
+    ) throws IgniteCheckedException {
         // No-op.
     }
 
