@@ -138,12 +138,12 @@ public class WorkersRegistry implements GridWorkerListener {
     }
 
     /** */
-    long getSysWorkerBlockedTimeout() {
+    public long getSysWorkerBlockedTimeout() {
         return sysWorkerBlockedTimeout == Long.MAX_VALUE ? 0 : sysWorkerBlockedTimeout;
     }
 
     /** */
-    void setSysWorkerBlockedTimeout(long val) {
+    public void setSysWorkerBlockedTimeout(long val) {
         sysWorkerBlockedTimeout = U.ensurePositive(val, Long.MAX_VALUE);
     }
 
