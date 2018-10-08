@@ -25,7 +25,7 @@ import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -33,7 +33,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnReadAbstractTest.Params;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.util.typedef.T3;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -262,7 +261,7 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
         List<T3<String, String, String>> caches = new ArrayList<>();
 
         for (int i = 0; i < 3; i++) {
-            String tblName = "TABLE_" + GridTestUtils.randomString(ThreadLocalRandom.current(), 16);
+            String tblName = "TABLE_" + UUID.randomUUID().toString().replace('-', '_');
 
             String cacheName = "CACHE_" + tblName;
 
