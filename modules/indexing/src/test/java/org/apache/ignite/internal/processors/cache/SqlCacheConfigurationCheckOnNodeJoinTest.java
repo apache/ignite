@@ -38,7 +38,8 @@ public class SqlCacheConfigurationCheckOnNodeJoinTest extends GridCommonAbstract
     private static final String TABLE_NAME = "PERSON";
 
     /** Create table sql. */
-    private static final String CREATE_TABLE_SQL = "CREATE TABLE " + TABLE_NAME + " (id int primary key, name varchar) WITH \"backups=1\"";
+    private static final String CREATE_TABLE_SQL = "CREATE TABLE " + TABLE_NAME +
+        " (id int primary key, name varchar) WITH \"backups=1\"";
 
     /** Select sql. */
     private static final String SELECT_SQL = "SELECT id from " + TABLE_NAME + " where name = 'foo'";

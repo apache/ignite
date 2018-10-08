@@ -37,7 +37,9 @@ import static java.util.Comparator.comparingLong;
  * Check's correct node behavior on join in case caches were changed.
  */
 public class CacheConfigurationCheckOnNodeJoinTest extends GridCommonAbstractTest {
+    /** Cache name. */
     private static final String CACHE_NAME = DEFAULT_CACHE_NAME + "-test";
+
     /** Second cache name. */
     private static final String SECOND_CACHE_NAME = CACHE_NAME + "-2";
 
@@ -182,13 +184,20 @@ public class CacheConfigurationCheckOnNodeJoinTest extends GridCommonAbstractTes
         restoreClusterAfterCacheCreate(NODES_COUNT, true, LAST_NODE);
     }
 
+    /** */
     public void testRemoveCacheFromCacheGroupAndCreateCacheWithoutCacheGroup() throws Exception{
         startGrids(2);
 
         grid(0).cluster().active(true);
 
-        CacheConfiguration cacheCfg1 = new CacheConfiguration().setName(CACHE_NAME).setGroupName(CACHE_GROUP_NAME).setBackups(1);
-        CacheConfiguration cacheCfg2 = new CacheConfiguration().setName(SECOND_CACHE_NAME).setGroupName(CACHE_GROUP_NAME).setBackups(1);
+        CacheConfiguration cacheCfg1 = new CacheConfiguration()
+            .setName(CACHE_NAME)
+            .setGroupName(CACHE_GROUP_NAME)
+            .setBackups(1);
+        CacheConfiguration cacheCfg2 = new CacheConfiguration()
+            .setName(SECOND_CACHE_NAME)
+            .setGroupName(CACHE_GROUP_NAME)
+            .setBackups(1);
 
         grid(0).getOrCreateCache(cacheCfg1);
         grid(0).getOrCreateCache(cacheCfg2);

@@ -52,26 +52,26 @@ public class GridCacheConfigurationVersionSelfTest extends GridCacheConfiguratio
     @Override protected int performActionsOnCache(
         int firstNodeId,
         int lastNodeId,
-        int version,
+        int ver,
         IgniteEx ignite
     ) throws Exception {
         ignite.getOrCreateCache(CACHE_NAME);
 
-        version++;
+        ver++;
 
         for (int i = firstNodeId; i < lastNodeId; i++)
-            checkCacheVersion(grid(i), CACHE_NAME, version, START);
+            checkCacheVersion(grid(i), CACHE_NAME, ver, START);
 
         ignite.cache(CACHE_NAME).destroy();
 
         Thread.sleep(1000L);
 
-        version++;
+        ver++;
 
         for (int i = firstNodeId; i < lastNodeId; i++)
-            checkCacheVersion(grid(i), CACHE_NAME, version, DESTROY);
+            checkCacheVersion(grid(i), CACHE_NAME, ver, DESTROY);
 
-        return version;
+        return ver;
     }
 
 }
