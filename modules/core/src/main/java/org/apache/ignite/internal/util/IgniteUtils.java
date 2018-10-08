@@ -32,10 +32,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInput;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.Reader;
+import java.io.Serializable;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.annotation.Annotation;
@@ -107,6 +110,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Random;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -193,6 +197,7 @@ import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
+import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -476,6 +481,9 @@ public abstract class IgniteUtils {
     /** Ignite Work Directory. */
     public static final String IGNITE_WORK_DIR = System.getenv(IgniteSystemProperties.IGNITE_WORK_DIR);
 
+    /** Random is used to get random server node to authentication from client node. */
+    private static final Random RND = new Random(System.currentTimeMillis());
+
     /** Clock timer. */
     private static Thread timer;
 
@@ -550,6 +558,12 @@ public abstract class IgniteUtils {
     /** Dev only logging disabled. */
     private static boolean devOnlyLogDisabled =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DEV_ONLY_LOGGING_DISABLED);
+
+    /** JDK9: jdk.internal.loader.URLClassPath. */
+    private static Class clsURLClassPath;
+
+    /** JDK9: URLClassPath#getURLs. */
+    private static Method mthdURLClassPathGetUrls;
 
     /*
      * Initializes enterprise check.
@@ -802,6 +816,15 @@ public abstract class IgniteUtils {
                 equalsMtd = mtd;
             else if ("toString".equals(mtd.getName()))
                 toStringMtd = mtd;
+        }
+
+        try {
+            clsURLClassPath = Class.forName("jdk.internal.loader.URLClassPath");
+            mthdURLClassPathGetUrls = clsURLClassPath.getMethod("getURLs");
+        }
+        catch (ReflectiveOperationException e) {
+            clsURLClassPath = null;
+            mthdURLClassPathGetUrls = null;
         }
     }
 
@@ -1319,7 +1342,7 @@ public abstract class IgniteUtils {
 
         final Set<Long> deadlockedThreadsIds = getDeadlockedThreadIds(mxBean);
 
-        if (deadlockedThreadsIds.size() == 0)
+        if (deadlockedThreadsIds.isEmpty())
             warn(log, "No deadlocked threads detected.");
         else
             warn(log, "Deadlocked threads detected (see thread dump below) " +
@@ -1344,6 +1367,22 @@ public abstract class IgniteUtils {
         }
 
         sb.a(NL);
+
+        warn(log, sb.toString());
+    }
+
+    /**
+     * Dumps stack trace of the thread to the given log at warning level.
+     *
+     * @param t Thread to be dumped.
+     * @param log Logger.
+     */
+    public static void dumpThread(Thread t, @Nullable IgniteLogger log) {
+        ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
+
+        GridStringBuilder sb = new GridStringBuilder();
+
+        printThreadInfo(mxBean.getThreadInfo(t.getId()), sb, Collections.emptySet());
 
         warn(log, sb.toString());
     }
@@ -4016,6 +4055,22 @@ public abstract class IgniteUtils {
             }
             catch (Exception e) {
                 warn(log, "Failed to close resource: " + e.getMessage());
+            }
+    }
+
+    /**
+     * Closes given resource suppressing possible checked exception.
+     *
+     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
+     * @param e Suppressor exception
+     */
+    public static void closeWithSuppressingException(@Nullable AutoCloseable rsrc, @NotNull Exception e) {
+        if (rsrc != null)
+            try {
+                rsrc.close();
+            }
+            catch (Exception suppressed) {
+               e.addSuppressed(suppressed);
             }
     }
 
@@ -7640,9 +7695,33 @@ public abstract class IgniteUtils {
             return ((URLClassLoader)clsLdr).getURLs();
         else if (bltClsLdrCls != null && urlClsLdrField != null && bltClsLdrCls.isAssignableFrom(clsLdr.getClass())) {
             try {
-                return ((URLClassLoader)urlClsLdrField.get(clsLdr)).getURLs();
+                synchronized (urlClsLdrField) {
+                    // Backup accessible field state.
+                    boolean accessible = urlClsLdrField.isAccessible();
+
+                    try {
+                        if (!accessible)
+                            urlClsLdrField.setAccessible(true);
+
+                        Object ucp = urlClsLdrField.get(clsLdr);
+
+                        if (ucp instanceof URLClassLoader)
+                            return ((URLClassLoader)ucp).getURLs();
+                        else if (clsURLClassPath!= null && clsURLClassPath.isInstance(ucp))
+                            return (URL[])mthdURLClassPathGetUrls.invoke(ucp);
+                        else
+                            throw new RuntimeException("Unknown classloader: " + clsLdr.getClass());
+                    }
+                    finally {
+                        // Recover accessible field state.
+                        if (!accessible)
+                            urlClsLdrField.setAccessible(false);
+                    }
+                }
             }
-            catch (IllegalAccessException e) {
+            catch (InvocationTargetException | IllegalAccessException e) {
+                e.printStackTrace(System.err);
+
                 return EMPTY_URL_ARR;
             }
         }
@@ -8662,13 +8741,32 @@ public abstract class IgniteUtils {
             if (clsFilter != null && !clsFilter.apply(clsName))
                 throw new RuntimeException("Deserialization of class " + clsName + " is disallowed.");
 
-            Class old = ldrMap.putIfAbsent(clsName, cls = Class.forName(clsName, true, ldr));
+            // Avoid class caching inside Class.forName
+            if (ldr instanceof CacheClassLoaderMarker)
+                cls = ldr.loadClass(clsName);
+            else
+                cls = Class.forName(clsName, true, ldr);
+
+            Class old = ldrMap.putIfAbsent(clsName, cls);
 
             if (old != null)
                 cls = old;
         }
 
         return cls;
+    }
+
+    /**
+     * Clears class associated with provided class loader from class cache.
+     *
+     * @param ldr Class loader.
+     * @param clsName Class name of clearing class.
+     */
+    public static void clearClassFromClassCache(ClassLoader ldr, String clsName){
+        ConcurrentMap<String, Class> map = classCache.get(ldr);
+
+        if (map!=null)
+            map.remove(clsName);
     }
 
     /**
@@ -10248,6 +10346,43 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Serialize object to byte array.
+     *
+     * @param obj Object.
+     * @return Serialized object.
+     */
+    public static byte[] toBytes(Serializable obj) {
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             ObjectOutputStream oos = new ObjectOutputStream(bos)) {
+            
+            oos.writeObject(obj);
+            oos.flush();
+
+            return bos.toByteArray();
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * Deserialize object from byte array.
+     *
+     * @param data Serialized object.
+     * @return Object.
+     */
+    public static <T> T fromBytes(byte[] data) {
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(data);
+             ObjectInputStream ois = new ObjectInputStream(bis)) {
+
+            return (T)ois.readObject();
+        }
+        catch (IOException | ClassNotFoundException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
      * Return count of regular file in the directory (including in sub-directories)
      *
      * @param dir path to directory
@@ -10486,6 +10621,27 @@ public abstract class IgniteUtils {
             sb.append(U.hexLong(buf.getLong(i)));
 
         return sb.toString();
+    }
+
+    /**
+     * @param ctx Kernel context.
+     * @return Random alive server node.
+     */
+    public static ClusterNode randomServerNode(GridKernalContext ctx) {
+        Collection<ClusterNode> aliveNodes = ctx.discovery().aliveServerNodes();
+
+        int rndIdx = RND.nextInt(aliveNodes.size()) + 1;
+
+        int i = 0;
+        ClusterNode rndNode = null;
+
+        for (Iterator<ClusterNode> it = aliveNodes.iterator(); i < rndIdx && it.hasNext(); i++)
+            rndNode = it.next();
+
+        if (rndNode == null)
+            assert rndNode != null;
+
+        return rndNode;
     }
 
     /**

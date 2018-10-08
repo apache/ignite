@@ -29,8 +29,6 @@ import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.FullPageIdTable;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -228,7 +226,7 @@ public class PageIdDistributionTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            prov.shutdown();
+            prov.shutdown(true);
         }
     }
 }

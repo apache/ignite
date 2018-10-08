@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetrics
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -70,7 +71,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
         super.afterTest();
 
         if (pageMem != null)
-            pageMem.stop();
+            pageMem.stop(true);
 
         pageMem = null;
     }
@@ -407,6 +408,20 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public int size() throws IgniteCheckedException {
+            int len = key().valueBytesLength(null);
+
+            len += value().valueBytesLength(null) + CacheVersionIO.size(version(), false) + 8;
+
+            return len + (cacheId() != 0 ? 4 : 0);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int headerSize() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
         @Override public long link() {
             return link;
         }
@@ -424,6 +439,51 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public int cacheId() {
             return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long newMvccCoordinatorVersion() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long newMvccCounter() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int newMvccOperationCounter() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long mvccCoordinatorVersion() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long mvccCounter() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int mvccOperationCounter() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte mvccTxState() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte newMvccTxState() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isKeyAbsentBefore() {
+            return false;
         }
     }
 

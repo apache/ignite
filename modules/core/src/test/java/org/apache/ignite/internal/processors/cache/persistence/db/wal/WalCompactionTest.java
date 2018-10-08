@@ -33,7 +33,8 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -148,8 +149,10 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         }
 
         // Spam WAL to move all data records to compressible WAL zone.
-        for (int i = 0; i < WAL_SEGMENT_SIZE / DFLT_PAGE_SIZE * 2; i++)
-            ig.context().cache().context().wal().log(new PageSnapshot(new FullPageId(-1, -1), new byte[DFLT_PAGE_SIZE]));
+        for (int i = 0; i < WAL_SEGMENT_SIZE / DFLT_PAGE_SIZE * 2; i++) {
+            ig.context().cache().context().wal().log(new PageSnapshot(new FullPageId(-1, -1), new byte[DFLT_PAGE_SIZE],
+                DFLT_PAGE_SIZE));
+        }
 
         // WAL archive segment is allowed to be compressed when it's at least one checkpoint away from current WAL head.
         ig.context().cache().context().database().wakeupForCheckpoint("Forced checkpoint").get();
@@ -163,7 +166,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         File walDir = new File(dbDir, "wal");
         File archiveDir = new File(walDir, "archive");
         File nodeArchiveDir = new File(archiveDir, nodeFolderName);
-        File walSegment = new File(nodeArchiveDir, FileWriteAheadLogManager.FileDescriptor.fileName(0) + ".zip");
+        File walSegment = new File(nodeArchiveDir, FileDescriptor.fileName(0) + FilePageStoreManager.ZIP_SUFFIX);
 
         assertTrue(walSegment.exists());
         assertTrue(walSegment.length() < WAL_SEGMENT_SIZE / 2); // Should be compressed at least in half.
@@ -268,7 +271,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         File walDir = new File(dbDir, "wal");
         File archiveDir = new File(walDir, "archive");
         File nodeArchiveDir = new File(archiveDir, nodeFolderName);
-        File walSegment = new File(nodeArchiveDir, FileWriteAheadLogManager.FileDescriptor.fileName(emptyIdx));
+        File walSegment = new File(nodeArchiveDir, FileDescriptor.fileName(emptyIdx));
 
         try (RandomAccessFile raf = new RandomAccessFile(walSegment, "rw")) {
             raf.setLength(0); // Clear wal segment, but don't delete.
@@ -346,8 +349,10 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         }
 
         // Spam WAL to move all data records to compressible WAL zone.
-        for (int i = 0; i < WAL_SEGMENT_SIZE / DFLT_PAGE_SIZE * 2; i++)
-            ig.context().cache().context().wal().log(new PageSnapshot(new FullPageId(-1, -1), new byte[DFLT_PAGE_SIZE]));
+        for (int i = 0; i < WAL_SEGMENT_SIZE / DFLT_PAGE_SIZE * 2; i++) {
+            ig.context().cache().context().wal().log(new PageSnapshot(new FullPageId(-1, -1), new byte[DFLT_PAGE_SIZE],
+                DFLT_PAGE_SIZE));
+        }
 
         // WAL archive segment is allowed to be compressed when it's at least one checkpoint away from current WAL head.
         ig.context().cache().context().database().wakeupForCheckpoint("Forced checkpoint").get();
@@ -358,7 +363,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         File walDir = new File(dbDir, "wal");
         File archiveDir = new File(walDir, "archive");
         File nodeArchiveDir = new File(archiveDir, nodeFolderName);
-        File walSegment = new File(nodeArchiveDir, FileWriteAheadLogManager.FileDescriptor.fileName(0) + ".zip");
+        File walSegment = new File(nodeArchiveDir, FileDescriptor.fileName(0) + FilePageStoreManager.ZIP_SUFFIX);
 
         assertTrue(walSegment.exists());
         assertTrue(walSegment.length() < WAL_SEGMENT_SIZE / 2); // Should be compressed at least in half.

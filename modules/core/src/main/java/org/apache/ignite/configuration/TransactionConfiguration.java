@@ -19,7 +19,9 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import javax.cache.configuration.Factory;
+import org.apache.ignite.internal.util.TransientSerializable;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -27,7 +29,11 @@ import org.apache.ignite.transactions.TransactionIsolation;
 /**
  * Transactions configuration.
  */
+@TransientSerializable(methodName = "transientSerializableFields")
 public class TransactionConfiguration implements Serializable {
+    /** */
+    private static final IgniteProductVersion TX_PME_TIMEOUT_SINCE = IgniteProductVersion.fromString("2.5.1");
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -386,5 +392,19 @@ public class TransactionConfiguration implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TransactionConfiguration.class, this);
+    }
+
+    /**
+     * Excludes incompatible fields from serialization/deserialization process.
+     *
+     * @param ver Sender/Receiver node version.
+     * @return Array of excluded from serialization/deserialization fields.
+     */
+    @SuppressWarnings("unused")
+    private static String[] transientSerializableFields(IgniteProductVersion ver) {
+        if (TX_PME_TIMEOUT_SINCE.compareToIgnoreTimestamp(ver) >= 0)
+            return new String[] { "txTimeoutOnPartitionMapExchange" };
+
+        return null;
     }
 }

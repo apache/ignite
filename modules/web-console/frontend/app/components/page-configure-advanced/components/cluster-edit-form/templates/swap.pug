@@ -28,23 +28,33 @@ panel-collapsible(
 )
     panel-title Swap
     panel-description
-        | Settings for overflow data to disk if it cannot fit in memory. 
+        | Settings for overflow data to disk if it cannot fit in memory.
         | #[a.link-success(href="https://apacheignite.readme.io/v1.9/docs/off-heap-memory#swap-space" target="_blank") More info]
     panel-content.pca-form-row(ng-if=`$ctrl.available(["1.0.0", "2.0.0"]) && ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-60
-                +dropdown('Swap space SPI:', `${swapModel}.kind`, '"swapSpaceSpi"', 'true', 'Choose swap SPI',
-                    '::$ctrl.Clusters.swapSpaceSpis',
-                    'Provides a mechanism in grid for storing data on disk<br/>\
-                    Ignite cache uses swap space to overflow data to disk if it cannot fit in memory\
-                    <ul>\
-                        <li>File-based swap - File-based swap space SPI implementation which holds keys in memory</li>\
-                        <li>Not set - File-based swap space SPI with default configuration when it needed</li>\
-                    </ul>')
+                +form-field__dropdown({
+                    label: 'Swap space SPI:',
+                    model: `${swapModel}.kind`,
+                    name: '"swapSpaceSpi"',
+                    placeholder: 'Choose swap SPI',
+                    options: '::$ctrl.Clusters.swapSpaceSpis',
+                    tip: 'Provides a mechanism in grid for storing data on disk<br/>\
+                        Ignite cache uses swap space to overflow data to disk if it cannot fit in memory\
+                        <ul>\
+                            <li>File-based swap - File-based swap space SPI implementation which holds keys in memory</li>\
+                            <li>Not set - File-based swap space SPI with default configuration when it needed</li>\
+                        </ul>'
+                })
             .pc-form-group.pc-form-grid-row(ng-show=`${swapModel}.kind`)
                 .pc-form-grid-col-60
-                    +text('Base directory:', `${fileSwapModel}.baseDirectory`, '"baseDirectory"', 'false', 'swapspace',
-                        'Base directory where to write files')
+                    +form-field__text({
+                        label: 'Base directory:',
+                        model: `${fileSwapModel}.baseDirectory`,
+                        name: '"baseDirectory"',
+                        placeholder: 'swapspace',
+                        tip: 'Base directory where to write files'
+                    })
                 .pc-form-grid-col-30
                     +form-field__number({
                         label: 'Read stripe size:',
@@ -59,16 +69,36 @@ panel-collapsible(
                     )
                         +form-field__error({ error: 'powerOfTwo', message: 'Read stripe size must be positive and power of two' })
                 .pc-form-grid-col-30
-                    +number-min-max-step('Maximum sparsity:', `${fileSwapModel}.maximumSparsity`, '"maximumSparsity"', 'true', '0.5', '0', '0.999', '0.001',
-                        'This property defines maximum acceptable wasted file space to whole file size ratio<br/>\
-                        When this ratio becomes higher than specified number compacting thread starts working')
+                    +form-field__number({
+                        label: 'Maximum sparsity:',
+                        model: `${fileSwapModel}.maximumSparsity`,
+                        name: '"maximumSparsity"',
+                        placeholder: '0.5',
+                        min: '0',
+                        max: '0.999',
+                        step: '0.001',
+                        tip: 'This property defines maximum acceptable wasted file space to whole file size ratio<br/>\
+                             When this ratio becomes higher than specified number compacting thread starts working'
+                    })
                 .pc-form-grid-col-30
-                    +number('Max write queue size:', `${fileSwapModel}.maxWriteQueueSize`, '"maxWriteQueueSize"', 'true', '1024 * 1024', '0',
-                        'Max write queue size in bytes<br/>\
-                        If there are more values are waiting for being written to disk then specified size, SPI will block on store operation')
+                    +form-field__number({
+                        label: 'Max write queue size:',
+                        model: `${fileSwapModel}.maxWriteQueueSize`,
+                        name: '"maxWriteQueueSize"',
+                        placeholder: '1024 * 1024',
+                        min: '0',
+                        tip: 'Max write queue size in bytes<br/>\
+                              If there are more values are waiting for being written to disk then specified size, SPI will block on store operation'
+                    })
                 .pc-form-grid-col-30
-                    +number('Write buffer size:', `${fileSwapModel}.writeBufferSize`, '"writeBufferSize"', 'true', '64 * 1024', '0',
-                        'Write buffer size in bytes<br/>\
-                        Write to disk occurs only when this buffer is full')
+                    +form-field__number({
+                        label: 'Write buffer size:',
+                        model: `${fileSwapModel}.writeBufferSize`,
+                        name: '"writeBufferSize"',
+                        placeholder: '64 * 1024',
+                        min: '0',
+                        tip: 'Write buffer size in bytes<br/>\
+                              Write to disk occurs only when this buffer is full'
+                    })
         .pca-form-column-6
             +preview-xml-java(model, 'clusterSwap')

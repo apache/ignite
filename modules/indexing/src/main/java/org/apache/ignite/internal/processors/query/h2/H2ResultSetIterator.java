@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.result.ResultInterface;
 import org.h2.value.Value;
@@ -69,9 +68,10 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
 
     /**
      * @param data Data array.
+     * @param forUpdate Whether is result is one of {@code SELECT FOR UPDATE} query.
      * @throws IgniteCheckedException If failed.
      */
-    protected H2ResultSetIterator(ResultSet data) throws IgniteCheckedException {
+    protected H2ResultSetIterator(ResultSet data, boolean forUpdate) throws IgniteCheckedException {
         this.data = data;
 
         try {
@@ -83,7 +83,9 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
 
         if (data != null) {
             try {
-                row = new Object[data.getMetaData().getColumnCount()];
+                int colsCnt = data.getMetaData().getColumnCount();
+
+                row = new Object[forUpdate ? colsCnt - 1 : colsCnt];
             }
             catch (SQLException e) {
                 throw new IgniteCheckedException(e);
@@ -96,13 +98,13 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
     /**
      * @return {@code true} If next row was fetched successfully.
      */
-    private boolean fetchNext() {
+    private boolean fetchNext() throws IgniteCheckedException {
         if (data == null)
             return false;
 
         try {
-            if (!data.next()){
-                onClose();
+            if (!data.next()) {
+                close();
 
                 return false;
             }
@@ -135,7 +137,7 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onHasNext() {
+    @Override public boolean onHasNext() throws IgniteCheckedException {
         return hasRow || (hasRow = fetchNext());
     }
 
@@ -161,15 +163,21 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public void onClose(){
+    @Override public void onClose() throws IgniteCheckedException {
         if (data == null)
             // Nothing to close.
             return;
 
-        U.closeQuiet(data);
-
-        res = null;
-        data = null;
+        try {
+            data.close();
+        }
+        catch (SQLException e) {
+            throw new IgniteSQLException(e);
+        }
+        finally {
+            res = null;
+            data = null;
+        }
     }
 
     /** {@inheritDoc} */

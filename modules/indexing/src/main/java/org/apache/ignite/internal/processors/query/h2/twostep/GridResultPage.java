@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -26,7 +28,9 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.value.Value;
 
@@ -70,7 +74,21 @@ public class GridResultPage {
             if (plainRows != null) {
                 rowsInPage = plainRows.size();
 
-                rows = (Iterator<Value[]>)plainRows.iterator();
+                if (rowsInPage == 0 || ((ArrayList<Value[]>)plainRows).get(0).length == res.columns())
+                    rows = (Iterator<Value[]>)plainRows.iterator();
+                else {
+                    // If it's a result of SELECT FOR UPDATE (we can tell by difference in number
+                    // of columns checked above), we need to strip off stuff we don't need.
+                    rows = F.iterator(plainRows, new IgniteClosure<Object, Value[]>() {
+                        @Override public Value[] apply(Object o) {
+                            Value[] row = (Value[])o;
+
+                            assert row.length >= res.columns();
+
+                            return Arrays.copyOfRange(row, 0, res.columns());
+                        }
+                    }, true);
+                }
             }
             else {
                 final int cols = res.columns();

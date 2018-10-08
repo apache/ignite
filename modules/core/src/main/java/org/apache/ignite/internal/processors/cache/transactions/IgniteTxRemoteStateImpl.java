@@ -176,7 +176,7 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(IgniteTxRemoteStateImpl.class, this);
     }
 
@@ -208,5 +208,15 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
         }
 
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean mvccEnabled(GridCacheSharedContext cctx) {
+        for (IgniteTxEntry e : writeMap.values()) {
+            if (e.context().mvccEnabled())
+                return true;
+        }
+
+        return false;
     }
 }

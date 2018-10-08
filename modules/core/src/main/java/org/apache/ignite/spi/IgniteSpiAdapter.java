@@ -547,7 +547,8 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         if (rmtCls == null) {
             if (!optional && starting)
                 throw new IgniteSpiException("Remote SPI with the same name is not configured" + tipStr +
-                    " [name=" + name + ", loc=" + locCls + ']');
+                    " [name=" + name + ", loc=" + locCls + ", locNode=" + spiCtx.localNode() + ", rmt=" + rmtCls +
+                    ", rmtNode=" + node + ']');
 
             sb.a(format(">>> Remote SPI with the same name is not configured: " + name, locCls));
         }

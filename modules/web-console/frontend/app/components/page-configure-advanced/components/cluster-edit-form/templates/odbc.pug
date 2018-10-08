@@ -27,7 +27,7 @@ panel-collapsible(
 )
     panel-title ODBC configuration
     panel-description
-        | ODBC server configuration. 
+        | ODBC server configuration.
         | #[a.link-success(href="https://apacheignite.readme.io/docs/odbc-driver" target="_blank") More info]
     panel-content.pca-form-row(ng-if=`$ctrl.available(["1.0.0", "2.1.0"]) && ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
@@ -45,26 +45,61 @@ panel-collapsible(
                 )
                     +form-field__error({ error: 'correctMarshaller', message: 'ODBC can only be used with BinaryMarshaller' })
             .pc-form-grid-col-60
-                +text-ip-address-with-port-range('ODBC endpoint address:', `${model}.endpointAddress`, '"endpointAddress"', enabled, '0.0.0.0:10800..10810',
-                    'ODBC endpoint address. <br/>\
-                    The following address formats are permitted:\
-                    <ul>\
-                        <li>hostname - will use provided hostname and default port range</li>\
-                        <li>hostname:port - will use provided hostname and port</li>\
-                        <li>hostname:port_from..port_to - will use provided hostname and port range</li>\
-                    </ul>')
+                +form-field__ip-address-with-port-range({
+                    label: `${model}.endpointAddress`,
+                    model: '$item.localOutboundHost',
+                    name: '"endpointAddress"',
+                    enabled,
+                    placeholder: '0.0.0.0:10800..10810',
+                    tip: 'ODBC endpoint address. <br/>\
+                          The following address formats are permitted:\
+                          <ul>\
+                              <li>hostname - will use provided hostname and default port range</li>\
+                              <li>hostname:port - will use provided hostname and port</li>\
+                              <li>hostname:port_from..port_to - will use provided hostname and port range</li>\
+                          </ul>'
+                })
             .pc-form-grid-col-30
-                +number('Send buffer size:', `${model}.socketSendBufferSize`, '"ODBCSocketSendBufferSize"', enabled, '0', '0',
-                    'Socket send buffer size.<br/>\
-                    When set to <b>0</b>, operation system default will be used')
+                +form-field__number({
+                    label: 'Send buffer size:',
+                    model: `${model}.socketSendBufferSize`,
+                    name: '"ODBCSocketSendBufferSize"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Socket send buffer size.<br/>\
+                          When set to <b>0</b>, operation system default will be used'
+                })
             .pc-form-grid-col-30
-                +number('Socket receive buffer size:', `${model}.socketReceiveBufferSize`, '"ODBCSocketReceiveBufferSize"', enabled, '0', '0',
-                    'Socket receive buffer size.<br/>\
-                    When set to <b>0</b>, operation system default will be used')
+                +form-field__number({
+                    label:'Socket receive buffer size:',
+                    model: `${model}.socketReceiveBufferSize`,
+                    name: '"ODBCSocketReceiveBufferSize"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Socket receive buffer size.<br/>\
+                          When set to <b>0</b>, operation system default will be used'
+                })
             .pc-form-grid-col-30
-                +number('Maximum open cursors', `${model}.maxOpenCursors`, '"maxOpenCursors"', enabled, '128', '1', 'Maximum number of opened cursors per connection')
+                +form-field__number({
+                    label: 'Maximum open cursors',
+                    model: `${model}.maxOpenCursors`,
+                    name: '"maxOpenCursors"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '128',
+                    min: '1',
+                    tip: 'Maximum number of opened cursors per connection'
+                })
             .pc-form-grid-col-30
-                +number('Pool size:', `${model}.threadPoolSize`, '"ODBCThreadPoolSize"', enabled, 'max(8, availableProcessors)', '1',
-                    'Size of thread pool that is in charge of processing ODBC tasks')
+                +form-field__number({
+                    label: 'Pool size:',
+                    model: `${model}.threadPoolSize`,
+                    name: '"ODBCThreadPoolSize"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'max(8, availableProcessors)',
+                    min: '1',
+                    tip: 'Size of thread pool that is in charge of processing ODBC tasks'
+                })
         .pca-form-column-6
             +preview-xml-java(model, 'clusterODBC')

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import SqlTypes from '../../app/services/SqlTypes.service.js';
+import SqlTypes from '../../app/services/SqlTypes.service';
 
 const INSTANCE = new SqlTypes();
 

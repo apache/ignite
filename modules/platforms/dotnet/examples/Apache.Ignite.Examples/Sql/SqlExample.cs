@@ -140,7 +140,8 @@ namespace Apache.Ignite.Examples.Sql
                 "from Employee, \"dotnet_cache_query_organization\".Organization " +
                 "where Employee.organizationId = Organization._key and Organization.name = ?", orgName)
             {
-                EnableDistributedJoins = true
+                EnableDistributedJoins = true,
+                Timeout = new TimeSpan(0, 1, 0)
             });
 
             Console.WriteLine();

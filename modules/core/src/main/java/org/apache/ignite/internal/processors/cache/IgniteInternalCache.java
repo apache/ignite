@@ -1658,20 +1658,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public long igfsDataSpaceUsed();
 
     /**
-     * Checks whether this cache is Mongo data cache.
-     *
-     * @return {@code True} if this cache is mongo data cache.
-     */
-    public boolean isMongoDataCache();
-
-    /**
-     * Checks whether this cache is Mongo meta cache.
-     *
-     * @return {@code True} if this cache is mongo meta cache.
-     */
-    public boolean isMongoMetaCache();
-
-    /**
      * @param keepBinary Keep binary flag.
      * @param p Optional key/value predicate.
      * @return Scan query iterator.

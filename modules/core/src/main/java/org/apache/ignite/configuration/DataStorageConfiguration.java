@@ -18,6 +18,7 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import java.util.zip.Deflater;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -114,6 +115,9 @@ public class DataStorageConfiguration implements Serializable {
     /** Default number of checkpoints to be kept in WAL after checkpoint is finished */
     public static final int DFLT_WAL_HISTORY_SIZE = 20;
 
+    /** Default max size of WAL archive files, in bytes */
+    public static final long DFLT_WAL_ARCHIVE_MAX_SIZE = 1024 * 1024 * 1024;
+
     /** */
     public static final int DFLT_WAL_SEGMENTS = 10;
 
@@ -153,6 +157,9 @@ public class DataStorageConfiguration implements Serializable {
     /** Default wal compaction enabled. */
     public static final boolean DFLT_WAL_COMPACTION_ENABLED = false;
 
+    /** Default wal compaction level. */
+    public static final int DFLT_WAL_COMPACTION_LEVEL = Deflater.BEST_SPEED;
+
     /** Initial size of a memory chunk reserved for system cache. */
     private long sysRegionInitSize = DFLT_SYS_REG_INIT_SIZE;
 
@@ -189,6 +196,9 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Number of checkpoints to keep */
     private int walHistSize = DFLT_WAL_HISTORY_SIZE;
+
+    /** Maximum size of wal archive folder, in bytes */
+    private long maxWalArchiveSize = DFLT_WAL_ARCHIVE_MAX_SIZE;
 
     /** Number of work WAL segments. */
     private int walSegments = DFLT_WAL_SEGMENTS;
@@ -245,7 +255,7 @@ public class DataStorageConfiguration implements Serializable {
     private long metricsRateTimeInterval = DFLT_RATE_TIME_INTERVAL_MILLIS;
 
     /**
-     *  Time interval (in milliseconds) for running auto archiving for incompletely WAL segment
+     * Time interval (in milliseconds) for running auto archiving for incompletely WAL segment
      */
     private long walAutoArchiveAfterInactivity = -1;
 
@@ -259,6 +269,15 @@ public class DataStorageConfiguration implements Serializable {
      * Compressed WAL archive gets automatically decompressed on demand.
      */
     private boolean walCompactionEnabled = DFLT_WAL_COMPACTION_ENABLED;
+
+    /**
+     * ZIP level to WAL compaction.
+     *
+     * @see java.util.zip.ZipOutputStream#setLevel(int)
+     * @see java.util.zip.Deflater#BEST_SPEED
+     * @see java.util.zip.Deflater#BEST_COMPRESSION
+     */
+    private int walCompactionLevel = DFLT_WAL_COMPACTION_LEVEL;
 
     /**
      * Initial size of a data region reserved for system cache.
@@ -275,7 +294,6 @@ public class DataStorageConfiguration implements Serializable {
      * Default value is {@link #DFLT_SYS_REG_INIT_SIZE}
      *
      * @param sysRegionInitSize Size in bytes.
-     *
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setSystemRegionInitialSize(long sysRegionInitSize) {
@@ -302,7 +320,6 @@ public class DataStorageConfiguration implements Serializable {
      * Default value is {@link #DFLT_SYS_REG_MAX_SIZE}.
      *
      * @param sysRegionMaxSize Maximum size in bytes for system cache data region.
-     *
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setSystemRegionMaxSize(long sysRegionMaxSize) {
@@ -392,6 +409,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Overrides configuration of default data region which is created automatically.
+     *
      * @param dfltDataRegConf Default data region configuration.
      */
     public DataStorageConfiguration setDefaultDataRegionConfiguration(DataRegionConfiguration dfltDataRegConf) {
@@ -487,7 +505,10 @@ public class DataStorageConfiguration implements Serializable {
      * Gets a total number of checkpoints to keep in the WAL history.
      *
      * @return Number of checkpoints to keep in WAL after a checkpoint is finished.
+     * @see DataStorageConfiguration#getMaxWalArchiveSize()
+     * @deprecated Instead of walHistorySize use maxWalArchiveSize for manage of archive size.
      */
+    @Deprecated
     public int getWalHistorySize() {
         return walHistSize <= 0 ? DFLT_WAL_HISTORY_SIZE : walHistSize;
     }
@@ -497,9 +518,42 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @param walHistSize Number of checkpoints to keep after a checkpoint is finished.
      * @return {@code this} for chaining.
+     * @see DataStorageConfiguration#setMaxWalArchiveSize(long)
+     * @deprecated Instead of walHistorySize use maxWalArchiveSize for manage of archive size.
      */
+    @Deprecated
     public DataStorageConfiguration setWalHistorySize(int walHistSize) {
         this.walHistSize = walHistSize;
+
+        return this;
+    }
+
+    /**
+     * If WalHistorySize was set by user will use this parameter for compatibility.
+     *
+     * @return {@code true} if use WalHistorySize for compatibility.
+     */
+    public boolean isWalHistorySizeParameterUsed() {
+        return getWalHistorySize() != DFLT_WAL_HISTORY_SIZE && getWalHistorySize() != Integer.MAX_VALUE;
+    }
+
+    /**
+     * Gets a max allowed size of WAL archives. In bytes.
+     *
+     * @return max size of WAL archive directory.
+     */
+    public long getMaxWalArchiveSize() {
+        return maxWalArchiveSize <= 0 ? DFLT_WAL_ARCHIVE_MAX_SIZE : maxWalArchiveSize;
+    }
+
+    /**
+     * Sets a max allowed size of WAL archives. In bytes
+     *
+     * @param walArchiveMaxSize max size of WAL archive directory.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setMaxWalArchiveSize(long walArchiveMaxSize) {
+        this.maxWalArchiveSize = walArchiveMaxSize;
 
         return this;
     }
@@ -576,7 +630,7 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Gets a path to the WAL archive directory.
      *
-     *  @return WAL archive directory.
+     * @return WAL archive directory.
      */
     public String getWalArchivePath() {
         return walArchivePath;
@@ -744,8 +798,8 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     *  This property define how often WAL will be fsync-ed in {@code BACKGROUND} mode. Ignored for
-     *  all other WAL modes.
+     * This property define how often WAL will be fsync-ed in {@code BACKGROUND} mode. Ignored for
+     * all other WAL modes.
      *
      * @return WAL flush frequency, in milliseconds.
      */
@@ -754,8 +808,8 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     *  This property define how often WAL will be fsync-ed in {@code BACKGROUND} mode. Ignored for
-     *  all other WAL modes.
+     * This property define how often WAL will be fsync-ed in {@code BACKGROUND} mode. Ignored for
+     * all other WAL modes.
      *
      * @param walFlushFreq WAL flush frequency, in milliseconds.
      */
@@ -913,6 +967,20 @@ public class DataStorageConfiguration implements Serializable {
         this.walCompactionEnabled = walCompactionEnabled;
 
         return this;
+    }
+
+    /**
+     * @return ZIP level to WAL compaction.
+     */
+    public int getWalCompactionLevel() {
+        return walCompactionLevel;
+    }
+
+    /**
+     * @param walCompactionLevel New ZIP level to WAL compaction.
+     */
+    public void setWalCompactionLevel(int walCompactionLevel) {
+        this.walCompactionLevel = walCompactionLevel;
     }
 
     /** {@inheritDoc} */

@@ -295,7 +295,7 @@ public class JdbcThinSSLUtil {
             }
         }
 
-        assert tms.size() != 0;
+        assert !tms.isEmpty();
 
         try {
             SSLContext sslContext = SSLContext.getInstance(sslProtocol);

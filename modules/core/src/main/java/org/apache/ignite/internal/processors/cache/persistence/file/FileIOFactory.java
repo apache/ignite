@@ -44,5 +44,4 @@ public interface FileIOFactory extends Serializable {
      * @throws IOException If I/O interface creation was failed.
      */
     public FileIO create(File file, OpenOption... modes) throws IOException;
-
 }

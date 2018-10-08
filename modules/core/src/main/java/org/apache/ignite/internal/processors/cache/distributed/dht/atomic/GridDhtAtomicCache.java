@@ -65,12 +65,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
@@ -83,6 +82,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSing
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrExpirationInfo;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
@@ -1422,7 +1422,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             skipVals,
             needVer,
             false,
-            recovery);
+            recovery,
+            null);
 
         fut.init();
 
@@ -1531,6 +1532,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                             taskName,
                                             expiry,
                                             true,
+                                            null,
                                             null);
 
                                         if (getRes != null) {
@@ -1549,7 +1551,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                             null,
                                             taskName,
                                             expiry,
-                                            !deserializeBinary);
+                                            !deserializeBinary,
+                                            null);
                                     }
 
                                     // Entry was not in memory or in swap, so we remove it from cache.
@@ -1626,7 +1629,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             expiry,
             skipVals,
             needVer,
-            false);
+            false,
+            null);
 
         fut.init(topVer);
 
@@ -1786,6 +1790,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         finally {
                             top.readUnlock();
                         }
+
+                        // This call will convert entry processor invocation results to cache object instances.
+                        // Must be done outside topology read lock to avoid deadlocks.
+                        if (res.returnValue() != null)
+                            res.returnValue().marshalResult(ctx);
 
                         break;
                     }
@@ -2093,7 +2102,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         entryProcessor,
                         taskName,
                         null,
-                        req.keepBinary());
+                        req.keepBinary(),
+                        null);
 
                     Object oldVal = null;
                     Object updatedVal = null;
@@ -2273,7 +2283,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             null,
                             taskName,
                             null,
-                            req.keepBinary());
+                            req.keepBinary(),
+                            null);
 
                         Object val = ctx.config().getInterceptor().onBeforePut(
                             new CacheLazyEntry(
@@ -2318,7 +2329,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             null,
                             taskName,
                             null,
-                            req.keepBinary());
+                            req.keepBinary(),
+                            null);
 
                         IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor()
                             .onBeforeRemove(new CacheLazyEntry(ctx, entry.key(), old, req.keepBinary()));
@@ -3557,7 +3569,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     private void processDhtAtomicDeferredUpdateResponse(UUID nodeId, GridDhtAtomicDeferredUpdateResponse res) {
         GridLongList futIds = res.futureIds();
 
-        assert futIds != null && futIds.size() > 0 : futIds;
+        assert futIds != null && !futIds.isEmpty() : futIds;
 
         for (int i = 0; i < futIds.size(); i++) {
             long id = futIds.get(i);

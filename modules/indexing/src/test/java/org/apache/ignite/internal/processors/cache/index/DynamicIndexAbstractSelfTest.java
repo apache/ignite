@@ -33,6 +33,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
@@ -82,6 +83,13 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
 
     /** Argument for simple SQL (2). */
     protected static final int SQL_ARG_2 = 80;
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        super.afterTestsStopped();
+    }
 
     /**
      * Create server configuration.
@@ -174,6 +182,8 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
 
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg.setBackups(1);
+
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 128));
 
         return ccfg;
     }

@@ -39,9 +39,8 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopologyImpl;
-import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionsEvictManager;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
@@ -60,6 +59,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
@@ -147,6 +147,9 @@ public class CacheGroupContext {
     /** */
     private boolean qryEnabled;
 
+    /** */
+    private boolean mvccEnabled;
+
     /** MXBean. */
     private CacheGroupMetricsMXBean mxBean;
 
@@ -213,11 +216,20 @@ public class CacheGroupContext {
 
         storeCacheId = affNode && dataRegion.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED;
 
+        mvccEnabled = ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
+
         log = ctx.kernalContext().log(getClass());
 
         caches = new ArrayList<>();
 
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
+    }
+
+    /**
+     * @return Mvcc flag.
+     */
+    public boolean mvccEnabled() {
+        return mvccEnabled;
     }
 
     /**
@@ -393,6 +405,13 @@ public class CacheGroupContext {
      */
     public boolean eventRecordable(int type) {
         return cacheType.userCache() && ctx.gridEvents().isRecordable(type);
+    }
+
+    /**
+     * @return {@code True} if cache created by user.
+     */
+    public boolean userCache() {
+        return cacheType.userCache();
     }
 
     /**
@@ -776,8 +795,6 @@ public class CacheGroupContext {
                 cctx.dr().partitionEvicted(part);
 
             cctx.continuousQueries().onPartitionEvicted(part);
-
-            cctx.dataStructures().onPartitionEvicted(part);
         }
     }
 

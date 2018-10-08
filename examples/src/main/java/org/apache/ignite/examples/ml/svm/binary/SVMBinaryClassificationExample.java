@@ -29,7 +29,6 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationTrainer;
-import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Run SVM binary-class classification model ({@link SVMLinearBinaryClassificationModel}) over distributed dataset.
@@ -54,119 +53,113 @@ public class SVMBinaryClassificationExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                SVMBinaryClassificationExample.class.getSimpleName(), () -> {
-                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
+            IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
 
-                SVMLinearBinaryClassificationTrainer trainer = new SVMLinearBinaryClassificationTrainer();
+            SVMLinearBinaryClassificationTrainer trainer = new SVMLinearBinaryClassificationTrainer();
 
-                SVMLinearBinaryClassificationModel mdl = trainer.fit(
-                    ignite,
-                    dataCache,
-                    (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-                    (k, v) -> v[0]
-                );
+            SVMLinearBinaryClassificationModel mdl = trainer.fit(
+                ignite,
+                dataCache,
+                (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+                (k, v) -> v[0]
+            );
 
-                System.out.println(">>> SVM model " + mdl);
+            System.out.println(">>> SVM model " + mdl);
 
-                System.out.println(">>> ---------------------------------");
-                System.out.println(">>> | Prediction\t| Ground Truth\t|");
-                System.out.println(">>> ---------------------------------");
+            System.out.println(">>> ---------------------------------");
+            System.out.println(">>> | Prediction\t| Ground Truth\t|");
+            System.out.println(">>> ---------------------------------");
 
-                int amountOfErrors = 0;
-                int totalAmount = 0;
+            int amountOfErrors = 0;
+            int totalAmount = 0;
 
-                // Build confusion matrix. See https://en.wikipedia.org/wiki/Confusion_matrix
-                int[][] confusionMtx = {{0, 0}, {0, 0}};
+            // Build confusion matrix. See https://en.wikipedia.org/wiki/Confusion_matrix
+            int[][] confusionMtx = {{0, 0}, {0, 0}};
 
-                try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {
-                    for (Cache.Entry<Integer, double[]> observation : observations) {
-                        double[] val = observation.getValue();
-                        double[] inputs = Arrays.copyOfRange(val, 1, val.length);
-                        double groundTruth = val[0];
+            try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {
+                for (Cache.Entry<Integer, double[]> observation : observations) {
+                    double[] val = observation.getValue();
+                    double[] inputs = Arrays.copyOfRange(val, 1, val.length);
+                    double groundTruth = val[0];
 
-                        double prediction = mdl.apply(new DenseVector(inputs));
+                    double prediction = mdl.apply(new DenseVector(inputs));
 
-                        totalAmount++;
-                        if(groundTruth != prediction)
-                            amountOfErrors++;
+                    totalAmount++;
+                    if(groundTruth != prediction)
+                        amountOfErrors++;
 
-                        int idx1 = (int)prediction == -1.0 ? 0 : 1;
-                        int idx2 = (int)groundTruth == -1.0 ? 0 : 1;
+                    int idx1 = prediction == 0.0 ? 0 : 1;
+                    int idx2 = groundTruth == 0.0 ? 0 : 1;
 
-                        confusionMtx[idx1][idx2]++;
+                    confusionMtx[idx1][idx2]++;
 
-                        System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
-                    }
-
-                    System.out.println(">>> ---------------------------------");
-
-                    System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
-                    System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double)totalAmount));
+                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
                 }
 
-                System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtx));
+                System.out.println(">>> ---------------------------------");
 
-                System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
-            });
+                System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
+                System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double)totalAmount));
+            }
 
-            igniteThread.start();
-            igniteThread.join();
+            System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtx));
+
+            System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
         }
     }
 
     /** The 1st and 2nd classes from the Iris dataset. */
     private static final double[][] data = {
-        {-1, 5.1, 3.5, 1.4, 0.2},
-        {-1, 4.9, 3, 1.4, 0.2},
-        {-1, 4.7, 3.2, 1.3, 0.2},
-        {-1, 4.6, 3.1, 1.5, 0.2},
-        {-1, 5, 3.6, 1.4, 0.2},
-        {-1, 5.4, 3.9, 1.7, 0.4},
-        {-1, 4.6, 3.4, 1.4, 0.3},
-        {-1, 5, 3.4, 1.5, 0.2},
-        {-1, 4.4, 2.9, 1.4, 0.2},
-        {-1, 4.9, 3.1, 1.5, 0.1},
-        {-1, 5.4, 3.7, 1.5, 0.2},
-        {-1, 4.8, 3.4, 1.6, 0.2},
-        {-1, 4.8, 3, 1.4, 0.1},
-        {-1, 4.3, 3, 1.1, 0.1},
-        {-1, 5.8, 4, 1.2, 0.2},
-        {-1, 5.7, 4.4, 1.5, 0.4},
-        {-1, 5.4, 3.9, 1.3, 0.4},
-        {-1, 5.1, 3.5, 1.4, 0.3},
-        {-1, 5.7, 3.8, 1.7, 0.3},
-        {-1, 5.1, 3.8, 1.5, 0.3},
-        {-1, 5.4, 3.4, 1.7, 0.2},
-        {-1, 5.1, 3.7, 1.5, 0.4},
-        {-1, 4.6, 3.6, 1, 0.2},
-        {-1, 5.1, 3.3, 1.7, 0.5},
-        {-1, 4.8, 3.4, 1.9, 0.2},
-        {-1, 5, 3, 1.6, 0.2},
-        {-1, 5, 3.4, 1.6, 0.4},
-        {-1, 5.2, 3.5, 1.5, 0.2},
-        {-1, 5.2, 3.4, 1.4, 0.2},
-        {-1, 4.7, 3.2, 1.6, 0.2},
-        {-1, 4.8, 3.1, 1.6, 0.2},
-        {-1, 5.4, 3.4, 1.5, 0.4},
-        {-1, 5.2, 4.1, 1.5, 0.1},
-        {-1, 5.5, 4.2, 1.4, 0.2},
-        {-1, 4.9, 3.1, 1.5, 0.1},
-        {-1, 5, 3.2, 1.2, 0.2},
-        {-1, 5.5, 3.5, 1.3, 0.2},
-        {-1, 4.9, 3.1, 1.5, 0.1},
-        {-1, 4.4, 3, 1.3, 0.2},
-        {-1, 5.1, 3.4, 1.5, 0.2},
-        {-1, 5, 3.5, 1.3, 0.3},
-        {-1, 4.5, 2.3, 1.3, 0.3},
-        {-1, 4.4, 3.2, 1.3, 0.2},
-        {-1, 5, 3.5, 1.6, 0.6},
-        {-1, 5.1, 3.8, 1.9, 0.4},
-        {-1, 4.8, 3, 1.4, 0.3},
-        {-1, 5.1, 3.8, 1.6, 0.2},
-        {-1, 4.6, 3.2, 1.4, 0.2},
-        {-1, 5.3, 3.7, 1.5, 0.2},
-        {-1, 5, 3.3, 1.4, 0.2},
+        {0, 5.1, 3.5, 1.4, 0.2},
+        {0, 4.9, 3, 1.4, 0.2},
+        {0, 4.7, 3.2, 1.3, 0.2},
+        {0, 4.6, 3.1, 1.5, 0.2},
+        {0, 5, 3.6, 1.4, 0.2},
+        {0, 5.4, 3.9, 1.7, 0.4},
+        {0, 4.6, 3.4, 1.4, 0.3},
+        {0, 5, 3.4, 1.5, 0.2},
+        {0, 4.4, 2.9, 1.4, 0.2},
+        {0, 4.9, 3.1, 1.5, 0.1},
+        {0, 5.4, 3.7, 1.5, 0.2},
+        {0, 4.8, 3.4, 1.6, 0.2},
+        {0, 4.8, 3, 1.4, 0.1},
+        {0, 4.3, 3, 1.1, 0.1},
+        {0, 5.8, 4, 1.2, 0.2},
+        {0, 5.7, 4.4, 1.5, 0.4},
+        {0, 5.4, 3.9, 1.3, 0.4},
+        {0, 5.1, 3.5, 1.4, 0.3},
+        {0, 5.7, 3.8, 1.7, 0.3},
+        {0, 5.1, 3.8, 1.5, 0.3},
+        {0, 5.4, 3.4, 1.7, 0.2},
+        {0, 5.1, 3.7, 1.5, 0.4},
+        {0, 4.6, 3.6, 1, 0.2},
+        {0, 5.1, 3.3, 1.7, 0.5},
+        {0, 4.8, 3.4, 1.9, 0.2},
+        {0, 5, 3, 1.6, 0.2},
+        {0, 5, 3.4, 1.6, 0.4},
+        {0, 5.2, 3.5, 1.5, 0.2},
+        {0, 5.2, 3.4, 1.4, 0.2},
+        {0, 4.7, 3.2, 1.6, 0.2},
+        {0, 4.8, 3.1, 1.6, 0.2},
+        {0, 5.4, 3.4, 1.5, 0.4},
+        {0, 5.2, 4.1, 1.5, 0.1},
+        {0, 5.5, 4.2, 1.4, 0.2},
+        {0, 4.9, 3.1, 1.5, 0.1},
+        {0, 5, 3.2, 1.2, 0.2},
+        {0, 5.5, 3.5, 1.3, 0.2},
+        {0, 4.9, 3.1, 1.5, 0.1},
+        {0, 4.4, 3, 1.3, 0.2},
+        {0, 5.1, 3.4, 1.5, 0.2},
+        {0, 5, 3.5, 1.3, 0.3},
+        {0, 4.5, 2.3, 1.3, 0.3},
+        {0, 4.4, 3.2, 1.3, 0.2},
+        {0, 5, 3.5, 1.6, 0.6},
+        {0, 5.1, 3.8, 1.9, 0.4},
+        {0, 4.8, 3, 1.4, 0.3},
+        {0, 5.1, 3.8, 1.6, 0.2},
+        {0, 4.6, 3.2, 1.4, 0.2},
+        {0, 5.3, 3.7, 1.5, 0.2},
+        {0, 5, 3.3, 1.4, 0.2},
         {1, 7, 3.2, 4.7, 1.4},
         {1, 6.4, 3.2, 4.5, 1.5},
         {1, 6.9, 3.1, 4.9, 1.5},
@@ -218,5 +211,4 @@ public class SVMBinaryClassificationExample {
         {1, 5.1, 2.5, 3, 1.1},
         {1, 5.7, 2.8, 4.1, 1.3},
     };
-
 }

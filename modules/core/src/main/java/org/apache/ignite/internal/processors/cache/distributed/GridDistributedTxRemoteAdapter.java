@@ -50,6 +50,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWra
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -59,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteEx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
+import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -203,6 +207,16 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** {@inheritDoc} */
     @Override public boolean activeCachesDeploymentEnabled() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void activeCachesDeploymentEnabled(boolean depEnabled) {
+        throw new UnsupportedOperationException("Remote tx doesn't support deployment.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException {
+        txState.addActiveCache(cacheCtx, recovery, this);
     }
 
     /**
@@ -460,7 +474,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                 GridCacheReturnCompletableWrapper wrapper = null;
 
-                if (!F.isEmpty(writeMap)) {
+                if (!F.isEmpty(writeMap) || mvccSnapshot != null) {
                     GridCacheReturn ret = null;
 
                     if (!near() && !local() && onePhaseCommit()) {
@@ -488,6 +502,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     cctx.database().checkpointReadLock();
 
                     try {
+                        assert !txState.mvccEnabled(cctx) || mvccSnapshot != null : "Mvcc is not initialized: " + this;
+
                         Collection<IgniteTxEntry> entries = near() || cctx.snapshot().needTxReadLogging() ? allEntries() : writeEntries();
 
                         // Data entry to write to WAL and associated with it TxEntry.
@@ -613,7 +629,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                         CU.subjectId(this, cctx),
                                                         resolveTaskName(),
                                                         dhtVer,
-                                                        txEntry.updateCounter());
+                                                        txEntry.updateCounter(),
+                                                        mvccSnapshot());
                                                 else {
                                                     assert val != null : txEntry;
 
@@ -637,9 +654,10 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                         CU.subjectId(this, cctx),
                                                         resolveTaskName(),
                                                         dhtVer,
-                                                        txEntry.updateCounter());
+                                                        txEntry.updateCounter(),
+                                                        mvccSnapshot());
 
-                                                    txEntry.updateCounter(updRes.updatePartitionCounter());
+                                                    txEntry.updateCounter(updRes.updateCounter());
 
                                                     if (updRes.loggedPointer() != null)
                                                         ptr = updRes.loggedPointer();
@@ -674,9 +692,10 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     CU.subjectId(this, cctx),
                                                     resolveTaskName(),
                                                     dhtVer,
-                                                    txEntry.updateCounter());
+                                                    txEntry.updateCounter(),
+                                                    mvccSnapshot());
 
-                                                txEntry.updateCounter(updRes.updatePartitionCounter());
+                                                txEntry.updateCounter(updRes.updateCounter());
 
                                                 if (updRes.loggedPointer() != null)
                                                     ptr = updRes.loggedPointer();
@@ -790,6 +809,15 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                 }
                             }
 
+                            // Apply cache size deltas.
+                            applyTxSizes();
+
+                            TxCounters txCntrs = txCounters(false);
+
+                            // Apply update counters.
+                            if (txCntrs != null)
+                                applyPartitionsUpdatesCounters(txCntrs.updateCounters());
+
                             if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null) {
                                 // Set new update counters for data entries received from persisted tx entries.
                                 List<DataEntry> entriesWithCounters = dataEntries.stream()
@@ -803,12 +831,16 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                 cctx.wal().flush(ptr, false);
                         }
                         catch (StorageException e) {
+                            err = e;
+
                             throw new IgniteCheckedException("Failed to log transaction record " +
                                 "(transaction will be rolled back): " + this, e);
                         }
                     }
                     finally {
                         cctx.database().checkpointReadUnlock();
+
+                        notifyDrManager(state() == COMMITTING && err == null);
 
                         if (wrapper != null)
                             wrapper.initialize(ret);
@@ -901,10 +933,17 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** {@inheritDoc} */
     @Override public final void rollbackRemoteTx() {
         try {
+            notifyDrManager(false);
+
             // Note that we don't evict near entries here -
             // they will be deleted by their corresponding transactions.
             if (state(ROLLING_BACK) || state() == UNKNOWN) {
                 cctx.tm().rollbackTx(this, false, skipCompletedVers);
+
+                TxCounters counters = txCounters(false);
+
+                if (counters != null)
+                    applyPartitionsUpdatesCounters(counters.updateCounters());
 
                 state(ROLLED_BACK);
             }
@@ -970,9 +1009,41 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         }
     }
 
+    /**
+     * Applies partition counters updates for mvcc transactions.
+     *
+     * @param counters Counters values to be updated.
+     */
+    private void applyPartitionsUpdatesCounters(Iterable<PartitionUpdateCountersMessage> counters) {
+        if (counters == null)
+            return;
+
+        int cacheId = CU.UNDEFINED_CACHE_ID;
+        GridDhtPartitionTopology top = null;
+
+        for (PartitionUpdateCountersMessage counter : counters) {
+            if (counter.cacheId() != cacheId) {
+                GridCacheContext ctx0 = cctx.cacheContext(cacheId = counter.cacheId());
+
+                assert ctx0.mvccEnabled();
+
+                top = ctx0.topology();
+            }
+
+            assert top != null;
+
+            for (int i = 0; i < counter.size(); i++) {
+                GridDhtLocalPartition part = top.localPartition(counter.partition(i));
+
+                assert part != null;
+
+                part.updateCounter(counter.initialCounter(i), counter.updatesCount(i));
+            }
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(GridDistributedTxRemoteAdapter.class, this, "super", super.toString());
     }
-
 }

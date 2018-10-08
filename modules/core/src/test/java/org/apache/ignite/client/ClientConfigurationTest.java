@@ -27,7 +27,10 @@ import java.io.ObjectOutputStream;
 import java.util.Collections;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import static org.junit.Assert.assertTrue;
 
@@ -35,6 +38,10 @@ import static org.junit.Assert.assertTrue;
  * {@link ClientConfiguration} unit tests.
  */
 public class ClientConfigurationTest {
+    /** Per test timeout */
+    @Rule
+    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+
     /** Serialization/deserialization. */
     @Test
     public void testSerialization() throws IOException, ClassNotFoundException {

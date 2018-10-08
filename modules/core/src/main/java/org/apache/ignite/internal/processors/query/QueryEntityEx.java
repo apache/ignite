@@ -63,7 +63,7 @@ public class QueryEntityEx extends QueryEntity {
     }
 
     /** {@inheritDoc} */
-    public QueryEntity setNotNullFields(@Nullable Set<String> notNullFields) {
+    @Override public QueryEntity setNotNullFields(@Nullable Set<String> notNullFields) {
         this.notNullFields = notNullFields;
 
         return this;

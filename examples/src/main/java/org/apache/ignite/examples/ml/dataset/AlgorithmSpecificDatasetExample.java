@@ -34,8 +34,9 @@ import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 
 /**
- * Example that shows how to implement your own algorithm (gradient descent trainer for linear regression) which uses
- * dataset as an underlying infrastructure.
+ * Example that shows how to implement your own algorithm
+ * (<a href="https://en.wikipedia.org/wiki/Gradient_descent">gradient</a> descent trainer for linear regression)
+ * which uses dataset as an underlying infrastructure.
  * <p>
  * Code in this example launches Ignite grid and fills the cache with simple test data.</p>
  * <p>

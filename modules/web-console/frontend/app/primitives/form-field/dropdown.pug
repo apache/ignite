@@ -28,7 +28,8 @@ mixin form-field__dropdown({ label, model, name, disabled, required, multiple, p
             ng-model=model
             ng-disabled=disabled && `${disabled}`
             ng-required=required && `${required}`
-            expose-ignite-form-field-control='$input'
+            ng-ref='$input'
+            ng-ref-read='ngModel'
 
             bs-select
             bs-options=`item.value as item.${optionLabel} for item in ${options}`

@@ -177,4 +177,24 @@ public abstract class BaggingModelTrainer extends DatasetTrainer<ModelsCompositi
             return VectorUtils.of(newFeaturesValues);
         });
     }
+
+    /**
+     * Learn new models on dataset and create new Compositions over them and already learned models.
+     *
+     * @param mdl Learned model.
+     * @param datasetBuilder Dataset builder.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor Label extractor.
+     * @param <K> Type of a key in {@code upstream} data.
+     * @param <V> Type of a value in {@code upstream} data.
+     * @return New models composition.
+     */
+    @Override public <K, V> ModelsComposition updateModel(ModelsComposition mdl, DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        ArrayList<Model<Vector, Double>> newModels = new ArrayList<>(mdl.getModels());
+        newModels.addAll(fit(datasetBuilder, featureExtractor, lbExtractor).getModels());
+
+        return new ModelsComposition(newModels, predictionsAggregator);
+    }
 }

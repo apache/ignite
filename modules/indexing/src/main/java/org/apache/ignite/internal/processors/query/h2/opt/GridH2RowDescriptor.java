@@ -29,6 +29,8 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -36,7 +38,6 @@ import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.h2.message.DbException;
 import org.h2.result.SearchRow;
-import org.h2.result.SimpleRow;
 import org.h2.util.LocalDateTimeUtils;
 import org.h2.value.DataType;
 import org.h2.value.Value;
@@ -58,6 +59,7 @@ import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
@@ -221,13 +223,13 @@ public class GridH2RowDescriptor {
                 UUID uuid = (UUID)obj;
                 return ValueUuid.get(uuid.getMostSignificantBits(), uuid.getLeastSignificantBits());
             case Value.DATE:
-                if (LocalDateTimeUtils.isLocalDate(obj.getClass()))
+                if (LocalDateTimeUtils.LOCAL_DATE == obj.getClass())
                     return LocalDateTimeUtils.localDateToDateValue(obj);
 
                 return ValueDate.get((Date)obj);
 
             case Value.TIME:
-                if (LocalDateTimeUtils.isLocalTime(obj.getClass()))
+                if (LocalDateTimeUtils.LOCAL_TIME == obj.getClass())
                     return LocalDateTimeUtils.localTimeToTimeValue(obj);
 
                 return ValueTime.get((Time)obj);
@@ -236,7 +238,7 @@ public class GridH2RowDescriptor {
                 if (obj instanceof java.util.Date && !(obj instanceof Timestamp))
                     obj = new Timestamp(((java.util.Date)obj).getTime());
 
-                if (LocalDateTimeUtils.isLocalDateTime(obj.getClass()))
+                if (LocalDateTimeUtils.LOCAL_DATE_TIME == obj.getClass())
                     return LocalDateTimeUtils.localDateTimeToValue(obj);
 
                 return ValueTimestamp.get((Timestamp)obj);
@@ -280,8 +282,9 @@ public class GridH2RowDescriptor {
         GridH2Row row;
 
         try {
-            if (dataRow.value() == null) // Only can happen for remove operation, can create simple search row.
+            if (dataRow.value() == null) { // Only can happen for remove operation, can create simple search row.
                 row = new GridH2KeyRowOnheap(dataRow, wrap(dataRow.key(), keyType));
+            }
             else
                 row = new GridH2KeyValueRowOnheap(this, dataRow, keyType, valType);
         }
@@ -465,7 +468,7 @@ public class GridH2RowDescriptor {
         copyAliasColumnData(data, KEY_COL, keyAliasColId);
         copyAliasColumnData(data, VAL_COL, valAliasColId);
 
-        return new SimpleRow(data);
+        return GridH2PlainRowFactory.create(data);
     }
 
     /**

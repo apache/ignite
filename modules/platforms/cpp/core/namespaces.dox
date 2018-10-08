@@ -18,7 +18,7 @@
 /**
  * \mainpage Apache Ignite C++
  *
- * Apache Ignite In-Memory Data Fabric is a high-performance, integrated and distributed in-memory platform for
+ * Apache Ignite In-Memory Database and Caching Platformis a high-performance, integrated and distributed in-memory platform for
  * computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with
  * traditional disk-based or flash-based technologies.
  */

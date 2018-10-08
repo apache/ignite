@@ -33,10 +33,10 @@ page-configure {
         display: flex;
         flex-direction: row;
         padding: 10px 20px 10px 30px;
-        box-shadow: 0 0px 4px 0 rgba(0, 0, 0, 0.2), 0px 3px 4px -1px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 0 4px 0 rgba(0, 0, 0, 0.2), 0 3px 4px -1px rgba(0, 0, 0, 0.2);
         position: -webkit-sticky;
         position: sticky;
-        bottom: 0px;
+        bottom: 0;
         // margin: 20px -30px -30px;
         background: white;
         border-radius: 0 0 4px 4px;
@@ -102,6 +102,11 @@ page-configure {
         &>div {
             margin-left: 10px !important;
         }
+    }
+
+    .form-field__label.required:after {
+        content: '*';
+        margin-left: 0.25em;
     }
 }
 
@@ -307,4 +312,24 @@ list-editable .pc-form-group__text-title {
     align-items: center;
     background: white;
     z-index: 2;
+}
+
+.config-changes-guard__details {
+    cursor: pointer;
+
+    summary {
+        list-style: none;
+    }
+
+    summary::-webkit-details-marker {
+        display: none;
+    }
+
+    summary:before {
+        content: '▶ ';
+    }
+
+    &[open] summary:before {
+        content: '▼ ';
+    }
 }

@@ -126,7 +126,7 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
                         if (acc.groupBy.isDefined) {
                             val tableAlias = acc.igniteQueryContext.uniqueTableAlias
 
-                            accumulator.SingleTableSQLAccumulator(
+                            SingleTableSQLAccumulator(
                                 igniteQueryContext = acc.igniteQueryContext,
                                 table = None,
                                 tableExpression = Some((acc, tableAlias)),
@@ -141,7 +141,7 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
                     case acc: QueryAccumulator ⇒
                         val tableAlias = acc.igniteQueryContext.uniqueTableAlias
 
-                        accumulator.SingleTableSQLAccumulator(
+                        SingleTableSQLAccumulator(
                             igniteQueryContext = acc.igniteQueryContext,
                             table = None,
                             tableExpression = Some((acc, tableAlias)),
@@ -156,6 +156,9 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
                     case acc: SelectAccumulator ⇒
                         acc.withLocalLimit(limit.limitExpr)
 
+                    case acc: QueryAccumulator ⇒
+                        acc.withLocalLimit(limit.limitExpr)
+
                     case _ ⇒
                         throw new IgniteException("stepSkipped == true but child is not SelectAccumulator")
                 }
@@ -163,6 +166,9 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
             case limit: GlobalLimit if !stepSkipped && exprsAllowed(limit.limitExpr) ⇒
                 limit.child.transformUp {
                     case acc: SelectAccumulator ⇒
+                        acc.withLimit(limit.limitExpr)
+
+                    case acc: QueryAccumulator ⇒
                         acc.withLimit(limit.limitExpr)
 
                     case _ ⇒

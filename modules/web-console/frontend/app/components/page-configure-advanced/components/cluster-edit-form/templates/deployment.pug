@@ -35,34 +35,58 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-60
-                +dropdown('Deployment mode:', `${model}.deploymentMode`, '"deploymentMode"', 'true', 'SHARED',
-                    '[\
+                +form-field__dropdown({
+                    label: 'Deployment mode:',
+                    model: `${model}.deploymentMode`,
+                    name: '"deploymentMode"',
+                    placeholder: 'SHARED',
+                    options: '[\
                         {value: "PRIVATE", label: "PRIVATE"},\
                         {value: "ISOLATED", label: "ISOLATED"}, \
                         {value: "SHARED", label: "SHARED"},\
                         {value: "CONTINUOUS", label: "CONTINUOUS"}\
                     ]',
-                    'Task classes and resources sharing mode<br/>\
+                    tip: 'Task classes and resources sharing mode<br/>\
                     The following deployment modes are supported:\
-                    <ul>\
-                        <li>PRIVATE - in this mode deployed classes do not share resources</li>\
-                        <li>ISOLATED - in this mode tasks or classes deployed within the same class loader will share the same instances of resources</li>\
-                        <li>SHARED - same as ISOLATED, but now tasks from different master nodes with the same user version and same class loader will share the same class loader on remote nodes</li>\
-                        <li>CONTINUOUS - same as SHARED deployment mode, but resources will not be undeployed even after all master nodes left grid</li>\
-                    </ul>')
+                        <ul>\
+                            <li>PRIVATE - in this mode deployed classes do not share resources</li>\
+                            <li>ISOLATED - in this mode tasks or classes deployed within the same class loader will share the same instances of resources</li>\
+                            <li>SHARED - same as ISOLATED, but now tasks from different master nodes with the same user version and same class loader will share the same class loader on remote nodes</li>\
+                            <li>CONTINUOUS - same as SHARED deployment mode, but resources will not be undeployed even after all master nodes left grid</li>\
+                        </ul>'
+                })
             .pc-form-grid-col-60
-                +checkbox('Enable peer class loading', `${model}.peerClassLoadingEnabled`, '"peerClassLoadingEnabled"', 'Enables/disables peer class loading')
+                +form-field__checkbox({
+                    label: 'Enable peer class loading',
+                    model: `${model}.peerClassLoadingEnabled`,
+                    name: '"peerClassLoadingEnabled"',
+                    tip: 'Enables/disables peer class loading'
+                })
             .pc-form-grid-col-60
-                +number('Missed resources cache size:', `${model}.peerClassLoadingMissedResourcesCacheSize`, '"peerClassLoadingMissedResourcesCacheSize"', enabled, '100', '0',
-                    'If size greater than 0, missed resources will be cached and next resource request ignored<br/>\
-                    If size is 0, then request for the resource will be sent to the remote node every time this resource is requested')
+                +form-field__number({
+                    label: 'Missed resources cache size:',
+                    model: `${model}.peerClassLoadingMissedResourcesCacheSize`,
+                    name: '"peerClassLoadingMissedResourcesCacheSize"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '100',
+                    min: '0',
+                    tip: 'If size greater than 0, missed resources will be cached and next resource request ignored<br/>\
+                          If size is 0, then request for the resource will be sent to the remote node every time this resource is requested'
+                })
             .pc-form-grid-col-60
-                +number('Pool size:', `${model}.peerClassLoadingThreadPoolSize`, '"peerClassLoadingThreadPoolSize"', enabled, '2', '1', 'Thread pool size to use for peer class loading')
+                +form-field__number({
+                    label: 'Pool size:',
+                    model: `${model}.peerClassLoadingThreadPoolSize`,
+                    name: '"peerClassLoadingThreadPoolSize"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '2',
+                    min: '1',
+                    tip: 'Thread pool size to use for peer class loading'
+                })
             .pc-form-grid-col-60
                 mixin clusters-deployment-packages
                     .ignite-form-field
                         -let items = exclude
-                        -var uniqueTip = 'Such package already exists!'
 
                         list-editable(
                             ng-model=items
@@ -84,10 +108,10 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                                     placeholder: 'Enter package name',
                                     required: enabled
                                 })(
-                                    data-ignite-unique=items
-                                    data-ignite-form-field-input-autofocus='true'
+                                    ignite-unique=items
+                                    ignite-form-field-input-autofocus='true'
                                 )
-                                    +unique-feedback('"packageName"', uniqueTip)
+                                    +form-field__error({ error: 'igniteUnique', message: 'Such package already exists!' })
 
                             list-editable-no-items
                                 list-editable-add-item-button(
@@ -102,30 +126,38 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
 
             //- Since ignite 2.0
             .pc-form-grid-col-60(ng-if='$ctrl.available("2.0.0")')
-                +java-class('Class loader:', model + '.classLoader', '"classLoader"', 'true', 'false',
-                    'Loader which will be used for instantiating execution context')
+                +form-field__java-class({
+                    label: 'Class loader:',
+                    model: `${model}.classLoader`,
+                    name: '"classLoader"',
+                    tip: 'Loader which will be used for instantiating execution context'
+                })
 
             .pc-form-grid-col-60
-                +dropdown('Deployment variant:', modelDeployment + '.kind', '"deploymentKind"', 'true', 'Default',
-                    '[\
+                +form-field__dropdown({
+                    label: 'Deployment variant:',
+                    model: `${modelDeployment}.kind`,
+                    name: '"deploymentKind"',
+                    placeholder: 'Default',
+                    options: '[\
                         {value: "URI", label: "URI"},\
                         {value: "Local", label: "Local"}, \
                         {value: "Custom", label: "Custom"},\
                         {value: null, label: "Default"}\
                     ]',
-                    'Grid deployment SPI is in charge of deploying tasks and classes from different sources:\
-                    <ul>\
-                        <li>URI - Deploy tasks from different sources like file system folders, email and HTTP</li>\
-                        <li>Local - Only within VM deployment on local node</li>\
-                        <li>Custom - Custom implementation of DeploymentSpi</li>\
-                        <li>Default - Default configuration of LocalDeploymentSpi will be used</li>\
-                    </ul>')
+                    tip: 'Grid deployment SPI is in charge of deploying tasks and classes from different sources:\
+                        <ul>\
+                            <li>URI - Deploy tasks from different sources like file system folders, email and HTTP</li>\
+                            <li>Local - Only within VM deployment on local node</li>\
+                            <li>Custom - Custom implementation of DeploymentSpi</li>\
+                            <li>Default - Default configuration of LocalDeploymentSpi will be used</li>\
+                        </ul>'
+                })
             .pc-form-group(ng-show=uriDeployment).pc-form-grid-row
                 .pc-form-grid-col-60
                     mixin clusters-deployment-uri
                         .ignite-form-field
                             -let items = uriListModel
-                            -var uniqueTip = 'Such URI already configured!'
 
                             list-editable(
                                 ng-model=items
@@ -139,7 +171,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
 
                                 list-editable-item-edit
                                     +list-url-field('URL', '$item', '"url"', items)
-                                        +unique-feedback('"url"', uniqueTip)
+                                        +form-field__error({ error: 'igniteUnique', message: 'Such URI already configured!' })
 
                                 list-editable-no-items
                                     list-editable-add-item-button(
@@ -153,13 +185,17 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     - var form = 'deployment'
 
                 .pc-form-grid-col-60
-                    +text('Temporary directory path:', modelDeployment + '.URI.temporaryDirectoryPath', '"DeploymentURITemporaryDirectoryPath"', 'false', 'Temporary directory path',
-                    'Absolute path to temporary directory which will be used by deployment SPI to keep all deployed classes in')
+                    +form-field__text({
+                        label: 'Temporary directory path:',
+                        model: modelDeployment + '.URI.temporaryDirectoryPath',
+                        name: '"DeploymentURITemporaryDirectoryPath"',
+                        placeholder: 'Temporary directory path',
+                        tip: 'Absolute path to temporary directory which will be used by deployment SPI to keep all deployed classes in'
+                    })
                 .pc-form-grid-col-60
                     mixin clusters-deployment-scanner
                         .ignite-form-field
                             -let items = scannerModel
-                            -var uniqueTip = 'Such scanner already configured!'
 
                             list-editable(
                                 ng-model=items
@@ -170,7 +206,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
 
                                 list-editable-item-edit
                                     +list-java-class-field('Scanner', '$item', '"scanner"', items)
-                                        +unique-feedback('"scanner"', uniqueTip)
+                                        +form-field__error({ error: 'igniteUnique', message: 'Such scanner already configured!' })
 
                                 list-editable-no-items
                                     list-editable-add-item-button(
@@ -184,16 +220,45 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     - var form = 'deployment'
 
                 .pc-form-grid-col-60
-                    +java-class('Listener:', `${modelDeployment}.URI.listener`, '"DeploymentURIListener"', 'true', 'false', 'Deployment event listener', uriDeployment)
+                    +form-field__java-class({
+                        label: 'Listener:',
+                        model: `${modelDeployment}.URI.listener`,
+                        name: '"DeploymentURIListener"',
+                        tip: 'Deployment event listener',
+                        validationActive: uriDeployment
+                    })
                 .pc-form-grid-col-60
-                    +checkbox('Check MD5', `${modelDeployment}.URI.checkMd5`, '"DeploymentURICheckMd5"', 'Exclude files with same md5s from deployment')
+                    +form-field__checkbox({
+                        label: 'Check MD5',
+                        model: `${modelDeployment}.URI.checkMd5`,
+                        name: '"DeploymentURICheckMd5"',
+                        tip: 'Exclude files with same md5s from deployment'
+                    })
                 .pc-form-grid-col-60
-                    +checkbox('Encode URI', `${modelDeployment}.URI.encodeUri`, '"DeploymentURIEncodeUri"', 'URI must be encoded before usage')
+                    +form-field__checkbox({
+                        label: 'Encode URI',
+                        model: `${modelDeployment}.URI.encodeUri`,
+                        name: '"DeploymentURIEncodeUri"',
+                        tip: 'URI must be encoded before usage'
+                    })
             .pc-form-group(ng-show=localDeployment).pc-form-grid-row
                 .pc-form-grid-col-60
-                    +java-class('Listener:', `${modelDeployment}.Local.listener`, '"DeploymentLocalListener"', 'true', 'false', 'Deployment event listener', localDeployment)
+                    +form-field__java-class({
+                        label: 'Listener:',
+                        model: `${modelDeployment}.Local.listener`,
+                        name: '"DeploymentLocalListener"',
+                        tip: 'Deployment event listener',
+                        validationActive: localDeployment
+                    })
             .pc-form-group(ng-show=customDeployment).pc-form-grid-row
                 .pc-form-grid-col-60
-                    +java-class('Class:', `${modelDeployment}.Custom.className`, '"DeploymentCustom"', 'true', customDeployment, 'DeploymentSpi implementation class', customDeployment)
+                    +form-field__java-class({
+                        label: 'Class:',
+                        model: `${modelDeployment}.Custom.className`,
+                        name: '"DeploymentCustom"',
+                        required: customDeployment,
+                        tip: 'DeploymentSpi implementation class',
+                        validationActive: customDeployment
+                    })
         .pca-form-column-6
             +preview-xml-java(model, 'clusterDeployment')

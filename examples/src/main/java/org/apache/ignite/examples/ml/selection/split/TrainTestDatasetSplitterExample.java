@@ -31,7 +31,6 @@ import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
-import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Run linear regression model over dataset split on train and test subsets ({@link TrainTestDatasetSplitter}).
@@ -113,55 +112,47 @@ public class TrainTestDatasetSplitterExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                TrainTestDatasetSplitterExample.class.getSimpleName(), () -> {
-                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
+            IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
 
-                System.out.println(">>> Create new linear regression trainer object.");
-                LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
+            System.out.println(">>> Create new linear regression trainer object.");
+            LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
 
-                System.out.println(">>> Create new training dataset splitter object.");
-                TrainTestSplit<Integer, double[]> split = new TrainTestDatasetSplitter<Integer, double[]>()
-                    .split(0.75);
+            System.out.println(">>> Create new training dataset splitter object.");
+            TrainTestSplit<Integer, double[]> split = new TrainTestDatasetSplitter<Integer, double[]>()
+                .split(0.75);
 
-                System.out.println(">>> Perform the training to get the model.");
-                LinearRegressionModel mdl = trainer.fit(
-                    ignite,
-                    dataCache,
-                    split.getTrainFilter(),
-                    (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-                    (k, v) -> v[0]
-                );
+            System.out.println(">>> Perform the training to get the model.");
+            LinearRegressionModel mdl = trainer.fit(
+                ignite,
+                dataCache,
+                split.getTrainFilter(),
+                (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+                (k, v) -> v[0]
+            );
 
-                System.out.println(">>> Linear regression model: " + mdl);
+            System.out.println(">>> Linear regression model: " + mdl);
 
-                System.out.println(">>> ---------------------------------");
-                System.out.println(">>> | Prediction\t| Ground Truth\t|");
-                System.out.println(">>> ---------------------------------");
+            System.out.println(">>> ---------------------------------");
+            System.out.println(">>> | Prediction\t| Ground Truth\t|");
+            System.out.println(">>> ---------------------------------");
 
-                ScanQuery<Integer, double[]> qry = new ScanQuery<>();
-                qry.setFilter(split.getTestFilter());
+            ScanQuery<Integer, double[]> qry = new ScanQuery<>();
+            qry.setFilter(split.getTestFilter());
 
-                try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(qry)) {
-                    for (Cache.Entry<Integer, double[]> observation : observations) {
-                        double[] val = observation.getValue();
-                        double[] inputs = Arrays.copyOfRange(val, 1, val.length);
-                        double groundTruth = val[0];
+            try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(qry)) {
+                for (Cache.Entry<Integer, double[]> observation : observations) {
+                    double[] val = observation.getValue();
+                    double[] inputs = Arrays.copyOfRange(val, 1, val.length);
+                    double groundTruth = val[0];
 
-                        double prediction = mdl.apply(new DenseVector(inputs));
+                    double prediction = mdl.apply(new DenseVector(inputs));
 
-                        System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
-                    }
+                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
                 }
+            }
 
-                System.out.println(">>> ---------------------------------");
-
-                System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
-            });
-
-            igniteThread.start();
-
-            igniteThread.join();
+            System.out.println(">>> ---------------------------------");
+            System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
         }
     }
 }

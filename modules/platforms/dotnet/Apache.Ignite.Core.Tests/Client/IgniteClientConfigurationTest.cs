@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618
 namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
@@ -84,6 +85,12 @@ namespace Apache.Ignite.Core.Tests.Client
                     CheckCertificateRevocation = true,
                     SkipServerCertificateValidation = true,
                     SslProtocols = SslProtocols.None
+                },
+                Endpoints = new []
+                {
+                    "foo",
+                    "bar:123",
+                    "baz:100..103"
                 }
             };
 
@@ -177,7 +184,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 }
 
                 // Missing section content.
-                ex = Assert.Throws<ConfigurationErrorsException>(() => 
+                ex = Assert.Throws<ConfigurationErrorsException>(() =>
                     Ignition.StartClient("igniteClientConfiguration3"));
                 Assert.AreEqual("IgniteClientConfigurationSection with name 'igniteClientConfiguration3' is " +
                                 "defined in <configSections>, but not present in configuration.", ex.Message);
@@ -210,7 +217,8 @@ namespace Apache.Ignite.Core.Tests.Client
         public void TestAllPropertiesArePresentInSchema()
         {
             IgniteConfigurationSerializerTest.CheckAllPropertiesArePresentInSchema(
-                "IgniteClientConfigurationSection.xsd", "igniteClientConfiguration", typeof(IgniteClientConfiguration));
+                "IgniteClientConfigurationSection.xsd", "igniteClientConfiguration",
+                typeof(IgniteClientConfiguration));
         }
 #endif
     }

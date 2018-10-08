@@ -435,9 +435,6 @@ public class JdbcConnection implements Connection {
     /** {@inheritDoc} */
     @Override public void setReadOnly(boolean readOnly) throws SQLException {
         ensureNotClosed();
-
-        if (!readOnly)
-            throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */

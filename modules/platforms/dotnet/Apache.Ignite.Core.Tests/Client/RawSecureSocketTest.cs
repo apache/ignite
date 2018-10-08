@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Tests.Client
     using System.Net.Sockets;
     using System.Security.Authentication;
     using System.Security.Cryptography.X509Certificates;
-    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using NUnit.Framework;
 
@@ -38,25 +37,22 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestHandshake()
         {
-            var icfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            var igniteConfiguration = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = Path.Combine("Config", "Client", "server-with-ssl.xml")
             };
 
-            using (Ignition.Start(icfg))
+            using (Ignition.Start(igniteConfiguration))
             {
-                var cfg = new IgniteClientConfiguration
-                {
-                    Host = "127.0.0.1",
-                    Port = 11110
-                };
+                const string host = "127.0.0.1";
+                const int port = 11110;
 
-                using (var client = new TcpClient(cfg.Host, cfg.Port))
+                using (var client = new TcpClient(host, port))
                 using (var sslStream = new SslStream(client.GetStream(), false, ValidateServerCertificate, null))
                 {
                     var certsCollection = new X509CertificateCollection(new X509Certificate[] {LoadCertificateFile()});
 
-                    sslStream.AuthenticateAsClient(cfg.Host, certsCollection, SslProtocols.Tls, false);
+                    sslStream.AuthenticateAsClient(host, certsCollection, SslProtocols.Tls, false);
 
                     Assert.IsTrue(sslStream.IsAuthenticated);
                     Assert.IsTrue(sslStream.IsMutuallyAuthenticated);
@@ -87,7 +83,7 @@ namespace Apache.Ignite.Core.Tests.Client
         /// </summary>
         private static X509Certificate2 LoadCertificateFile()
         {
-            // Conveting from JKS to PFX:
+            // Converting from JKS to PFX:
             // keytool -importkeystore -srckeystore thekeystore.jks -srcstoretype JKS
             // -destkeystore thekeystore.pfx -deststoretype PKCS12
             return new X509Certificate2(Path.Combine("Config", "Client", "thin-client-cert.pfx"), "123456");

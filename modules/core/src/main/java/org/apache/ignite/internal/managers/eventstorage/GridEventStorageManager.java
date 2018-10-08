@@ -1468,7 +1468,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         }
 
         /** {@inheritDoc} */
-        public IgnitePredicate<? extends Event> listener() {
+        @Override public IgnitePredicate<? extends Event> listener() {
             return lsnr;
         }
 

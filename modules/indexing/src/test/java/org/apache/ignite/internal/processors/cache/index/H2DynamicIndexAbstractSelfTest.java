@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -33,9 +32,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -88,6 +85,9 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
 
         // Test that local queries on all nodes use new index.
         for (int i = 0 ; i < 4; i++) {
+            if (ignite(i).configuration().isClientMode())
+                continue;
+
             List<List<?>> locRes = ignite(i).cache("cache").query(new SqlFieldsQuery("explain select \"id\" from " +
                 "\"cache\".\"ValueClass\" where \"field1\" = 'A'").setLocal(true)).getAll();
 
@@ -158,6 +158,9 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
 
         // Test that no local queries on all nodes use new index.
         for (int i = 0 ; i < 4; i++) {
+            if (ignite(i).configuration().isClientMode())
+                continue;
+
             List<List<?>> locRes = ignite(i).cache("cache").query(new SqlFieldsQuery("explain select \"id\" from " +
                 "\"cache\".\"ValueClass\" where \"field1\" = 'A'").setLocal(true)).getAll();
 
@@ -298,21 +301,6 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
     }
 
     /**
-     * Create common node configuration.
-     *
-     * @param idx Index.
-     * @return Configuration.
-     * @throws Exception If failed.
-     */
-    private IgniteConfiguration commonConfiguration(int idx) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(getTestIgniteInstanceName(idx));
-
-        cfg.setMarshaller(new BinaryMarshaller());
-
-        return optimize(cfg);
-    }
-
-    /**
      * @return Default cache configuration.
      */
     private CacheConfiguration cacheConfiguration() {
@@ -359,35 +347,4 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
      * @return Whether to use near cache.
      */
     protected abstract boolean nearCache();
-
-    /**
-     * Ensure that SQL exception is thrown.
-     *
-     * @param r Runnable.
-     * @param expCode Error code.
-     */
-    private static void assertSqlException(DynamicIndexAbstractBasicSelfTest.RunnableX r, int expCode) {
-        try {
-            try {
-                r.run();
-            }
-            catch (CacheException e) {
-                if (e.getCause() != null)
-                    throw (Exception)e.getCause();
-                else
-                    throw e;
-            }
-        }
-        catch (IgniteSQLException e) {
-            assertEquals("Unexpected error code [expected=" + expCode + ", actual=" + e.statusCode() + ']',
-                expCode, e.statusCode());
-
-            return;
-        }
-        catch (Exception e) {
-            fail("Unexpected exception: " + e);
-        }
-
-        fail(IgniteSQLException.class.getSimpleName() +  " is not thrown.");
-    }
 }

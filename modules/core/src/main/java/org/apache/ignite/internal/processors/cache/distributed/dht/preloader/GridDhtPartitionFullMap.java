@@ -27,11 +27,12 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Full partition map.
  */
-public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap> implements Externalizable {
+public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap> implements Comparable<GridDhtPartitionFullMap>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -250,5 +251,12 @@ public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap> 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtPartitionFullMap.class, this, "size", size());
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(@NotNull GridDhtPartitionFullMap o) {
+        assert nodeId.equals(o.nodeId);
+
+        return Long.compare(updateSeq, o.updateSeq);
     }
 }

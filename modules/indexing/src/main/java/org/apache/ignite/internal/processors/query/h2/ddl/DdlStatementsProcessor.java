@@ -38,6 +38,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -70,7 +72,6 @@ import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.AlterTableAlterColumn;
@@ -124,6 +125,8 @@ public class DdlStatementsProcessor {
 
         try {
             isDdlOnSchemaSupported(cmd.schemaName());
+
+            finishActiveTxIfNecessary();
 
             if (cmd instanceof SqlCreateIndexCommand) {
                 SqlCreateIndexCommand cmd0 = (SqlCreateIndexCommand)cmd;
@@ -260,6 +263,8 @@ public class DdlStatementsProcessor {
         IgniteInternalFuture fut = null;
 
         try {
+            finishActiveTxIfNecessary();
+
             GridSqlStatement stmt0 = new GridSqlQueryParser(false).parse(prepared);
 
             if (stmt0 instanceof GridSqlCreateIndex) {
@@ -352,7 +357,7 @@ public class DdlStatementsProcessor {
 
                     ctx.query().dynamicTableCreate(cmd.schemaName(), e, cmd.templateName(), cmd.cacheName(),
                         cmd.cacheGroup(), cmd.dataRegionName(), cmd.affinityKey(), cmd.atomicityMode(),
-                        cmd.writeSynchronizationMode(), cmd.backups(), cmd.ifNotExists());
+                        cmd.writeSynchronizationMode(), cmd.backups(), cmd.ifNotExists(), cmd.encrypted());
                 }
             }
             else if (stmt0 instanceof GridSqlDropTable) {
@@ -441,6 +446,10 @@ public class DdlStatementsProcessor {
                 }
                 else {
                     assert tbl.rowDescriptor() != null;
+
+                    if (tbl.cache().mvccEnabled())
+                        throw new IgniteSQLException("Cannot drop column(s) with enabled MVCC. " +
+                            "Operation is unsupported at the moment.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
                     if (QueryUtils.isSqlType(tbl.rowDescriptor().type().valueClass()))
                         throw new SchemaOperationException("Cannot drop column(s) because table was created " +
@@ -567,6 +576,23 @@ public class DdlStatementsProcessor {
         if (cctx.isLocal())
             throw new IgniteSQLException("DDL statements are not supported on LOCAL caches",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+    }
+
+    /**
+     * Commits active transaction if exists.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    private void finishActiveTxIfNecessary() throws IgniteCheckedException {
+        try (GridNearTxLocal tx = MvccUtils.tx(ctx)) {
+            if (tx == null)
+                return;
+
+            if (!tx.isRollbackOnly())
+                tx.commit();
+            else
+                tx.rollback();
+        }
     }
 
     /**

@@ -197,7 +197,7 @@ public class JdbcThinConnection implements Connection {
                 }
 
                 sendRequest(new JdbcQueryExecuteRequest(JdbcStatementType.ANY_STATEMENT_TYPE,
-                    schema, 1, 1, sql, null));
+                    schema, 1, 1, autoCommit, sql, null));
 
                 streamState = new StreamState((SqlSetStreamingCommand)cmd);
             }
@@ -234,7 +234,7 @@ public class JdbcThinConnection implements Connection {
         int resSetHoldability) throws SQLException {
         ensureNotClosed();
 
-        checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
+        checkCursorOptions(resSetType, resSetConcurrency);
 
         JdbcThinStatement stmt  = new JdbcThinStatement(this, resSetHoldability, schema);
 
@@ -264,7 +264,7 @@ public class JdbcThinConnection implements Connection {
         int resSetHoldability) throws SQLException {
         ensureNotClosed();
 
-        checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
+        checkCursorOptions(resSetType, resSetConcurrency);
 
         if (sql == null)
             throw new SQLException("SQL string cannot be null.");
@@ -284,19 +284,14 @@ public class JdbcThinConnection implements Connection {
     /**
      * @param resSetType Cursor option.
      * @param resSetConcurrency Cursor option.
-     * @param resSetHoldability Cursor option.
      * @throws SQLException If options unsupported.
      */
-    private void checkCursorOptions(int resSetType, int resSetConcurrency,
-        int resSetHoldability) throws SQLException {
+    private void checkCursorOptions(int resSetType, int resSetConcurrency) throws SQLException {
         if (resSetType != TYPE_FORWARD_ONLY)
             throw new SQLFeatureNotSupportedException("Invalid result set type (only forward is supported).");
 
         if (resSetConcurrency != CONCUR_READ_ONLY)
             throw new SQLFeatureNotSupportedException("Invalid concurrency (updates are not supported).");
-
-        if (resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
-            LOG.warning("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -328,18 +323,17 @@ public class JdbcThinConnection implements Connection {
     @Override public void setAutoCommit(boolean autoCommit) throws SQLException {
         ensureNotClosed();
 
-        this.autoCommit = autoCommit;
+        // Do nothing if resulting value doesn't actually change.
+        if (autoCommit != this.autoCommit) {
+            doCommit();
 
-        if (!autoCommit)
-            LOG.warning("Transactions are not supported.");
+            this.autoCommit = autoCommit;
+        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean getAutoCommit() throws SQLException {
         ensureNotClosed();
-
-        if (!autoCommit)
-            LOG.warning("Transactions are not supported.");
 
         return autoCommit;
     }
@@ -351,7 +345,7 @@ public class JdbcThinConnection implements Connection {
         if (autoCommit)
             throw new SQLException("Transaction cannot be committed explicitly in auto-commit mode.");
 
-        LOG.warning("Transactions are not supported.");
+        doCommit();
     }
 
     /** {@inheritDoc} */
@@ -359,9 +353,21 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (autoCommit)
-            throw new SQLException("Transaction cannot rollback in auto-commit mode.");
+            throw new SQLException("Transaction cannot be rolled back explicitly in auto-commit mode.");
 
-        LOG.warning("Transactions are not supported.");
+        try (Statement s = createStatement()) {
+            s.execute("ROLLBACK");
+        }
+    }
+
+    /**
+     * Send to the server {@code COMMIT} command.
+     * @throws SQLException if failed.
+     */
+    private void doCommit() throws SQLException {
+        try (Statement s = createStatement()) {
+            s.execute("COMMIT");
+        }
     }
 
     /** {@inheritDoc} */
@@ -430,10 +436,6 @@ public class JdbcThinConnection implements Connection {
             case Connection.TRANSACTION_READ_COMMITTED:
             case Connection.TRANSACTION_REPEATABLE_READ:
             case Connection.TRANSACTION_SERIALIZABLE:
-                LOG.warning("Transactions are not supported.");
-
-                break;
-
             case Connection.TRANSACTION_NONE:
                 break;
 
@@ -447,8 +449,6 @@ public class JdbcThinConnection implements Connection {
     /** {@inheritDoc} */
     @Override public int getTransactionIsolation() throws SQLException {
         ensureNotClosed();
-
-        LOG.warning("Transactions are not supported.");
 
         return txIsolation;
     }
@@ -482,9 +482,6 @@ public class JdbcThinConnection implements Connection {
     /** {@inheritDoc} */
     @Override public void setHoldability(int holdability) throws SQLException {
         ensureNotClosed();
-
-        if (holdability != HOLD_CURSORS_OVER_COMMIT)
-            LOG.warning("Transactions are not supported.");
 
         if (holdability != HOLD_CURSORS_OVER_COMMIT && holdability != CLOSE_CURSORS_AT_COMMIT)
             throw new SQLException("Invalid result set holdability value.");
@@ -927,7 +924,7 @@ public class JdbcThinConnection implements Connection {
                 respSem.acquire();
 
                 sendRequestNotWaitResponse(
-                    new JdbcOrderedBatchExecuteRequest(schema, streamBatch, lastBatch, order));
+                    new JdbcOrderedBatchExecuteRequest(schema, streamBatch, autoCommit, lastBatch, order));
 
                 streamBatch = null;
 

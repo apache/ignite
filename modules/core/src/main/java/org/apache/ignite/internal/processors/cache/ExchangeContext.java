@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,11 +55,20 @@ public class ExchangeContext {
     /** */
     private final boolean compatibilityNode = getBoolean(IGNITE_EXCHANGE_COMPATIBILITY_VER_1, false);
 
+    /** */
+    private final boolean newMvccCrd;
+
+    /** Currently running mvcc queries, initialized when mvcc coordinator is changed. */
+    private Map<UUID, GridLongList> activeQueries;
+
     /**
      * @param crd Coordinator flag.
+     * @param newMvccCrd {@code True} if new coordinator assigned during this exchange.
      * @param fut Exchange future.
      */
-    public ExchangeContext(boolean crd, GridDhtPartitionsExchangeFuture fut) {
+    public ExchangeContext(boolean crd, boolean newMvccCrd, GridDhtPartitionsExchangeFuture fut) {
+        this.newMvccCrd = newMvccCrd;
+
         int protocolVer = exchangeProtocolVersion(fut.firstEventCache().minimumNodeVersion());
 
         if (compatibilityNode || (crd && fut.localJoinExchange())) {
@@ -122,6 +135,34 @@ public class ExchangeContext {
      */
     public boolean mergeExchanges() {
         return merge;
+    }
+
+    /**
+     * @return {@code True} if new node assigned as mvcc coordinator node during this exchange.
+     */
+    public boolean newMvccCoordinator() {
+        return newMvccCrd;
+    }
+
+    /**
+     * @return Active queries.
+     */
+    public Map<UUID, GridLongList> activeQueries() {
+        return activeQueries;
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param nodeQueries Node queries.
+     */
+    public void addActiveQueries(UUID nodeId, @Nullable GridLongList nodeQueries) {
+        if (nodeQueries == null)
+            return;
+
+        if (activeQueries == null)
+            activeQueries = new HashMap<>();
+
+        activeQueries.put(nodeId, nodeQueries);
     }
 
     /** {@inheritDoc} */

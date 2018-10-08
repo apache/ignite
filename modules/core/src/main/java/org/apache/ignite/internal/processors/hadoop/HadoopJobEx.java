@@ -47,7 +47,7 @@ public abstract class HadoopJobEx implements HadoopJob {
      *
      * @return Input splits.
      */
-    abstract public Collection<HadoopInputSplit> input();
+    @Override abstract public Collection<HadoopInputSplit> input();
 
     /**
      * Returns context for task execution.

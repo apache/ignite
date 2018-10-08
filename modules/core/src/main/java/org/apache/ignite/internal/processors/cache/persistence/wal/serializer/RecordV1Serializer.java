@@ -29,13 +29,15 @@ import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleFileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
@@ -168,7 +170,7 @@ public class RecordV1Serializer implements RecordSerializer {
         /** {@inheritDoc} */
         @Override public void writeWithHeaders(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
             // Write record type.
-            putRecordType(buf, rec);
+            putRecordType(buf, dataSerializer.recordType(rec));
 
             // SWITCH_SEGMENT_RECORD should have only type, no need to write pointer.
             if (rec.type() == SWITCH_SEGMENT_RECORD)
@@ -246,14 +248,14 @@ public class RecordV1Serializer implements RecordSerializer {
      * NOTE: Method mutates position of {@code io}.
      *
      * @param io I/O interface for file.
-     * @param expectedIdx Expected WAL segment index for readable record.
+     * @param segmentFileInputFactory File input factory.
      * @return Instance of {@link SegmentHeader} extracted from the file.
      * @throws IgniteCheckedException If failed to read serializer version.
      */
-    public static SegmentHeader readSegmentHeader(FileIO io, long expectedIdx)
+    public static SegmentHeader readSegmentHeader(SegmentIO io, SegmentFileInputFactory segmentFileInputFactory)
         throws IgniteCheckedException, IOException {
         try (ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())) {
-            FileInput in = new FileInput(io, buf);
+            ByteBufferBackedDataInput in = segmentFileInputFactory.createFileInput(io, buf);
 
             in.ensure(HEADER_RECORD_SIZE);
 
@@ -270,7 +272,7 @@ public class RecordV1Serializer implements RecordSerializer {
             // Read file pointer.
             FileWALPointer ptr = readPosition(in);
 
-            if (expectedIdx != ptr.index())
+            if (io.getSegmentId() != ptr.index())
                 throw new SegmentEofException("Reached logical end of the segment by pointer", null);
 
             assert ptr.fileOffset() == 0 : "Header record should be placed at the beginning of file " + ptr;
@@ -324,10 +326,10 @@ public class RecordV1Serializer implements RecordSerializer {
      * Writes record type to given {@code buf}.
      *
      * @param buf Buffer to write record type.
-     * @param rec WAL record.
+     * @param type WAL record type.
      */
-    static void putRecordType(ByteBuffer buf, WALRecord rec) {
-        buf.put((byte)(rec.type().ordinal() + 1));
+    static void putRecordType(ByteBuffer buf, RecordType type) {
+        buf.put((byte)(type.ordinal() + 1));
     }
 
     /**
@@ -364,7 +366,7 @@ public class RecordV1Serializer implements RecordSerializer {
     ) throws EOFException, IgniteCheckedException {
         long startPos = -1;
 
-        try (FileInput.Crc32CheckingFileInput in = in0.startRead(skipCrc)) {
+        try (SimpleFileInput.Crc32CheckingFileInput in = in0.startRead(skipCrc)) {
             startPos = in0.position();
 
             WALRecord res = reader.readWithHeaders(in, expPtr);

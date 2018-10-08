@@ -202,7 +202,7 @@ public class OdbcUtils {
         if (iter.hasNext()) {
             List<?> res = iter.next();
 
-            if (res.size() > 0) {
+            if (!res.isEmpty()) {
                 Long affected = (Long) res.get(0);
 
                 if (affected != null)

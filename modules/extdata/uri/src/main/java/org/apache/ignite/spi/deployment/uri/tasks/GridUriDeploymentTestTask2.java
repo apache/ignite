@@ -27,7 +27,7 @@ import org.springframework.beans.factory.xml.XmlBeanFactory;
 import org.springframework.core.io.ClassPathResource;
 
 /**
- * URI deployment test task which loads Spring bean definitions from spring1.xml configuration file.
+ * URI deployment test task which loads Spring bean definitions from spring2.xml configuration file.
  */
 public class GridUriDeploymentTestTask2 extends ComputeTaskSplitAdapter<Object, Object> {
     /** */
@@ -37,7 +37,7 @@ public class GridUriDeploymentTestTask2 extends ComputeTaskSplitAdapter<Object, 
     @SuppressWarnings("unchecked")
     public GridUriDeploymentTestTask2() {
         XmlBeanFactory factory = new XmlBeanFactory(
-            new ClassPathResource("org/apache/ignite/grid/spi/deployment/uri/tasks/spring2.xml",
+            new ClassPathResource("org/apache/ignite/spi/deployment/uri/tasks/spring2.xml",
                 getClass().getClassLoader()));
 
         factory.setBeanClassLoader(getClass().getClassLoader());

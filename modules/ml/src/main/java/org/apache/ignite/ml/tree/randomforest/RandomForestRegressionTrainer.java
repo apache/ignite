@@ -17,73 +17,49 @@
 
 package org.apache.ignite.ml.tree.randomforest;
 
+import java.util.List;
+import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
-import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
-import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.tree.DecisionTreeNode;
-import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
+import org.apache.ignite.ml.dataset.feature.FeatureMeta;
+import org.apache.ignite.ml.tree.randomforest.data.TreeRoot;
+import org.apache.ignite.ml.tree.randomforest.data.impurity.ImpurityHistogramsComputer;
+import org.apache.ignite.ml.tree.randomforest.data.impurity.MSEHistogram;
+import org.apache.ignite.ml.tree.randomforest.data.impurity.MSEHistogramComputer;
+import org.apache.ignite.ml.tree.randomforest.data.statistics.LeafValuesComputer;
+import org.apache.ignite.ml.tree.randomforest.data.statistics.MeanValueStatistic;
+import org.apache.ignite.ml.tree.randomforest.data.statistics.RegressionLeafValuesComputer;
 
 /**
- * Random forest regression trainer.
+ * Regression trainer based on RandomForest algorithm.
  */
-public class RandomForestRegressionTrainer extends RandomForestTrainer {
+public class RandomForestRegressionTrainer
+    extends RandomForestTrainer<MeanValueStatistic, MSEHistogram, RandomForestRegressionTrainer> {
     /**
-     * Constructs new instance of RandomForestRegressionTrainer.
+     * Constructs an instance of RandomForestRegressionTrainer.
      *
-     * @param predictionsAggregator Predictions aggregator.
-     * @param featureVectorSize Feature vector size.
-     * @param maximumFeaturesCntPerMdl Number of features to draw from original features vector to train each model.
-     * @param ensembleSize Ensemble size.
-     * @param samplePartSizePerMdl Size of sample part in percent to train one model.
-     * @param maxDeep Max decision tree deep.
-     * @param minImpurityDecrease Min impurity decrease.
+     * @param meta Features meta.
      */
-    public RandomForestRegressionTrainer(PredictionsAggregator predictionsAggregator,
-        int featureVectorSize,
-        int maximumFeaturesCntPerMdl,
-        int ensembleSize,
-        double samplePartSizePerMdl,
-        int maxDeep,
-        double minImpurityDecrease) {
-
-        super(predictionsAggregator, featureVectorSize, maximumFeaturesCntPerMdl,
-            ensembleSize, samplePartSizePerMdl, maxDeep, minImpurityDecrease);
-    }
-
-    /**
-     * Constructs new instance of RandomForestRegressionTrainer.
-     *
-     * @param featureVectorSize Feature vector size.
-     * @param maximumFeaturesCntPerMdl Number of features to draw from original features vector to train each model.
-     * @param ensembleSize Ensemble size.
-     * @param samplePartSizePerMdl Size of sample part in percent to train one model.
-     * @param maxDeep Max decision tree deep.
-     * @param minImpurityDecrease Min impurity decrease.
-     */
-    public RandomForestRegressionTrainer(int featureVectorSize,
-        int maximumFeaturesCntPerMdl,
-        int ensembleSize,
-        double samplePartSizePerMdl,
-        int maxDeep,
-        double minImpurityDecrease) {
-
-        this(new MeanValuePredictionsAggregator(), featureVectorSize, maximumFeaturesCntPerMdl,
-            ensembleSize, samplePartSizePerMdl, maxDeep, minImpurityDecrease);
+    public RandomForestRegressionTrainer(List<FeatureMeta> meta) {
+        super(meta);
     }
 
     /** {@inheritDoc} */
-    @Override protected DatasetTrainer<DecisionTreeNode, Double> buildDatasetTrainerForModel() {
-        return new DecisionTreeRegressionTrainer(maxDeep, minImpurityDecrease).withUseIndex(useIndex);
+    @Override protected RandomForestRegressionTrainer instance() {
+        return this;
     }
 
-    /**
-     * Sets useIndex parameter and returns trainer instance.
-     *
-     * @param useIndex Use index.
-     * @return Decision tree trainer.
-     */
-    public RandomForestRegressionTrainer withUseIndex(boolean useIndex) {
-        this.useIndex = useIndex;
-        return this;
+    /** {@inheritDoc} */
+    @Override protected ModelsComposition buildComposition(List<TreeRoot> models) {
+        return new ModelsComposition(models, new MeanValuePredictionsAggregator());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected ImpurityHistogramsComputer<MSEHistogram> createImpurityHistogramsComputer() {
+        return new MSEHistogramComputer();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected LeafValuesComputer<MeanValueStatistic> createLeafStatisticsAggregator() {
+        return new RegressionLeafValuesComputer();
     }
 }

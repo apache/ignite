@@ -100,7 +100,7 @@ public class LSQROnHeap<K, V> extends AbstractLSQR implements AutoCloseable {
      *
      * @return number of columns
      */
-    @Override protected int getColumns() {
+    @Override protected Integer getColumns() {
         return dataset.compute(
             data -> data.getFeatures() == null ? null : data.getFeatures().length / data.getRows(),
             (a, b) -> {

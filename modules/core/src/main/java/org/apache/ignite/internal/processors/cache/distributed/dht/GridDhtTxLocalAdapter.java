@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.io.Externalizable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -25,11 +26,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -37,10 +40,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
+import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanMap;
@@ -59,7 +64,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
@@ -78,7 +82,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     private static final long serialVersionUID = 0L;
 
     /** Asynchronous rollback marker for lock futures. */
-    protected static final IgniteInternalFuture<Boolean> ROLLBACK_FUT = new GridFutureAdapter<>();
+    public static final IgniteInternalFuture<Boolean> ROLLBACK_FUT = new GridFutureAdapter<>();
 
     /** Lock future updater. */
     private static final AtomicReferenceFieldUpdater<GridDhtTxLocalAdapter, IgniteInternalFuture> LOCK_FUT_UPD =
@@ -108,7 +112,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** Enlist or lock future what is currently in progress. */
     @SuppressWarnings("UnusedDeclaration")
     @GridToStringExclude
-    protected volatile IgniteInternalFuture<Boolean> lockFut;
+    protected volatile IgniteInternalFuture<?> lockFut;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -853,11 +857,17 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /**
+     * @return Lock future.
+     */
+    public IgniteInternalFuture<?> lockFuture() {
+        return lockFut;
+    }
+
+    /**
      * Atomically updates lock future.
      *
      * @param oldFut Old future.
      * @param newFut New future.
-     *
      * @return {@code true} If future was changed.
      */
     public boolean updateLockFuture(IgniteInternalFuture<?> oldFut, IgniteInternalFuture<?> newFut) {
@@ -870,20 +880,21 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param cond Clear lock condition.
      */
     public void clearLockFuture(@Nullable IgniteInternalFuture cond) {
-        IgniteInternalFuture f = lockFut;
+        while (true) {
+            IgniteInternalFuture f = lockFut;
 
-        if (cond != null && f != cond)
-            return;
-
-        lockFut = null;
+            if (f == null
+                || f == ROLLBACK_FUT
+                || (cond != null && f != cond)
+                || updateLockFuture(f, null))
+                return;
+        }
     }
 
     /**
-     *
      * @param f Future to finish.
      * @param err Error.
      * @param clearLockFut {@code True} if need to clear lock future.
-     *
      * @return Finished future.
      */
     public <T> GridFutureAdapter<T> finishFuture(GridFutureAdapter<T> f, Throwable err, boolean clearLockFut) {
@@ -900,17 +911,14 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      *
      * @return Current lock future or null if it's safe to roll back.
      */
-    public @Nullable IgniteInternalFuture<?> tryRollbackAsync() {
-        IgniteInternalFuture<Boolean> fut;
+    @Nullable public IgniteInternalFuture<?> tryRollbackAsync() {
+        while (true) {
+            final IgniteInternalFuture fut = lockFut;
 
-        while(true) {
-            fut = lockFut;
-
-            if (fut != null)
-                return fut == ROLLBACK_FUT ? null : fut;
-
-            if (updateLockFuture(null, ROLLBACK_FUT))
+            if (fut == ROLLBACK_FUT)
                 return null;
+            else if (updateLockFuture(fut, ROLLBACK_FUT))
+                return fut;
         }
     }
 
@@ -924,14 +932,48 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         if (commitOnPrepare()) {
             return finishFuture().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, GridNearTxPrepareResponse>() {
                 @Override public GridNearTxPrepareResponse applyx(IgniteInternalFuture<IgniteInternalTx> finishFut)
-                    throws IgniteCheckedException
-                {
+                    throws IgniteCheckedException {
                     return prepFut.get();
                 }
             });
         }
 
         return prepFut;
+    }
+
+    /**
+     * @param node Backup node.
+     * @return Partition counters map for the given backup node.
+     */
+    public List<PartitionUpdateCountersMessage> filterUpdateCountersForBackupNode(ClusterNode node) {
+        TxCounters txCntrs = txCounters(false);
+
+        if (txCntrs == null || F.isEmpty(txCntrs.updateCounters()))
+            return null;
+
+        Collection<PartitionUpdateCountersMessage> updCntrs = txCntrs.updateCounters();
+
+        List<PartitionUpdateCountersMessage> res = new ArrayList<>(updCntrs.size());
+
+        AffinityTopologyVersion top = topologyVersionSnapshot();
+
+        for (PartitionUpdateCountersMessage partCntrs : updCntrs) {
+            GridCacheAffinityManager affinity = cctx.cacheContext(partCntrs.cacheId()).affinity();
+
+            PartitionUpdateCountersMessage resCntrs = new PartitionUpdateCountersMessage(partCntrs.cacheId(), partCntrs.size());
+
+            for (int i = 0; i < partCntrs.size(); i++) {
+                int part = partCntrs.partition(i);
+
+                if (affinity.backupByPartition(node, part, top))
+                    resCntrs.add(part, partCntrs.initialCounter(i), partCntrs.updatesCount(i));
+            }
+
+            if (resCntrs.size() > 0)
+                res.add(resCntrs);
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */

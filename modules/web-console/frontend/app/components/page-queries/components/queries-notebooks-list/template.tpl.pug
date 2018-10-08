@@ -37,7 +37,6 @@ page-queries-slot(slot-name="'queriesButtons'" ng-if="!$root.IgniteDemoMode")
                     model: '$ctrl.action',
                     name: 'action',
                     disabled: '$ctrl.gridApi.selection.legacyGetSelectedRows().length === 0',
-                    required: false,
                     options: '$ctrl.actionOptions'
                 })
 
