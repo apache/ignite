@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -72,6 +73,7 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationChangeAction;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFilter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
@@ -122,6 +124,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_SCHEMA;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SCHEMA_POOL;
+import static org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationChangeAction.META_CHANGED;
 
 /**
  * Indexing processor.
@@ -520,6 +523,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (cacheDesc != null && F.eq(cacheDesc.deploymentId(), proposeMsg.deploymentId())) {
                     cacheDesc.schemaChangeFinish(msg);
+
+                    assert cacheDesc.version() != null;
+
+                    if (cacheDesc.cacheType() == CacheType.USER &&
+                        cacheDesc.version().isNeedUpdateVersion(META_CHANGED)) {
+                        cacheDesc.version().updateVersion(META_CHANGED);
+
+                        ctx.cache().updateCacheVersion(cacheDesc.version());
+                    }
 
                     try {
                         ctx.cache().saveCacheConfiguration(cacheDesc);
@@ -2524,15 +2536,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         for (QueryField col : cols) {
             try {
                 props.add(new QueryBinaryProperty(
-                    ctx, 
+                    ctx,
                     col.name(),
-                    null, 
-                    Class.forName(col.typeName()), 
-                    false, 
-                    null, 
-                    !col.isNullable(), 
-                    null, 
-                    col.precision(), 
+                    null,
+                    Class.forName(col.typeName()),
+                    false,
+                    null,
+                    !col.isNullable(),
+                    null,
+                    col.precision(),
                     col.scale()));
             }
             catch (ClassNotFoundException e) {

@@ -17,57 +17,32 @@
 package org.apache.ignite.internal.processors.cache.version;
 
 import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.CacheEvent;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationChangeAction.DESTROY;
 import static org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationChangeAction.START;
 
-public class GridCacheConfigurationVersionSelfTest extends GridCommonAbstractTest {
+public class GridCacheConfigurationVersionSelfTest extends GridCacheConfigurationVersionAbstractSelfTest {
     /** Cache name. */
     private static final String CACHE_NAME = DEFAULT_CACHE_NAME + "-test";
 
-    private static final IgnitePredicate<Event> CACHE_EVENT_PREDICATE =
-        e -> e instanceof CacheEvent && ((CacheEvent)e).cacheName().equals(CACHE_NAME);
+    public void testRestartNode() throws Exception {
+        IgniteEx ignite = startGrid(0);
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+        ignite.cluster().active(true);
 
-        DataRegionConfiguration drCfg = new DataRegionConfiguration().setPersistenceEnabled(true);
+        ignite.getOrCreateCache(CACHE_NAME);
 
-        DataStorageConfiguration dsCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(drCfg);
-
-        cfg.setDataStorageConfiguration(dsCfg);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
+        checkCacheVersion(ignite, CACHE_NAME, 1, START);
 
         stopAllGrids();
 
-        cleanPersistenceDir();
-    }
+        ignite = startGrid(0);
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
+        ignite.cluster().active(true);
 
-        stopAllGrids();
+        checkCacheVersion(ignite, CACHE_NAME, 1, START);
 
-        cleanPersistenceDir();
     }
 
     public void testSignleNode() throws Exception {
@@ -106,60 +81,7 @@ public class GridCacheConfigurationVersionSelfTest extends GridCommonAbstractTes
         testSameVersionOnNodes(2, 0, 2, true, Comparator.reverseOrder());
     }
 
-    private void testSameVersionOnNodes(int nodesCnt,
-        int performNodeId,
-        int skipRounds,
-        boolean stopGrid,
-        Comparator<Integer> startOrder
-    ) throws Exception {
-        assert nodesCnt > 0 : nodesCnt;
-        assert performNodeId >= 0 : performNodeId;
-        assert performNodeId < nodesCnt;
-        assert skipRounds >= 0 : skipRounds;
-        assert skipRounds == 0 || nodesCnt > 1;
-        assert skipRounds == 0 || performNodeId < nodesCnt / 2;
-        assert !stopGrid || startOrder != null;
-
-        int versionCounter = 0;
-
-        startGrids(nodesCnt);
-
-        IgniteEx ignite = grid(performNodeId);
-
-        ignite.cluster().active(true);
-
-        versionCounter = performCreateDestroyCache(0, nodesCnt, versionCounter, ignite);
-
-        if (skipRounds > 0) {
-            for (int i = nodesCnt / 2; i < nodesCnt; i++)
-                stopGrid(i);
-
-            for (int i = 0; i < skipRounds; i++)
-                versionCounter = performCreateDestroyCache(0, nodesCnt / 2, versionCounter, ignite);
-
-            if (stopGrid) {
-                for (int i = 0; i < nodesCnt / 2; i++)
-                    stopGrid(i);
-
-                List<Integer> order = IntStream.range(0, nodesCnt).mapToObj(Integer::valueOf).sorted(startOrder).collect(Collectors.toList());
-
-                for (int i : order)
-                    startGrid(i);
-
-                ignite = grid(order.get(0));
-
-                ignite.cluster().active(true);
-            }
-            else {
-                for (int i = nodesCnt / 2; i < nodesCnt; i++)
-                    startGrid(i);
-            }
-        }
-
-        versionCounter = performCreateDestroyCache(0, nodesCnt, versionCounter, ignite);
-    }
-
-    private int performCreateDestroyCache(
+    @Override protected int performActionsOnCache(
         int firstNodeId,
         int lastNodeId,
         int version,
@@ -169,12 +91,8 @@ public class GridCacheConfigurationVersionSelfTest extends GridCommonAbstractTes
 
         version++;
 
-        for (int i = firstNodeId; i < lastNodeId; i++) {
-            assertEquals(version, grid(i).context().cache().cacheDescriptor(CACHE_NAME).version().id());
-            assertEquals(version, grid(i).context().cache().cacheVersion(CACHE_NAME).id());
-
-            assertEquals(START, grid(i).context().cache().cacheVersion(CACHE_NAME).lastAction());
-        }
+        for (int i = firstNodeId; i < lastNodeId; i++)
+            checkCacheVersion(grid(i), CACHE_NAME, version, START);
 
         ignite.cache(CACHE_NAME).destroy();
 
@@ -182,14 +100,10 @@ public class GridCacheConfigurationVersionSelfTest extends GridCommonAbstractTes
 
         version++;
 
-        for (int i = firstNodeId; i < lastNodeId; i++) {
-            assertNull(grid(i).context().cache().cacheDescriptor(CACHE_NAME));
-
-            assertEquals(version, grid(i).context().cache().cacheVersion(CACHE_NAME).id());
-
-            assertEquals(DESTROY, grid(i).context().cache().cacheVersion(CACHE_NAME).lastAction());
-        }
+        for (int i = firstNodeId; i < lastNodeId; i++)
+            checkCacheVersion(grid(i), CACHE_NAME, version, DESTROY);
 
         return version;
     }
+
 }

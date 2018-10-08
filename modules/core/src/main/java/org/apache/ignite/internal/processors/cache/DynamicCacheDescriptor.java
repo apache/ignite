@@ -392,6 +392,7 @@ public class DynamicCacheDescriptor {
 
         res.queryEntities(schema().entities());
         res.sql(sql());
+        res.version(version());
 
         return res;
     }
