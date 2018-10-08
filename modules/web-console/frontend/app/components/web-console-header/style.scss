@@ -106,6 +106,7 @@ web-console-header {
         &:focus, :focus,
         &.active, .active {
             color: $color-active;
+            text-decoration: none;
         }
 
         &[disabled] {
