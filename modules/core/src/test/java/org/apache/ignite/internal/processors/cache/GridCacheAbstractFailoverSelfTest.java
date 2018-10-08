@@ -229,6 +229,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         }, TOP_CHANGE_THREAD_CNT, "topology-change-thread");
 
         boolean isInterrupted = false;
+
         try {
             while (!fut.isDone() && !isInterrupted) {
                 if (tx) {
