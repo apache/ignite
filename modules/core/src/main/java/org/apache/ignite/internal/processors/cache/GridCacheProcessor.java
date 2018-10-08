@@ -4134,15 +4134,13 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         if (log.isDebugEnabled())
             log.debug("Getting cache for name: " + name);
 
-        IgniteCacheProxy<?, ?> cache = jcacheProxy(name, false);
+        IgniteCacheProxy<?, ?> cache = jcacheProxy(name, true);
 
         if (cache == null) {
             dynamicStartCache(ccfg, name, null, false, ccfg == null, true).get();
 
             cache = jcacheProxy(name, true);
         }
-
-        awaitInitProxy(cache);
 
         return cache == null ? null : (IgniteInternalCache<K, V>)cache.internalProxy();
     }
@@ -4185,7 +4183,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      */
     private <K, V> IgniteInternalCache<K, V> internalCacheEx(String name) {
         if (ctx.discovery().localNode().isClient()) {
-            IgniteCacheProxy<K, V> proxy = (IgniteCacheProxy<K, V>)jcacheProxy(name, false);
+            IgniteCacheProxy<K, V> proxy = (IgniteCacheProxy<K, V>)jcacheProxy(name, true);
 
             if (proxy == null) {
                 GridCacheAdapter<?, ?> cacheAdapter = caches.get(name);
@@ -4272,7 +4270,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         if (desc != null && !desc.cacheType().userCache())
             throw new IllegalStateException("Failed to get cache because it is a system cache: " + cacheName);
 
-        IgniteCacheProxyImpl<?, ?> proxy = jcacheProxy(cacheName, false);
+        IgniteCacheProxyImpl<?, ?> proxy = jcacheProxy(cacheName, true);
 
         // Try to start cache, there is no guarantee that cache will be instantiated.
         if (proxy == null) {
@@ -4280,8 +4278,6 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
             proxy = jcacheProxy(cacheName, true);
         }
-
-        awaitInitProxy(proxy);
 
         return proxy != null ? (IgniteCacheProxy<K, V>)proxy.gatewayWrapper() : null;
     }
@@ -4400,7 +4396,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     public <K, V> IgniteCacheProxy<K, V> jcache(String name) {
         assert name != null;
 
-        IgniteCacheProxy<K, V> cache = (IgniteCacheProxy<K, V>)jcacheProxy(name, false);
+        IgniteCacheProxy<K, V> cache = (IgniteCacheProxy<K, V>)jcacheProxy(name, true);
 
         if (cache == null) {
             GridCacheAdapter<?, ?> cacheAdapter = caches.get(name);
@@ -4417,8 +4413,6 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             }
         }
 
-        awaitInitProxy(cache);
-
         if (cache == null)
             throw new IllegalArgumentException("Cache is not configured: " + name);
 
@@ -4427,6 +4421,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
     /**
      * @param name Cache name.
+     * @param awaitInit Await proxy initialization.
      * @return Cache proxy.
      */
     @Nullable public IgniteCacheProxyImpl<?, ?> jcacheProxy(String name, boolean awaitInit) {
@@ -4438,6 +4433,11 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         return cache;
     }
 
+    /**
+     * @param name Cache name.
+     * @param proxy Cache proxy.
+     * @return Previous cache proxy.
+     */
     @Nullable public IgniteCacheProxyImpl<?, ?> addjCacheProxy(String name, IgniteCacheProxyImpl<?, ?> proxy) {
         return jCacheProxies.putIfAbsent(name, proxy);
     }
