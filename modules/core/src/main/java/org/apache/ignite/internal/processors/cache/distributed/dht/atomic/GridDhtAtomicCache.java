@@ -1723,14 +1723,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     boolean remap = false;
 
-                    // Do not check topology version if topology was locked on near node by
-                    // external transaction or explicit lock.
-                    if (!req.topologyLocked()) {
-                        // Can not wait for topology future since it will break
-                        // GridNearAtomicCheckUpdateRequest processing.
-                        remap = !top.topologyVersionFuture().exchangeDone() ||
-                            needRemap(req.topologyVersion(), top.readyTopologyVersion());
-                    }
+                            // Do not check topology version if topology was locked on near node by
+                            // external transaction or explicit lock.
+                            if (!req.topologyLocked()) {
+                                // Can not wait for topology future since it will break
+                                // GridNearAtomicCheckUpdateRequest processing.
+                                remap = !top.topologyVersionFuture().exchangeDone() ||
+                                    needRemap(req.topologyVersion(), top.readyTopologyVersion(),
+                                        req.lastAffinityChangedTopologyVersion(), req.keys());
+                            }
 
                     if (!remap) {
                         DhtAtomicUpdateResult updRes = update(node, locked, req, res);
@@ -2394,7 +2395,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         boolean intercept = ctx.config().getInterceptor() != null;
 
-        AffinityAssignment affAssignment = ctx.affinity().assignment(topVer);
+        AffinityAssignment affAssignment = ctx.affinity().assignment(topVer, req.lastAffinityChangedTopologyVersion());
 
         // Avoid iterator creation.
         for (int i = 0; i < req.size(); i++) {
@@ -2645,7 +2646,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             boolean intercept = ctx.config().getInterceptor() != null;
 
-            AffinityAssignment affAssignment = ctx.affinity().assignment(topVer);
+            AffinityAssignment affAssignment = ctx.affinity().assignment(topVer, req.lastAffinityChangedTopologyVersion());
 
             // Avoid iterator creation.
             for (int i = 0; i < entries.size(); i++) {
