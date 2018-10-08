@@ -287,11 +287,11 @@ class IgniteSQLDataFrameSpec extends AbstractDataFrameSpec {
             // `employeeCache2` is created with a custom schema of `employeeSchema`.
             createEmployeeCache(client, "employeeCache2", Some("employeeSchema"))
 
+            Iterators.size(client.cache("employeeCache2").iterator()) should equal(3)
+
             // Remove a value from `employeeCache2` so that we know whether the select statement picks up the
             // correct cache, ie. it should now have 2 values compared to 3 in `employeeCache1`.
-            Iterators.size(client.cache("employeeCache2").iterator()) should equal(3)
-            val removed = client.cache("employeeCache2").remove("key1")
-            removed shouldBe true
+            client.cache("employeeCache2").remove("key1") shouldBe true
 
             spark.read
                 .format(FORMAT_IGNITE)

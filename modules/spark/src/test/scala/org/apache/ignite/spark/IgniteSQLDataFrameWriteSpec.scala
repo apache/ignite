@@ -24,6 +24,7 @@ import org.apache.ignite.spark.impl.sqlTableInfo
 import org.apache.ignite.testframework.GridTestUtils.resolveIgnitePath
 import org.apache.spark.sql.SaveMode.{Append, Ignore, Overwrite}
 import org.apache.spark.sql.{DataFrame, SaveMode}
+import org.junit.Assert.assertEquals
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.apache.spark.sql.functions._
@@ -344,7 +345,7 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
                     .save()
             }
 
-            assert(ex.getMessage ==
+            assertEquals(ex.getMessage,
                 "Creating new tables in schema mySchema is not valid, tables must only be created in " +
                 org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA)
         }
