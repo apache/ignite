@@ -77,8 +77,8 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
                     ", page2Id=" + fullId2.pageId() + ", page2=" + page2 + ']');
 
                 try {
-                    writePage(mem, fullId1.pageId(), page1, 1);
-                    writePage(mem, fullId2.pageId(), page2, 2);
+                    writePage(mem, fullId1, page1, 1);
+                    writePage(mem, fullId2, page2, 2);
 
                     readPage(mem, fullId1.pageId(), page1, 1);
                     readPage(mem, fullId2.pageId(), page2, 2);
@@ -149,7 +149,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
                     if (i % 64 == 0)
                         info("Writing page [idx=" + i + ", pageId=" + fullId.pageId() + ", page=" + page + ']');
 
-                    writePage(mem, fullId.pageId(), page, i + 1);
+                    writePage(mem, fullId, page, i + 1);
                 }
                 finally {
                     mem.releasePage(fullId.groupId(), fullId.pageId(), page);
@@ -230,7 +230,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
                     assertNotNull(pageAddr);
 
                     try {
-                        PAGE_IO.initNewPage(pageAddr, id.pageId(), mem.pageSize());
+                        PAGE_IO.initNewPage(pageAddr, id.pageId(), mem.realPageSize(id.groupId()));
 
                         long updId = PageIdUtils.rotatePageId(id.pageId());
 
@@ -332,21 +332,21 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param mem Page memory.
-     * @param pageId Page ID.
+     * @param fullId Page ID.
      * @param page Page pointer.
      * @param val Value to write.
      */
-    private void writePage(PageMemory mem, long pageId, long page, int val) {
-        long pageAddr = mem.writeLock(-1, pageId, page);
+    private void writePage(PageMemory mem, FullPageId fullId, long page, int val) {
+        long pageAddr = mem.writeLock(-1, fullId.pageId(), page);
 
         try {
-            PAGE_IO.initNewPage(pageAddr, pageId, mem.pageSize());
+            PAGE_IO.initNewPage(pageAddr, fullId.pageId(), mem.realPageSize(fullId.groupId()));
 
             for (int i = PageIO.COMMON_HEADER_END; i < PAGE_SIZE; i++)
                 PageUtils.putByte(pageAddr, i, (byte)val);
         }
         finally {
-            mem.writeUnlock(-1, pageId, page, null, true);
+            mem.writeUnlock(-1, fullId.pageId(), page, null, true);
         }
     }
 
