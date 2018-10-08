@@ -10,7 +10,7 @@
     "build": "webpack --config ./webpack/webpack.prod.js",
     "test": "karma start ./test/karma.conf.js",
     "test-watch": "npm test -- --no-single-run",
-    "eslint": "eslint --format node_modules/eslint-friendly-formatter app/ -- --eff-by-issue"
+    "eslint": "eslint --ignore-pattern node_modules/ --format node_modules/eslint-formatter-friendly . -- --eff-by-issue"
   },
   "license": "Apache-2.0",
   "keywords": [
@@ -28,7 +28,6 @@
   ],
   "dependencies": {
     "@babel/plugin-transform-parameters": "7.0.0",
-    "@types/angular-translate": "2.16.0",
     "@uirouter/angularjs": "1.0.20",
     "@uirouter/core": "5.0.19",
     "@uirouter/rx": "0.4.1",
@@ -85,6 +84,7 @@
     "@types/angular-animate": "1.5.10",
     "@types/angular-mocks": "1.5.12",
     "@types/angular-strap": "2.3.1",
+    "@types/angular-translate": "2.16.0",
     "@types/chai": "4.1.4",
     "@types/copy-webpack-plugin": "4.4.2",
     "@types/karma": "1.7.4",
@@ -108,7 +108,6 @@
     "eslint": "4.19.1",
     "eslint-formatter-friendly": "6.0.0",
     "eslint-loader": "2.1.0",
-    "eslint-plugin-babel": "5.2.0",
     "eslint-plugin-typescript": "0.12.0",
     "expose-loader": "0.7.5",
     "file-loader": "1.1.11",
