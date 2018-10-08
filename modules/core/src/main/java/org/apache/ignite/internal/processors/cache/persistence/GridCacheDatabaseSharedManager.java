@@ -382,10 +382,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         ioFactory = persistenceCfg.getFileIOFactory();
 
-        long cpReadLockTimeout = IgniteSystemProperties.getLong(IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT,
-            ctx.config().getCheckpointReadLockTimeout());
-
-        checkpointReadLockTimeout = cpReadLockTimeout <= 0 ? Long.MAX_VALUE : cpReadLockTimeout;
+        checkpointReadLockTimeout = U.ensurePositive(
+            IgniteSystemProperties.getLong(IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT,
+                ctx.config().getCheckpointReadLockTimeout()),
+            Long.MAX_VALUE);
     }
 
     /** */
@@ -2894,7 +2894,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param val New timeout in milliseconds, non-positive value denotes infinite timeout.
      */
     @Override public void setCheckpointReadLockTimeout(long val) {
-        checkpointReadLockTimeout = val <= 0 ? Long.MAX_VALUE : val;
+        checkpointReadLockTimeout = U.ensurePositive(val, Long.MAX_VALUE);
     }
 
     /**

@@ -80,7 +80,7 @@ public class WorkersRegistry implements GridWorkerListener {
         long sysWorkerBlockedTimeout,
         IgniteLogger log) {
         this.workerFailedHnd = workerFailedHnd;
-        this.sysWorkerBlockedTimeout = sysWorkerBlockedTimeout <= 0 ? Long.MAX_VALUE : sysWorkerBlockedTimeout;
+        this.sysWorkerBlockedTimeout = U.ensurePositive(sysWorkerBlockedTimeout, Long.MAX_VALUE);
         this.checkInterval = Math.min(DFLT_CHECK_INTERVAL, sysWorkerBlockedTimeout);
         this.log = log;
     }
@@ -144,7 +144,7 @@ public class WorkersRegistry implements GridWorkerListener {
 
     /** */
     void setSysWorkerBlockedTimeout(long val) {
-        sysWorkerBlockedTimeout = val <= 0 ? Long.MAX_VALUE : val;
+        sysWorkerBlockedTimeout = U.ensurePositive(val, Long.MAX_VALUE);
     }
 
     /** {@inheritDoc} */
