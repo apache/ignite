@@ -57,6 +57,10 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
         cacheCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
+        // TODO IGNITE-9530 Remove this clause.
+        if (atomicMode() == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
+            cacheCfg.setNearConfiguration(null);
+
         cfg.setCacheConfiguration(cacheCfg);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
