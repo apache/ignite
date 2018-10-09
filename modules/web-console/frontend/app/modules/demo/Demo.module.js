@@ -22,11 +22,150 @@ import templateUrl from 'views/templates/demo-info.tpl.pug';
 
 const DEMO_QUERY_STATE = {state: 'base.sql.notebook', params: {noteId: 'demo'}};
 
-angular
-.module('ignite-console.demo', [
-    'ignite-console.socket'
-])
-.config(['$stateProvider', ($stateProvider) => {
+/**
+ * @param {import('@uirouter/angularjs').StateProvider} $state
+ * @param {ng.IHttpProvider} $http
+ * @param {unknown} socketFactory
+ */
+export function DemoProvider($state, $http, socketFactory) {
+    if (/(\/demo.*)/ig.test(location.pathname))
+        sessionStorage.setItem('IgniteDemoMode', 'true');
+
+    const enabled = sessionStorage.getItem('IgniteDemoMode') === 'true';
+
+    if (enabled) {
+        socketFactory.set({query: 'IgniteDemoMode=true'});
+
+        $http.interceptors.push('demoInterceptor');
+    }
+
+    function service($root) {
+        $root.IgniteDemoMode = enabled;
+
+        return {enabled};
+    }
+    service.$inject = ['$rootScope'];
+
+    this.$get = service;
+    return this;
+}
+
+DemoProvider.$inject = ['$stateProvider', '$httpProvider', 'igniteSocketFactoryProvider'];
+
+/**
+ * @param {{enabled: boolean}} Demo
+ * @returns {ng.IHttpInterceptor}
+ */
+function demoInterceptor(Demo) {
+    const isApiRequest = (url) => /\/api\/v1/ig.test(url);
+
+    return {
+        request(cfg) {
+            if (Demo.enabled && isApiRequest(cfg.url))
+                cfg.headers.IgniteDemoMode = true;
+
+            return cfg;
+        }
+    };
+}
+
+demoInterceptor.$inject = ['Demo'];
+
+/**
+ * @param {ng.IScope} $scope
+ * @param {import('@uirouter/angularjs').StateService} $state
+ * @param {ng.IWindowService} $window
+ * @param {ReturnType<typeof import('app/services/Confirm.service').default>} Confirm
+ */
+function demoController($scope, $state, $window, Confirm) {
+    const _openTab = (stateName) => $window.open($state.href(stateName), '_blank');
+
+    $scope.startDemo = () => {
+        if (!$scope.user.demoCreated)
+            return _openTab('demo.reset');
+
+        Confirm.confirm('Would you like to continue with previous demo session?', true, false)
+            .then((resume) => {
+                if (resume)
+                    return _openTab('demo.resume');
+
+                _openTab('demo.reset');
+            });
+    };
+
+    $scope.closeDemo = () => {
+        $window.close();
+    };
+}
+
+demoController.$inject = ['$scope', '$state', '$window', 'IgniteConfirm'];
+
+function igniteDemoInfoProvider() {
+    const items = DEMO_INFO;
+
+    this.update = (data) => items[0] = data;
+
+    this.$get = () => {
+        return items;
+    };
+    return this;
+}
+
+/**
+ * @param {ng.IRootScopeService} $rootScope
+ * @param {mgcrea.ngStrap.modal.IModalScope} $modal
+ * @param {import('@uirouter/angularjs').StateService} $state
+ * @param {ng.IQService} $q
+ * @param {Array<{title: string, message: Array<string>}>} igniteDemoInfo
+ * @param {import('app/modules/agent/AgentManager.service').default} agentMgr
+ */
+function DemoInfo($rootScope, $modal, $state, $q, igniteDemoInfo, agentMgr) {
+    const scope = $rootScope.$new();
+
+    let closePromise = null;
+
+    function _fillPage() {
+        const model = igniteDemoInfo;
+
+        scope.title = model[0].title;
+        scope.message = model[0].message.join(' ');
+    }
+
+    const dialog = $modal({
+        templateUrl,
+        scope,
+        show: false,
+        backdrop: 'static'
+    });
+
+    scope.downloadAgentHref = '/api/v1/downloads/agent';
+
+    scope.close = () => {
+        dialog.hide();
+
+        closePromise && closePromise.resolve();
+    };
+
+    return {
+        show: () => {
+            closePromise = $q.defer();
+
+            _fillPage();
+
+            return dialog.$promise
+                .then(dialog.show)
+                .then(() => Promise.race([agentMgr.awaitCluster(), closePromise.promise]))
+                .then(() => scope.hasAgents = true);
+        }
+    };
+}
+
+DemoInfo.$inject = ['$rootScope', '$modal', '$state', '$q', 'igniteDemoInfo', 'AgentManager'];
+
+/**
+ * @param {import('@uirouter/angularjs').StateProvider} $stateProvider
+ */
+function config($stateProvider) {
     $stateProvider
         .state('demo', {
             abstract: true,
@@ -61,116 +200,17 @@ angular
                 title: 'Demo reset'
             }
         });
-}])
-.provider('Demo', ['$stateProvider', '$httpProvider', 'igniteSocketFactoryProvider', function($state, $http, socketFactory) {
-    if (/(\/demo.*)/ig.test(location.pathname))
-        sessionStorage.setItem('IgniteDemoMode', 'true');
+}
 
-    const enabled = sessionStorage.getItem('IgniteDemoMode') === 'true';
+config.$inject = ['$stateProvider'];
 
-    if (enabled) {
-        socketFactory.set({query: 'IgniteDemoMode=true'});
-
-        $http.interceptors.push('demoInterceptor');
-    }
-
-    this.$get = ['$rootScope', ($root) => {
-        $root.IgniteDemoMode = enabled;
-
-        return {enabled};
-    }];
-}])
-.factory('demoInterceptor', ['Demo', function(Demo) {
-    const isApiRequest = (url) => /\/api\/v1/ig.test(url);
-
-    return {
-        request(cfg) {
-            if (Demo.enabled && isApiRequest(cfg.url))
-                cfg.headers.IgniteDemoMode = true;
-
-            return cfg;
-        }
-    };
-}])
-.controller('demoController', ['$scope', '$state', '$window', 'IgniteConfirm', function($scope, $state, $window, Confirm) {
-    const _openTab = (stateName) => $window.open($state.href(stateName), '_blank');
-
-    $scope.startDemo = () => {
-        if (!$scope.user.demoCreated)
-            return _openTab('demo.reset');
-
-        Confirm.confirm('Would you like to continue with previous demo session?', true, false)
-            .then((resume) => {
-                if (resume)
-                    return _openTab('demo.resume');
-
-                _openTab('demo.reset');
-            });
-    };
-
-    $scope.closeDemo = () => {
-        $window.close();
-    };
-}])
-.provider('igniteDemoInfo', [function() {
-    const items = DEMO_INFO;
-
-    this.update = (data) => items[0] = data;
-
-    this.$get = [() => {
-        return items;
-    }];
-}])
-.service('DemoInfo', ['$rootScope', '$modal', '$state', '$q', 'igniteDemoInfo', 'AgentManager', function($rootScope, $modal, $state, $q, igniteDemoInfo, agentMgr) {
-    const scope = $rootScope.$new();
-
-    let closePromise = null;
-
-    function _fillPage() {
-        const model = igniteDemoInfo;
-
-        scope.title = model[0].title;
-        scope.message = model[0].message.join(' ');
-    }
-
-    const dialog = $modal({
-        templateUrl,
-        scope,
-        show: false,
-        backdrop: 'static'
-    });
-
-    scope.close = () => {
-        dialog.hide();
-
-        closePromise && closePromise.resolve();
-    };
-
-    scope.downloadAgent = () => {
-        const lnk = document.createElement('a');
-
-        lnk.setAttribute('href', '/api/v1/agent/downloads/agent');
-        lnk.setAttribute('target', '_self');
-        lnk.setAttribute('download', null);
-        lnk.style.display = 'none';
-
-        document.body.appendChild(lnk);
-
-        lnk.click();
-
-        document.body.removeChild(lnk);
-    };
-
-    return {
-        show: () => {
-            closePromise = $q.defer();
-
-            _fillPage();
-
-            return dialog.$promise
-                .then(dialog.show)
-                .then(() => Promise.race([agentMgr.awaitCluster(), closePromise.promise]))
-                .then(() => scope.hasAgents = true);
-        }
-    };
-}]);
+angular
+.module('ignite-console.demo', [
+    'ignite-console.socket'
+])
+.config(config)
+.provider('Demo', DemoProvider)
+.factory('demoInterceptor', demoInterceptor)
+.controller('demoController', demoController)
+.provider('igniteDemoInfo', igniteDemoInfoProvider)
+.service('DemoInfo', DemoInfo);

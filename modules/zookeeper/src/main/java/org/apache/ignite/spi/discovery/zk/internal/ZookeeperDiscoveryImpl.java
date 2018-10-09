@@ -70,6 +70,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.MarshallerUtils;
@@ -471,8 +472,8 @@ public class ZookeeperDiscoveryImpl {
                 rtState.evtsData.topVer,
                 locNode,
                 rtState.top.topologySnapshot(),
-                Collections.<Long, Collection<ClusterNode>>emptyMap(),
-                null);
+                Collections.emptyMap(),
+                null).get();
         }
 
         try {
@@ -533,14 +534,14 @@ public class ZookeeperDiscoveryImpl {
         List<ClusterNode> nodes = rtState.top.topologySnapshot();
 
         if (nodes.isEmpty())
-            nodes = Collections.singletonList((ClusterNode)locNode);
+            nodes = Collections.singletonList(locNode);
 
         lsnr.onDiscovery(EVT_NODE_SEGMENTED,
             rtState.evtsData != null ? rtState.evtsData.topVer : 1L,
             locNode,
             nodes,
-            Collections.<Long, Collection<ClusterNode>>emptyMap(),
-            null);
+            Collections.emptyMap(),
+            null).get();
     }
 
     /**
@@ -777,6 +778,19 @@ public class ZookeeperDiscoveryImpl {
             }
 
             startJoin(rtState, prevState, joinDataBytes);
+
+            try {
+                if (rtState.zkClient.pingerEnabled() && !locNode.isClient() && !locNode.isDaemon()) {
+                    ZkPinger pinger = new ZkPinger(log, rtState.zkClient.zk(), zkPaths);
+
+                    rtState.zkClient.attachPinger(pinger);
+
+                    pinger.start();
+                }
+            }
+            catch (Exception e) {
+                log.error("Failed to create and attach Zookeeper pinger", e);
+            }
         }
         finally {
             busyLock.leaveBusy();
@@ -2242,12 +2256,19 @@ public class ZookeeperDiscoveryImpl {
 
         final List<ClusterNode> topSnapshot = Collections.singletonList((ClusterNode)locNode);
 
-        lsnr.onDiscovery(EVT_NODE_JOINED,
-            1L,
-            locNode,
-            topSnapshot,
-            Collections.<Long, Collection<ClusterNode>>emptyMap(),
-            null);
+        try {
+            lsnr.onDiscovery(EVT_NODE_JOINED,
+                1L,
+                locNode,
+                topSnapshot,
+                Collections.emptyMap(),
+                null).get();
+        }
+        catch (IgniteException e) {
+            joinFut.onDone(e);
+
+            throw new IgniteException("Failed to wait for discovery listener notification on node join", e);
+        }
 
         // Reset events (this is also notification for clients left from previous cluster).
         rtState.zkClient.setData(zkPaths.evtsPath, marshalZip(rtState.evtsData), -1);
@@ -2942,16 +2963,16 @@ public class ZookeeperDiscoveryImpl {
                 joinedEvtData.topVer,
                 locNode,
                 topSnapshot,
-                Collections.<Long, Collection<ClusterNode>>emptyMap(),
-                null);
+                Collections.emptyMap(),
+                null).get();
 
             if (rtState.prevJoined) {
                 lsnr.onDiscovery(EVT_CLIENT_NODE_RECONNECTED,
                     joinedEvtData.topVer,
                     locNode,
                     topSnapshot,
-                    Collections.<Long, Collection<ClusterNode>>emptyMap(),
-                    null);
+                    Collections.emptyMap(),
+                    null).get();
 
                 U.quietAndWarn(log, "Client node was reconnected after it was already considered failed [locId=" + locNode.id() + ']');
             }
@@ -3402,13 +3423,17 @@ public class ZookeeperDiscoveryImpl {
 
         final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
-        lsnr.onDiscovery(
+        IgniteFuture<?> fut = lsnr.onDiscovery(
             DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
             evtData.topologyVersion(),
             sndNode,
             topSnapshot,
-            Collections.<Long, Collection<ClusterNode>>emptyMap(),
-            msg);
+            Collections.emptyMap(),
+            msg
+        );
+
+        if (msg != null && msg.isMutable())
+            fut.get();
     }
 
     /**
@@ -3430,8 +3455,8 @@ public class ZookeeperDiscoveryImpl {
             joinedEvtData.topVer,
             joinedNode,
             topSnapshot,
-            Collections.<Long, Collection<ClusterNode>>emptyMap(),
-            null);
+            Collections.emptyMap(),
+            null).get();
     }
 
     /**
@@ -3461,8 +3486,8 @@ public class ZookeeperDiscoveryImpl {
             topVer,
             failedNode,
             topSnapshot,
-            Collections.<Long, Collection<ClusterNode>>emptyMap(),
-            null);
+            Collections.emptyMap(),
+            null).get();
 
         stats.onNodeFailed();
     }

@@ -22,8 +22,8 @@ import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.AbstractFailureHandler;
 import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -83,9 +83,9 @@ public class TcpDiscoverySegmentationPolicyTest extends GridCommonAbstractTest {
     /**
      * Test failure handler.
      */
-    private static class TestFailureHandler implements FailureHandler {
+    private static class TestFailureHandler extends AbstractFailureHandler {
         /** {@inheritDoc} */
-        @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+        @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
             dfltFailureHndInvoked = true;
 
             return true;

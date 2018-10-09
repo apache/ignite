@@ -1567,7 +1567,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      */
     public void onUtilityCacheStarted() {
         synchronized (pendingJobCtxs) {
-            if (pendingJobCtxs.size() == 0)
+            if (pendingJobCtxs.isEmpty())
                 return;
 
             Iterator<ComputeJobContext> iter = pendingJobCtxs.iterator();
@@ -1949,7 +1949,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
                         @Override public void onTimeout() {
                             depExe.execute(new Runnable() {
-                                public void run() {
+                                @Override public void run() {
                                     onReassignmentFailed(topVer, retries);
                                 }
                             });

@@ -52,7 +52,7 @@ form(novalidate name=form)
                 ignite-unique-property='name'
                 ignite-unique-skip=`["_id", ${model}]`
             )
-                +unique-feedback(`${model}.name`, 'Cluster name should be unique.')
+                +form-field__error({ error: 'igniteUnique', message: 'Cluster name should be unique.' })
 
         .pc-form-grid__break
         .pc-form-grid-col-60
@@ -154,7 +154,7 @@ form(novalidate name=form)
                                 ignite-unique-property='name'
                                 ignite-form-field-input-autofocus='true'
                             )
-                                +unique-feedback('"name"', 'Cache name should be unqiue')
+                                +form-field__error({ error: 'igniteUnique', message: 'Cache name should be unqiue' })
                         div
                             +form-field__cache-modes({
                                 label: 'Mode:',
@@ -171,7 +171,7 @@ form(novalidate name=form)
                                 options: '::$ctrl.Caches.atomicityModes'
                             })
                         div(ng-show='$ctrl.Caches.shouldShowCacheBackupsCount($item)')
-                            +form-field__number({ 
+                            +form-field__number({
                                 label: 'Backups:',
                                 model: '$item.backups',
                                 name: '"backups"',
@@ -184,7 +184,7 @@ form(novalidate name=form)
                             label-single='cache'
                             label-multiple='caches'
                         )
-        
+
     .pc-form-actions-panel
         button-preview-project(ng-hide='$ctrl.isNew$|async:this' cluster=model)
 

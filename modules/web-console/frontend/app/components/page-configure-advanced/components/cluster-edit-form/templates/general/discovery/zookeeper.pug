@@ -25,36 +25,52 @@ mixin discovery-zookeeper(modelAt = '$ctrl.clonedCluster')
 
     .pc-form-grid-row&attributes(attributes=attributes)
         .pc-form-grid-col-60
-            +java-class('Curator:', `${model}.curator`, '"curator"', 'true', 'false',
-                'The Curator framework in use<br/>\
-                By default generates curator of org.apache.curator. framework.imps.CuratorFrameworkImpl\
-                class with configured connect string, retry policy, and default session and connection timeouts', required)
+            +form-field__java-class({
+                label: 'Curator:',
+                model: `${model}.curator`,
+                name: '"curator"',
+                tip: 'The Curator framework in use<br/>\
+                     By default generates curator of org.apache.curator. framework.imps.CuratorFrameworkImpl\
+                     class with configured connect string, retry policy, and default session and connection timeouts',
+                validationActive: required
+            })
         .pc-form-grid-col-60
-            +text('Connect string:', `${model}.zkConnectionString`, `'${discoveryKind}ConnectionString'`, required, 'host:port[chroot][,host:port[chroot]]',
-                'When <b>IGNITE_ZK_CONNECTION_STRING</b> system property is not configured this property will be used.<br><br>This should be a comma separated host:port pairs, each corresponding to a zk server. e.g. "127.0.0.1:3000,127.0.0.1:3001".<br>If the optional chroot suffix is used the example would look like: "127.0.0.1:3000,127.0.0.1:3002/app/a".<br><br>Where the client would be rooted at "/app/a" and all paths would be relative to this root - ie getting/setting/etc... "/foo/bar" would result in operations being run on "/app/a/foo/bar" (from the server perspective).<br><br><a href="https://zookeeper.apache.org/doc/r3.2.2/api/org/apache/zookeeper/ZooKeeper.html#ZooKeeper(java.lang.String,%20int,%20org.apache.zookeeper.Watcher)">Zookeeper docs</a>')
+            +form-field__text({
+                label: 'Connect string:',
+                model: `${model}.zkConnectionString`,
+                name: `'${discoveryKind}ConnectionString'`,
+                required: required,
+                placeholder: 'host:port[chroot][,host:port[chroot]]',
+                tip: 'When <b>IGNITE_ZK_CONNECTION_STRING</b> system property is not configured this property will be used.<br><br>This should be a comma separated host:port pairs, each corresponding to a zk server. e.g. "127.0.0.1:3000,127.0.0.1:3001".<br>If the optional chroot suffix is used the example would look like: "127.0.0.1:3000,127.0.0.1:3002/app/a".<br><br>Where the client would be rooted at "/app/a" and all paths would be relative to this root - ie getting/setting/etc... "/foo/bar" would result in operations being run on "/app/a/foo/bar" (from the server perspective).<br><br><a href="https://zookeeper.apache.org/doc/r3.2.2/api/org/apache/zookeeper/ZooKeeper.html#ZooKeeper(java.lang.String,%20int,%20org.apache.zookeeper.Watcher)">Zookeeper docs</a>'
+            })
         .pc-form-grid-col-60
-            +dropdown('Retry policy:', `${model}.retryPolicy.kind`, '"retryPolicy"', 'true', 'Default',
-            '[\
-                {value: "ExponentialBackoff", label: "Exponential backoff"},\
-                {value: "BoundedExponentialBackoff", label: "Bounded exponential backoff"},\
-                {value: "UntilElapsed", label: "Until elapsed"},\
-                {value: "NTimes", label: "Max number of times"},\
-                {value: "OneTime", label: "Only once"},\
-                {value: "Forever", label: "Always allow retry"},\
-                {value: "Custom", label: "Custom"},\
-                {value: null, label: "Default"}\
-            ]',
-            'Available retry policies:\
-            <ul>\
-                <li>Exponential backoff - retries a set number of times with increasing sleep time between retries</li>\
-                <li>Bounded exponential backoff - retries a set number of times with an increasing (up to a maximum bound) sleep time between retries</li>\
-                <li>Until elapsed - retries until a given amount of time elapses</li>\
-                <li>Max number of times - retries a max number of times</li>\
-                <li>Only once - retries only once</li>\
-                <li>Always allow retry - retries infinitely</li>\
-                <li>Custom - custom retry policy implementation</li>\
-                <li>Default - exponential backoff retry policy with configured base sleep time equal to 1000ms and max retry count equal to 10</li>\
-            </ul>')
+            +form-field__dropdown({
+                label: 'Retry policy:',
+                model: `${model}.retryPolicy.kind`,
+                name: '"retryPolicy"',
+                placeholder: 'Default',
+                options: '[\
+                                {value: "ExponentialBackoff", label: "Exponential backoff"},\
+                                {value: "BoundedExponentialBackoff", label: "Bounded exponential backoff"},\
+                                {value: "UntilElapsed", label: "Until elapsed"},\
+                                {value: "NTimes", label: "Max number of times"},\
+                                {value: "OneTime", label: "Only once"},\
+                                {value: "Forever", label: "Always allow retry"},\
+                                {value: "Custom", label: "Custom"},\
+                                {value: null, label: "Default"}\
+                            ]',
+                tip: 'Available retry policies:\
+                            <ul>\
+                                <li>Exponential backoff - retries a set number of times with increasing sleep time between retries</li>\
+                                <li>Bounded exponential backoff - retries a set number of times with an increasing (up to a maximum bound) sleep time between retries</li>\
+                                <li>Until elapsed - retries until a given amount of time elapses</li>\
+                                <li>Max number of times - retries a max number of times</li>\
+                                <li>Only once - retries only once</li>\
+                                <li>Always allow retry - retries infinitely</li>\
+                                <li>Custom - custom retry policy implementation</li>\
+                                <li>Default - exponential backoff retry policy with configured base sleep time equal to 1000ms and max retry count equal to 10</li>\
+                            </ul>'
+            })
 
         .pc-form-grid__break
 
@@ -69,16 +85,31 @@ mixin discovery-zookeeper(modelAt = '$ctrl.clonedCluster')
         .pc-form-grid-col-30
             -var model = `${modelAt}.discovery.ZooKeeper`
 
-            +text('Base path:', `${model}.basePath`, '"basePath"', 'false', '/services', 'Base path for service registration')
+            +form-field__text({
+                label: 'Base path:',
+                model: `${model}.basePath`,
+                name: '"basePath"',
+                placeholder: '/services',
+                tip: 'Base path for service registration'
+            })
         .pc-form-grid-col-30
-            +text('Service name:', `${model}.serviceName`, '"serviceName"', 'false', 'ignite',
-                'Service name to use, as defined by Curator&#39;s ServiceDiscovery recipe<br/>\
-                In physical ZooKeeper terms, it represents the node under basePath, under which services will be registered')
+            +form-field__text({
+                label:'Service name:',
+                model: `${model}.serviceName`,
+                name: '"serviceName"',
+                placeholder: 'ignite',
+                tip: 'Service name to use, as defined by Curator&#39;s ServiceDiscovery recipe<br/>\
+                      In physical ZooKeeper terms, it represents the node under basePath, under which services will be registered'
+            })
 
         .pc-form-grid__break
 
         .pc-form-grid-col-60
-            +checkbox('Allow duplicate registrations', `${model}.allowDuplicateRegistrations`, '"allowDuplicateRegistrations"',
-                'Whether to register each node only once, or if duplicate registrations are allowed<br/>\
-                Nodes will attempt to register themselves, plus those they know about<br/>\
-                By default, duplicate registrations are not allowed, but you might want to set this property to <b>true</b> if you have multiple network interfaces or if you are facing troubles')
+            +form-field__checkbox({
+                label: 'Allow duplicate registrations',
+                model: `${model}.allowDuplicateRegistrations`,
+                name: '"allowDuplicateRegistrations"',
+                tip: 'Whether to register each node only once, or if duplicate registrations are allowed<br/>\
+                     Nodes will attempt to register themselves, plus those they know about<br/>\
+                     By default, duplicate registrations are not allowed, but you might want to set this property to <b>true</b> if you have multiple network interfaces or if you are facing troubles'
+            })
