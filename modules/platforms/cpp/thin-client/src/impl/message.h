@@ -375,12 +375,12 @@ namespace ignite
             };
 
             /**
-             * Cache key request.
+             * Cache value request.
              *
-             * Request to cache containing single key.
+             * Request to cache containing writable value.
              */
             template<int32_t OpCode>
-            class CacheKeyRequest : public CacheRequest<OpCode>
+            class CacheValueRequest : public CacheRequest<OpCode>
             {
             public:
                 /**
@@ -388,11 +388,11 @@ namespace ignite
                  *
                  * @param cacheId Cache ID.
                  * @param binary Binary cache flag.
-                 * @param key Key.
+                 * @param value Value.
                  */
-                CacheKeyRequest(int32_t cacheId, bool binary, const Writable& key) :
+                CacheValueRequest(int32_t cacheId, bool binary, const Writable& value) :
                     CacheRequest<OpCode>(cacheId, binary),
-                    key(key)
+                    value(value)
                 {
                     // No-op.
                 }
@@ -400,7 +400,7 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                virtual ~CacheKeyRequest()
+                virtual ~CacheValueRequest()
                 {
                     // No-op.
                 }
@@ -414,18 +414,18 @@ namespace ignite
                 {
                     CacheRequest<OpCode>::Write(writer, ver);
 
-                    key.Write(writer);
+                    value.Write(writer);
                 }
 
             private:
                 /** Key. */
-                const Writable& key;
+                const Writable& value;
             };
 
             /**
              * Cache put request.
              */
-            class CachePutRequest : public CacheKeyRequest<RequestType::CACHE_PUT>
+            class CachePutRequest : public CacheValueRequest<RequestType::CACHE_PUT>
             {
             public:
                 /**
@@ -621,9 +621,9 @@ namespace ignite
             };
 
             /**
-             * Cache get response.
+             * Cache value response.
              */
-            class CacheGetResponse : public Response
+            class CacheValueResponse : public Response
             {
             public:
                 /**
@@ -631,12 +631,12 @@ namespace ignite
                  *
                  * @param value Value.
                  */
-                CacheGetResponse(Readable& value);
+                CacheValueResponse(Readable& value);
 
                 /**
                  * Destructor.
                  */
-                virtual ~CacheGetResponse();
+                virtual ~CacheValueResponse();
 
                 /**
                  * Read data if response status is ResponseStatus::SUCCESS.

@@ -135,9 +135,23 @@ namespace ignite
                 {
                     using namespace ignite::binary;
 
-                    BinaryRawWriter writer0(&writer);
+                    interop::InteropOutputStream* out = writer.GetStream();
 
-                    writer0.WriteCollection<IteratorType>(begin, end, CollectionType::HASH_SET);
+                    int32_t cntPos = out->Reserve(4);
+
+                    out->Synchronize();
+
+                    int32_t cnt = 0;
+                    for (IteratorType it = begin; it != end; ++it)
+                    {
+                        writer.WriteObject(*it);
+
+                        ++cnt;
+                    }
+
+                    out->WriteInt32(cntPos, cnt);
+
+                    out->Synchronize();
                 }
 
             private:

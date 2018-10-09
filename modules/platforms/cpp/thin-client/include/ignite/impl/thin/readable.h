@@ -140,14 +140,16 @@ namespace ignite
                 {
                     using namespace ignite::binary;
 
-                    BinaryRawReader reader0(&reader);
+                    int32_t cnt = reader.ReadInt32();
 
-                    BinaryMapReader<ElementType1, ElementType2> mreader =
-                        reader0.ReadMap<ElementType1, ElementType2>();
-
-                    while (mreader.HasNext())
+                    for (int32_t i = 0; i < cnt; ++i)
                     {
-                        mreader.GetNext(iter->first, iter->second);
+                        std::pair<ElementType1, ElementType2> pair;
+
+                        reader.ReadTopObject<ElementType1>(pair.first);
+                        reader.ReadTopObject<ElementType2>(pair.second);
+
+                        iter = pair;
 
                         ++iter;
                     }

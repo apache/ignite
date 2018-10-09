@@ -134,25 +134,6 @@ namespace ignite
                     return value;
                 }
 
-                
-                /**
-                 * Retrieves values mapped to the specified keys from cache.
-                 * If some value is not present in cache, then it will be looked up from swap storage. If
-                 * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
-                 * will be loaded from persistent store.
-                 * This method is transactional and will enlist the entry into ongoing transaction if there is one.
-                 *
-                 * This method should only be used on the valid instance.
-                 *
-                 * @param keys Keys.
-                 * @param res Map of key-value pairs.
-                 */
-                template<typename Set, typename Map>
-                void GetAll(const Set& keys, Map& res)
-                {
-                    return GetAll(keys.begin(), keys.end(), std::back_inserter(res, res.end()));
-                }
-
                 /**
                  * Retrieves values mapped to the specified keys from cache.
                  * If some value is not present in cache, then it will be looked up from swap storage. If
@@ -171,6 +152,24 @@ namespace ignite
                     impl::thin::ReadableMapImpl<K, V, OutIter> rdSeq(dst);
 
                     proxy.GetAll(wrSeq, rdSeq);
+                }
+
+                /**
+                 * Retrieves values mapped to the specified keys from cache.
+                 * If some value is not present in cache, then it will be looked up from swap storage. If
+                 * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
+                 * will be loaded from persistent store.
+                 * This method is transactional and will enlist the entry into ongoing transaction if there is one.
+                 *
+                 * This method should only be used on the valid instance.
+                 *
+                 * @param keys Keys.
+                 * @param res Map of key-value pairs.
+                 */
+                template<typename Set, typename Map>
+                void GetAll(const Set& keys, Map& res)
+                {
+                    return GetAll(keys.begin(), keys.end(), std::inserter(res, res.end()));
                 }
 
                 /**

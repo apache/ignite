@@ -176,6 +176,16 @@ namespace ignite
                     template<typename ReqT, typename RspT>
                     void SyncCacheKeyMessage(const WritableKey& key, const ReqT& req, RspT& rsp);
 
+                    /**
+                     * Synchronously send message and receive response.
+                     *
+                     * @param req Request message.
+                     * @param rsp Response message.
+                     * @throw IgniteError on error.
+                     */
+                    template<typename ReqT, typename RspT>
+                    void SyncMessage(const ReqT& req, RspT& rsp);
+
                     /** Data router. */
                     SP_DataRouter router;
 
