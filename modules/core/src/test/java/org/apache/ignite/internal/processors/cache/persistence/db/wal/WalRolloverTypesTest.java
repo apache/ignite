@@ -38,6 +38,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.configuration.WALMode.FSYNC;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
@@ -54,6 +55,9 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
 
     /** */
     private WALMode walMode;
+
+    /** */
+    private boolean disableWALArchiving;
 
     /** */
     private static class AdHocWALRecord extends CheckpointRecord {
@@ -74,7 +78,7 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
                 .setPersistenceEnabled(true)
                 .setMaxSize(20 * 1024 * 1024))
             .setWalMode(walMode)
-            .setWalArchivePath(DFLT_WAL_PATH)
+            .setWalArchivePath(disableWALArchiving ? DFLT_WAL_PATH : DFLT_WAL_ARCHIVE_PATH)
             .setWalSegmentSize(4 * 1024 * 1024))
             .setCheckpointSpi(new NoopCheckpointSpi())
         ;
@@ -97,39 +101,54 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testCurrentSegmentTypeLogOnlyMode() throws Exception {
-        walMode = LOG_ONLY;
-
-        checkCurrentSegmentType();
+    public void testCurrentSegmentTypeLogOnlyModeArchiveOn() throws Exception {
+        checkCurrentSegmentType(LOG_ONLY, false);
     }
 
     /** */
-    public void testCurrentSegmentTypeLogFsyncMode() throws Exception {
+    public void testCurrentSegmentTypeLogOnlyModeArchiveOff() throws Exception {
+        checkCurrentSegmentType(LOG_ONLY, true);
+    }
+
+    /** */
+    public void testCurrentSegmentTypeLogFsyncModeArchiveOn() throws Exception {
+        checkCurrentSegmentType(FSYNC, false);
+    }
+
+    /** */
+    public void testCurrentSegmentTypeLogFsyncModeArchiveOff() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9776");
 
-        walMode = FSYNC;
-
-        checkCurrentSegmentType();
+        checkCurrentSegmentType(FSYNC, true);
     }
 
     /** */
-    public void testNextSegmentTypeLogOnlyMode() throws Exception {
-        walMode = LOG_ONLY;
-
-        checkNextSegmentType();
+    public void testNextSegmentTypeLogOnlyModeArchiveOn() throws Exception {
+        checkNextSegmentType(LOG_ONLY, false);
     }
 
     /** */
-    public void testNextSegmentTypeFsyncMode() throws Exception {
+    public void testNextSegmentTypeLogOnlyModeArchiveOff() throws Exception {
+        checkNextSegmentType(LOG_ONLY, true);
+    }
+
+    /** */
+    public void testNextSegmentTypeFsyncModeArchiveOn() throws Exception {
+        checkNextSegmentType(FSYNC, false);
+    }
+
+    /** */
+    public void testNextSegmentTypeFsyncModeArchiveOff() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9776");
 
-        walMode = FSYNC;
-
-        checkNextSegmentType();
+        checkNextSegmentType(FSYNC, true);
     }
 
     /** */
-    private void checkCurrentSegmentType() throws Exception {
+    private void checkCurrentSegmentType(WALMode mode, boolean disableArch) throws Exception {
+        walMode = mode;
+        disableWALArchiving = disableArch;
+
         IgniteEx ig = startGrid(0);
 
         ig.cluster().active(true);
@@ -149,7 +168,10 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkNextSegmentType() throws Exception {
+    private void checkNextSegmentType(WALMode mode, boolean disableArch) throws Exception {
+        walMode = mode;
+        disableWALArchiving = disableArch;
+
         IgniteEx ig = startGrid(0);
 
         ig.cluster().active(true);
@@ -169,25 +191,34 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testNextSegmentTypeWithCacheActivityLogOnlyMode() throws Exception {
-        walMode = LOG_ONLY;
-
-        checkNextSegmentTypeWithCacheActivity();
+    public void testNextSegmentTypeWithCacheActivityLogOnlyModeArchiveOn() throws Exception {
+        checkNextSegmentTypeWithCacheActivity(LOG_ONLY, false);
     }
 
     /** */
-    public void testNextSegmentTypeWithCacheActivityFsyncMode() throws Exception {
+    public void testNextSegmentTypeWithCacheActivityLogOnlyModeArchiveOff() throws Exception {
+        checkNextSegmentTypeWithCacheActivity(LOG_ONLY, true);
+    }
+
+    /** */
+    public void testNextSegmentTypeWithCacheActivityFsyncModeArchiveOn() throws Exception {
+        checkNextSegmentTypeWithCacheActivity(FSYNC, false);
+    }
+
+    /** */
+    public void testNextSegmentTypeWithCacheActivityFsyncModeArchiveOff() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9776");
 
-        walMode = FSYNC;
-
-        checkNextSegmentTypeWithCacheActivity();
+        checkNextSegmentTypeWithCacheActivity(FSYNC, true);
     }
 
     /**
      * Under load, ensures the record gets into very beginning of the segment in {@code NEXT_SEGMENT} log mode.
      */
-    private void checkNextSegmentTypeWithCacheActivity() throws Exception {
+    private void checkNextSegmentTypeWithCacheActivity(WALMode mode, boolean disableArch) throws Exception {
+        walMode = mode;
+        disableWALArchiving = disableArch;
+
         IgniteEx ig = startGrid(0);
 
         ig.cluster().active(true);
@@ -248,25 +279,34 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testCurrentSegmentTypeWithCacheActivityLogOnlyMode() throws Exception {
-        walMode = LOG_ONLY;
-
-        checkCurrentSegmentTypeWithCacheActivity();
+    public void testCurrentSegmentTypeWithCacheActivityLogOnlyModeArchiveOn() throws Exception {
+        checkCurrentSegmentTypeWithCacheActivity(LOG_ONLY, false);
     }
 
     /** */
-    public void testCurrentSegmentTypeWithCacheActivityFsyncMode() throws Exception {
+    public void testCurrentSegmentTypeWithCacheActivityLogOnlyModeArchiveOff() throws Exception {
+        checkCurrentSegmentTypeWithCacheActivity(LOG_ONLY, true);
+    }
+
+    /** */
+    public void testCurrentSegmentTypeWithCacheActivityFsyncModeArchiveOn() throws Exception {
+        checkCurrentSegmentTypeWithCacheActivity(FSYNC, false);
+    }
+
+    /** */
+    public void testCurrentSegmentTypeWithCacheActivityFsyncModeArchiveOff() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-9776");
 
-        walMode = FSYNC;
-
-        checkCurrentSegmentTypeWithCacheActivity();
+        checkCurrentSegmentTypeWithCacheActivity(FSYNC, true);
     }
 
     /**
      * Under load, ensures the record gets into very beginning of the segment in {@code NEXT_SEGMENT} log mode.
      */
-    private void checkCurrentSegmentTypeWithCacheActivity() throws Exception {
+    private void checkCurrentSegmentTypeWithCacheActivity(WALMode mode, boolean disableArch) throws Exception {
+        walMode = mode;
+        disableWALArchiving = disableArch;
+
         IgniteEx ig = startGrid(0);
 
         ig.cluster().active(true);
