@@ -262,14 +262,14 @@ public class QueryUtils {
         // Propagate plain properties.
         normalEntity.setKeyType(entity.getKeyType());
         normalEntity.setValueType(entity.getValueType());
-        normalEntity.setFields(entity.getFields());
-        normalEntity.setKeyFields(entity.getKeyFields());
-        normalEntity.setKeyFieldName(entity.getKeyFieldName());
-        normalEntity.setValueFieldName(entity.getValueFieldName());
-        normalEntity.setNotNullFields(entity.getNotNullFields());
-        normalEntity.setDefaultFieldValues(entity.getDefaultFieldValues());
-        normalEntity.setFieldsPrecision(entity.getFieldsPrecision());
-        normalEntity.setFieldsScale(entity.getFieldsScale());
+        normalEntity.setFields(normalizeFieldMapping(entity.getFields()));
+        normalEntity.setKeyFields(normalizeFields(entity.getKeyFields()));
+        normalEntity.setKeyFieldName(normalizeObjectName(entity.getKeyFieldName(), false));
+        normalEntity.setValueFieldName(normalizeObjectName(entity.getValueFieldName(), false));
+        normalEntity.setNotNullFields(normalizeFields(entity.getNotNullFields()));
+        normalEntity.setDefaultFieldValues(normalizeFieldMapping(entity.getDefaultFieldValues())); // HashMap -> LinkedHashMap !!!
+        normalEntity.setFieldsPrecision(normalizeFieldMapping(entity.getFieldsPrecision()));       // ^-- too.
+        normalEntity.setFieldsScale(normalizeFieldMapping(entity.getFieldsScale()));               // ^-- too.
 
         // Normalize table name.
         String normalTblName = entity.getTableName();
@@ -305,7 +305,7 @@ public class QueryUtils {
         for (QueryIndex idx : entity.getIndexes()) {
             QueryIndex normalIdx = new QueryIndex();
 
-            normalIdx.setFields(idx.getFields());
+            normalIdx.setFields(normalizeFieldMapping(idx.getFields()));
             normalIdx.setIndexType(idx.getIndexType());
             normalIdx.setInlineSize(idx.getInlineSize());
 
@@ -319,6 +319,46 @@ public class QueryUtils {
         validateQueryEntity(normalEntity);
 
         return normalEntity;
+    }
+
+    /**
+     * Normalizes keys (without special chars replacement) of mapping which are fields.
+     *
+     * @param rawMap mapping which keys are not normalized fields.
+     * @param <T> value parameter of mapping.
+     * @return mapping that have normalized keys and the same values as parameter.
+     */
+    private static<T> LinkedHashMap<String, T> normalizeFieldMapping(Map<String, T> rawMap) {
+        if (rawMap == null)
+            return null;
+
+        LinkedHashMap<String, T> normalized = new LinkedHashMap<>(rawMap.size());
+
+        for (Map.Entry<String, T> ent : rawMap.entrySet()) {
+            String normKey = normalizeObjectName(ent.getKey(), false);
+
+            normalized.put(normKey, ent.getValue());
+        }
+
+        return normalized;
+    }
+
+    /**
+     * Normalizes set of fields without special chars replacements.
+     *
+     * @param rawFields not normalized set of fields.
+     * @return normalized set of fields or {@code null} if parameter is {@code null}.
+     */
+    private static Set<String> normalizeFields(Set<String> rawFields) {
+        if (rawFields == null)
+            return null;
+
+        HashSet<String> normalizedFields = new HashSet<>(rawFields.size());
+
+        for (String rawField : rawFields)
+            normalizedFields.add(normalizeObjectName(rawField, false));
+
+        return rawFields;
     }
 
     /**
