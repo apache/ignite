@@ -114,7 +114,7 @@ public class StandardScalerTrainer<K, V> implements PreprocessingTrainer<K, V, V
                             + " features";
 
                     for (int i = 0; i < row.size(); i++) {
-                        squaredDiff[i] = (means[i] - row.get(i)) * (means[i] - row.get(i));
+                        squaredDiff[i] += (means[i] - row.get(i)) * (means[i] - row.get(i));
                     }
                 }
                 return new VarianceHelper(squaredDiff);
