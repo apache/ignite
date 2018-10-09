@@ -27,6 +27,9 @@ import org.h2.command.Prepared;
  * Result of parsing and splitting SQL from {@link SqlFieldsQuery}.
  */
 final class ParsingResult {
+    /** Cache Ids*/
+    private final int[] cacheIds;
+
     /** H2 command. */
     private final Prepared prepared;
 
@@ -47,14 +50,30 @@ final class ParsingResult {
     private final List<GridQueryFieldMetadata> meta;
 
     /** Simple constructor. */
-    ParsingResult(Prepared prepared, SqlFieldsQuery newQry, String remainingSql, GridCacheTwoStepQuery twoStepQry,
-        H2TwoStepCachedQueryKey twoStepQryKey, List<GridQueryFieldMetadata> meta) {
+    ParsingResult(
+        int[] cacheIds,
+        Prepared prepared,
+        SqlFieldsQuery newQry,
+        String remainingSql,
+        GridCacheTwoStepQuery twoStepQry,
+        H2TwoStepCachedQueryKey twoStepQryKey,
+        List<GridQueryFieldMetadata> meta
+    ) {
+        this.cacheIds = cacheIds;
         this.prepared = prepared;
         this.newQry = newQry;
         this.remainingSql = remainingSql;
         this.twoStepQry = twoStepQry;
         this.twoStepQryKey = twoStepQryKey;
         this.meta = meta;
+    }
+
+    /**
+     *
+     * @return Involved cache ids
+     */
+    int[] cacheIds(){
+        return cacheIds;
     }
 
     /**

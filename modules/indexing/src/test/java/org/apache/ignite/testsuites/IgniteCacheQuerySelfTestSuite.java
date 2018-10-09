@@ -410,6 +410,13 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(CacheReplicatedQueryDetailMetricsDistributedSelfTest.class);
         suite.addTestSuite(CacheReplicatedQueryDetailMetricsLocalSelfTest.class);
 
+        // Cache query metrics.
+        suite.addTestSuite(org.apache.ignite.internal.processors.cache.metrics.CacheLocalQueryDetailMetricsSelfTest.class);
+        suite.addTestSuite(org.apache.ignite.internal.processors.cache.metrics.CachePartitionedQueryDetailMetricsDistributedSelfTest.class);
+        suite.addTestSuite(org.apache.ignite.internal.processors.cache.metrics.CachePartitionedQueryDetailMetricsLocalSelfTest.class);
+        suite.addTestSuite(org.apache.ignite.internal.processors.cache.metrics.CacheReplicatedQueryDetailMetricsDistributedSelfTest.class);
+        suite.addTestSuite(org.apache.ignite.internal.processors.cache.metrics.CacheReplicatedQueryDetailMetricsLocalSelfTest.class);
+
         // Unmarshalling query test.
         suite.addTestSuite(IgniteCacheP2pUnmarshallingQueryErrorTest.class);
         suite.addTestSuite(IgniteCacheNoClassQuerySelfTest.class);

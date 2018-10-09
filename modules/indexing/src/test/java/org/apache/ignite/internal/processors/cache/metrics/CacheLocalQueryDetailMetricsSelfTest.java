@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.metrics;
 
+import org.apache.ignite.configuration.CacheConfiguration;
+
 import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Tests for local cache query metrics.
@@ -29,5 +32,22 @@ public class CacheLocalQueryDetailMetricsSelfTest extends CacheAbstractQueryDeta
         cacheMode = LOCAL;
 
         super.beforeTest();
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return Cache configuration.
+     */
+    protected CacheConfiguration<Integer, String> configureCache2(String cacheName) {
+        CacheConfiguration<Integer, String> ccfg = defaultCacheConfiguration();
+
+        ccfg.setName(cacheName);
+        ccfg.setCacheMode(cacheMode);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setIndexedTypes(Integer.class, Long.class);
+        ccfg.setStatisticsEnabled(true);
+        ccfg.setQueryDetailMetricsSize(QRY_DETAIL_METRICS_SIZE);
+
+        return ccfg;
     }
 }

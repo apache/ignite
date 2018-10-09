@@ -83,16 +83,10 @@ public interface GridQueryIndexing {
 
     /**
      * Detect whether SQL query should be executed in distributed or local manner and execute it.
-     * @param schemaName Schema name.
-     * @param qry Query.
-     * @param cliCtx Client context.
-     * @param keepBinary Keep binary flag.
-     * @param failOnMultipleStmts Whether an exception should be thrown for multiple statements query.
-     * @param tracker Query tracker.
+     * @param task Holder of parameters
      * @return Cursor.
      */
-    public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-        SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker, GridQueryCancel cancel);
+    public List<FieldsQueryCursor<List<?>>> querySqlFields(TaskSqlFields task);
 
     /**
      * Execute an INSERT statement using data streamer as receiver.
@@ -135,15 +129,10 @@ public interface GridQueryIndexing {
     /**
      * Queries individual fields (generally used by JDBC drivers).
      *
-     * @param schemaName Schema name.
-     * @param qry Query.
-     * @param keepBinary Keep binary flag.
-     * @param filter Cache name and key filter.
-     * @param cancel Query cancel.
+     * @param task Holder of parameters
      * @return Cursor.
      */
-    public FieldsQueryCursor<List<?>> queryLocalSqlFields(String schemaName, SqlFieldsQuery qry,
-        boolean keepBinary, IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException;
+    public FieldsQueryCursor<List<?>> queryLocalSqlFields(TaskSqlFields task) throws IgniteCheckedException;
 
     /**
      * Executes text query.

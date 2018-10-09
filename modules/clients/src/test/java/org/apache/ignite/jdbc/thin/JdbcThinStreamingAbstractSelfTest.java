@@ -30,16 +30,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.jdbc2.JdbcStreamingSelfTest;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
-import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
+import org.apache.ignite.internal.processors.query.TaskSqlFields;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Tests for streaming via thin driver.
@@ -505,12 +502,10 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
         }
 
         /** {@inheritDoc} */
-        @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-            @Nullable SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker,
-            GridQueryCancel cancel) {
+        @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(TaskSqlFields t) {
             IndexingWithContext.cliCtx = cliCtx;
 
-            return super.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, tracker, cancel);
+            return super.querySqlFields(t);
         }
     }
 }

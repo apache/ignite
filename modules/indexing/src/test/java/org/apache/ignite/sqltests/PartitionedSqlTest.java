@@ -50,7 +50,7 @@ public class PartitionedSqlTest extends BaseSqlTest {
             assertContainsEq("Distributed join on 'idx = idx' returned unexpected result. " +
                 "Preserve join order = " + forceOrder + ".", actIdxOnOn.values(), exp);
             assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result. " +
-                "Preserve join order = " + forceOrder + ".", actIdxOffOn.values(), exp);
+                "Preserve join order = " + true + ".", actIdxOffOn.values(), exp);
         }));
     }
 

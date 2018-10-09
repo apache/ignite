@@ -1755,6 +1755,23 @@ public class GridSqlQueryParser {
         return null;
     }
 
+    public int[] getCacheIdsOfTables(){
+        List<Integer> res = new ArrayList<>();
+
+        for (Object o : h2ObjToGridObj.values()) {
+            if (o instanceof GridSqlAlias)
+                o = GridSqlAlias.unwrap((GridSqlAst)o);
+
+            if (o instanceof GridSqlTable) {
+                GridH2Table tbl = ((GridSqlTable)o).dataTable();
+
+                if (tbl != null)
+                    res.add(tbl.cacheId());
+            }
+        }
+        return res.stream().mapToInt(Integer::intValue).toArray();
+    }
+
     /**
      * @param stmt Prepared statement.
      * @return Parsed AST.

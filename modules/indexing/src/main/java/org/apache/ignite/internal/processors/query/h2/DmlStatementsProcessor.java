@@ -52,10 +52,12 @@ import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadStreamerWriter;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMetricsCollector;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.StaticMvccQueryTracker;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
@@ -66,6 +68,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.TaskSqlFields;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlBatchSender;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlDistributedPlanInfo;
@@ -426,9 +429,18 @@ public class DmlStatementsProcessor {
                     Iterator<List<?>> it;
 
                     if (!F.isEmpty(plan.selectQuery())) {
-                        GridQueryFieldsResult res = idx.queryLocalSqlFields(idx.schema(cctx.name()),
-                            plan.selectQuery(), F.asList(U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY)),
-                            null, false, false, 0, null);
+                        GridQueryFieldsResult res = idx.queryLocalSqlFields(
+                            new int[0],
+                            idx.schema(cctx.name()),
+                            plan.selectQuery(),
+                            F.asList(U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY)),
+                            null,
+                            false,
+                            false,
+                            0,
+                            null,
+                            null
+                        );
 
                         it = res.iterator();
                     }
@@ -488,64 +500,113 @@ public class DmlStatementsProcessor {
     private UpdateResult executeUpdateStatement(String schemaName, final UpdatePlan plan,
         SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters,
         GridQueryCancel cancel) throws IgniteCheckedException {
+        GridCacheMetricsCollector metrCol = GridCacheMetricsCollector.Default.createWithTrigger();
+
         GridCacheContext cctx = plan.cacheContext();
 
-        if (cctx != null && cctx.mvccEnabled()) {
-            assert cctx.transactional();
+        try {
+            if (cctx != null && cctx.mvccEnabled()) {
+                assert cctx.transactional();
 
-            DmlDistributedPlanInfo distributedPlan = plan.distributedPlan();
+                DmlDistributedPlanInfo distributedPlan = plan.distributedPlan();
 
-            GridNearTxLocal tx = tx(cctx.kernalContext());
+                GridNearTxLocal tx = tx(cctx.kernalContext());
 
-            boolean implicit = (tx == null);
+                boolean implicit = (tx == null);
 
-            boolean commit = implicit && (!(fieldsQry instanceof SqlFieldsQueryEx) ||
-                ((SqlFieldsQueryEx)fieldsQry).isAutoCommit());
+                boolean commit = implicit && (!(fieldsQry instanceof SqlFieldsQueryEx) ||
+                    ((SqlFieldsQueryEx)fieldsQry).isAutoCommit());
 
-            if (implicit)
-                tx = txStart(cctx, fieldsQry.getTimeout());
+                if (implicit)
+                    tx = txStart(cctx, fieldsQry.getTimeout());
 
-            requestSnapshot(cctx, checkActive(tx));
+                requestSnapshot(cctx, checkActive(tx));
 
-            try (GridNearTxLocal toCommit = commit ? tx : null) {
-                long timeout = implicit
-                    ? tx.remainingTime()
-                    : IgniteH2Indexing.operationTimeout(fieldsQry.getTimeout(), tx);
+                try (GridNearTxLocal toCommit = commit ? tx : null) {
+                    long timeout = implicit
+                        ? tx.remainingTime()
+                        : IgniteH2Indexing.operationTimeout(fieldsQry.getTimeout(), tx);
 
-                if (cctx.isReplicated() || distributedPlan == null || ((plan.mode() == UpdateMode.INSERT
-                    || plan.mode() == UpdateMode.MERGE) && !plan.isLocalSubquery())) {
+                    if (cctx.isReplicated() || distributedPlan == null || ((plan.mode() == UpdateMode.INSERT
+                        || plan.mode() == UpdateMode.MERGE) && !plan.isLocalSubquery())) {
 
-                    boolean sequential = true;
+                        boolean sequential = true;
 
-                    UpdateSourceIterator<?> it;
+                        UpdateSourceIterator<?> it;
 
-                    if (plan.fastResult()) {
-                        IgniteBiTuple row = plan.getFastRow(fieldsQry.getArgs());
+                        if (plan.fastResult()) {
+                            metrCol.arm();
 
-                        EnlistOperation op = UpdatePlan.enlistOperation(plan.mode());
+                            IgniteBiTuple row = plan.getFastRow(fieldsQry.getArgs());
 
-                        it = new DmlUpdateSingleEntryIterator<>(op, op.isDeleteOrLock() ? row.getKey() : row);
+                            EnlistOperation op = UpdatePlan.enlistOperation(plan.mode());
+
+                            it = new DmlUpdateSingleEntryIterator<>(op, op.isDeleteOrLock() ? row.getKey() : row);
+                        }
+                        else if (plan.hasRows()) {
+                            metrCol.arm();
+
+                            it = new DmlUpdateResultsIterator(UpdatePlan.enlistOperation(plan.mode()), plan, plan.createRows(fieldsQry.getArgs()));
+                        }
+                        else {
+                            // TODO IGNITE-8865 if there is no ORDER BY statement it's no use to retain entries order on locking (sequential = false).
+                            SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQuery(), fieldsQry.isCollocated())
+                                .setArgs(fieldsQry.getArgs())
+                                .setDistributedJoins(fieldsQry.isDistributedJoins())
+                                .setEnforceJoinOrder(fieldsQry.isEnforceJoinOrder())
+                                .setLocal(fieldsQry.isLocal())
+                                .setPageSize(fieldsQry.getPageSize())
+                                .setTimeout((int)timeout, TimeUnit.MILLISECONDS);
+
+                            FieldsQueryCursor<List<?>> cur = idx.querySqlFields(
+                                TaskSqlFields
+                                    .create()
+                                    .addSchemaName(schemaName)
+                                    .addSqlFieldsQuery(newFieldsQry)
+                                    .addKeepBinary(true)
+                                    .addFailOnMultipleStmts(true)
+                                    .addMvccQueryTracker(mvccTracker(cctx, tx))
+                                    .addGridQueryCancel(cancel)
+                                    .addQuerySubmitted(fieldsQry.getSql())
+                                    .addQueryTypeSubmitted(GridCacheQueryType.SQL_FIELDS)
+                            ).get(0);
+
+                            it = plan.iteratorForTransaction(idx, cur);
+                        }
+
+                        IgniteInternalFuture<Long> fut = tx.updateAsync(cctx, it,
+                            fieldsQry.getPageSize(), timeout, sequential);
+
+                        UpdateResult res = new UpdateResult(fut.get(), X.EMPTY_OBJECT_ARRAY);
+
+                        if (commit)
+                            toCommit.commit();
+
+                        return res;
                     }
-                    else if (plan.hasRows())
-                        it = new DmlUpdateResultsIterator(UpdatePlan.enlistOperation(plan.mode()), plan, plan.createRows(fieldsQry.getArgs()));
-                    else {
-                        // TODO IGNITE-8865 if there is no ORDER BY statement it's no use to retain entries order on locking (sequential = false).
-                        SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQuery(), fieldsQry.isCollocated())
-                            .setArgs(fieldsQry.getArgs())
-                            .setDistributedJoins(fieldsQry.isDistributedJoins())
-                            .setEnforceJoinOrder(fieldsQry.isEnforceJoinOrder())
-                            .setLocal(fieldsQry.isLocal())
-                            .setPageSize(fieldsQry.getPageSize())
-                            .setTimeout((int)timeout, TimeUnit.MILLISECONDS);
 
-                        FieldsQueryCursor<List<?>> cur = idx.querySqlFields(schemaName, newFieldsQry, null,
-                            true, true, mvccTracker(cctx, tx), cancel).get(0);
+                    int[] ids = U.toIntArray(distributedPlan.getCacheIds());
 
-                        it = plan.iteratorForTransaction(idx, cur);
-                    }
+                    int flags = 0;
 
-                    IgniteInternalFuture<Long> fut = tx.updateAsync(cctx, it,
-                        fieldsQry.getPageSize(), timeout, sequential);
+                    if (fieldsQry.isEnforceJoinOrder())
+                        flags |= GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER;
+
+                    if (distributedPlan.isReplicatedOnly())
+                        flags |= GridH2QueryRequest.FLAG_REPLICATED;
+
+                    int[] parts = fieldsQry.getPartitions();
+
+                    IgniteInternalFuture<Long> fut = tx.updateAsync(
+                        cctx,
+                        ids,
+                        parts,
+                        schemaName,
+                        fieldsQry.getSql(),
+                        fieldsQry.getArgs(),
+                        flags,
+                        fieldsQry.getPageSize(),
+                        timeout);
 
                     UpdateResult res = new UpdateResult(fut.get(), X.EMPTY_OBJECT_ARRAY);
 
@@ -554,103 +615,103 @@ public class DmlStatementsProcessor {
 
                     return res;
                 }
+                catch (IgniteCheckedException e) {
+                    checkSqlException(e);
 
-                int[] ids = U.toIntArray(distributedPlan.getCacheIds());
+                    U.error(log, "Error during update [localNodeId=" + cctx.localNodeId() + "]", e);
 
-                int flags = 0;
-
-                if (fieldsQry.isEnforceJoinOrder())
-                    flags |= GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER;
-
-                if (distributedPlan.isReplicatedOnly())
-                    flags |= GridH2QueryRequest.FLAG_REPLICATED;
-
-                int[] parts = fieldsQry.getPartitions();
-
-                IgniteInternalFuture<Long> fut = tx.updateAsync(
-                    cctx,
-                    ids,
-                    parts,
-                    schemaName,
-                    fieldsQry.getSql(),
-                    fieldsQry.getArgs(),
-                    flags,
-                    fieldsQry.getPageSize(),
-                    timeout);
-
-                UpdateResult res = new UpdateResult(fut.get(), X.EMPTY_OBJECT_ARRAY);
-
-                if (commit)
-                    toCommit.commit();
-
-                return res;
-            }
-            catch (IgniteCheckedException e) {
-                checkSqlException(e);
-
-                U.error(log, "Error during update [localNodeId=" + cctx.localNodeId() + "]", e);
-
-                throw new IgniteSQLException("Failed to run update. " + e.getMessage(), e);
-            }
-            finally {
-                if (commit)
-                    cctx.tm().resetContext();
-            }
-        }
-
-        UpdateResult fastUpdateRes = plan.processFast(fieldsQry.getArgs());
-
-        if (fastUpdateRes != null)
-            return fastUpdateRes;
-
-        if (plan.distributedPlan() != null) {
-            UpdateResult result = doDistributedUpdate(schemaName, fieldsQry, plan, cancel);
-
-            // null is returned in case not all nodes support distributed DML.
-            if (result != null)
-                return result;
-        }
-
-        Iterable<List<?>> cur;
-
-        // Do a two-step query only if locality flag is not set AND if plan's SELECT corresponds to an actual
-        // sub-query and not some dummy stuff like "select 1, 2, 3;"
-        if (!loc && !plan.isLocalSubquery()) {
-            assert !F.isEmpty(plan.selectQuery());
-
-            SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQuery(), fieldsQry.isCollocated())
-                .setArgs(fieldsQry.getArgs())
-                .setDistributedJoins(fieldsQry.isDistributedJoins())
-                .setEnforceJoinOrder(fieldsQry.isEnforceJoinOrder())
-                .setLocal(fieldsQry.isLocal())
-                .setPageSize(fieldsQry.getPageSize())
-                .setTimeout(fieldsQry.getTimeout(), TimeUnit.MILLISECONDS);
-
-            cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schemaName, newFieldsQry, null, true, true,
-                null, cancel).get(0);
-        }
-        else if (plan.hasRows())
-            cur = plan.createRows(fieldsQry.getArgs());
-        else {
-            final GridQueryFieldsResult res = idx.queryLocalSqlFields(schemaName, plan.selectQuery(),
-                F.asList(fieldsQry.getArgs()), filters, fieldsQry.isEnforceJoinOrder(), false, fieldsQry.getTimeout(),
-                cancel);
-
-            cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
-                @Override public Iterator<List<?>> iterator() {
-                    try {
-                        return new GridQueryCacheObjectsIterator(res.iterator(), idx.objectContext(), true);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
+                    throw new IgniteSQLException("Failed to run update. " + e.getMessage(), e);
                 }
-            }, cancel);
+                finally {
+                    if (commit)
+                        cctx.tm().resetContext();
+                }
+            }
+
+            UpdateResult fastUpdateRes = plan.processFast(fieldsQry.getArgs());
+
+            if (fastUpdateRes != null) {
+                metrCol.arm();
+
+                return fastUpdateRes;
+            }
+
+            if (plan.distributedPlan() != null) {
+                UpdateResult result = doDistributedUpdate(schemaName, fieldsQry, plan, cancel);
+
+                // null is returned in case not all nodes support distributed DML.
+                if (result != null) {
+                    metrCol.arm();
+
+                    return result;
+                }
+            }
+
+            Iterable<List<?>> cur;
+
+            // Do a two-step query only if locality flag is not set AND if plan's SELECT corresponds to an actual
+            // sub-query and not some dummy stuff like "select 1, 2, 3;"
+            if (!loc && !plan.isLocalSubquery()) {
+                assert !F.isEmpty(plan.selectQuery());
+
+                SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQuery(), fieldsQry.isCollocated())
+                    .setArgs(fieldsQry.getArgs())
+                    .setDistributedJoins(fieldsQry.isDistributedJoins())
+                    .setEnforceJoinOrder(fieldsQry.isEnforceJoinOrder())
+                    .setLocal(fieldsQry.isLocal())
+                    .setPageSize(fieldsQry.getPageSize())
+                    .setTimeout(fieldsQry.getTimeout(), TimeUnit.MILLISECONDS);
+
+                cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(TaskSqlFields
+                    .create()
+                    .addSchemaName(schemaName)
+                    .addSqlFieldsQuery(newFieldsQry)
+                    .addKeepBinary(true)
+                    .addFailOnMultipleStmts(true)
+                    .addGridQueryCancel(cancel)
+                    .addQuerySubmitted(fieldsQry.getSql())
+                    .addQueryTypeSubmitted(GridCacheQueryType.SQL_FIELDS)
+                ).get(0);
+            }
+            else if (plan.hasRows()) {
+                metrCol.arm();
+
+                cur = plan.createRows(fieldsQry.getArgs());
+            }
+            else {
+                final GridQueryFieldsResult res = idx.queryLocalSqlFields(
+                    new int[0],
+                    schemaName,
+                    plan.selectQuery(),
+                    F.asList(fieldsQry.getArgs()),
+                    filters,
+                    fieldsQry.isEnforceJoinOrder(),
+                    false,
+                    fieldsQry.getTimeout(),
+                    cancel,
+                    null
+                );
+
+                cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
+                    @Override public Iterator<List<?>> iterator() {
+                        try {
+                            return new GridQueryCacheObjectsIterator(res.iterator(), idx.objectContext(), true);
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw new IgniteException(e);
+                        }
+                    }
+                }, cancel);
+            }
+
+            int pageSize = loc ? 0 : fieldsQry.getPageSize();
+
+            return processDmlSelectResult(plan, cur, pageSize);
+        } finally {
+            metrCol.finish();
+
+            metrCol.collectMetrics(GridCacheQueryType.SQL_FIELDS, fieldsQry.getSql(), cctx.queries(), null);
         }
-
-        int pageSize = loc ? 0 : fieldsQry.getPageSize();
-
-        return processDmlSelectResult(plan, cur, pageSize);
     }
 
     /**
@@ -1150,13 +1211,34 @@ public class DmlStatementsProcessor {
                 .setPageSize(qry.getPageSize())
                 .setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
-            cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schema, newFieldsQry, null, true, true,
-                new StaticMvccQueryTracker(cctx, mvccSnapshot), cancel).get(0);
+            cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(TaskSqlFields
+                .create()
+                .addSchemaName(schema)
+                .addSqlFieldsQuery(newFieldsQry)
+                .addKeepBinary(true)
+                .addFailOnMultipleStmts(true)
+                .addMvccQueryTracker(new StaticMvccQueryTracker(cctx, mvccSnapshot))
+                .addGridQueryCancel(cancel)
+                .addQuerySubmitted(qry.getSql())
+            ).get(0);
         }
         else {
-            final GridQueryFieldsResult res = idx.queryLocalSqlFields(schema, plan.selectQuery(),
-                F.asList(qry.getArgs()), filter, qry.isEnforceJoinOrder(), false, qry.getTimeout(), cancel,
-                new StaticMvccQueryTracker(cctx, mvccSnapshot));
+            int[] cacheIds = new int[1];
+
+            cacheIds[0] = cctx.cacheId();
+
+            final GridQueryFieldsResult res = idx.queryLocalSqlFields(
+                cacheIds,
+                schema,
+                plan.selectQuery(),
+                F.asList(qry.getArgs()),
+                filter,
+                qry.isEnforceJoinOrder(),
+                false,
+                qry.getTimeout(),
+                cancel,
+                new StaticMvccQueryTracker(cctx, mvccSnapshot)
+            );
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {

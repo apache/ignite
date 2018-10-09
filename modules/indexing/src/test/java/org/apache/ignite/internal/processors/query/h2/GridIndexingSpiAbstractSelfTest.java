@@ -173,9 +173,9 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
      */
     private BinaryObjectBuilder aa(String typeName, long id, String name, int age) {
         BinaryObjectBuilder aBuilder = ignite0.binary().builder(typeName)
-                .setField("id", id)
-                .setField("name", name)
-                .setField("age", age);
+            .setField("id", id)
+            .setField("name", name)
+            .setField("age", age);
 
         return aBuilder;
     }
@@ -342,11 +342,21 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         // Fields query
         GridQueryFieldsResult fieldsRes =
-            spi.queryLocalSqlFields(spi.schema("A"), "select a.a.name n1, a.a.age a1, b.a.name n2, " +
-            "b.a.age a2 from a.a, b.a where a.a.id = b.a.id ", Collections.emptySet(), null, false, false, 0, null);
+            spi.queryLocalSqlFields(
+                collectCacheIds(spi, "A"),
+                spi.schema("A"),
+                "select a.a.name n1, a.a.age a1, b.a.name n2, b.a.age a2 from a.a, b.a where a.a.id = b.a.id ",
+                Collections.emptySet(),
+                null,
+                false,
+                false,
+                0,
+                null,
+                null
+            );
 
         String[] aliases = {"N1", "A1", "N2", "A2"};
-        Object[] vals = { "Valera", 19, "Kolya", 25};
+        Object[] vals = {"Valera", 19, "Kolya", 25};
 
         IgniteSpiCloseableIterator<List<?>> it = fieldsRes.iterator();
 
@@ -400,8 +410,18 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                 time = now;
                 range *= 3;
 
-                GridQueryFieldsResult res = spi.queryLocalSqlFields(spi.schema("A"), sql, Arrays.<Object>asList(1,
-                    range), null, false, false, 0, null);
+                GridQueryFieldsResult res = spi.queryLocalSqlFields(
+                    collectCacheIds(spi, "A"),
+                    spi.schema("A"),
+                    sql,
+                    Arrays.<Object>asList(1, range),
+                    null,
+                    false,
+                    false,
+                    0,
+                    null,
+                    null
+                );
 
                 assert res.iterator().hasNext();
 
@@ -415,6 +435,13 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         finally {
             GridTestUtils.setFieldValue(spi, "log", oldLog);
         }
+    }
+
+    private int[] collectCacheIds(IgniteH2Indexing spi, String a) {
+        return spi.tables(a).stream()
+            .map(desc -> desc.table().cacheId())
+            .mapToInt(Integer::intValue)
+            .toArray();
     }
 
     /**
@@ -483,7 +510,8 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
          * @param valFields Fields.
          * @param textIdx Fulltext index.
          */
-        private TypeDesc(String cacheName, String schemaName, String name, Map<String, Class<?>> valFields, GridQueryIndexDescriptor textIdx) {
+        private TypeDesc(String cacheName, String schemaName, String name, Map<String, Class<?>> valFields,
+            GridQueryIndexDescriptor textIdx) {
             this.name = name;
             this.cacheName = cacheName;
             this.schemaName = schemaName;
@@ -595,7 +623,8 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override public void setValue(String field, Object key, Object val, Object propVal) throws IgniteCheckedException {
+        @Override public void setValue(String field, Object key, Object val, Object propVal
+        ) throws IgniteCheckedException {
             assert !F.isEmpty(field);
 
             assert key instanceof Integer;
@@ -759,7 +788,8 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr
+        ) throws IgniteCheckedException {
             throw new UnsupportedOperationException();
         }
 

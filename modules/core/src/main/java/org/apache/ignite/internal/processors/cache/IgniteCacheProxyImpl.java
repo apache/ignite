@@ -423,12 +423,12 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             if (grp != null)
                 qry.projection(grp);
 
-            fut = ctx.kernalContext().query().executeQuery(GridCacheQueryType.TEXT, p.getText(), ctx,
+            fut = ctx.kernalContext().query().executeDefferedQuery(//GridCacheQueryType.TEXT, p.getText(), ctx,
                 new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
                     @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() {
                         return qry.execute();
                     }
-                }, false);
+                });
         }
         else if (filter instanceof SpiQuery) {
             qry = ctx.queries().createSpiQuery(isKeepBinary);

@@ -19,9 +19,12 @@ package org.apache.ignite.internal.processors.cache.metrics;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.Query;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.QueryDetailMetrics;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -44,7 +47,10 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommonAbstractTest {
     /**  */
-    private static final int QRY_DETAIL_METRICS_SIZE = 3;
+    static final int QRY_DETAIL_METRICS_SIZE = 3;
+
+    /** */
+    public static final int CACHED_VALUES = 100;
 
     /** Grid count. */
     protected int gridCnt;
@@ -62,7 +68,7 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
         IgniteCache<Integer, String> cacheA = grid(0).cache("A");
         IgniteCache<Integer, Long> cacheB = grid(0).cache("B");
 
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < CACHED_VALUES; i++) {
             cacheA.put(i, String.valueOf(i));
             cacheB.put(i, Integer.valueOf(i).longValue());
         }
@@ -94,7 +100,7 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
      * @param cacheName Cache name.
      * @return Cache configuration.
      */
-    private CacheConfiguration<Integer, String> configureCache2(String cacheName) {
+    protected CacheConfiguration<Integer, String> configureCache2(String cacheName) {
         CacheConfiguration<Integer, String> ccfg = defaultCacheConfiguration();
 
         ccfg.setName(cacheName);
@@ -103,6 +109,7 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
         ccfg.setIndexedTypes(Integer.class, Long.class);
         ccfg.setStatisticsEnabled(true);
         ccfg.setQueryDetailMetricsSize(QRY_DETAIL_METRICS_SIZE);
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
 
         return ccfg;
     }
@@ -133,7 +140,7 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
 
         SqlFieldsQuery qry = new SqlFieldsQuery("select * from \"B\".Long");
 
-        checkQueryMetrics(cache, cache2, qry);
+        checkDeferredQueryMetrics(cache, cache2, qry, CACHED_VALUES);
     }
 
     /**
@@ -146,22 +153,10 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
         IgniteCache<Integer, String> cache2 = grid(0).context().cache().jcache("B");
 
         SqlFieldsQuery qry = new SqlFieldsQuery("select * from \"B\".Long");
+
         qry.setPageSize(10);
 
         checkQueryNotFullyFetchedMetrics(cache, cache2, false, qry);
-    }
-
-    /**
-     * Test metrics for failed SQL queries.
-     *
-     * @throws Exception In case of error.
-     */
-    public void testSqlFieldsQueryFailedMetrics() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
-
-        SqlFieldsQuery qry = new SqlFieldsQuery("select * from UNKNOWN");
-
-        checkQueryFailedMetrics(cache, qry);
     }
 
     /**
@@ -201,7 +196,7 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
         String lastMetrics = "";
 
         for (QueryDetailMetrics m : metrics)
-            lastMetrics += m.queryType() +  " " + m.query() + ";";
+            lastMetrics += m.queryType() + " " + m.query() + ";";
 
         assertTrue(lastMetrics.contains("SQL_FIELDS select * from String limit 2;"));
         assertTrue(lastMetrics.contains("SCAN A;"));
@@ -209,12 +204,12 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
 
         cache = grid(0).context().cache().jcache("B");
 
-        cache.query(new SqlFieldsQuery("select * from String")).getAll();
-        cache.query(new SqlFieldsQuery("select count(*) from String")).getAll();
-        cache.query(new SqlFieldsQuery("select * from String limit 1")).getAll();
-        cache.query(new SqlFieldsQuery("select * from String limit 2")).getAll();
+        cache.query(new SqlFieldsQuery("select * from Long")).getAll();
+        cache.query(new SqlFieldsQuery("select count(*) from Long")).getAll();
+        cache.query(new SqlFieldsQuery("select * from Long limit 1")).getAll();
+        cache.query(new SqlFieldsQuery("select * from Long limit 2")).getAll();
         cache.query(new ScanQuery()).getAll();
-        cache.query(new SqlQuery("String", "from String")).getAll();
+        cache.query(new SqlQuery("Long", "from Long")).getAll();
 
         waitingFor(cache, "size", QRY_DETAIL_METRICS_SIZE);
 
@@ -238,12 +233,12 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
 
             cache = grid(1).context().cache().jcache("B");
 
-            cache.query(new SqlFieldsQuery("select * from String")).getAll();
-            cache.query(new SqlFieldsQuery("select count(*) from String")).getAll();
-            cache.query(new SqlFieldsQuery("select * from String limit 1")).getAll();
-            cache.query(new SqlFieldsQuery("select * from String limit 2")).getAll();
+            cache.query(new SqlFieldsQuery("select * from Long")).getAll();
+            cache.query(new SqlFieldsQuery("select count(*) from Long")).getAll();
+            cache.query(new SqlFieldsQuery("select * from Long limit 1")).getAll();
+            cache.query(new SqlFieldsQuery("select * from Long limit 2")).getAll();
             cache.query(new ScanQuery()).getAll();
-            cache.query(new SqlQuery("String", "from String")).getAll();
+            cache.query(new SqlQuery(Long.class, "from Long")).getAll();
 
             waitingFor(cache, "size", QRY_DETAIL_METRICS_SIZE);
 
@@ -253,12 +248,31 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
     }
 
     /** */
+    public void testInsertMetrics() throws Exception {
+        IgniteCache<Integer, Long> cache = grid(0).context().cache().jcache("B");
+
+        SqlFieldsQuery qry = new SqlFieldsQuery(
+            "INSERT INTO LONG (_key, _val) values (-101,-101),(-102,-102),(-103,-103)");
+
+        checkQueryMetrics(cache, qry, 1);
+    }
+
+    /** */
+    public void testDeleteMetrics() throws Exception {
+        IgniteCache<Integer, Long> cache = grid(0).context().cache().jcache("B");
+
+        SqlFieldsQuery qry = new SqlFieldsQuery("DELETE FROM LONG Where _val='5'");
+
+        checkQueryMetrics(cache, qry, 1);
+    }
+
+    /** */
     private static class Worker extends Thread {
         /** */
         private final IgniteCache cache;
 
         /** */
-        private final  Query qry;
+        private final Query qry;
 
         /** */
         Worker(IgniteCache cache, Query qry) {
@@ -310,7 +324,7 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
 
         SqlQuery<Integer, String> qry = new SqlQuery<>("String", "from String");
 
-        checkQueryMetrics(cache, qry);
+        checkDoubleQueryMetrics(cache, qry, CACHED_VALUES);
     }
 
     /**
@@ -322,10 +336,12 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
         IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
         IgniteCache<Integer, String> cache2 = grid(0).context().cache().jcache("B");
 
-        SqlQuery<Integer, String> qry = new SqlQuery<>("String", "from String");
+        SqlQuery<Integer, String> qry = new SqlQuery<>(Long.class, "Select * from \"B\".Long");
+
         qry.setPageSize(10);
 
-        checkQueryNotFullyFetchedMetrics(cache, cache2, true, qry);
+        //todo: Enable after fix of IGNITE-9771
+        //checkQueryNotFullyFetchedMetrics(cache, cache2, true, qry);
     }
 
     /**
@@ -351,7 +367,7 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
 
         TextQuery qry = new TextQuery<>("String", "1");
 
-        checkQueryMetrics(cache, qry);
+        checkDoubleQueryMetrics(cache, qry, 1);
     }
 
     /**
@@ -365,7 +381,7 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
 
         SqlFieldsQuery qry = new SqlFieldsQuery("select * from \"B\".Long");
 
-        checkQueryMetrics(cache, cache2, qry);
+        checkDeferredQueryMetrics(cache, cache2, qry, CACHED_VALUES);
     }
 
     /**
@@ -384,19 +400,6 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
     }
 
     /**
-     * Test metrics for failed SQL cross cache queries.
-     *
-     * @throws Exception In case of error.
-     */
-    public void testSqlFieldsCrossCacheQueryFailedMetrics() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
-
-        SqlFieldsQuery qry = new SqlFieldsQuery("select * from \"G\".Long");
-
-        checkQueryFailedMetrics(cache, qry);
-    }
-
-    /**
      * Check metrics.
      *
      * @param cache Cache to check metrics.
@@ -407,42 +410,68 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
      * @param failures Expected number of failures.
      * @param first {@code true} if metrics checked for first query only.
      */
-    private void checkMetrics(IgniteCache<Integer, String> cache, int sz, int idx, int execs,
-        int completions, int failures, boolean first) {
+    private void checkMetrics(IgniteCache<?, ?> cache,
+        int sz,
+        int idx,
+        int execs,
+        int completions,
+        int failures,
+        boolean first) {
         Collection<? extends QueryDetailMetrics> metrics = cache.queryDetailMetrics();
 
         assertNotNull(metrics);
         assertEquals(sz, metrics.size());
 
-        QueryDetailMetrics m = new ArrayList<>(metrics).get(idx);
+        if (sz > 0) {
+            QueryDetailMetrics m = new ArrayList<>(metrics).get(idx);
 
-        info("Metrics: " + m);
+            info("Metrics: " + m);
 
-        assertEquals("Executions", execs, m.executions());
-        assertEquals("Completions", completions, m.completions());
-        assertEquals("Failures", failures, m.failures());
-        assertTrue(m.averageTime() >= 0);
-        assertTrue(m.maximumTime() >= 0);
-        assertTrue(m.minimumTime() >= 0);
+            assertEquals("Executions", execs, m.executions());
+            assertEquals("Completions", completions, m.completions());
+            assertEquals("Failures", failures, m.failures());
+            assertTrue(m.averageTime() >= 0);
+            assertTrue(m.maximumTime() >= 0);
+            assertTrue(m.minimumTime() >= 0);
 
-        if (first)
-            assertTrue("On first execution minTime == maxTime", m.minimumTime() == m.maximumTime());
+            if (first)
+                assertTrue("On first execution minTime == maxTime", m.minimumTime() == m.maximumTime());
+        }
     }
 
     /**
      * @param cache Cache.
      * @param qry Query.
      */
-    private void checkQueryMetrics(IgniteCache<Integer, String> cache, Query qry) {
+    private void checkDoubleQueryMetrics(IgniteCache<?, ?> cache, Query qry, int expResSize) {
         // Execute query.
-        cache.query(qry).getAll();
-
-        checkMetrics(cache, 1, 0, 1, 1, 0, true);
+        checkQueryMetrics(cache, qry, expResSize, 1);
 
         // Execute again with the same parameters.
-        cache.query(qry).getAll();
+        checkQueryMetrics(cache, qry, expResSize, 2);
+    }
 
-        checkMetrics(cache, 1, 0, 2, 2, 0, false);
+    /**
+     * @param cache Cache.
+     * @param qry Query.
+     */
+    private void checkQueryMetrics(IgniteCache<?, ?> cache, Query qry, int expResSize) {
+        checkQueryMetrics(cache, qry, expResSize, 1);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param qry Query.
+     */
+    private void checkQueryMetrics(IgniteCache<?, ?> cache, Query qry, int expResSize, int number) {
+        // Execute query.
+        QueryCursor<?> cur = cache.query(qry);
+
+        List<?> res1 = cur.getAll();
+
+        assertEquals(expResSize, res1.size());
+
+        checkMetrics(cache, 1, 0, number, number, 0, number<=1);
     }
 
     /**
@@ -450,14 +479,26 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
      * @param cache2 Cache.
      * @param qry Query.
      */
-    private void checkQueryMetrics(IgniteCache<Integer, String> cache, IgniteCache cache2, Query qry) {
+    private void checkDeferredQueryMetrics(IgniteCache<Integer, String> cache, IgniteCache cache2, Query qry, int expResSize) {
         // Execute query.
-        cache.query(qry).getAll();
+        QueryCursor<?> cur = cache.query(qry);
+
+        checkMetrics(cache, 0, 0, 0, 0, 0, true);
+
+        checkMetrics(cache2, 0, 0, 0, 0, 0, true);
+
+        List<?> res1 = cur.getAll();
+
+        assertEquals(expResSize, res1.size());
+
+        checkMetrics(cache, 0, 0, 0, 0, 0, true);
 
         checkMetrics(cache2, 1, 0, 1, 1, 0, true);
 
         // Execute again with the same parameters.
-        cache.query(qry).getAll();
+        List<?> res2 = cache.query(qry).getAll();
+
+        assertEquals(expResSize, res2.size());
 
         checkMetrics(cache2, 1, 0, 2, 2, 0, false);
     }
@@ -468,8 +509,8 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
      * @param waitingForCompletion Waiting for query completion.
      * @param qry Query.
      */
-    private void checkQueryNotFullyFetchedMetrics(IgniteCache<Integer, String> cache,
-        IgniteCache cache2, boolean waitingForCompletion, Query qry) throws IgniteInterruptedCheckedException {
+    private void checkQueryNotFullyFetchedMetrics(IgniteCache<?, ?> cache,
+        IgniteCache<?,?> cache2, boolean waitingForCompletion, Query qry) throws IgniteInterruptedCheckedException {
         // Execute query.
         cache.query(qry).iterator().next();
 
@@ -518,7 +559,7 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
      * @param cond Condition to check.
      * @param exp Expected value.
      */
-    private static void waitingFor(final IgniteCache<Integer, String> cache,
+    private static void waitingFor(final IgniteCache<?, ?> cache,
         final String cond, final int exp) throws IgniteInterruptedCheckedException {
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {

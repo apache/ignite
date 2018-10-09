@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMetricsCollector;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -122,7 +123,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_SCHEMA;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SCHEMA_POOL;
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 
 /**
  * Indexing processor.
@@ -914,7 +914,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (!dscoMsgIdHist.add(id)) {
             U.warn(log, "Received duplicate schema custom discovery message (will ignore) [opId=" +
-                msg.operation().id() + ", msg=" + msg  +']');
+                msg.operation().id() + ", msg=" + msg + ']');
 
             return;
         }
@@ -933,7 +933,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
         else
             U.warn(log, "Received unsupported schema custom discovery message (will ignore) [opId=" +
-                msg.operation().id() + ", msg=" + msg  +']');
+                msg.operation().id() + ", msg=" + msg + ']');
     }
 
     /**
@@ -1555,7 +1555,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         if (!res && !ifNotExists)
-            throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS,  entity.getTableName());
+            throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS, entity.getTableName());
     }
 
     /**
@@ -2133,20 +2133,29 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         try {
             IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>> clo =
                 new IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>>() {
-                @Override public List<FieldsQueryCursor<List<?>>> applyx() throws IgniteCheckedException {
-                    GridQueryCancel cancel = new GridQueryCancel();
+                    @Override public List<FieldsQueryCursor<List<?>>> applyx() throws IgniteCheckedException {
+                        GridQueryCancel cancel = new GridQueryCancel();
 
-                    List<FieldsQueryCursor<List<?>>> res =
-                        idx.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, null, cancel);
+                        List<FieldsQueryCursor<List<?>>> res = idx.querySqlFields(TaskSqlFields
+                            .create()
+                            .addSchemaName(schemaName)
+                            .addSqlFieldsQuery(qry)
+                            .addSqlClientContext(cliCtx)
+                            .addKeepBinary(keepBinary)
+                            .addFailOnMultipleStmts(failOnMultipleStmts)
+                            .addGridQueryCancel(cancel)
+                            .addQuerySubmitted(qry.getSql())
+                            .addQueryTypeSubmitted(GridCacheQueryType.SQL_FIELDS)
+                        );
 
-                    if (cctx != null)
-                        sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx);
+                        if (cctx != null)
+                            sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx);
 
-                    return res;
-                }
-            };
+                        return res;
+                    }
+                };
 
-            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), cctx, clo, true);
+            return executeDefferedQuery(clo);
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e);
@@ -2210,7 +2219,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 @Override public Long applyx() throws IgniteCheckedException {
                     return idx.streamUpdateQuery(schemaName, qry, args, streamer);
                 }
-            }, true);
+            }, false);
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e);
@@ -2237,7 +2246,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 @Override public List<Long> applyx() throws IgniteCheckedException {
                     return idx.streamBatchedUpdateQuery(schemaName, qry, args, cliCtx);
                 }
-            }, true);
+            }, false);
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e);
@@ -2293,7 +2302,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     @Override public QueryCursor<Cache.Entry<K, V>> applyx() throws IgniteCheckedException {
                         return idx.queryDistributedSql(schemaName, cctx.name(), qry, keepBinary);
                     }
-                }, true);
+                }, false);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -2340,7 +2349,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             return idx.queryLocalSql(schemaName, cctx.name(), qry, idx.backupFilter(requestTopVer.get(),
                                 qry.getPartitions()), keepBinary);
                     }
-                }, true);
+                },true);
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e);
@@ -2525,15 +2534,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         for (QueryField col : cols) {
             try {
                 props.add(new QueryBinaryProperty(
-                    ctx, 
+                    ctx,
                     col.name(),
-                    null, 
-                    Class.forName(col.typeName()), 
-                    false, 
-                    null, 
-                    !col.isNullable(), 
-                    null, 
-                    col.precision(), 
+                    null,
+                    Class.forName(col.typeName()),
+                    false,
+                    null,
+                    !col.isNullable(),
+                    null,
+                    col.precision(),
                     col.scale()));
             }
             catch (ClassNotFoundException e) {
@@ -2598,7 +2607,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (desc == null)
                 return;
 
-                idx.remove(cctx, desc, row);
+            idx.remove(cctx, desc, row);
         }
         finally {
             busyLock.leaveBusy();
@@ -2702,7 +2711,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public <R> R executeQuery(GridCacheQueryType qryType, String qry, @Nullable GridCacheContext<?, ?> cctx,
         IgniteOutClosureX<R> clo, boolean complete) throws IgniteCheckedException {
-        final long startTime = U.currentTimeMillis();
+        final GridCacheMetricsCollector metrCol = GridCacheMetricsCollector.Default.create();
 
         Throwable err = null;
 
@@ -2735,20 +2744,50 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IgniteCheckedException(e);
         }
         finally {
-            if (!SQL_FIELDS.equals(qryType)) {
-                boolean failed = err != null;
+            boolean failed = err != null;
 
-                long duration = U.currentTimeMillis() - startTime;
+            if (complete || failed) {
+                metrCol.finish();
 
-                if (complete || failed) {
-                    if (cctx != null)
-                        cctx.queries().collectMetrics(qryType, qry, startTime, duration, failed);
+                assert cctx != null;
 
-                    if (log.isTraceEnabled())
-                        log.trace("Query execution [startTime=" + startTime + ", duration=" + duration +
-                            ", fail=" + failed + ", res=" + res + ']');
-                }
+                metrCol.collectMetrics(qryType, qry, cctx.queries(), err);
+
+                if (log.isTraceEnabled())
+                    log.trace(String.format("Query execution [startTime=%d, duration=%d, fail=%s, res=%s]",
+                        metrCol.startTime(),
+                        metrCol.duration(),
+                        failed,
+                        res
+                    ));
             }
+        }
+    }
+
+    /**
+     * @param clo Closure.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public <R> R executeDefferedQuery(IgniteOutClosureX<R> clo) throws IgniteCheckedException {
+        try {
+            R res = clo.apply();
+
+            if (res instanceof CacheQueryFuture) {
+                CacheQueryFuture fut = (CacheQueryFuture)res;
+
+                fut.error();
+            }
+
+            return res;
+        }
+        catch (GridClosureException e) {
+            throw (IgniteCheckedException)(e.unwrap());
+        }
+        catch (CacheException | IgniteException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
         }
     }
 
@@ -2891,7 +2930,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return new SchemaOperationException("Operation failed, but error cannot be deserialized.");
         }
     }
-
 
     /**
      * @return Value object context.
@@ -3075,10 +3113,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             // thread under load. Hence, moving short-lived operation to separate worker.
                             new IgniteThread(ctx.igniteInstanceName(), "schema-circuit-breaker-" + op.id(),
                                 new Runnable() {
-                                @Override public void run() {
-                                    onSchemaPropose(nextOp.proposeMessage());
-                                }
-                            }).start();
+                                    @Override public void run() {
+                                        onSchemaPropose(nextOp.proposeMessage());
+                                    }
+                                }).start();
                         }
                     }
                 }

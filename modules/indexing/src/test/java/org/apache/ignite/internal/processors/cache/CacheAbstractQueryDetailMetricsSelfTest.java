@@ -133,19 +133,6 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
     }
 
     /**
-     * Test metrics for failed SQL queries.
-     *
-     * @throws Exception In case of error.
-     */
-    public void testSqlFieldsQueryFailedMetrics() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
-
-        SqlFieldsQuery qry = new SqlFieldsQuery("select * from UNKNOWN");
-
-        checkQueryFailedMetrics(cache, qry);
-    }
-
-    /**
      * Test metrics eviction.
      *
      * @throws Exception In case of error.
@@ -407,11 +394,13 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
      * @throws Exception In case of error.
      */
     public void testSqlFieldsCrossCacheQueryMetrics() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
+        IgniteCache<Integer, String> cacheA = grid(0).context().cache().jcache("A");
+
+        IgniteCache<Integer, String> cacheB = grid(0).context().cache().jcache("B");
 
         SqlFieldsQuery qry = new SqlFieldsQuery("select * from \"B\".String");
 
-        checkQueryMetrics(cache, qry);
+        checkCrossCacheQueryMetrics(cacheA, cacheB, qry);
     }
 
     /**
@@ -420,25 +409,14 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
      * @throws Exception In case of error.
      */
     public void testSqlFieldsCrossCacheQueryNotFullyFetchedMetrics() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
+        IgniteCache<Integer, String> cacheA = grid(0).context().cache().jcache("A");
+
+        IgniteCache<Integer, String> cacheB = grid(0).context().cache().jcache("B");
 
         SqlFieldsQuery qry = new SqlFieldsQuery("select * from \"B\".String");
         qry.setPageSize(10);
 
-        checkQueryNotFullyFetchedMetrics(cache, qry, false);
-    }
-
-    /**
-     * Test metrics for failed SQL cross cache queries.
-     *
-     * @throws Exception In case of error.
-     */
-    public void testSqlFieldsCrossCacheQueryFailedMetrics() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
-
-        SqlFieldsQuery qry = new SqlFieldsQuery("select * from \"G\".String");
-
-        checkQueryFailedMetrics(cache, qry);
+        checkCrossCacheQueryMetrics(cacheA, cacheB, qry);
     }
 
     /**
@@ -452,7 +430,7 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
      * @param failures Expected number of failures.
      * @param first {@code true} if metrics checked for first query only.
      */
-    private void checkMetrics(IgniteCache<Integer, String> cache, int sz, int idx, int execs,
+    private void checkMetrics(IgniteCache<?, ?> cache, int sz, int idx, int execs,
         int completions, int failures, boolean first) {
         Collection<? extends QueryDetailMetrics> metrics = cache.queryDetailMetrics();
 
@@ -488,6 +466,18 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
         cache.query(qry).getAll();
 
         checkMetrics(cache, 1, 0, 2, 2, 0, false);
+    }
+
+    private void checkCrossCacheQueryMetrics(IgniteCache<?, ?> cacheToRun, IgniteCache<?, ?> cacheToCheck, Query qry) {
+        // Execute query.
+        cacheToRun.query(qry).getAll();
+
+        checkMetrics(cacheToCheck, 1, 0, 1, 1, 0, true);
+
+        // Execute again with the same parameters.
+        cacheToRun.query(qry).getAll();
+
+        checkMetrics(cacheToCheck, 1, 0, 2, 2, 0, false);
     }
 
     /**
