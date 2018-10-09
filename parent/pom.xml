@@ -491,7 +491,7 @@
                         </groups>
                         <header>
                             <![CDATA[
-                                    Ignite - In-Memory Data Fabric
+                                    Ignite - In-Memory Database and Caching Platform
                                 ]]>
                         </header>
                         <bottom>
@@ -519,7 +519,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <b>Ignite Fabric</b>
+                                                            <b>Ignite Database and Caching Platform</b>
                                                         </td>
                                                         <td>:&nbsp;&nbsp;
                                                             ver. <strong>${project.version}</strong>
