@@ -169,6 +169,12 @@ public class CachesRegistry {
 
         Collection<DynamicCacheDescriptor> caches = descs.stream()
             .filter(cacheDesc -> !registeredCaches.containsKey(cacheDesc.cacheId()))
+            .map(d -> {
+                if (d.version() == null)
+                    d.version(cctx.cache().getOrCreateCacheVersion(d));
+
+                return d;
+            })
             .collect(Collectors.toList());
 
         return registerAllCachesAndGroups(groups, caches);
@@ -197,6 +203,12 @@ public class CachesRegistry {
 
         Collection<DynamicCacheDescriptor> cacheDescs = exchActions.cacheStartRequests().stream()
             .map(ExchangeActions.CacheActionData::descriptor)
+            .map(d -> {
+                if (d.version() == null)
+                    d.version(cctx.cache().getOrCreateCacheVersion(d));
+
+                return d;
+            })
             .collect(Collectors.toList());
 
         return registerAllCachesAndGroups(grpDescs, cacheDescs);
@@ -287,12 +299,13 @@ public class CachesRegistry {
             ).collect(Collectors.toList());
 
         return cctx.kernalContext().closure().runLocalSafe(() -> {
-            try {
-                for (StoredCacheData data : cacheConfigsToPersist)
+            for (StoredCacheData data : cacheConfigsToPersist) {
+                try {
                     cctx.database().storeCacheConfiguration(data, false);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Error while saving cache configurations on disk", e);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Error while saving cache configurations on disk", e);
+                }
             }
         });
     }

@@ -951,6 +951,13 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         return cachesInfo.getOrCreateVersion(cacheName, cacheGrpName, staticlyConfigured);
     }
 
+    /**
+     * @see ClusterCachesInfo#getOrCreateVersion(DynamicCacheDescriptor)
+     */
+    public GridCacheConfigurationVersion getOrCreateCacheVersion(DynamicCacheDescriptor desc){
+        return cachesInfo.getOrCreateVersion(desc);
+    }
+
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
