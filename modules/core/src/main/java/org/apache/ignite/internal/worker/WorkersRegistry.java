@@ -144,7 +144,7 @@ public class WorkersRegistry implements GridWorkerListener {
      *
      * @return Maximum inactivity period for system worker in milliseconds.
      */
-    public long getSysWorkerBlockedTimeout() {
+    public long getSystemWorkerBlockedTimeout() {
         return sysWorkerBlockedTimeout == Long.MAX_VALUE ? 0 : sysWorkerBlockedTimeout;
     }
 
@@ -153,7 +153,7 @@ public class WorkersRegistry implements GridWorkerListener {
      *
      * @param val Maximum inactivity period for system worker in milliseconds.
      */
-    public void setSysWorkerBlockedTimeout(long val) {
+    public void setSystemWorkerBlockedTimeout(long val) {
         sysWorkerBlockedTimeout = U.ensurePositive(val, Long.MAX_VALUE);
     }
 

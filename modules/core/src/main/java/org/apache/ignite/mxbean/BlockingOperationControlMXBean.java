@@ -25,10 +25,10 @@ public interface BlockingOperationControlMXBean {
     /** */
     @MXBeanDescription("Maximum inactivity period for system worker. Critical failure handler fires if exceeded. " +
         "Nonpositive value denotes infinite timeout.")
-    public long getSysWorkerBlockedTimeout();
+    public long getSystemWorkerBlockedTimeout();
 
     /** */
-    public void setSysWorkerBlockedTimeout(long val);
+    public void setSystemWorkerBlockedTimeout(long val);
 
     /** */
     @MXBeanDescription("Timeout for checkpoint read lock acquisition. Critical failure handler fires if exceeded. " +

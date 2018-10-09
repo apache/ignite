@@ -84,7 +84,7 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
             cfg.setCheckpointReadLockTimeout(checkpointReadLockTimeout);
 
         if (sysWorkerBlockedTimeout != null)
-            cfg.setSysWorkerBlockedTimeout(sysWorkerBlockedTimeout);
+            cfg.setSystemWorkerBlockedTimeout(sysWorkerBlockedTimeout);
 
         return cfg;
     }
@@ -121,10 +121,10 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
 
         BlockingOperationControlMXBean mBean = getMBean();
 
-        assertEquals(sysWorkerBlockedTimeout.longValue(), reg.getSysWorkerBlockedTimeout());
+        assertEquals(sysWorkerBlockedTimeout.longValue(), reg.getSystemWorkerBlockedTimeout());
         assertEquals(checkpointReadLockTimeout.longValue(), dbMgr.getCheckpointReadLockTimeout());
 
-        assertEquals(sysWorkerBlockedTimeout.longValue(), mBean.getSysWorkerBlockedTimeout());
+        assertEquals(sysWorkerBlockedTimeout.longValue(), mBean.getSystemWorkerBlockedTimeout());
         assertEquals(checkpointReadLockTimeout.longValue(), mBean.getCheckpointReadLockTimeout());
     }
 
@@ -145,10 +145,10 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
 
         BlockingOperationControlMXBean mBean = getMBean();
 
-        assertEquals(0L, reg.getSysWorkerBlockedTimeout());
+        assertEquals(0L, reg.getSystemWorkerBlockedTimeout());
         assertEquals(0L, dbMgr.getCheckpointReadLockTimeout());
 
-        assertEquals(0L, mBean.getSysWorkerBlockedTimeout());
+        assertEquals(0L, mBean.getSystemWorkerBlockedTimeout());
         assertEquals(0L, mBean.getCheckpointReadLockTimeout());
     }
 
@@ -179,13 +179,13 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
 
             BlockingOperationControlMXBean mBean = getMBean();
 
-            assertEquals(sysWorkerBlockedTimeout, ignite.configuration().getSysWorkerBlockedTimeout());
+            assertEquals(sysWorkerBlockedTimeout, ignite.configuration().getSystemWorkerBlockedTimeout());
             assertEquals(checkpointReadLockTimeout, ignite.configuration().getCheckpointReadLockTimeout());
 
-            assertEquals(workerPropVal, reg.getSysWorkerBlockedTimeout());
+            assertEquals(workerPropVal, reg.getSystemWorkerBlockedTimeout());
             assertEquals(checkpointPropVal, dbMgr.getCheckpointReadLockTimeout());
 
-            assertEquals(workerPropVal, mBean.getSysWorkerBlockedTimeout());
+            assertEquals(workerPropVal, mBean.getSystemWorkerBlockedTimeout());
             assertEquals(checkpointPropVal, mBean.getCheckpointReadLockTimeout());
         }
         finally {
@@ -211,8 +211,8 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
 
         BlockingOperationControlMXBean mBean = getMBean();
 
-        mBean.setSysWorkerBlockedTimeout(80_000L);
-        assertEquals(80_000L, ignite.context().workersRegistry().getSysWorkerBlockedTimeout());
+        mBean.setSystemWorkerBlockedTimeout(80_000L);
+        assertEquals(80_000L, ignite.context().workersRegistry().getSystemWorkerBlockedTimeout());
 
         mBean.setCheckpointReadLockTimeout(90_000L);
         assertEquals(90_000L, ignite.context().cache().context().database().getCheckpointReadLockTimeout());
@@ -228,7 +228,7 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
 
         BlockingOperationControlMXBean mBean = getMBean();
 
-        mBean.setSysWorkerBlockedTimeout(1);
+        mBean.setSystemWorkerBlockedTimeout(1);
 
         assertTrue(failureLatch.await(3, TimeUnit.SECONDS));
     }

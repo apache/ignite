@@ -204,7 +204,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(com.UnacknowledgedMessagesBufferSize, resCom.UnacknowledgedMessagesBufferSize);
 
                 Assert.AreEqual(cfg.FailureDetectionTimeout, resCfg.FailureDetectionTimeout);
-                Assert.AreEqual(cfg.SysWorkerBlockedTimeout, resCfg.SysWorkerBlockedTimeout);
+                Assert.AreEqual(cfg.SystemWorkerBlockedTimeout, resCfg.SystemWorkerBlockedTimeout);
                 Assert.AreEqual(cfg.CheckpointReadLockTimeout, resCfg.CheckpointReadLockTimeout);
                 Assert.AreEqual(cfg.ClientFailureDetectionTimeout, resCfg.ClientFailureDetectionTimeout);
                 Assert.AreEqual(cfg.LongQueryWarningTimeout, resCfg.LongQueryWarningTimeout);
@@ -504,7 +504,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(IgniteConfiguration.DefaultNetworkSendRetryCount, cfg.NetworkSendRetryCount);
             Assert.AreEqual(IgniteConfiguration.DefaultNetworkSendRetryDelay, cfg.NetworkSendRetryDelay);
             Assert.AreEqual(IgniteConfiguration.DefaultFailureDetectionTimeout, cfg.FailureDetectionTimeout);
-            Assert.AreEqual(IgniteConfiguration.DefaultFailureDetectionTimeout, cfg.SysWorkerBlockedTimeout);
+            Assert.AreEqual(IgniteConfiguration.DefaultFailureDetectionTimeout, cfg.SystemWorkerBlockedTimeout);
             Assert.AreEqual(IgniteConfiguration.DefaultFailureDetectionTimeout, cfg.CheckpointReadLockTimeout);
             Assert.AreEqual(IgniteConfiguration.DefaultClientFailureDetectionTimeout,
                 cfg.ClientFailureDetectionTimeout);
@@ -756,7 +756,7 @@ namespace Apache.Ignite.Core.Tests
                     UnacknowledgedMessagesBufferSize = 3450
                 },
                 FailureDetectionTimeout = TimeSpan.FromSeconds(3.5),
-                SysWorkerBlockedTimeout = TimeSpan.FromSeconds(8.5),
+                SystemWorkerBlockedTimeout = TimeSpan.FromSeconds(8.5),
                 CheckpointReadLockTimeout = TimeSpan.FromSeconds(9.5),
                 ClientFailureDetectionTimeout = TimeSpan.FromMinutes(12.3),
                 LongQueryWarningTimeout = TimeSpan.FromMinutes(1.23),

@@ -663,7 +663,7 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             cfg.setMvccVacuumThreadCount(in.readInt());
         if (in.readBoolean())
-            cfg.setSysWorkerBlockedTimeout(in.readLong());
+            cfg.setSystemWorkerBlockedTimeout(in.readLong());
         if (in.readBoolean())
             cfg.setCheckpointReadLockTimeout(in.readLong());
 
@@ -1244,7 +1244,7 @@ public class PlatformConfigurationUtils {
         w.writeBoolean(true);
         w.writeInt(cfg.getMvccVacuumThreadCount());
         w.writeBoolean(true);
-        w.writeLong(cfg.getSysWorkerBlockedTimeout());
+        w.writeLong(cfg.getSystemWorkerBlockedTimeout());
         w.writeBoolean(true);
         w.writeLong(cfg.getCheckpointReadLockTimeout());
 

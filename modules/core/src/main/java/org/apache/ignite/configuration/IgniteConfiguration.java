@@ -631,7 +631,7 @@ public class IgniteConfiguration {
         svcCfgs = cfg.getServiceConfiguration();
         svcPoolSize = cfg.getServiceThreadPoolSize();
         sysPoolSize = cfg.getSystemThreadPoolSize();
-        sysWorkerBlockedTimeout = cfg.getSysWorkerBlockedTimeout();
+        sysWorkerBlockedTimeout = cfg.getSystemWorkerBlockedTimeout();
         timeSrvPortBase = cfg.getTimeServerPortBase();
         timeSrvPortRange = cfg.getTimeServerPortRange();
         txCfg = cfg.getTransactionConfiguration();
@@ -1995,10 +1995,10 @@ public class IgniteConfiguration {
      * <p>
      * Default is {@link #getFailureDetectionTimeout()}.
      *
-     * @see #setSysWorkerBlockedTimeout(long)
+     * @see #setSystemWorkerBlockedTimeout(long)
      * @return Maximum inactivity period for system worker in milliseconds.
      */
-    public Long getSysWorkerBlockedTimeout() {
+    public Long getSystemWorkerBlockedTimeout() {
         return sysWorkerBlockedTimeout != null ? sysWorkerBlockedTimeout : getFailureDetectionTimeout();
     }
 
@@ -2010,7 +2010,7 @@ public class IgniteConfiguration {
      * @param sysWorkerBlockedTimeout Maximum inactivity period for system worker in milliseconds.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setSysWorkerBlockedTimeout(long sysWorkerBlockedTimeout) {
+    public IgniteConfiguration setSystemWorkerBlockedTimeout(long sysWorkerBlockedTimeout) {
         this.sysWorkerBlockedTimeout = sysWorkerBlockedTimeout;
 
         return this;
