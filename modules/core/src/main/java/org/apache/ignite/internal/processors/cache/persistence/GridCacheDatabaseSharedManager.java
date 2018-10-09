@@ -382,10 +382,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         ioFactory = persistenceCfg.getFileIOFactory();
 
-        checkpointReadLockTimeout = U.ensurePositive(
-            IgniteSystemProperties.getLong(IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT,
-                ctx.config().getCheckpointReadLockTimeout()),
-            Long.MAX_VALUE);
+        checkpointReadLockTimeout = IgniteSystemProperties.getLong(IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT,
+            ctx.config().getCheckpointReadLockTimeout());
     }
 
     /** */
@@ -1492,19 +1490,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         long timeout = checkpointReadLockTimeout;
 
         long start = U.currentTimeMillis();
-        long passed;
 
         boolean interruped = false;
 
         try {
             for (; ; ) {
                 try {
-                    if ((passed = U.currentTimeMillis() - start) >= timeout)
+                    if (timeout > 0 && (U.currentTimeMillis() - start) >= timeout)
                         failCheckpointReadLock();
 
                     try {
-                        if (!checkpointLock.readLock().tryLock(timeout - passed, TimeUnit.MILLISECONDS))
-                            failCheckpointReadLock();
+                        if (timeout > 0) {
+                            if (!checkpointLock.readLock().tryLock(timeout - (U.currentTimeMillis() - start),
+                                TimeUnit.MILLISECONDS))
+                                failCheckpointReadLock();
+                        }
+                        else
+                            checkpointLock.readLock().lock();
                     }
                     catch (InterruptedException e) {
                         interruped = true;
@@ -1523,7 +1525,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     else {
                         checkpointLock.readLock().unlock();
 
-                        if (U.currentTimeMillis() - start >= timeout)
+                        if (timeout > 0 && U.currentTimeMillis() - start >= timeout)
                             failCheckpointReadLock();
 
                         try {
@@ -1539,7 +1541,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     }
                 }
                 catch (IgniteCheckedException e) {
-                    timeout = Long.MAX_VALUE;
+                    timeout = 0;
                 }
             }
         }
@@ -2904,7 +2906,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @return Timeout for checkpoint read lock acquisition in milliseconds.
      */
     @Override public long getCheckpointReadLockTimeout() {
-        return checkpointReadLockTimeout == Long.MAX_VALUE ? 0 : checkpointReadLockTimeout;
+        return checkpointReadLockTimeout;
     }
 
     /**
@@ -2913,7 +2915,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param val New timeout in milliseconds, non-positive value denotes infinite timeout.
      */
     @Override public void setCheckpointReadLockTimeout(long val) {
-        checkpointReadLockTimeout = U.ensurePositive(val, Long.MAX_VALUE);
+        checkpointReadLockTimeout = val;
     }
 
     /**
