@@ -313,9 +313,14 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public GridDhtTopologyFuture topologyVersionFuture() {
-        assert topReadyFut != null;
+        GridDhtTopologyFuture topReadyFut0 = topReadyFut;
 
-        return topReadyFut;
+        assert topReadyFut0 != null;
+
+        if (topReadyFut0 instanceof GridDhtPartitionsExchangeFuture && ((GridDhtPartitionsExchangeFuture)topReadyFut0).changedAffinity())
+            return ctx.exchange().lastFinishedFuture();
+
+        return topReadyFut0;
     }
 
     /** {@inheritDoc} */
