@@ -20,11 +20,11 @@ public class StandardScalerPreprocessorTest {
             {1, 0., 22., 1.3}
         };
         double[] means = new double[] {0.5, 1.75, 4.5, 0.875};
-        double[] variances = new double[] {0.25, 2.1875, 210.75, 0.871875};
+        double[] sigmas = new double[] {0.5, 1.47901995, 14.51723114, 0.93374247};
 
         StandardScalerPreprocessor<Integer, Vector> preprocessor = new StandardScalerPreprocessor<>(
             means,
-            variances,
+            sigmas,
             (k, v) -> v
         );
 

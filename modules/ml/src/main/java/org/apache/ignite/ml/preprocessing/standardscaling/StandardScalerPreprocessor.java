@@ -25,10 +25,10 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * and {@code variance} equal to {@code 1}. From mathematical point of view it's the following function which is applied
  * to every element in a dataset:
  *
- * {@code a_i = (a_i - mean_i) / var_i for all i},
+ * {@code a_i = (a_i - mean_i) / sigma_i for all i},
  *
- * where {@code i} is a number of column, {@code mean_i} is the mean value this column and {@code var_i} in the variance
- * value in this column.
+ * where {@code i} is a number of column, {@code mean_i} is the mean value this column and {@code sigma_i} is the
+ * standard deviation in this column.
  *
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
@@ -39,8 +39,8 @@ public class StandardScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, 
 
     /** Means for each column. */
     private final double[] means;
-    /** Variances for each column. */
-    private final double[] variances;
+    /** Standard deviation for each column. */
+    private final double[] sigmas;
 
     /** Base preprocessor. */
     private final IgniteBiFunction<K, V, Vector> basePreprocessor;
@@ -49,15 +49,15 @@ public class StandardScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, 
      * Constructs a new instance of standardscaling preprocessor.
      *
      * @param means Means of each column.
-     * @param variances Variances in each column.
+     * @param sigmas Standatd deviations in each column.
      * @param basePreprocessor Base preprocessor.
      */
-    public StandardScalerPreprocessor(double[] means, double[] variances,
+    public StandardScalerPreprocessor(double[] means, double[] sigmas,
         IgniteBiFunction<K, V, Vector> basePreprocessor) {
-        assert means.length == variances.length;
+        assert means.length == sigmas.length;
 
         this.means = means;
-        this.variances = variances;
+        this.sigmas = sigmas;
         this.basePreprocessor = basePreprocessor;
     }
 
@@ -74,7 +74,7 @@ public class StandardScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, 
         assert res.size() == means.length;
 
         for (int i = 0; i < res.size(); i++)
-            res.set(i, (res.get(i) - means[i]) / variances[i]);
+            res.set(i, (res.get(i) - means[i]) / sigmas[i]);
 
         return res;
     }
@@ -85,7 +85,7 @@ public class StandardScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, 
     }
 
     /***/
-    public double[] getVariances() {
-        return variances;
+    public double[] getSigmas() {
+        return sigmas;
     }
 }
