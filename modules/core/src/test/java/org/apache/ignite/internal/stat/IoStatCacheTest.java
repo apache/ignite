@@ -65,7 +65,7 @@ public class IoStatCacheTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(name);
 
-        cfg.setIgniteInstanceName("ioStatIgniteInstance");
+        cfg.setConsistentId("consistentId");
 
         final CacheConfiguration atomicCacheCfg = new CacheConfiguration()
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
