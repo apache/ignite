@@ -2017,7 +2017,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
    /**
      * @see ClusterCachesInfo#updateVersion(GridCacheConfigurationVersion)
      */
-    public void updateCacheVersion(@NotNull GridCacheConfigurationVersion ver){ cachesInfo.updateVersion(ver); }
+    public void updateCacheVersion(GridCacheConfigurationVersion ver){ cachesInfo.updateVersion(ver); }
 
     /**
      * @param startCfg Cache configuration to use.
@@ -2862,7 +2862,9 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      *
      * @param desc Cache descriptor.
      */
-    private void setVersionToCacheDescriptorIfNull(@NotNull DynamicCacheDescriptor desc) {
+    private void setVersionToCacheDescriptorIfNull(DynamicCacheDescriptor desc) {
+        assert desc != null;
+
         GridCacheConfigurationVersion ver = desc.version();
 
         if (ver == null) {

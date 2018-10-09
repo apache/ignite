@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.version;
 import java.io.Serializable;
 import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Grid cache configuration version. Used for correct merge cache configuration in moment joining of node. Make sense
@@ -62,7 +61,9 @@ public class GridCacheConfigurationVersion implements Serializable {
      *
      * @param action Reason for update version.
      */
-    public void updateVersion(@NotNull GridCacheConfigurationChangeAction action) {
+    public void updateVersion(GridCacheConfigurationChangeAction action) {
+        assert action != null;
+
         synchronized (this) {
             if (isNeedUpdateVersion(action)) {
                 this.id++;
@@ -78,7 +79,9 @@ public class GridCacheConfigurationVersion implements Serializable {
      * @param act Reason for update version.
      * @return {@code true} if version must be updated.
      */
-    public boolean isNeedUpdateVersion(@NotNull GridCacheConfigurationChangeAction act) {
+    public boolean isNeedUpdateVersion(GridCacheConfigurationChangeAction act) {
+        assert act != null;
+
         if (staticallyConfigured)
             return false;
 

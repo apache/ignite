@@ -68,7 +68,6 @@ import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
@@ -1525,7 +1524,9 @@ class ClusterCachesInfo {
      * @param cacheName Cache name.
      * @return Cache configuration version or {@code null}, if configuration not found.
      */
-    GridCacheConfigurationVersion getVersion(@NotNull String cacheName){
+    GridCacheConfigurationVersion getVersion(String cacheName){
+        assert cacheName != null;
+
         return cachesConfigurationVer.get(cacheName);
     }
 
@@ -1536,7 +1537,7 @@ class ClusterCachesInfo {
      * @return Cache configuration version for cache with {@code desc} descriptor.
      */
     GridCacheConfigurationVersion getOrCreateVersion(DynamicCacheDescriptor desc) {
-        return getOrCreateVersion(desc.cacheName(),desc.groupDescriptor().groupName(), desc.staticallyConfigured());
+        return getOrCreateVersion(desc.cacheName(), desc.groupDescriptor().groupName(), desc.staticallyConfigured());
     }
 
     /**
@@ -1548,10 +1549,12 @@ class ClusterCachesInfo {
      * @return Cache configuration version for cache with {@code cacheName} name.
      */
     GridCacheConfigurationVersion getOrCreateVersion(
-        @NotNull String cacheName,
+        String cacheName,
         String cacheGrpName,
         boolean staticallyConfigured
     ) {
+        assert cacheName != null;
+
         GridCacheConfigurationVersion ver = getVersion(cacheName);
 
         if (ver == null) {
@@ -1571,9 +1574,12 @@ class ClusterCachesInfo {
      *
      * @param ver Version for update.
      */
-    void updateVersion(@NotNull GridCacheConfigurationVersion ver) {
+    void updateVersion(GridCacheConfigurationVersion ver) {
+        assert ver != null;
+
         GridCacheConfigurationVersion old = cachesConfigurationVer.put(ver.cacheName(), ver);
 
+        // versions must be same (i.e. one instance) or previous version not exist or version order is correct.
         assert old == ver || old == null || old.id() < ver.id() : ver + " old: " + (old == null ? "null" : old);
     }
 

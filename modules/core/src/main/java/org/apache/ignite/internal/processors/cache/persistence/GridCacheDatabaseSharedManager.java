@@ -1544,8 +1544,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      *
      * @param data Stored cache data for destroyed cache.
      */
-    private void updateCacheConfigurationVersionAfterDestroy(@NotNull StoredCacheData data){
-        this.context().database().checkpointReadLock();
+    private void updateCacheConfigurationVersionAfterDestroy(StoredCacheData data){
+        assert data != null;
+
+        context().database().checkpointReadLock();
 
         try {
             String key = getCacheConfigVersionMetastoreKey(data.config());
@@ -1570,7 +1572,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             throw new RuntimeException("Can't update cache configuration version for " + data, e);
         }
         finally {
-            this.context().database().checkpointReadUnlock();
+            context().database().checkpointReadUnlock();
         }
     }
 
@@ -1858,7 +1860,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param ver cache configuration version.
      * @return metastore key.
      */
-    private String getCacheConfigVersionMetastoreKey(@NotNull GridCacheConfigurationVersion ver){
+    private String getCacheConfigVersionMetastoreKey(GridCacheConfigurationVersion ver) {
+        assert ver != null;
+
         return getCacheConfigVersionMetastoreKey(ver.cacheName(), ver.cacheGroupName());
     }
 
@@ -1869,10 +1873,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param cacheGrpName cache group name.
      * @return metastore key.
      */
-    private String getCacheConfigVersionMetastoreKey(@NotNull  String cacheName,@Nullable String cacheGrpName){
+    private String getCacheConfigVersionMetastoreKey(String cacheName, @Nullable String cacheGrpName) {
+        assert cacheName != null;
+
         return new StringBuilder(METASTORE_KEY_SB_CAPACITY)
             .append(CACHE_CONFIGURATION_VERSION_PREFIX)
-            .append((cacheGrpName ==null ? cacheName : cacheGrpName).hashCode())
+            .append((cacheGrpName == null ? cacheName : cacheGrpName).hashCode())
             .append(CACHE_GRP_CACHE_NAME_METASTORE_KEY_DELIMITER)
             .append(cacheName.hashCode())
             .toString();
