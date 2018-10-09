@@ -143,6 +143,9 @@ public class WorkersRegistry implements GridWorkerListener {
 
     /** {@inheritDoc} */
     @Override public void onStopped(GridWorker w) {
+        if (!w.isCancelled())
+            workerFailedHnd.apply(w, SYSTEM_WORKER_TERMINATION);
+
         unregister(w.runner().getName());
     }
 

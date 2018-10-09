@@ -34,14 +34,15 @@ import scala.collection.JavaConversions._
   */
 class IgniteSQLRelation[K, V](
     private[apache] val ic: IgniteContext,
-    private[apache] val tableName: String)
+    private[apache] val tableName: String,
+    private[apache] val schemaName: Option[String])
     (@transient val sqlContext: SQLContext) extends BaseRelation with PrunedFilteredScan with Logging {
 
     /**
       * @return Schema of Ignite SQL table.
       */
     override def schema: StructType =
-        igniteSQLTable(ic.ignite(), tableName)
+        igniteSQLTable(ic.ignite(), tableName, schemaName)
             .map(IgniteSQLRelation.schema)
             .getOrElse(throw new IgniteException(s"Unknown table $tableName"))
 
@@ -101,7 +102,7 @@ class IgniteSQLRelation[K, V](
       * Cache name for a table name.
       */
     private lazy val cacheName: String =
-        sqlCacheName(ic.ignite(), tableName)
+        sqlCacheName(ic.ignite(), tableName, schemaName)
             .getOrElse(throw new IgniteException(s"Unknown table $tableName"))
 }
 
@@ -126,6 +127,7 @@ object IgniteSQLRelation {
         })
     }
 
-    def apply[K, V](ic: IgniteContext, tableName: String, sqlContext: SQLContext): IgniteSQLRelation[K, V] =
-        new IgniteSQLRelation[K, V](ic,tableName)(sqlContext)
+    def apply[K, V](ic: IgniteContext, tableName: String, schemaName: Option[String],
+        sqlContext: SQLContext): IgniteSQLRelation[K, V] =
+        new IgniteSQLRelation[K, V](ic, tableName, schemaName)(sqlContext)
 }
