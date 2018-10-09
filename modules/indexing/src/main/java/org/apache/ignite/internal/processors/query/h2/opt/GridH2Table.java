@@ -314,11 +314,8 @@ public class GridH2Table extends TableBase {
                     if (l.tryLock(200, TimeUnit.MILLISECONDS)) {
                         if (lazyTransferCnt.get() == 0)
                             break;
-                        else {
-                            cctx.kernalContext().log("H2Table").info("WAIT LOCK " + getName());
+                        else
                             l.unlock();
-                            l.unlock();
-                        }
                     }
 
                     Thread.yield();
