@@ -1995,18 +1995,9 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      */
     private void updateCacheConfigurationVersionOnStart(DynamicCacheDescriptor desc) throws IgniteCheckedException {
         if(desc.cacheType()==CacheType.USER){
-            GridCacheConfigurationVersion ver = desc.version();
+            setVersionToCacheDescriptorIfNull(desc);
 
-            if(ver ==null) {
-                ver = cachesInfo.getVersion(desc.cacheName());
-
-                if(ver ==null)
-                    ver = cachesInfo.getOrCreateVersion(desc);
-
-                desc.version(ver);
-            }
-
-            if(ver.isNeedUpdateVersion(GridCacheConfigurationChangeAction.START)) {
+            if(desc.version().isNeedUpdateVersion(GridCacheConfigurationChangeAction.START)) {
                 desc.version().updateVersion(GridCacheConfigurationChangeAction.START);
 
                 cachesInfo.updateVersion(desc.version());
@@ -2683,7 +2674,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 sharedCtx.database().storeCacheConfigurationVersion(ver, true);
         }
         catch (IgniteCheckedException e) {
-            log.error("Can't save received grid data.", e);
+            U.error(log,"Can't save received grid data.", e);
         }
 
         sharedCtx.walState().onCachesInfoCollected();
@@ -2756,7 +2747,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             for (String cacheName : cachesForRmv)
                 nodeData.caches().remove(cacheName);
 
-            Map<String, GridCacheConfigurationVersion> remoteNodeCfgs = 
+            Map<String, GridCacheConfigurationVersion> remoteNodeCfgs =
                 new HashMap<>(nodeData.cachesConfigurationVersion());
 
             for (String verKey : cachesInfo.cachesVersion().keySet()) {
@@ -2773,7 +2764,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
         return null;
     }
-    
+
     /**
      * Checks, that local cache configuration version more actual than version from joining node.
      *
@@ -2835,6 +2826,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                     if (desc.cacheConfiguration().isStatisticsEnabled() != msg.enabled()) {
                         desc.cacheConfiguration().setStatisticsEnabled(msg.enabled());
 
+                        setVersionToCacheDescriptorIfNull(desc);
+
                         try {
                             ctx.cache().saveCacheConfiguration(desc);
                         }
@@ -2855,6 +2848,26 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             if (fut != null)
                 fut.onDone();
         }
+    }
+
+    /**
+     * Sets cache configuration version to cache descriptor if not present.
+     *
+     * @param desc Cache descriptor.
+     */
+    private void setVersionToCacheDescriptorIfNull(@NotNull DynamicCacheDescriptor desc) {
+        GridCacheConfigurationVersion ver = desc.version();
+
+        if (ver == null) {
+            ver = cachesInfo.getVersion(desc.cacheName());
+
+            if (ver == null)
+                ver = cachesInfo.getOrCreateVersion(desc);
+
+            desc.version(ver);
+        }
+
+        assert desc.version() != null : desc;
     }
 
     /**

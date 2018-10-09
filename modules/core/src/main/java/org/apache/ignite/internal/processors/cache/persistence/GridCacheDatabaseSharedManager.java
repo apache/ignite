@@ -1050,6 +1050,31 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 fileLockHolder.close();
             }
         }
+
+        if(cancel) {
+            try {
+                readStoredCacheCfgFut.cancel();
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Can't cancel read stored caches configuration future", e);
+            }
+
+            try {
+                readStoredCacheCfgVerFut.cancel();
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Can't cancel read stored caches configuration version future", e);
+            }
+
+            for (Object key : saveCacheConfigurationFuts.keySet()) {
+                try {
+                    saveCacheConfigurationFuts.get(key).cancel();
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Can't cancel store future key: " + key, e);
+                }
+            }
+        }
     }
 
     /** */
