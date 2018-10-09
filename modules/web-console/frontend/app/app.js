@@ -116,7 +116,6 @@ import IgniteActivitiesUserDialog from './components/activities-user-dialog';
 import './components/input-dialog';
 import webConsoleHeader from './components/web-console-header';
 import webConsoleFooter from './components/web-console-footer';
-import webConsoleNavbar from './components/web-console-navbar';
 import igniteIcon from './components/ignite-icon';
 import versionPicker from './components/version-picker';
 import userNotifications from './components/user-notifications';
@@ -140,7 +139,6 @@ import uiGridColumnResizer from './components/ui-grid-column-resizer';
 import listEditable from './components/list-editable';
 import breadcrumbs from './components/breadcrumbs';
 import panelCollapsible from './components/panel-collapsible';
-import stepsNav from './components/steps-nav';
 import clusterSelector from './components/cluster-selector';
 import connectedClusters from './components/connected-clusters-badge';
 import connectedClustersDialog from './components/connected-clusters-dialog';
@@ -217,7 +215,6 @@ export default angular.module('ignite-console', [
     // Components
     webConsoleHeader.name,
     webConsoleFooter.name,
-    webConsoleNavbar.name,
     igniteIcon.name,
     igniteServices.name,
     versionPicker.name,
@@ -243,7 +240,6 @@ export default angular.module('ignite-console', [
     AngularStrapSelect.name,
     listEditable.name,
     panelCollapsible.name,
-    stepsNav.name,
     clusterSelector.name,
     servicesModule.name,
     connectedClusters.name,

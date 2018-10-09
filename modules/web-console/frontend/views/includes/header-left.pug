@@ -14,9 +14,19 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.wch-additional-nav-items
-    .wch-nav-item(ng-repeat='item in $ctrl.items' ng-if='!item.hidden')
-        div.ng-animate-disabled(ng-if='item.children' ng-click='$event.stopPropagation()'
+a.wch-nav-item(
+    ui-sref='base.configuration.overview'
+    ui-sref-active='{active: "base.configuration"}'
+)
+    | Configure
+
+.wch-nav-item(ng-if='!$root.user.becomeUsed')
+    a(ui-sref='base.sql.tabs' ui-sref-active='active')
+        | Queries
+
+.wch-additional-nav-items(ignite-navbar)
+    .wch-nav-item(ng-repeat='item in navbar.items')
+        div(ng-if='$root.user.becomeUsed ? item.canBecomed : item.children' ng-click='$event.stopPropagation()'
                 ng-class='{active: $state.includes(item.sref)}'
                 bs-dropdown='item.children'
                 data-placement='bottom-left'
@@ -28,11 +38,5 @@
                 span {{::item.text}}
                     span.caret
 
-        a.ng-animate-disabled(ng-if='!item.children && item.sref' ui-sref='{{item.sref}}' ui-sref-active='active')
-            | {{::item.text}}
-
-        a.ng-animate-disabled(ng-if='!item.children && item.click' ng-click='item.click()')
-            | {{::item.text}}
-
-        a.ng-animate-disabled(ng-if='!item.children && item.href' href='{{item.href}}' target='_blank')
+        a(ng-if='$root.user.becomeUsed ? item.canBecomed : !item.children' ui-sref='{{item.sref}}' ui-sref-active='active')
             | {{::item.text}}

@@ -15,11 +15,6 @@
  * limitations under the License.
  */
 
-import 'rxjs/add/operator/merge';
-
-import { defer } from 'rxjs/observable/defer';
-import { Subject } from 'rxjs/Subject';
-
 export default class Notebook {
     static $inject = ['$state', 'IgniteConfirm', 'IgniteMessages', 'IgniteNotebookData'];
 
@@ -34,9 +29,6 @@ export default class Notebook {
         this.confirmModal = confirmModal;
         this.Messages = Messages;
         this.NotebookData = NotebookData;
-
-        this._list$ = new Subject();
-        this.list$ = defer(() => this.read()).merge(this._list$);
     }
 
     read() {
@@ -44,15 +36,11 @@ export default class Notebook {
     }
 
     create(name) {
-        return this.save({name});
+        return this.NotebookData.save({name});
     }
 
     save(notebook) {
-        return this.NotebookData.save(notebook)
-            .then((data) => {
-                this._list$.next(this.NotebookData.notebooks);
-                return data;
-            });
+        return this.NotebookData.save(notebook);
     }
 
     async clone(newNotebookName, clonedNotebook) {
@@ -80,6 +68,7 @@ export default class Notebook {
 
     remove(notebook) {
         return this.confirmModal.confirm(`Are you sure you want to remove notebook: "${notebook.name}"?`)
+            .then(() => this.NotebookData.findIndex(notebook))
             .then((idx) => {
                 return this.NotebookData.remove(notebook)
                     .then(() => {
@@ -87,8 +76,7 @@ export default class Notebook {
                             return this._openNotebook(idx);
                     })
                     .catch(this.Messages.showError);
-            })
-            .then(() => this._list$.next(this.NotebookData.notebooks));
+            });
     }
 
     removeBatch(notebooks) {

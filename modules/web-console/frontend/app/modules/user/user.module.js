@@ -74,14 +74,6 @@ function run($root, $transitions, AclService, User, Activities) {
         AclService.attachRole(role);
     });
 
-    $transitions.onFinish({}, (trans) => {
-        const $state = trans.router.stateService;
-        const {permission} = trans.to();
-
-        if (AclService.can(permission))
-            Activities.post({action: $state.href(name, trans.params('to'))});
-    });
-
     $transitions.onBefore({}, (trans) => {
         const $state = trans.router.stateService;
         const {permission} = trans.to();
