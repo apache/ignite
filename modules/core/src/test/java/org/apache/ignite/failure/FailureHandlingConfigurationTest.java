@@ -218,21 +218,6 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
         assertEquals(90_000L, ignite.context().cache().context().database().getCheckpointReadLockTimeout());
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testFailureOnMBeanParamChange() throws Exception {
-        IgniteEx ignite = startGrid(0);
-
-        ignite.cluster().active(true);
-
-        BlockingOperationControlMXBean mBean = getMBean();
-
-        mBean.setSystemWorkerBlockedTimeout(1);
-
-        assertTrue(failureLatch.await(3, TimeUnit.SECONDS));
-    }
-
     /** */
     private BlockingOperationControlMXBean getMBean() throws Exception {
         ObjectName name = U.makeMBeanName(getTestIgniteInstanceName(0), "Kernal",
