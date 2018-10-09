@@ -1428,6 +1428,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      * Monitor of current object is used for notify on:
      * <ul>
      * <li>exception occurred ({@link FileArchiver#cleanException}!=null)</li>
+     * <li>stopping thread ({@link FileArchiver#isCancelled}==true)</li>
      * <li>current file index changed ({@link FileArchiver#curAbsWalIdx})</li>
      * <li>last archived file index was changed ({@link FileArchiver#lastAbsArchivedIdx})</li>
      * <li>some WAL index was removed from {@link FileArchiver#locked} map</li>
@@ -1479,7 +1480,11 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
          * @throws IgniteInterruptedCheckedException If failed to wait for thread shutdown.
          */
         private void shutdown() throws IgniteInterruptedCheckedException {
-            cancel();
+            synchronized (this) {
+                isCancelled = true;
+
+                notifyAll();
+            }
 
             U.join(runner());
         }

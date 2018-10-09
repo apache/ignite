@@ -1642,10 +1642,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * the absolute index of last archived segment is denoted by A and the absolute index of next segment we want to
      * write is denoted by W, then we can allow write to S(W) if W - A <= walSegments. <br>
      *
-     * Monitor of current object is used for notify on:
-     * <ul>
+     * Monitor of current object is used for notify on: <ul>
      *     <li>exception occurred ({@link FileArchiver#cleanErr}!=null)</li>
-     *     <li>current file index changed</li>
+     *     <li>stopping thread ({@link FileArchiver#isCancelled==true})</li>
+     *     <li>current file index changed </li>
      *     <li>last archived file index was changed</li>
      *     <li>some WAL index was removed from map</li>
      * </ul>
@@ -1671,7 +1671,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @throws IgniteInterruptedCheckedException If failed to wait for thread shutdown.
          */
         private void shutdown() throws IgniteInterruptedCheckedException {
-            cancel();
+            synchronized (this) {
+                isCancelled = true;
+
+                notifyAll();
+            }
 
             U.join(runner());
         }
@@ -1760,7 +1764,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }
             }
             catch (IgniteInterruptedCheckedException e) {
-                cancel();
+                Thread.currentThread().interrupt();
+
+                synchronized (this) {
+                    isCancelled = true;
+                }
             }
             catch (Throwable t) {
                 err = t;
@@ -1880,7 +1888,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          *
          */
         private boolean checkStop() {
-            return isCancelled();
+            return isCancelled;
         }
 
         /**
