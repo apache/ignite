@@ -49,34 +49,36 @@ public class GridIoStatManagerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test statistics for persistent cache with enabled statistics tracking.
+     * Test GLOBAL statistics tracking for persistent cache.
      *
      * @throws Exception In case of failure.
      */
-    public void testNotPersistentIOStatEnabled() throws Exception {
-        ioStatPageTrackEnabledTest(false);
+    public void testNotPersistentIOGlobalStat() throws Exception {
+        ioStatGlobalPageTrackTest(false);
     }
 
     /**
-     * Test statistics for not persistent cache with enabled statistics tracking.
+     * Test GLOBAL statistics tracking for not persistent cache.
      *
      * @throws Exception In case of failure.
      */
-    public void testPersistentIOStatEnabled() throws Exception {
-        ioStatPageTrackEnabledTest(true);
+    public void testPersistentIOGlobalStat() throws Exception {
+        ioStatGlobalPageTrackTest(true);
     }
 
     /**
-     * Check statistics for enabled statistics tracking.
+     * Check GLOBAL statistics tracking.
      *
      * @param isPersistent {@code true} in case persistence should be enable.
      * @throws Exception In case of failure.
      */
-    public void ioStatPageTrackEnabledTest(boolean isPersistent) throws Exception {
+    private void ioStatGlobalPageTrackTest(boolean isPersistent) throws Exception {
         GridIoStatManager ioStatMgr = prepareData(isPersistent);
 
         long physicalReadsCnt = ioStatMgr.physicalReadsGlobal().values().stream().reduce(Long::sum).get();
+
         long physicalWritesCnt = ioStatMgr.physicalWritesGlobal().values().stream().reduce(Long::sum).get();
+
         if (isPersistent) {
             Assert.assertTrue(physicalReadsCnt>0);
 
@@ -91,6 +93,7 @@ public class GridIoStatManagerTest extends GridCommonAbstractTest {
         Map<AggregatePageType, AtomicLong> aggLogReads = ioStatMgr.aggregate(ioStatMgr.logicalReadsGlobal());
 
         Assert.assertTrue(aggLogReads.containsKey(AggregatePageType.INDEX));
+
         Assert.assertEquals(RECORD_COUNT, aggLogReads.get(AggregatePageType.INDEX).longValue());
     }
 
@@ -138,7 +141,6 @@ public class GridIoStatManagerTest extends GridCommonAbstractTest {
         }
 
         return cfg;
-
     }
 
     /**

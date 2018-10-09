@@ -21,19 +21,19 @@ package org.apache.ignite.internal.stat;
 import java.util.Objects;
 
 /**
- * @param <V> Type of subtype of specific statistics
+ *
  */
-public class StatOperationType<V> {
+public class StatOperationType {
     /** */
     private final StatType type;
     /** */
-    private final V subType;
+    private final String subType;
 
     /**
      * @param type type of statistic.
-     * @param subType sub type of statistic.
+     * @param subType subtype of statistic.
      */
-    public StatOperationType(StatType type, V subType) {
+    public StatOperationType(StatType type, String subType) {
         assert type != null && subType != null;
 
         this.type = type;
@@ -50,7 +50,7 @@ public class StatOperationType<V> {
     /**
      * @return Subtype.
      */
-    public V subType() {
+    public String subType() {
         return subType;
     }
 
@@ -60,7 +60,7 @@ public class StatOperationType<V> {
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        StatOperationType<?> type1 = (StatOperationType<?>)o;
+        StatOperationType type1 = (StatOperationType)o;
         return type == type1.type &&
             Objects.equals(subType, type1.subType);
     }

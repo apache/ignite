@@ -45,7 +45,7 @@ public interface IoStatMetricsMXBean {
      * Universal method to get statistics for IO logical reads
      *
      * @param statTypeName Type of statistic {@link StatType}
-     * @param subTypeFilter Subtype of statistics. In case value can be parsed as int will be used as Integer.
+     * @param subTypeFilter Subtype of statistics to filter results.
      * @param aggregate True in case statistics should be aggregated.
      * @return Logical reads statistics for given params.
      */
@@ -60,7 +60,7 @@ public interface IoStatMetricsMXBean {
     @MXBeanParametersDescriptions(
         {
             "Type of statistic.",
-            "Subtype of statistics. In case of null value will be returned GLOBAL statistics.",
+            "Subtype of statistics.",
             "True in case statistics should be aggregated."
         }
     )
@@ -70,7 +70,7 @@ public interface IoStatMetricsMXBean {
      * Universal method to get statistics for IO physical reads
      *
      * @param statTypeName Type of statistic {@link StatType}
-     * @param subTypeFilter Subtype of statistics. In case value can be parsed as int will be used as Integer.
+     * @param subTypeFilter Subtype of statistics to filter results.
      * @param aggregate True in case statistics should be aggregated.
      * @return Physical reads statistics for given params.
      */
@@ -85,7 +85,7 @@ public interface IoStatMetricsMXBean {
     @MXBeanParametersDescriptions(
         {
             "Type of statistic.",
-            "Subtype of statistics. In case of null value will be returned GLOBAL statistics.",
+            "Subtype of statistics.",
             "True in case statistics should be aggregated."
         }
     )

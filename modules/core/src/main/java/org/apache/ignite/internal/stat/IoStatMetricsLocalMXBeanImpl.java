@@ -125,28 +125,21 @@ public class IoStatMetricsLocalMXBeanImpl implements IoStatMetricsMXBean {
 
     /**
      * @param statTypeName String representation of {@code StatType}.
-     * @param subTypeFilter Subtype of statistics. In case value can be parsed as int will be used as Integer.
+     * @param subTypeFilter Subtype of statistics to filter results.
      * @param aggregate {@code true} in case statistics should be aggregated.
      * @param statFunction Function to retrieve statistics.
      * @return Requested statistics.
      */
     private Map<String, Long> getStatistics(String statTypeName, String subTypeFilter, boolean aggregate,
-        BiFunction<StatType, Object, Map<PageType, Long>> statFunction) {
+        BiFunction<StatType, String, Map<PageType, Long>> statFunction) {
         StatType type = StatType.valueOf(statTypeName);
 
-        Object subType;
+        String subType;
 
         if (type == StatType.GLOBAL)
             subType = KEY_FOR_GLOBAL_STAT;
-        else {
+        else
             subType = subTypeFilter;
-            try {
-                subType = Integer.valueOf(subTypeFilter);
-            }
-            catch (NumberFormatException nfe) {
-                //ignore.
-            }
-        }
 
         Map<PageType, Long> stat = statFunction.apply(type, subType);
 

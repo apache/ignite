@@ -19,17 +19,12 @@
 package org.apache.ignite.internal.stat;
 
 /**
- * Type of statistics.
+ * Tests for cache IO statistics for persistence mode.
  */
-public enum StatType {
-    /** */
-    GLOBAL,
-    /** */
-    INDEX,
-    /** */
-    CACHE,
-    /** */
-    TABLE,
-    /** */
-    SQL
+public class IoStatCachePersistenceTest extends IoStatCacheTest {
+
+    /** {@inheritDoc} */
+    protected boolean persist(){
+        return true;
+    }
 }

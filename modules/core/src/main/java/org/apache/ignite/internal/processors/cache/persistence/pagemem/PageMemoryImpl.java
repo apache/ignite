@@ -818,6 +818,8 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     tryToRestorePage(fullId, buf);
 
+                    ioStatMgr.trackPhysicalAndLogicalRead(pageAddr);
+
                     memMetrics.onPageRead();
                 }
                 finally {

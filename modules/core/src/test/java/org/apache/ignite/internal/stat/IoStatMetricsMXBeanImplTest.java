@@ -63,6 +63,7 @@ public class IoStatMetricsMXBeanImplTest extends GridCommonAbstractTest {
         ignite = startGrid(0);
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
@@ -75,7 +76,7 @@ public class IoStatMetricsMXBeanImplTest extends GridCommonAbstractTest {
      * @throws Exception In case of failure.
      */
     public void testBasic() throws Exception {
-        IoStatMetricsMXBean bean = ioStatMXBean(0);
+        IoStatMetricsMXBean bean = ioStatMXBean();
 
         Assert.assertNotNull(bean.getStartGatheringStatistics());
 
@@ -84,7 +85,9 @@ public class IoStatMetricsMXBeanImplTest extends GridCommonAbstractTest {
         Assert.assertNotNull(bean.getStartGatheringStatistics());
 
         checkAggregatedStatIsEmpty(bean.getAggregatedLogicalReadsGlobal());
+
         checkAggregatedStatIsEmpty(bean.getAggregatedPhysicalReadsGlobal());
+
         checkAggregatedStatIsEmpty(bean.getAggregatedPhysicalWritesGlobal());
 
         populateCache(ignite, 100);
@@ -98,7 +101,7 @@ public class IoStatMetricsMXBeanImplTest extends GridCommonAbstractTest {
      * @throws Exception In case of failure.
      */
     public void testUniversalStatisticMethods() throws Exception {
-        IoStatMetricsMXBean bean = ioStatMXBean(0);
+        IoStatMetricsMXBean bean = ioStatMXBean();
 
         int cnt = 300;
 
@@ -112,11 +115,24 @@ public class IoStatMetricsMXBeanImplTest extends GridCommonAbstractTest {
 
         Assert.assertEquals(Long.valueOf(cnt), globalAggregated.get(INDEX.name()));
 
+
         Map<String, Long> globalPlain = bean.getLogicalReadStatistics(StatType.GLOBAL.name(), null, false);
 
         Assert.assertEquals(globalAggregated.get(DATA.name()), globalPlain.get(T_DATA.name()));
 
         Assert.assertEquals(globalAggregated.get(INDEX.name()), globalPlain.get(T_DATA_REF_LEAF.name()));
+
+
+        // existed cache
+        Map<String, Long> cacheAggregated = bean.getLogicalReadStatistics(StatType.CACHE.name(), DEFAULT_CACHE_NAME, true);
+
+        Assert.assertEquals(cacheAggregated.get(DATA.name()), globalPlain.get(T_DATA.name()));
+
+        Assert.assertEquals(cacheAggregated.get(INDEX.name()), globalPlain.get(T_DATA_REF_LEAF.name()));
+
+
+        //unknown cache
+        checkAggregatedStatIsEmpty(bean.getLogicalReadStatistics(StatType.CACHE.name(), "Unknown", true));
     }
 
     /**
@@ -151,12 +167,11 @@ public class IoStatMetricsMXBeanImplTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param igniteIdx Ignite node index.
      * @return IO statistics MX bean for node with given index.
      * @throws Exception In case of failure.
      */
-    private IoStatMetricsMXBean ioStatMXBean(int igniteIdx) throws Exception {
-        ObjectName mbeanName = U.makeMBeanName(getTestIgniteInstanceName(igniteIdx), "IOMetrics",
+    private IoStatMetricsMXBean ioStatMXBean() throws Exception {
+        ObjectName mbeanName = U.makeMBeanName(getTestIgniteInstanceName(0), "IOMetrics",
             IoStatMetricsLocalMXBeanImpl.class.getSimpleName());
 
         MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();

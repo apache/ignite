@@ -276,8 +276,8 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Local node's MAC address. */
     private String locMacs;
 
-    /** IO statistics to be gathered. */
-    private StatOperationType[] statOpTypes;
+    /** Cache IO statistics to be gathered. */
+    private StatOperationType cacheStatOpType;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -405,10 +405,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         assert locMacs != null;
 
-        statOpTypes = new StatOperationType[] {
-            new StatOperationType(StatType.CACHE, cacheIdBoxed),
-            new StatOperationType(StatType.CACHE_GROUP, grp.groupId())
-        };
+        cacheStatOpType = new StatOperationType(StatType.CACHE, cacheName);
     }
 
     /**
@@ -416,7 +413,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * method to avoid gather incorrect statistics.
      */
     public void startGatheringStatistics() {
-        GridIoStatManager.addCurrentOperationType(statOpTypes);
+        GridIoStatManager.addCurrentOperationType(cacheStatOpType);
     }
 
     /**
@@ -424,7 +421,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * invoked after it to avoid gather incorrect statistics.
      */
     public void finishGatheringStatistics() {
-        GridIoStatManager.removeCurrentOperationType(statOpTypes);
+        GridIoStatManager.removeCurrentOperationType(cacheStatOpType);
     }
 
     /**

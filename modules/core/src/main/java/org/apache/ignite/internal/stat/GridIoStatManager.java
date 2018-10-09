@@ -40,21 +40,21 @@ public class GridIoStatManager {
     private static final ThreadLocal<List<StatOperationType>> currentOperationType = ThreadLocal.withInitial(ArrayList::new);
 
     /** Complex map to track physical reads of memory pages */
-    private final Map<StatType, Map<PageType, Map<Object, LongAdder>>> TRACK_PHYSICAL_READS = new EnumMap<>(StatType.class);
+    private final Map<StatType, Map<PageType, Map<String, LongAdder>>> TRACK_PHYSICAL_READS = new EnumMap<>(StatType.class);
 
     /** Complex map to track physical writes of memory pages */
-    private final Map<StatType, Map<PageType, Map<Object, LongAdder>>> TRACK_PHYSICAL_WRITES = new EnumMap<>(StatType.class);
+    private final Map<StatType, Map<PageType, Map<String, LongAdder>>> TRACK_PHYSICAL_WRITES = new EnumMap<>(StatType.class);
 
     /** Complex map to track logical reads of memory pages */
-    private final Map<StatType, Map<PageType, Map<Object, LongAdder>>> TRACK_LOGICAL_READS = new EnumMap<>(StatType.class);
+    private final Map<StatType, Map<PageType, Map<String, LongAdder>>> TRACK_LOGICAL_READS = new EnumMap<>(StatType.class);
 
     {
         for (StatType statType : StatType.values()) {
-            Map<PageType, Map<Object, LongAdder>> logReadMap = new EnumMap<>(PageType.class);
+            Map<PageType, Map<String, LongAdder>> logReadMap = new EnumMap<>(PageType.class);
 
-            Map<PageType, Map<Object, LongAdder>> physReadMap = new EnumMap<>(PageType.class);
+            Map<PageType, Map<String, LongAdder>> physReadMap = new EnumMap<>(PageType.class);
 
-            Map<PageType, Map<Object, LongAdder>> physWriteMap = new EnumMap<>(PageType.class);
+            Map<PageType, Map<String, LongAdder>> physWriteMap = new EnumMap<>(PageType.class);
 
             for (PageType pageType : PageType.values()) {
                 if (statType == StatType.GLOBAL) {
@@ -77,8 +77,6 @@ public class GridIoStatManager {
                     logReadMap.put(pageType, new ConcurrentHashMap<>());
 
                     physReadMap.put(pageType, new ConcurrentHashMap<>());
-
-                    physWriteMap.put(pageType, new ConcurrentHashMap<>());
                 }
             }
 
@@ -91,31 +89,27 @@ public class GridIoStatManager {
     }
 
     /** Key for GLOBAL statistics. */
-    public static Object KEY_FOR_GLOBAL_STAT = StatType.GLOBAL;
+    public static String KEY_FOR_GLOBAL_STAT = StatType.GLOBAL.name();
 
     /** Time of since statistics start gathering. */
     private volatile LocalDateTime statsSince = LocalDateTime.now();
 
     /**
-     * Add operation types statistics context for current thread.
+     * Add operation type statistics context for current thread.
      *
-     * @param statTypes Statistic operation types.
+     * @param statType Statistic operation type.
      */
-    public static void addCurrentOperationType(StatOperationType... statTypes) {
-        for (StatOperationType statType : statTypes) {
+    public static void addCurrentOperationType(StatOperationType statType) {
             currentOperationType.get().add(statType);
-        }
     }
 
     /**
-     * Remove operation types statistics context for current thread.
+     * Remove operation type statistics context for current thread.
      *
-     * @param statTypes Statistic operation types.
+     * @param statType Statistic operation type.
      */
-    public static void removeCurrentOperationType(StatOperationType... statTypes) {
-        for (StatOperationType statType : statTypes) {
+    public static void removeCurrentOperationType(StatOperationType statType) {
             currentOperationType.get().remove(statType);
-        }
     }
 
     /**
@@ -123,13 +117,13 @@ public class GridIoStatManager {
      */
     public void resetStats() {
         Stream.of(TRACK_LOGICAL_READS, TRACK_PHYSICAL_READS, TRACK_PHYSICAL_WRITES).forEach(stat -> {
-                for (Map.Entry<StatType, Map<PageType, Map<Object, LongAdder>>> entry : stat.entrySet()) {
+            for (Map.Entry<StatType, Map<PageType, Map<String, LongAdder>>> entry : stat.entrySet()) {
                     if (entry.getKey() == StatType.GLOBAL) {
-                        for (Map<Object, LongAdder> value : entry.getValue().values())
+                        for (Map<String, LongAdder> value : entry.getValue().values())
                             value.get(KEY_FOR_GLOBAL_STAT).reset();
                     }
                     else {
-                        for (Map<Object, LongAdder> value : entry.getValue().values())
+                        for (Map<String, LongAdder> value : entry.getValue().values())
                             value.clear();
                     }
                 }
@@ -181,7 +175,7 @@ public class GridIoStatManager {
      * @param pageAddr Address of page.
      * @param mapToTrack Map to track access to the given page.
      */
-    private void trackByPageAddress(long pageAddr, Map<StatType, Map<PageType, Map<Object, LongAdder>>> mapToTrack) {
+    private void trackByPageAddress(long pageAddr, Map<StatType, Map<PageType, Map<String, LongAdder>>> mapToTrack) {
         int pageIoType = PageIO.getType(pageAddr);
 
         trackByPageIoType(pageIoType, mapToTrack);
@@ -193,11 +187,15 @@ public class GridIoStatManager {
      * @param pageIoType Page IO type.
      * @param mapToTrack Map to track access to page.
      */
-    private void trackByPageIoType(int pageIoType, Map<StatType, Map<PageType, Map<Object, LongAdder>>> mapToTrack) {
+    private void trackByPageIoType(int pageIoType, Map<StatType, Map<PageType, Map<String, LongAdder>>> mapToTrack) {
         if (pageIoType > 0) { // To skip not set type.
             PageType pageType = PageType.derivePageType(pageIoType);
 
             mapToTrack.get(StatType.GLOBAL).get(pageType).get(KEY_FOR_GLOBAL_STAT).increment();
+
+            // We shouldn't track anything except global statistics for physical writes operations.
+            if (mapToTrack == TRACK_PHYSICAL_WRITES)
+                return;
 
             List<StatOperationType> statOpTypes = currentOperationType.get();
 
@@ -250,7 +248,7 @@ public class GridIoStatManager {
      * @param subType Subtype of statistics which need to take.
      * @return Tracked logical reads by types since last reset statistics.
      */
-    public Map<PageType, Long> logicalReads(StatType statType, Object subType) {
+    public Map<PageType, Long> logicalReads(StatType statType, String subType) {
         return extractStat(TRACK_LOGICAL_READS, statType, subType);
     }
 
@@ -259,7 +257,7 @@ public class GridIoStatManager {
      * @param subType Subtype of statistics which need to take.
      * @return Tracked phisycal reads by types since last reset statistics.
      */
-    public Map<PageType, Long> physicalReads(StatType statType, Object subType) {
+    public Map<PageType, Long> physicalReads(StatType statType, String subType) {
         return extractStat(TRACK_PHYSICAL_READS, statType, subType);
     }
 
@@ -267,10 +265,9 @@ public class GridIoStatManager {
      * Extract all tracked logical reads subtypes.
      *
      * @param statType Type of statistics which subtypes need to extract.
-     * @param <T> Type of subTypes.
      * @return Set of present subtypes for given statType.
      */
-    public <T> Set<T> subTypesLogicalReads(StatType statType) {
+    public Set<String> subTypesLogicalReads(StatType statType) {
         return extractSubTypes(TRACK_LOGICAL_READS, statType);
     }
 
@@ -278,10 +275,9 @@ public class GridIoStatManager {
      * Extract all tracked physical reads subtypes.
      *
      * @param statType Type of statistics which subtypes need to extract.
-     * @param <T> Type of subTypes.
      * @return Set of present subtypes for given statType.
      */
-    public <T> Set<T> subTypesPhysicalReads(StatType statType) {
+    public Set<String> subTypesPhysicalReads(StatType statType) {
         return extractSubTypes(TRACK_PHYSICAL_READS, statType);
     }
 
@@ -291,19 +287,18 @@ public class GridIoStatManager {
      * @param statMap Map with full statistics.
      * @param statType Type of statistics which subtypes need to extract.
      * @return Set of present subtypes for given statType
-     * @param <T> Type of subtype.
      */
     @SuppressWarnings({"unchecked"})
-    private <T> Set<T> extractSubTypes(Map<StatType, Map<PageType, Map<Object, LongAdder>>> statMap,
+    private Set<String> extractSubTypes(Map<StatType, Map<PageType, Map<String, LongAdder>>> statMap,
         StatType statType) {
         assert statType != null;
 
-        Set<Object> res = new HashSet<>();
+        Set<String> res = new HashSet<>();
 
-        for (Map<Object, LongAdder> value : statMap.get(statType).values())
+        for (Map<String, LongAdder> value : statMap.get(statType).values())
             res.addAll(value.keySet());
 
-        return (Set<T>)res;
+        return res;
     }
 
     /**
@@ -314,11 +309,11 @@ public class GridIoStatManager {
      * @param subtype Subtype of statistics which need to be extracted.
      * @return Extracted statistics.
      */
-    private Map<PageType, Long> extractStat(Map<StatType, Map<PageType, Map<Object, LongAdder>>> statMap,
-        StatType statType, Object subtype) {
+    private Map<PageType, Long> extractStat(Map<StatType, Map<PageType, Map<String, LongAdder>>> statMap,
+        StatType statType, String subtype) {
         Map<PageType, Long> stat = new HashMap<>();
 
-        for (Map.Entry<PageType, Map<Object, LongAdder>> entry : statMap.get(statType).entrySet()) {
+        for (Map.Entry<PageType, Map<String, LongAdder>> entry : statMap.get(statType).entrySet()) {
             LongAdder cntr = entry.getValue().get(subtype);
 
             if (cntr != null)

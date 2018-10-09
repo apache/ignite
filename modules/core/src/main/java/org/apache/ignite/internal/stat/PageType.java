@@ -18,7 +18,9 @@
 
 package org.apache.ignite.internal.stat;
 
-import org.apache.ignite.IgniteException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.T2;
 
@@ -123,13 +125,48 @@ public enum PageType {
      * @param pageIoType Page io type.
      * @return Derived PageType.
      */
-    static PageType derivePageType(int pageIoType) {
-        for (PageType t : values()) {
-            if (t.pageIoTypeRange.get1() <= pageIoType && pageIoType <= t.pageIoTypeRange.get2())
-                return t;
-        }
-
-        return UNKNOWN;
+    public static PageType derivePageType(int pageIoType) {
+        return PageTypeFastResolver.derivePageType(pageIoType);
     }
 
+    /**
+     * Help to fast derive PageType by integer representation page IO type.
+     */
+    private final static class PageTypeFastResolver {
+        /** */
+        private final static HashMap<Integer, PageType> SIMPLE_PAGES_MAP = new HashMap<>();
+
+        /** */
+        private final static Set<PageType> RANGE_PAGE_SET = new HashSet<>();
+
+        static {
+            for (PageType pageType : PageType.values()) {
+                T2<Integer, Integer> range = pageType.pageIoTypeRange;
+
+                if (range.get1().equals(range.get2()))
+                    SIMPLE_PAGES_MAP.put(range.get1(), pageType);
+                else
+                    RANGE_PAGE_SET.add(pageType);
+            }
+        }
+
+        /**
+         * @param pageIoType  Page io type.
+         * @return Derived PageType. {@code UNKNOWN} in case page type can't be determined.
+         */
+        static PageType derivePageType(int pageIoType) {
+            PageType simplePageType = SIMPLE_PAGES_MAP.get(pageIoType);
+
+            if (simplePageType != null)
+                return simplePageType;
+
+            for (PageType pageType : RANGE_PAGE_SET) {
+                if (pageType.pageIoTypeRange.get1() <= pageIoType && pageIoType <= pageType.pageIoTypeRange.get2())
+                    return pageType;
+            }
+
+            return UNKNOWN;
+        }
+    }
 }
+
