@@ -423,6 +423,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** */
     private IgniteDiscoverySpiInternalListener internalLsnr;
 
+    /** For tests. */
+    public boolean skipAddressesRandomization = false;
+
     /**
      * Gets current SPI state.
      *
@@ -1881,7 +1884,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             }
         }
 
-        if (!res.isEmpty())
+        if (!res.isEmpty() && !skipAddressesRandomization)
             Collections.shuffle(res);
 
         return res;
