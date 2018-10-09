@@ -840,7 +840,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             final MetaStorage storage = new MetaStorage(
                 cctx,
                 dataRegionMap.get(METASTORE_DATA_REGION_NAME),
-                (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME)
+                (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME),
+                false
             );
 
             // Init metastore only after WAL logging resumed. Can't do it earlier because
