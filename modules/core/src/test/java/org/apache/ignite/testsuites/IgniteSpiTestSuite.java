@@ -32,6 +32,7 @@ public class IgniteSpiTestSuite extends TestSuite {
      */
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite SPIs Test Suite");
+/*
 
         // Failover.
         suite.addTest(IgniteSpiFailoverSelfTestSuite.suite());
@@ -53,18 +54,20 @@ public class IgniteSpiTestSuite extends TestSuite {
 
         // Discovery.
         suite.addTest(IgniteSpiDiscoverySelfTestSuite.suite());
+*/
 
         // Communication.
+        for (int i = 0; i < 150; i++)
         suite.addTest(IgniteSpiCommunicationSelfTestSuite.suite());
 
-        // All other tests.
+      /*  // All other tests.
         suite.addTestSuite(GridNoopManagerSelfTest.class);
 
         // Local Message Listener tests.
         suite.addTestSuite(GridManagerLocalMessageListenerSelfTest.class);
 
         suite.addTestSuite(KeystoreEncryptionSpiSelfTest.class);
-
+*/
         return suite;
     }
 }

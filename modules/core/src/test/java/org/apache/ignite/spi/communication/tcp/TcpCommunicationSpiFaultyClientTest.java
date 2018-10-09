@@ -122,7 +122,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    public void testNoServerOnHost() throws Exception {
+    public void t1estNoServerOnHost() throws Exception {
         testFailClient(null);
     }
 
