@@ -43,7 +43,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  * Wrapper that provides getting current security context for the {@link GridSecurityProcessor#authorize(String,
  * SecurityPermission, SecurityContext)} method.
  */
-public class NearNodeContextSecurityProcessor extends GridSecurityProcessorWrp {
+public class InitiatorContextSecurityProcessor extends GridSecurityProcessorWrapper {
     /** Local node's security context. */
     private SecurityContext locSecCtx;
 
@@ -57,7 +57,7 @@ public class NearNodeContextSecurityProcessor extends GridSecurityProcessorWrp {
      * @param ctx Grid kernal context.
      * @param original Original grid security processor.
      */
-    public NearNodeContextSecurityProcessor(GridKernalContext ctx, GridSecurityProcessor original) {
+    public InitiatorContextSecurityProcessor(GridKernalContext ctx, GridSecurityProcessor original) {
         super(ctx, original);
 
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
@@ -66,7 +66,7 @@ public class NearNodeContextSecurityProcessor extends GridSecurityProcessorWrp {
     /** {@inheritDoc} */
     @Override public void authorize(String name, SecurityPermission perm, SecurityContext securityCtx)
         throws SecurityException {
-        if(enabled()) {
+        if (enabled()) {
             SecurityContext curSecCtx = securityCtx(securityCtx);
 
             if (log.isDebugEnabled())
@@ -90,12 +90,12 @@ public class NearNodeContextSecurityProcessor extends GridSecurityProcessorWrp {
     }
 
     /**
-     * Get near dode's id.
+     * Get current initiator node's id.
      *
-     * @return Near node's id.
+     * @return Initiator node's id.
      */
-    private UUID nearNodeId() {
-        return GridIoManager.currentNearNode();
+    private UUID currentRemoteInitiatorId() {
+        return GridIoManager.currentRemoteInitiator();
     }
 
     /**
@@ -109,10 +109,10 @@ public class NearNodeContextSecurityProcessor extends GridSecurityProcessorWrp {
         SecurityContext res = passed;
 
         if (res == null) {
-            res = nearNodeSecurityCtx();
+            res = currentRemoteInitiatorContext();
 
             if (res == null)
-                res = localSecurityCtx();
+                res = localSecurityContext();
         }
 
         assert res != null;
@@ -121,20 +121,20 @@ public class NearNodeContextSecurityProcessor extends GridSecurityProcessorWrp {
     }
 
     /**
-     * Getting current near node's security context.
+     * Getting current initiator node's security context.
      *
-     * @return Security context of near node.
+     * @return Security context of initiator node.
      */
-    private SecurityContext nearNodeSecurityCtx() {
+    private SecurityContext currentRemoteInitiatorContext() {
         SecurityContext secCtx = null;
 
-        final UUID nodeId = nearNodeId();
+        final UUID nodeId = currentRemoteInitiatorId();
 
         if (nodeId != null) {
             secCtx = secCtxs.computeIfAbsent(nodeId,
                 new Function<UUID, SecurityContext>() {
                     @Override public SecurityContext apply(UUID uuid) {
-                        return nodeSecurityCtx(ctx.discovery().node(nodeId));
+                        return nodeSecurityContext(ctx.discovery().node(nodeId));
 
                     }
                 });
@@ -148,11 +148,11 @@ public class NearNodeContextSecurityProcessor extends GridSecurityProcessorWrp {
      *
      * @return Security context of local node.
      */
-    private SecurityContext localSecurityCtx() {
+    private SecurityContext localSecurityContext() {
         SecurityContext res = locSecCtx;
 
         if (res == null) {
-            res = nodeSecurityCtx(ctx.discovery().localNode());
+            res = nodeSecurityContext(ctx.discovery().localNode());
 
             locSecCtx = res;
         }
@@ -166,7 +166,7 @@ public class NearNodeContextSecurityProcessor extends GridSecurityProcessorWrp {
      * @param node Node.
      * @return Node's security context.
      */
-    private SecurityContext nodeSecurityCtx(ClusterNode node) {
+    private SecurityContext nodeSecurityContext(ClusterNode node) {
         byte[] subjBytes = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
 
         byte[] subjBytesV2 = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);

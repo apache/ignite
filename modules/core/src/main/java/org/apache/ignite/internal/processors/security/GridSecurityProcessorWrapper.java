@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Wrapper class for implementation of {@link GridSecurityProcessor}.
  */
-public class GridSecurityProcessorWrp implements GridSecurityProcessor {
+public class GridSecurityProcessorWrapper implements GridSecurityProcessor {
     /** Logger. */
     @GridToStringExclude
     protected final IgniteLogger log;
@@ -53,7 +53,7 @@ public class GridSecurityProcessorWrp implements GridSecurityProcessor {
      * @param ctx Grid kernal context.
      * @param original Original grid security processor.
      */
-    public GridSecurityProcessorWrp(GridKernalContext ctx, GridSecurityProcessor original) {
+    public GridSecurityProcessorWrapper(GridKernalContext ctx, GridSecurityProcessor original) {
         assert ctx != null;
         assert original != null;
 
@@ -61,6 +61,13 @@ public class GridSecurityProcessorWrp implements GridSecurityProcessor {
         this.original = original;
 
         log = ctx.log(original.getClass());
+    }
+
+    /**
+     * @return Orginal GridSecurityProcessor.
+     */
+    public GridSecurityProcessor original(){
+        return original;
     }
 
     /** {@inheritDoc} */
