@@ -40,7 +40,7 @@ public class EncryptedCacheExample {
         try (Ignite ignite = Ignition.start("examples/config/encryption/example-encrypted-store.xml")) {
             // Activate the cluster. Required to do if the persistent store is enabled because you might need
             // to wait while all the nodes, that store a subset of data on disk, join the cluster.
-            ignite.active(true);
+            ignite.cluster().active(true);
 
             CacheConfiguration<Long, BankAccount> ccfg = new CacheConfiguration<>("encrypted-cache");
 
@@ -64,7 +64,7 @@ public class EncryptedCacheExample {
         System.out.println(">>> Starting cluster again.");
         // Starting cluster again.
         try (Ignite ignite = Ignition.start("examples/config/encryption/example-encrypted-store.xml")) {
-            ignite.active(true);
+            ignite.cluster().active(true);
 
             // We can obtain existing cache and load data from disk.
             IgniteCache<Long, BankAccount> cache = ignite.getOrCreateCache("encrypted-cache");

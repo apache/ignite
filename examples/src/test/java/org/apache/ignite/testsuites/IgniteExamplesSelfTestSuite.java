@@ -102,7 +102,8 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
         // ML Grid.
         suite.addTest(IgniteExamplesMLTestSuite.suite());
 
-        suite.addTest(new TestSuite(EncryptedCacheExampleSelfTest.class));
+        // Encryption.
+        suite.addTestSuite(EncryptedCacheExampleSelfTest.class);
 
         return suite;
     }
