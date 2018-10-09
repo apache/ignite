@@ -50,7 +50,7 @@ public class CachesRegistry {
     private final ConcurrentHashMap<Integer, DynamicCacheDescriptor> registeredCaches = new ConcurrentHashMap<>();
 
     /** Last registered caches configuration persist future. */
-    private volatile IgniteInternalFuture<?> cachesConfPersistFuture;
+    private volatile IgniteInternalFuture<?> cachesConfPersistFut;
 
     /**
      * @param cctx Cache shared context.
@@ -66,17 +66,17 @@ public class CachesRegistry {
      * Removes currently registered cache groups and caches.
      * Adds given cache groups and caches to registry.
      *
-     * @param groupDescriptors Registered groups.
+     * @param grpDescriptors Registered groups.
      * @param cacheDescriptors Registered caches.
      * @return Future that will be completed when all caches configurations will be persisted.
      */
     public IgniteInternalFuture<?> init(
-        Map<Integer, CacheGroupDescriptor> groupDescriptors,
+        Map<Integer, CacheGroupDescriptor> grpDescriptors,
         Map<String, DynamicCacheDescriptor> cacheDescriptors
     ) {
         unregisterAll();
 
-        return registerAllCachesAndGroups(groupDescriptors.values(), cacheDescriptors.values());
+        return registerAllCachesAndGroups(grpDescriptors.values(), cacheDescriptors.values());
     }
 
     /**
@@ -213,11 +213,11 @@ public class CachesRegistry {
      * Awaits last registered caches configurations persist future.
      */
     private void waitLastRegistration() {
-        IgniteInternalFuture<?> currentFut = cachesConfPersistFuture;
+        IgniteInternalFuture<?> currFut = cachesConfPersistFut;
 
-        if (currentFut != null && !currentFut.isDone()) {
+        if (currFut != null && !currFut.isDone()) {
             try {
-                currentFut.get();
+                currFut.get();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to wait for last registered caches registration future", e);
@@ -232,17 +232,17 @@ public class CachesRegistry {
      * Registers caches and groups.
      * Persists caches configurations on disk if needed.
      *
-     * @param groupDescriptors Cache group descriptors.
+     * @param grpDescriptors Cache group descriptors.
      * @param cacheDescriptors Cache descriptors.
      * @return Future that will be completed when all unregistered cache configurations will be persisted.
      */
     private IgniteInternalFuture<?> registerAllCachesAndGroups(
-        Collection<CacheGroupDescriptor> groupDescriptors,
+        Collection<CacheGroupDescriptor> grpDescriptors,
         Collection<DynamicCacheDescriptor> cacheDescriptors
     ) {
         waitLastRegistration();
 
-        for (CacheGroupDescriptor grpDesc : groupDescriptors)
+        for (CacheGroupDescriptor grpDesc : grpDescriptors)
             registerGroup(grpDesc);
 
         for (DynamicCacheDescriptor cacheDesc : cacheDescriptors) {
@@ -257,9 +257,9 @@ public class CachesRegistry {
             .collect(Collectors.toList());
 
         if (cachesToPersist.isEmpty())
-            return cachesConfPersistFuture = new GridFinishedFuture<>();
+            return cachesConfPersistFut = new GridFinishedFuture<>();
 
-        return cachesConfPersistFuture = persistCacheConfigurations(cachesToPersist);
+        return cachesConfPersistFut = persistCacheConfigurations(cachesToPersist);
     }
 
     /**
