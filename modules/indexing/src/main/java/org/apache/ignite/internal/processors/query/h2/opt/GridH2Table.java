@@ -93,7 +93,7 @@ public class GridH2Table extends TableBase {
     /** */
     private final ReadWriteLock lock;
 
-    /** Nunmber of reading threads which currently move execution from query pool to dedicated thread. */
+    /** Number of reading threads which currently move execution from query pool to dedicated thread. */
     private final AtomicInteger lazyTransferCnt = new AtomicInteger();
 
     /** */
