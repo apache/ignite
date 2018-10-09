@@ -169,12 +169,6 @@ public class CachesRegistry {
 
         Collection<DynamicCacheDescriptor> caches = descs.stream()
             .filter(cacheDesc -> !registeredCaches.containsKey(cacheDesc.cacheId()))
-            .map(d -> {
-                if (d.version() == null)
-                    d.version(cctx.cache().getOrCreateCacheVersion(d));
-
-                return d;
-            })
             .collect(Collectors.toList());
 
         return registerAllCachesAndGroups(groups, caches);
@@ -203,12 +197,6 @@ public class CachesRegistry {
 
         Collection<DynamicCacheDescriptor> cacheDescs = exchActions.cacheStartRequests().stream()
             .map(ExchangeActions.CacheActionData::descriptor)
-            .map(d -> {
-                if (d.version() == null)
-                    d.version(cctx.cache().getOrCreateCacheVersion(d));
-
-                return d;
-            })
             .collect(Collectors.toList());
 
         return registerAllCachesAndGroups(grpDescs, cacheDescs);
@@ -259,8 +247,12 @@ public class CachesRegistry {
         for (CacheGroupDescriptor grpDesc : groupDescriptors)
             registerGroup(grpDesc);
 
-        for (DynamicCacheDescriptor cacheDesc : cacheDescriptors)
+        for (DynamicCacheDescriptor cacheDesc : cacheDescriptors) {
+            if(cacheDesc.version()==null)
+                cacheDesc.version(cctx.cache().getOrCreateCacheVersion(cacheDesc));
+
             registerCache(cacheDesc);
+        }
 
         List<DynamicCacheDescriptor> cachesToPersist = cacheDescriptors.stream()
             .filter(cacheDesc -> shouldPersist(cacheDesc.cacheConfiguration()))
