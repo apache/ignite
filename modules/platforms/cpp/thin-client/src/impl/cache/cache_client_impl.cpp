@@ -85,6 +85,17 @@ namespace ignite
                         throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
                 }
 
+                void CacheClientImpl::GetAll(const Writable& keys, Readable& pairs)
+                {
+                    CacheKeyRequest<RequestType::CACHE_GET> req(id, binary, key);
+                    CacheGetResponse rsp(value);
+
+                    SyncCacheKeyMessage(key, req, rsp);
+
+                    if (rsp.GetStatus() != ResponseStatus::SUCCESS)
+                        throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
+                }
+
                 bool CacheClientImpl::ContainsKey(const WritableKey& key)
                 {
                     CacheKeyRequest<RequestType::CACHE_CONTAINS_KEY> req(id, binary, key);
