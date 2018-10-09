@@ -24,6 +24,7 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -33,27 +34,46 @@ import static org.junit.Assert.assertArrayEquals;
  */
 public class StandardScalerTrainerTest extends TrainerTest {
     /** Tests {@code fit()} method. */
-    @Test
-    public void fit_returnsCorrectPreprocessor() {
+
+    private DatasetBuilder<Integer, Vector> datasetBuilder;
+    private StandardScalerTrainer<Integer, Vector> standardizationTrainer;
+
+    @Before
+    public void prepareDataset() {
         Map<Integer, Vector> data = new HashMap<>();
         data.put(1, VectorUtils.of(0, 2., 4., .1));
         data.put(2, VectorUtils.of(0, 1., -18., 2.2));
         data.put(3, VectorUtils.of(1, 4., 10., -.1));
         data.put(4, VectorUtils.of(1, 0., 22., 1.3));
+        datasetBuilder = new LocalDatasetBuilder<>(data, parts);
+    }
 
-        DatasetBuilder<Integer, Vector> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
+    @Before
+    public void createTrainver() {
+        standardizationTrainer = new StandardScalerTrainer<>();
+    }
 
-        StandardScalerTrainer<Integer, Vector> standardizationTrainer = new StandardScalerTrainer<>();
+    @Test
+    public void fit_countsCorrectMeans() {
+        double[] expectedMeans = new double[] {0.5, 1.75, 4.5, 0.875};
 
         StandardScalerPreprocessor<Integer, Vector> preprocessor = standardizationTrainer.fit(
             datasetBuilder,
             (k, v) -> v
         );
 
-        double[] expectedMeans = new double[] {0.5, 1.75, 4.5, 0.875};
+        assertArrayEquals(expectedMeans, preprocessor.getMeans(), 1e-8);
+    }
+
+    @Test
+    public void fit_countsCorrectStandardDeviations() {
         double[] expectedSigmas = new double[] {0.5, 1.47901995, 14.51723114, 0.93374247};
 
-        assertArrayEquals(expectedMeans, preprocessor.getMeans(), 1e-8);
+        StandardScalerPreprocessor<Integer, Vector> preprocessor = standardizationTrainer.fit(
+            datasetBuilder,
+            (k, v) -> v
+        );
+
         assertArrayEquals(expectedSigmas, preprocessor.getSigmas(), 1e-8);
     }
 }
