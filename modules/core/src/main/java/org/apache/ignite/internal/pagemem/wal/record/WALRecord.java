@@ -195,6 +195,12 @@ public abstract class WALRecord {
         /** */
         MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD,
 
+        /** Encrypted WAL-record. */
+        ENCRYPTED_RECORD,
+
+        /** Ecnrypted data record */
+        ENCRYPTED_DATA_RECORD,
+
         /** Consistent cut record. */
         CONSISTENT_CUT;
 

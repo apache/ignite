@@ -1138,8 +1138,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         m.topologyVersion(msgTopVer);
 
-        if (log.isInfoEnabled())
-            log.info("Full Message creating for " + msgTopVer + " performed in " + (System.currentTimeMillis() - time) + " ms.");
+        if (log.isInfoEnabled()) {
+            long latency = System.currentTimeMillis() - time;
+
+            if (latency > 100 || log.isDebugEnabled())
+                log.info("Full Message creating for " + msgTopVer + " performed in " + latency + " ms.");
+        }
 
         if (log.isTraceEnabled())
             log.trace("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", msg=" + m + ']');
@@ -2577,6 +2581,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
                 else if (err != null)
                     cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
+                else
+                    // In case of reconnectNeeded == true, prevent general-case termination handling.
+                    cancel();
             }
         }
 
