@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheE
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridInvokeValue;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
@@ -99,6 +100,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -736,10 +738,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         try {
             validateTxMode(cacheCtx);
 
-            // TODO: IGNITE-9540: Fix invoke/invokeAll.
-            if(invokeMap != null)
-                MvccUtils.verifyMvccOperationSupport(cacheCtx, "invoke/invokeAll");
-
             if (mvccSnapshot == null) {
                 MvccUtils.mvccTracker(cacheCtx, this);
 
@@ -752,16 +750,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             return new GridFinishedFuture(e);
         }
 
-        // Cached entry may be passed only from entry wrapper.
-        final Map<?, ?> map0 = map;
-        final Map<?, EntryProcessor<K, V, Object>> invokeMap0 = (Map<K, EntryProcessor<K, V, Object>>)invokeMap;
-
         if (log.isDebugEnabled())
-            log.debug("Called putAllAsync(...) [tx=" + this + ", map=" + map0 + ", retval=" + retval + "]");
+            log.debug("Called putAllAsync(...) [tx=" + this + ", map=" + map + ", retval=" + retval + "]");
 
-        assert map0 != null || invokeMap0 != null;
+        assert map != null || invokeMap != null;
 
-        if (F.isEmpty(map0) && F.isEmpty(invokeMap0)) {
+        if (F.isEmpty(map) && F.isEmpty(invokeMap)) {
             if (implicit())
                 try {
                     commit();
@@ -773,14 +767,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             return new GridFinishedFuture<>(new GridCacheReturn(true, false));
         }
 
+        // Set transform flag for operation.
+        boolean transform = invokeMap != null;
+
         try {
-            // Set transform flag for transaction.
-            if (invokeMap != null)
-                transform = true;
+            Set<?> keys = map != null ? map.keySet() : invokeMap.keySet();
 
-            Set<?> keys = map0 != null ? map0.keySet() : invokeMap0.keySet();
-
-            final Map<KeyCacheObject, CacheObject> enlisted = new HashMap<>(keys.size());
+            final Map<KeyCacheObject, Message> enlisted = new HashMap<>(keys.size());
 
             for (Object key : keys) {
                 if (isRollbackOnly())
@@ -792,7 +785,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     throw new NullPointerException("Null key.");
                 }
 
-                Object val = map0 == null ? null : map0.get(key);
+                Object val = map == null ? null : map.get(key);
                 EntryProcessor entryProcessor = transform ? invokeMap.get(key) : null;
 
                 if (val == null && entryProcessor == null) {
@@ -802,25 +795,27 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 }
 
                 KeyCacheObject cacheKey = cacheCtx.toCacheKeyObject(key);
-                CacheObject cacheVal = cacheCtx.toCacheObject(val);
 
-                enlisted.put(cacheKey, cacheVal);
+                if (transform)
+                    enlisted.put(cacheKey, new GridInvokeValue(entryProcessor, invokeArgs));
+                else
+                    enlisted.put(cacheKey, cacheCtx.toCacheObject(val));
             }
 
-            return updateAsync(cacheCtx, new UpdateSourceIterator<IgniteBiTuple<KeyCacheObject, CacheObject>>() {
+            return updateAsync(cacheCtx, new UpdateSourceIterator<IgniteBiTuple<KeyCacheObject, Message>>() {
 
-                private Iterator<Map.Entry<KeyCacheObject, CacheObject>> it = enlisted.entrySet().iterator();
+                private Iterator<Map.Entry<KeyCacheObject, Message>> it = enlisted.entrySet().iterator();
 
                 @Override public EnlistOperation operation() {
-                    return EnlistOperation.UPSERT;
+                    return transform ? EnlistOperation.TRANSFORM : EnlistOperation.UPSERT;
                 }
 
                 @Override public boolean hasNextX() throws IgniteCheckedException {
                     return it.hasNext();
                 }
 
-                @Override public IgniteBiTuple<KeyCacheObject, CacheObject> nextX() throws IgniteCheckedException {
-                    Map.Entry<KeyCacheObject, CacheObject> next = it.next();
+                @Override public IgniteBiTuple<KeyCacheObject, Message> nextX() throws IgniteCheckedException {
+                    Map.Entry<KeyCacheObject, Message> next = it.next();
 
                     return new IgniteBiTuple<>(next.getKey(), next.getValue());
                 }
@@ -2120,7 +2115,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                     mvccSnapshot.incrementOperationCounter();
 
-                    return new GridCacheReturn(cacheCtx, true, keepBinary, futRes.value(), futRes.success());
+                    Object val = futRes.value();
+
+                    if (futRes.invokeResult()) {
+                        assert val instanceof Map;
+
+                        val = cacheCtx.unwrapInvokeResult((Map)val, keepBinary);
+                    }
+
+                    return new GridCacheReturn(cacheCtx, true, keepBinary, val, futRes.success());
                 }
             }));
         }

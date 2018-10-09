@@ -40,6 +40,7 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureHandler;
@@ -214,11 +215,11 @@ public class IgniteConfiguration {
     /** Default timeout after which long query warning will be printed. */
     public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
 
-    /** Default size of MVCC vacuum thread pool. */
+    /** Default number of MVCC vacuum threads.. */
     public static final int DFLT_MVCC_VACUUM_THREAD_CNT = 2;
 
-    /** Default time interval between vacuum process runs (ms). */
-    public static final int DFLT_MVCC_VACUUM_FREQUENCY = 5000;
+    /** Default time interval between MVCC vacuum runs in milliseconds. */
+    public static final long DFLT_MVCC_VACUUM_FREQUENCY = 5000;
 
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
@@ -367,6 +368,9 @@ public class IgniteConfiguration {
     /** Address resolver. */
     private AddressResolver addrRslvr;
 
+    /** Encryption SPI. */
+    private EncryptionSpi encryptionSpi;
+
     /** Cache configurations. */
     private CacheConfiguration[] cacheCfg;
 
@@ -496,8 +500,8 @@ public class IgniteConfiguration {
     /** Size of MVCC vacuum thread pool. */
     private int mvccVacuumThreadCnt = DFLT_MVCC_VACUUM_THREAD_CNT;
 
-    /** Time interval between vacuum process runs (ms). */
-    private int mvccVacuumFreq = DFLT_MVCC_VACUUM_FREQUENCY;
+    /** Time interval between vacuum runs (ms). */
+    private long mvccVacuumFreq = DFLT_MVCC_VACUUM_FREQUENCY;
 
     /** User authentication enabled. */
     private boolean authEnabled;
@@ -537,6 +541,7 @@ public class IgniteConfiguration {
         failSpi = cfg.getFailoverSpi();
         loadBalancingSpi = cfg.getLoadBalancingSpi();
         indexingSpi = cfg.getIndexingSpi();
+        encryptionSpi = cfg.getEncryptionSpi();
 
         commFailureRslvr = cfg.getCommunicationFailureResolver();
 
@@ -2062,6 +2067,28 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Sets fully configured instances of {@link EncryptionSpi}.
+     *
+     * @param encryptionSpi Fully configured instance of {@link EncryptionSpi}.
+     * @see IgniteConfiguration#getEncryptionSpi()
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setEncryptionSpi(EncryptionSpi encryptionSpi) {
+        this.encryptionSpi = encryptionSpi;
+
+        return this;
+    }
+
+    /**
+     * Gets fully configured encryption SPI implementations.
+     *
+     * @return Encryption SPI implementation.
+     */
+    public EncryptionSpi getEncryptionSpi() {
+        return encryptionSpi;
+    }
+
+    /**
      * Gets address resolver for addresses mapping determination.
      *
      * @return Address resolver.
@@ -2998,18 +3025,18 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Returns number of MVCC vacuum cleanup threads.
+     * Returns number of MVCC vacuum threads.
      *
-     * @return Number of MVCC vacuum cleanup threads.
+     * @return Number of MVCC vacuum threads.
      */
     public int getMvccVacuumThreadCount() {
         return mvccVacuumThreadCnt;
     }
 
     /**
-     * Sets number of MVCC vacuum cleanup threads.
+     * Sets number of MVCC vacuum threads.
      *
-     * @param mvccVacuumThreadCnt Number of MVCC vacuum cleanup threads.
+     * @param mvccVacuumThreadCnt Number of MVCC vacuum threads.
      * @return {@code this} for chaining.
      */
     public IgniteConfiguration setMvccVacuumThreadCount(int mvccVacuumThreadCnt) {
@@ -3019,21 +3046,21 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Returns time interval between vacuum runs.
+     * Returns time interval between MVCC vacuum runs in milliseconds.
      *
-     * @return Time interval between vacuum runs.
+     * @return Time interval between MVCC vacuum runs in milliseconds.
      */
-    public int getMvccVacuumFrequency() {
+    public long getMvccVacuumFrequency() {
         return mvccVacuumFreq;
     }
 
     /**
-     * Sets time interval between vacuum runs.
+     * Sets time interval between MVCC vacuum runs in milliseconds.
      *
-     * @param mvccVacuumFreq Time interval between vacuum runs.
+     * @param mvccVacuumFreq Time interval between MVCC vacuum runs in milliseconds.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setMvccVacuumFrequency(int mvccVacuumFreq) {
+    public IgniteConfiguration setMvccVacuumFrequency(long mvccVacuumFreq) {
         this.mvccVacuumFreq = mvccVacuumFreq;
 
         return this;
