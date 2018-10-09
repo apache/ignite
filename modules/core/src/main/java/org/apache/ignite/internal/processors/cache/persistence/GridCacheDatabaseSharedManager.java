@@ -1836,12 +1836,32 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         String cacheName = cacheCfg.getName();
         String cacheGrpName = cacheCfg.getGroupName() != null ? cacheCfg.getGroupName() : cacheName;
 
+        return getCacheGroupMetastoreKeyPrefixSb(cacheGrpName).append(cacheName.hashCode()).toString();
+    }
+
+    /**
+     * Creates metastore key prefix for all caches from {@code cacheGrpName} group.
+     *
+     * @param cacheGrpName Cache group name.
+     * @return StringBuilder with metastore key prefix.
+     */
+    private StringBuilder getCacheGroupMetastoreKeyPrefixSb(String cacheGrpName){
+        assert cacheGrpName != null;
+
         return new StringBuilder(METASTORE_KEY_SB_CAPACITY)
             .append(STORE_CACHE_PREFIX)
             .append(cacheGrpName.hashCode())
-            .append(CACHE_GRP_CACHE_NAME_METASTORE_KEY_DELIMITER)
-            .append(cacheName.hashCode())
-            .toString();
+            .append(CACHE_GRP_CACHE_NAME_METASTORE_KEY_DELIMITER);
+    }
+
+    /**
+     * Creates metastore key prefix for all caches from {@code cacheGrpName} group.
+     *
+     * @param cacheGrpName Cache group name.
+     * @return Metastore key prefix.
+     */
+    private String getCacheGroupMetastoreKeyPrefix(String cacheGrpName){
+        return getCacheGroupMetastoreKeyPrefixSb(cacheGrpName).toString();
     }
 
     /**
@@ -1895,10 +1915,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try {
             Map<String, StoredCacheData> cacheData = (Map<String, StoredCacheData>)metaStorage
                 .readForPredicate(
-                    key -> key != null &&
-                        key.startsWith(
-                            STORE_CACHE_PREFIX + grp.cacheOrGroupName() + CACHE_GRP_CACHE_NAME_METASTORE_KEY_DELIMITER
-                        )
+                    key -> key != null && key.startsWith(getCacheGroupMetastoreKeyPrefix(grp.cacheOrGroupName()))
                 );
 
             rmvCaches = cacheData.values();
