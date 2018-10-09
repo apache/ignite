@@ -30,7 +30,8 @@ export default class ConfigureState {
         const reducer = (state = {}, action) => {
             try {
                 return this._combinedReducer(state, action);
-            } catch (e) {
+            }
+            catch (e) {
                 console.error(e);
 
                 return state;
