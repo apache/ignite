@@ -23,7 +23,7 @@ package org.apache.ignite.mxbean;
 @MXBeanDescription("MBean that controls long blocking operations handling.")
 public interface BlockingOperationControlMXBean {
     /** */
-    @MXBeanDescription("Timeout for blocked system workers detection. Critical failure handler fires if exceeded. " +
+    @MXBeanDescription("Maximum inactivity period for system worker. Critical failure handler fires if exceeded. " +
         "Nonpositive value denotes infinite timeout.")
     public long getSysWorkerBlockedTimeout();
 

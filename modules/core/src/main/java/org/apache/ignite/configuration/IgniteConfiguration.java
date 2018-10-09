@@ -1990,25 +1990,24 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Returns timeout for blocked system workers detection.
+     * Returns maximum inactivity period for system worker. When this value is exceeded, worker is considered blocked
+     * with consequent critical failure handler invocation.
      * <p>
      * Default is {@link #getFailureDetectionTimeout()}.
      *
      * @see #setSysWorkerBlockedTimeout(long)
-     * @return Returns timeout for blocked system workers detection in milliseconds.
+     * @return Maximum inactivity period for system worker in milliseconds.
      */
     public Long getSysWorkerBlockedTimeout() {
         return sysWorkerBlockedTimeout != null ? sysWorkerBlockedTimeout : getFailureDetectionTimeout();
     }
 
     /**
-     * Sets timeout for blocked system workers detection.
-     * <p>
-     * When a blocking operation in some system-critical worker lasts more than this timeout, then critical failure
-     * handler is being called.
+     * Sets maximum inactivity period for system worker. When this value is exceeded, worker is considered blocked
+     * with consequent critical failure handler invocation.
      *
      * @see #setFailureHandler(FailureHandler)
-     * @param sysWorkerBlockedTimeout Timeout for blocked system workers detection in milliseconds.
+     * @param sysWorkerBlockedTimeout Maximum inactivity period for system worker in milliseconds.
      * @return {@code this} for chaining.
      */
     public IgniteConfiguration setSysWorkerBlockedTimeout(long sysWorkerBlockedTimeout) {
