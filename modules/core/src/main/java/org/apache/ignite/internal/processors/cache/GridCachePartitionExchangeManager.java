@@ -2415,6 +2415,35 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         return false;
     }
 
+    /** */
+    public boolean affinityChanged(AffinityTopologyVersion from, AffinityTopologyVersion to) {
+        List<GridDhtPartitionsExchangeFuture> history = exchFuts.values();
+
+        boolean fromFound = false;
+
+        for (GridDhtPartitionsExchangeFuture fut : history) {
+            if (!fromFound) {
+                int cmp = fut.initialVersion().compareTo(from);
+
+                if (cmp > 0) // We don't have history, so return true for safety
+                    return true;
+                else if (cmp == 0)
+                    fromFound = true;
+                else if (fut.isDone() && fut.topologyVersion().compareTo(from) >= 0)
+                    return true; // Temporary solution for merge exchange case
+            }
+            else {
+                if (fut.changedAffinity())
+                    return true;
+
+                if (fut.initialVersion().compareTo(to) >= 0)
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
     /**
      * Exchange future thread. All exchanges happen only by one thread and next
      * exchange will not start until previous one completes.

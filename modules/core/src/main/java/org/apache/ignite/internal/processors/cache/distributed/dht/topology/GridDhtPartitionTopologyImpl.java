@@ -1131,25 +1131,38 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             List<ClusterNode> nodes = null;
 
-            if (!topVer.equals(diffFromAffinityVer)) {
-                LT.warn(log, "Requested topology version does not match calculated diff, will require full iteration to" +
-                    "calculate mapping [grp=" + grp.cacheOrGroupName() + ", topVer=" + topVer +
-                    ", diffVer=" + diffFromAffinityVer + "]");
+            AffinityTopologyVersion diffVer = diffFromAffinityVer;
 
-                nodes = new ArrayList<>();
+            if (!diffVer.equals(topVer)) {
+                LT.warn(log, "Requested topology version does not match calculated diff, need to check if " +
+                    "affinity has changed [grp=" + grp.cacheOrGroupName() + ", topVer=" + topVer +
+                    ", diffVer=" + diffVer + "]");
 
-                nodes.addAll(affNodes);
+                boolean affChanged;
 
-                for (Map.Entry<UUID, GridDhtPartitionMap> entry : node2part.entrySet()) {
-                    GridDhtPartitionState state = entry.getValue().get(p);
+                if (diffVer.compareTo(topVer) < 0)
+                    affChanged = ctx.exchange().affinityChanged(diffVer, topVer);
+                else
+                    affChanged = ctx.exchange().affinityChanged(topVer, diffVer);
 
-                    ClusterNode n = ctx.discovery().node(entry.getKey());
+                if (affChanged) {
+                    LT.warn(log, "Requested topology version does not match calculated diff, will require full iteration to" +
+                        "calculate mapping [grp=" + grp.cacheOrGroupName() + ", topVer=" + topVer +
+                        ", diffVer=" + diffVer + "]");
 
-                    if (n != null && state != null && (state == MOVING || state == OWNING || state == RENTING)
-                        && !nodes.contains(n) && (topVer.topologyVersion() < 0 || n.order() <= topVer.topologyVersion())) {
-                        nodes.add(n);
+                    nodes = new ArrayList<>();
+
+                    nodes.addAll(affNodes);
+
+                    for (Map.Entry<UUID, GridDhtPartitionMap> entry : node2part.entrySet()) {
+                        GridDhtPartitionState state = entry.getValue().get(p);
+
+                        ClusterNode n = ctx.discovery().node(entry.getKey());
+
+                        if (n != null && state != null && (state == MOVING || state == OWNING || state == RENTING)
+                            && !nodes.contains(n) && (topVer.topologyVersion() < 0 || n.order() <= topVer.topologyVersion()))
+                            nodes.add(n);
                     }
-
                 }
 
                 return nodes;
