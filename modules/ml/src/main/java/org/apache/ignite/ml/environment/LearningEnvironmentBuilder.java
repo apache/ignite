@@ -35,7 +35,7 @@ public class LearningEnvironmentBuilder {
     /**
      * Creates an instance of LearningEnvironmentBuilder.
      */
-    LearningEnvironmentBuilder() {
+    public LearningEnvironmentBuilder() {
         parallelismStgy = NoParallelismStrategy.INSTANCE;
         loggingFactory = NoOpLogger.factory();
     }

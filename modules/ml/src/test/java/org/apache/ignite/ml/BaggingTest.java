@@ -20,6 +20,15 @@ package org.apache.ignite.ml;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
+import org.apache.ignite.ml.dataset.Dataset;
+import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.environment.parallelism.DefaultParallelismStrategy;
+import org.apache.ignite.ml.math.functions.Functions;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
@@ -33,14 +42,61 @@ import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDT
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.TrainerTransformers;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+import org.junit.runners.Parameterized;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class BaggingTest extends TrainerTest {
+//    @Test
+//    public void test() {
+//        Map<Integer, Double[]> cacheMock = new HashMap<>();
+//
+//        for (int i = 0; i < twoLinearlySeparableClasses.length; i++) {
+//            double[] row = twoLinearlySeparableClasses[i];
+//            Double[] convertedRow = new Double[row.length];
+//            for (int j = 0; j < row.length; j++)
+//                convertedRow[j] = row[j];
+//            cacheMock.put(i, convertedRow);
+//        }
+//
+//        LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>(new UpdatesStrategy<>(
+//                new SimpleGDUpdateCalculator().withLearningRate(0.2),
+//                SimpleGDParameterUpdate::sumLocal,
+//                SimpleGDParameterUpdate::avg
+//        ), 100000, 10, 100, 123L);
+//
+//        DatasetTrainer<ModelsComposition, Double> transformedTrainer = trainer
+//                .transform(TrainerTransformers.makeBagged(3, 0.5, new MeanValuePredictionsAggregator()));
+//
+//        PipelineMdl<Integer, Double[]> mdl = new Pipeline<Integer, Double[], Vector>()
+//                .addFeatureExtractor((k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)))
+//                .addLabelExtractor((k, v) -> v[0])
+//                .addPreprocessor(new MinMaxScalerTrainer<Integer, Object[]>())
+//                .addPreprocessor(new NormalizationTrainer<Integer, Object[]>()
+//                        .withP(1))
+//                .addTrainer(transformedTrainer)
+//                .fit(
+//                        cacheMock,
+//                        parts
+//                );
+//
+//        TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(100, 10)), PRECISION);
+//        TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(10, 100)), PRECISION);
+//    }
+
     @Test
-    public void test() {
+    public void testContextCount() {
+        count((ctxCount, countData, integer) -> ctxCount);
+    }
+
+    @Test
+    public void testDataCount() {
+        count((ctxCount, countData, integer) -> countData.cnt);
+    }
+
+    protected void count(IgniteTriFunction<Long, CountData, Integer, Long> counter) {
         Map<Integer, Double[]> cacheMock = new HashMap<>();
 
         for (int i = 0; i < twoLinearlySeparableClasses.length; i++) {
@@ -51,28 +107,73 @@ public class BaggingTest extends TrainerTest {
             cacheMock.put(i, convertedRow);
         }
 
-        LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>(new UpdatesStrategy<>(
-                new SimpleGDUpdateCalculator().withLearningRate(0.2),
-                SimpleGDParameterUpdate::sumLocal,
-                SimpleGDParameterUpdate::avg
-        ), 100000, 10, 100, 123L);
+        CountTrainer countTrainer = new CountTrainer(counter);
 
-        DatasetTrainer<ModelsComposition, Double> transformedTrainer = trainer
-                .transform(TrainerTransformers.makeBagged(10, 0.5, new MeanValuePredictionsAggregator()));
+        double subsampleSize = 0.3;
 
-        PipelineMdl<Integer, Double[]> mdl = new Pipeline<Integer, Double[], Vector>()
-                .addFeatureExtractor((k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)))
-                .addLabelExtractor((k, v) -> v[0])
-                .addPreprocessor(new MinMaxScalerTrainer<Integer, Object[]>())
-                .addPreprocessor(new NormalizationTrainer<Integer, Object[]>()
-                        .withP(1))
-                .addTrainer(transformedTrainer)
-                .fit(
-                        cacheMock,
-                        parts
-                );
+        ModelsComposition model = countTrainer
+            .transform(TrainerTransformers.makeBagged(100, subsampleSize, new MeanValuePredictionsAggregator()))
+            .fit(cacheMock, parts, null, null);
 
-        TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(100, 10)), PRECISION);
-        TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(10, 100)), PRECISION);
+        Double res = model.apply(null);
+
+        TestUtils.assertEquals(twoLinearlySeparableClasses.length * subsampleSize, res, twoLinearlySeparableClasses.length / 10);
+    }
+
+    protected static Long plusOfNullables(Long a, Long b) {
+        if (a == null) {
+            return b;
+        }
+        if (b == null) {
+            return a;
+        }
+
+        return a + b;
+    }
+
+    protected static class CountTrainer extends DatasetTrainer<Model<Vector, Double>, Double> {
+        private final IgniteTriFunction<Long, CountData, Integer, Long> counter;
+
+        public CountTrainer(IgniteTriFunction<Long, CountData, Integer, Long> counter) {
+            this.counter = counter;
+        }
+
+        @Override
+        public <K, V> Model<Vector, Double> fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+            Dataset<Long, CountData> dataset = datasetBuilder.build(
+                (upstreamData, upstreamDataSize) -> upstreamDataSize,
+                (upstreamData, upstreamDataSize, ctx) -> new CountData(upstreamDataSize)
+            );
+
+            Long cnt = dataset.computeWithCtx(counter, BaggingTest::plusOfNullables);
+
+            return x -> Double.valueOf(cnt);
+        }
+
+        @Override
+        protected boolean checkState(Model<Vector, Double> mdl) {
+            return true;
+        }
+
+        @Override
+        protected <K, V> Model<Vector, Double> updateModel(
+            Model<Vector, Double> mdl,
+            DatasetBuilder<K, V> datasetBuilder,
+            IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+            return fit(datasetBuilder, featureExtractor, lbExtractor);
+        }
+    }
+
+    protected static class CountData implements AutoCloseable {
+        private long cnt;
+
+        public CountData(long cnt) {
+            this.cnt = cnt;
+        }
+
+        @Override
+        public void close() throws Exception {
+            // No-op
+        }
     }
 }

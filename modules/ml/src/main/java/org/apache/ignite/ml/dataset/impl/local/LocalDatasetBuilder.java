@@ -18,12 +18,10 @@
 package org.apache.ignite.ml.dataset.impl.local;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -31,7 +29,9 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.util.Utils;
 
 /**
@@ -51,7 +51,9 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     /** Filter for {@code upstream} data. */
     private final IgniteBiPredicate<K, V> filter;
 
-    private IgniteFunction<Stream<UpstreamEntry<K, V>>, Stream<UpstreamEntry<K, V>>> transformer;
+    private List<IgniteBiFunction<Stream<UpstreamEntry<K, V>>, ?, Stream<UpstreamEntry<K, V>>>> transformers;
+
+    private List<IgniteSupplier<?>> transformerDataSuppliers;
 
     /**
      * Constructs a new instance of local dataset builder that makes {@link LocalDataset} with default predicate that
@@ -75,7 +77,8 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         this.upstreamMap = upstreamMap;
         this.filter = filter;
         this.partitions = partitions;
-        this.transformer = x -> x;
+        this.transformers = new LinkedList<>();
+        this.transformerDataSuppliers = new LinkedList<>();
     }
 
     /** {@inheritDoc} */
@@ -85,31 +88,40 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         List<C> ctxList = new ArrayList<>();
         List<D> dataList = new ArrayList<>();
 
-        Map<K, V> filteredMap = new HashMap<>();
-        upstreamMap.forEach((key, val) -> {
-            if (filter.apply(key, val))
-                filteredMap.put(key, val);
-        });
+        // TODO: Do we have any constraint telling us that in upstream data key is unique?
+        List<UpstreamEntry<K, V>> entriesList = new LinkedList<>();
 
-        int partSize = Math.max(1, filteredMap.size() / partitions);
+        Stream<UpstreamEntry<K, V>> filteredStream = upstreamMap
+            .entrySet()
+            .stream()
+            .filter(en -> filter.apply(en.getKey(), en.getValue()))
+            .map(en -> new UpstreamEntry<>(en.getKey(), en.getValue()));
 
-        Iterator<K> firstKeysIter = filteredMap.keySet().iterator();
-        Iterator<K> secondKeysIter = filteredMap.keySet().iterator();
+        List<?> suppliersData = transformerDataSuppliers.stream().map(Supplier::get).collect(Collectors.toList());
+
+        transformStream(filteredStream, suppliersData)
+            .forEach(entriesList::add);
+
+        int partSize = Math.max(1, entriesList.size() / partitions);
+
+        Iterator<UpstreamEntry<K, V>> firstKeysIter = entriesList.iterator();
+        Iterator<UpstreamEntry<K, V>> secondKeysIter = entriesList.iterator();
 
         int ptr = 0;
-        for (int part = 0; part < partitions; part++) {
-            int cnt = part == partitions - 1 ? filteredMap.size() - ptr : Math.min(partSize, filteredMap.size() - ptr);
 
-            IteratorWindow<K, UpstreamEntry<K, V>> iter = new IteratorWindow<>(
-                    firstKeysIter, k -> new UpstreamEntry<>(k, filteredMap.get(k)), cnt);
+        for (int part = 0; part < partitions; part++) {
+            int cnt = part == partitions - 1 ? entriesList.size() - ptr : Math.min(partSize, entriesList.size() - ptr);
+
+            IteratorWindow<UpstreamEntry<K, V>, UpstreamEntry<K, V>> iter = new IteratorWindow<>(
+                    firstKeysIter, k -> k, cnt);
             C ctx = cnt > 0 ? partCtxBuilder.build(
-                    transformer.apply(Utils.asStream(iter)),
+                    Utils.asStream(iter),
                 cnt
             ) : null;
 
             Iterator<UpstreamEntry<K, V>> iter1 = new IteratorWindow<>(
-                    secondKeysIter, k -> new UpstreamEntry<>(k, filteredMap.get(k)), cnt);
-            Stream<UpstreamEntry<K, V>> tStream = transformer.apply(Utils.asStream(iter1));
+                    secondKeysIter, k -> k, cnt);
+            Stream<UpstreamEntry<K, V>> tStream = Utils.asStream(iter1);
             D data = cnt > 0 ? partDataBuilder.build(
                     tStream,
                 cnt,
@@ -126,9 +138,11 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     }
 
     @Override
-    public DatasetBuilder<K, V> withStreamTransformer(IgniteFunction<Stream<UpstreamEntry<K, V>>, Stream<UpstreamEntry<K, V>>> t) {
-        IgniteFunction<Stream<UpstreamEntry<K, V>>, Stream<UpstreamEntry<K, V>>> oldTrans = transformer;
-        transformer = s -> oldTrans.andThen(t).apply(s);
+    public <T> DatasetBuilder<K, V> addStreamTransformer(
+        IgniteBiFunction<Stream<UpstreamEntry<K, V>>, T, Stream<UpstreamEntry<K, V>>> transformer,
+        IgniteSupplier<T> transformerDataSupplier) {
+        transformers.add(transformer);
+        transformerDataSuppliers.add(transformerDataSupplier);
 
         return this;
     }
@@ -137,6 +151,21 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     @Override public DatasetBuilder<K, V> withFilter(IgniteBiPredicate<K, V> filterToAdd) {
         return new LocalDatasetBuilder<>(upstreamMap,
             (e1, e2) -> filter.apply(e1, e2) && filterToAdd.apply(e1, e2), partitions);
+    }
+
+    private Stream<UpstreamEntry<K, V>> transformStream(Stream<UpstreamEntry<K, V>> upstream, List<?> data) {
+        assert transformers.size() == data.size();
+
+        Iterator<?> dataSuppliersIter = data.iterator();
+
+        Stream<UpstreamEntry<K, V>> res = upstream;
+
+        for (IgniteBiFunction transformer : transformers) {
+            Object d = dataSuppliersIter.next();
+            res = (Stream<UpstreamEntry<K, V>>) transformer.apply(res, d);
+        }
+
+        return res;
     }
 
     /**

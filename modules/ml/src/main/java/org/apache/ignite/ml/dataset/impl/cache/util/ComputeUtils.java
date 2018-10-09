@@ -37,6 +37,7 @@ import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.util.Utils;
 
 /**
  * Util class that provides common methods to perform computations on top of the Ignite Compute Grid.
@@ -142,8 +143,13 @@ public class ComputeUtils {
      * @param <D> Type of a partition {@code data}.
      * @return Partition {@code data}.
      */
-    public static <K, V, C extends Serializable, D extends AutoCloseable> D getData(Ignite ignite,
-        String upstreamCacheName, IgniteBiPredicate<K, V> filter, IgniteFunction<Stream<UpstreamEntry<K, V>>, Stream<UpstreamEntry<K, V>>> transformer, String datasetCacheName, UUID datasetId, int part,
+    public static <K, V, C extends Serializable, D extends AutoCloseable> D getData(
+        Ignite ignite,
+        String upstreamCacheName, IgniteBiPredicate<K, V> filter,
+        IgniteFunction<Stream<UpstreamEntry<K, V>>, Stream<UpstreamEntry<K, V>>> transformer,
+        String datasetCacheName,
+        UUID datasetId,
+        int part,
         PartitionDataBuilder<K, V, C, D> partDataBuilder) {
 
         PartitionDataStorage dataStorage = (PartitionDataStorage)ignite
@@ -202,14 +208,21 @@ public class ComputeUtils {
      * @param ignite Ignite instance.
      * @param upstreamCacheName Name of an {@code upstream} cache.
      * @param filter Filter for {@code upstream} data.
+     * @param transformer Upstream data {@link Stream} transformer.
      * @param datasetCacheName Name of a partition {@code context} cache.
      * @param ctxBuilder Partition {@code context} builder.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @param <C> Type of a partition {@code context}.
      */
-    public static <K, V, C extends Serializable> void initContext(Ignite ignite, String upstreamCacheName,
-        IgniteBiPredicate<K, V> filter, IgniteFunction<Stream<UpstreamEntry<K, V>>, Stream<UpstreamEntry<K, V>>> transformer, String datasetCacheName, PartitionContextBuilder<K, V, C> ctxBuilder, int retries,
+    public static <K, V, C extends Serializable> void initContext(
+        Ignite ignite,
+        String upstreamCacheName,
+        IgniteBiPredicate<K, V> filter,
+        IgniteFunction<Stream<UpstreamEntry<K, V>>, Stream<UpstreamEntry<K, V>>> transformer,
+        String datasetCacheName,
+        PartitionContextBuilder<K, V, C> ctxBuilder,
+        int retries,
         int interval) {
         affinityCallWithRetries(ignite, Arrays.asList(datasetCacheName, upstreamCacheName), part -> {
             Ignite locIgnite = Ignition.localIgnite();
@@ -221,22 +234,19 @@ public class ComputeUtils {
             qry.setPartition(part);
             qry.setFilter(filter);
 
-            long cnt = computeCount(locUpstreamCache, qry);
-
             C ctx;
             try (QueryCursor<UpstreamEntry<K, V>> cursor = locUpstreamCache.query(qry,
                 e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
+                long cnt = transformer.apply(Utils.asStream(cursor.iterator())).count();
 
-                Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(cursor.iterator(), cnt,
+                Stream<UpstreamEntry<K, V>> transformedStream = transformer.apply(Utils.asStream(cursor.iterator()));
+
+                Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(
+                    transformedStream.iterator(),
+                    cnt,
                     "Cache expected to be not modified during dataset data building [partition=" + part + ']');
 
-                Stream<UpstreamEntry<K, V>> initialStream = StreamSupport.stream(
-                        Spliterators.spliterator(iter, cnt, Spliterator.ORDERED),
-                        false);
-
-                Stream<UpstreamEntry<K, V>> transformedStream = transformer.apply(initialStream);
-
-                ctx = ctxBuilder.build(transformedStream, cnt);
+                ctx = ctxBuilder.build(iter, cnt);
             }
 
             IgniteCache<Integer, C> datasetCache = locIgnite.cache(datasetCacheName);
@@ -260,8 +270,13 @@ public class ComputeUtils {
      * @param <V> Type of a value in {@code upstream} data.
      * @param <C> Type of a partition {@code context}.
      */
-    public static <K, V, C extends Serializable> void initContext(Ignite ignite, String upstreamCacheName,
-        IgniteBiPredicate<K, V> filter, IgniteFunction<Stream<UpstreamEntry<K, V>>, Stream<UpstreamEntry<K, V>>> transformer, String datasetCacheName, PartitionContextBuilder<K, V, C> ctxBuilder,
+    public static <K, V, C extends Serializable> void initContext(
+        Ignite ignite,
+        String upstreamCacheName,
+        IgniteBiPredicate<K, V> filter,
+        IgniteFunction<Stream<UpstreamEntry<K, V>>, Stream<UpstreamEntry<K, V>>> transformer,
+        String datasetCacheName,
+        PartitionContextBuilder<K, V, C> ctxBuilder,
         int retries) {
         initContext(ignite, upstreamCacheName, filter, transformer, datasetCacheName, ctxBuilder, retries, 0);
     }

@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.trainers;
 
 import org.apache.commons.math3.distribution.PoissonDistribution;
+import org.apache.commons.math3.random.Well19937c;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
@@ -33,15 +34,22 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class TrainerTransformers {
-    public static <M extends Model<Vector, Double>, L> IgniteFunction<DatasetTrainer<M, L>, DatasetTrainer<ModelsComposition, L>> makeBagged(int ensembleSize, double subsampleSize, PredictionsAggregator aggregator) {
+    public static <M extends Model<Vector, Double>, L> IgniteFunction<DatasetTrainer<M, L>, DatasetTrainer<ModelsComposition, L>> makeBagged(
+        int ensembleSize,
+        double subsampleSize,
+        PredictionsAggregator aggregator) {
         return trainer -> new DatasetTrainer<ModelsComposition, L>() {
             @Override
-            public <K, V> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+            public <K, V> ModelsComposition fit(
+                DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor,
+                IgniteBiFunction<K, V, L> lbExtractor) {
                 return runOnEnsemble(
                         (db, i) -> (() -> trainer.fit(db, featureExtractor, lbExtractor)),
                         datasetBuilder,
@@ -81,8 +89,10 @@ public class TrainerTransformers {
 
         Long startTs = System.currentTimeMillis();
 
-        DatasetBuilder<X, Y> bootstrappedBuilder = datasetBuilder.withStreamTransformer(
-                s -> s.flatMap(en -> sampleForBagging(en, subsampleSize)));
+        DatasetBuilder<X, Y> bootstrappedBuilder = datasetBuilder.addStreamTransformer(
+            (s, rnd) -> s.flatMap(en -> sampleForBagging(en, rnd)),
+            () -> new PoissonDistribution(subsampleSize)
+        );
 
         List<IgniteSupplier<M>> tasks = new ArrayList<>();
 
@@ -101,9 +111,9 @@ public class TrainerTransformers {
         return new ModelsComposition(models, aggregator);
     }
 
-    private static <K, V> Stream<UpstreamEntry<K, V>> sampleForBagging(UpstreamEntry<K, V> en, double subsampleSize) {
-        PoissonDistribution poissonDistribution = new PoissonDistribution(subsampleSize);
-
+    private static <K, V> Stream<UpstreamEntry<K, V>> sampleForBagging(
+        UpstreamEntry<K, V> en,
+        PoissonDistribution poissonDistribution) {
         int count = poissonDistribution.sample();
 
         return IntStream.range(0, count).mapToObj(i -> en);
