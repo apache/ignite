@@ -18,7 +18,7 @@
 import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import {BehaviorSubject} from 'rxjs/BehaviorSubject';
 import 'rxjs/add/operator/first';
 import 'rxjs/add/operator/partition';
 import 'rxjs/add/operator/takeUntil';
@@ -239,7 +239,8 @@ export default class AgentManager {
     saveToStorage(cluster = this.connectionSbj.getValue().cluster) {
         try {
             localStorage.cluster = JSON.stringify(cluster);
-        } catch (ignore) {
+        }
+        catch (ignore) {
             // No-op.
         }
     }

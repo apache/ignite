@@ -127,7 +127,8 @@ module.exports.factory = function() {
                             const top = this.restResultParse(res);
 
                             _.forEach(this.demo.browserSockets, (sock) => sock.emit('topology', top));
-                        } catch (err) {
+                        }
+                        catch (err) {
                             _.forEach(this.demo.browserSockets, (sock) => sock.emit('topology:err', err));
                         }
                     });
