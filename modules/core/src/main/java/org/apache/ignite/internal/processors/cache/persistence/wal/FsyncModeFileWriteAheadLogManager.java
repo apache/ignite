@@ -1459,7 +1459,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      * Monitor of current object is used for notify on:
      * <ul>
      * <li>exception occurred ({@link FileArchiver#cleanException}!=null)</li>
-     * <li>stopping thread ({@link FileArchiver#stopped}==true)</li>
+     * <li>stopping thread ({@link FileArchiver#isCancelled}==true)</li>
      * <li>current file index changed ({@link FileArchiver#curAbsWalIdx})</li>
      * <li>last archived file index was changed ({@link FileArchiver#lastAbsArchivedIdx})</li>
      * <li>some WAL index was removed from {@link FileArchiver#locked} map</li>
@@ -1477,9 +1477,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         /** Last archived file index (absolute, 0-based). Guarded by <code>this</code>. */
         private volatile long lastAbsArchivedIdx = -1;
-
-        /** current thread stopping advice */
-        private volatile boolean stopped;
 
         /** */
         private NavigableMap<Long, Integer> reserved = new TreeMap<>();
@@ -1515,7 +1512,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
          */
         private void shutdown() throws IgniteInterruptedCheckedException {
             synchronized (this) {
-                stopped = true;
+                isCancelled = true;
 
                 notifyAll();
             }
@@ -1597,7 +1594,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
             try {
                 synchronized (this) {
-                    while (curAbsWalIdx == -1 && !stopped) {
+                    while (curAbsWalIdx == -1 && !isCancelled()) {
                         blockingSectionBegin();
 
                         try {
@@ -1613,14 +1610,14 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     // once it was archived.
                 }
 
-                while (!Thread.currentThread().isInterrupted() && !stopped) {
+                while (!Thread.currentThread().isInterrupted() && !isCancelled()) {
                     long toArchive;
 
                     synchronized (this) {
                         assert lastAbsArchivedIdx <= curAbsWalIdx : "lastArchived=" + lastAbsArchivedIdx +
                             ", current=" + curAbsWalIdx;
 
-                        while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !stopped) {
+                        while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !isCancelled()) {
                             blockingSectionBegin();
 
                             try {
@@ -1634,7 +1631,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                         toArchive = lastAbsArchivedIdx + 1;
                     }
 
-                    if (stopped)
+                    if (isCancelled())
                         break;
 
                     SegmentArchiveResult res;
@@ -1649,7 +1646,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     }
 
                     synchronized (this) {
-                        while (locked.containsKey(toArchive) && !stopped) {
+                        while (locked.containsKey(toArchive) && !isCancelled()) {
                             blockingSectionBegin();
 
                             try {
@@ -1676,14 +1673,14 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             catch (InterruptedException t) {
                 Thread.currentThread().interrupt();
 
-                if (!stopped)
+                if (!isCancelled())
                     err = t;
             }
             catch (Throwable t) {
                 err = t;
             }
             finally {
-                if (err == null && !stopped)
+                if (err == null && !isCancelled())
                     err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly");
 
                 if (err instanceof OutOfMemoryError)
@@ -1858,7 +1855,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
          *
          */
         private boolean checkStop() {
-            return stopped;
+            return isCancelled();
         }
 
         /**
