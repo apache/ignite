@@ -248,7 +248,7 @@ public class CachesRegistry {
             registerGroup(grpDesc);
 
         for (DynamicCacheDescriptor cacheDesc : cacheDescriptors) {
-            if(cacheDesc.version()==null)
+            if (cacheDesc.version() == null)
                 cacheDesc.version(cctx.cache().getOrCreateCacheVersion(cacheDesc));
 
             registerCache(cacheDesc);
