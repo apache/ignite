@@ -571,8 +571,9 @@ public class QueryUtils {
         for (Map.Entry<String, String> entry : fields.entrySet()) {
             Boolean isKeyField;
 
-            if (isKeyClsSqlType) // We don't care about keyFields in this case - it might be null, or empty, or anything
-                isKeyField = false;
+            if (isKeyClsSqlType)
+                // In case of field is neither composite nor wrapped, it is a key, if it equal to keyFieldName.
+                isKeyField = entry.getKey().equals(qryEntity.getKeyFieldName());
             else
                 isKeyField = (hasKeyFields ? keyFields.contains(entry.getKey()) : null);
 
