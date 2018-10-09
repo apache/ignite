@@ -102,7 +102,7 @@ public class FailureProcessor extends GridProcessorAdapter {
      * Processes failure accordingly to configured {@link FailureHandler}.
      *
      * @param failureCtx Failure context.
-     * @return {@code true} If this very call led to Ignite node invalidation.
+     * @return {@code True} If this very call led to Ignite node invalidation.
      */
     public boolean process(FailureContext failureCtx) {
         return process(failureCtx, hnd);
@@ -113,7 +113,7 @@ public class FailureProcessor extends GridProcessorAdapter {
      *
      * @param failureCtx Failure context.
      * @param hnd Failure handler.
-     * @return {@code true} If this very call led to Ignite node invalidation.
+     * @return {@code True} If this very call led to Ignite node invalidation.
      */
     public synchronized boolean process(FailureContext failureCtx, FailureHandler hnd) {
         assert failureCtx != null;
