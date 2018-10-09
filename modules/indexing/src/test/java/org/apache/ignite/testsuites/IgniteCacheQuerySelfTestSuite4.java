@@ -18,6 +18,8 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnCreateDestoryIndexTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnSqlQueryTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFailoverAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFailoverTxReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFailoverTxSelfTest;
@@ -46,6 +48,10 @@ public class IgniteCacheQuerySelfTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheContinuousQueryAsyncFailoverAtomicSelfTest.class);
         suite.addTestSuite(CacheContinuousQueryAsyncFailoverTxReplicatedSelfTest.class);
         suite.addTestSuite(CacheContinuousQueryAsyncFailoverTxSelfTest.class);
+
+        // Tests that check that read operations are not blocked by exchange.
+        suite.addTestSuite(CacheBlockOnSqlQueryTest.class);
+        suite.addTestSuite(CacheBlockOnCreateDestoryIndexTest.class);
 
         return suite;
     }
