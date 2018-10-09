@@ -146,10 +146,10 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
         BlockingOperationControlMXBean mBean = getMBean();
 
         assertEquals(0L, reg.getSystemWorkerBlockedTimeout());
-        assertEquals(0L, dbMgr.getCheckpointReadLockTimeout());
+        assertEquals(-85L, dbMgr.getCheckpointReadLockTimeout());
 
         assertEquals(0L, mBean.getSystemWorkerBlockedTimeout());
-        assertEquals(0L, mBean.getCheckpointReadLockTimeout());
+        assertEquals(-85L, mBean.getCheckpointReadLockTimeout());
     }
 
     /**
