@@ -99,12 +99,14 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /**
      * @param cctx Cache context.
+     * @param rowCache Row cache.
      * @param tbl Table.
      * @param idxName Index name.
      * @param pk Primary key.
      * @param affinityKey {@code true} for affinity key.
      * @param colsList Index columns.
      * @param inlineSize Inline size.
+     * @param segmentsCnt Count of index segments.
      * @throws IgniteCheckedException If failed.
      */
     public H2TreeIndex(
@@ -382,10 +384,10 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColumnsSet) {
+    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColsSet) {
         long rowCnt = getRowCountApproximation();
 
-        double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
+        double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColsSet);
 
         int mul = getDistributedMultiplier(ses, filters, filter);
 
@@ -442,9 +444,9 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public void destroy(boolean rmvIndex) {
+    @Override public void destroy(boolean rmvIdx) {
         try {
-            if (cctx.affinityNode() && rmvIndex) {
+            if (cctx.affinityNode() && rmvIdx) {
                 assert cctx.shared().database().checkpointLockIsHeldByThread();
 
                 for (int i = 0; i < segments.length; i++) {
@@ -460,7 +462,7 @@ public class H2TreeIndex extends GridH2IndexBase {
             throw new IgniteException(e);
         }
         finally {
-            super.destroy(rmvIndex);
+            super.destroy(rmvIdx);
         }
     }
 
