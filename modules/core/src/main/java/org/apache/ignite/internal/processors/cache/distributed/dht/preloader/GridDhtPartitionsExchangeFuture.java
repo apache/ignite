@@ -334,6 +334,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Latest (by update sequences) full message with exchangeId == null, need to be processed right after future is done. */
     private GridDhtPartitionsFullMessage delayedLatestMsg;
 
+    private final GridFutureAdapter<?> finishFut = new GridFutureAdapter<>();
+
     /**
      * @param cctx Cache context.
      * @param busyLock Busy lock.
@@ -773,6 +775,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     exchange = firstDiscoEvt.eventNode().isClient() ? onClientNodeEvent(crdNode) :
                         onServerNodeEvent(crdNode);
                 }
+            }
+
+            if (exchActions != null) {
+                Map<String, DynamicCacheChangeRequest> reqs = exchActions.cacheStartRequests()
+                    .stream()
+                    .map(ExchangeActions.CacheActionData::request)
+                    .collect(Collectors.toMap(DynamicCacheChangeRequest::cacheName, r -> r));
+
+                cctx.cache().intiExchange(reqs, finishFut);
             }
 
             updateTopologies(crdNode, cctx.coordinators().currentCoordinator());
@@ -1950,6 +1961,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             // Update last finished future in the first.
             cctx.exchange().lastFinishedFuture(this);
 
+            // Complete any affReady futures and update last exchange done version.
+            cctx.exchange().onExchangeDone(res, initialVersion(), err0);
+
             Map<String, DynamicCacheChangeRequest> reqs = null;
 
             if (exchActions != null)
@@ -1959,9 +1973,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     .collect(Collectors.toMap(DynamicCacheChangeRequest::cacheName, r -> r));
 
             cctx.cache().finishedProxyRestart(initialVersion(), res, reqs);
-
-            // Complete any affReady futures and update last exchange done version.
-            cctx.exchange().onExchangeDone(res, initialVersion(), err0);
 
             cctx.cache().finishedAll();
 
@@ -1973,6 +1984,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         });
 
         if (super.onDone(res, err)) {
+            finishFut.onDone();
+
             if (log.isDebugEnabled())
                 log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this +
                     ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');

@@ -1830,6 +1830,13 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         }
     }
 
+    public void intiExchange(Map<String, DynamicCacheChangeRequest> reqs, GridFutureAdapter<?> fut) {
+        for (IgniteCacheProxyImpl<?, ?> proxy : jCacheProxies.values()) {
+            if (reqs.containsKey(proxy.getName()) && proxy.isRestarting() && !reqs.get(proxy.getName()).disabledAfterStart())
+                proxy.onExchangeInit(fut);
+        }
+    }
+
     public void finishedProxyRestart(
         AffinityTopologyVersion initVer,
         AffinityTopologyVersion doneVer,
