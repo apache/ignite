@@ -41,19 +41,19 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
 
         execSQL("INSERT INTO varchar_table VALUES(?, ?)", 1, "12345");
 
-        compareSQLResult("SELECT * FROM varchar_table WHERE id = ?", 1, "12345");
+        checkSQLResults("SELECT * FROM varchar_table WHERE id = 1", 1, "12345");
 
         runSQL("CREATE TABLE decimal_table(id INT PRIMARY KEY, val DECIMAL(4, 2))" + mvccTrigger);
 
         execSQL("INSERT INTO decimal_table VALUES(?, ?)", 1, 12.34);
 
-        compareSQLResult("SELECT * FROM decimal_table WHERE id = ?", 1, BigDecimal.valueOf(12.34));
+        checkSQLResults("SELECT * FROM decimal_table WHERE id = 1", 1, BigDecimal.valueOf(12.34));
 
         runSQL("CREATE TABLE char_table(id INT PRIMARY KEY, str CHAR(5))" + mvccTrigger);
 
         execSQL("INSERT INTO char_table VALUES(?, ?)", 1, "12345");
 
-        compareSQLResult("SELECT * FROM char_table WHERE id = ?", 1, "12345");
+        checkSQLResults("SELECT * FROM char_table WHERE id = 1", 1, "12345");
 
         runSQL("CREATE TABLE decimal_table_4(id INT PRIMARY KEY, field DECIMAL(4, 2))" + mvccTrigger);
 
@@ -101,7 +101,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
 
         checkSQLThrows("MERGE INTO decimal_table(id, val) VALUES(?, ?)", CONSTRAINT_VIOLATION, 1, 123.45);
 
-        compareSQLResult("SELECT * FROM decimal_table WHERE id = ?", 1, BigDecimal.valueOf(12.34));
+        checkSQLResults("SELECT * FROM decimal_table WHERE id = 1", 1, BigDecimal.valueOf(12.34));
     }
 
     /**
@@ -116,7 +116,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
 
         checkSQLThrows("MERGE INTO decimal_table(id, val) VALUES(?, ?)", CONSTRAINT_VIOLATION, 1, 1.234);
 
-        compareSQLResult("SELECT * FROM decimal_table WHERE id = ?", 1, BigDecimal.valueOf(12.34));
+        checkSQLResults("SELECT * FROM decimal_table WHERE id = 1", 1, BigDecimal.valueOf(12.34));
     }
 
     /**
@@ -131,7 +131,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
 
         checkSQLThrows("MERGE INTO varchar_table(id, str) VALUES(?, ?)", CONSTRAINT_VIOLATION, 1, "123456");
 
-        compareSQLResult("SELECT * FROM varchar_table WHERE id = ?", 1, "12345");
+        checkSQLResults("SELECT * FROM varchar_table WHERE id = 1", 1, "12345");
     }
 
     /**
@@ -146,7 +146,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
 
         checkSQLThrows("MERGE INTO char_table(id, str) VALUES(?, ?)", CONSTRAINT_VIOLATION, 1, "123456");
 
-        compareSQLResult("SELECT * FROM char_table WHERE id = ?", 1, "12345");
+        checkSQLResults("SELECT * FROM char_table WHERE id = 1", 1, "12345");
     }
 
     /**
@@ -157,7 +157,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
         
         execSQL("INSERT INTO char_table_2(id, str) VALUES(?, ?)", 1, "1");
 
-        compareSQLResult("SELECT * FROM char_table_2 WHERE id = ?", 1, null, "1");
+        checkSQLResults("SELECT * FROM char_table_2 WHERE id = 1", 1, null, "1");
 
         checkSQLThrows("INSERT INTO char_table_2(id, str) VALUES(?, ?)", CONSTRAINT_VIOLATION, 2, "123456");
 
@@ -167,7 +167,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
 
         checkSQLThrows("MERGE INTO char_table_2(id, str) VALUES(?, ?)", CONSTRAINT_VIOLATION, 1, "123456");
 
-        compareSQLResult("SELECT * FROM char_table_2 WHERE id = ?", 1, null, "1");
+        checkSQLResults("SELECT * FROM char_table_2 WHERE id = 1", 1, null, "1");
     }
 
     /**
@@ -178,7 +178,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
 
         execSQL("INSERT INTO decimal_table_2(id, val) VALUES(?, ?)", 1, 12.34);
 
-        compareSQLResult("SELECT * FROM decimal_table_2 WHERE id = ?", 1, null, BigDecimal.valueOf(12.34));
+        checkSQLResults("SELECT * FROM decimal_table_2 WHERE id = 1", 1, null, BigDecimal.valueOf(12.34));
 
         checkSQLThrows("INSERT INTO decimal_table_2(id, val) VALUES(?, ?)", CONSTRAINT_VIOLATION, 2, 1234.56);
 
@@ -194,7 +194,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
 
         checkSQLThrows("MERGE INTO decimal_table_2(id, val) VALUES(?, ?)", CONSTRAINT_VIOLATION, 1, 1.234);
 
-        compareSQLResult("SELECT * FROM decimal_table_2 WHERE id = ?", 1, null, BigDecimal.valueOf(12.34));
+        checkSQLResults("SELECT * FROM decimal_table_2 WHERE id = 1", 1, null, BigDecimal.valueOf(12.34));
     }
 
     /**
@@ -203,7 +203,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
     public void testCharDropColumnWithConstraint() throws Exception {
         execSQL("INSERT INTO char_table_3(id, field, field2) VALUES(?, ?, ?)", 1, "12345", 1);
 
-        compareSQLResult("SELECT * FROM char_table_3 WHERE id = ?", 1, "12345", 1);
+        checkSQLResults("SELECT * FROM char_table_3 WHERE id = 1", 1, "12345", 1);
 
         checkSQLThrows("INSERT INTO char_table_3(id, field, field2) VALUES(?, ?, ?)", CONSTRAINT_VIOLATION,
             2, "123456", 1);
@@ -214,7 +214,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
 
         execSQL("INSERT INTO char_table_3(id, field2) VALUES(?, ?)", 3, 3);
 
-        compareSQLResult("SELECT * FROM char_table_3 WHERE id = ?", 3, 3);
+        checkSQLResults("SELECT * FROM char_table_3 WHERE id = 3", 3, 3);
     }
 
     /**
@@ -223,7 +223,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
     public void testDecimalDropColumnWithConstraint() throws Exception {
         execSQL("INSERT INTO decimal_table_3(id, field, field2) VALUES(?, ?, ?)", 1, 12.34, 1);
 
-        compareSQLResult("SELECT * FROM decimal_table_3 WHERE id = ?", 1, BigDecimal.valueOf(12.34), 1);
+        checkSQLResults("SELECT * FROM decimal_table_3 WHERE id = 1", 1, BigDecimal.valueOf(12.34), 1);
 
         checkSQLThrows("INSERT INTO decimal_table_3(id, field, field2) VALUES(?, ?, ?)", CONSTRAINT_VIOLATION,
             2, 12.3456, 1);
@@ -234,7 +234,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
 
         execSQL("INSERT INTO decimal_table_3(id, field2) VALUES(?, ?)", 3, 3);
 
-        compareSQLResult("SELECT * FROM decimal_table_3 WHERE id = ?", 3, 3);
+        checkSQLResults("SELECT * FROM decimal_table_3 WHERE id = 3", 3, 3);
     }
 
     /**
@@ -247,13 +247,13 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
 
         execSQL("INSERT INTO char_table_4(id, field) VALUES(?, ?)", 2, "12345");
 
-        compareSQLResult("SELECT * FROM char_table_4 WHERE id = ?", 2, "12345");
+        checkSQLResults("SELECT * FROM char_table_4 WHERE id = 2", 2, "12345");
 
         checkSQLThrows("UPDATE char_table_4 SET field = ? WHERE id = ?", CONSTRAINT_VIOLATION, "123456", 2);
 
         checkSQLThrows("MERGE INTO char_table_4(id, field) VALUES(?, ?)", CONSTRAINT_VIOLATION, 2, "123456");
 
-        compareSQLResult("SELECT * FROM char_table_4 WHERE id = ?", 2, "12345");
+        checkSQLResults("SELECT * FROM char_table_4 WHERE id = 2", 2, "12345");
     }
 
     /**
@@ -272,7 +272,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
 
         execSQL("INSERT INTO decimal_table_4 (id, field) VALUES(?, ?)", 2, 12.34);
 
-        compareSQLResult("SELECT * FROM decimal_table_4 WHERE id = ?", 2, BigDecimal.valueOf(12.34));
+        checkSQLResults("SELECT * FROM decimal_table_4 WHERE id = 2", 2, BigDecimal.valueOf(12.34));
 
         checkSQLThrows("UPDATE decimal_table_4 SET field = ? WHERE id = ?", CONSTRAINT_VIOLATION,
             BigDecimal.valueOf(1234.56), 2);
@@ -286,7 +286,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
         checkSQLThrows("MERGE INTO decimal_table_4(id, field) VALUES(?, ?)", CONSTRAINT_VIOLATION,
             2, BigDecimal.valueOf(1.345));
 
-        compareSQLResult("SELECT * FROM decimal_table_4 WHERE id = ?", 2, BigDecimal.valueOf(12.34));
+        checkSQLResults("SELECT * FROM decimal_table_4 WHERE id = 2", 2, BigDecimal.valueOf(12.34));
     }
 
     /** */
@@ -314,18 +314,20 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected void compareSQLResult(String sql, Object... args) {
-        List<?> rows = execSQL(sql, args);
+    protected void checkSQLResults(String sql, Object... args) {
+        List<?> rows = execSQL(sql);
 
         if (rows.isEmpty()) {
-            assertTrue(args.length == 1);
+            assertEquals(args.length, 0);
 
             return;
         }
 
-        List<Object> row = (List<Object>)(rows.get(0));
+        assertEquals(rows.size(), 1);
 
-        assertTrue(row.size() == args.length);
+        List<Object> row = (List<Object>)rows.get(0);
+
+        assertEquals(row.size(), args.length);
 
         for (int i = 0; i < args.length; i++)
             assertTrue(Objects.equals(args[i], row.get(i)));
