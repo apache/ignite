@@ -1558,7 +1558,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             for (IgniteCacheProxy cache : ((IgniteKernal)node).caches()) {
                 GridCacheContext cctx = cache.context();
 
-                if (!cctx.userCache() || !cctx.group().mvccEnabled())
+                if (!cctx.userCache() || !cctx.group().mvccEnabled() || F.isEmpty(cctx.group().caches()))
                     continue;
 
                 for (Iterator it = cache.withKeepBinary().iterator(); it.hasNext(); ) {
