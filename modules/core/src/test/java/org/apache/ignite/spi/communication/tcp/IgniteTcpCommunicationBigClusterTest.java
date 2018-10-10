@@ -53,6 +53,9 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
     private static final int CLUSTER_SIZE = 8;
 
     /** */
+    private static final int LOG_LENGTH = 10 * 1024 * 1024;
+
+    /** */
     private GridStringLogger strLog;
 
     static {
@@ -93,7 +96,7 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
     public void testHandshakeNoHangOnNodeJoining() throws Exception {
         strLog = new GridStringLogger();
 
-        strLog.logLength(10 * 1024 * 1024);
+        strLog.logLength(LOG_LENGTH);
 
         AtomicInteger idx = new AtomicInteger();
 
