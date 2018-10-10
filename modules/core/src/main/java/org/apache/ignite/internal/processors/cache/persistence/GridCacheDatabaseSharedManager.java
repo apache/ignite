@@ -1548,7 +1548,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         }
                     }
                 }
-                catch (IgniteCheckedException e) {
+                catch (NonCriticalCheckpointReadLockException e) {
                     timeout = 0;
                 }
             }
