@@ -169,8 +169,6 @@ public class MessageCodeGenerator {
 
 //        gen.generateAll(true);
 
-        gen.generateAndWrite(MvccRecoveryFinishedMessage.class);
-
 //        gen.generateAndWrite(GridNearAtomicUpdateRequest.class);
 
 //        gen.generateAndWrite(GridMessageCollection.class);

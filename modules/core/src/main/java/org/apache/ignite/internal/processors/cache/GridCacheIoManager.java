@@ -222,8 +222,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             else {
                 AffinityTopologyVersion locAffVer = cctx.exchange().readyAffinityVersion();
                 AffinityTopologyVersion rmtAffVer = cacheMsg.topologyVersion();
+                AffinityTopologyVersion lastAffChangedVer = cacheMsg.lastAffinityChangedTopologyVersion();
 
-                if (locAffVer.compareTo(rmtAffVer) < 0) {
+                if (locAffVer.compareTo(lastAffChangedVer) < 0) {
                     IgniteLogger log = cacheMsg.messageLogger(cctx);
 
                     if (log.isDebugEnabled()) {
@@ -233,12 +234,13 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                         msg0.append(", locTopVer=").append(locAffVer).
                             append(", rmtTopVer=").append(rmtAffVer).
+                            append(", lastAffChangedVer=").append(lastAffChangedVer).
                             append(']');
 
                         log.debug(msg0.toString());
                     }
 
-                    fut = cctx.exchange().affinityReadyFuture(rmtAffVer);
+                    fut = cctx.exchange().affinityReadyFuture(lastAffChangedVer);
                 }
             }
 
@@ -1151,6 +1153,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      */
     public void send(ClusterNode node, GridCacheMessage msg, byte plc) throws IgniteCheckedException {
         assert !node.isLocal() : node;
+
+        msg.lastAffinityChangedTopologyVersion(cctx.exchange().lastAffinityChangedTopologyVersion(msg.topologyVersion()));
 
         if (!onSend(msg, node.id()))
             return;

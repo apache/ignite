@@ -337,6 +337,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Future for wait all exchange listeners comepleted. */
     private final GridFutureAdapter<?> afterLsnrCompleteFut = new GridFutureAdapter<>();
 
+    /** */
+    private volatile AffinityTopologyVersion lastAffChangeTopVer;
+
     /**
      * @param cctx Cache context.
      * @param busyLock Busy lock.
@@ -575,14 +578,27 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         return exchActions != null && exchActions.changedBaseline();
     }
 
-    /** */
-    public boolean changedAffinity() {
+    /** {@inheritDoc} */
+    @Override public boolean changedAffinity() {
         DiscoveryEvent firstDiscoEvt0 = firstDiscoEvt;
 
         assert firstDiscoEvt0 != null;
 
         return firstDiscoEvt0.type() == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT
             || !firstDiscoEvt0.eventNode().isClient() || firstDiscoEvt0.eventNode().isLocal();
+    }
+
+    /** {@inheritDoc} */
+    @Override public AffinityTopologyVersion lastAffinityChangeTopologyVersion() {
+        assert exchangeDone();
+
+        if (changedAffinity())
+            return topologyVersion();
+        else {
+            assert lastAffChangeTopVer != null;
+
+            return lastAffChangeTopVer;
+        }
     }
 
     /**
@@ -667,7 +683,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param newCrd {@code True} if node become coordinator on this exchange.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
-    public void init(boolean newCrd) throws IgniteInterruptedCheckedException {
+    public void init(@Nullable GridDhtPartitionsExchangeFuture lastFut, boolean newCrd) throws IgniteInterruptedCheckedException {
         if (isDone())
             return;
 
@@ -688,6 +704,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert exchId.nodeId().equals(firstDiscoEvt.eventNode().id()) : this;
 
         try {
+            if (!changedAffinity()) {
+                assert lastFut != null;
+
+                lastAffChangeTopVer = lastFut.lastAffinityChangeTopologyVersion();
+            }
+
             AffinityTopologyVersion topVer = initialVersion();
 
             srvNodes = new ArrayList<>(firstEvtDiscoCache.serverNodes());
