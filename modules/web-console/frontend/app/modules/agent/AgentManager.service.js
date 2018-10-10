@@ -516,22 +516,21 @@ export default class AgentManager {
                 if (_.isNil(cluster))
                     throw new Error('Failed to execute request on cluster.');
 
-                // TODO GC-320 Implement correct fix for GG Cloud and secured cluster.
-                // if (cluster.secured) {
-                //     return Promise.resolve(this.clustersSecrets.get(cluster.id))
-                //         .then((secrets) => {
-                //             if (secrets.hasCredentials())
-                //                 return secrets;
-                //
-                //             return this.ClusterLoginSrv.askCredentials(secrets)
-                //                 .then((secrets) => {
-                //                     this.clustersSecrets.put(cluster.id, secrets);
-                //
-                //                     return secrets;
-                //                 });
-                //         })
-                //         .then((secrets) => ({cluster, credentials: secrets.getCredentials()}));
-                // }
+                if (cluster.secured) {
+                    return Promise.resolve(this.clustersSecrets.get(cluster.id))
+                        .then((secrets) => {
+                            if (secrets.hasCredentials())
+                                return secrets;
+
+                            return this.ClusterLoginSrv.askCredentials(secrets)
+                                .then((secrets) => {
+                                    this.clustersSecrets.put(cluster.id, secrets);
+
+                                    return secrets;
+                                });
+                        })
+                        .then((secrets) => ({cluster, credentials: secrets.getCredentials()}));
+                }
 
                 return {cluster, credentials: {}};
             })
