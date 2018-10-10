@@ -1847,6 +1847,9 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         AffinityTopologyVersion initVer,
         AffinityTopologyVersion doneVer
     ) {
+        if (initVer == null || doneVer == null)
+            return;
+
         for (GridCacheAdapter<?, ?> cache : caches.values()) {
             GridCacheContext<?, ?> cacheCtx = cache.context();
 
