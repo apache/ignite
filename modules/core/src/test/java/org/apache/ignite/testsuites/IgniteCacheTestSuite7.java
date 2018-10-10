@@ -68,46 +68,46 @@ public class IgniteCacheTestSuite7 extends TestSuite {
     public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("IgniteCache With Persistence Test Suite");
 
-//        suite.addTestSuite(CheckpointBufferDeadlockTest.class);
-//        suite.addTestSuite(IgniteCacheStartWithLoadTest.class);
-//
-//        suite.addTestSuite(AuthenticationConfigurationClusterTest.class);
-//        suite.addTestSuite(AuthenticationProcessorSelfTest.class);
-//        suite.addTestSuite(AuthenticationOnNotActiveClusterTest.class);
-//        suite.addTestSuite(AuthenticationProcessorNodeRestartTest.class);
-//        suite.addTestSuite(AuthenticationProcessorNPEOnStartTest.class);
-//        suite.addTestSuite(Authentication1kUsersNodeRestartTest.class);
-//
-//        suite.addTestSuite(CacheDataRegionConfigurationTest.class);
+        suite.addTestSuite(CheckpointBufferDeadlockTest.class);
+        suite.addTestSuite(IgniteCacheStartWithLoadTest.class);
 
-//        suite.addTestSuite(WalModeChangeAdvancedSelfTest.class);
-//        suite.addTestSuite(WalModeChangeSelfTest.class);
-//        suite.addTestSuite(WalModeChangeCoordinatorNotAffinityNodeSelfTest.class);
-//
-//        suite.addTestSuite(Cache64kPartitionsTest.class);
-//        suite.addTestSuite(GridCacheRebalancingPartitionCountersTest.class);
-//        suite.addTestSuite(GridCacheRebalancingWithAsyncClearingTest.class);
-//
-//        suite.addTestSuite(IgnitePdsCacheAssignmentNodeRestartsTest.class);
-//        suite.addTestSuite(TxRollbackAsyncWithPersistenceTest.class);
-//
-//        suite.addTestSuite(CacheGroupMetricsMBeanTest.class);
-//        suite.addTestSuite(CacheMetricsManageTest.class);
-//        suite.addTestSuite(PageEvictionMultinodeMixedRegionsTest.class);
-//
-//        suite.addTestSuite(IgniteDynamicCacheStartFailWithPersistenceTest.class);
-//
-//        suite.addTestSuite(TxWithSmallTimeoutAndContentionOneKeyTest.class);
-//
-//        suite.addTestSuite(CacheRentingStateRepairTest.class);
-//
-//        suite.addTestSuite(TransactionIntegrityWithPrimaryIndexCorruptionTest.class);
-//        suite.addTestSuite(CacheDataLossOnPartitionMoveTest.class);
-//
-//        suite.addTestSuite(CachePageWriteLockUnlockTest.class);
+        suite.addTestSuite(AuthenticationConfigurationClusterTest.class);
+        suite.addTestSuite(AuthenticationProcessorSelfTest.class);
+        suite.addTestSuite(AuthenticationOnNotActiveClusterTest.class);
+        suite.addTestSuite(AuthenticationProcessorNodeRestartTest.class);
+        suite.addTestSuite(AuthenticationProcessorNPEOnStartTest.class);
+        suite.addTestSuite(Authentication1kUsersNodeRestartTest.class);
+
+        suite.addTestSuite(CacheDataRegionConfigurationTest.class);
+
+        suite.addTestSuite(WalModeChangeAdvancedSelfTest.class);
+        suite.addTestSuite(WalModeChangeSelfTest.class);
+        suite.addTestSuite(WalModeChangeCoordinatorNotAffinityNodeSelfTest.class);
+
+        suite.addTestSuite(Cache64kPartitionsTest.class);
+        suite.addTestSuite(GridCacheRebalancingPartitionCountersTest.class);
+        suite.addTestSuite(GridCacheRebalancingWithAsyncClearingTest.class);
+
+        suite.addTestSuite(IgnitePdsCacheAssignmentNodeRestartsTest.class);
+        suite.addTestSuite(TxRollbackAsyncWithPersistenceTest.class);
+
+        suite.addTestSuite(CacheGroupMetricsMBeanTest.class);
+        suite.addTestSuite(CacheMetricsManageTest.class);
+        suite.addTestSuite(PageEvictionMultinodeMixedRegionsTest.class);
+
+        suite.addTestSuite(IgniteDynamicCacheStartFailWithPersistenceTest.class);
+
+        suite.addTestSuite(TxWithSmallTimeoutAndContentionOneKeyTest.class);
+
+        suite.addTestSuite(CacheRentingStateRepairTest.class);
+
+        suite.addTestSuite(TransactionIntegrityWithPrimaryIndexCorruptionTest.class);
+        suite.addTestSuite(CacheDataLossOnPartitionMoveTest.class);
+
+        suite.addTestSuite(CachePageWriteLockUnlockTest.class);
 
         suite.addTestSuite(CacheConfigurationCheckOnNodeJoinTest.class);
-//        suite.addTestSuite(GridCacheConfigurationVersionSelfTest.class);
+        suite.addTestSuite(GridCacheConfigurationVersionSelfTest.class);
 
         return suite;
     }

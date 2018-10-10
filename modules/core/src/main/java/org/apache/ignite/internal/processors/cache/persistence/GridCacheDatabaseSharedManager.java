@@ -2838,27 +2838,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         if (metastoreOnly)
                             continue;
 
-                        DataRecord dataRec = (DataRecord)rec;
-
-                        for (DataEntry dataEntry : dataRec.writeEntries()) {
-                            int cacheId = dataEntry.cacheId();
-
-                            DynamicCacheDescriptor desc = cctx.cache().cacheDescriptor(cacheId);
-
-                            // Cache descriptor not found means, that cache was destroyed while node was off.
-                            if (desc == null) {
-                                GridCacheConfigurationVersion ver = cctx.cache().cacheVersion(cacheId);
-
-                                assert ver != null || ver.lastAction() == DESTROY : ver;
-                            }
-                            else if (!ignoreGrps.contains(desc.groupId())) {
-                                GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
-
-                                applyUpdate(cacheCtx, dataEntry);
-
-                                applied++;
-                            }
-                        }
+                        applied += applyDataRecord((DataRecord)rec, ignoreGrps);
 
                         break;
 
@@ -2939,6 +2919,44 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             log.info("Finished applying WAL changes [updatesApplied=" + applied +
                 ", time=" + (U.currentTimeMillis() - start) + "ms]");
     }
+
+    /**
+     * Applies data record.
+     *
+     * @param dataRec Data record for apply.
+     * @param ignoreGrps Ignored group IDs on applying data record.
+     * @return Number of applied data entries.
+     * @throws IgniteCheckedException if exception occurred while restoring data entry.
+     */
+    private int applyDataRecord(DataRecord dataRec, Collection<Integer> ignoreGrps) throws IgniteCheckedException {
+        assert dataRec != null;
+        assert ignoreGrps != null;
+
+        int applied = 0;
+
+        for (DataEntry dataEntry : dataRec.writeEntries()) {
+            int cacheId = dataEntry.cacheId();
+
+            DynamicCacheDescriptor desc = cctx.cache().cacheDescriptor(cacheId);
+
+            // Cache descriptor not found means, that cache was destroyed while node was off.
+            if (desc == null) {
+                GridCacheConfigurationVersion ver = cctx.cache().cacheVersion(cacheId);
+
+                assert ver != null || ver.lastAction() == DESTROY : ver;
+            }
+            else if (!ignoreGrps.contains(desc.groupId())) {
+                GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+
+                applyUpdate(cacheCtx, dataEntry);
+
+                applied++;
+            }
+        }
+
+        return applied;
+    }
+
 
     /**
      * Initializes not empty partitions and restores their state from page memory or WAL.
