@@ -112,6 +112,7 @@ public class PartitionUpdateCounter {
      * @param delta Delta.
      */
     public synchronized void update(long start, long delta) {
+        // t0d0 cleanup queue after node failures
         long cur = cntr.get(), next;
 
         if (cur > start) {

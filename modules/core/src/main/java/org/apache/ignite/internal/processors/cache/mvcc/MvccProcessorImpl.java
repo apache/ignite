@@ -402,7 +402,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
      * Cleans up active transacitons lost near node which is server. Executed on coordinator.
      * @param liveSrvs Live server nodes at the moment of cleanup.
      */
-    private void cleanupOrphanedServerTransactions(List<ClusterNode> liveSrvs) {
+    private void cleanupOrphanedServerTransactions(Collection<ClusterNode> liveSrvs) {
         Set<UUID> ids = liveSrvs.stream()
             .map(ClusterNode::id)
             .collect(Collectors.toSet());
@@ -414,14 +414,14 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 // If node started tx is not known as live then remove such tx from active list
                 ActiveTx activeTx = entry.getValue();
 
-                if (activeTx instanceof ActiveServerTx && !ids.contains(activeTx.nearNodeId))
+                if (activeTx.getClass() == ActiveServerTx.class && !ids.contains(activeTx.nearNodeId))
                     forRmv.add(entry.getKey());
             }
         }
 
         for (Long txCntr : forRmv)
-            // Committed counter is not increased because here we do not know whether tx was committed or not
-            onTxDone(txCntr, false);
+            // Committed counter is increased because t0d0
+            onTxDone(txCntr, true);
     }
 
     /** {@inheritDoc} */
@@ -563,7 +563,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         if (!ctx.localNodeId().equals(crd.nodeId()) || !initFut.isDone())
             return null;
         else if (tx != null)
-            return assignTxSnapshot(0L, ctx.localNodeId(), !ctx.clientNode());
+            return assignTxSnapshot(0L, ctx.localNodeId(), false);
         else
             return activeQueries.assignQueryCounter(ctx.localNodeId(), 0L);
     }
@@ -613,7 +613,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 });
             }
             else if (tx != null)
-                lsnr.onResponse(assignTxSnapshot(0L, ctx.localNodeId(), !ctx.clientNode()));
+                lsnr.onResponse(assignTxSnapshot(0L, ctx.localNodeId(), false));
             else
                 lsnr.onResponse(activeQueries.assignQueryCounter(ctx.localNodeId(), 0L));
 
@@ -769,9 +769,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 first = false;
             }
 
-            for (MvccSnapshotResponseListener lsnr : map.values()) {
+            for (MvccSnapshotResponseListener lsnr : map.values())
                 U.warn(log, ">>> " + lsnr.toString());
-            }
         }
 
         first = true;
@@ -938,7 +937,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** */
-    private MvccSnapshotResponse assignTxSnapshot(long futId, UUID nearId, boolean srv) {
+    private MvccSnapshotResponse assignTxSnapshot(long futId, UUID nearId, boolean client) {
         assert initFut.isDone();
         assert crdVer != 0;
         assert ctx.localNodeId().equals(currentCoordinatorId());
@@ -959,7 +958,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 res.addTx(entry.getKey());
             }
 
-            ActiveTx activeTx = srv ? new ActiveServerTx(tracking, nearId) : new ActiveTx(tracking, nearId);
+            ActiveTx activeTx = client ? new ActiveTx(tracking, nearId) : new ActiveServerTx(tracking, nearId);
 
             boolean add = activeTxs.put(ver, activeTx) == null;
 
@@ -1378,7 +1377,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             return;
         }
 
-        MvccSnapshotResponse res = assignTxSnapshot(msg.futureId(), nodeId, !node.isClient());
+        MvccSnapshotResponse res = assignTxSnapshot(msg.futureId(), nodeId, node.isClient());
 
         try {
             sendMessage(node.id(), res);
