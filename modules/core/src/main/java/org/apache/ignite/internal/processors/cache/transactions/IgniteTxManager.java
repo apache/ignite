@@ -2497,8 +2497,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                             }
                         }
 
-                        // do not vote for failed servers
-                        if (client && tx.eventNodeId().equals(evtNodeId))
+                        // Await only mvcc transactions initiated by failed client node.
+                        if (client && tx.eventNodeId().equals(evtNodeId) && tx.mvccSnapshot() != null)
                             allTxFinFut.add(tx.finishFuture());
                     }
                 }
