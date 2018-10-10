@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
@@ -1743,6 +1744,28 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
+    private void write(String key, Serializable value) throws IgniteCheckedException {
+        assert key != null;
+        assert value != null;
+
+        if(value instanceof GridCacheConfigurationVersion || value instanceof StoredCacheData){
+            try{
+                throw new RuntimeException();
+            } catch (RuntimeException e){
+                log.error("IGNITE-8717 write() key: " + key + " value: " + U.toString(value), e);
+            }
+        }
+
+        context().database().checkpointReadLock();
+
+        try{
+            metaStorage.write(key, value);
+        } finally {
+            context().database().checkpointReadUnlock();
+        }
+
+    }
+
     /**
      * Read stored caches configurations version from metastore.
      *
@@ -1831,7 +1854,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     assert oldVer == null || oldVer.id() <= ver.id() :
                         ver + " old: " + (oldVer == null ? "null" : oldVer);
 
-                    metaStorage.write(verKey, ver);
+                    write(verKey, ver);
                 }
             }
         }
@@ -1878,7 +1901,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             StoredCacheData old = (StoredCacheData)metaStorage.read(key);
 
             if (old == null || overwrite)
-                metaStorage.write(key, cacheData);
+                write(key, cacheData);
 
             assert cacheData.version() != null : cacheData;
 
@@ -5101,7 +5124,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (enabled)
                 remove(key);
             else {
-                metaStorage.write(key, true);
+                write(key, true);
 
                 lastCheckpointInapplicableForWalRebalance(grpId);
             }
@@ -5140,7 +5163,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             long lastCpTs = lastCp != null ? lastCp.timestamp() : 0;
 
             if (lastCpTs != 0)
-                metaStorage.write(checkpointInapplicableCpAndGroupIdToKey(lastCpTs, grpId), true);
+                write(checkpointInapplicableCpAndGroupIdToKey(lastCpTs, grpId), true);
         }
         catch (IgniteCheckedException e) {
             log.error("Failed to mark last checkpoint as inapplicable for WAL rebalance for group: " + grpId, e);
