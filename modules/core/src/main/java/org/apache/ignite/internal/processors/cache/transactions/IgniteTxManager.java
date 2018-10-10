@@ -45,7 +45,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectsReleaseFuture;
-import org.apache.ignite.internal.processors.cache.GridCacheCompoundFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -2438,30 +2437,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     log.debug("Processing node failed event [locNodeId=" + cctx.localNodeId() +
                         ", failedNodeId=" + evtNodeId + ']');
 
-                // t0d0
-                // 1. await finishing all transactions for failed near node
-                // 2. listen for mvcc crd failure
-                GridCacheCompoundFuture<IgniteInternalTx, Void> allTxFinFut = new GridCacheCompoundFuture(null) {
-                    private final IgniteUuid futId = IgniteUuid.randomUuid();
-                    private boolean trackable = true;
-
-                    @Override public IgniteUuid futureId() {
-                        return futId;
-                    }
-
-                    @Override public boolean onNodeLeft(UUID nodeId) {
-                        // t0d0
-                        return false;
-                    }
-
-                    @Override public boolean trackable() {
-                        return trackable;
-                    }
-
-                    @Override public void markNotTrackable() {
-                        trackable = false;
-                    }
-                };
+                GridCompoundFuture<IgniteInternalTx, Void> allTxFinFut = new GridCompoundFuture<>();
 
                 for (final IgniteInternalTx tx : activeTransactions()) {
                     if ((tx.near() && !tx.local()) || (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId))) {
