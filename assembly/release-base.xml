@@ -51,6 +51,11 @@
             <source>config/java.util.logging.properties</source>
             <outputDirectory>/config</outputDirectory>
         </file>
+
+        <file>
+            <source>modules/tensorflow/src/main/sh/ignite-tf.sh</source>
+            <outputDirectory>/bin</outputDirectory>
+        </file>
     </files>
 
     <fileSets>
