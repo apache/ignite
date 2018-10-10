@@ -2284,12 +2284,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param cctx Cache context.
+     * @param pcctx Cache context.
      * @param qry Query.
      * @param keepBinary Keep binary flag.
      * @return Cursor.
      */
-    private <K,V> QueryCursor<Cache.Entry<K,V>> queryDistributedSql(final GridCacheContext<?,?> cctx,
+    private <K,V> QueryCursor<Cache.Entry<K,V>> queryDistributedSql(final GridCacheContext<?,?> pcctx,
         final SqlQuery qry, final boolean keepBinary) {
         checkxEnabled();
 
@@ -2297,7 +2297,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            final String schemaName = idx.schema(cctx.name());
+            final GridCacheContext<?,?> cctx;
+
+            if (F.isEmpty(qry.getCacheName())) {
+                qry.setCacheName(pcctx.name());
+
+                cctx = pcctx;
+            }
+            else
+                cctx = this.ctx.cache().context().cacheContext(CU.cacheId(qry.getCacheName()));
+
+            final String schemaName = idx.schema(qry.getCacheName());
 
             return executeQuery(GridCacheQueryType.SQL, qry.getSql(), cctx,
                 new IgniteOutClosureX<QueryCursor<Cache.Entry<K, V>>>() {
@@ -2315,17 +2325,27 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param cctx Cache context.
+     * @param pcctx Cache context parameter.
      * @param qry Query.
      * @param keepBinary Keep binary flag.
      * @return Cursor.
      */
-    private <K, V> QueryCursor<Cache.Entry<K, V>> queryLocalSql(final GridCacheContext<?, ?> cctx, final SqlQuery qry,
+    private <K, V> QueryCursor<Cache.Entry<K, V>> queryLocalSql(final GridCacheContext<?, ?> pcctx, final SqlQuery qry,
         final boolean keepBinary) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
-        final String schemaName = idx.schema(cctx.name());
+        final GridCacheContext<?, ?> cctx;
+
+        if (F.isEmpty(qry.getCacheName())) {
+            qry.setCacheName(pcctx.name());
+
+            cctx = pcctx;
+        }
+        else
+            cctx = this.ctx.cache().context().cacheContext(CU.cacheId(qry.getCacheName()));
+
+        final String schemaName = idx.schema(qry.getCacheName());
 
         try {
             return executeQuery(GridCacheQueryType.SQL, qry.getSql(), cctx,

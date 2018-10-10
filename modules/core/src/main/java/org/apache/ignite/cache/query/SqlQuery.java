@@ -36,6 +36,9 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     private static final long serialVersionUID = 0L;
 
     /** */
+    private String cacheName;
+
+    /** */
     private String type;
 
     /** Table alias */
@@ -67,7 +70,19 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * @param sql SQL Query.
      */
     public SqlQuery(String type, String sql) {
-        setType(type);
+        if (type != null) {
+            int pp = type.indexOf(".");
+
+            if ( pp >= 0) {
+                setCacheName(type.substring(0, type.indexOf(".")));
+
+                if ( pp < type.length()-1)
+                    setType(type.substring(type.indexOf(".") + 1));
+            }
+            else
+                setType(type);
+        }
+
         setSql(sql);
     }
 
@@ -78,6 +93,18 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * @param sql SQL Query.
      */
     public SqlQuery(Class<?> type, String sql) {
+        setType(type);
+        setSql(sql);
+    }
+
+    /**
+     * Constructs query for the given type and SQL query.
+     *
+     * @param type Type.
+     * @param sql SQL Query.
+     */
+    public SqlQuery(String cacheName, Class<?> type, String sql) {
+        setCacheName(cacheName);
         setType(type);
         setSql(sql);
     }
@@ -124,6 +151,23 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
         this.args = args;
 
         return this;
+    }
+
+    /**
+     * Gets cache name for query.
+     *
+     * @return Type.
+     */
+    public String getCacheName() {
+        return cacheName;
+    }
+
+    /**
+     * Sets cache name for query.
+     * @param cacheName
+     */
+    public void setCacheName(String cacheName) {
+        this.cacheName = cacheName;
     }
 
     /**
@@ -205,6 +249,8 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * @return {@code this} For chaining.
      */
     public SqlQuery<K, V> setType(Class<?> type) {
+        A.notNull(type, "type");
+
         return setType(QueryUtils.typeName(type));
     }
 

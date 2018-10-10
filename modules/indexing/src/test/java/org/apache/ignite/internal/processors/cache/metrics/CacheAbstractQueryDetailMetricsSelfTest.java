@@ -336,12 +336,11 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
         IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
         IgniteCache<Integer, String> cache2 = grid(0).context().cache().jcache("B");
 
-        SqlQuery<Integer, String> qry = new SqlQuery<>(Long.class, "Select * from \"B\".Long");
+        SqlQuery<Integer, Long> qry = new SqlQuery<>("B", Long.class, "Select * from Long");
 
         qry.setPageSize(10);
 
-        //todo: Enable after fix of IGNITE-9771
-        //checkQueryNotFullyFetchedMetrics(cache, cache2, true, qry);
+        checkQueryNotFullyFetchedMetrics(cache, cache2, true, qry);
     }
 
     /**

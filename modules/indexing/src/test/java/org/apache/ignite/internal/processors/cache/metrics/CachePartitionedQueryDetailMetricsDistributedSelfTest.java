@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.metrics;
 
+import org.apache.ignite.configuration.CacheConfiguration;
+
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Tests for partitioned distributed cache query metrics.
@@ -29,5 +32,22 @@ public class CachePartitionedQueryDetailMetricsDistributedSelfTest extends Cache
         cacheMode = PARTITIONED;
 
         super.beforeTest();
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return Cache configuration.
+     */
+    protected CacheConfiguration<Integer, String> configureCache2(String cacheName) {
+        CacheConfiguration<Integer, String> ccfg = defaultCacheConfiguration();
+
+        ccfg.setName(cacheName);
+        ccfg.setCacheMode(cacheMode);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setIndexedTypes(Integer.class, Long.class);
+        ccfg.setStatisticsEnabled(true);
+        ccfg.setQueryDetailMetricsSize(QRY_DETAIL_METRICS_SIZE);
+
+        return ccfg;
     }
 }
