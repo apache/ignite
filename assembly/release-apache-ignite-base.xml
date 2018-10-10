@@ -47,6 +47,22 @@
             <destName>Makefile.am</destName>
         </file>
 
+        <!-- Copy Node.js files. -->
+        <file>
+            <source>modules/platforms/nodejs/index.js</source>
+            <outputDirectory>/platforms/nodejs</outputDirectory>
+        </file>
+
+        <file>
+            <source>modules/platforms/nodejs/package.json</source>
+            <outputDirectory>/platforms/nodejs</outputDirectory>
+        </file>
+
+        <file>
+            <source>modules/platforms/nodejs/README.md</source>
+            <outputDirectory>/platforms/nodejs</outputDirectory>
+        </file>
+
         <!-- Other files. -->
         <file>
             <source>assembly/LICENSE_IGNITE</source>
@@ -190,6 +206,17 @@
         <fileSet>
             <directory>modules/platforms/cpp/bin</directory>
             <outputDirectory>/platforms/cpp/bin</outputDirectory>
+        </fileSet>
+
+        <!-- Copy Node.js binaries. -->
+        <fileSet>
+            <directory>modules/platforms/nodejs/lib</directory>
+            <outputDirectory>/platforms/nodejs/lib</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/platforms/nodejs/examples</directory>
+            <outputDirectory>/platforms/nodejs/examples</outputDirectory>
         </fileSet>
 
         <!-- Other files. -->
