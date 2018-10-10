@@ -329,24 +329,24 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
 
         if (cacheGrp) {
             for (int i = 0; i < 3; i++) {
-                CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME + i);
+                CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME + i);
 
                 ccfg.setGroupName("testGroup");
                 ccfg.setWriteSynchronizationMode(FULL_SYNC);
                 ccfg.setAtomicityMode(atomicityMode);
 
-                IgniteCache cache = client.createCache(ccfg);
+                IgniteCache<?, ?> cache = client.createCache(ccfg);
 
                 caches.add(cache.getName());
             }
         }
         else {
-            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+            CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setAtomicityMode(atomicityMode);
 
-            IgniteCache cache = client.createCache(ccfg);
+            IgniteCache<?, ?> cache = client.createCache(ccfg);
 
             caches.add(cache.getName());
         }
@@ -476,7 +476,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
 
                         return evtCnt.get() >= THREADS * UPDATES;
                     }
-                }, 5000);
+                }, 30000);
 
                 assertEquals(THREADS * UPDATES, qry.get1().get());
 
