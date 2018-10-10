@@ -138,7 +138,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
-import org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationChangeAction;
 import org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationVersion;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -392,6 +391,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Barrier for notification that metastore ready for write. */
     private final CountDownLatch metaStorageReadyForWriteLatch = new CountDownLatch(1);
 
+    /** Barrier for notification that metastore cleared. */
+    private final CountDownLatch cachesCfgVerClearFromMetaStorageLatch = new CountDownLatch(1);
     /**
      * @param ctx Kernal context.
      */
@@ -1631,12 +1632,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             log.error("IGNITE-8717 storeCacheConfiguration() data: " + cacheData + " overwrite: " + overwrite, e);
         }
 
-        if (metaStorageReadyForWriteLatch.getCount() == 0L)
+        if (metastoreReadyForReadWriteCacheCfg())
             storeCacheConfiguration0(cacheData, overwrite);
         else {
             IgniteInternalFuture<?> fut = cctx.kernalContext().closure().runLocalSafe(() -> {
                 try {
-                    metaStorageReadyForWriteLatch.await();
+                    awaitTillMetastoreWillBeReadyForReadWriteOpsOnCachesCfg();
 
                     storeCacheConfiguration0(cacheData, overwrite);
                 }
@@ -1659,14 +1660,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             log.error("IGNITE-8717 clearStoredCachesConfigurationVersion()", e);
         }
 
-        if (metaStorageReadyForWriteLatch.getCount() == 0L)
-            removeStoredCachesConfigurationVersion0();
+        if (metastoreReadyForReadWriteOperations())
+            clearStoredCachesConfigurationVersion0();
         else {
             IgniteInternalFuture<?> fut = cctx.kernalContext().closure().runLocalSafe(() -> {
                 try {
-                    metaStorageReadyForWriteLatch.await();
+                    awaitTillMetastoreWillBeReadyForReadWrite();
 
-                    removeStoredCachesConfigurationVersion0();
+                    clearStoredCachesConfigurationVersion0();
                 }
                 catch (IgniteCheckedException | InterruptedException e) {
                     U.error(log, "Failed to clear caches configuration! ", e);
@@ -1684,7 +1685,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      *
      * @see GridCacheDatabaseSharedManager#clearStoredCachesConfigurationVersion()
      */
-    private void removeStoredCachesConfigurationVersion0() throws IgniteCheckedException {
+    private void clearStoredCachesConfigurationVersion0() throws IgniteCheckedException {
         context().database().checkpointReadLock();
 
         try {
@@ -1697,12 +1698,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             try{
                 throw new RuntimeException();
             } catch (RuntimeException e){
-                log.error("IGNITE-8717 removeStoredCachesConfigurationVersion0() removed: " + data, e);
+                log.error("IGNITE-8717 clearStoredCachesConfigurationVersion0() removed: " + data, e);
             }
         }
         finally {
             context().database().checkpointReadUnlock();
         }
+
+        // Caches configuration version cleared. Now we can store new caches configuration version.
+        cachesCfgVerClearFromMetaStorageLatch.countDown();
     }
 
     /**
@@ -1803,12 +1807,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             log.error("IGNITE-8717 storeCacheConfigurationVersion() ver: " + ver + " overwrite: " + overwrite, e);
         }
 
-        if (metaStorageReadyForWriteLatch.getCount() == 0L)
+        if (metastoreReadyForReadWriteCacheCfg())
             storeCacheConfigurationVersion0(ver, overwrite);
         else {
             IgniteInternalFuture<?> fut = cctx.kernalContext().closure().runLocalSafe(() -> {
                 try {
-                    metaStorageReadyForWriteLatch.await();
+                    awaitTillMetastoreWillBeReadyForReadWriteOpsOnCachesCfg();
 
                     storeCacheConfigurationVersion0(ver, overwrite);
                 }
@@ -1821,6 +1825,43 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             assert old == null : old;
         }
+    }
+
+    /**
+     * Wait till metastore will be ready for read/write operations.
+     *
+     * @throws InterruptedException if wail was interrupted.
+     */
+    private void awaitTillMetastoreWillBeReadyForReadWrite() throws InterruptedException {
+        metaStorageReadyForWriteLatch.await();
+    }
+
+    /**
+     * Wait till metastore will be ready for read/write operations on cache configuration and cache configuration
+     * version.
+     *
+     * @throws InterruptedException if wail was interrupted.
+     */
+    private void awaitTillMetastoreWillBeReadyForReadWriteOpsOnCachesCfg() throws InterruptedException {
+        awaitTillMetastoreWillBeReadyForReadWrite();
+
+        // Wait till old caches configuration version in metastore will be clean.
+        cachesCfgVerClearFromMetaStorageLatch.await();
+    }
+
+    /**
+     * @return {@code true} if metastore ready for read/write operations .
+     */
+    private boolean metastoreReadyForReadWriteOperations() {
+        return metaStorageReadyForWriteLatch.getCount() == 0L;
+    }
+
+    /**
+     * @return {@code true} if metastore ready for read/write operations on cache configuration/cache configuration
+     * version and {@code false} otherwise.
+     */
+    private boolean metastoreReadyForReadWriteCacheCfg(){
+        return metastoreReadyForReadWriteOperations() && cachesCfgVerClearFromMetaStorageLatch.getCount() == 0L;
     }
 
     /**
