@@ -169,6 +169,14 @@ namespace ignite
                     SyncMessage(req, rsp);
                 }
 
+                void CacheClientImpl::ClearAll(const Writable& keys)
+                {
+                    CacheValueRequest<RequestType::CACHE_CLEAR_KEYS> req(id, binary, keys);
+                    Response rsp;
+
+                    SyncMessage(req, rsp);
+                }
+
                 void CacheClientImpl::LocalPeek(const WritableKey& key, Readable& value)
                 {
                     CacheValueRequest<RequestType::CACHE_LOCAL_PEEK> req(id, binary, key);

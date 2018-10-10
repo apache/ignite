@@ -300,6 +300,33 @@ namespace ignite
                 }
 
                 /**
+                 * Clear entries from the cache and swap storage, without notifying listeners or CacheWriters.
+                 * Entry is cleared only if it is not currently locked, and is not participating in a transaction.
+                 *
+                 * @param keys Keys to clear.
+                 */
+                template<typename Set>
+                void ClearAll(const Set& keys)
+                {
+                    ClearAll(keys.begin(), keys.end());
+                }
+
+                /**
+                 * Clear entries from the cache and swap storage, without notifying listeners or CacheWriters.
+                 * Entry is cleared only if it is not currently locked, and is not participating in a transaction.
+                 *
+                 * @param begin Iterator pointing to the beggining of the key sequence.
+                 * @param end Iterator pointing to the end of the key sequence.
+                 */
+                template<typename InIter>
+                void ClearAll(InIter begin, InIter end)
+                {
+                    impl::thin::WritableSetImpl<K, InIter> wrSeq(begin, end);
+
+                    proxy.ClearAll(wrSeq);
+                }
+
+                /**
                  * Refresh affinity mapping.
                  *
                  * Retrieves affinity mapping information from remote server. This information uses to send data

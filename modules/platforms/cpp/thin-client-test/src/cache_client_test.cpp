@@ -948,4 +948,74 @@ BOOST_AUTO_TEST_CASE(CacheClientRemoveAllIterators)
     BOOST_REQUIRE_EQUAL(cache.GetSize(cache::CachePeekMode::PRIMARY), 0);
 }
 
+BOOST_AUTO_TEST_CASE(CacheClientClearAllContainers)
+{
+    IgniteClientConfiguration cfg;
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, std::string> cache =
+        client.CreateCache<int32_t, std::string>("test");
+
+    std::vector<int32_t> keys;
+
+    keys.push_back(1);
+    keys.push_back(2);
+    keys.push_back(3);
+
+    std::vector<std::string> values;
+
+    values.push_back("first");
+    values.push_back("second");
+    values.push_back("third");
+
+    for (size_t i = 0; i < keys.size(); ++i)
+        cache.Put(keys[i], values[i]);
+
+    BOOST_REQUIRE_EQUAL(cache.GetSize(cache::CachePeekMode::PRIMARY), 3);
+
+    for (size_t i = 0; i < keys.size(); ++i)
+        BOOST_REQUIRE_EQUAL(cache.Get(keys[i]), values[i]);
+
+    cache.ClearAll(keys);
+
+    BOOST_REQUIRE_EQUAL(cache.GetSize(cache::CachePeekMode::PRIMARY), 0);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientClearAllIterators)
+{
+    IgniteClientConfiguration cfg;
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, std::string> cache =
+        client.CreateCache<int32_t, std::string>("test");
+
+    std::vector<int32_t> keys;
+
+    keys.push_back(1);
+    keys.push_back(2);
+    keys.push_back(3);
+
+    std::vector<std::string> values;
+
+    values.push_back("first");
+    values.push_back("second");
+    values.push_back("third");
+
+    for (size_t i = 0; i < keys.size(); ++i)
+        cache.Put(keys[i], values[i]);
+
+    BOOST_REQUIRE_EQUAL(cache.GetSize(cache::CachePeekMode::PRIMARY), 3);
+
+    for (size_t i = 0; i < keys.size(); ++i)
+        BOOST_REQUIRE_EQUAL(cache.Get(keys[i]), values[i]);
+
+    cache.ClearAll(keys.begin(), keys.end());
+
+    BOOST_REQUIRE_EQUAL(cache.GetSize(cache::CachePeekMode::PRIMARY), 0);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

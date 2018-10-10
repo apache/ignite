@@ -110,6 +110,11 @@ namespace ignite
                 {
                     GetCacheImpl(impl).Clear();
                 }
+
+                void CacheClientProxy::ClearAll(const Writable& keys)
+                {
+                    GetCacheImpl(impl).ClearAll(keys);
+                }
             }
         }
     }

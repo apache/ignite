@@ -161,6 +161,14 @@ namespace ignite
                     void Clear();
 
                     /**
+                     * Clear entries from the cache and swap storage, without notifying listeners or CacheWriters.
+                     * Entry is cleared only if it is not currently locked, and is not participating in a transaction.
+                     *
+                     * @param keys Keys to clear.
+                     */
+                    void ClearAll(const Writable& keys);
+
+                    /**
                      * Peeks at in-memory cached value using default optional
                      * peek mode. This method will not load value from any
                      * persistent store or from a remote node.
