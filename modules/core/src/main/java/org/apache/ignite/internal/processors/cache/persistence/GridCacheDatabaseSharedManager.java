@@ -385,7 +385,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointReadLockTimeout = IgniteSystemProperties.getLong(IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT,
             ctx.config().getCheckpointReadLockTimeout() != null
                 ? ctx.config().getCheckpointReadLockTimeout()
-                : ctx.workersRegistry().getSystemWorkerBlockedTimeout());
+                : (ctx.workersRegistry() != null
+                    ? ctx.workersRegistry().getSystemWorkerBlockedTimeout()
+                    : ctx.config().getFailureDetectionTimeout()));
     }
 
     /** */
