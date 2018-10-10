@@ -63,6 +63,12 @@ export class FormField {
         // return this._selector.find(`.form-field__error`)
         return this._selector.find(`[ng-message="${errorType}"]`);
     }
+    get selectedOption() {
+        return this.control.textContent;
+    }
+    get postfix() {
+        return this._selector.find('[data-postfix]').getAttribute('data-postfix');
+    }
 }
 
 /**
@@ -72,4 +78,12 @@ export class CustomFormField extends FormField {
     static ROOT_SELECTOR = '.form-field';
     static LABEL_SELECTOR = '.form-field__label';
     static ERRORS_SELECTOR = '.form-field__errors';
+    constructor(...args) {
+        super(...args);
+        this.errors = this.errors.addCustomMethods({
+            hasError(errors, errorMessage) {
+                return !!errors.querySelectorAll(`.form-field__error [data-title*="${errorMessage}"]`).length;
+            }
+        });
+    }
 }
