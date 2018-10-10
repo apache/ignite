@@ -1854,7 +1854,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             GridCacheContext<?, ?> cacheCtx = cache.context();
 
             if (reqs.containsKey(cache.name()) ||
-                (cacheCtx.startTopologyVersion().compareTo(initVer) >= 0 &&
+                (cacheCtx.startTopologyVersion().compareTo(initVer) <= 0 ||
                     cacheCtx.startTopologyVersion().compareTo(doneVer) <= 0))
                 completeProxyInitialize(cache.name());
 
