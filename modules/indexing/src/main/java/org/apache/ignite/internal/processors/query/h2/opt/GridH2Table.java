@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
-import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
@@ -27,8 +26,8 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
+import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.thread.IgniteThread;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.command.dml.Insert;
 import org.h2.engine.DbObject;
@@ -95,6 +94,9 @@ public class GridH2Table extends TableBase {
 
     /** Number of reading threads which currently move execution from query pool to dedicated thread. */
     private final AtomicInteger lazyTransferCnt = new AtomicInteger();
+
+    /** Has writer that waits lock in the loop. */
+    private volatile boolean hasWaitedWriter;
 
     /** */
     private boolean destroyed;
@@ -318,19 +320,25 @@ public class GridH2Table extends TableBase {
                             l.unlock();
                     }
 
+                    hasWaitedWriter = true;
+
                     Thread.yield();
                 }
+
+                hasWaitedWriter = false;
             }
             else {
                 // Attempt to acquire read lock (query execution, DML, cache update).
                 // If query is being executed inside a query pool, we do not want it to be blocked
                 // for a long time, as it would prevent other queries from being executed. So we
                 // wait a little and then force transfer to dedicated thread by throwing special
-                // timeout exception.
+                // timeout exception.GridNioSslSelfTest
                 // If query is not in the query pool, then we simply wait for lock acquisition.
-                if (isQueryPool()) {
-                    if (!l.tryLock(200, TimeUnit.MILLISECONDS))
-                        throw new GridH2ReadLockTimeoutException();
+                if (isSqlNotInLazy()) {
+                    if (hasWaitedWriter || !l.tryLock(200, TimeUnit.MILLISECONDS)) {
+                        throw new GridH2RetryException("Long wait on Table lock: [tableName=" + getName()
+                            + ", hasWaitedWriter=" + hasWaitedWriter + ']');
+                    }
                 }
                 else
                     l.lockInterruptibly();
@@ -355,14 +363,12 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     * Check if table is being locked in query pool.
+     * Check if table is being locked in not lazy thread by SQL query.
      *
      * @return {@code True} if is in query pool.
      */
-    private static boolean isQueryPool() {
-        IgniteThread thread = IgniteThread.current();
-
-        return thread != null && thread.policy() == GridIoPolicy.QUERY_POOL;
+    private static boolean isSqlNotInLazy() {
+        return GridH2QueryContext.get() != null && MapQueryLazyWorker.currentWorker() == null;
     }
 
     /**
@@ -376,7 +382,7 @@ public class GridH2Table extends TableBase {
 
         lazyTransferCnt.incrementAndGet();
 
-        unlock(false);
+        lock.readLock().unlock();
     }
 
     /**
@@ -387,9 +393,16 @@ public class GridH2Table extends TableBase {
     public void onLazyTransferFinished(Session ses) {
         assert sessions.containsKey(ses) : "Attached session have not locked the table: " + getName();
 
-        lock(false);
+        try {
+            lock.readLock().lockInterruptibly();
 
-        lazyTransferCnt.decrementAndGet();
+            lazyTransferCnt.decrementAndGet();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IgniteInterruptedException("Thread got interrupted while trying to acquire table lock.", e);
+        }
     }
 
     /**

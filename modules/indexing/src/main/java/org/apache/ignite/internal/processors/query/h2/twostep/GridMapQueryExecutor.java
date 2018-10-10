@@ -78,7 +78,6 @@ import org.apache.ignite.internal.processors.query.h2.ResultSetEnlistFuture;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2ReadLockTimeoutException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
@@ -995,76 +994,35 @@ public class GridMapQueryExecutor {
             else
                 releaseReservations();
 
-            if (X.cause(e, GridH2ReadLockTimeoutException.class) != null) {
-                // Execute query in separate lazy worker in case we couldn't obtain table lock long time.
-                // Prev worker is closed within MapQueryResult
-                worker = createLazyWorker(node, reqId, segmentId);
+            // Stop and unregister worker after possible cancellation.
+            if (lazy)
+                worker.stop(false);
 
-                try {
-                    worker.startForWholeQuery();
-
-                    worker.submit(new Runnable() {
-                        @Override public void run() {
-                            onQueryRequest0(
-                                node,
-                                reqId,
-                                segmentId,
-                                schemaName,
-                                qrys,
-                                cacheIds,
-                                topVer,
-                                partsMap,
-                                parts,
-                                pageSize,
-                                distributedJoinMode,
-                                enforceJoinOrder,
-                                replicated,
-                                timeout,
-                                params,
-                                txDetails == null,
-                                mvccSnapshot,
-                                tx,
-                                txDetails,
-                                lockFut,
-                                runCntr);
-                        }
-                    });
-                }
-                catch (QueryCancelledException eCanceled) {
-                    sendError(node, reqId, new QueryCancelledException());
-                }
-            }
+            if (e instanceof QueryCancelledException)
+                sendError(node, reqId, e);
             else {
-                // Stop and unregister worker after possible cancellation.
-                if (lazy)
-                    worker.stop(false);
+                JdbcSQLException sqlEx = X.cause(e, JdbcSQLException.class);
 
-                if (e instanceof QueryCancelledException)
-                    sendError(node, reqId, e);
+                if (sqlEx != null && sqlEx.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
+                    sendError(node, reqId, new QueryCancelledException());
                 else {
-                    JdbcSQLException sqlEx = X.cause(e, JdbcSQLException.class);
+                    GridH2RetryException retryErr = X.cause(e, GridH2RetryException.class);
 
-                    if (sqlEx != null && sqlEx.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
-                        sendError(node, reqId, new QueryCancelledException());
+                    if (retryErr != null) {
+                        final String retryCause = String.format(
+                            "Failed to execute non-collocated query (will retry) [localNodeId=%s, rmtNodeId=%s, reqId=%s, " +
+                                "errMsg=%s]", ctx.localNodeId(), node.id(), reqId, retryErr.getMessage()
+                        );
+
+                        sendRetry(node, reqId, segmentId, retryCause);
+                    }
                     else {
-                        GridH2RetryException retryErr = X.cause(e, GridH2RetryException.class);
+                        U.error(log, "Failed to execute local query.", e);
 
-                        if (retryErr != null) {
-                            final String retryCause = String.format(
-                                "Failed to execute non-collocated query (will retry) [localNodeId=%s, rmtNodeId=%s, reqId=%s, " +
-                                    "errMsg=%s]", ctx.localNodeId(), node.id(), reqId, retryErr.getMessage()
-                            );
+                        sendError(node, reqId, e);
 
-                            sendRetry(node, reqId, segmentId, retryCause);
-                        }
-                        else {
-                            U.error(log, "Failed to execute local query.", e);
-
-                            sendError(node, reqId, e);
-
-                            if (e instanceof Error)
-                                throw (Error)e;
-                        }
+                        if (e instanceof Error)
+                            throw (Error)e;
                     }
                 }
             }

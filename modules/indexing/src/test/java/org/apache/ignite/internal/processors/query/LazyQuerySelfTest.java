@@ -120,7 +120,7 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
                 latch.countDown();
 
                 while(!end.get()) {
-                    FieldsQueryCursor<List<?>> cursor = execute(srv, query(KEY_CNT - PAGE_SIZE_SMALL + PAGE_SIZE_SMALL)
+                    FieldsQueryCursor<List<?>> cursor = execute(srv, query(0)
                         .setPageSize(PAGE_SIZE_SMALL));
 
                     cursor.getAll();
