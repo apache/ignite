@@ -111,9 +111,9 @@ import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
@@ -158,8 +158,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
-import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteTaskTrackingThreadPoolExecutor;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
@@ -1565,10 +1565,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * Invokes critical failure processing. Always throws.
      *
-     * @throws IgniteCheckedException If node was not invalidated as result of handling.
+     * @throws NonCriticalCheckpointReadLockException If node was not invalidated as result of handling.
      * @throws IgniteException If node was invalidated as result of handling.
      */
-    private void failCheckpointReadLock() throws IgniteCheckedException, IgniteException {
+    private void failCheckpointReadLock() throws NonCriticalCheckpointReadLockException, IgniteException {
         String msg = "Checkpoint read lock acquisition has been timed out.";
 
         IgniteException e = new IgniteException(msg);
@@ -1576,7 +1576,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e)))
             throw e;
 
-        throw new IgniteCheckedException(msg);
+        throw new NonCriticalCheckpointReadLockException(msg);
     }
 
     /** {@inheritDoc} */
@@ -4845,6 +4845,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         public RestoreLogicalState(long lastArchivedSegment, IgniteLogger log) {
             super(lastArchivedSegment, log);
+        }
+    }
+
+    /** Indicates checkpoint read lock acquisition failure which did not lead to node invalidation. */
+    private static class NonCriticalCheckpointReadLockException extends IgniteCheckedException {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private NonCriticalCheckpointReadLockException(String msg) {
+            super(msg);
         }
     }
 }
