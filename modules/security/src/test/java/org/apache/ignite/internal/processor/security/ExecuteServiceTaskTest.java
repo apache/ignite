@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processor.security;
 
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -33,9 +31,6 @@ import static org.junit.Assert.assertThat;
  * Security tests for an execute server task.
  */
 public class ExecuteServiceTaskTest extends AbstractInintiatorContextSecurityProcessorTest {
-    /** Key. */
-    private AtomicInteger key = new AtomicInteger(0);
-
     /** */
     public void testExecute() throws Exception {
         successExecute(succsessClnt, failClnt);
@@ -58,7 +53,7 @@ public class ExecuteServiceTaskTest extends AbstractInintiatorContextSecurityPro
      * @param remote Remote node.
      */
     private void successExecute(IgniteEx initiator, IgniteEx remote) throws Exception {
-        int val = key.getAndIncrement();
+        int val = values.getAndIncrement();
 
         initiator.executorService(initiator.cluster().forNode(remote.localNode()))
             .submit(

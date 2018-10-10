@@ -86,4 +86,12 @@ public class TestSecuritySubject implements SecuritySubject {
     public void setPermissions(SecurityPermissionSet permissions) {
         this.permissions = permissions;
     }
+
+    @Override public String toString() {
+        return "TestSecuritySubject{" +
+            "id=" + id +
+            ", type=" + type +
+            ", login=" + login +
+            '}';
+    }
 }

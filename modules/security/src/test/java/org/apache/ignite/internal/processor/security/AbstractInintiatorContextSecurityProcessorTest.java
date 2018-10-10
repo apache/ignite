@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processor.security;
 import com.google.common.collect.Sets;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -42,6 +43,9 @@ public class AbstractInintiatorContextSecurityProcessorTest extends GridCommonAb
 
     /** Security error message. */
     protected static final String SEC_ERR_MSG = "Test security exception.";
+
+    /** Values. */
+    protected AtomicInteger values = new AtomicInteger(0);
 
     /** */
     protected IgniteEx succsessSrv;
@@ -81,8 +85,13 @@ public class AbstractInintiatorContextSecurityProcessorTest extends GridCommonAb
                 (name, perm, secCtx) -> {
                     if (secCtx != null) {
                         if (CACHE_NAME.equals(name) && SecurityPermission.CACHE_PUT == perm &&
-                            failUUIDs.contains(secCtx.subject().id()))
+                            failUUIDs.contains(secCtx.subject().id())) {
+
+                            log.info("Failed authorize. [name=" + name + ", perm=" + perm
+                            + ", secCtx=" + secCtx + "]");
+
                             throw new SecurityException(SEC_ERR_MSG);
+                        }
                     }
                 }
             );

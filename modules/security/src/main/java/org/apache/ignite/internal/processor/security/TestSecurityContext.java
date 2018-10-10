@@ -61,4 +61,10 @@ public class TestSecurityContext implements SecurityContext, Serializable {
     @Override public boolean systemOperationAllowed(SecurityPermission perm) {
         return true;
     }
+
+    @Override public String toString() {
+        return "TestSecurityContext{" +
+            "subject=" + subject +
+            '}';
+    }
 }
