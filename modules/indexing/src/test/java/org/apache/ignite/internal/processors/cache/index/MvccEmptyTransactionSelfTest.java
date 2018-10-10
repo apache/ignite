@@ -55,7 +55,8 @@ public class MvccEmptyTransactionSelfTest extends GridCommonAbstractTest {
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:10801")) {
             try (Statement stmt = conn.createStatement()) {
-                stmt.execute("CREATE TABLE person (id BIGINT PRIMARY KEY, name VARCHAR) WITH \"atomicity=TRANSACTIONAL_SNAPSHOT, cache_name=PERSON_CACHE\"");
+                stmt.execute("CREATE TABLE person (id BIGINT PRIMARY KEY, name VARCHAR) " +
+                    "WITH \"atomicity=TRANSACTIONAL_SNAPSHOT, cache_name=PERSON_CACHE\"");
             }
         }
 
@@ -63,6 +64,9 @@ public class MvccEmptyTransactionSelfTest extends GridCommonAbstractTest {
 
         try (Transaction tx = cli.transactions().txStart()) {
             // This will cause empty near TX to be created and then rolled back.
+            cache.query(new SqlFieldsQuery("UPDATE person SET name=?").setArgs("Petr")).getAll();
+
+            // One more time.
             cache.query(new SqlFieldsQuery("UPDATE person SET name=?").setArgs("Petr")).getAll();
 
             // Normal transaction is created, and several updates are performed.
