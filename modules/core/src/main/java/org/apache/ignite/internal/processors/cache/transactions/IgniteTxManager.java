@@ -266,7 +266,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     // Wait some time in case there are some unprocessed messages from failed node.
                     cctx.time().addTimeoutObject(
-                        new NodeFailureTimeoutObject(nodeId, discoEvt.eventNode().isClient(), discoEvt.topologyVersion()));
+                        new NodeFailureTimeoutObject(discoEvt));
 
                     if (txFinishSync != null)
                         txFinishSync.onNodeLeft(nodeId);
@@ -2405,24 +2405,16 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * Timeout object for node failure handler.
      */
     private final class NodeFailureTimeoutObject extends GridTimeoutObjectAdapter {
-        /** Left or failed node. */
-        private final UUID evtNodeId;
         /** */
-        private final boolean client;
-        /** */
-        private final long topVer;
+        private final DiscoveryEvent discoEvt;
 
         /**
-         * @param evtNodeId Event node ID.
-         * @param client Indicates whether event node is client.
+         * @param discoEvt Triggering event.
          */
-        private NodeFailureTimeoutObject(UUID evtNodeId, boolean client, long topVer) {
-            // t0d0 receive discovery event as constructor argument
+        private NodeFailureTimeoutObject(DiscoveryEvent discoEvt) {
             super(IgniteUuid.fromUuid(cctx.localNodeId()), TX_SALVAGE_TIMEOUT);
 
-            this.evtNodeId = evtNodeId;
-            this.client = client;
-            this.topVer = topVer;
+            this.discoEvt = discoEvt;
         }
 
         /**
@@ -2438,6 +2430,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                 return;
             }
+
+            UUID evtNodeId = discoEvt.eventNode().id();
 
             try {
                 if (log.isDebugEnabled())
@@ -2498,7 +2492,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         }
 
                         // Await only mvcc transactions initiated by failed client node.
-                        if (client && tx.eventNodeId().equals(evtNodeId) && tx.mvccSnapshot() != null)
+                        if (discoEvt.eventNode().isClient() && tx.eventNodeId().equals(evtNodeId)
+                            && tx.mvccSnapshot() != null)
                             allTxFinFut.add(tx.finishFuture());
                     }
                 }
@@ -2516,7 +2511,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     finally {
                         MvccCoordinator mvccCrd = cctx.coordinators().currentCoordinator();
 
-                        if (mvccCrd.topologyVersion().topologyVersion() <= topVer) {
+                        if (mvccCrd.topologyVersion().topologyVersion() <= discoEvt.topologyVersion()) {
                             try {
                                 cctx.kernalContext().io().sendToGridTopic(
                                     mvccCrd.nodeId(),
