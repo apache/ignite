@@ -1053,6 +1053,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     registerCachesFuture = cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
 
+                    cctx.kernalContext().encryption().onDeActivate(cctx.kernalContext());
+
                     if (log.isInfoEnabled()) {
                         log.info("Successfully deactivated data structures, services and caches [" +
                             "nodeId=" + cctx.localNodeId() +
@@ -1509,7 +1511,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         releaseLatch.countDown();
 
         // For compatibility with old version where joining nodes are not waiting for latch.
-        if (!cctx.exchange().latch().canSkipJoiningNodes(initialVersion()))
+        if (localJoinExchange() && !cctx.exchange().latch().canSkipJoiningNodes(initialVersion()))
             return;
 
         try {
@@ -2544,7 +2546,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
         }
-
         if (allReceived) {
             if (!awaitSingleMapUpdates())
                 return;
