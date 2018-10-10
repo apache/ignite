@@ -147,6 +147,12 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         return this;
     }
 
+    /**  */
+    @Override
+    public <T> DatasetBuilder<K, V> addStreamTransformer(IgniteBiFunction<Stream<UpstreamEntry<K, V>>, T, Stream<UpstreamEntry<K, V>>> transformer) {
+        return addStreamTransformer(transformer, () -> null);
+    }
+
     /** {@inheritDoc} */
     @Override public DatasetBuilder<K, V> withFilter(IgniteBiPredicate<K, V> filterToAdd) {
         return new LocalDatasetBuilder<>(upstreamMap,

@@ -18,81 +18,66 @@
 package org.apache.ignite.ml;
 
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.composition.BaggingModelTrainer;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.environment.LearningEnvironment;
-import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.environment.parallelism.DefaultParallelismStrategy;
-import org.apache.ignite.ml.math.functions.Functions;
+import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedDatasetPartition;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.nn.UpdatesStrategy;
-import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
-import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
-import org.apache.ignite.ml.pipeline.Pipeline;
-import org.apache.ignite.ml.pipeline.PipelineMdl;
-import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
-import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
-import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.trainers.TrainerTransformers;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
-import org.junit.runners.Parameterized;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 public class BaggingTest extends TrainerTest {
-//    @Test
-//    public void test() {
-//        Map<Integer, Double[]> cacheMock = new HashMap<>();
-//
-//        for (int i = 0; i < twoLinearlySeparableClasses.length; i++) {
-//            double[] row = twoLinearlySeparableClasses[i];
-//            Double[] convertedRow = new Double[row.length];
-//            for (int j = 0; j < row.length; j++)
-//                convertedRow[j] = row[j];
-//            cacheMock.put(i, convertedRow);
-//        }
-//
-//        LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>(new UpdatesStrategy<>(
-//                new SimpleGDUpdateCalculator().withLearningRate(0.2),
-//                SimpleGDParameterUpdate::sumLocal,
-//                SimpleGDParameterUpdate::avg
-//        ), 100000, 10, 100, 123L);
-//
-//        DatasetTrainer<ModelsComposition, Double> transformedTrainer = trainer
-//                .transform(TrainerTransformers.makeBagged(3, 0.5, new MeanValuePredictionsAggregator()));
-//
-//        PipelineMdl<Integer, Double[]> mdl = new Pipeline<Integer, Double[], Vector>()
-//                .addFeatureExtractor((k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)))
-//                .addLabelExtractor((k, v) -> v[0])
-//                .addPreprocessor(new MinMaxScalerTrainer<Integer, Object[]>())
-//                .addPreprocessor(new NormalizationTrainer<Integer, Object[]>()
-//                        .withP(1))
-//                .addTrainer(transformedTrainer)
-//                .fit(
-//                        cacheMock,
-//                        parts
-//                );
-//
-//        TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(100, 10)), PRECISION);
-//        TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(10, 100)), PRECISION);
-//    }
+    @Test
+    public void testBaggingTrainerContextCount() {
+        Map<Integer, Double[]> cacheMock = new HashMap<>();
+
+        for (int i = 0; i < twoLinearlySeparableClasses.length; i++) {
+            double[] row = twoLinearlySeparableClasses[i];
+            Double[] convertedRow = new Double[row.length];
+            for (int j = 0; j < row.length; j++)
+                convertedRow[j] = row[j];
+            cacheMock.put(i, convertedRow);
+        }
+
+        CountTrainer countTrainer = new CountTrainer(counter);
+
+        double subsampleSize = 0.3;
+
+        new BaggingModelTrainer(new MeanValuePredictionsAggregator(), 10, 5, 100, 0.3) {
+            @Override
+            protected boolean checkState(ModelsComposition mdl) {
+                return true;
+            }
+
+            @Override
+            protected Model<Vector, Double> doTrainOneModel(Dataset<EmptyContext, BootstrappedDatasetPartition> ds) {
+                return null;
+            }
+        };
+
+        ModelsComposition model = countTrainer
+            .transform(TrainerTransformers.makeBagged(100, subsampleSize, new MeanValuePredictionsAggregator()))
+            .fit(cacheMock, parts, null, null);
+
+        Double res = model.apply(null);
+    }
 
     @Test
-    public void testContextCount() {
+    public void testNaiveBaggingContextCount() {
         count((ctxCount, countData, integer) -> ctxCount);
     }
 
     @Test
-    public void testDataCount() {
+    public void testNaiveBaggingDataCount() {
         count((ctxCount, countData, integer) -> countData.cnt);
     }
 

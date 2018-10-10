@@ -51,12 +51,12 @@ public class TrainerTransformers {
                 IgniteBiFunction<K, V, Vector> featureExtractor,
                 IgniteBiFunction<K, V, L> lbExtractor) {
                 return runOnEnsemble(
-                        (db, i) -> (() -> trainer.fit(db, featureExtractor, lbExtractor)),
-                        datasetBuilder,
-                        ensembleSize,
-                        subsampleSize,
-                        aggregator,
-                        environment);
+                    (db, i) -> (() -> trainer.fit(db, featureExtractor, lbExtractor)),
+                    datasetBuilder,
+                    ensembleSize,
+                    subsampleSize,
+                    aggregator,
+                    environment);
             }
 
             @Override
@@ -65,25 +65,29 @@ public class TrainerTransformers {
             }
 
             @Override
-            protected <K, V> ModelsComposition updateModel(ModelsComposition mdl, DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+            protected <K, V> ModelsComposition updateModel(
+                ModelsComposition mdl,
+                DatasetBuilder<K, V> datasetBuilder,
+                IgniteBiFunction<K, V, Vector> featureExtractor,
+                IgniteBiFunction<K, V, L> lbExtractor) {
                 return runOnEnsemble(
-                        (db, i) -> (() -> trainer.updateModel((M) mdl.getModels().get(i), db, featureExtractor, lbExtractor)),
-                        datasetBuilder,
-                        ensembleSize,
-                        subsampleSize,
-                        aggregator,
-                        environment);
+                    (db, i) -> (() -> trainer.updateModel((M) mdl.getModels().get(i), db, featureExtractor, lbExtractor)),
+                    datasetBuilder,
+                    ensembleSize,
+                    subsampleSize,
+                    aggregator,
+                    environment);
             }
         };
     }
 
     private static <X, Y, M extends Model<Vector, Double>> ModelsComposition runOnEnsemble(
-            IgniteBiFunction<DatasetBuilder<X, Y>, Integer, IgniteSupplier<M>> supplierGenerator,
-            DatasetBuilder<X, Y> datasetBuilder,
-            int ensembleSize,
-            double subsampleSize,
-            PredictionsAggregator aggregator,
-            LearningEnvironment environment) {
+        IgniteBiFunction<DatasetBuilder<X, Y>, Integer, IgniteSupplier<M>> supplierGenerator,
+        DatasetBuilder<X, Y> datasetBuilder,
+        int ensembleSize,
+        double subsampleSize,
+        PredictionsAggregator aggregator,
+        LearningEnvironment environment) {
         MLLogger log = environment.logger(datasetBuilder.getClass());
         log.log(MLLogger.VerboseLevel.LOW, "Start learning");
 
@@ -96,15 +100,15 @@ public class TrainerTransformers {
 
         List<IgniteSupplier<M>> tasks = new ArrayList<>();
 
-        for(int i = 0; i < ensembleSize; i++) {
+        for (int i = 0; i < ensembleSize; i++) {
             tasks.add(supplierGenerator.apply(bootstrappedBuilder, i));
         }
 
         List<M> models = environment.parallelismStrategy().submit(tasks)
-                .stream().map(Promise::unsafeGet)
-                .collect(Collectors.toList());
+            .stream().map(Promise::unsafeGet)
+            .collect(Collectors.toList());
 
-        double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
+        double learningTime = (double) (System.currentTimeMillis() - startTs) / 1000.0;
         log.log(MLLogger.VerboseLevel.LOW, "The training time was %.2fs", learningTime);
         log.log(MLLogger.VerboseLevel.LOW, "Learning finished");
 
