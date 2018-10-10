@@ -2876,7 +2876,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             else
                 cursor = dataTree.find(lowerRow, upperRow, x);
 
-            return new GridCursorIoStatisticsProxy<>(cursor, cctx);
+            if (cctx != null)
+                return new GridCursorIoStatisticsProxy<>(cursor, cctx);
+            else
+                return cursor;
         }
 
         /** {@inheritDoc} */
