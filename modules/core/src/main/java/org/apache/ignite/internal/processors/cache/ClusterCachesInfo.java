@@ -1294,11 +1294,13 @@ class ClusterCachesInfo {
      * @param desc Cache to save.
      */
     private void saveCacheConfiguration(DynamicCacheDescriptor desc) {
+        ctx.cache().setVersionToCacheDescriptorIfNull(desc);
+
         try {
             ctx.cache().saveCacheConfiguration(desc);
         }
         catch (IgniteCheckedException e) {
-            log.error("Error while saving cache configuration to disk, cfg = " + desc.cacheConfiguration(), e);
+            U.error(log, "Error while saving cache configuration to disk, cfg = " + desc, e);
         }
     }
 

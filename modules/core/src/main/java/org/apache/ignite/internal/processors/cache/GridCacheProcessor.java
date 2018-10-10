@@ -2925,7 +2925,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      *
      * @param desc Cache descriptor.
      */
-    private void setVersionToCacheDescriptorIfNull(DynamicCacheDescriptor desc) {
+    void setVersionToCacheDescriptorIfNull(DynamicCacheDescriptor desc) {
         assert desc != null;
 
         GridCacheConfigurationVersion ver = desc.version();

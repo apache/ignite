@@ -1614,6 +1614,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         StoredCacheData cacheData,
         boolean overwrite
     ) throws IgniteCheckedException {
+        assert cacheData != null;
+
         if (metaStorageReadyForWriteLatch.getCount() == 0L)
             storeCacheConfiguration0(cacheData, overwrite);
         else {
@@ -1741,7 +1743,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         GridCacheConfigurationVersion ver,
         boolean overwrite
     ) throws IgniteCheckedException {
-        assert ver!=null;
+        assert ver != null;
 
         context().database().checkpointReadLock();
 
@@ -1795,6 +1797,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             if (old == null || overwrite)
                 metaStorage.write(key, cacheData);
+
+            assert cacheData.version() != null : cacheData;
 
             storeCacheConfigurationVersion0(cacheData.version(), overwrite);
         }
