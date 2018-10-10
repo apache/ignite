@@ -46,12 +46,12 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -385,14 +385,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private final GridFutureAdapter<Map<String, GridCacheConfigurationVersion>> readStoredCacheCfgVerFut =
         new GridFutureAdapter<>();
 
+    /** Future that will be done when stored caches configuration version will be cleared */
+    private final GridFutureAdapter<Void> clearStoredCachesCfgVerFut = new GridFutureAdapter<>();
+
+    /** Flag means that stored caches config version must be cleared went metastore will be ready. */
+    private final AtomicBoolean storedCachesCfgVerMustBeCleared = new AtomicBoolean();
+
+    /** Metastore ready for read write operations flag. */
+    private final AtomicBoolean metastoreReadyForReadWriteOps = new AtomicBoolean();
+
     /** Map of futures that will be done, when new stored caches configuration were write to metastore. */
-    private final Map<Object,IgniteInternalFuture<?>> saveCacheConfigurationFuts = new ConcurrentHashMap<>();
+    private final Map<Object,IgniteInternalFuture<?>> saveCacheCfgFuts = new ConcurrentHashMap<>();
 
-    /** Barrier for notification that metastore ready for write. */
-    private final CountDownLatch metaStorageReadyForWriteLatch = new CountDownLatch(1);
-
-    /** Barrier for notification that metastore cleared. */
-    private final CountDownLatch cachesCfgVerClearFromMetaStorageLatch = new CountDownLatch(1);
     /**
      * @param ctx Kernal context.
      */
@@ -422,13 +426,24 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** */
     private void notifyMetastorageReadyForRead() throws IgniteCheckedException {
+        log.info("Metastore ready for read operations!");
+
         for (MetastorageLifecycleListener lsnr : metastorageLifecycleLsnrs)
             lsnr.onReadyForRead(metaStorage);
     }
 
     /** */
     private void notifyMetastorageReadyForReadWrite() throws IgniteCheckedException {
-        metaStorageReadyForWriteLatch.countDown();
+        log.info("Metastore ready for write operations!");
+
+        if(storedCachesCfgVerMustBeCleared.get())
+            clearStoredCachesConfigurationVersion0();
+
+        clearStoredCachesCfgVerFut.onDone();
+
+        log.info("Metastore cleared from stored caches configuration version!");
+
+        metastoreReadyForReadWriteOps.set(true);
 
         for (MetastorageLifecycleListener lsnr : metastorageLifecycleLsnrs)
             lsnr.onReadyForReadWrite(metaStorage);
@@ -1069,13 +1084,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 U.error(log, "Can't cancel read stored caches configuration version future", e);
             }
 
-            for (Object key : saveCacheConfigurationFuts.keySet()) {
+            for (Object key : saveCacheCfgFuts.keySet()) {
                 try {
-                    saveCacheConfigurationFuts.get(key).cancel();
+                    saveCacheCfgFuts.get(key).cancel();
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Can't cancel store future key: " + key, e);
                 }
+            }
+
+            try {
+                clearStoredCachesCfgVerFut.cancel();
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Can't cancel clear stored caches configuration version future", e);
             }
         }
     }
@@ -1609,13 +1631,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         for (StoredCacheData cacheData : readCacheData.values())
             storedCaches.put(cacheData.config().getName(), cacheData);
 
-        try{
-            throw new RuntimeException();
-        } catch (RuntimeException e){
-            log.error("IGNITE-8717 readStoredCacheConfiguration0() data: " + storedCaches, e);
-        }
-
-
         return storedCaches;
     }
 
@@ -1626,27 +1641,22 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     ) throws IgniteCheckedException {
         assert cacheData != null;
 
-        try{
-            throw new RuntimeException();
-        } catch (RuntimeException e){
-            log.error("IGNITE-8717 storeCacheConfiguration() data: " + cacheData + " overwrite: " + overwrite, e);
-        }
-
-        if (metastoreReadyForReadWriteCacheCfg())
+        if (metastoreReadyForReadWriteOps.get())
             storeCacheConfiguration0(cacheData, overwrite);
         else {
             IgniteInternalFuture<?> fut = cctx.kernalContext().closure().runLocalSafe(() -> {
                 try {
-                    awaitTillMetastoreWillBeReadyForReadWriteOpsOnCachesCfg();
+                    // Wait till old stored caches configuration version will be cleared.
+                    clearStoredCachesCfgVerFut.get();
 
                     storeCacheConfiguration0(cacheData, overwrite);
                 }
-                catch (IgniteCheckedException | InterruptedException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to store cache configuration! " + cacheData, e);
                 }
             });
 
-            IgniteInternalFuture<?> old = saveCacheConfigurationFuts.put(cacheData.config(), fut);
+            IgniteInternalFuture<?> old = saveCacheCfgFuts.put(cacheData.config(), fut);
 
             assert old == null : old;
         }
@@ -1654,30 +1664,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void clearStoredCachesConfigurationVersion() throws IgniteCheckedException {
-        try{
-            throw new RuntimeException();
-        } catch (RuntimeException e){
-            log.error("IGNITE-8717 clearStoredCachesConfigurationVersion()", e);
-        }
+        assert !metastoreReadyForReadWriteOps.get();
 
-        if (metastoreReadyForReadWriteOperations())
-            clearStoredCachesConfigurationVersion0();
-        else {
-            IgniteInternalFuture<?> fut = cctx.kernalContext().closure().runLocalSafe(() -> {
-                try {
-                    awaitTillMetastoreWillBeReadyForReadWrite();
-
-                    clearStoredCachesConfigurationVersion0();
-                }
-                catch (IgniteCheckedException | InterruptedException e) {
-                    U.error(log, "Failed to clear caches configuration! ", e);
-                }
-            });
-
-            IgniteInternalFuture<?> old = saveCacheConfigurationFuts.put("clearStoredCachesConfigurationVersion", fut);
-
-            assert old == null : old;
-        }
+        storedCachesCfgVerMustBeCleared.set(true);
     }
 
     /**
@@ -1694,19 +1683,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             for (String key : data.keySet())
                 remove(key);
-
-            try{
-                throw new RuntimeException();
-            } catch (RuntimeException e){
-                log.error("IGNITE-8717 clearStoredCachesConfigurationVersion0() removed: " + data, e);
-            }
         }
         finally {
             context().database().checkpointReadUnlock();
         }
-
-        // Caches configuration version cleared. Now we can store new caches configuration version.
-        cachesCfgVerClearFromMetaStorageLatch.countDown();
     }
 
     /**
@@ -1719,25 +1699,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private GridCacheConfigurationVersion readStoredCacheConfigurationVersion(
         String key
     ) throws IgniteCheckedException {
-        GridCacheConfigurationVersion ver = (GridCacheConfigurationVersion)metaStorage.read(key);
-
-        try{
-            throw new RuntimeException();
-        } catch (RuntimeException e){
-            log.error("IGNITE-8717 readStoredCacheConfigurationVersion() key: " + key + " ver: " + U.toString(ver), e);
-        }
-
-        return ver;
+        return (GridCacheConfigurationVersion)metaStorage.read(key);
     }
 
+    /**
+     * Removes record from metastore associated with {@code key}.
+     * @param key Metastore record key.
+     * @throws IgniteCheckedException If remove failed.
+     */
     private void remove(String key) throws IgniteCheckedException {
         assert key != null;
-
-        try{
-            throw new RuntimeException();
-        } catch (RuntimeException e){
-            log.error("IGNITE-8717 remove() key: " + key, e);
-        }
 
         context().database().checkpointReadLock();
 
@@ -1748,22 +1719,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
-    private void write(String key, Serializable value) throws IgniteCheckedException {
+    /**
+     * Writes {@code rec} to metastore by {@code key}.
+     *
+     * @param key Metastore record key.
+     * @param rec Record.
+     * @throws IgniteCheckedException If write failed.
+     */
+    private void write(String key, Serializable rec) throws IgniteCheckedException {
         assert key != null;
-        assert value != null;
-
-        if(value instanceof GridCacheConfigurationVersion || value instanceof StoredCacheData){
-            try{
-                throw new RuntimeException();
-            } catch (RuntimeException e){
-                log.error("IGNITE-8717 write() key: " + key + " value: " + U.toString(value), e);
-            }
-        }
+        assert rec != null;
 
         context().database().checkpointReadLock();
 
         try{
-            metaStorage.write(key, value);
+            metaStorage.write(key, rec);
         } finally {
             context().database().checkpointReadUnlock();
         }
@@ -1785,12 +1755,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         for (GridCacheConfigurationVersion version : readVersions.values())
             storedVersions.put(version.cacheName(), version);
 
-        try{
-            throw new RuntimeException();
-        } catch (RuntimeException e){
-            log.error("IGNITE-8717 readStoredCachesConfigurationVersion0() vers: " + storedVersions, e);
-        }
-
         return storedVersions;
     }
 
@@ -1801,67 +1765,25 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     ) throws IgniteCheckedException {
         assert ver != null;
 
-        try{
-            throw new RuntimeException();
-        } catch (RuntimeException e){
-            log.error("IGNITE-8717 storeCacheConfigurationVersion() ver: " + ver + " overwrite: " + overwrite, e);
-        }
-
-        if (metastoreReadyForReadWriteCacheCfg())
+        if (metastoreReadyForReadWriteOps.get())
             storeCacheConfigurationVersion0(ver, overwrite);
         else {
             IgniteInternalFuture<?> fut = cctx.kernalContext().closure().runLocalSafe(() -> {
                 try {
-                    awaitTillMetastoreWillBeReadyForReadWriteOpsOnCachesCfg();
+                    // Wait till old stored caches configuration version will be cleared.
+                    clearStoredCachesCfgVerFut.get();
 
                     storeCacheConfigurationVersion0(ver, overwrite);
                 }
-                catch (IgniteCheckedException | InterruptedException e) {
+                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to store cache configuration version! " + ver, e);
                 }
             });
 
-            IgniteInternalFuture<?> old = saveCacheConfigurationFuts.put(ver, fut);
+            IgniteInternalFuture<?> old = saveCacheCfgFuts.put(ver, fut);
 
             assert old == null : old;
         }
-    }
-
-    /**
-     * Wait till metastore will be ready for read/write operations.
-     *
-     * @throws InterruptedException if wail was interrupted.
-     */
-    private void awaitTillMetastoreWillBeReadyForReadWrite() throws InterruptedException {
-        metaStorageReadyForWriteLatch.await();
-    }
-
-    /**
-     * Wait till metastore will be ready for read/write operations on cache configuration and cache configuration
-     * version.
-     *
-     * @throws InterruptedException if wail was interrupted.
-     */
-    private void awaitTillMetastoreWillBeReadyForReadWriteOpsOnCachesCfg() throws InterruptedException {
-        awaitTillMetastoreWillBeReadyForReadWrite();
-
-        // Wait till old caches configuration version in metastore will be clean.
-        cachesCfgVerClearFromMetaStorageLatch.await();
-    }
-
-    /**
-     * @return {@code true} if metastore ready for read/write operations .
-     */
-    private boolean metastoreReadyForReadWriteOperations() {
-        return metaStorageReadyForWriteLatch.getCount() == 0L;
-    }
-
-    /**
-     * @return {@code true} if metastore ready for read/write operations on cache configuration/cache configuration
-     * version and {@code false} otherwise.
-     */
-    private boolean metastoreReadyForReadWriteCacheCfg(){
-        return metastoreReadyForReadWriteOperations() && cachesCfgVerClearFromMetaStorageLatch.getCount() == 0L;
     }
 
     /**
@@ -1872,12 +1794,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         boolean overwrite
     ) throws IgniteCheckedException {
         assert ver != null;
-
-        try{
-            throw new RuntimeException();
-        } catch (RuntimeException e){
-            log.error("IGNITE-8717 storeCacheConfigurationVersion0() ver: " + ver + " overwrite: " + overwrite, e);
-        }
 
         context().database().checkpointReadLock();
 
@@ -1906,12 +1822,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void removeCacheConfiguration(CacheConfiguration<?, ?> cacheCfg) throws IgniteCheckedException {
-        try{
-            throw new RuntimeException();
-        } catch (RuntimeException e){
-            log.error("IGNITE-8717 removeCacheConfiguration() cfg: " + cacheCfg, e);
-        }
-
         context().database().checkpointReadLock();
 
         try {
@@ -1927,12 +1837,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private void storeCacheConfiguration0(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException {
         assert cacheData != null;
-
-        try{
-            throw new RuntimeException();
-        } catch (RuntimeException e){
-            log.error("IGNITE-8717 storeCacheConfiguration0() data: " + cacheData + " overwrite: " + overwrite, e);
-        }
 
         context().database().checkpointReadLock();
 
@@ -1958,7 +1862,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private void waitNewCachesConfigurationAreSaved() {
         try {
-            for (Map.Entry<Object, IgniteInternalFuture<?>> e : saveCacheConfigurationFuts.entrySet()) {
+            for (Map.Entry<Object, IgniteInternalFuture<?>> e : saveCacheCfgFuts.entrySet()) {
                 if (!e.getValue().isDone()) {
                     final long timeout = 10_000L;
 
@@ -2085,12 +1989,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
         finally {
             checkpointReadUnlock();
-        }
-
-        try{
-            throw new RuntimeException();
-        } catch (RuntimeException e){
-            log.error("IGNITE-8717 removeCacheConfiguration() grp: " + grp + " removed: " + rmvCaches, e);
         }
 
         return rmvCaches;
