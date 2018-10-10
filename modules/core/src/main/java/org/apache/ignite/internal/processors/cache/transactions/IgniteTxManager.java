@@ -262,9 +262,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     UUID nodeId = discoEvt.eventNode().id();
 
                     // Wait some time in case there are some unprocessed messages from failed node.
-                    cctx.time().addTimeoutObject(discoEvt.eventNode().isClient()
-                        ? new NodeFailureTimeoutObject(nodeId)
-                        : new ServerFailureTimeoutObject(nodeId));
+                    cctx.time().addTimeoutObject(new NodeFailureTimeoutObject(nodeId, discoEvt.eventNode().isClient()));
 
                     if (txFinishSync != null)
                         txFinishSync.onNodeLeft(nodeId);
@@ -2399,25 +2397,24 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         return logTxRecords;
     }
 
-    private class ServerFailureTimeoutObject extends NodeFailureTimeoutObject {
-        private ServerFailureTimeoutObject(UUID evtNodeId) {
-            super(evtNodeId);
-        }
-    }
     /**
      * Timeout object for node failure handler.
      */
-    private class NodeFailureTimeoutObject extends GridTimeoutObjectAdapter {
+    private final class NodeFailureTimeoutObject extends GridTimeoutObjectAdapter {
         /** Left or failed node. */
         private final UUID evtNodeId;
+        /** */
+        private final boolean client;
 
         /**
          * @param evtNodeId Event node ID.
+         * @param client Indicates whether event node is client.
          */
-        private NodeFailureTimeoutObject(UUID evtNodeId) {
+        private NodeFailureTimeoutObject(UUID evtNodeId, boolean client) {
             super(IgniteUuid.fromUuid(cctx.localNodeId()), TX_SALVAGE_TIMEOUT);
 
             this.evtNodeId = evtNodeId;
+            this.client = client;
         }
 
         /**
@@ -2493,7 +2490,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         }
 
                         // do not vote for failed servers
-                        if (tx.eventNodeId().equals(evtNodeId) && !(this instanceof ServerFailureTimeoutObject))
+                        if (client && tx.eventNodeId().equals(evtNodeId))
                             allTxFinFut.add(tx.finishFuture());
                     }
                 }
