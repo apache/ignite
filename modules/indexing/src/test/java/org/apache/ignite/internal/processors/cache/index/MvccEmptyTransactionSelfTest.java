@@ -62,9 +62,18 @@ public class MvccEmptyTransactionSelfTest extends GridCommonAbstractTest {
         IgniteCache cache = cli.cache("PERSON_CACHE");
 
         try (Transaction tx = cli.transactions().txStart()) {
+            // This will cause empty near TX to be created and then rolled back.
             cache.query(new SqlFieldsQuery("UPDATE person SET name=?").setArgs("Petr")).getAll();
+
+            // Normal transaction is created, and several updates are performed.
             cache.query(new SqlFieldsQuery("INSERT INTO person VALUES (?, ?)").setArgs(1, "Ivan")).getAll();
             cache.query(new SqlFieldsQuery("UPDATE person SET name=?").setArgs("Sergey")).getAll();
+
+            // Another update with empty response.
+            cache.query(new SqlFieldsQuery("UPDATE person SET name=? WHERE name=?").setArgs("Vasiliy", "Ivan")).getAll();
+
+            // One more normal update.
+            cache.query(new SqlFieldsQuery("UPDATE person SET name=?").setArgs("Vsevolod")).getAll();
 
             tx.commit();
         }
@@ -74,7 +83,7 @@ public class MvccEmptyTransactionSelfTest extends GridCommonAbstractTest {
         assert res.size() == 1;
         assert res.get(0).size() == 1;
 
-        assertEquals("Sergey", (String)res.get(0).get(0));
+        assertEquals("Vsevolod", (String)res.get(0).get(0));
     }
 
     /**
