@@ -279,35 +279,33 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
      */
     @SuppressWarnings("unchecked")
     private void preparePessimistic() {
+        assert !tx.implicitSingle() || tx.queryEnlisted(); // Non-mvcc implicit-single tx goes fast commit way.
+
         Map<UUID, GridDistributedTxMapping> mappings = new HashMap<>();
 
         AffinityTopologyVersion topVer = tx.topologyVersion();
-
-        boolean queryMapped = false;
-
-        Collection<GridDistributedTxMapping> mvccMappings = F.view(
-            !tx.implicitSingle() ? tx.mappings().mappings() : Collections.singleton(tx.mappings().singleMapping()),
-            CU.FILTER_QUERY_MAPPING);
-
-        Map<UUID, Collection<UUID>> mvccTxNodes = new HashMap<>(mvccMappings.size());
-
-        assert !tx.implicitSingle() || tx.queryEnlisted(); // Non-mvcc implicit-single tx goes fast commit way.
-
-        for (GridDistributedTxMapping m : mvccMappings) {
-            mappings.put(m.primary().id(), m);
-
-            mvccTxNodes.put(m.primary().id(), m.backups());
-
-            queryMapped = true;
-        }
 
         MvccCoordinator mvccCrd = null;
 
         boolean hasNearCache = false;
 
-        GridDhtTxMapping txMapping = new GridDhtTxMapping();
+        Map<UUID, Collection<UUID>> txNodes;
 
-        if (!queryMapped) {
+        if (tx.txState().mvccEnabled()) {
+            Collection<GridDistributedTxMapping> mvccMappings = tx.implicitSingle()
+                ? Collections.singleton(tx.mappings().singleMapping()) : tx.mappings().mappings();
+
+            txNodes = new HashMap<>(mvccMappings.size());
+
+            for (GridDistributedTxMapping m : mvccMappings) {
+                mappings.put(m.primary().id(), m);
+
+                txNodes.put(m.primary().id(), m.backups());
+            }
+        }
+        else {
+            GridDhtTxMapping txMapping = new GridDhtTxMapping();
+
             for (IgniteTxEntry txEntry : tx.allEntries()) {
                 txEntry.clearEntryReadVersion();
 
@@ -357,11 +355,11 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
                 txMapping.addMapping(nodes);
             }
+
+            txNodes = txMapping.transactionNodes();
         }
 
-        assert !tx.txState().mvccEnabled(cctx) || tx.mvccSnapshot() != null || mvccCrd != null;
-
-        Map<UUID, Collection<UUID>> txNodes = !mvccTxNodes.isEmpty() ? mvccTxNodes : txMapping.transactionNodes();
+        assert !tx.txState().mvccEnabled() || tx.mvccSnapshot() != null || mvccCrd != null;
 
         tx.transactionNodes(txNodes);
 

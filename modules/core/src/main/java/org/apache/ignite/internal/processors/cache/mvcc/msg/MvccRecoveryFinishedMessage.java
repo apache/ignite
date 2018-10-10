@@ -114,7 +114,7 @@ public class MvccRecoveryFinishedMessage implements MvccMessage {
     }
 
     @Override public short directType() {
-        return 162;
+        return 164;
     }
 
     @Override public byte fieldsCount() {

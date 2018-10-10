@@ -175,7 +175,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
      * @param txNodes Primary to backups node map.
      */
     final void checkOnePhase(Map<UUID, Collection<UUID>> txNodes) {
-        if (tx.storeWriteThrough() || tx.txState().mvccEnabled(cctx)) // TODO IGNITE-3479 (onePhase + mvcc)
+        if (tx.storeWriteThrough() || tx.txState().mvccEnabled()) // TODO IGNITE-3479 (onePhase + mvcc)
             return;
 
         if (txNodes.size() == 1) {

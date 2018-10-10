@@ -926,6 +926,7 @@
                                         <exclude>**/obj/x86/**</exclude>
                                         <exclude>**/bin/x64/**</exclude>
                                         <exclude>**/bin/x86/**</exclude>
+										<exclude>**/Doxyfile</exclude>
                                         <exclude>**/*.dxg</exclude>
                                         <exclude>**/*.cmd</exclude>
                                         <exclude>**/*.ps1</exclude>
