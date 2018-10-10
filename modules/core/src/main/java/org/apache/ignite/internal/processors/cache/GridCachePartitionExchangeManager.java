@@ -2243,6 +2243,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         break;
                     }
 
+                    if (!fut.changedAffinity()) {
+                        if (log.isInfoEnabled())
+                            log.info("Stop merge, no-affinity exchange found: " + evt);
+
+                        break;
+                    }
+
                     ClusterNode node = evt.eventNode();
 
                     if ((evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT) &&
