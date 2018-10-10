@@ -361,6 +361,56 @@ BOOST_AUTO_TEST_CASE(CacheClientContainsComplexKey)
     BOOST_CHECK(cache.ContainsKey(key));
 }
 
+BOOST_AUTO_TEST_CASE(CacheClientReplaceBasicKey)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, std::string> cache = client.GetCache<int32_t, std::string>("local");
+
+    int32_t key = 42;
+    std::string valIn = "Lorem ipsum";
+
+    cache.Put(key, valIn);
+
+    BOOST_REQUIRE(!cache.Replace(1, "Test"));
+    BOOST_REQUIRE(cache.Replace(42, "Test"));
+
+    BOOST_REQUIRE_EQUAL(cache.Get(1), "");
+    BOOST_REQUIRE_EQUAL(cache.Get(42), "Test");
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientReplaceComplexKey)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<ignite::ComplexType, int32_t> cache = client.GetCache<ignite::ComplexType, int32_t>("local");
+
+    ignite::ComplexType key;
+
+    key.i32Field = 123;
+    key.strField = "Test value";
+    key.objField.f1 = 42;
+    key.objField.f2 = "Inner value";
+
+    int32_t valIn = 42;
+
+    cache.Put(key, valIn);
+
+    BOOST_REQUIRE(!cache.Replace(ignite::ComplexType(), 2));
+    BOOST_REQUIRE(cache.Replace(key, 13));
+
+    BOOST_REQUIRE_EQUAL(cache.Get(key), 13);
+    BOOST_REQUIRE_EQUAL(cache.Get(ignite::ComplexType()), 0);
+}
+
 BOOST_AUTO_TEST_CASE(CacheClientPartitionsInt8)
 {
     NumPartitionTest<int8_t>(100);

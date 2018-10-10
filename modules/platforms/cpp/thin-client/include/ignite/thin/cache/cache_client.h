@@ -106,6 +106,33 @@ namespace ignite
                 }
 
                 /**
+                 * Stores given key-value pairs in cache.
+                 * If write-through is enabled, the stored values will be persisted to store.
+                 *
+                 * @param begin Iterator pointing to the beggining of the key-value pair sequence.
+                 * @param end Iterator pointing to the end of the key-value pair sequence.
+                 */
+                template<typename InIter>
+                void PutAll(InIter begin, InIter end)
+                {
+                    impl::thin::WritableMapImpl<K, V, InIter> wrSeq(begin, end);
+
+                    proxy.PutAll(wrSeq);
+                }
+
+                /**
+                 * Stores given key-value pairs in cache.
+                 * If write-through is enabled, the stored values will be persisted to store.
+                 *
+                 * @param vals Key-value pairs to store in cache.
+                 */
+                template<typename Map>
+                void PutAll(const Map& vals)
+                {
+                    PutAll(vals.begin(), vals.end());
+                }
+
+                /**
                  * Get value from the cache.
                  *
                  * @param key Key.
@@ -132,33 +159,6 @@ namespace ignite
                     Get(key, value);
 
                     return value;
-                }
-
-                /**
-                 * Stores given key-value pairs in cache.
-                 * If write-through is enabled, the stored values will be persisted to store.
-                 *
-                 * @param begin Iterator pointing to the beggining of the key-value pair sequence.
-                 * @param end Iterator pointing to the end of the key-value pair sequence.
-                 */
-                template<typename InIter>
-                void PutAll(InIter begin, InIter end)
-                {
-                    impl::thin::WritableMapImpl<K, V, InIter> wrSeq(begin, end);
-
-                    proxy.PutAll(wrSeq);
-                }
-
-                /**
-                 * Stores given key-value pairs in cache.
-                 * If write-through is enabled, the stored values will be persisted to store.
-                 *
-                 * @param vals Key-value pairs to store in cache.
-                 */
-                template<typename Map>
-                void PutAll(const Map& vals)
-                {
-                    PutAll(vals.begin(), vals.end());
                 }
 
                 /**
@@ -193,6 +193,26 @@ namespace ignite
                 void GetAll(const Set& keys, Map& res)
                 {
                     return GetAll(keys.begin(), keys.end(), std::inserter(res, res.end()));
+                }
+
+                /**
+                 * Stores given key-value pair in cache only if there is a previous mapping for it.
+                 * If cache previously contained value for the given key, then this value is returned.
+                 * In case of PARTITIONED or REPLICATED caches, the value will be loaded from the primary node,
+                 * which in its turn may load the value from the swap storage, and consecutively, if it's not
+                 * in swap, rom the underlying persistent storage.
+                 * If write-through is enabled, the stored value will be persisted to store.
+                 *
+                 * @param key Key to store in cache.
+                 * @param value Value to be associated with the given key.
+                 * @return True if the value was replaced.
+                 */
+                bool Replace(const K& key, const V& value)
+                {
+                    impl::thin::WritableKeyImpl<KeyType> wrKey(key);
+                    impl::thin::WritableImpl<ValueType> wrValue(value);
+
+                    return proxy.Replace(wrKey, wrValue);
                 }
 
                 /**

@@ -75,20 +75,20 @@ namespace ignite
                     void Put(const WritableKey& key, const Writable& value);
 
                     /**
-                     * Get value from cache.
-                     *
-                     * @param key Key.
-                     * @param value Value.
-                     */
-                    void Get(const WritableKey& key, Readable& value);
-
-                    /**
                      * Stores given key-value pairs in cache.
                      * If write-through is enabled, the stored values will be persisted to store.
                      *
                      * @param pairs Writable key-value pair sequence.
                      */
                     void PutAll(const Writable& pairs);
+
+                    /**
+                     * Get value from cache.
+                     *
+                     * @param key Key.
+                     * @param value Value.
+                     */
+                    void Get(const WritableKey& key, Readable& value);
 
                     /**
                      * Retrieves values mapped to the specified keys from cache.
@@ -100,6 +100,20 @@ namespace ignite
                      * @param pairs Readable key-value pair sequence.
                      */
                     void GetAll(const Writable& keys, Readable& pairs);
+
+                    /**
+                     * Stores given key-value pair in cache only if there is a previous mapping for it.
+                     * If cache previously contained value for the given key, then this value is returned.
+                     * In case of PARTITIONED or REPLICATED caches, the value will be loaded from the primary node,
+                     * which in its turn may load the value from the swap storage, and consecutively, if it's not
+                     * in swap, rom the underlying persistent storage.
+                     * If write-through is enabled, the stored value will be persisted to store.
+                     *
+                     * @param key Key to store in cache.
+                     * @param value Value to be associated with the given key.
+                     * @return True if the value was replaced.
+                     */
+                    bool Replace(const WritableKey& key, const Writable& value);
 
                     /**
                      * Check if the cache contains a value for the specified key.

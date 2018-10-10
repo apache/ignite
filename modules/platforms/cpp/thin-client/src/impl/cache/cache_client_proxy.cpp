@@ -66,6 +66,11 @@ namespace ignite
                     GetCacheImpl(impl).GetAll(keys, pairs);
                 }
 
+                bool CacheClientProxy::Replace(const WritableKey& key, const Writable& value)
+                {
+                    return GetCacheImpl(impl).Replace(key, value);
+                }
+
                 bool CacheClientProxy::ContainsKey(const WritableKey & key)
                 {
                     return GetCacheImpl(impl).ContainsKey(key);

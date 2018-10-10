@@ -77,7 +77,7 @@ namespace ignite
 
                 void CacheClientImpl::Put(const WritableKey& key, const Writable& value)
                 {
-                    CachePutRequest req(id, binary, key, value);
+                    CacheKeyValueRequest<RequestType::CACHE_PUT> req(id, binary, key, value);
                     Response rsp;
 
                     SyncCacheKeyMessage(key, req, rsp);
@@ -105,6 +105,16 @@ namespace ignite
                     CacheValueResponse rsp(pairs);
 
                     SyncMessage(req, rsp);
+                }
+
+                bool CacheClientImpl::Replace(const WritableKey& key, const Writable& value)
+                {
+                    CacheKeyValueRequest<RequestType::CACHE_REPLACE> req(id, binary, key, value);
+                    BoolResponse rsp;
+
+                    SyncCacheKeyMessage(key, req, rsp);
+
+                    return rsp.GetValue();
                 }
 
                 bool CacheClientImpl::ContainsKey(const WritableKey& key)

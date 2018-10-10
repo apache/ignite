@@ -73,20 +73,6 @@ namespace ignite
                     reader.ReadString(error);
             }
 
-            CachePutRequest::CachePutRequest(int32_t cacheId, bool binary, const Writable& key, const Writable& value) :
-                CacheValueRequest<RequestType::CACHE_PUT>(cacheId, binary, key),
-                value(value)
-            {
-                // No-op.
-            }
-
-            void CachePutRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
-            {
-                CacheValueRequest<RequestType::CACHE_PUT>::Write(writer, ver);
-
-                value.Write(writer);
-            }
-
             ClientCacheNodePartitionsResponse::ClientCacheNodePartitionsResponse(
                 std::vector<ConnectableNodePartitions>& nodeParts):
                 nodeParts(nodeParts)

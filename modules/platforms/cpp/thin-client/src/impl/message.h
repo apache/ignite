@@ -423,9 +423,10 @@ namespace ignite
             };
 
             /**
-             * Cache put request.
+             * Cache key value request.
              */
-            class CachePutRequest : public CacheValueRequest<RequestType::CACHE_PUT>
+            template<int32_t OpCode>
+            class CacheKeyValueRequest : public CacheValueRequest<OpCode>
             {
             public:
                 /**
@@ -436,12 +437,17 @@ namespace ignite
                  * @param key Key.
                  * @param value Value.
                  */
-                CachePutRequest(int32_t cacheId, bool binary, const Writable& key, const Writable& value);
+                CacheKeyValueRequest(int32_t cacheId, bool binary, const Writable& key, const Writable& value) :
+                    CacheValueRequest<OpCode>(cacheId, binary, key),
+                    value(value)
+                {
+                    // No-op.
+                }
 
                 /**
                  * Destructor.
                  */
-                virtual ~CachePutRequest()
+                virtual ~CacheKeyValueRequest()
                 {
                     // No-op.
                 }
@@ -451,7 +457,12 @@ namespace ignite
                  * @param writer Writer.
                  * @param ver Version.
                  */
-                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
+                {
+                    CacheValueRequest<OpCode>::Write(writer, ver);
+
+                    value.Write(writer);
+                }
 
             private:
                 /** Value. */
