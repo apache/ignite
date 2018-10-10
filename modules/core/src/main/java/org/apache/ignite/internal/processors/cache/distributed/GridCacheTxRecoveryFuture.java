@@ -500,7 +500,6 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
             if (err == null) {
                 assert res != null;
 
-                // t0d0 proper voting behavior will be achieved when votes are sent after finishing tx locally
                 cctx.tm().finishTxOnRecovery(tx, res);
             }
             else {
