@@ -89,6 +89,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -2078,8 +2079,10 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
             VacuumMetrics metrics = new VacuumMetrics();
 
-            if (part == null || part.state() != OWNING || !part.reserve())
+            if (!canRunVacuum(part, null) || !part.reserve())
                 return metrics;
+
+            int curCacheId = CU.UNDEFINED_CACHE_ID;
 
             try {
                 GridCursor<? extends CacheDataRow> cursor = part.dataStore().cursor(KEY_ONLY);
@@ -2093,8 +2096,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 MvccSnapshot snapshot = task.snapshot();
 
                 GridCacheContext cctx = null;
-
-                int curCacheId = CU.UNDEFINED_CACHE_ID;
 
                 boolean shared = part.group().sharedGroup();
 
@@ -2150,9 +2151,62 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
                 return metrics;
             }
+            catch (Exception e) {
+                if (canRunVacuum(part, curCacheId))
+                    throw e; // Unexpected error.
+
+                if (log.isDebugEnabled())
+                    log.debug("Error occurred during the vacuum. Skip vacuuming for the current partition. " +
+                        "[part=" + part + ", err=" + X.getFullStackTrace(e) + ']');
+
+                return new VacuumMetrics();
+            }
             finally {
                 part.release();
             }
+        }
+
+        /**
+         * @param part Partition.
+         * @param cacheId Cache id.
+         * @return {@code True} if we can vacuum given partition.
+         */
+        private boolean canRunVacuum(GridDhtLocalPartition part, Integer cacheId) {
+            if (part == null || part.state() != OWNING)
+                return false;
+
+            CacheGroupContext grp = part.group();
+
+            assert grp != null;
+
+            List<GridCacheContext> caches = grp.caches();
+
+            if (F.isEmpty(caches))
+                return false;
+
+            if (grp.shared().kernalContext().isStopping())
+                return false;
+
+            if (cacheId == null && grp.sharedGroup())
+                return true; // Cache context is unknown, but we can try to run vacuum.
+
+            GridCacheContext ctx0;
+
+            if (grp.sharedGroup()) {
+                assert cacheId != null && cacheId != CU.UNDEFINED_CACHE_ID;
+
+                if (!grp.cacheIds().contains(cacheId))
+                    return false;
+
+                ctx0 = grp.shared().cacheContext(cacheId);
+            }
+            else
+                ctx0 = caches.get(0);
+
+            if (ctx0 == null)
+                return false;
+
+            return !grp.shared().closed(ctx0);
         }
 
         /** */
