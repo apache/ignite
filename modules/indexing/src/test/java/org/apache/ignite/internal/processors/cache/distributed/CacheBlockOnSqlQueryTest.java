@@ -36,9 +36,7 @@ public class CacheBlockOnSqlQueryTest extends CacheBlockOnReadAbstractTest {
 
             /** {@inheritDoc} */
             @Override protected CacheConfiguration<Integer, TestingEntity> createCacheConfiguration() {
-                return new CacheConfiguration<Integer, TestingEntity>(DEFAULT_CACHE_NAME)
-                    .setIndexedTypes(Integer.class, TestingEntity.class)
-                    .setBackups(1);
+                return super.createCacheConfiguration().setIndexedTypes(Integer.class, TestingEntity.class);
             }
 
             /** {@inheritDoc} */

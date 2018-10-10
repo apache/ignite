@@ -136,6 +136,13 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     }
 
     /**
+     * Number of backups to configure in caches by default.
+     */
+    protected int backupsCount() {
+        return Math.min(3, baselineServersCount() - 1);
+    }
+
+    /**
      * Number of milliseconds to warmup reading process. Used to lower fluctuations in run time. Might be 0.
      *
      * @see Params#warmup()
@@ -1193,7 +1200,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
          */
         protected CacheConfiguration<KeyType, ValueType> createCacheConfiguration() {
             return new CacheConfiguration<KeyType, ValueType>(DEFAULT_CACHE_NAME)
-                .setBackups(Math.min(3, baselineServersCount() - 1))
+                .setBackups(backupsCount())
                 .setAffinity(
                     new RendezvousAffinityFunction()
                         .setPartitions(32)
