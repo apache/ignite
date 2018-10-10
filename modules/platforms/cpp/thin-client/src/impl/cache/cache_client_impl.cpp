@@ -137,6 +137,14 @@ namespace ignite
                     return rsp.GetValue();
                 }
 
+                void CacheClientImpl::RemoveAll(const Writable& keys)
+                {
+                    CacheValueRequest<RequestType::CACHE_REMOVE_KEYS> req(id, binary, keys);
+                    Response rsp;
+
+                    SyncMessage(req, rsp);
+                }
+
                 void CacheClientImpl::RemoveAll()
                 {
                     CacheRequest<RequestType::CACHE_REMOVE_ALL> req(id, binary);

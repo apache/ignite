@@ -230,7 +230,6 @@ namespace ignite
                  * If the returned value is not needed, method removex() should always be used instead of this
                  * one to avoid the overhead associated with returning of the previous value.
                  * If write-through is enabled, the value will be removed from store.
-                 * This method is transactional and will enlist the entry into ongoing transaction if there is one.
                  *
                  * @param key Key whose mapping is to be removed from cache.
                  * @return False if there was no matching key.
@@ -240,6 +239,33 @@ namespace ignite
                     impl::thin::WritableKeyImpl<KeyType> wrKey(key);
 
                     return proxy.Remove(wrKey);
+                }
+
+                /**
+                 * Removes given key mappings from cache.
+                 * If write-through is enabled, the value will be removed from store.
+                 *
+                 * @param keys Keys whose mappings are to be removed from cache.
+                 */
+                template<typename Set>
+                void RemoveAll(const Set& keys)
+                {
+                    RemoveAll(keys.begin(), keys.end());
+                }
+
+                /**
+                 * Removes given key mappings from cache.
+                 * If write-through is enabled, the value will be removed from store.
+                 *
+                 * @param begin Iterator pointing to the beggining of the key sequence.
+                 * @param end Iterator pointing to the end of the key sequence.
+                 */
+                template<typename InIter>
+                void RemoveAll(InIter begin, InIter end)
+                {
+                    impl::thin::WritableSetImpl<K, InIter> wrSeq(begin, end);
+
+                    proxy.RemoveAll(wrSeq);
                 }
 
                 /**
