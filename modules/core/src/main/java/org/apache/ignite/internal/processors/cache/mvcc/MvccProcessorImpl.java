@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -1753,10 +1754,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
             prevCrdQueries.onNodeFailed(nodeId);
 
-            // Remove failed node from pending voters list
             recoveryBallotBoxes.forEach((nearNodeId, ballotBox) -> {
-                if (ballotBox.excludeVoter(nodeId))
-                    tryFinishRecoveryVoting(nearNodeId, ballotBox);
+                // Put synthetic vote from failed node
+                ballotBox.vote(nodeId, Collections.emptyMap());
+
+                tryFinishRecoveryVoting(nearNodeId, ballotBox);
             });
 
             if (discoEvt.eventNode().isClient()) {
@@ -1842,10 +1844,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         synchronized void voters(List<UUID> voters) {
             this.voters = voters;
-        }
-
-        synchronized boolean excludeVoter(UUID voter) {
-            return voters.remove(voter);
         }
 
         synchronized void vote(UUID nodeId, Map<Long, Boolean> vote) {
