@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processor.security;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -29,61 +30,57 @@ import static org.junit.Assert.assertThat;
  * Security tests for a compute task.
  */
 public class ComputeTaskTest extends AbstractInintiatorContextSecurityProcessorTest {
+    /** Values. */
+    private AtomicInteger values = new AtomicInteger(0);
+
     /** */
     public void testCompute() {
-        successCompute(succsessClnt, failClnt, "10");
+        successCompute(succsessClnt, failClnt);
+        successCompute(succsessClnt, failSrv);
+        successCompute(succsessSrv, failClnt);
+        successCompute(succsessSrv, failSrv);
+        successCompute(succsessSrv, succsessSrv);
+        successCompute(succsessClnt, succsessClnt);
 
-        successCompute(succsessClnt, failSrv, "20");
-
-        successCompute(succsessSrv, failClnt, "30");
-
-        successCompute(succsessSrv, failSrv, "40");
-
-        successCompute(succsessSrv, succsessSrv, "50");
-
-        successCompute(succsessClnt, succsessClnt, "60");
-
-        failCompute(failClnt, succsessSrv, "70");
-
-        failCompute(failClnt, succsessClnt, "80");
-
-        failCompute(failSrv, succsessSrv, "90");
-
-        failCompute(failSrv, succsessClnt, "100");
-
-        failCompute(failSrv, failSrv, "110");
-
-        failCompute(failClnt, failClnt, "120");
+        failCompute(failClnt, succsessSrv);
+        failCompute(failClnt, succsessClnt);
+        failCompute(failSrv, succsessSrv);
+        failCompute(failSrv, succsessClnt);
+        failCompute(failSrv, failSrv);
+        failCompute(failClnt, failClnt);
     }
 
     /**
      * @param initiator Initiator node.
      * @param remote Remote node.
      */
-    private void successCompute(IgniteEx initiator, IgniteEx remote, String key) {
+    private void successCompute(IgniteEx initiator, IgniteEx remote) {
+        int val = values.getAndIncrement();
+
         initiator.compute(initiator.cluster().forNode(remote.localNode()))
             .broadcast(() ->
-                Ignition.localIgnite().cache(CACHE_NAME).put(key, "value")
+                Ignition.localIgnite().cache(CACHE_NAME)
+                    .put("key", val)
             );
 
-        assertThat(remote.cache(CACHE_NAME).get(key), is("value"));
+        assertThat(remote.cache(CACHE_NAME).get("key"), is(val));
     }
 
     /**
      * @param initiator Initiator node.
      * @param remote Remote node.
      */
-    private void failCompute(IgniteEx initiator, IgniteEx remote, String key) {
+    private void failCompute(IgniteEx initiator, IgniteEx remote) {
         assertCauseMessage(
             GridTestUtils.assertThrowsWithCause(
                 () -> initiator.compute(initiator.cluster().forNode(remote.localNode()))
                     .broadcast(() ->
-                        Ignition.localIgnite().cache(CACHE_NAME).put(key, "value")
+                        Ignition.localIgnite().cache(CACHE_NAME).put("fail_key", -1)
                     )
                 , SecurityException.class
             )
         );
 
-        assertThat(remote.cache(CACHE_NAME).get(key), nullValue());
+        assertThat(remote.cache(CACHE_NAME).get("fail_key"), nullValue());
     }
 }

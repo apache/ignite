@@ -17,46 +17,89 @@
 
 package org.apache.ignite.internal.processor.security;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
+/**
+ * Security tests for an execute server task.
+ */
 public class ExecuteServiceTaskTest extends AbstractInintiatorContextSecurityProcessorTest {
-    /**
-     * @param initiator Initiator node.
-     * @param remote Remote node.
-     */
-    private void successExecute(IgniteEx initiator, IgniteEx remote, String key) {
-        initiator.executorService(initiator.cluster().forNode(remote.localNode()))
-            .submit(
-                ()->
-                    Ignition.localIgnite().cache(CACHE_NAME).put(key, "value")
-            );
+    /** Key. */
+    private AtomicInteger key = new AtomicInteger(0);
 
-        assertThat(remote.cache(CACHE_NAME).get(key), is("value"));
+    /** */
+    public void testExecute() throws Exception {
+        successExecute(succsessClnt, failClnt);
+        successExecute(succsessClnt, failSrv);
+        successExecute(succsessSrv, failClnt);
+        successExecute(succsessSrv, failSrv);
+        successExecute(succsessSrv, succsessSrv);
+        successExecute(succsessClnt, succsessClnt);
+
+        failExecute(failClnt, succsessSrv);
+        failExecute(failClnt, succsessClnt);
+        failExecute(failSrv, succsessSrv);
+        failExecute(failSrv, succsessClnt);
+        failExecute(failSrv, failSrv);
+        failExecute(failClnt, failClnt);
     }
 
     /**
      * @param initiator Initiator node.
      * @param remote Remote node.
      */
-    private void failExecute(IgniteEx initiator, IgniteEx remote, String key) {
+    private void successExecute(IgniteEx initiator, IgniteEx remote) throws Exception {
+        int val = key.getAndIncrement();
+
+        initiator.executorService(initiator.cluster().forNode(remote.localNode()))
+            .submit(
+                new IgniteRunnable() {
+                    @Override public void run() {
+                        Ignition.localIgnite().cache(CACHE_NAME)
+                            .put("key", val);
+                    }
+                }
+            ).get();
+
+        assertThat(remote.cache(CACHE_NAME).get("key"), is(val));
+    }
+
+    /**
+     * @param initiator Initiator node.
+     * @param remote Remote node.
+     */
+    private void failExecute(IgniteEx initiator, IgniteEx remote) {
         assertCauseMessage(
             GridTestUtils.assertThrowsWithCause(
-                () -> initiator.executorService(initiator.cluster().forNode(remote.localNode()))
-                    .submit(
-                        () ->
-                            Ignition.localIgnite().cache(CACHE_NAME).put(key, "value")
-                    )
+                () -> {
+                    try {
+                        initiator.executorService(initiator.cluster().forNode(remote.localNode()))
+                            .submit(
+                                new IgniteRunnable() {
+                                    @Override public void run() {
+                                        Ignition.localIgnite().cache(CACHE_NAME).put("fail_key", -1);
+                                    }
+                                }
+                            ).get();
+                    }
+                    catch (InterruptedException | ExecutionException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
                 , SecurityException.class
             )
         );
 
-        assertThat(remote.cache(CACHE_NAME).get(key), nullValue());
+        assertThat(remote.cache(CACHE_NAME).get("fail_key"), nullValue());
     }
 
 }
