@@ -209,6 +209,33 @@ namespace ignite
                 }
 
                 /**
+                 * Check if cache contains mapping for these keys.
+                 *
+                 * @param keys Keys.
+                 * @return True if cache contains mapping for all these keys.
+                 */
+                template<typename Set>
+                bool ContainsKeys(const Set& keys)
+                {
+                    return ContainsKeys(keys.begin(), keys.end());
+                }
+
+                /**
+                 * Check if cache contains mapping for these keys.
+                 *
+                 * @param begin Iterator pointing to the beggining of the key sequence.
+                 * @param end Iterator pointing to the end of the key sequence.
+                 * @return True if cache contains mapping for all these keys.
+                 */
+                template<typename InIter>
+                bool ContainsKeys(InIter begin, InIter end)
+                {
+                    impl::thin::WritableSetImpl<K, InIter> wrSeq(begin, end);
+
+                    return proxy.ContainsKeys(wrSeq);
+                }
+
+                /**
                  * Gets the number of all entries cached across all nodes.
                  * @note This operation is distributed and will query all participating nodes for their cache sizes.
                  *

@@ -112,6 +112,14 @@ namespace ignite
                     bool ContainsKey(const WritableKey& key);
 
                     /**
+                     * Check if cache contains mapping for these keys.
+                     *
+                     * @param keys Keys.
+                     * @return True if cache contains mapping for all these keys.
+                     */
+                    bool ContainsKeys(const Writable& keys);
+
+                    /**
                      * Gets the number of all entries cached across all nodes.
                      * @note This operation is distributed and will query all participating nodes for their cache sizes.
                      *

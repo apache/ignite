@@ -117,6 +117,16 @@ namespace ignite
                     return rsp.GetValue();
                 }
 
+                bool CacheClientImpl::ContainsKeys(const Writable& keys)
+                {
+                    CacheValueRequest<RequestType::CACHE_CONTAINS_KEYS> req(id, binary, keys);
+                    BoolResponse rsp;
+
+                    SyncMessage(req, rsp);
+
+                    return rsp.GetValue();
+                }
+
                 int64_t CacheClientImpl::GetSize(int32_t peekModes)
                 {
                     CacheGetSizeRequest req(id, binary, peekModes);
