@@ -45,7 +45,7 @@ public class GaussianNaiveBayesModel implements Model<Vector, Double>, Exportabl
      * @param classProbabilities probabilities for all classes
      */
     public GaussianNaiveBayesModel(double[][] means, double[][] variances,
-        double[] classProbabilities,  double[] labels) {
+        double[] classProbabilities, double[] labels) {
         this.means = means;
         this.variances = variances;
         this.classProbabilities = classProbabilities;
@@ -60,7 +60,9 @@ public class GaussianNaiveBayesModel implements Model<Vector, Double>, Exportabl
     /** Returns a number of class to which the input belongs. */
     @Override public Double apply(Vector vector) {
         int k = classProbabilities.length;
-        double[] probabilites = new double[k];
+
+        double maxProbapility = .0;
+        int max = 0;
 
         for (int i = 0; i < k; i++) {
             double p = classProbabilities[i];
@@ -69,13 +71,10 @@ public class GaussianNaiveBayesModel implements Model<Vector, Double>, Exportabl
                 double g = gauss(x, means[i][j], variances[i][j]);
                 p *= g;
             }
-            probabilites[i] = p;
-        }
-
-        int max = 0;
-        for (int i = 0; i < k; i++) {
-            if (probabilites[i] > probabilites[max])
+            if (p > maxProbapility) {
                 max = i;
+                maxProbapility = p;
+            }
         }
         return labels[max];
     }
