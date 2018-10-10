@@ -1568,7 +1568,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (err == null)
             exchFuts.readyTopVer(topVer);
 
-        completeAffReadyFuts(err != null ? topVer : initTopVer, err);
+        completeAffReadyFuts(err == null ? topVer : initTopVer, err);
 
         ExchangeFutureSet exchFuts0 = exchFuts;
 
