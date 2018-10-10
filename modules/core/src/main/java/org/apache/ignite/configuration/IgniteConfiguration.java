@@ -1992,14 +1992,12 @@ public class IgniteConfiguration {
     /**
      * Returns maximum inactivity period for system worker. When this value is exceeded, worker is considered blocked
      * with consequent critical failure handler invocation.
-     * <p>
-     * Default is {@link #getFailureDetectionTimeout()}.
      *
      * @see #setSystemWorkerBlockedTimeout(long)
      * @return Maximum inactivity period for system worker in milliseconds.
      */
     public Long getSystemWorkerBlockedTimeout() {
-        return sysWorkerBlockedTimeout != null ? sysWorkerBlockedTimeout : getFailureDetectionTimeout();
+        return sysWorkerBlockedTimeout;
     }
 
     /**
@@ -2018,14 +2016,12 @@ public class IgniteConfiguration {
 
     /**
      * Returns timeout for checkpoint read lock acquisition.
-     * <p>
-     * Default is {@link #getFailureDetectionTimeout()}.
      *
      * @see #setCheckpointReadLockTimeout(long)
      * @return Returns timeout for checkpoint read lock acquisition in milliseconds.
      */
     public Long getCheckpointReadLockTimeout() {
-        return checkpointReadLockTimeout != null ? checkpointReadLockTimeout : getFailureDetectionTimeout();
+        return checkpointReadLockTimeout;
     }
 
     /**

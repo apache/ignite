@@ -131,6 +131,30 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testPartialCfgParamsPropagation() throws Exception {
+        sysWorkerBlockedTimeout = 30_000L;
+        checkpointReadLockTimeout = null;
+
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        WorkersRegistry reg = ignite.context().workersRegistry();
+
+        IgniteCacheDatabaseSharedManager dbMgr = ignite.context().cache().context().database();
+
+        BlockingOperationControlMXBean mBean = getMBean();
+
+        assertEquals(sysWorkerBlockedTimeout.longValue(), reg.getSystemWorkerBlockedTimeout());
+        assertEquals(sysWorkerBlockedTimeout.longValue(), dbMgr.getCheckpointReadLockTimeout());
+
+        assertEquals(sysWorkerBlockedTimeout.longValue(), mBean.getSystemWorkerBlockedTimeout());
+        assertEquals(sysWorkerBlockedTimeout.longValue(), mBean.getCheckpointReadLockTimeout());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testNegativeParamValues() throws Exception {
         sysWorkerBlockedTimeout = -1L;
         checkpointReadLockTimeout = -85L;

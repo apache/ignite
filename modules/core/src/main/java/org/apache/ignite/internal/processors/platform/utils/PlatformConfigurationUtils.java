@@ -1244,9 +1244,13 @@ public class PlatformConfigurationUtils {
         w.writeBoolean(true);
         w.writeInt(cfg.getMvccVacuumThreadCount());
         w.writeBoolean(true);
-        w.writeLong(cfg.getSystemWorkerBlockedTimeout());
+        w.writeLong(cfg.getSystemWorkerBlockedTimeout() != null
+            ? cfg.getSystemWorkerBlockedTimeout()
+            : cfg.getFailureDetectionTimeout());
         w.writeBoolean(true);
-        w.writeLong(cfg.getCheckpointReadLockTimeout());
+        w.writeLong(cfg.getCheckpointReadLockTimeout() != null
+            ? cfg.getCheckpointReadLockTimeout()
+            : cfg.getFailureDetectionTimeout());
 
         if (cfg.getSqlSchemas() == null)
             w.writeInt(-1);
