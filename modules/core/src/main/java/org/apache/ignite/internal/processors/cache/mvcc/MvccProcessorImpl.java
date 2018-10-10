@@ -735,17 +735,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         while (!sendQueryDone(crd, msg));
     }
 
-    @Override public void ackRecoveryFinished(UUID failedNodeId, Map<Long, Boolean> recoveryResolution) {
-        // t0d0 handle exceptions properly
-        // t0d0 consider coordinator change
-        try {
-            sendMessage(curCrd.nodeId(), new MvccRecoveryFinishedMessage(failedNodeId, recoveryResolution));
-        }
-        catch (IgniteCheckedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Void> waitTxsFuture(UUID crdId, GridLongList txs) {
         assert crdId != null;
@@ -1761,7 +1750,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             });
 
             if (discoEvt.eventNode().isClient()) {
-                RecoveryBallotBox ballotBox = recoveryBallotBoxes.computeIfAbsent(nodeId, uuid -> new RecoveryBallotBox());
+                RecoveryBallotBox ballotBox = recoveryBallotBoxes
+                    .computeIfAbsent(nodeId, uuid -> new RecoveryBallotBox());
 
                 ballotBox
                     .voters(discoEvt.topologyNodes().stream().map(ClusterNode::id).collect(Collectors.toList()));

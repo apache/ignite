@@ -70,6 +70,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearOptimisticTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinishedMessage;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
@@ -103,6 +105,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_TX_STARTED;
+import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TX;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
@@ -262,7 +265,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     UUID nodeId = discoEvt.eventNode().id();
 
                     // Wait some time in case there are some unprocessed messages from failed node.
-                    cctx.time().addTimeoutObject(new NodeFailureTimeoutObject(nodeId, discoEvt.eventNode().isClient()));
+                    cctx.time().addTimeoutObject(
+                        new NodeFailureTimeoutObject(nodeId, discoEvt.eventNode().isClient(), discoEvt.topologyVersion()));
 
                     if (txFinishSync != null)
                         txFinishSync.onNodeLeft(nodeId);
@@ -2405,16 +2409,20 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         private final UUID evtNodeId;
         /** */
         private final boolean client;
+        /** */
+        private final long topVer;
 
         /**
          * @param evtNodeId Event node ID.
          * @param client Indicates whether event node is client.
          */
-        private NodeFailureTimeoutObject(UUID evtNodeId, boolean client) {
+        private NodeFailureTimeoutObject(UUID evtNodeId, boolean client, long topVer) {
+            // t0d0 receive discovery event as constructor argument
             super(IgniteUuid.fromUuid(cctx.localNodeId()), TX_SALVAGE_TIMEOUT);
 
             this.evtNodeId = evtNodeId;
             this.client = client;
+            this.topVer = topVer;
         }
 
         /**
@@ -2506,7 +2514,24 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                             "[locNodeId=" + cctx.localNodeId() + ", failedNodeId=" + evtNodeId + ']', e);
                     }
                     finally {
-                        cctx.coordinators().ackRecoveryFinished(evtNodeId, Collections.emptyMap());
+                        MvccCoordinator mvccCrd = cctx.coordinators().currentCoordinator();
+
+                        if (mvccCrd.topologyVersion().topologyVersion() <= topVer) {
+                            try {
+                                cctx.kernalContext().io().sendToGridTopic(
+                                    mvccCrd.nodeId(),
+                                    TOPIC_CACHE_COORDINATOR,
+                                    new MvccRecoveryFinishedMessage(evtNodeId, Collections.emptyMap()),
+                                    SYSTEM_POOL);
+                            }
+                            catch (IgniteCheckedException e) {
+                                log.warning("Failed to notify mvcc coordinator that all recovering transactions were " +
+                                    "finished. Old mvcc coordinator migh have been failed, " +
+                                    "notification is not needed in this case " +
+                                    "[locNodeId=" + cctx.localNodeId() + ", failedNodeId=" + evtNodeId +
+                                    ", mvccCrdNodeId=" + mvccCrd.nodeId() + ']', e);
+                            }
+                        }
                     }
                 });
             }
