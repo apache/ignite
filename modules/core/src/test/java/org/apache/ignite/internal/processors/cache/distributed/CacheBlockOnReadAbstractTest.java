@@ -1053,7 +1053,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
          */
         protected CacheConfiguration<KeyType, ValueType> createCacheConfiguration() {
             return new CacheConfiguration<KeyType, ValueType>(DEFAULT_CACHE_NAME)
-                .setBackups(1)
+                .setBackups(Math.min(3, baselineServersCount() - 1))
                 .setAffinity(
                     new RendezvousAffinityFunction()
                         .setPartitions(32)
