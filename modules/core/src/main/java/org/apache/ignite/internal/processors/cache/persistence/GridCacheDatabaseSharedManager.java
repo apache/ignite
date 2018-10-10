@@ -1691,7 +1691,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 (Map<String, GridCacheConfigurationVersion>)metaStorage.readForPredicate(CACHE_CFG_VER_KEY_PREFIX_PRED);
 
             for (String key : data.keySet())
-                metaStorage.remove(key);
+                remove(key);
 
             try{
                 throw new RuntimeException();
@@ -1719,10 +1719,28 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try{
             throw new RuntimeException();
         } catch (RuntimeException e){
-            log.error("IGNITE-8717 readStoredCacheConfigurationVersion() key: " + key + " ver: " + (ver==null ? "null" : ver), e);
+            log.error("IGNITE-8717 readStoredCacheConfigurationVersion() key: " + key + " ver: " + U.toString(ver), e);
         }
 
         return ver;
+    }
+
+    private void remove(String key) throws IgniteCheckedException {
+        assert key != null;
+
+        try{
+            throw new RuntimeException();
+        } catch (RuntimeException e){
+            log.error("IGNITE-8717 remove() key: " + key, e);
+        }
+
+        context().database().checkpointReadLock();
+
+        try{
+            metaStorage.remove(key);
+        } finally {
+            context().database().checkpointReadUnlock();
+        }
     }
 
     /**
@@ -1833,7 +1851,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         context().database().checkpointReadLock();
 
         try {
-            metaStorage.remove(getCacheConfigMetastoreKey(cacheCfg));
+            remove(getCacheConfigMetastoreKey(cacheCfg));
         }
         finally {
             context().database().checkpointReadUnlock();
@@ -1994,7 +2012,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             rmvCaches = cacheData.values();
 
             for (String key : cacheData.keySet())
-                metaStorage.remove(key);
+                remove(key);
 
         }
         catch (IgniteCheckedException e) {
@@ -5081,7 +5099,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         try {
             if (enabled)
-                metaStorage.remove(key);
+                remove(key);
             else {
                 metaStorage.write(key, true);
 
