@@ -1395,12 +1395,13 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         try {
             sendMessage(node.id(), res);
         }
-        catch (ClusterTopologyCheckedException e) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to send tx snapshot response, node left [msg=" + msg + ", node=" + nodeId + ']');
-        }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to send tx snapshot response [msg=" + msg + ", node=" + nodeId + ']', e);
+            onTxDone(res.counter(), false);
+
+            if (!(e instanceof ClusterTopologyCheckedException))
+                U.error(log, "Failed to send tx snapshot response [msg=" + msg + ", node=" + nodeId + ']', e);
+            else if (log.isDebugEnabled())
+                log.debug("Failed to send tx snapshot response, node left [msg=" + msg + ", node=" + nodeId + ']');
         }
     }
 
@@ -1423,14 +1424,14 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         try {
             sendMessage(node.id(), res);
         }
-        catch (ClusterTopologyCheckedException e) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to send query counter response, node left [msg=" + msg + ", node=" + nodeId + ']');
-        }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to send query counter response [msg=" + msg + ", node=" + nodeId + ']', e);
+            if (!(e instanceof ClusterTopologyCheckedException)) {
+                onQueryDone(nodeId, res.tracking());
 
-            onQueryDone(nodeId, res.tracking());
+                U.error(log, "Failed to send query counter response [msg=" + msg + ", node=" + nodeId + ']', e);
+            }
+            else if (log.isDebugEnabled())
+                log.debug("Failed to send query counter response, node left [msg=" + msg + ", node=" + nodeId + ']');
         }
     }
 
