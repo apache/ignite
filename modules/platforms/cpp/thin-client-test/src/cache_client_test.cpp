@@ -793,6 +793,8 @@ BOOST_AUTO_TEST_CASE(CacheClientGetAllContainers)
 
     cache.GetAll(keys, res);
 
+    BOOST_REQUIRE_EQUAL(res.size(), keys.size());
+
     for (size_t i = 0; i < keys.size(); ++i)
         BOOST_REQUIRE_EQUAL(values[i], res[keys[i]]);
 }
@@ -826,8 +828,54 @@ BOOST_AUTO_TEST_CASE(CacheClientGetAllIterators)
 
     cache.GetAll(keys.begin(), keys.end(), std::inserter(res, res.end()));
 
+    BOOST_REQUIRE_EQUAL(res.size(), keys.size());
+
     for (size_t i = 0; i < keys.size(); ++i)
         BOOST_REQUIRE_EQUAL(values[i], res[keys[i]]);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientPutAllContainers)
+{
+    IgniteClientConfiguration cfg;
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, std::string> cache =
+        client.CreateCache<int32_t, std::string>("test");
+
+    std::map<int32_t, std::string> toPut;
+
+    toPut[1] = "first";
+    toPut[2] = "second";
+    toPut[3] = "third";
+
+    cache.PutAll(toPut);
+
+    for (std::map<int32_t, std::string>::const_iterator it = toPut.begin(); it != toPut.end(); ++it)
+        BOOST_REQUIRE_EQUAL(cache.Get(it->first), it->second);
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientPutAllIterators)
+{
+    IgniteClientConfiguration cfg;
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, std::string> cache =
+        client.CreateCache<int32_t, std::string>("test");
+
+    std::map<int32_t, std::string> toPut;
+
+    toPut[1] = "first";
+    toPut[2] = "second";
+    toPut[3] = "third";
+
+    cache.PutAll(toPut.begin(), toPut.end());
+
+    for (std::map<int32_t, std::string>::const_iterator it = toPut.begin(); it != toPut.end(); ++it)
+        BOOST_REQUIRE_EQUAL(cache.Get(it->first), it->second);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

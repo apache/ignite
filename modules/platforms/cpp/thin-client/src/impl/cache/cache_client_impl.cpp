@@ -91,6 +91,14 @@ namespace ignite
                     SyncCacheKeyMessage(key, req, rsp);
                 }
 
+                void CacheClientImpl::PutAll(const Writable & pairs)
+                {
+                    CacheValueRequest<RequestType::CACHE_PUT_ALL> req(id, binary, pairs);
+                    Response rsp;
+
+                    SyncMessage(req, rsp);
+                }
+
                 void CacheClientImpl::GetAll(const Writable& keys, Readable& pairs)
                 {
                     CacheValueRequest<RequestType::CACHE_GET_ALL> req(id, binary, keys);

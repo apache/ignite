@@ -135,11 +135,37 @@ namespace ignite
                 }
 
                 /**
+                 * Stores given key-value pairs in cache.
+                 * If write-through is enabled, the stored values will be persisted to store.
+                 *
+                 * @param begin Iterator pointing to the beggining of the key-value pair sequence.
+                 * @param end Iterator pointing to the end of the key-value pair sequence.
+                 */
+                template<typename InIter>
+                void PutAll(InIter begin, InIter end)
+                {
+                    impl::thin::WritableMapImpl<K, V, InIter> wrSeq(begin, end);
+
+                    proxy.PutAll(wrSeq);
+                }
+
+                /**
+                 * Stores given key-value pairs in cache.
+                 * If write-through is enabled, the stored values will be persisted to store.
+                 *
+                 * @param vals Key-value pairs to store in cache.
+                 */
+                template<typename Map>
+                void PutAll(const Map& vals)
+                {
+                    PutAll(vals.begin(), vals.end());
+                }
+
+                /**
                  * Retrieves values mapped to the specified keys from cache.
                  * If some value is not present in cache, then it will be looked up from swap storage. If
                  * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
                  * will be loaded from persistent store.
-                 * This method is transactional and will enlist the entry into ongoing transaction if there is one.
                  *
                  * @param begin Iterator pointing to the beggining of the key sequence.
                  * @param end Iterator pointing to the end of the key sequence.
@@ -148,7 +174,7 @@ namespace ignite
                 template<typename InIter, typename OutIter>
                 void GetAll(InIter begin, InIter end, OutIter dst)
                 {
-                    impl::thin::WritableSequenceImpl<K, InIter> wrSeq(begin, end);
+                    impl::thin::WritableSetImpl<K, InIter> wrSeq(begin, end);
                     impl::thin::ReadableMapImpl<K, V, OutIter> rdSeq(dst);
 
                     proxy.GetAll(wrSeq, rdSeq);
@@ -159,9 +185,6 @@ namespace ignite
                  * If some value is not present in cache, then it will be looked up from swap storage. If
                  * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
                  * will be loaded from persistent store.
-                 * This method is transactional and will enlist the entry into ongoing transaction if there is one.
-                 *
-                 * This method should only be used on the valid instance.
                  *
                  * @param keys Keys.
                  * @param res Map of key-value pairs.

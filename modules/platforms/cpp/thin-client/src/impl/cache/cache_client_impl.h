@@ -83,11 +83,18 @@ namespace ignite
                     void Get(const WritableKey& key, Readable& value);
 
                     /**
+                     * Stores given key-value pairs in cache.
+                     * If write-through is enabled, the stored values will be persisted to store.
+                     *
+                     * @param pairs Writable key-value pair sequence.
+                     */
+                    void PutAll(const Writable& pairs);
+
+                    /**
                      * Retrieves values mapped to the specified keys from cache.
                      * If some value is not present in cache, then it will be looked up from swap storage. If
                      * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
                      * will be loaded from persistent store.
-                     * This method is transactional and will enlist the entry into ongoing transaction if there is one.
                      *
                      * @param keys Writable key sequence.
                      * @param pairs Readable key-value pair sequence.

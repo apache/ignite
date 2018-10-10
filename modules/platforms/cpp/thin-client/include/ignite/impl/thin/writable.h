@@ -50,6 +50,8 @@ namespace ignite
 
             /**
              * Implementation of the Writable class for a concrete type.
+             *
+             * @tparam T Value type.
              */
             template<typename T>
             class WritableImpl : public Writable
@@ -93,13 +95,16 @@ namespace ignite
             };
 
             /**
-             * Implementation of the Writable class for a sequence.
+             * Implementation of the Writable class for a set of values.
+             *
+             * @tparam T Value type.
+             * @tparam I Iterator type.
              */
             template<typename T, typename I>
-            class WritableSequenceImpl : public Writable
+            class WritableSetImpl : public Writable
             {
             public:
-                /** Iterator type. */
+                /** Element type. */
                 typedef T ElementType;
 
                 /** Iterator type. */
@@ -111,7 +116,7 @@ namespace ignite
                  * @param begin Begin of the sequence.
                  * @param end Sequence end.
                  */
-                WritableSequenceImpl(IteratorType begin, IteratorType end) :
+                WritableSetImpl(IteratorType begin, IteratorType end) :
                     begin(begin),
                     end(end)
                 {
@@ -121,7 +126,7 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                virtual ~WritableSequenceImpl()
+                virtual ~WritableSetImpl()
                 {
                     // No-op.
                 }
@@ -145,6 +150,84 @@ namespace ignite
                     for (IteratorType it = begin; it != end; ++it)
                     {
                         writer.WriteObject(*it);
+
+                        ++cnt;
+                    }
+
+                    out->WriteInt32(cntPos, cnt);
+
+                    out->Synchronize();
+                }
+
+            private:
+                /** Sequence begin. */
+                IteratorType begin;
+
+                /** Sequence end. */
+                IteratorType end;
+            };
+
+            /**
+             * Implementation of the Writable class for a map.
+             *
+             * @tparam K Key type.
+             * @tparam V Value type.
+             * @tparam I Iterator type.
+             */
+            template<typename K, typename V, typename I>
+            class WritableMapImpl : public Writable
+            {
+            public:
+                /** Key type. */
+                typedef K KeyType;
+
+                /** Value type. */
+                typedef V ValueType;
+
+                /** Iterator type. */
+                typedef I IteratorType;
+
+                /**
+                 * Constructor.
+                 *
+                 * @param begin Begin of the sequence.
+                 * @param end Sequence end.
+                 */
+                WritableMapImpl(IteratorType begin, IteratorType end) :
+                    begin(begin),
+                    end(end)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~WritableMapImpl()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write sequence using writer.
+                 *
+                 * @param writer Writer to use.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer) const
+                {
+                    using namespace ignite::binary;
+
+                    interop::InteropOutputStream* out = writer.GetStream();
+
+                    int32_t cntPos = out->Reserve(4);
+
+                    out->Synchronize();
+
+                    int32_t cnt = 0;
+                    for (IteratorType it = begin; it != end; ++it)
+                    {
+                        writer.WriteObject(it->first);
+                        writer.WriteObject(it->second);
 
                         ++cnt;
                     }
