@@ -1559,7 +1559,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             GridCacheConfigurationVersion ver = readStoredCacheConfigurationVersion(key);
 
-            assert ver !=null : data;
+            assert ver != null : data;
 
             // 0 - means, that cache isn't user cache.
             if(ver.id()>0){
@@ -1609,7 +1609,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try{
             throw new RuntimeException();
         } catch (RuntimeException e){
-            log.error("IGNITE-8717 readStoredCacheConfiguration0() data: " + storedCaches);
+            log.error("IGNITE-8717 readStoredCacheConfiguration0() data: " + storedCaches, e);
         }
 
 
@@ -1626,7 +1626,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try{
             throw new RuntimeException();
         } catch (RuntimeException e){
-            log.error("IGNITE-8717 storeCacheConfiguration() data: " + cacheData + " overwrite: " + overwrite);
+            log.error("IGNITE-8717 storeCacheConfiguration() data: " + cacheData + " overwrite: " + overwrite, e);
         }
 
         if (metaStorageReadyForWriteLatch.getCount() == 0L)
@@ -1654,7 +1654,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try{
             throw new RuntimeException();
         } catch (RuntimeException e){
-            log.error("IGNITE-8717 clearStoredCachesConfigurationVersion()");
+            log.error("IGNITE-8717 clearStoredCachesConfigurationVersion()", e);
         }
 
         if (metaStorageReadyForWriteLatch.getCount() == 0L)
@@ -1695,7 +1695,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             try{
                 throw new RuntimeException();
             } catch (RuntimeException e){
-                log.error("IGNITE-8717 removeStoredCachesConfigurationVersion0() removed: " + data);
+                log.error("IGNITE-8717 removeStoredCachesConfigurationVersion0() removed: " + data, e);
             }
         }
         finally {
@@ -1718,7 +1718,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try{
             throw new RuntimeException();
         } catch (RuntimeException e){
-            log.error("IGNITE-8717 readStoredCacheConfigurationVersion() key: " + key + " ver: " + (ver==null ? "null" : ver));
+            log.error("IGNITE-8717 readStoredCacheConfigurationVersion() key: " + key + " ver: " + (ver==null ? "null" : ver), e);
         }
 
         return ver;
@@ -1742,7 +1742,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try{
             throw new RuntimeException();
         } catch (RuntimeException e){
-            log.error("IGNITE-8717 readStoredCachesConfigurationVersion0() vers: " + storedVersions);
+            log.error("IGNITE-8717 readStoredCachesConfigurationVersion0() vers: " + storedVersions, e);
         }
 
         return storedVersions;
@@ -1758,7 +1758,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try{
             throw new RuntimeException();
         } catch (RuntimeException e){
-            log.error("IGNITE-8717 storeCacheConfigurationVersion() ver: " + ver + " overwrite: " + overwrite);
+            log.error("IGNITE-8717 storeCacheConfigurationVersion() ver: " + ver + " overwrite: " + overwrite, e);
         }
 
         if (metaStorageReadyForWriteLatch.getCount() == 0L)
@@ -1793,7 +1793,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try{
             throw new RuntimeException();
         } catch (RuntimeException e){
-            log.error("IGNITE-8717 storeCacheConfigurationVersion0() ver: " + ver + " overwrite: " + overwrite);
+            log.error("IGNITE-8717 storeCacheConfigurationVersion0() ver: " + ver + " overwrite: " + overwrite, e);
         }
 
         context().database().checkpointReadLock();
@@ -1826,7 +1826,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try{
             throw new RuntimeException();
         } catch (RuntimeException e){
-            log.error("IGNITE-8717 removeCacheConfiguration() cfg: " + cacheCfg);
+            log.error("IGNITE-8717 removeCacheConfiguration() cfg: " + cacheCfg, e);
         }
 
         context().database().checkpointReadLock();
@@ -1848,7 +1848,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try{
             throw new RuntimeException();
         } catch (RuntimeException e){
-            log.error("IGNITE-8717 storeCacheConfiguration0() data: " + cacheData + " overwrite: " + overwrite);
+            log.error("IGNITE-8717 storeCacheConfiguration0() data: " + cacheData + " overwrite: " + overwrite, e);
         }
 
         context().database().checkpointReadLock();
@@ -2007,7 +2007,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try{
             throw new RuntimeException();
         } catch (RuntimeException e){
-            log.error("IGNITE-8717 removeCacheConfiguration() grp: " + grp + " removed: " + rmvCaches);
+            log.error("IGNITE-8717 removeCacheConfiguration() grp: " + grp + " removed: " + rmvCaches, e);
         }
 
         return rmvCaches;
