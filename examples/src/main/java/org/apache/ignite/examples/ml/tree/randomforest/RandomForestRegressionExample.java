@@ -37,7 +37,6 @@ import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
 import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategies;
-import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Example represents a solution for the task of price predictions for houses in Boston based on a
@@ -66,68 +65,62 @@ public class RandomForestRegressionExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                RandomForestRegressionExample.class.getSimpleName(), () -> {
-                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
+            IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
 
-                AtomicInteger idx = new AtomicInteger(0);
-                RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(
-                    IntStream.range(0, data[0].length - 1).mapToObj(
-                        x -> new FeatureMeta("", idx.getAndIncrement(), false)).collect(Collectors.toList())
-                ).withAmountOfTrees(101)
-                    .withFeaturesCountSelectionStrgy(FeaturesCountSelectionStrategies.ONE_THIRD)
-                    .withMaxDepth(4)
-                    .withMinImpurityDelta(0.)
-                    .withSubSampleSize(0.3)
-                    .withSeed(0);
+            AtomicInteger idx = new AtomicInteger(0);
+            RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(
+                IntStream.range(0, data[0].length - 1).mapToObj(
+                    x -> new FeatureMeta("", idx.getAndIncrement(), false)).collect(Collectors.toList())
+            ).withAmountOfTrees(101)
+                .withFeaturesCountSelectionStrgy(FeaturesCountSelectionStrategies.ONE_THIRD)
+                .withMaxDepth(4)
+                .withMinImpurityDelta(0.)
+                .withSubSampleSize(0.3)
+                .withSeed(0);
 
-                trainer.setEnvironment(LearningEnvironment.builder()
-                    .withParallelismStrategy(ParallelismStrategy.Type.ON_DEFAULT_POOL)
-                    .withLoggingFactory(ConsoleLogger.factory(MLLogger.VerboseLevel.LOW))
-                    .build()
-                );
+            trainer.setEnvironment(LearningEnvironment.builder()
+                .withParallelismStrategy(ParallelismStrategy.Type.ON_DEFAULT_POOL)
+                .withLoggingFactory(ConsoleLogger.factory(MLLogger.VerboseLevel.LOW))
+                .build()
+            );
 
-                System.out.println(">>> Configured trainer: " + trainer.getClass().getSimpleName());
+            System.out.println(">>> Configured trainer: " + trainer.getClass().getSimpleName());
 
-                ModelsComposition randomForest = trainer.fit(ignite, dataCache,
-                    (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-                    (k, v) -> v[v.length - 1]
-                );
+            ModelsComposition randomForest = trainer.fit(ignite, dataCache,
+                (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
+                (k, v) -> v[v.length - 1]
+            );
 
-                System.out.println(">>> Trained model: " + randomForest.toString(true));
+            System.out.println(">>> Trained model: " + randomForest.toString(true));
 
-                double mse = 0.0;
-                double mae = 0.0;
-                int totalAmount = 0;
+            double mse = 0.0;
+            double mae = 0.0;
+            int totalAmount = 0;
 
-                try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {
-                    for (Cache.Entry<Integer, double[]> observation : observations) {
-                        double[] val = observation.getValue();
-                        double[] inputs = Arrays.copyOfRange(val, 0, val.length - 1);
-                        double groundTruth = val[val.length - 1];
+            try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {
+                for (Cache.Entry<Integer, double[]> observation : observations) {
+                    double[] val = observation.getValue();
+                    double[] inputs = Arrays.copyOfRange(val, 0, val.length - 1);
+                    double groundTruth = val[val.length - 1];
 
-                        double prediction = randomForest.apply(VectorUtils.of(inputs));
+                    double prediction = randomForest.apply(VectorUtils.of(inputs));
 
-                        mse += Math.pow(prediction - groundTruth, 2.0);
-                        mae += Math.abs(prediction - groundTruth);
+                    mse += Math.pow(prediction - groundTruth, 2.0);
+                    mae += Math.abs(prediction - groundTruth);
 
-                        totalAmount++;
-                    }
-
-                    System.out.println("\n>>> Evaluated model on " + totalAmount + " data points.");
-
-                    mse = mse / totalAmount;
-                    System.out.println("\n>>> Mean squared error (MSE) " + mse);
-
-                    mae = mae / totalAmount;
-                    System.out.println("\n>>> Mean absolute error (MAE) " + mae);
-
-                    System.out.println(">>> Random Forest regression algorithm over cached dataset usage example completed.");
+                    totalAmount++;
                 }
-            });
 
-            igniteThread.start();
-            igniteThread.join();
+                System.out.println("\n>>> Evaluated model on " + totalAmount + " data points.");
+
+                mse = mse / totalAmount;
+                System.out.println("\n>>> Mean squared error (MSE) " + mse);
+
+                mae = mae / totalAmount;
+                System.out.println("\n>>> Mean absolute error (MAE) " + mae);
+
+                System.out.println(">>> Random Forest regression algorithm over cached dataset usage example completed.");
+            }
         }
     }
 
