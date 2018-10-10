@@ -834,6 +834,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             // Memory should be recovered at startup.
             assert !status.needRestoreMemory() : status;
 
+            if (!cpHistory.isInit())
+                cpHistory.initialize(retreiveHistory());
+
             // Memory restored at startup, just resume logging from last seen WAL pointer.
             cctx.wal().resumeLogging();
 
