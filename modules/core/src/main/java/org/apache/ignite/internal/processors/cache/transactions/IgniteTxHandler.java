@@ -702,7 +702,7 @@ public class IgniteTxHandler {
                 List<ClusterNode> aff1 = ctx.affinity().assignments(expVer).get(e.key().partition());
                 List<ClusterNode> aff2 = ctx.affinity().assignments(curVer).get(e.key().partition());
 
-                if (!aff1.containsAll(aff2))
+                if (!aff1.containsAll(aff2) || aff2.isEmpty() || !aff1.get(0).equals(aff2.get(0)))
                     return true;
             }
             catch (IllegalStateException ignored) {

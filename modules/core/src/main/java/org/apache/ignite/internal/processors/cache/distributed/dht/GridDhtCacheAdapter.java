@@ -1273,8 +1273,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 List<ClusterNode> aff1 = ctx.affinity().assignments(expVer).get(key.partition());
                 List<ClusterNode> aff2 = ctx.affinity().assignments(curVer).get(key.partition());
 
-                if (!aff1.containsAll(aff2))
-                    return false;
+                if (!aff1.containsAll(aff2) || aff2.isEmpty() || !aff1.get(0).equals(aff2.get(0)))
+                    return true;
             }
             catch (IllegalStateException ignored) {
                 return true;
