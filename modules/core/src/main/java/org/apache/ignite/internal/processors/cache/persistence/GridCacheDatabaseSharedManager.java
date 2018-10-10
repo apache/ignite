@@ -1606,6 +1606,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         for (StoredCacheData cacheData : readCacheData.values())
             storedCaches.put(cacheData.config().getName(), cacheData);
 
+        try{
+            throw new RuntimeException();
+        } catch (RuntimeException e){
+            log.error("IGNITE-8717 readStoredCacheConfiguration0() data: " + storedCaches);
+        }
+
+
         return storedCaches;
     }
 
@@ -1615,6 +1622,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         boolean overwrite
     ) throws IgniteCheckedException {
         assert cacheData != null;
+
+        try{
+            throw new RuntimeException();
+        } catch (RuntimeException e){
+            log.error("IGNITE-8717 storeCacheConfiguration() data: " + cacheData + " overwrite: " + overwrite);
+        }
 
         if (metaStorageReadyForWriteLatch.getCount() == 0L)
             storeCacheConfiguration0(cacheData, overwrite);
@@ -1638,6 +1651,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void clearStoredCachesConfigurationVersion() throws IgniteCheckedException {
+        try{
+            throw new RuntimeException();
+        } catch (RuntimeException e){
+            log.error("IGNITE-8717 clearStoredCachesConfigurationVersion()");
+        }
+
         if (metaStorageReadyForWriteLatch.getCount() == 0L)
             removeStoredCachesConfigurationVersion0();
         else {
@@ -1672,6 +1691,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             for (String key : data.keySet())
                 metaStorage.remove(key);
+
+            try{
+                throw new RuntimeException();
+            } catch (RuntimeException e){
+                log.error("IGNITE-8717 removeStoredCachesConfigurationVersion0() removed: " + data);
+            }
         }
         finally {
             context().database().checkpointReadUnlock();
@@ -1688,7 +1713,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private GridCacheConfigurationVersion readStoredCacheConfigurationVersion(
         String key
     ) throws IgniteCheckedException {
-        return (GridCacheConfigurationVersion)metaStorage.read(key);
+        GridCacheConfigurationVersion ver = (GridCacheConfigurationVersion)metaStorage.read(key);
+
+        try{
+            throw new RuntimeException();
+        } catch (RuntimeException e){
+            log.error("IGNITE-8717 readStoredCacheConfigurationVersion() key: " + key + " ver: " + (ver==null ? "null" : ver));
+        }
+
+        return ver;
     }
 
     /**
@@ -1706,6 +1739,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         for (GridCacheConfigurationVersion version : readVersions.values())
             storedVersions.put(version.cacheName(), version);
 
+        try{
+            throw new RuntimeException();
+        } catch (RuntimeException e){
+            log.error("IGNITE-8717 readStoredCachesConfigurationVersion0() vers: " + storedVersions);
+        }
+
         return storedVersions;
     }
 
@@ -1715,6 +1754,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         boolean overwrite
     ) throws IgniteCheckedException {
         assert ver != null;
+
+        try{
+            throw new RuntimeException();
+        } catch (RuntimeException e){
+            log.error("IGNITE-8717 storeCacheConfigurationVersion() ver: " + ver + " overwrite: " + overwrite);
+        }
 
         if (metaStorageReadyForWriteLatch.getCount() == 0L)
             storeCacheConfigurationVersion0(ver, overwrite);
@@ -1745,6 +1790,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     ) throws IgniteCheckedException {
         assert ver != null;
 
+        try{
+            throw new RuntimeException();
+        } catch (RuntimeException e){
+            log.error("IGNITE-8717 storeCacheConfigurationVersion0() ver: " + ver + " overwrite: " + overwrite);
+        }
+
         context().database().checkpointReadLock();
 
         try {
@@ -1772,6 +1823,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void removeCacheConfiguration(CacheConfiguration<?, ?> cacheCfg) throws IgniteCheckedException {
+        try{
+            throw new RuntimeException();
+        } catch (RuntimeException e){
+            log.error("IGNITE-8717 removeCacheConfiguration() cfg: " + cacheCfg);
+        }
+
         context().database().checkpointReadLock();
 
         try {
@@ -1787,6 +1844,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private void storeCacheConfiguration0(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException {
         assert cacheData != null;
+
+        try{
+            throw new RuntimeException();
+        } catch (RuntimeException e){
+            log.error("IGNITE-8717 storeCacheConfiguration0() data: " + cacheData + " overwrite: " + overwrite);
+        }
 
         context().database().checkpointReadLock();
 
@@ -1939,6 +2002,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
         finally {
             checkpointReadUnlock();
+        }
+
+        try{
+            throw new RuntimeException();
+        } catch (RuntimeException e){
+            log.error("IGNITE-8717 removeCacheConfiguration() grp: " + grp + " removed: " + rmvCaches);
         }
 
         return rmvCaches;
