@@ -18,7 +18,6 @@
 import './style.scss';
 
 import angular from 'angular';
-import webConsoleNavbar from 'app/components/web-console-navbar';
 
 import queriesNotebooksList from './components/queries-notebooks-list';
 import queriesNotebook from './components/queries-notebook';
@@ -29,8 +28,7 @@ import Notebook from './notebook.service';
 export default angular.module('ignite-console.sql', [
     'ui.router',
     queriesNotebooksList.name,
-    queriesNotebook.name,
-    webConsoleNavbar.name
+    queriesNotebook.name
 ])
     .component('pageQueries', pageQueriesCmp)
     .component('pageQueriesSlot', {
@@ -86,19 +84,4 @@ export default angular.module('ignite-console.sql', [
                     title: 'Query notebook'
                 }
             });
-    }])
-    .service('QueriesNavbar', class {
-        static $inject = ['$rootScope'];
-        constructor($rootScope) {
-            this.$rootScope = $rootScope;
-            this.text = 'Queries';
-            this.sref = 'base.sql.tabs';
-        }
-        get hidden() {
-            return this.$rootScope.user && this.$rootScope.user.becomeUsed;
-        }
-    })
-    .decorator('webConsoleNavbarDirective', ['$delegate', function($delegate) {
-        $delegate[0].controller.$inject.push('QueriesNavbar');
-        return $delegate;
     }]);

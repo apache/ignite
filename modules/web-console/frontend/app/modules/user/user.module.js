@@ -21,12 +21,12 @@ import aclData from './permissions';
 import Auth from './Auth.service';
 import User from './User.service';
 
-angular.module('ignite-console.user', [
-    'mm.acl',
-    'ignite-console.config',
-    'ignite-console.core'
-])
-.factory('sessionRecoverer', ['$injector', '$q', function($injector, $q) {
+/**
+ * @param {ng.auto.IInjectorService} $injector
+ * @param {ng.IQService} $q
+ */
+function sessionRecoverer($injector, $q) {
+    /** @type {ng.IHttpInterceptor} */
     return {
         responseError: (response) => {
             // Session has expired
@@ -42,13 +42,18 @@ angular.module('ignite-console.user', [
             return $q.reject(response);
         }
     };
-}])
-.config(['$httpProvider', ($httpProvider) => {
-    $httpProvider.interceptors.push('sessionRecoverer');
-}])
-.service('Auth', Auth)
-.service(...User)
-.run(['$rootScope', '$transitions', 'AclService', 'User', 'IgniteActivitiesData', ($root, $transitions, AclService, User, Activities) => {
+}
+
+sessionRecoverer.$inject = ['$injector', '$q'];
+
+/**
+ * @param {ng.IRootScopeService} $root
+ * @param {import('@uirouter/angularjs').TransitionService} $transitions
+ * @param {unknown} AclService
+ * @param {ReturnType<typeof import('./User.service').default>} User
+ * @param {ReturnType<typeof import('app/components/activities-user-dialog/index').default>} Activities
+ */
+function run($root, $transitions, AclService, User, Activities) {
     AclService.setAbilities(aclData);
     AclService.attachRole('guest');
 
@@ -69,14 +74,6 @@ angular.module('ignite-console.user', [
         AclService.attachRole(role);
     });
 
-    $transitions.onFinish({}, (trans) => {
-        const $state = trans.router.stateService;
-        const {name, permission} = trans.to();
-
-        if (AclService.can(permission))
-            Activities.post({action: $state.href(name, trans.params('to'))});
-    });
-
     $transitions.onBefore({}, (trans) => {
         const $state = trans.router.stateService;
         const {permission} = trans.to();
@@ -93,4 +90,27 @@ angular.module('ignite-console.user', [
                 return $state.target(trans.to().failState || '403');
             });
     });
-}]);
+
+    $transitions.onFinish({}, (trans) => {
+        const $state = trans.router.stateService;
+        const {name, permission} = trans.to();
+
+        if (AclService.can(permission))
+            Activities.post({action: $state.href(name, trans.params('to'))});
+    });
+}
+
+run.$inject = ['$rootScope', '$transitions', 'AclService', 'User', 'IgniteActivitiesData'];
+
+angular.module('ignite-console.user', [
+    'mm.acl',
+    'ignite-console.config',
+    'ignite-console.core'
+])
+.factory('sessionRecoverer', sessionRecoverer)
+.config(['$httpProvider', ($httpProvider) => {
+    $httpProvider.interceptors.push('sessionRecoverer');
+}])
+.service('Auth', Auth)
+.service('User', User)
+.run(run);

@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+
 import './style.scss';
 
 import './vendor';
@@ -89,7 +91,6 @@ import LegacyUtils from './services/LegacyUtils.service';
 import Messages from './services/Messages.service';
 import ErrorParser from './services/ErrorParser.service';
 import ModelNormalizer from './services/ModelNormalizer.service';
-import UnsavedChangesGuard from './services/UnsavedChangesGuard.service';
 import Caches from './services/Caches';
 import {CSV} from './services/CSV';
 import {$exceptionHandler} from './services/exceptionHandler';
@@ -115,7 +116,6 @@ import IgniteActivitiesUserDialog from './components/activities-user-dialog';
 import './components/input-dialog';
 import webConsoleHeader from './components/web-console-header';
 import webConsoleFooter from './components/web-console-footer';
-import webConsoleNavbar from './components/web-console-navbar';
 import igniteIcon from './components/ignite-icon';
 import versionPicker from './components/version-picker';
 import userNotifications from './components/user-notifications';
@@ -139,7 +139,6 @@ import uiGridColumnResizer from './components/ui-grid-column-resizer';
 import listEditable from './components/list-editable';
 import breadcrumbs from './components/breadcrumbs';
 import panelCollapsible from './components/panel-collapsible';
-import stepsNav from './components/steps-nav';
 import clusterSelector from './components/cluster-selector';
 import connectedClusters from './components/connected-clusters-badge';
 import connectedClustersDialog from './components/connected-clusters-dialog';
@@ -216,7 +215,6 @@ export default angular.module('ignite-console', [
     // Components
     webConsoleHeader.name,
     webConsoleFooter.name,
-    webConsoleNavbar.name,
     igniteIcon.name,
     igniteServices.name,
     versionPicker.name,
@@ -242,7 +240,6 @@ export default angular.module('ignite-console', [
     AngularStrapSelect.name,
     listEditable.name,
     panelCollapsible.name,
-    stepsNav.name,
     clusterSelector.name,
     servicesModule.name,
     connectedClusters.name,
@@ -267,23 +264,23 @@ export default angular.module('ignite-console', [
 ])
 .service('$exceptionHandler', $exceptionHandler)
 // Directives.
-.directive(...igniteAutoFocus)
-.directive(...igniteBsAffixUpdate)
-.directive(...igniteCentered)
-.directive(...igniteCopyToClipboard)
-.directive(...igniteHideOnStateChange)
-.directive(...igniteInformation)
+.directive('igniteAutoFocus', igniteAutoFocus)
+.directive('igniteBsAffixUpdate', igniteBsAffixUpdate)
+.directive('centered', igniteCentered)
+.directive('igniteCopyToClipboard', igniteCopyToClipboard)
+.directive('hideOnStateChange', igniteHideOnStateChange)
+.directive('igniteInformation', igniteInformation)
 .directive('igniteMatch', igniteMatch)
-.directive(...igniteOnClickFocus)
-.directive(...igniteOnEnter)
-.directive(...igniteOnEnterFocusMove)
-.directive(...igniteOnEscape)
-.directive(...igniteUiAceCSharp)
-.directive(...igniteUiAcePojos)
-.directive(...igniteUiAcePom)
-.directive(...igniteUiAceDocker)
-.directive(...igniteUiAceTabs)
-.directive(...igniteRetainSelection)
+.directive('igniteOnClickFocus', igniteOnClickFocus)
+.directive('igniteOnEnter', igniteOnEnter)
+.directive('igniteOnEnterFocusMove', igniteOnEnterFocusMove)
+.directive('igniteOnEscape', igniteOnEscape)
+.directive('igniteUiAceSharp', igniteUiAceCSharp)
+.directive('igniteUiAcePojos', igniteUiAcePojos)
+.directive('igniteUiAcePom', igniteUiAcePom)
+.directive('igniteUiAceDocker', igniteUiAceDocker)
+.directive('igniteUiAceTabs', igniteUiAceTabs)
+.directive('igniteRetainSelection', igniteRetainSelection)
 .directive('igniteOnFocusOut', igniteOnFocusOut)
 .directive('igniteRestoreInputFocus', igniteRestoreInputFocus)
 .directive('btnIgniteLinkDashedSuccess', btnIgniteLink)
@@ -292,21 +289,20 @@ export default angular.module('ignite-console', [
 .service('IgniteErrorPopover', ErrorPopover)
 .service('JavaTypes', JavaTypes)
 .service('SqlTypes', SqlTypes)
-.service(...ChartColors)
-.service(...IgniteConfirm)
+.service('IgniteChartColors', ChartColors)
+.service('IgniteConfirm', IgniteConfirm)
 .service('Confirm', Confirm)
 .service('IgniteConfirmBatch', ConfirmBatch)
-.service(...CopyToClipboard)
-.service(...Countries)
-.service(...Focus)
-.service(...InetAddress)
-.service(...Messages)
+.service('IgniteCopyToClipboard', CopyToClipboard)
+.service('IgniteCountries', Countries)
+.service('IgniteFocus', Focus)
+.service('IgniteInetAddress', InetAddress)
+.service('IgniteMessages', Messages)
 .service('IgniteErrorParser', ErrorParser)
-.service(...ModelNormalizer)
-.service(...LegacyTable)
-.service(...FormUtils)
-.service(...LegacyUtils)
-.service(...UnsavedChangesGuard)
+.service('IgniteModelNormalizer', ModelNormalizer)
+.service('IgniteLegacyTable', LegacyTable)
+.service('IgniteFormUtils', FormUtils)
+.service('IgniteLegacyUtils', LegacyUtils)
 .service('IgniteActivitiesUserDialog', IgniteActivitiesUserDialog)
 .service('Caches', Caches)
 .service('CSV', CSV)
@@ -321,55 +317,85 @@ export default angular.module('ignite-console', [
 .filter('hasPojo', hasPojo)
 .filter('uiGridSubcategories', uiGridSubcategories)
 .filter('id8', id8)
-.config(['$translateProvider', '$stateProvider', '$locationProvider', '$urlRouterProvider', ($translateProvider, $stateProvider, $locationProvider, $urlRouterProvider) => {
-    $translateProvider.translations('en', i18n);
-    $translateProvider.preferredLanguage('en');
+.config(['$translateProvider', '$stateProvider', '$locationProvider', '$urlRouterProvider',
+    /**
+     * @param {angular.translate.ITranslateProvider} $translateProvider
+     * @param {import('@uirouter/angularjs').StateProvider} $stateProvider
+     * @param {ng.ILocationProvider} $locationProvider
+     * @param {import('@uirouter/angularjs').UrlRouterProvider} $urlRouterProvider
+     */
+    ($translateProvider, $stateProvider, $locationProvider, $urlRouterProvider) => {
+        $translateProvider.translations('en', i18n);
+        $translateProvider.preferredLanguage('en');
 
-    // Set up the states.
-    $stateProvider
+        // Set up the states.
+        $stateProvider
         .state('base', {
             url: '',
             abstract: true,
             template: baseTemplate
         });
 
-    $urlRouterProvider.otherwise('/404');
-    $locationProvider.html5Mode(true);
-}])
-.run(['$rootScope', '$state', 'gettingStarted', ($root, $state, gettingStarted) => {
-    $root._ = _;
-    $root.$state = $state;
-    $root.gettingStarted = gettingStarted;
-}])
-.run(['$rootScope', 'AgentManager', ($root, agentMgr) => {
-    let lastUser;
+        $urlRouterProvider.otherwise('/404');
+        $locationProvider.html5Mode(true);
+    }])
+.run(['$rootScope', '$state', 'gettingStarted',
+    /**
+     * @param {ng.IRootScopeService} $root
+     * @param {import('@uirouter/angularjs').StateService} $state
+     * @param {ReturnType<typeof import('./modules/getting-started/GettingStarted.provider').service>} gettingStarted
+     */
+    ($root, $state, gettingStarted) => {
+        $root._ = _;
+        $root.$state = $state;
+        $root.gettingStarted = gettingStarted;
+    }
+])
+.run(['$rootScope', 'AgentManager',
+    /**
+     * @param {ng.IRootScopeService} $root
+     * @param {import('./modules/agent/AgentManager.service').default} agentMgr
+     */
+    ($root, agentMgr) => {
+        let lastUser;
 
-    $root.$on('user', (e, user) => {
-        if (lastUser)
-            return;
+        $root.$on('user', (e, user) => {
+            if (lastUser)
+                return;
 
-        lastUser = user;
+            lastUser = user;
 
-        agentMgr.connect();
-    });
-}])
-.run(['$transitions', ($transitions) => {
-    $transitions.onSuccess({ }, (trans) => {
-        try {
-            const {name, unsaved} = trans.$to();
-            const params = trans.params();
+            agentMgr.connect();
+        });
+    }
+])
+.run(['$transitions',
+    /**
+     * @param {import('@uirouter/angularjs').TransitionService} $transitions
+     */
+    ($transitions) => {
+        $transitions.onSuccess({ }, (trans) => {
+            try {
+                const {name, unsaved} = trans.$to();
+                const params = trans.params();
 
-            if (unsaved)
-                localStorage.removeItem('lastStateChangeSuccess');
-            else
-                localStorage.setItem('lastStateChangeSuccess', JSON.stringify({name, params}));
-        }
-        catch (ignored) {
+                if (unsaved)
+                    localStorage.removeItem('lastStateChangeSuccess');
+                else
+                    localStorage.setItem('lastStateChangeSuccess', JSON.stringify({name, params}));
+            }
+            catch (ignored) {
             // No-op.
-        }
-    });
-}])
+            }
+        });
+    }
+])
 .run(['$rootScope', '$http', '$state', 'IgniteMessages', 'User', 'IgniteNotebookData',
+    /**
+     * @param {ng.IRootScopeService} $root
+     * @param {ng.IHttpService} $http
+     * @param {ReturnType<typeof import('./services/Messages.service').default>} Messages
+     */
     ($root, $http, $state, Messages, User, Notebook) => { // eslint-disable-line no-shadow
         $root.revertIdentity = () => {
             $http.get('/api/v1/admin/revert/identity')
@@ -380,4 +406,9 @@ export default angular.module('ignite-console', [
         };
     }
 ])
-.run(['IgniteIcon', (IgniteIcon) => IgniteIcon.registerIcons(icons)]);
+.run(['IgniteIcon',
+    /**
+     * @param {import('./components/ignite-icon/service').default} IgniteIcon
+     */
+    (IgniteIcon) => IgniteIcon.registerIcons(icons)
+]);

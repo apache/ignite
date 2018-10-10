@@ -37,7 +37,7 @@ export default class ActivitiesData {
 
         return this.$http.post('/api/v1/activities/page', { group, action })
             .catch(() => {
-                // No-op.;
+                // No-op.
             });
     }
 }

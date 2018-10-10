@@ -315,11 +315,6 @@ module.exports = {
                             // Handle browser disconnect event.
                             sock.on('disconnect', () => {
                                 this._browserSockets.remove(sock);
-
-                                const demo = sock.request._query.IgniteDemoMode === 'true';
-
-                                // Stop demo if latest demo tab for this token.
-                                demo && agentHnd.tryStopDemo(sock);
                             });
 
                             this.agentListeners(sock);

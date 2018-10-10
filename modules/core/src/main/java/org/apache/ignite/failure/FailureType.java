@@ -27,6 +27,9 @@ public enum FailureType {
     /** System worker termination. */
     SYSTEM_WORKER_TERMINATION,
 
+    /** System worker has not updated its heartbeat for a long time. */
+    SYSTEM_WORKER_BLOCKED,
+
     /** Critical error - error which leads to the system's inoperability. */
     CRITICAL_ERROR
 }

@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-export default [() => {
+export default () => {
     /**
-     * @param {Number} t Time in ms.
+     * @param {number} t Time in ms.
+     * @param {string} dflt Default value.
      */
-    return (t, dflt = '0') => {
+    const filter = (t, dflt = '0') => {
         if (t === 9223372036854775807)
             return 'Infinite';
 
@@ -41,4 +42,6 @@ export default [() => {
 
         return a(d, 'd') + a(h, 'h') + a(m, 'm') + a(s, 's') + (t < 1000 || (t < cm && ms !== 0) ? ms + 'ms' : '');
     };
-}];
+
+    return filter;
+};

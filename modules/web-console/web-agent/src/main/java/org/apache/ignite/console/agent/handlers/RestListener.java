@@ -24,12 +24,7 @@ import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.rest.RestExecutor;
 import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.console.demo.AgentClusterDemo;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.apache.ignite.console.agent.AgentUtils.EXPIRED_SES_ERROR_MSG;
-import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
-import static org.apache.ignite.internal.processors.rest.client.message.GridClientResponse.STATUS_FAILED;
 
 /**
  * API to translate REST requests to Ignite cluster.
@@ -37,9 +32,6 @@ import static org.apache.ignite.internal.processors.rest.client.message.GridClie
 public class RestListener extends AbstractListener {
     /** */
     private final AgentConfiguration cfg;
-
-    /** */
-    private String sesTok;
 
     /** */
     private final RestExecutor restExecutor;
@@ -90,35 +82,7 @@ public class RestListener extends AbstractListener {
                 return restExecutor.sendRequest(AgentClusterDemo.getDemoUrl(), params, headers);
             }
 
-            // TODO GC-320 Implement correct fix for GG Cloud and secured cluster.
-            if (!F.isEmpty(sesTok))
-                params.put("sessionToken", sesTok);
-            else if (!F.isEmpty(cfg.nodeLogin()) && !F.isEmpty(cfg.nodePassword())) {
-                params.put("user", cfg.nodeLogin());
-                params.put("password", cfg.nodePassword());
-            }
-
-            RestResult res = restExecutor.sendRequest(this.cfg.nodeURIs(), params, headers);
-
-            // TODO GC-320 Implement correct fix for GG Cloud and secured cluster.
-            switch (res.getStatus()) {
-                case STATUS_SUCCESS:
-                    sesTok = res.getSessionToken();
-
-                    return res;
-
-                case STATUS_FAILED:
-                    if (res.getError().startsWith(EXPIRED_SES_ERROR_MSG)) {
-                        sesTok = null;
-
-                        params.remove("sessionToken");
-
-                        return execute(params);
-                    }
-
-                default:
-                    return res;
-            }
+            return restExecutor.sendRequest(this.cfg.nodeURIs(), params, headers);
         }
         catch (Exception e) {
             U.error(log, "Failed to execute REST command with parameters: " + params, e);

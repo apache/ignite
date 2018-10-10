@@ -18,7 +18,7 @@
 import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import {BehaviorSubject} from 'rxjs/BehaviorSubject';
 import 'rxjs/add/operator/first';
 import 'rxjs/add/operator/partition';
 import 'rxjs/add/operator/takeUntil';
@@ -135,7 +135,7 @@ export default class AgentManager {
 
     pool = new SimpleWorkerPool('decompressor', Worker, 4);
 
-    /** @type {Set<ng.IDifferend>} */
+    /** @type {Set<ng.IPromise<unknown>>} */
     promises = new Set();
 
     socket = null;
@@ -152,8 +152,25 @@ export default class AgentManager {
         }
     }
 
+    /**
+     * @param {ng.IRootScopeService} $root
+     * @param {ng.IQService} $q
+     * @param {import('@uirouter/angularjs').TransitionService} $transitions
+     * @param {unknown} socketFactory
+     * @param {import('./AgentModal.service').default} agentModal
+     * @param {import('app/components/user-notifications/service').default} UserNotifications
+     * @param {import('app/services/Version.service').default} Version
+     * @param {import('./components/cluster-login/service').default} ClusterLoginSrv
+     */
     constructor($root, $q, $transitions, socketFactory, agentModal, UserNotifications, Version, ClusterLoginSrv) {
-        Object.assign(this, {$root, $q, $transitions, socketFactory, agentModal, UserNotifications, Version, ClusterLoginSrv});
+        this.$root = $root;
+        this.$q = $q;
+        this.$transitions = $transitions;
+        this.socketFactory = socketFactory;
+        this.agentModal = agentModal;
+        this.UserNotifications = UserNotifications;
+        this.Version = Version;
+        this.ClusterLoginSrv = ClusterLoginSrv;
 
         let prevCluster;
 
@@ -222,7 +239,8 @@ export default class AgentManager {
     saveToStorage(cluster = this.connectionSbj.getValue().cluster) {
         try {
             localStorage.cluster = JSON.stringify(cluster);
-        } catch (ignore) {
+        }
+        catch (ignore) {
             // No-op.
         }
     }
@@ -498,22 +516,21 @@ export default class AgentManager {
                 if (_.isNil(cluster))
                     throw new Error('Failed to execute request on cluster.');
 
-                // TODO GC-320 Implement correct fix for GG Cloud and secured cluster.
-                // if (cluster.secured) {
-                //     return Promise.resolve(this.clustersSecrets.get(cluster.id))
-                //         .then((secrets) => {
-                //             if (secrets.hasCredentials())
-                //                 return secrets;
-                //
-                //             return this.ClusterLoginSrv.askCredentials(secrets)
-                //                 .then((secrets) => {
-                //                     this.clustersSecrets.put(cluster.id, secrets);
-                //
-                //                     return secrets;
-                //                 });
-                //         })
-                //         .then((secrets) => ({cluster, credentials: secrets.getCredentials()}));
-                // }
+                if (cluster.secured) {
+                    return Promise.resolve(this.clustersSecrets.get(cluster.id))
+                        .then((secrets) => {
+                            if (secrets.hasCredentials())
+                                return secrets;
+
+                            return this.ClusterLoginSrv.askCredentials(secrets)
+                                .then((secrets) => {
+                                    this.clustersSecrets.put(cluster.id, secrets);
+
+                                    return secrets;
+                                });
+                        })
+                        .then((secrets) => ({cluster, credentials: secrets.getCredentials()}));
+                }
 
                 return {cluster, credentials: {}};
             })

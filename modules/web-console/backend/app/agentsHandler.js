@@ -89,7 +89,6 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
 
             this.id = _.isEmpty(top.clusterId) ? uuid() : top.clusterId;
             this.name = _.isEmpty(clusterName) ? `Cluster ${this.id.substring(0, 8).toUpperCase()}` : clusterName;
-
             this.nids = top.nids;
             this.addresses = top.addresses;
             this.clients = top.clients;
@@ -356,7 +355,7 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
                     });
                 })
                 .catch(() => {
-                    // No-op.
+                    console.log('Failed to collect supported agents');
                 });
         }
 

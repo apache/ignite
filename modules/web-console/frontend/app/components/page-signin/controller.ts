@@ -28,11 +28,13 @@ interface ISigninFormController extends ng.IFormController {
 }
 
 export default class {
-    data:ISiginData = {
+    data: ISiginData = {
         email: null,
         password: null
     };
+
     form: ISigninFormController;
+
     serverError: string = null;
 
     static $inject = ['Auth', 'IgniteMessages', 'IgniteFormUtils'];

@@ -15,17 +15,19 @@
  * limitations under the License.
  */
 
-import _ from 'lodash';
 import angular from 'angular';
 
-const nonNil = _.negate(_.isNil);
-const nonEmpty = _.negate(_.isEmpty);
-const id8 = (uuid) => uuid.substring(0, 8).toUpperCase();
+import negate from 'lodash/negate';
+import isNil from 'lodash/isNil';
+import isEmpty from 'lodash/isEmpty';
+import mixin from 'lodash/mixin';
 
-_.mixin({
+const nonNil = negate(isNil);
+const nonEmpty = negate(isEmpty);
+
+mixin({
     nonNil,
-    nonEmpty,
-    id8
+    nonEmpty
 });
 
 import alertTemplateUrl from 'views/templates/alert.tpl.pug';
@@ -131,7 +133,3 @@ igniteConsoleCfg.directive('uiGridSelection', function() {
         }
     };
 });
-
-igniteConsoleCfg.config(['$httpProvider', ($httpProvider) => {
-    $httpProvider.defaults.withCredentials = true;
-}]);

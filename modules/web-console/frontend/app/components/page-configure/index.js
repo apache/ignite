@@ -113,16 +113,6 @@ export default angular
     .config(['DefaultStateProvider', (DefaultState) => {
         DefaultState.setRedirectTo(() => 'base.configuration.overview');
     }])
-    .service('ConfigurationNavbar', class {
-        constructor() {
-            this.text = 'Configure';
-            this.sref = 'base.configuration.overview';
-        }
-    })
-    .decorator('webConsoleNavbarDirective', ['$delegate', function($delegate) {
-        $delegate[0].controller.$inject.push('ConfigurationNavbar');
-        return $delegate;
-    }])
     .run(registerActivitiesHook)
     .run(['ConfigEffects', 'ConfigureState', '$uiRouter', (ConfigEffects, ConfigureState, $uiRouter) => {
         $uiRouter.plugin(UIRouterRx);

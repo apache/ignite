@@ -49,7 +49,6 @@ import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLUSTER_NAME;
-import static org.apache.ignite.console.agent.AgentUtils.EXPIRED_SES_ERROR_MSG;
 import static org.apache.ignite.console.agent.AgentUtils.toJSON;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
@@ -74,6 +73,9 @@ public class ClusterListener implements AutoCloseable {
 
     /** */
     private static final IgniteProductVersion IGNITE_2_3 = IgniteProductVersion.fromString("2.3.0");
+
+    /** Optional Ignite cluster ID. */
+    public static final String IGNITE_CLUSTER_ID = "IGNITE_CLUSTER_ID";
 
     /** Unique Visor key to get events last order. */
     private static final String EVT_LAST_ORDER_KEY = "WEB_AGENT_" + UUID.randomUUID().toString();
@@ -247,7 +249,7 @@ public class ClusterListener implements AutoCloseable {
                 Map<String, Object> attrs = node.getAttributes();
 
                 if (F.isEmpty(clusterId))
-                    clusterId = attribute(attrs, "GRIDGAIN_CLOUD_ID");
+                    clusterId = attribute(attrs, IGNITE_CLUSTER_ID);
 
                 if (F.isEmpty(clusterName))
                     clusterName = attribute(attrs, IGNITE_CLUSTER_NAME);
@@ -276,7 +278,7 @@ public class ClusterListener implements AutoCloseable {
         }
 
         /**
-         * @return Cloud id.
+         * @return Cluster id.
          */
         public String getClusterId() {
             return clusterId;
@@ -370,6 +372,9 @@ public class ClusterListener implements AutoCloseable {
 
     /** */
     private class WatchTask implements Runnable {
+        /** */
+        private static final String EXPIRED_SES_ERROR_MSG = "Failed to handle request - unknown session token (maybe expired session)";
+
         /** */
         private String sesTok;
 

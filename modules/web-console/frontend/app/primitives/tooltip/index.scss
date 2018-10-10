@@ -40,18 +40,3 @@
         color: white;
     }
 }
-
-.tooltip--black {
-    &.bottom .tooltip-arrow {
-        border-bottom-color: #393939;
-    }
-
-    .tooltip-inner {
-        padding-left: 20px;
-        padding-right: 20px;
-
-        background: #393939;
-        border-color: #393939;
-        color: white;
-    }
-}

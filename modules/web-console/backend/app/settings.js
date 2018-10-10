@@ -72,13 +72,8 @@ module.exports = {
             },
             mail,
             mongoUrl: nconf.get('mongodb:url') || 'mongodb://127.0.0.1/console',
-            cookie: {
-                domain: nconf.get('server:cookie:domain'),
-                // eslint-disable-next-line eqeqeq
-                httpOnly: nconf.get('server:cookie:httpOnly') != 'false',
-                ttl: 3600000 * 24 * 30
-            },
-            sessionSecret: nconf.get('server:sessionSecret') || 'CHANGE ME',
+            cookieTTL: 3600000 * 24 * 30,
+            sessionSecret: nconf.get('server:sessionSecret') || 'keyboard cat',
             tokenLength: 20
         };
     }
