@@ -80,7 +80,7 @@ public class IgniteCacheTestSuite7 extends TestSuite {
 //
 //        suite.addTestSuite(CacheDataRegionConfigurationTest.class);
 
-        suite.addTestSuite(WalModeChangeAdvancedSelfTest.class);
+//        suite.addTestSuite(WalModeChangeAdvancedSelfTest.class);
 //        suite.addTestSuite(WalModeChangeSelfTest.class);
 //        suite.addTestSuite(WalModeChangeCoordinatorNotAffinityNodeSelfTest.class);
 //
@@ -107,7 +107,7 @@ public class IgniteCacheTestSuite7 extends TestSuite {
 //        suite.addTestSuite(CachePageWriteLockUnlockTest.class);
 
         suite.addTestSuite(CacheConfigurationCheckOnNodeJoinTest.class);
-        suite.addTestSuite(GridCacheConfigurationVersionSelfTest.class);
+//        suite.addTestSuite(GridCacheConfigurationVersionSelfTest.class);
 
         return suite;
     }

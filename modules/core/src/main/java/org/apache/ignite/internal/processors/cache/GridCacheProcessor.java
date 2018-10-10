@@ -1003,6 +1003,19 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     public GridCacheConfigurationVersion cacheVersion(String cacheName) { return cachesInfo.getVersion(cacheName); }
 
     /**
+     * @param cacheId Cache ID.
+     * @return Cache configuration version.
+     */
+    @Nullable public GridCacheConfigurationVersion cacheVersion(int cacheId) {
+        for (GridCacheConfigurationVersion ver : cachesInfo.cachesVersion().values()) {
+            if (CU.cacheId(ver.cacheName()) == cacheId)
+                return ver;
+        }
+
+        return null;
+    }
+
+    /**
      * @see ClusterCachesInfo#getOrCreateVersion(String, String, boolean)
      */
     public GridCacheConfigurationVersion getOrCreateCacheVersion(

@@ -175,6 +175,7 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
+import static org.apache.ignite.internal.processors.cache.version.GridCacheConfigurationChangeAction.DESTROY;
 
 /**
  *
@@ -1563,9 +1564,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             // 0 - means, that cache isn't user cache.
             if(ver.id()>0){
-                assert ver.isNeedUpdateVersion(GridCacheConfigurationChangeAction.DESTROY) : ver;
+                assert ver.isNeedUpdateVersion(DESTROY) : ver;
 
-                ver.updateVersion(GridCacheConfigurationChangeAction.DESTROY);
+                ver.updateVersion(DESTROY);
 
                 cctx.cache().updateCacheVersion(ver);
 
@@ -2842,9 +2843,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         for (DataEntry dataEntry : dataRec.writeEntries()) {
                             int cacheId = dataEntry.cacheId();
 
-                            int grpId = cctx.cache().cacheDescriptor(cacheId).groupId();
+                            DynamicCacheDescriptor desc = cctx.cache().cacheDescriptor(cacheId);
 
-                            if (!ignoreGrps.contains(grpId)) {
+                            // Cache descriptor not found means, that cache was destroyed while node was off.
+                            if (desc == null) {
+                                GridCacheConfigurationVersion ver = cctx.cache().cacheVersion(cacheId);
+
+                                assert ver != null || ver.lastAction() == DESTROY : ver;
+                            }
+                            else if (!ignoreGrps.contains(desc.groupId())) {
                                 GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
                                 applyUpdate(cacheCtx, dataEntry);
