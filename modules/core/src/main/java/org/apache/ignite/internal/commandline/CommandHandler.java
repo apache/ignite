@@ -73,7 +73,7 @@ import org.apache.ignite.internal.visor.baseline.VisorBaselineOperation;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskArg;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
-import org.apache.ignite.internal.visor.cache.VisorCachesConfigurationListTask;
+import org.apache.ignite.internal.visor.cache.VisorCachesConfigurationTask;
 import org.apache.ignite.internal.visor.misc.VisorClusterNode;
 import org.apache.ignite.internal.visor.misc.VisorWalTask;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskArg;
@@ -608,8 +608,8 @@ public class CommandHandler {
 
                 break;
 
-            case CONFIG_LIST:
-                cachesConfigList(client, cacheArgs);
+            case CONFIG:
+                cachesConfig(client, cacheArgs);
 
                 break;
 
@@ -632,7 +632,7 @@ public class CommandHandler {
         usage("  Validate custom indexes on idle cluster:", CACHE, " validate_indexes [cache1,...,cacheN] [nodeId] [checkFirst|checkThrough]");
         usage("  Collect partition distribution information:", CACHE, " distribution nodeId|null [cacheName1,...,cacheNameN] [--user-attributes attributeName1[,...,attributeNameN]]");
         usage("  Reset lost partitions:", CACHE, " reset_lost_partitions cacheName1[,...,cacheNameN]");
-        usage("  List caches configuration:", CACHE, CacheCommand.CONFIG_LIST.name(), "cacheNameRegexPattern [--human-readable]");
+        usage("  List caches configuration:", CACHE, CacheCommand.CONFIG.name(), "cacheNameRegexPattern [--human-readable]");
 
         log("  If [nodeId] is not specified, contention and validate_indexes commands will be broadcasted to all server nodes.");
         log("  Another commands where [nodeId] is optional will run on a random server node.");
@@ -828,9 +828,9 @@ public class CommandHandler {
      * @param client Client.
      * @param cacheArgs Cache args.
      */
-    private void cachesConfigList(GridClient client, CacheArguments cacheArgs) throws GridClientException {
+    private void cachesConfig(GridClient client, CacheArguments cacheArgs) throws GridClientException {
         final SortedMap<String, Map<String, String>> result =
-            client.compute().execute(VisorCachesConfigurationListTask.class.getName(), cacheArgs.regex());
+            client.compute().execute(VisorCachesConfigurationTask.class.getName(), cacheArgs.regex());
 
         if (!F.isEmpty(result)) {
             for (Map.Entry<String, Map<String, String>> entry : result.entrySet()) {
@@ -1678,7 +1678,7 @@ public class CommandHandler {
 
                 break;
 
-            case CONFIG_LIST:
+            case CONFIG:
 
                 cacheArgs.regex(nextArg("Regex is expected"));
 

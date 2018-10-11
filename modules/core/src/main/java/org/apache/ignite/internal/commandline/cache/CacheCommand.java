@@ -61,7 +61,7 @@ public enum CacheCommand {
     /**
      * Prints caches configuration.
      */
-    CONFIG_LIST("config_list");
+    CONFIG("config");
 
     /** Enumerated values. */
     private static final CacheCommand[] VALS = values();

@@ -37,13 +37,13 @@ import org.jetbrains.annotations.Nullable;
  * Task that will collect caches configuration matching with regex.
  */
 @GridInternal
-public class VisorCachesConfigurationListTask
+public class VisorCachesConfigurationTask
     extends VisorMultiNodeTask<String, SortedMap<String, Map<String, Object>>, SortedMap<String, Map<String, Object>>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     @Override protected VisorJob<String, SortedMap<String, Map<String, Object>>> job(String regex) {
-        return new VisorCachesConfigurationListJob(regex, debug);
+        return new VisorCachesConfigurationJob(regex, debug);
     }
 
     @Nullable @Override
@@ -57,13 +57,13 @@ public class VisorCachesConfigurationListTask
     }
 
     /** Job that will find affinity node for key. */
-    private static class VisorCachesConfigurationListJob
+    private static class VisorCachesConfigurationJob
         extends VisorJob<String, SortedMap<String, Map<String, Object>>> {
 
         /** Regex. */
         private String regex;
 
-        private VisorCachesConfigurationListJob(String regex, boolean debug) {
+        private VisorCachesConfigurationJob(String regex, boolean debug) {
             super(regex, debug);
 
             this.regex = regex;
