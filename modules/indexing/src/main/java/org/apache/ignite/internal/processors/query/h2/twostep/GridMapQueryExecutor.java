@@ -977,7 +977,7 @@ public class GridMapQueryExecutor {
                 if (MapQueryLazyWorker.currentWorker() == null) {
                     final ObjectPoolReusable<H2ConnectionWrapper> detachedConn = h2.detachConnection();
 
-                    worker.startForQueryRemains(H2Utils.session(conn), detachedConn);
+                    worker.start(H2Utils.session(conn), detachedConn);
 
                     GridH2QueryContext.clearThreadLocal();
                 }

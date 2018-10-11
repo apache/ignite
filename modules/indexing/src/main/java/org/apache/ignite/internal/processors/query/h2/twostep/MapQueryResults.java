@@ -152,7 +152,7 @@ class MapQueryResults {
         if (lazyWorker == null)
             close();
         else {
-            lazyWorker.submitStopTask(this::close, false);
+            lazyWorker.submitStopTask(this::close);
 
             lazyWorker.stop(false);
         }

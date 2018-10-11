@@ -93,16 +93,6 @@ public class MapQueryLazyWorker extends GridWorker {
     }
 
     /**
-     * The processing of the message will be produced in the started lazy thread (e.g. after long wait on table lock).
-     *
-     * @throws QueryCancelledException  In case query is canceled during the worker start.
-     */
-    void startForWholeQuery() throws QueryCancelledException {
-        startForQueryRemains(null, null);
-    }
-
-
-    /**
      * Start lazy worker for half-processed query.
      * In this case we have to detach H2 connection from current thread and use it for current query processing.
      * Also tables locks must be transferred to lazy thread from QUERY_POOL thread pool.
@@ -111,7 +101,7 @@ public class MapQueryLazyWorker extends GridWorker {
      * @param detached H2 connection detached from current thread.
      * @throws QueryCancelledException  In case query is canceled during the worker start.
      */
-    void startForQueryRemains(Session ses, ObjectPoolReusable<H2ConnectionWrapper> detached) throws QueryCancelledException {
+    void start(Session ses, ObjectPoolReusable<H2ConnectionWrapper> detached) throws QueryCancelledException {
         synchronized (mux) {
             if (!exec.busyLock().enterBusy()) {
                 log.warning("Lazy worker isn't started. Node is stopped [key=" + key + ']');
@@ -247,9 +237,8 @@ public class MapQueryLazyWorker extends GridWorker {
 
     /**
      * @param task Stop task.
-     * @param nodeStop Node stop flag.
      */
-    public void submitStopTask(Runnable task, boolean nodeStop) {
+    public void submitStopTask(Runnable task) {
         synchronized (mux) {
             if (LAZY_WORKER.get() != null)
                 task.run();
