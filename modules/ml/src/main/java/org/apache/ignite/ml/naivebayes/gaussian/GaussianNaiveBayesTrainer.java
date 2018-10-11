@@ -114,7 +114,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                     classProbabilities[i] = 1. / k;
                 }
             }
-            if (priorProbabilities != null) {
+            else if (priorProbabilities != null) {
                 assert classProbabilities.length == priorProbabilities.length;
                 classProbabilities = priorProbabilities;
             }
