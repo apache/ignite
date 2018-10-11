@@ -25,6 +25,7 @@ import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -53,8 +54,8 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
         singleLabeldata_1.put(1, new double[] {-1.0, 2.0, LABEL_1});
         singleLabeldata_1.put(2, new double[] {6.0, 1.0, LABEL_1});
 
-        singleLabeldata_1.put(0, new double[] {-3.0, 2.0, LABEL_2});
-        singleLabeldata_1.put(1, new double[] {-5.0, -2.0, LABEL_2});
+        singleLabeldata_2.put(0, new double[] {-3.0, 2.0, LABEL_2});
+        singleLabeldata_2.put(1, new double[] {-5.0, -2.0, LABEL_2});
     }
 
     @Test
@@ -149,4 +150,8 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
         Assert.assertArrayEquals(expectedVars, model.getVariances()[0], PRECISION);
     }
 
+    @Test
+    public void updateModel_returnsCorrectVariances() {
+
+    }
 }
