@@ -39,6 +39,7 @@ public class GridCursorIoStatisticsProxy<T> implements GridCursor<T> {
      */
     public GridCursorIoStatisticsProxy(GridCursor<T> delegate, GridCacheContext cctx) {
         assert cctx != null;
+        assert delegate != null;
 
         this.delegate = delegate;
 
