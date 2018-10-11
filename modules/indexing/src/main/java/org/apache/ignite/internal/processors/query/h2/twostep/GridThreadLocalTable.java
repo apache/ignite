@@ -23,6 +23,7 @@ import java.util.HashSet;
 import javax.cache.CacheException;
 import org.h2.api.TableEngine;
 import org.h2.command.ddl.CreateTableData;
+import org.h2.command.dml.AllColumnsForPlan;
 import org.h2.engine.DbObject;
 import org.h2.engine.Session;
 import org.h2.index.Index;
@@ -92,8 +93,8 @@ public class GridThreadLocalTable extends Table {
 
     /** {@inheritDoc} */
     @Override public PlanItem getBestPlanItem(Session session, int[] masks, TableFilter[] filters, int filter,
-        SortOrder sortOrder, HashSet<Column> cols) {
-        return innerTable().getBestPlanItem(session, masks, filters, filter, sortOrder, cols);
+        SortOrder sortOrder, AllColumnsForPlan allColumnsSet) {
+        return innerTable().getBestPlanItem(session, masks, filters, filter, sortOrder, allColumnsSet);
     }
 
     /** {@inheritDoc} */

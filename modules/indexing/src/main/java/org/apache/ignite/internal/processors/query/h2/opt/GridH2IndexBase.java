@@ -52,11 +52,13 @@ import org.h2.index.BaseIndex;
 import org.h2.index.Cursor;
 import org.h2.index.IndexCondition;
 import org.h2.index.IndexLookupBatch;
+import org.h2.index.IndexType;
 import org.h2.index.ViewIndex;
 import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
+import org.h2.table.Table;
 import org.h2.table.TableFilter;
 import org.h2.util.DoneFuture;
 import org.h2.value.Value;
@@ -117,6 +119,20 @@ public abstract class GridH2IndexBase extends BaseIndex {
     };
 
     protected GridCacheContext<?, ?> ctx;
+
+    /**
+     * Initialize the base index.
+     *
+     * @param newTable the table
+     * @param id the object id
+     * @param name the index name
+     * @param newIndexColumns the columns that are indexed or null if this is not yet known
+     * @param newIndexType the index type
+     */
+    protected GridH2IndexBase(Table newTable, int id, String name, IndexColumn[] newIndexColumns,
+        IndexType newIndexType) {
+        super(newTable, id, name, newIndexColumns, newIndexType);
+    }
 
     /**
      * @param tbl Table.

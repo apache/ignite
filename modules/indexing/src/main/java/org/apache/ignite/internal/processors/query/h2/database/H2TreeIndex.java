@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
@@ -46,6 +45,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.h2.command.dml.AllColumnsForPlan;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
@@ -53,7 +53,6 @@ import org.h2.index.SingleRowCursor;
 import org.h2.message.DbException;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
-import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
@@ -112,6 +111,10 @@ public class H2TreeIndex extends GridH2IndexBase {
         int inlineSize,
         int segmentsCnt
     ) throws IgniteCheckedException {
+        super(tbl, 0, idxName,
+            createIndexColumns(colsList, tbl),
+            pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
+
         assert segmentsCnt > 0 : segmentsCnt;
 
         this.cctx = cctx;
@@ -124,13 +127,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         this.tblName = tbl.getName();
         this.idxName = idxName;
 
-        IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
-
-        IndexColumn.mapColumns(cols, tbl);
-
-        initBaseIndex(tbl, 0, idxName, cols,
-            pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
-
         GridQueryTypeDescriptor typeDesc = tbl.rowDescriptor().type();
 
         int typeId = cctx.binaryMarshaller() ? typeDesc.typeId() : typeDesc.valueClass().hashCode();
@@ -140,7 +136,7 @@ public class H2TreeIndex extends GridH2IndexBase {
         treeName = BPlusTree.treeName(treeName, "H2Tree");
 
         if (cctx.affinityNode()) {
-            inlineIdxs = getAvailableInlineColumns(cols);
+            inlineIdxs = getAvailableInlineColumns(indexColumns);
 
             segments = new H2Tree[segmentsCnt];
 
@@ -167,7 +163,7 @@ public class H2TreeIndex extends GridH2IndexBase {
                         tbl.rowFactory(),
                         page.pageId().pageId(),
                         page.isAllocated(),
-                        cols,
+                        getIndexColumns(),
                         inlineIdxs,
                         computeInlineSize(inlineIdxs, inlineSize),
                         maxCalculatedInlineSize,
@@ -178,7 +174,7 @@ public class H2TreeIndex extends GridH2IndexBase {
                         cctx.kernalContext().failure(),
                         log) {
                         @Override public int compareValues(Value v1, Value v2) {
-                            return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
+                            return v1 == v2 ? 0 : table.compareValues(v1, v2);
                         }
                     };
                 }
@@ -194,6 +190,19 @@ public class H2TreeIndex extends GridH2IndexBase {
         }
 
         initDistributedJoinMessaging(tbl);
+    }
+
+    /**
+     * @param colsList Index column list.
+     * @param tbl Table to map.
+     * @return Index column array.
+     */
+    private static IndexColumn[] createIndexColumns(List<IndexColumn> colsList, GridH2Table tbl) {
+        IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
+
+        IndexColumn.mapColumns(cols, tbl);
+
+        return cols;
     }
 
     /**
@@ -353,7 +362,8 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColumnsSet) {
+    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
+        AllColumnsForPlan allColumnsSet) {
         long rowCnt = getRowCountApproximation();
 
         double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);

@@ -47,6 +47,7 @@ import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
+import org.h2.table.Table;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
@@ -136,15 +137,20 @@ public abstract class GridMergeIndex extends BaseIndex {
         IndexType type,
         IndexColumn[] cols
     ) {
-        this(ctx);
+        super(tbl, 0, name, cols, type);
 
-        initBaseIndex(tbl, 0, name, cols, type);
+        this.ctx = ctx;
+
+        fetched = new BlockList<>(PREFETCH_SIZE);
     }
 
     /**
      * @param ctx Context.
+     * @param tbl Fake table.
      */
-    protected GridMergeIndex(GridKernalContext ctx) {
+    protected GridMergeIndex(GridKernalContext ctx, Table tbl) {
+        super(tbl, 0, null, null, IndexType.createNonUnique(false));
+
         this.ctx = ctx;
 
         fetched = new BlockList<>(PREFETCH_SIZE);

@@ -82,21 +82,6 @@ public abstract class GridH2SearchRowAdapter implements GridH2SearchRow {
     }
 
     /** {@inheritDoc} */
-    @Override public void setSessionId(int sessionId) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getSessionId() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void commit() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isDeleted() {
         throw new UnsupportedOperationException();
     }

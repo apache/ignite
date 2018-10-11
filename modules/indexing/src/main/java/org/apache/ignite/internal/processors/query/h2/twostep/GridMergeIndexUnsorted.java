@@ -28,6 +28,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2PlainRowFactory;
+import org.h2.command.dml.AllColumnsForPlan;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
@@ -36,6 +37,7 @@ import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
+import org.h2.table.Table;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
 
@@ -66,17 +68,19 @@ public final class GridMergeIndexUnsorted extends GridMergeIndex {
 
     /**
      * @param ctx Context.
+     * @param tbl Fake table.
      * @return Dummy index instance.
      */
-    public static GridMergeIndexUnsorted createDummy(GridKernalContext ctx) {
-        return new GridMergeIndexUnsorted(ctx);
+    public static GridMergeIndexUnsorted createDummy(GridKernalContext ctx, Table tbl) {
+        return new GridMergeIndexUnsorted(ctx, tbl);
     }
 
     /**
      * @param ctx Context.
+     * @param tbl Fake table.
      */
-    private GridMergeIndexUnsorted(GridKernalContext ctx) {
-        super(ctx);
+    private GridMergeIndexUnsorted(GridKernalContext ctx, Table tbl) {
+        super(ctx, tbl);
     }
 
     /** {@inheritDoc} */
@@ -118,7 +122,8 @@ public final class GridMergeIndexUnsorted extends GridMergeIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColumnsSet) {
+    @Override public double getCost(Session session, int[] masks, TableFilter[] filters, int filter,
+        SortOrder sortOrder, AllColumnsForPlan allColumnsSet) {
         return getCostRangeIndex(masks, getRowCountApproximation(), filters, filter, sortOrder, true, allColumnsSet);
     }
 

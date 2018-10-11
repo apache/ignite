@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.h2.command.dml.AllColumnsForPlan;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
@@ -70,15 +71,27 @@ public class H2PkHashIndex extends GridH2IndexBase {
         String name,
         List<IndexColumn> colsList
     ) {
+        super(tbl, 0, name, indexColums(colsList, tbl),  IndexType.createPrimaryKey(false, true));
 
         IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
 
         IndexColumn.mapColumns(cols, tbl);
 
-        initBaseIndex(tbl, 0, name, cols, IndexType.createPrimaryKey(false, true));
-
         this.tbl = tbl;
         this.cctx = cctx;
+    }
+
+    /**
+     * @param colsList Columns list.
+     * @param tbl Table.
+     * @return Index column array.
+     */
+    private static IndexColumn[] indexColums(List<IndexColumn> colsList, GridH2Table tbl) {
+        IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
+
+        IndexColumn.mapColumns(cols, tbl);
+
+        return cols;
     }
 
     /** {@inheritDoc} */
@@ -158,7 +171,8 @@ public class H2PkHashIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColumnsSet) {
+    @Override public double getCost(Session session, int[] masks, TableFilter[] filters, int filter,
+        SortOrder sortOrder, AllColumnsForPlan allColumnsSet) {
         return Double.MAX_VALUE;
     }
 

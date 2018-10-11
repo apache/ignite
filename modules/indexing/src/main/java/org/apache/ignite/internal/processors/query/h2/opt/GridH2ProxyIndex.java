@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import org.h2.command.dml.AllColumnsForPlan;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
 import org.h2.index.Cursor;
@@ -41,7 +42,6 @@ import java.util.concurrent.Future;
  * Delegates the calls to underlying normal index
  */
 public class GridH2ProxyIndex extends BaseIndex {
-
     /** Underlying normal index */
     protected Index idx;
 
@@ -56,14 +56,23 @@ public class GridH2ProxyIndex extends BaseIndex {
                             String name,
                             List<IndexColumn> colsList,
                             Index idx) {
+        super(tbl, 0, name, createIndexColumns(colsList, tbl),
+            IndexType.createNonUnique(false, false, idx instanceof SpatialIndex));
 
+        this.idx = idx;
+    }
+
+    /**
+     * @param colsList Index columns list.
+     * @param tbl Table.
+     * @return Index colums array.
+     */
+    private static IndexColumn[] createIndexColumns(List<IndexColumn> colsList, GridH2Table tbl) {
         IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
 
         IndexColumn.mapColumns(cols, tbl);
 
-        initBaseIndex(tbl, 0, name, cols, IndexType.createNonUnique(false, false, idx instanceof SpatialIndex));
-
-        this.idx = idx;
+        return cols;
     }
 
     /**
@@ -100,7 +109,8 @@ public class GridH2ProxyIndex extends BaseIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session session, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColumnsSet) {
+    @Override public double getCost(Session session, int[] masks, TableFilter[] filters, int filter,
+        SortOrder sortOrder, AllColumnsForPlan allColumnsSet) {
         long rowCnt = getRowCountApproximation();
 
         double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);

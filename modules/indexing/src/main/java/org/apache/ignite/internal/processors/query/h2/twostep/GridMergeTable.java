@@ -23,6 +23,7 @@ import java.util.HashSet;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ScanIndex;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.ddl.CreateTableData;
+import org.h2.command.dml.AllColumnsForPlan;
 import org.h2.engine.Session;
 import org.h2.index.Index;
 import org.h2.index.IndexType;
@@ -192,10 +193,11 @@ public class GridMergeTable extends TableBase {
 
         /** {@inheritDoc} */
         @Override public double getCost(Session session, int[] masks, TableFilter[] filters, int filter,
-            SortOrder sortOrder, HashSet<Column> allColumnsSet) {
+            SortOrder sortOrder, AllColumnsForPlan allColumnsSet) {
             long rows = getRowCountApproximation();
 
             return getCostRangeIndex(masks, rows, filters, filter, sortOrder, true, allColumnsSet);
         }
+
     }
 }

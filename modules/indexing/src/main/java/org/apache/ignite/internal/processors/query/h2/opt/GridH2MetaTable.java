@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.h2.command.ddl.CreateTableData;
+import org.h2.command.dml.AllColumnsForPlan;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
 import org.h2.index.Cursor;
@@ -39,6 +40,7 @@ import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
+import org.h2.table.Table;
 import org.h2.table.TableBase;
 import org.h2.table.TableFilter;
 import org.h2.table.TableType;
@@ -75,7 +77,12 @@ public class GridH2MetaTable extends TableBase {
         assert "ID".equals(id.getName()) && id.getType() == Value.INT : cols;
         assert id.getColumnId() == ID;
 
-        index = new MetaIndex();
+        IndexColumn ic = new IndexColumn();
+
+        ic.column = id;
+        ic.columnName = id.getName();
+
+        index = new MetaIndex(this, 0, null, new IndexColumn[] {ic}, IndexType.createNonUnique(false));
     }
 
     /** {@inheritDoc} */
@@ -298,6 +305,20 @@ public class GridH2MetaTable extends TableBase {
         /** */
         private final ConcurrentMap<ValueInt, Row> rows = new ConcurrentHashMap<>();
 
+        /**
+         * Initialize the base index.
+         *
+         * @param newTable the table
+         * @param id the object id
+         * @param name the index name
+         * @param newIndexColumns the columns that are indexed or null if this is not yet known
+         * @param newIndexType the index type
+         */
+        protected MetaIndex(Table newTable, int id, String name, IndexColumn[] newIndexColumns,
+            IndexType newIndexType) {
+            super(newTable, id, name, newIndexColumns, newIndexType);
+        }
+
         /** {@inheritDoc} */
         @Override public void checkRename() {
             throw DbException.getUnsupportedException("rename");
@@ -339,8 +360,8 @@ public class GridH2MetaTable extends TableBase {
         }
 
         /** {@inheritDoc} */
-        @Override public double getCost(Session session, int[] masks, TableFilter[] filters,
-            int filter, SortOrder sortOrder, HashSet<Column> cols) {
+        @Override public double getCost(Session session, int[] masks, TableFilter[] filters, int filter,
+            SortOrder sortOrder, AllColumnsForPlan allColumnsSet) {
             if ((masks[ID] & IndexCondition.EQUALITY) == IndexCondition.EQUALITY)
                 return 1;
 

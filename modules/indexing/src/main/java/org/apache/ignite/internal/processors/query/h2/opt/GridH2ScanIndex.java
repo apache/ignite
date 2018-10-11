@@ -48,6 +48,9 @@ public abstract class GridH2ScanIndex<D extends BaseIndex> extends BaseIndex {
      * @param delegate Delegate.
      */
     public GridH2ScanIndex(D delegate) {
+        super(delegate.getTable(), delegate.getId(), delegate.getName(),
+            delegate.getIndexColumns(), delegate.getIndexType());
+
         this.delegate = delegate;
     }
 
@@ -85,11 +88,6 @@ public abstract class GridH2ScanIndex<D extends BaseIndex> extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public final void close(Session ses) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void commit(int operation, Row row) {
         // No-op.
     }
 

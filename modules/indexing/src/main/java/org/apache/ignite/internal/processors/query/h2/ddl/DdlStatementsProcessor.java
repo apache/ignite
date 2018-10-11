@@ -779,7 +779,7 @@ public class DdlStatementsProcessor {
                     return UUID.class.getName();
 
             default:
-                return DataType.getTypeClassName(type);
+                return DataType.getTypeClassName(type, false);
         }
     }
 }

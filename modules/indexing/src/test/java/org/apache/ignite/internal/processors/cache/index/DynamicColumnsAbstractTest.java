@@ -83,7 +83,7 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
 
                     short type = rs.getShort("DATA_TYPE");
 
-                    String typeClsName = DataType.getTypeClassName(DataType.convertSQLTypeToValueType(type));
+                    String typeClsName = DataType.getTypeClassName(DataType.convertSQLTypeToValueType(type), false);
 
                     short nullable = rs.getShort("NULLABLE");
 
@@ -131,7 +131,7 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
 
                     short type = rs.getShort("DATA_TYPE");
 
-                    String typeClsName = DataType.getTypeClassName(DataType.convertSQLTypeToValueType(type));
+                    String typeClsName = DataType.getTypeClassName(DataType.convertSQLTypeToValueType(type), false);
 
                     short nullable = rs.getShort("NULLABLE");
 
