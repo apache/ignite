@@ -80,16 +80,21 @@ public class JdbcVersionMismatchSelfTest extends GridCommonAbstractTest {
             }
             catch (SQLException e) {
                 assertNotNull(e.getMessage());
-                assertTrue(e.getMessage().contains("Mvcc version mismatch"));
+                assertTrue(e.getMessage().contains("Cannot serialize transaction due to write conflict"));
             }
 
             // Try executing any other statement from the same transaction.
             // TODO
-            assertEquals(1, executeQuery(conn1, "SELECT * FROM test").size());
-
-            // TODO: Native API.
+            //assertEquals(1, executeQuery(conn1, "SELECT * FROM test").size());
 
             //executeUpdate(conn1, "INSERT INTO test VALUES (3, 3, 'test_3')");
+
+            //executeUpdate(conn1, "ROLLBACK");
+            //conn1.rollback();
+
+            // TODO: Should throw exception!
+            executeUpdate(conn1, "COMMIT");
+            //conn1.commit();
         }
 
         // TODO: Ensure that thread state is cleared.
@@ -133,11 +138,11 @@ public class JdbcVersionMismatchSelfTest extends GridCommonAbstractTest {
             }
             catch (CacheException e) {
                 assertNotNull(e.getMessage());
-                assertTrue(e.getMessage().contains("Mvcc version mismatch"));
+                assertTrue(e.getMessage().contains("Cannot serialize transaction due to write conflict"));
             }
 
             // Try executing any other statement from the same transaction.
-            assertEquals(1, cache.query(new SqlFieldsQuery("SELECT * FROM test")).getAll().size());
+            //assertEquals(1, cache.query(new SqlFieldsQuery("SELECT * FROM test")).getAll().size());
 
             tx.rollback();
         }

@@ -120,6 +120,9 @@ public final class IgniteQueryErrorCode {
     /** Transaction is already completed. */
     public final static int TRANSACTION_COMPLETED = 5004;
 
+    /** Transaction serialization error. */
+    public final static int TRANSACTION_SERIALIZATION_ERROR = 5005;
+
     /** */
     private IgniteQueryErrorCode() {
         // No-op.
