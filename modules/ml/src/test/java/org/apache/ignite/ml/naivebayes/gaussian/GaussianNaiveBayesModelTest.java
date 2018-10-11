@@ -40,7 +40,7 @@ public class GaussianNaiveBayesModelTest {
             {9.7225E-2, 5.5833E2, 1.6667},
         };
         double[] probabilities = new double[] {.5, .5};
-        GaussianNaiveBayesModel mdl = new GaussianNaiveBayesModel(means, variances, probabilities, new double[]{first,second});
+        GaussianNaiveBayesModel mdl = new GaussianNaiveBayesModel(means, variances, probabilities, new double[]{first,second}, null);
         Vector observation = new DenseVector(new double[] {6, 130, 8});
 
         Assert.assertEquals(second, mdl.apply(observation), 0.0001);

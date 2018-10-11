@@ -86,7 +86,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     public void fit_returnsCorrectLabelProbalities() {
 
         GaussianNaiveBayesModel model = trainer.fit(
-            new LocalDatasetBuilder<>(data, 2),
+            new LocalDatasetBuilder<>(data, parts),
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         );
@@ -101,7 +101,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
             .withEquiprobableClasses();
 
         GaussianNaiveBayesModel model = trainer.fit(
-            new LocalDatasetBuilder<>(data, 2),
+            new LocalDatasetBuilder<>(data, parts),
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         );
@@ -117,7 +117,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
             .setPriorProbabilities(priorProbabilities);
 
         GaussianNaiveBayesModel model = trainer.fit(
-            new LocalDatasetBuilder<>(data, 2),
+            new LocalDatasetBuilder<>(data, parts),
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         );
@@ -130,7 +130,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     public void fit_returnsCorrectMeans() {
 
         GaussianNaiveBayesModel model = trainer.fit(
-            new LocalDatasetBuilder<>(singleLabeldata_1, 2),
+            new LocalDatasetBuilder<>(singleLabeldata_1, parts),
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         );
@@ -142,7 +142,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     public void fit_returnsCorrectVariances() {
 
         GaussianNaiveBayesModel model = trainer.fit(
-            new LocalDatasetBuilder<>(singleLabeldata_1, 2),
+            new LocalDatasetBuilder<>(singleLabeldata_1, parts),
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         );
@@ -153,22 +153,19 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
 
     @Test
     public void updateModel_returnsCorrectProbabilities() {
-        GaussianNaiveBayesModel model1 = trainer.fit(
-            new LocalDatasetBuilder<>(singleLabeldata_1, 2),
+        GaussianNaiveBayesModel model = trainer.fit(
+            new LocalDatasetBuilder<>(singleLabeldata_1, parts),
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         );
 
-        GaussianNaiveBayesModel model2 = trainer.updateModel(model1,
-            new LocalDatasetBuilder<>(singleLabeldata_2, 2),
+        GaussianNaiveBayesModel updatedModel = trainer.updateModel(model,
+            new LocalDatasetBuilder<>(singleLabeldata_2, parts),
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         );
 
-
-        Assert.assertEquals(3. / data.size(), model2.getClassProbabilities()[0], PRECISION);
-        Assert.assertEquals(2. / data.size(), model2.getClassProbabilities()[1], PRECISION);
-
-
+        Assert.assertEquals(3. / data.size(), updatedModel.getClassProbabilities()[0], PRECISION);
+        Assert.assertEquals(2. / data.size(), updatedModel.getClassProbabilities()[1], PRECISION);
     }
 }
