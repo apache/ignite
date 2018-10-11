@@ -32,10 +32,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInput;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.Reader;
+import java.io.Serializable;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.annotation.Annotation;
@@ -137,6 +140,7 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
@@ -208,16 +212,20 @@ import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoader;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.GridTuple;
+import org.apache.ignite.internal.util.lang.IgniteInClosureX;
+import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
@@ -10235,6 +10243,43 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Serialize object to byte array.
+     *
+     * @param obj Object.
+     * @return Serialized object.
+     */
+    public static byte[] toBytes(Serializable obj) {
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             ObjectOutputStream oos = new ObjectOutputStream(bos)) {
+
+            oos.writeObject(obj);
+            oos.flush();
+
+            return bos.toByteArray();
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * Deserialize object from byte array.
+     *
+     * @param data Serialized object.
+     * @return Object.
+     */
+    public static <T> T fromBytes(byte[] data) {
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(data);
+             ObjectInputStream ois = new ObjectInputStream(bis)) {
+
+            return (T)ois.readObject();
+        }
+        catch (IOException | ClassNotFoundException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
      * Return count of regular file in the directory (including in sub-directories)
      *
      * @param dir path to directory
@@ -10457,6 +10502,139 @@ public abstract class IgniteUtils {
             sb.append(U.hexLong(buf.getLong(i)));
 
         return sb.toString();
+    }
+
+    /**
+     * @param executorSvc Service for parallel execution.
+     * @param srcDatas List of data for parallelization.
+     * @param consumer Logic for execution of on each item of data.
+     * @param <T> Type of data.
+     * @throws ParallelExecutionException if parallel execution was failed. It contains actual exception in suppressed section.
+     */
+    public static <T> void doInParallel(int parallelismLvl, ExecutorService executorSvc, Collection<T> srcDatas,
+        IgniteThrowableConsumer<T> consumer) throws ParallelExecutionException {
+
+        List<List<T>> batches = new ArrayList<>(parallelismLvl);
+
+        for (int i = 0; i < parallelismLvl; i++)
+            batches.add(new ArrayList<>());
+
+        int i = 0;
+
+        for (T src : srcDatas) {
+            int idx = i % parallelismLvl;
+
+            List<T> batch = batches.get(idx);
+
+            batch.add(src);
+
+            i++;
+        }
+
+        List<T2<List<T>, Future<Object>>> consumerFutures = batches.stream()
+            .filter(batch -> !batch.isEmpty())
+            .map(batch -> new T2<>(
+                batch,
+                executorSvc.submit(() -> {
+                    for (T item : batch)
+                        consumer.accept(item);
+
+                    return null;
+                })))
+            .collect(Collectors.toList());
+
+        ParallelExecutionException executionE = null;
+
+        for (T2<List<T>, Future<Object>> future : consumerFutures) {
+            try {
+                future.get2().get();
+            }
+            catch (Exception e) {
+                if (executionE == null)
+                    executionE = new ParallelExecutionException("Failed during parallel execution.");
+
+                executionE.addSuppressed(e);
+
+                for (T failedData : future.get1())
+                    executionE.addFailedData(failedData);
+            }
+        }
+
+        if (executionE != null)
+            throw executionE;
+    }
+
+    /**
+     * @param executorSvc Service for parallel execution.
+     * @param srcDatas List of data for parallelization.
+     * @param consumer Logic for execution of on each item of data.
+     * @param errHnd Optionan error handler. If not {@code null}, an error of each item execution will be passed to
+     *      this handler. If error handler is not {@code null}, the exception will not be thrown from this method.
+     * @param <T> Type of data.
+     * @return List of (item, execution future) tuples.
+     * @throws IgniteCheckedException If parallel execution failed and {@code errHnd} is {@code null}.
+     */
+    public static <T> List<T2<T, Future<Object>>> doInParallel(
+        ExecutorService executorSvc,
+        Collection<T> srcDatas,
+        IgniteInClosureX<T> consumer,
+        @Nullable IgniteBiInClosure<T, Throwable> errHnd
+    ) throws IgniteCheckedException {
+        List<T2<T, Future<Object>>> consumerFutures = srcDatas.stream()
+            .map(item -> new T2<>(
+                item,
+                executorSvc.submit(() -> {
+                    consumer.apply(item);
+
+                    return null;
+                })))
+            .collect(Collectors.toList());
+
+        IgniteCheckedException composite = null;
+
+        for (T2<T, Future<Object>> tup : consumerFutures) {
+            try {
+                getUninterruptibly(tup.get2());
+            }
+            catch (ExecutionException e) {
+                if (errHnd != null)
+                    errHnd.apply(tup.get1(), e.getCause());
+                else {
+                    if (composite == null)
+                        composite = new IgniteCheckedException("Failed to execute one of the tasks " +
+                            "(see suppressed exception for details)");
+
+                    composite.addSuppressed(e.getCause());
+                }
+            }
+        }
+
+        if (composite != null)
+            throw composite;
+
+        return consumerFutures;
+    }
+
+    /**
+     * @param fut Future to wait for completion.
+     * @throws ExecutionException If the future
+     */
+    private static void getUninterruptibly(Future fut) throws ExecutionException {
+        boolean interrupted = false;
+
+        while (true) {
+            try {
+                fut.get();
+
+                break;
+            }
+            catch (InterruptedException e) {
+                interrupted = true;
+            }
+        }
+
+        if (interrupted)
+            Thread.currentThread().interrupt();
     }
 
     /**
