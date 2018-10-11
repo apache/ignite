@@ -63,6 +63,12 @@
             <outputDirectory>/platforms/nodejs</outputDirectory>
         </file>
 
+        <!-- Copy PHP files. -->
+        <file>
+            <source>modules/platforms/php/composer.json</source>
+            <outputDirectory>/platforms/php</outputDirectory>
+        </file>
+
         <!-- Other files. -->
         <file>
             <source>assembly/LICENSE_IGNITE</source>
@@ -217,6 +223,17 @@
         <fileSet>
             <directory>modules/platforms/nodejs/examples</directory>
             <outputDirectory>/platforms/nodejs/examples</outputDirectory>
+        </fileSet>
+
+        <!-- Copy PHP sources.. -->
+        <fileSet>
+            <directory>modules/platforms/php/src</directory>
+            <outputDirectory>/platforms/php/src</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/platforms/php/examples</directory>
+            <outputDirectory>/platforms/php/examples</outputDirectory>
         </fileSet>
 
         <!-- Other files. -->
