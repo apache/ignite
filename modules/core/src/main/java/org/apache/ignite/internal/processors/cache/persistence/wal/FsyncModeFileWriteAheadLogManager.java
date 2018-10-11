@@ -505,6 +505,25 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
                 new IgniteThread(archiver).start();
             }
+            else {
+                try {
+                    archiver.allocateRemainingFiles();
+                }
+                catch (StorageException e) {
+                    synchronized (this) {
+                        // Stop the thread and report to starter.
+                        archiver.cleanException = e;
+
+                        notifyAll();
+                    }
+
+                    cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
+
+                    return;
+                }
+
+            }
+
 
             if (compressor != null)
                 compressor.start();
