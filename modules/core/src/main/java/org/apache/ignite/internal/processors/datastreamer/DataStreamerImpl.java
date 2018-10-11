@@ -2206,24 +2206,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             GridCacheContext<?, ?> cctx = internalCache.context();
 
-/*          todo: uncomment this and remove topFut choosing logic below after IGNITE-9550 race is fixed
             GridDhtTopologyFuture topFut = cctx.shared().exchange().lastFinishedFuture();
 
             AffinityTopologyVersion topVer = topFut.topologyVersion();
-*/
-            AffinityTopologyVersion topVer = cctx.isLocal() ?
-                cctx.affinity().affinityTopologyVersion() :
-                cctx.shared().exchange().readyAffinityVersion();
-
-            GridDhtTopologyFuture topFut = (GridDhtTopologyFuture)cctx.shared().exchange().affinityReadyFuture(topVer);
-
-            if (topFut == null) {
-                // Exchange for newer topology version is already in progress, let's try to use last finished future.
-                GridDhtTopologyFuture lastFinishedFut = cctx.shared().exchange().lastFinishedFuture();
-
-                if (F.eq(lastFinishedFut.topologyVersion(), topVer))
-                    topFut = lastFinishedFut;
-            }
 
             GridCacheVersion ver = cctx.versions().isolatedStreamerVersion();
 
@@ -2285,8 +2270,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         }
 
                         if (topFut != null) {
-                            topFut.get();
-
                             Throwable err = topFut.validateCache(cctx, false, false, entry.key(), null);
 
                             if (err != null)
