@@ -73,26 +73,30 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
             (upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
-            GaussianNaiveBayesSumsHolder GaussianNaiveBayesSumsHolder = computeSums(dataset);
+            GaussianNaiveBayesSumsHolder sumsHolder = computeSums(dataset);
 
-            List<Double> sortedLabels = new ArrayList<>(GaussianNaiveBayesSumsHolder.featureCountersPerLbl.keySet());
+            if (mdl != null && mdl.getSumsHolder() != null) {
+                sumsHolder = sumsHolder.merge(mdl.getSumsHolder());
+            }
+
+            List<Double> sortedLabels = new ArrayList<>(sumsHolder.featureCountersPerLbl.keySet());
             sortedLabels.sort(Double::compareTo);
 
             int labelCount = sortedLabels.size();
-            int featureCount = GaussianNaiveBayesSumsHolder.featureSumsPerLbl.get(sortedLabels.get(0)).length;
+            int featureCount = sumsHolder.featureSumsPerLbl.get(sortedLabels.get(0)).length;
 
             double[][] means = new double[labelCount][featureCount];
             double[][] variances = new double[labelCount][featureCount];
             double[] classProbabilities = new double[labelCount];
             double[] labels = new double[labelCount];
 
-            long datasetSize = GaussianNaiveBayesSumsHolder.featureCountersPerLbl.values().stream().mapToInt(i -> i).sum();
+            long datasetSize = sumsHolder.featureCountersPerLbl.values().stream().mapToInt(i -> i).sum();
 
             int lbl = 0;
             for (Double label : sortedLabels) {
-                int count = GaussianNaiveBayesSumsHolder.featureCountersPerLbl.get(label);
-                double[] sum = GaussianNaiveBayesSumsHolder.featureSumsPerLbl.get(label);
-                double[] sqSum = GaussianNaiveBayesSumsHolder.featureSquaredSumsPerLbl.get(label);
+                int count = sumsHolder.featureCountersPerLbl.get(label);
+                double[] sum = sumsHolder.featureSumsPerLbl.get(label);
+                double[] sqSum = sumsHolder.featureSquaredSumsPerLbl.get(label);
 
                 for (int i = 0; i < featureCount; i++) {
                     means[lbl][i] = sum[i] / count;
