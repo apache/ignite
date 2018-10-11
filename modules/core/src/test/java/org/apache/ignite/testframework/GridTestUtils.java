@@ -905,8 +905,15 @@ public final class GridTestUtils {
         }
 
         // Wait threads finish their job.
-        for (Thread t : threads)
-            t.join();
+        try {
+            for (Thread t : threads)
+                t.join();
+        } catch (InterruptedException e) {
+            for (Thread t : threads)
+                t.interrupt();
+
+            throw e;
+        }
 
         time = System.currentTimeMillis() - time;
 
