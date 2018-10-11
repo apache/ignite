@@ -409,18 +409,18 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Start gathering IO statistics for cache and cache group. Should be invoked in pair with finishGatheringStatistics
+     * Start gathering IO statistics for cache and cache group. Should be invoked in pair with finishGatheringIOStatistics
      * method to avoid gather incorrect statistics.
      */
-    public void startGatheringStatistics() {
+    public void startGatheringIOStatistics() {
         GridIoStatManager.addCurrentOperationType(cacheStatOpType);
     }
 
     /**
-     * Finish gathering IO statistics for cache and cache group. Should used in pair with startGatheringStatistics and
+     * Finish gathering IO statistics for cache and cache group. Should used in pair with startGatheringIOStatistics and
      * invoked after it to avoid gather incorrect statistics.
      */
-    public void finishGatheringStatistics() {
+    public void finishGatheringIOStatistics() {
         GridIoStatManager.removeCurrentOperationType(cacheStatOpType);
     }
 

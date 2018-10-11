@@ -2245,7 +2245,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
             int cleaned = 0;
 
-            cctx.startGatheringStatistics();
+            cctx.startGatheringIOStatistics();
 
             try {
                 if (cleanupRows != null)
@@ -2270,7 +2270,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 metrics.addCleanupNanoTime(System.nanoTime() - cleanupStartNanoTime);
                 metrics.addCleanupRowsCnt(cleaned);
 
-                cctx.finishGatheringStatistics();
+                cctx.finishGatheringIOStatistics();
             }
         }
     }

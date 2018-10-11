@@ -48,13 +48,13 @@ public class GridCursorIoStatisticsProxy<T> implements GridCursor<T> {
 
     /** {@inheritDoc} */
     @Override public boolean next() throws IgniteCheckedException {
-        cctx.startGatheringStatistics();
+        cctx.startGatheringIOStatistics();
 
         try {
             return delegate.next();
         }
         finally {
-            cctx.finishGatheringStatistics();
+            cctx.finishGatheringIOStatistics();
         }
     }
 

@@ -604,13 +604,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         if (entry.detached() || entry.isNear())
             return;
 
-        entry.context().startGatheringStatistics();
+        entry.context().startGatheringIOStatistics();
 
         try {
             dataStore(entry.localPartition()).mvccRemoveAll(entry.context(), entry.key());
         }
         finally {
-            entry.context().finishGatheringStatistics();
+            entry.context().finishGatheringIOStatistics();
         }
     }
 
@@ -1613,7 +1613,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
-            cctx.startGatheringStatistics();
+            cctx.startGatheringIOStatistics();
 
             try {
                 assert cctx.shared().database().checkpointLockIsHeldByThread();
@@ -1649,7 +1649,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             finally {
                 busyLock.leaveBusy();
 
-                cctx.finishGatheringStatistics();
+                cctx.finishGatheringIOStatistics();
             }
         }
 
@@ -1716,7 +1716,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
-            cctx.startGatheringStatistics();
+            cctx.startGatheringIOStatistics();
 
             try {
                 CacheObjectContext coCtx = cctx.cacheObjectContext();
@@ -1770,7 +1770,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             finally {
                 busyLock.leaveBusy();
 
-                cctx.finishGatheringStatistics();
+                cctx.finishGatheringIOStatistics();
             }
 
             return false;
@@ -1794,7 +1794,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
-            cctx.startGatheringStatistics();
+            cctx.startGatheringIOStatistics();
 
             try {
                 CacheObjectContext coCtx = cctx.cacheObjectContext();
@@ -1828,7 +1828,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             finally {
                 busyLock.leaveBusy();
 
-                cctx.finishGatheringStatistics();
+                cctx.finishGatheringIOStatistics();
             }
         }
 
@@ -1897,7 +1897,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
-            cctx.startGatheringStatistics();
+            cctx.startGatheringIOStatistics();
 
             try {
                 int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
@@ -2031,7 +2031,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             finally {
                 busyLock.leaveBusy();
 
-                cctx.finishGatheringStatistics();
+                cctx.finishGatheringIOStatistics();
             }
         }
 
@@ -2098,7 +2098,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
-            cctx.startGatheringStatistics();
+            cctx.startGatheringIOStatistics();
 
             try {
                 int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
@@ -2156,7 +2156,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             finally {
                 busyLock.leaveBusy();
 
-                cctx.finishGatheringStatistics();
+                cctx.finishGatheringIOStatistics();
             }
         }
 
@@ -2168,7 +2168,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
-            cctx.startGatheringStatistics();
+            cctx.startGatheringIOStatistics();
 
             try {
                 int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
@@ -2212,7 +2212,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             finally {
                 busyLock.leaveBusy();
 
-                cctx.finishGatheringStatistics();
+                cctx.finishGatheringIOStatistics();
             }
         }
 
@@ -2231,7 +2231,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
-            cctx.startGatheringStatistics();
+            cctx.startGatheringIOStatistics();
 
             try {
                 int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
@@ -2309,7 +2309,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             finally {
                 busyLock.leaveBusy();
 
-                cctx.finishGatheringStatistics();
+                cctx.finishGatheringIOStatistics();
             }
         }
 
@@ -2324,7 +2324,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
-            cctx.startGatheringStatistics();
+            cctx.startGatheringIOStatistics();
 
             try {
                 int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
@@ -2375,7 +2375,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             finally {
                 busyLock.leaveBusy();
 
-                cctx.finishGatheringStatistics();
+                cctx.finishGatheringIOStatistics();
             }
         }
 
@@ -2488,7 +2488,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
-            cctx.startGatheringStatistics();
+            cctx.startGatheringIOStatistics();
 
             try {
                 int cacheId = grp.storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
@@ -2534,7 +2534,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             finally {
                 busyLock.leaveBusy();
 
-                cctx.finishGatheringStatistics();
+                cctx.finishGatheringIOStatistics();
             }
         }
 
@@ -2600,7 +2600,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
-            cctx.startGatheringStatistics();
+            cctx.startGatheringIOStatistics();
 
             try {
                 int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
@@ -2614,7 +2614,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             finally {
                 busyLock.leaveBusy();
 
-                cctx.finishGatheringStatistics();
+                cctx.finishGatheringIOStatistics();
             }
         }
 
@@ -2667,7 +2667,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             CacheDataRow row;
 
-            cctx.startGatheringStatistics();
+            cctx.startGatheringIOStatistics();
 
             try {
                 if (grp.mvccEnabled()) {
@@ -2685,7 +2685,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     row = dataTree.findOne(new SearchRow(cacheId, key), CacheDataRowAdapter.RowData.NO_KEY);
             }
             finally {
-                cctx.finishGatheringStatistics();
+                cctx.finishGatheringIOStatistics();
             }
 
             afterRowFound(row, key);
@@ -2707,7 +2707,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
-            cctx.startGatheringStatistics();
+            cctx.startGatheringIOStatistics();
 
             try {
                 GridCursor<CacheDataRow> cur = dataTree.find(
@@ -2737,7 +2737,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 return res;
             }
             finally {
-                cctx.finishGatheringStatistics();
+                cctx.finishGatheringIOStatistics();
             }
         }
 
@@ -2764,7 +2764,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             MvccSnapshotSearchRow clo = new MvccSnapshotSearchRow(cctx, key, snapshot);
 
-            cctx.startGatheringStatistics();
+            cctx.startGatheringIOStatistics();
 
             try {
                 dataTree.iterate(
@@ -2774,7 +2774,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 );
             }
             finally {
-                cctx.finishGatheringStatistics();
+                cctx.finishGatheringIOStatistics();
             }
 
             CacheDataRow row = clo.row();
