@@ -17,8 +17,13 @@
 
 package org.apache.ignite.jdbc;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 
+import javax.cache.CacheException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -26,6 +31,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * JDBC version mismatch test.
@@ -37,7 +45,7 @@ public class JdbcVersionMismatchSelfTest extends GridCommonAbstractTest {
 
         try (Connection conn = connect()) {
             executeUpdate(conn,
-                "CREATE TABLE test (a INT PRIMARY KEY, b INT, c VARCHAR) WITH \"atomicity=TRANSACTIONAL_SNAPSHOT\"");
+                "CREATE TABLE test (a INT PRIMARY KEY, b INT, c VARCHAR) WITH \"atomicity=TRANSACTIONAL_SNAPSHOT, cache_name=TEST\"");
 
             executeUpdate(conn, "INSERT INTO test VALUES (1, 1, 'test_1')");
         }
@@ -51,7 +59,7 @@ public class JdbcVersionMismatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testVersionMismatch() throws Exception {
+    public void testVersionMismatchJdbc() throws Exception {
         try (Connection conn1 = connect(); Connection conn2 = connect()) {
             conn1.setAutoCommit(false);
             conn2.setAutoCommit(false);
@@ -74,7 +82,67 @@ public class JdbcVersionMismatchSelfTest extends GridCommonAbstractTest {
                 assertNotNull(e.getMessage());
                 assertTrue(e.getMessage().contains("Mvcc version mismatch"));
             }
+
+            // Try executing any other statement from the same transaction.
+            // TODO
+            assertEquals(1, executeQuery(conn1, "SELECT * FROM test").size());
+
+            // TODO: Native API.
+
+            //executeUpdate(conn1, "INSERT INTO test VALUES (3, 3, 'test_3')");
         }
+
+        // TODO: Ensure that thread state is cleared.
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testVersionMismatchNative() throws Exception {
+        Ignite ignite = grid();
+
+        IgniteCache cache = ignite.cache("TEST");
+
+        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            // Start first transaction and observe some values.
+            assertEquals(1, cache.query(new SqlFieldsQuery("SELECT * FROM test")).getAll().size());
+
+            // Change values while first transaction is still in progress.
+            Thread thread = new Thread(new Runnable() {
+                @Override public void run() {
+                    try (Transaction txOther = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        assertEquals(1, cache.query(new SqlFieldsQuery("SELECT * FROM test")).getAll().size());
+
+                        cache.query(new SqlFieldsQuery("INSERT INTO test VALUES (2, 2, 'test_2')")).getAll();
+
+                        assertEquals(2, cache.query(new SqlFieldsQuery("SELECT * FROM test")).getAll().size());
+
+                        txOther.commit();
+                    }
+                }
+            });
+
+            thread.start();
+            thread.join();
+
+            // Force version mismatch.
+            try {
+                cache.query(new SqlFieldsQuery("INSERT INTO test VALUES (2, 2, 'test_2')")).getAll();
+
+                fail();
+            }
+            catch (CacheException e) {
+                assertNotNull(e.getMessage());
+                assertTrue(e.getMessage().contains("Mvcc version mismatch"));
+            }
+
+            // Try executing any other statement from the same transaction.
+            assertEquals(1, cache.query(new SqlFieldsQuery("SELECT * FROM test")).getAll().size());
+
+            tx.rollback();
+        }
+
+        // TODO: Ensure that thread state is cleared.
     }
 
     /**
