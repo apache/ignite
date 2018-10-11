@@ -23,14 +23,14 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Just ignores any failure. It's useful for tests and debugging.
  */
-public class NoOpFailureHandler implements FailureHandler {
+public class NoOpFailureHandler extends AbstractFailureHandler {
     /** {@inheritDoc} */
-    @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+    @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
         return false;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(NoOpFailureHandler.class, this);
+        return S.toString(NoOpFailureHandler.class, this, "super", super.toString());
     }
 }

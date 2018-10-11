@@ -30,7 +30,7 @@
         </xs:annotation>
         <xs:complexType>
             <xs:all>
-                <xs:element name="binaryConfiguration" minOccurs="0">
+                <xs:element name="binaryConfiguration" minOccurs="0" maxOccurs="1">
                     <xs:annotation>
                         <xs:documentation>Binary configuration.</xs:documentation>
                     </xs:annotation>
@@ -172,6 +172,16 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="endpoints" minOccurs="0" maxOccurs="1">
+                    <xs:annotation>
+                        <xs:documentation>Endpoints to connect to.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element maxOccurs="unbounded" name="string" type="xs:string" />
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
                 <xs:element name="sslStreamFactory">
                     <xs:complexType>
                         <xs:attribute name="type" type="xs:string" use="required">
@@ -235,6 +245,11 @@
             <xs:attribute name="socketTimeout" type="xs:string">
                 <xs:annotation>
                     <xs:documentation>Socket operation timeout. Zero or negative for infinite timeout.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="reconnectDisabled" type="xs:boolean">
+                <xs:annotation>
+                    <xs:documentation>Disables automatic reconnect on network or server failure.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
             <xs:attribute name="userName" type="xs:string">

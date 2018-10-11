@@ -53,7 +53,7 @@ export class IgniteChartController {
 
     /**
      * @param {JQLite} $element
-     * @param {ng.IScope} $scope
+     * @param {Array<string>} IgniteChartColors
      * @param {ng.IFilterService} $filter
      */
     constructor($element, IgniteChartColors, $filter) {
@@ -71,12 +71,19 @@ export class IgniteChartController {
     }
 
     $onDestroy() {
-        if (this.chart) this.chart.destroy();
+        if (this.chart)
+            this.chart.destroy();
+
         this.$element = this.ctx = this.chart = null;
     }
 
     $onInit() {
         this.chartColors = _.get(this.chartOptions, 'chartColors', this.IgniteChartColors);
+    }
+
+    _refresh() {
+        this.onRefresh();
+        this.rerenderChart();
     }
 
     /**
@@ -86,9 +93,10 @@ export class IgniteChartController {
         if (this.chart && _.get(changes, 'refreshRate.currentValue'))
             this.onRefreshRateChanged(_.get(changes, 'refreshRate.currentValue'));
 
-        // TODO: Investigate other signaling for resetting component state.
-        if (changes.chartDataPoint && _.isNil(changes.chartDataPoint.currentValue)) {
+        if ((changes.chartDataPoint && _.isNil(changes.chartDataPoint.currentValue)) ||
+            (changes.chartHistory && _.isEmpty(changes.chartHistory.currentValue))) {
             this.clearDatasets();
+
             return;
         }
 
@@ -101,8 +109,8 @@ export class IgniteChartController {
 
             this.newPoints.splice(0, this.newPoints.length, ...changes.chartHistory.currentValue);
 
-            this.onRefresh();
-            this.rerenderChart();
+            this._refresh();
+
             return;
         }
 
@@ -112,6 +120,8 @@ export class IgniteChartController {
 
             this.newPoints.push(this.chartDataPoint);
             this.localHistory.push(this.chartDataPoint);
+
+            this._refresh();
         }
     }
 
@@ -217,6 +227,7 @@ export class IgniteChartController {
                         duration: this.currentRange.value * 1000 * 60,
                         frameRate: 1000 / this.refreshRate || 1 / 3,
                         refresh: this.refreshRate || 3000,
+                        ttl: this.maxRangeInMilliseconds,
                         onRefresh: () => {
                             this.onRefresh();
                         }
@@ -291,10 +302,6 @@ export class IgniteChartController {
                     this.addDataset(key);
                 }
 
-                // Prune excessive data points.
-                if (this.maxPointsNumber && this.config.data.datasets[datasetIndex].length - this.maxPointsNumber > 0)
-                    this.config.data.datasets[datasetIndex].data.splice(0, this.config.data.datasets[datasetIndex].length - this.maxPointsNumber);
-
                 this.config.data.datasets[datasetIndex].data.push({x: dataPoint.x, y: dataPoint.y[key]});
                 this.config.data.datasets[datasetIndex].borderColor = this.chartColors[datasetIndex];
                 this.config.data.datasets[datasetIndex].borderWidth = 2;
@@ -324,8 +331,13 @@ export class IgniteChartController {
     addDataset(datasetName) {
         if (this.findDatasetIndex(datasetName) >= 0)
             throw new Error(`Dataset with name ${datasetName} is already in chart`);
-        else
-            this.config.data.datasets.push({ label: datasetName, data: [], hidden: true });
+        else {
+            const datasetIsHidden = _.isNil(this.config.datasetLegendMapping[datasetName].hidden)
+                ? false
+                : this.config.datasetLegendMapping[datasetName].hidden;
+
+            this.config.data.datasets.push({ label: datasetName, data: [], hidden: datasetIsHidden });
+        }
     }
 
     findDatasetIndex(searchedDatasetLabel) {
@@ -334,8 +346,7 @@ export class IgniteChartController {
 
     changeXRange(range) {
         if (this.chart) {
-            const deltaInMilliSeconds = range.value * 60 * 1000;
-            this.chart.config.options.plugins.streaming.duration = deltaInMilliSeconds;
+            this.chart.config.options.plugins.streaming.duration = range.value * 60 * 1000;
 
             this.clearDatasets();
             this.newPoints.splice(0, this.newPoints.length, ...this.localHistory);
@@ -352,6 +363,7 @@ export class IgniteChartController {
     }
 
     rerenderChart() {
-        this.chart.update();
+        if (this.chart)
+            this.chart.update();
     }
 }

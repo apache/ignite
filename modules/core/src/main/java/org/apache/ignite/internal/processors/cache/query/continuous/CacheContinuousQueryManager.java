@@ -395,7 +395,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 cctx.cacheId(),
                 evtType,
                 key,
-                evtType == REMOVED && lsnr.oldValueRequired() ? oldVal : newVal,
+                (!internal && evtType == REMOVED && lsnr.oldValueRequired()) ? oldVal : newVal,
                 lsnr.oldValueRequired() ? oldVal : null,
                 lsnr.keepBinary(),
                 partId,
@@ -403,7 +403,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 topVer,
                 (byte)0);
 
-            IgniteCacheProxy jcache = cctx.kernalContext().cache().jcacheProxy(cctx.name());
+            IgniteCacheProxy jcache = cctx.kernalContext().cache().jcacheProxy(cctx.name(), true);
 
             assert jcache != null : "Failed to get cache proxy [name=" + cctx.name() +
                 ", locStart=" + cctx.startTopologyVersion() +
@@ -497,7 +497,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         final boolean includeExpired) throws IgniteCheckedException
     {
         //TODO IGNITE-7953
-        if (!cctx.atomic() && cctx.kernalContext().config().isMvccEnabled())
+        if (cctx.transactionalSnapshot())
             throw new UnsupportedOperationException("Continuous queries are not supported for transactional caches " +
                 "when MVCC is enabled.");
 

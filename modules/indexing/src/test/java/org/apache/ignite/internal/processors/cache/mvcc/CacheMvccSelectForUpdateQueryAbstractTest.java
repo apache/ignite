@@ -26,14 +26,11 @@ import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -71,12 +68,14 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
 
         grid(0).addCacheConfiguration(seg);
 
+        Thread.sleep(1000L);
+
         try (Connection c = connect(grid(0))) {
             execute(c, "create table person (id int primary key, firstName varchar, lastName varchar) " +
-                "with \"atomicity=transactional,cache_name=Person\"");
+                "with \"atomicity=transactional_snapshot,cache_name=Person\"");
 
             execute(c, "create table person_seg (id int primary key, firstName varchar, lastName varchar) " +
-                "with \"atomicity=transactional,cache_name=PersonSeg,template=segmented\"");
+                "with \"atomicity=transactional_snapshot,cache_name=PersonSeg,template=segmented\"");
 
             try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.PESSIMISTIC,
                 TransactionIsolation.REPEATABLE_READ)) {
@@ -91,21 +90,6 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
                 tx.commit();
             }
         }
-
-        AffinityTopologyVersion curVer = grid(0).context().cache().context().exchange().readyAffinityVersion();
-
-        AffinityTopologyVersion nextVer = curVer.nextMinorVersion();
-
-        // Let's wait for rebalance to complete.
-        for (int i = 0; i < 3; i++) {
-            IgniteEx node = grid(i);
-
-            IgniteInternalFuture<AffinityTopologyVersion> fut =
-                node.context().cache().context().exchange().affinityReadyFuture(nextVer);
-
-            if (fut != null)
-                fut.get();
-        }
     }
 
     /**
@@ -117,22 +101,20 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
 
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testSelectForUpdateLocal() throws Exception {
         doTestSelectForUpdateLocal("Person", false);
     }
 
     /**
-     *
      * @throws Exception If failed.
      */
-    public void testSelectForUpdateOutsideTx() throws Exception {
+    public void testSelectForUpdateOutsideTxDistributed() throws Exception {
         doTestSelectForUpdateDistributed("Person", true);
     }
 
     /**
-     *
      * @throws Exception If failed.
      */
     public void testSelectForUpdateOutsideTxLocal() throws Exception {
@@ -178,6 +160,8 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
      * @throws Exception If failed.
      */
     void doTestSelectForUpdateDistributed(String cacheName, boolean outsideTx) throws Exception {
+        awaitPartitionMapExchange();
+
         Ignite node = grid(0);
 
         IgniteCache<Integer, ?> cache = node.cache(cacheName);
@@ -277,6 +261,8 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
             checkLocks("Person", keys, true);
 
             tx.rollback();
+
+            checkLocks("Person", keys, false);
         }
     }
 
@@ -318,19 +304,17 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
             if (!locked)
                 fut.get(TX_TIMEOUT);
             else {
-                GridTestUtils.assertThrows(null, new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        try {
-                            return fut.get(TX_TIMEOUT);
-                        }
-                        catch (IgniteCheckedException e) {
-                            if (X.hasCause(e, CacheException.class))
-                                throw X.cause(e, CacheException.class);
+                try {
+                    fut.get();
+                }
+                catch (Exception e) {
+                    CacheException e0 = X.cause(e, CacheException.class);
 
-                            throw e;
-                        }
-                    }
-                }, CacheException.class, "IgniteTxTimeoutCheckedException");
+                    assert e0 != null;
+
+                    assert e0.getMessage() != null &&
+                        e0.getMessage().contains("Failed to acquire lock within provided timeout");
+                }
             }
         }
     }
@@ -362,6 +346,7 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
      * @param exMsg Expected message.
      * @param loc Local query flag.
      */
+    @SuppressWarnings("ThrowableNotThrown")
     private void assertQueryThrows(String qry, String exMsg, boolean loc) {
         Ignite node = grid(0);
 

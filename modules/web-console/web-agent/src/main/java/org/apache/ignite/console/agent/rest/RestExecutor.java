@@ -136,7 +136,7 @@ public class RestExecutor implements AutoCloseable {
         if (res.code() == 404)
             return RestResult.fail(STATUS_FAILED, "Failed connect to cluster.");
 
-        return RestResult.fail(STATUS_FAILED, "Failed to execute REST command: " + res.message());
+        return RestResult.fail(STATUS_FAILED, "Failed to execute REST command: " + res);
     }
 
     /** */

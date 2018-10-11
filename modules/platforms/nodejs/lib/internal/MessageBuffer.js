@@ -105,19 +105,34 @@ class MessageBuffer {
         this.writeNumber(value, BinaryUtils.TYPE_CODE.DOUBLE);
     }
 
-    writeNumber(value, type) {
+    writeNumber(value, type, signed = true) {
         const size = BinaryUtils.getSize(type);
         this._ensureCapacity(size);
         try {
             switch (type) {
                 case BinaryUtils.TYPE_CODE.BYTE:
-                    this._buffer.writeInt8(value, this._position);
+                    if (signed) {
+                        this._buffer.writeInt8(value, this._position);
+                    }
+                    else {
+                        this._buffer.writeUInt8(value, this._position);   
+                    }
                     break;
                 case BinaryUtils.TYPE_CODE.SHORT:
-                    this._buffer.writeInt16LE(value, this._position);
+                    if (signed) {
+                        this._buffer.writeInt16LE(value, this._position);
+                    }
+                    else {
+                        this._buffer.writeUInt16LE(value, this._position);   
+                    }
                     break;
                 case BinaryUtils.TYPE_CODE.INTEGER:
-                    this._buffer.writeInt32LE(value, this._position);
+                    if (signed) {
+                        this._buffer.writeInt32LE(value, this._position);
+                    }
+                    else {
+                        this._buffer.writeUInt32LE(value, this._position);   
+                    }
                     break;
                 case BinaryUtils.TYPE_CODE.FLOAT:
                     this._buffer.writeFloatLE(value, this._position);
@@ -184,19 +199,19 @@ class MessageBuffer {
         return this.readNumber(BinaryUtils.TYPE_CODE.DOUBLE);
     }
 
-    readNumber(type) {
+    readNumber(type, signed = true) {
         const size = BinaryUtils.getSize(type);
         this._ensureSize(size);
         let value;
         switch (type) {
             case BinaryUtils.TYPE_CODE.BYTE:
-                value = this._buffer.readInt8(this._position);
+                value = signed ? this._buffer.readInt8(this._position) : this._buffer.readUInt8(this._position);
                 break;
             case BinaryUtils.TYPE_CODE.SHORT:
-                value = this._buffer.readInt16LE(this._position);
+                value = signed ? this._buffer.readInt16LE(this._position) : this._buffer.readUInt16LE(this._position);
                 break;
             case BinaryUtils.TYPE_CODE.INTEGER:
-                value = this._buffer.readInt32LE(this._position);
+                value = signed ? this._buffer.readInt32LE(this._position) : this._buffer.readUInt32LE(this._position);
                 break;
             case BinaryUtils.TYPE_CODE.FLOAT:
                 value = this._buffer.readFloatLE(this._position);

@@ -29,8 +29,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -40,20 +42,22 @@ import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryCntr;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryId;
@@ -73,7 +77,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
@@ -92,13 +95,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
-import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -107,10 +111,11 @@ import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker.MVCC_TRACKER_ID_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_HINTS_BIT_OFF;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_INITIAL_CNTR;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_READ_OP_CNTR;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_START_CNTR;
@@ -127,7 +132,10 @@ import static org.apache.ignite.internal.processors.cache.persistence.CacheDataR
  * MVCC processor.
  */
 @SuppressWarnings("serial")
-class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, DatabaseLifecycleListener {
+public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, DatabaseLifecycleListener {
+    /** */
+    private static final IgniteProductVersion MVCC_SUPPORTED_SINCE = IgniteProductVersion.fromString("2.7.0");
+
     /** */
     private static final Waiter LOCAL_TRANSACTION_MARKER = new LocalTransactionMarker();
 
@@ -153,6 +161,9 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
     private volatile MvccCoordinator curCrd;
 
     /** */
+    private volatile MvccCoordinator assignedCrd;
+
+    /** */
     private TxLog txLog;
 
     /** */
@@ -168,9 +179,6 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
 
     /** For tests only. */
     private volatile Throwable vacuumError;
-
-    /** */
-    private MvccDiscoveryData discoData = new MvccDiscoveryData(null);
 
     /** */
     private final GridAtomicLong futIdCntr = new GridAtomicLong(0);
@@ -208,6 +216,12 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
     /** */
     private final GridFutureAdapter<Void> initFut = new GridFutureAdapter<>();
 
+    /** Flag whether at least one cache with {@code CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT} mode is registered. */
+    private volatile boolean mvccEnabled;
+
+    /** Flag whether all nodes in cluster support MVCC. */
+    private volatile boolean mvccSupported = true;
+
     /**
      * @param ctx Context.
      */
@@ -219,8 +233,6 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_MVCC_ENABLED, Boolean.TRUE);
-
         ctx.event().addLocalEventListener(new CacheCoordinatorNodeFailListener(),
             EVT_NODE_FAILED, EVT_NODE_LEFT);
 
@@ -228,17 +240,55 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
-        Boolean rmtEnabled = node.attribute(IgniteNodeAttributes.ATTR_MVCC_ENABLED);
+    @Override public boolean mvccEnabled() {
+        return mvccEnabled;
+    }
 
-        if (rmtEnabled == null) {
-            String errMsg = "Failed to add node to topology because MVCC is enabled on cluster and " +
-                "the node doesn't support MVCC or MVCC is disabled for the node [nodeId=" + node.id() + ']';
+    /** {@inheritDoc} */
+    @Override public void preProcessCacheConfiguration(CacheConfiguration ccfg) {
+        if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
+            if (!mvccSupported)
+                throw new IgniteException("Cannot start MVCC transactional cache. " +
+                    "MVCC is unsupported by the cluster.");
+
+            mvccEnabled = true;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void validateCacheConfiguration(CacheConfiguration ccfg) {
+        if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
+            if (!mvccSupported)
+                throw new IgniteException("Cannot start MVCC transactional cache. " +
+                    "MVCC is unsupported by the cluster.");
+
+            mvccEnabled = true;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
+        if (mvccEnabled && node.version().compareToIgnoreTimestamp(MVCC_SUPPORTED_SINCE) < 0) {
+            String errMsg = "Failed to add node to topology. MVCC is enabled on the cluster, but " +
+                "the node doesn't support MVCC [nodeId=" + node.id() + ']';
 
             return new IgniteNodeValidationResult(node.id(), errMsg, errMsg);
         }
 
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void ensureStarted() throws IgniteCheckedException {
+        if (!ctx.clientNode() && txLog == null) {
+            assert mvccEnabled && mvccSupported;
+
+            txLog = new TxLog(ctx, ctx.cache().context().database());
+
+            startVacuumWorkers();
+
+            log.info("Mvcc processor started.");
+        }
     }
 
     /** {@inheritDoc} */
@@ -250,6 +300,7 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
 
     /** {@inheritDoc} */
     @Override public void onInitDataRegions(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
+        // We have to always init txLog data region.
         DataStorageConfiguration dscfg = dataStorageConfiguration();
 
         mgr.addDataRegion(
@@ -259,14 +310,8 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
     }
 
     /** {@inheritDoc} */
-    @Override public void afterInitialise(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
-        if (!CU.isPersistenceEnabled(ctx.config())) {
-            assert txLog == null;
-
-            txLog = new TxLog(ctx, mgr);
-
-            startVacuumWorkers();
-        }
+    @Override public void afterInitialise(IgniteCacheDatabaseSharedManager mgr) {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -280,88 +325,20 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
     }
 
     /** {@inheritDoc} */
-    @Override public void afterMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
-        assert CU.isPersistenceEnabled(ctx.config());
-        assert txLog == null;
-
-        txLog = new TxLog(ctx, mgr);
-
-        startVacuumWorkers();
+    @Override public void afterMemoryRestore(IgniteCacheDatabaseSharedManager mgr) {
+        // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public DiscoveryDataExchangeType discoveryDataType() {
-        return DiscoveryDataExchangeType.CACHE_CRD_PROC;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
-    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        Integer cmpId = discoveryDataType().ordinal();
-
-        if (!dataBag.commonDataCollectedFor(cmpId))
-            dataBag.addGridCommonData(cmpId, discoData);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
-        MvccDiscoveryData discoData0 = (MvccDiscoveryData)data.commonData();
-
-        // Disco data might be null in case the first joined node is daemon.
-        if (discoData0 != null) {
-            discoData = discoData0;
-
-            log.info("Received mvcc coordinator on node join: " + discoData.coordinator());
-
-            assert discoData != null;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onDiscoveryEvent(int evtType, Collection<ClusterNode> nodes, long topVer) {
-        if (evtType == EVT_NODE_METRICS_UPDATED || evtType == EVT_DISCOVERY_CUSTOM_EVT)
+    @Override public void onDiscoveryEvent(int evtType, Collection<ClusterNode> nodes, long topVer,
+        @Nullable DiscoveryCustomMessage customMsg) {
+        if (evtType == EVT_NODE_METRICS_UPDATED)
             return;
 
-        MvccCoordinator crd;
-
-        if (evtType == EVT_NODE_SEGMENTED || evtType == EVT_CLIENT_NODE_DISCONNECTED)
-            crd = null;
-        else {
-            crd = discoData.coordinator();
-
-            if (crd == null ||
-                ((evtType == EVT_NODE_FAILED || evtType == EVT_NODE_LEFT) && !F.nodeIds(nodes).contains(crd.nodeId()))) {
-                ClusterNode crdNode = null;
-
-                if (crdC != null) {
-                    crdNode = crdC.apply(nodes);
-
-                    if (log.isInfoEnabled())
-                        log.info("Assigned coordinator using test closure: " + crd);
-                }
-                else {
-                    // Expect nodes are sorted by order.
-                    for (ClusterNode node : nodes) {
-                        if (!node.isClient()) {
-                            crdNode = node;
-
-                            break;
-                        }
-                    }
-                }
-
-                crd = crdNode != null ? new MvccCoordinator(crdNode.id(), coordinatorVersion(topVer), new AffinityTopologyVersion(topVer, 0)) : null;
-
-                if (crd != null) {
-                    if (log.isInfoEnabled())
-                        log.info("Assigned mvcc coordinator [crd=" + crd + ", crdNode=" + crdNode + ']');
-                }
-                else
-                    U.warn(log, "New mvcc coordinator was not assigned [topVer=" + topVer + ']');
-            }
-        }
-
-        discoData = new MvccDiscoveryData(crd);
+        if (evtType == EVT_DISCOVERY_CUSTOM_EVT)
+            checkMvccCacheStarted(customMsg);
+        else
+            assignMvccCoordinator(evtType, nodes, topVer);
     }
 
     /** {@inheritDoc} */
@@ -384,8 +361,8 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
     }
 
     /** {@inheritDoc} */
-    @Override public void onExchangeDone(boolean newCoord, DiscoCache discoCache, Map<UUID, GridLongList> activeQueries) {
-        if (!newCoord)
+    @Override public void onExchangeDone(boolean newCrd, DiscoCache discoCache, Map<UUID, GridLongList> activeQueries) {
+        if (!newCrd)
             return;
 
         ctx.cache().context().tm().rollbackMvccTxOnCoordinatorChange();
@@ -406,7 +383,7 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
             log.info("Initialize local node as mvcc coordinator [node=" + ctx.localNodeId() +
                 ", crdVer=" + crdVer + ']');
 
-            prevCrdQueries.init(activeQueries, discoCache, ctx.discovery());
+            prevCrdQueries.init(activeQueries, F.view(discoCache.allNodes(), this::supportsMvcc), ctx.discovery());
 
             initFut.onDone();
         }
@@ -435,8 +412,8 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public MvccCoordinator coordinatorFromDiscoveryEvent() {
-        return discoData != null ? discoData.coordinator() : null;
+    @Override @Nullable public MvccCoordinator assignedCoordinator() {
+        return assignedCrd;
     }
 
     /** {@inheritDoc} */
@@ -458,6 +435,8 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
 
     /** {@inheritDoc} */
     @Override public byte state(MvccVersion ver) throws IgniteCheckedException {
+        assert txLog != null && mvccEnabled;
+
         return txLog.get(ver.coordinatorVersion(), ver.counter());
     }
 
@@ -468,6 +447,8 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
 
     /** {@inheritDoc} */
     @Override public void updateState(MvccVersion ver, byte state, boolean primary) throws IgniteCheckedException {
+        assert txLog != null && mvccEnabled;
+
         TxKey key = new TxKey(ver.coordinatorVersion(), ver.counter());
 
         txLog.put(key, state, primary);
@@ -725,7 +706,7 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Void> waitTxsFuture(UUID crdId, GridLongList txs) {
         assert crdId != null;
-        assert txs != null && txs.size() > 0;
+        assert txs != null && !txs.isEmpty();
 
         WaitAckFuture fut = new WaitAckFuture(futIdCntr.incrementAndGet(), crdId, false);
 
@@ -808,12 +789,104 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
         return ctx.config().getDataStorageConfiguration();
     }
 
+    /** */
+    private void assignMvccCoordinator(int evtType, Collection<ClusterNode> nodes, long topVer) {
+        checkMvccSupported(nodes);
+
+        MvccCoordinator crd;
+
+        if (evtType == EVT_NODE_SEGMENTED || evtType == EVT_CLIENT_NODE_DISCONNECTED)
+            crd = null;
+        else {
+            crd = assignedCrd;
+
+            if (crd == null ||
+                ((evtType == EVT_NODE_FAILED || evtType == EVT_NODE_LEFT) && !F.nodeIds(nodes).contains(crd.nodeId()))) {
+                ClusterNode crdNode = null;
+
+                if (crdC != null) {
+                    crdNode = crdC.apply(nodes);
+
+                    if (log.isInfoEnabled())
+                        log.info("Assigned coordinator using test closure: " + crd);
+                }
+                else {
+                    // Expect nodes are sorted by order.
+                    for (ClusterNode node : nodes) {
+                        if (!node.isClient() && supportsMvcc(node)) {
+                            crdNode = node;
+
+                            break;
+                        }
+                    }
+                }
+
+                crd = crdNode != null ? new MvccCoordinator(crdNode.id(), coordinatorVersion(crdNode),
+                    new AffinityTopologyVersion(topVer, 0)) : null;
+
+                if (log.isInfoEnabled() && crd != null)
+                    log.info("Assigned mvcc coordinator [crd=" + crd + ", crdNode=" + crdNode + ']');
+                else if (crd == null)
+                    U.warn(log, "New mvcc coordinator was not assigned [topVer=" + topVer + ']');
+            }
+        }
+
+        assignedCrd = crd;
+    }
+
     /**
-     * @param topVer Topology version.
+     * @param crdNode Assigned coordinator node.
      * @return Coordinator version.
      */
-    private long coordinatorVersion(long topVer) {
-        return topVer + ctx.discovery().gridStartTime();
+    private long coordinatorVersion(ClusterNode crdNode) {
+        return crdNode.order() + ctx.discovery().gridStartTime();
+    }
+
+    /** */
+    private void checkMvccSupported(Collection<ClusterNode> nodes) {
+        if (mvccEnabled) {
+            assert mvccSupported;
+
+            return;
+        }
+
+        boolean res = true, was = mvccSupported;
+
+        for (ClusterNode node : nodes) {
+            if (!supportsMvcc(node)) {
+                res = false;
+
+                break;
+            }
+        }
+
+        if (was != res)
+            mvccSupported = res;
+    }
+
+    /** */
+    private boolean supportsMvcc(ClusterNode node) {
+        return node.version().compareToIgnoreTimestamp(MVCC_SUPPORTED_SINCE) >= 0;
+    }
+
+    /** */
+    private void checkMvccCacheStarted(@Nullable DiscoveryCustomMessage customMsg) {
+        assert customMsg != null;
+
+        if (!mvccEnabled && customMsg instanceof DynamicCacheChangeBatch) {
+            for (DynamicCacheChangeRequest req : ((DynamicCacheChangeBatch)customMsg).requests()) {
+                CacheConfiguration ccfg = req.startCacheConfiguration();
+
+                if (ccfg == null)
+                    continue;
+
+                if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
+                    assert mvccSupported;
+
+                    mvccEnabled = true;
+                }
+            }
+        }
     }
 
     /**
@@ -952,11 +1025,11 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
 
                     cleanupQueue = new LinkedBlockingQueue<>();
 
-                    vacuumWorkers = new ArrayList<>(ctx.config().getMvccVacuumThreadCnt() + 1);
+                    vacuumWorkers = new ArrayList<>(ctx.config().getMvccVacuumThreadCount() + 1);
 
                     vacuumWorkers.add(new VacuumScheduler(ctx, log, this));
 
-                    for (int i = 0; i < ctx.config().getMvccVacuumThreadCnt(); i++) {
+                    for (int i = 0; i < ctx.config().getMvccVacuumThreadCount(); i++) {
                         vacuumWorkers.add(new VacuumWorker(ctx, log, cleanupQueue));
                     }
 
@@ -989,7 +1062,8 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
             }
 
             if (workers == null) {
-                U.warn(log, "Attempting to stop inactive vacuum.");
+                if (log.isInfoEnabled())
+                    log.info("Attempting to stop inactive vacuum.");
 
                 return;
             }
@@ -1136,7 +1210,8 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
                                             for (TxKey key : waitMap.keySet()) {
                                                 assert key.major() == snapshot.coordinatorVersion()
                                                     && key.minor() > snapshot.cleanupVersion()
-                                                    || key.major() > snapshot.coordinatorVersion();
+                                                    || key.major() > snapshot.coordinatorVersion() :
+                                                    "key=" + key + ", snapshot=" + snapshot;
                                             }
                                         }
 
@@ -1895,7 +1970,7 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
         VacuumScheduler(GridKernalContext ctx, IgniteLogger log, MvccProcessorImpl prc) {
             super(ctx.igniteInstanceName(), "vacuum-scheduler", log);
 
-            this.interval = ctx.config().getMvccVacuumTimeInterval();
+            this.interval = ctx.config().getMvccVacuumFrequency();
             this.prc = prc;
         }
 
@@ -2003,8 +2078,10 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
 
             VacuumMetrics metrics = new VacuumMetrics();
 
-            if (part == null || part.state() != OWNING || !part.reserve())
+            if (!canRunVacuum(part, null) || !part.reserve())
                 return metrics;
+
+            int curCacheId = CU.UNDEFINED_CACHE_ID;
 
             try {
                 GridCursor<? extends CacheDataRow> cursor = part.dataStore().cursor(KEY_ONLY);
@@ -2018,8 +2095,6 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
                 MvccSnapshot snapshot = task.snapshot();
 
                 GridCacheContext cctx = null;
-
-                int curCacheId = CU.UNDEFINED_CACHE_ID;
 
                 boolean shared = part.group().sharedGroup();
 
@@ -2036,8 +2111,6 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
                         prevKey = row.key();
 
                     if (cctx == null) {
-                        assert shared;
-
                         cctx = part.group().shared().cacheContext(curCacheId = row.cacheId());
 
                         if (cctx == null)
@@ -2077,9 +2150,61 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
 
                 return metrics;
             }
+            catch (Exception e) {
+                if (canRunVacuum(part, curCacheId))
+                    throw e; // Unexpected error.
+
+                U.warn(log, "Error occurred during the vacuum. Skip vacuuming for the current partition. " +
+                    "[cacheId=" + curCacheId + ", part=" + part + ", err=" + e.getMessage() + ']', e);
+
+                return new VacuumMetrics();
+            }
             finally {
                 part.release();
             }
+        }
+
+        /**
+         * @param part Partition.
+         * @param cacheId Cache id.
+         * @return {@code True} if we can vacuum given partition.
+         */
+        private boolean canRunVacuum(GridDhtLocalPartition part, Integer cacheId) {
+            if (part == null || part.state() != OWNING)
+                return false;
+
+            CacheGroupContext grp = part.group();
+
+            assert grp != null;
+
+            List<GridCacheContext> caches = grp.caches();
+
+            if (F.isEmpty(caches))
+                return false;
+
+            if (grp.shared().kernalContext().isStopping())
+                return false;
+
+            if (cacheId == null && grp.sharedGroup())
+                return true; // Cache context is unknown, but we can try to run vacuum.
+
+            GridCacheContext ctx0;
+
+            if (grp.sharedGroup()) {
+                assert cacheId != null && cacheId != CU.UNDEFINED_CACHE_ID;
+
+                if (!grp.cacheIds().contains(cacheId))
+                    return false;
+
+                ctx0 = grp.shared().cacheContext(cacheId);
+            }
+            else
+                ctx0 = caches.get(0);
+
+            if (ctx0 == null)
+                return false;
+
+            return !grp.shared().closed(ctx0);
         }
 
         /** */
@@ -2128,9 +2253,9 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
             return compare(row, snapshot.coordinatorVersion(), snapshot.cleanupVersion()) <= 0
                 && hasNewVersion(row) && MvccUtils.compareNewVersion(row, snapshot.coordinatorVersion(), snapshot.cleanupVersion()) <= 0
                 && MvccUtils.state(cctx, row.newMvccCoordinatorVersion(), row.newMvccCounter(),
-                row.newMvccOperationCounter() | (row.newMvccTxState() << PageIO.MVCC_HINTS_BIT_OFF)) == TxState.COMMITTED
+                row.newMvccOperationCounter() | (row.newMvccTxState() << MVCC_HINTS_BIT_OFF)) == TxState.COMMITTED
                 || MvccUtils.state(cctx, row.mvccCoordinatorVersion(), row.mvccCounter(),
-                row.mvccOperationCounter() | (row.mvccTxState() << PageIO.MVCC_HINTS_BIT_OFF)) == TxState.ABORTED;
+                row.mvccOperationCounter() | (row.mvccTxState() << MVCC_HINTS_BIT_OFF)) == TxState.ABORTED;
         }
 
         /** */
