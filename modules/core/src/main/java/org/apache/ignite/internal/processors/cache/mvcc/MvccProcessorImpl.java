@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
@@ -443,13 +444,13 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public void updateState(MvccVersion ver, byte state, IgniteInternalTx tx) throws IgniteCheckedException {
-        updateState(ver, state, true, tx);
+    @Override public void updateState(MvccVersion ver, byte state) throws IgniteCheckedException {
+        updateState(ver, state, true);
     }
 
     /** {@inheritDoc} */
-    @Override public void updateState(MvccVersion ver, byte state, boolean primary, IgniteInternalTx tx) throws IgniteCheckedException {
-        assert txLog != null && mvccEnabled && tx != null;
+    @Override public void updateState(MvccVersion ver, byte state, boolean primary) throws IgniteCheckedException {
+        assert txLog != null && mvccEnabled;
 
         TxKey key = new TxKey(ver.coordinatorVersion(), ver.counter());
 
@@ -460,9 +461,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         if (primary && (state == TxState.ABORTED || state == TxState.COMMITTED)
             && (waiter = waitMap.remove(key)) != null)
             waiter.run(ctx);
-
-        if (state == TxState.ABORTED || state == TxState.COMMITTED)
-            ctx.cache().context().mvccCaching().onTxFinished(tx, state == TxState.COMMITTED);
     }
 
     /** {@inheritDoc} */

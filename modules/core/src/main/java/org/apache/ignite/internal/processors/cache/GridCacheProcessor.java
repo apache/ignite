@@ -96,7 +96,7 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.local.atomic.GridLocalAtomicCache;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccTransactionEnlistCachingManager;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -2613,7 +2613,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
         CacheJtaManagerAdapter jta = JTA.createOptional();
 
-        MvccTransactionEnlistCachingManager mvccCachingMgr = new MvccTransactionEnlistCachingManager();
+        MvccCachingManager mvccCachingMgr = new MvccCachingManager();
 
         return new GridCacheSharedContext(
             kernalCtx,

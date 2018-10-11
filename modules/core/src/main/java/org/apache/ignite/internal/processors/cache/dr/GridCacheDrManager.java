@@ -57,36 +57,6 @@ public interface GridCacheDrManager extends GridCacheManager {
         AffinityTopologyVersion topVer)throws IgniteCheckedException;
 
     /**
-     * Enlist for DR.
-     *
-     * @param key Key.
-     * @param val Value.
-     * @param ttl TTL.
-     * @param expireTime Expire time.
-     * @param ver Version.
-     * @param drType Replication type.
-     * @param topVer Topology version.
-     * @param mvccVer Tx mvcc version.
-     * @throws IgniteCheckedException If failed.
-     */
-    void mvccReplicate(KeyCacheObject key,
-        @Nullable CacheObject val,
-        long ttl,
-        long expireTime,
-        GridCacheVersion ver,
-        GridDrType drType,
-        AffinityTopologyVersion topVer,
-        MvccVersion mvccVer) throws IgniteCheckedException;
-
-    /**
-     * @param mvccVer Tx mvcc version.
-     * @param commit {@code True} if tx committed, {@code False} otherwise.
-     * @param topVer Tx snapshot affinity version.
-     * @throws IgniteCheckedException If failed.
-     */
-    void onTxFinished(MvccVersion mvccVer, boolean commit, AffinityTopologyVersion topVer);
-
-    /**
      * Process partitions exchange event.
      *
      * @param topVer Topology version.

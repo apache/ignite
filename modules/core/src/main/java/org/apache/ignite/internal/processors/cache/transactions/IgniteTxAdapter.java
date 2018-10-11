@@ -1178,7 +1178,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                         try {
                             if (!cctx.localNode().isClient()) {
                                 if (dht() && remote())
-                                    cctx.coordinators().updateState(mvccSnapshot, txState, false, this);
+                                    cctx.coordinators().updateState(mvccSnapshot, txState, false);
                                 else if (local()) {
                                     IgniteInternalFuture<?> rollbackFut = rollbackFuture();
 
@@ -1186,15 +1186,13 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                                         rollbackFut == null || rollbackFut.isDone();
 
                                     if (syncUpdate)
-                                        cctx.coordinators().updateState(mvccSnapshot, txState, this);
+                                        cctx.coordinators().updateState(mvccSnapshot, txState);
                                     else {
-                                        final IgniteInternalTx self = this;
-
                                         // If tx was aborted, we need to wait tx log is updated on all backups.
                                         rollbackFut.listen(new IgniteInClosure<IgniteInternalFuture>() {
                                             @Override public void apply(IgniteInternalFuture fut) {
                                                 try {
-                                                    cctx.coordinators().updateState(mvccSnapshot, txState, self);
+                                                    cctx.coordinators().updateState(mvccSnapshot, txState);
                                                 }
                                                 catch (IgniteCheckedException e) {
                                                     U.error(log, "Failed to log TxState: " + txState, e);
@@ -1858,32 +1856,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         return F.t(op, ctx);
-    }
-
-    /**
-     * Notify Dr on tx finished.
-     *
-     * @param commit {@code True} if commited, {@code False} otherwise.
-     */
-    protected void notifyDrManager(boolean commit) {
-        if (system() || internal())
-            return;
-
-        IgniteTxState txState = txState();
-
-        if (mvccSnapshot == null || txState.cacheIds().isEmpty())
-            return;
-
-        GridIntIterator iter = txState.cacheIds().iterator();
-
-        while (iter.hasNext()) {
-            int cacheId = iter.next();
-
-            GridCacheContext ctx0 = cctx.cacheContext(cacheId);
-
-            if (ctx0.isDrEnabled())
-                ctx0.dr().onTxFinished(mvccSnapshot, commit, topologyVersionSnapshot());
-        }
     }
 
     /**

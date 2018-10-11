@@ -98,13 +98,13 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     /** */
     private static final int DELETED = FAST_MISMATCH << 1;
 
-    /** Whether tx has overridden it's own update. */
-    private static final int OWN_VALUE_OVERRIDDEN = DELETED << 1;
+    /** Force read full entry instead of header only. Old value == value before tx started. */
+    private static final int NEED_OLD_VALUE = DELETED << 1;
 
-    /** Whether need to remember old value. Old value == value before tx started. */
-    private static final int NEED_OLD_VALUE = OWN_VALUE_OVERRIDDEN << 1;
-
-    /** Force read full entry instead of header only. Prev value == value on previous tx step. */
+    /**
+     * Force read full entry instead of header only. Prev value == value on previous tx step or old value
+     * if it is a first tx step.
+     */
     private static final int NEED_PREV_VALUE = NEED_OLD_VALUE << 1;
 
     /** */
@@ -126,9 +126,6 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
     /** */
     private CacheDataRow oldRow;
-
-    /** */
-    private CacheObject oldVal;
 
     /** */
     @GridToStringExclude
@@ -191,7 +188,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
         this.mvccSnapshot = mvccSnapshot;
         this.cctx = cctx;
         this.filter = filter;
-        this.keyAbsentBefore = primary; // True for primary and false for backup (backups do not use this flag).
+        keyAbsentBefore0(primary); // True for primary and false for backup (backups do not use this flag).
 
         assert !lockOnly || val == null;
 
@@ -235,7 +232,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
             long lockCntr = rowIo.getMvccLockCounter(pageAddr, idx);
 
             // We cannot continue while entry is locked by another transaction.
-            if ((lockCrd != mvccCrd || lockCntr != mvccCntr)
+            if ((lockCrd != mvccCoordinatorVersion() || lockCntr != mvccCounter())
                 && isActive(cctx, lockCrd, lockCntr, mvccSnapshot)) {
                 resCrd = lockCrd;
                 resCntr = lockCntr;
@@ -267,7 +264,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
             }
 
             if (compare(mvccSnapshot, rowCrd, rowCntr) == 0) {
-                res = mvccOpCntr == rowOpCntr ? ResultType.VERSION_FOUND :
+                res = mvccOperationCounter() == rowOpCntr ? ResultType.VERSION_FOUND :
                     removed ? ResultType.PREV_NULL : ResultType.PREV_NOT_NULL;
 
                 if (removed)
@@ -285,11 +282,11 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                 if(filter != null && !applyFilter(res == ResultType.PREV_NOT_NULL ? oldRow.value() : null))
                     res = FILTERED;
 
-                setFlags(LAST_COMMITTED_FOUND | OWN_VALUE_OVERRIDDEN);
+                setFlags(LAST_COMMITTED_FOUND);
 
                 // Copy new key flag from the previous row version if it was created by the current tx.
                 if (isFlagsSet(PRIMARY))
-                    keyAbsentBefore = row.isKeyAbsentBefore();
+                    keyAbsentBefore0(row.isKeyAbsentBefore0());
             }
         }
 
@@ -338,17 +335,14 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                     else {
                         res = ResultType.PREV_NOT_NULL;
 
-                        keyAbsentBefore = false;
+                        keyAbsentBefore0(false);
 
                         // Actually, full row can be omitted for replace(k,newval) and putIfAbsent, but
                         // operation context is not available here and full row required if filter is set.
-                        if((isFlagsSet(NEED_PREV_VALUE) || filter != null || isFlagsSet(FIRST | NEED_OLD_VALUE))) {
+                        if((isFlagsSet(NEED_PREV_VALUE) || isFlagsSet(NEED_OLD_VALUE) || filter != null)) {
                             oldRow = tree.getRow(io, pageAddr, idx, RowData.NO_KEY);
 
                             oldRow.key(key);
-
-                            if (isFlagsSet(FIRST | NEED_OLD_VALUE))
-                                oldVal = oldRow.value();
                         }
                         else
                             oldRow = row;
@@ -400,8 +394,8 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                     // Lock entry for primary partition if needed.
                     // If invisible row is found for FAST_UPDATE case we should not lock row.
                     if (!isFlagsSet(DELETED) && isFlagsSet(PRIMARY | REMOVE_OR_LOCK) && !isFlagsSet(FAST_MISMATCH)) {
-                        rowIo.setMvccLockCoordinatorVersion(pageAddr, idx, mvccCrd);
-                        rowIo.setMvccLockCounter(pageAddr, idx, mvccCntr);
+                        rowIo.setMvccLockCoordinatorVersion(pageAddr, idx, mvccCoordinatorVersion());
+                        rowIo.setMvccLockCounter(pageAddr, idx, mvccCounter());
 
                         // TODO Delta record IGNITE-7991
 
@@ -449,7 +443,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
             // We can cleanup previous row only if it was deleted by another
             // transaction and delete version is less or equal to cleanup one
-            if (rowNewCrd < mvccCrd || Long.compare(cleanupVer, rowNewCntr) >= 0)
+            if (rowNewCrd < mvccCoordinatorVersion() || Long.compare(cleanupVer, rowNewCntr) >= 0)
                 setFlags(CAN_CLEANUP);
         }
 
@@ -464,8 +458,8 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
             // Row obsoleted by current operation, all rows created or updated with current tx.
             if (isFlagsSet(NEED_HISTORY)
                 && (row == oldRow
-                    || (rowCrd == mvccCrd && rowCntr == mvccCntr)
-                    || (rowNewCrd == mvccCrd && rowNewCntr == mvccCntr))) {
+                    || (rowCrd == mvccCoordinatorVersion() && rowCntr == mvccCounter())
+                    || (rowNewCrd == mvccCoordinatorVersion() && rowNewCntr == mvccCounter()))) {
                 if (histRows == null)
                     histRows = new ArrayList<>();
 
@@ -475,7 +469,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
             if (cleanupVer > MVCC_OP_COUNTER_NA // Do not clean if cleanup version is not assigned.
                 && !isFlagsSet(CAN_CLEANUP)
                 && isFlagsSet(LAST_COMMITTED_FOUND)
-                && (rowCrd < mvccCrd || Long.compare(cleanupVer, rowCntr) >= 0))
+                && (rowCrd < mvccCoordinatorVersion() || Long.compare(cleanupVer, rowCntr) >= 0))
                 // all further versions are guaranteed to be less than cleanup version
                 setFlags(CAN_CLEANUP);
         }
@@ -549,8 +543,9 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
             case VERSION_FOUND:
             case PREV_NULL:
 
-                return new MvccVersionImpl(mvccCrd, mvccCntr, mvccOpCntr);
+                return new MvccVersionImpl(mvccCoordinatorVersion(), mvccCounter(), mvccOperationCounter());
             case PREV_NOT_NULL:
+            case REMOVED_NOT_NULL:
 
                 return new MvccVersionImpl(oldRow.mvccCoordinatorVersion(), oldRow.mvccCounter(), oldRow.mvccOperationCounter());
             case LOCKED:
@@ -580,12 +575,14 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
     /** {@inheritDoc} */
     @Override public CacheObject oldValue() {
-        return oldVal;
+        assert oldRow != null;
+
+        return oldRow.value();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isOwnValueOverridden() {
-        return isFlagsSet(OWN_VALUE_OVERRIDDEN);
+    @Override public boolean isKeyAbsentBefore() {
+        return isKeyAbsentBefore0();
     }
 
     /** */

@@ -43,7 +43,7 @@ import org.apache.ignite.transactions.Transaction;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccTransactionEnlistCachingManager.TX_SIZE_THRESHOLD;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager.TX_SIZE_THRESHOLD;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -88,7 +88,7 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest  {
 
             assertEquals(0, ((Map)U.field(mgr, "lsnrs")).size());
 
-            MvccTransactionEnlistCachingManager cachingMgr = ((IgniteEx)node).context().cache().context().mvccCaching();
+            MvccCachingManager cachingMgr = ((IgniteEx)node).context().cache().context().mvccCaching();
 
             assertEquals(0, ((Map)U.field(cachingMgr, "enlistCache")).size());
             assertEquals(0, ((Map)U.field(cachingMgr, "cntrs")).size());

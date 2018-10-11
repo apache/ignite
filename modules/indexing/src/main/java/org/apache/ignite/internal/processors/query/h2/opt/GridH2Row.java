@@ -127,11 +127,6 @@ public abstract class GridH2Row extends GridH2SearchRowAdapter implements CacheD
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isKeyAbsentBefore() {
-        return row.isKeyAbsentBefore();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean indexSearchRow() {
         return false;
     }

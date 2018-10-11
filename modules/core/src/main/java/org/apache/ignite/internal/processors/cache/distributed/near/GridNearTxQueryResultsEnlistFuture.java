@@ -360,7 +360,8 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
                 }
             }
 
-            dhtTx.mvccEnlistBatch(cctx, it.operation(), keys, vals, mvccSnapshot.withoutActiveTransactions(), null, -1);
+            cctx.tm().txHandler().mvccEnlistBatch(dhtTx, cctx, it.operation(), keys, vals,
+                mvccSnapshot.withoutActiveTransactions(), null, -1);
         }
         catch (IgniteCheckedException e) {
             onDone(e);

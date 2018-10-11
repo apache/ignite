@@ -53,7 +53,7 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
  * Manager for caching MVCC transaction updates.
  * This updates can be used further in CQ, DR and other places.
  */
-public class MvccTransactionEnlistCachingManager extends GridCacheSharedManagerAdapter {
+public class MvccCachingManager extends GridCacheSharedManagerAdapter {
     /** Maximum possible transaction size when caching is enabled. */
     public static final int TX_SIZE_THRESHOLD = IgniteSystemProperties.getInteger(IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD,
         20_000);
@@ -155,7 +155,7 @@ public class MvccTransactionEnlistCachingManager extends GridCacheSharedManagerA
 
         Collection<PartitionUpdateCountersMessage> cntrsColl =  txCntrs.updateCounters();
 
-        assert  !F.isEmpty(cntrsColl);
+        assert  !F.isEmpty(cntrsColl) : cntrsColl;
 
         // cacheId -> partId -> initCntr -> cntr + delta.
         Map<Integer, Map<Integer, T2<AtomicLong, Long>>> cntrsMap = new HashMap<>();

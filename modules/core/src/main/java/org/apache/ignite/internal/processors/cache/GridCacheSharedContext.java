@@ -47,7 +47,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Part
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccTransactionEnlistCachingManager;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
@@ -131,7 +131,7 @@ public class GridCacheSharedContext<K, V> {
     private PartitionsEvictManager evictMgr;
 
     /** Mvcc caching manager. */
-    private MvccTransactionEnlistCachingManager mvccCachingMgr;
+    private MvccCachingManager mvccCachingMgr;
 
     /** Cache contexts map. */
     private ConcurrentHashMap<Integer, GridCacheContext<K, V>> ctxMap;
@@ -212,7 +212,7 @@ public class GridCacheSharedContext<K, V> {
         PartitionsEvictManager evictMgr,
         CacheJtaManagerAdapter jtaMgr,
         Collection<CacheStoreSessionListener> storeSesLsnrs,
-        MvccTransactionEnlistCachingManager mvccCachingMgr
+        MvccCachingManager mvccCachingMgr
     ) {
         this.kernalCtx = kernalCtx;
 
@@ -460,7 +460,7 @@ public class GridCacheSharedContext<K, V> {
         GridCacheIoManager ioMgr,
         GridCacheSharedTtlCleanupManager ttlMgr,
         PartitionsEvictManager evictMgr,
-        MvccTransactionEnlistCachingManager mvccCachingMgr
+        MvccCachingManager mvccCachingMgr
     ) {
         this.mvccMgr = add(mgrs, mvccMgr);
         this.verMgr = add(mgrs, verMgr);
@@ -826,7 +826,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Mvcc transaction enlist caching manager.
      */
-    public MvccTransactionEnlistCachingManager mvccCaching() {
+    public MvccCachingManager mvccCaching() {
         return mvccCachingMgr;
     }
 

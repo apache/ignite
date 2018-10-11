@@ -1208,11 +1208,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         @Override public byte newMvccTxState() {
             return 0; // TODO IGNITE-7384
         }
-
-        /** {@inheritDoc} */
-        @Override public boolean isKeyAbsentBefore() {
-            return false;
-        }
     }
 
     /**

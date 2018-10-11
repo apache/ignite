@@ -48,7 +48,7 @@ public interface MvccUpdateResult {
     public CacheObject newValue();
 
     /**
-     * @return Old value of updated entry.
+     * @return Old value.
      */
     public CacheObject oldValue();
 
@@ -58,12 +58,6 @@ public interface MvccUpdateResult {
     public boolean isKeyAbsentBefore();
 
     /**
-     * @return Flag whether tx has overridden it's own update.
-     */
-    public boolean isOwnValueOverridden();
-
-    /**
-     *
      * @return Entry processor invoke result.
      */
     CacheInvokeResult invokeResult();

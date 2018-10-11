@@ -380,7 +380,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
                 }
             }
 
-            dhtTx.mvccEnlistBatch(cctx, it.operation(), keys, vals, mvccSnapshot.withoutActiveTransactions(), null, -1);
+            cctx.tm().txHandler().mvccEnlistBatch(dhtTx, cctx, it.operation(), keys, vals,
+                mvccSnapshot.withoutActiveTransactions(), null, -1);
         }
         catch (IgniteCheckedException e) {
             onDone(e);
@@ -403,6 +404,10 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
         boolean clientFirst = first && cctx.localNode().isClient() && !topLocked && !tx.hasRemoteLocks();
 
         int batchId = batchCntr.incrementAndGet();
+
+        // Need to unlock topology to avoid deadlock with binary descriptors registration.
+        if(cctx.topology().holdsLock())
+            cctx.topology().readUnlock();
 
         if (node.isLocal())
             enlistLocal(batchId, node.id(), batch);

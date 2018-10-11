@@ -67,12 +67,12 @@ public class CacheMvccProcessorTest extends CacheMvccAbstractTest {
 
         assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 1, MvccUtils.MVCC_OP_COUNTER_NA)));
 
-        mvccProcessor.updateState(new MvccVersionImpl(1, 1, MvccUtils.MVCC_OP_COUNTER_NA), TxState.PREPARED, new GridNearTxLocal());
-        mvccProcessor.updateState(new MvccVersionImpl(1, 2, MvccUtils.MVCC_OP_COUNTER_NA), TxState.PREPARED, new GridNearTxLocal());
-        mvccProcessor.updateState(new MvccVersionImpl(1, 3, MvccUtils.MVCC_OP_COUNTER_NA), TxState.COMMITTED, new GridNearTxLocal());
-        mvccProcessor.updateState(new MvccVersionImpl(1, 4, MvccUtils.MVCC_OP_COUNTER_NA), TxState.ABORTED, new GridNearTxLocal());
-        mvccProcessor.updateState(new MvccVersionImpl(1, 5, MvccUtils.MVCC_OP_COUNTER_NA), TxState.ABORTED, new GridNearTxLocal());
-        mvccProcessor.updateState(new MvccVersionImpl(1, 6, MvccUtils.MVCC_OP_COUNTER_NA), TxState.PREPARED, new GridNearTxLocal());
+        mvccProcessor.updateState(new MvccVersionImpl(1, 1, MvccUtils.MVCC_OP_COUNTER_NA), TxState.PREPARED);
+        mvccProcessor.updateState(new MvccVersionImpl(1, 2, MvccUtils.MVCC_OP_COUNTER_NA), TxState.PREPARED);
+        mvccProcessor.updateState(new MvccVersionImpl(1, 3, MvccUtils.MVCC_OP_COUNTER_NA), TxState.COMMITTED);
+        mvccProcessor.updateState(new MvccVersionImpl(1, 4, MvccUtils.MVCC_OP_COUNTER_NA), TxState.ABORTED);
+        mvccProcessor.updateState(new MvccVersionImpl(1, 5, MvccUtils.MVCC_OP_COUNTER_NA), TxState.ABORTED);
+        mvccProcessor.updateState(new MvccVersionImpl(1, 6, MvccUtils.MVCC_OP_COUNTER_NA), TxState.PREPARED);
 
         if (persistence) {
             stopGrid(0, false);

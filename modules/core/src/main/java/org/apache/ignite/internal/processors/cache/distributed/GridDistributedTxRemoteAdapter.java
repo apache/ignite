@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -818,6 +819,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                             if (txCntrs != null)
                                 applyPartitionsUpdatesCounters(txCntrs.updateCounters());
 
+                            cctx.mvccCaching().onTxFinished(this, true);
+
                             if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null) {
                                 // Set new update counters for data entries received from persisted tx entries.
                                 List<DataEntry> entriesWithCounters = dataEntries.stream()
@@ -942,6 +945,13 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     applyPartitionsUpdatesCounters(counters.updateCounters());
 
                 state(ROLLED_BACK);
+
+                try {
+                    cctx.mvccCaching().onTxFinished(this, false);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
             }
         }
         catch (RuntimeException | Error e) {

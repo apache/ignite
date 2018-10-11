@@ -361,8 +361,7 @@ public interface GridCacheEntryEx {
      * @param op Cache operation.
      * @param needHist Whether to collect rows created or affected by the current tx.
      * @param noCreate Entry should not be created when enabled, e.g. SQL INSERT.
-     * @param futId Enlist future id.
-     * @param batchNum Batch number.
+     * @param needOldVal Flag if it is need to return the old value (value before current tx has been started).
      * @param filter Filter.
      * @param retVal Previous value return flag.
      * @return Tuple containing success flag and old value. If success is {@code false},
@@ -382,8 +381,7 @@ public interface GridCacheEntryEx {
         GridCacheOperation op,
         boolean needHist,
         boolean noCreate,
-        IgniteUuid futId,
-        int batchNum,
+        boolean needOldVal,
         @Nullable CacheEntryPredicate filter,
         boolean retVal) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
@@ -393,8 +391,7 @@ public interface GridCacheEntryEx {
      * @param topVer Topology version.
      * @param mvccVer Mvcc version.
      * @param needHist Whether to collect rows created or affected by the current tx.
-     * @param futId Enlist future id.
-     * @param batchNum Batch number.
+     * @param needOldValue Flag if it is need to return the old value (value before current tx has been started).
      * @param filter Filter.
      * @param retVal Previous value return flag.
      * @return Tuple containing success flag and old value. If success is {@code false},
@@ -408,8 +405,7 @@ public interface GridCacheEntryEx {
         AffinityTopologyVersion topVer,
         MvccSnapshot mvccVer,
         boolean needHist,
-        IgniteUuid futId,
-        int batchNum,
+        boolean needOldValue,
         @Nullable CacheEntryPredicate filter,
         boolean retVal) throws IgniteCheckedException, GridCacheEntryRemovedException;
 

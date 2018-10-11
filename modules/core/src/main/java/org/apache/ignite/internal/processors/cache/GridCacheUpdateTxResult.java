@@ -21,6 +21,7 @@ import java.util.List;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -53,6 +54,15 @@ public class GridCacheUpdateTxResult {
 
     /** Invoke result. */
     private CacheInvokeResult invokeRes;
+
+    /** New value. */
+    private CacheObject newVal;
+
+    /** Value before the current tx. */
+    private CacheObject oldVal;
+
+    /** Filtered flag. */
+    private boolean filtered;
 
     /**
      * Constructor.
@@ -188,6 +198,48 @@ public class GridCacheUpdateTxResult {
      */
     public CacheInvokeResult invokeResult() {
         return invokeRes;
+    }
+
+    /**
+     * @return New value.
+     */
+    public CacheObject newValue() {
+        return newVal;
+    }
+
+    /**
+     * @return Old value.
+     */
+    public CacheObject oldValue() {
+        return oldVal;
+    }
+
+    /**
+     * @param newVal New value.
+     */
+    public void newValue(CacheObject newVal) {
+        this.newVal = newVal;
+    }
+
+    /**
+     * @param oldVal Old value.
+     */
+    public void oldValue(CacheObject oldVal) {
+        this.oldVal = oldVal;
+    }
+
+    /**
+     * @return Filtered flag.
+     */
+    public boolean filtered() {
+        return filtered;
+    }
+
+    /**
+     * @param filtered Filtered flag.
+     */
+    public void filtered(boolean filtered) {
+        this.filtered = filtered;
     }
 
     /** {@inheritDoc} */
