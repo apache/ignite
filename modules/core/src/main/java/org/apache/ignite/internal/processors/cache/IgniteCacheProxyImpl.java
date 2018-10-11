@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import javax.cache.Cache;
@@ -127,9 +126,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /** Flag indicates that proxy is closed. */
     private volatile boolean closed;
 
-    /** */
-    private final CountDownLatch initLatch = new CountDownLatch(1);
-
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -170,14 +166,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         this.delegate = delegate;
 
         this.restartFut = restartFut;
-    }
-
-    /**
-     *
-     * @return Init latch.
-     */
-    public CountDownLatch getInitLatch(){
-        return initLatch;
     }
 
     /**

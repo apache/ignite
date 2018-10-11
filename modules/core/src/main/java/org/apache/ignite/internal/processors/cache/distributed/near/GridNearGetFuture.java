@@ -940,14 +940,10 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                             try {
-                                AffinityTopologyVersion topVer0 = fut.get();
+                                // Remap.
+                                map(keys.keySet(), F.t(node, keys), fut.get());
 
-                                cctx.shared().exchange().affinityReadyFuture(topVer0).listen(f -> {
-                                    // Remap.
-                                    map(keys.keySet(), F.t(node, keys), topVer0);
-
-                                    onDone(Collections.<K, V>emptyMap());
-                                });
+                                onDone(Collections.<K, V>emptyMap());
                             }
                             catch (IgniteCheckedException e) {
                                 GridNearGetFuture.this.onDone(e);
@@ -1010,16 +1006,14 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         IgniteInternalFuture<AffinityTopologyVersion> fut) throws IgniteCheckedException {
                         AffinityTopologyVersion readyTopVer = fut.get();
 
-                        cctx.shared().exchange().affinityReadyFuture(readyTopVer).listen(f -> {
-                            // This will append new futures to compound list.
-                            map(F.view(keys.keySet(), new P1<KeyCacheObject>() {
-                                @Override public boolean apply(KeyCacheObject key) {
-                                    return invalidParts.contains(cctx.affinity().partition(key));
-                                }
-                            }), F.t(node, keys), readyTopVer);
+                        // This will append new futures to compound list.
+                        map(F.view(keys.keySet(), new P1<KeyCacheObject>() {
+                            @Override public boolean apply(KeyCacheObject key) {
+                                return invalidParts.contains(cctx.affinity().partition(key));
+                            }
+                        }), F.t(node, keys), readyTopVer);
 
-                            postProcessResultAndDone(res);
-                        });
+                        postProcessResultAndDone(res);
                     }
                 });
             }

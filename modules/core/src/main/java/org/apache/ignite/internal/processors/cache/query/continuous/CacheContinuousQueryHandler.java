@@ -610,7 +610,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         if (!cctx.isLocal()) {
             AffinityTopologyVersion topVer = initTopVer;
 
-            cacheContext(ctx).shared().exchange().affinityReadyFuture(topVer).get();
+            cacheContext(ctx).affinity().affinityReadyFuture(topVer).get();
 
             for (int partId = 0; partId < cacheContext(ctx).affinity().partitions(); partId++)
                 getOrCreatePartitionRecovery(ctx, partId, topVer);

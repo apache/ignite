@@ -485,7 +485,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             ClusterTopologyCheckedException cause = new ClusterTopologyCheckedException(
                 "Failed to update keys, topology changed while execute atomic update inside transaction.");
 
-            cause.retryReadyFuture(cctx.shared().exchange().affinityReadyFuture(remapTopVer));
+            cause.retryReadyFuture(cctx.affinity().affinityReadyFuture(remapTopVer));
 
             e.add(remapKeys, cause);
 

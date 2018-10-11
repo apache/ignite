@@ -1612,6 +1612,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
 
+        cctx.exchange().onExchangeDone(res, initialVersion(), err);
+
         cctx.kernalContext().authentication().onActivate();
 
         if (exchActions != null && err == null)
@@ -1644,22 +1646,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
-        final Throwable err0 = err;
-
-        listen(f -> {
-            cctx.exchange().lastFinishedFuture(this);
-
-            cctx.exchange().onExchangeDone(res, initialVersion(), err0);
-
-            cctx.cache().finishedAll();
-
-            if (exchActions != null && err0 == null)
-                exchActions.completeRequestFutures(cctx);
-
-            if (stateChangeExchange() && err0 == null)
-                cctx.kernalContext().state().onStateChangeExchangeDone(exchActions.stateChangeRequest());
-        });
-
         if (super.onDone(res, err)) {
             if (log.isDebugEnabled())
                 log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this +
@@ -1687,6 +1673,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 ((DiscoveryCustomEvent)firstDiscoEvt).customMessage(null);
 
             if (err == null) {
+                cctx.exchange().lastFinishedFuture(this);
+
                 if (exchCtx != null && (exchCtx.events().hasServerLeft() || exchCtx.events().hasServerJoin())) {
                     ExchangeDiscoveryEvents evts = exchCtx.events();
 
