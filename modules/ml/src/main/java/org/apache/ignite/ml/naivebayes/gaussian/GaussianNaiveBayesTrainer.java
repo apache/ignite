@@ -79,24 +79,24 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
         )) {
             SumHelper sumHelper = computeSums(dataset);
 
-            List<Double> sortedFeatures = new ArrayList<>(sumHelper.featureCountPerLbl.keySet());
+            List<Double> sortedFeatures = new ArrayList<>(sumHelper.featureCountsPerLbl.keySet());
             sortedFeatures.sort(Double::compareTo);
 
             int labelCount = sortedFeatures.size();
-            int featureCount = sumHelper.featureSumPerLbl.get(sortedFeatures.get(0)).length;
+            int featureCount = sumHelper.featureSumsPerLbl.get(sortedFeatures.get(0)).length;
 
             double[][] means = new double[labelCount][featureCount];
             double[][] variances = new double[labelCount][featureCount];
             double[] classProbabilities = new double[labelCount];
             double[] labels = new double[labelCount];
 
-            long datasetSize = sumHelper.featureCountPerLbl.values().stream().mapToInt(i -> i).sum();
+            long datasetSize = sumHelper.featureCountsPerLbl.values().stream().mapToInt(i -> i).sum();
 
             int lbl = 0;
             for (Double label : sortedFeatures) {
-                int count = sumHelper.featureCountPerLbl.get(label);
-                double[] sum = sumHelper.featureSumPerLbl.get(label);
-                double[] sqSum = sumHelper.featuresSquaredSumPerLbl.get(label);
+                int count = sumHelper.featureCountsPerLbl.get(label);
+                double[] sum = sumHelper.featureSumsPerLbl.get(label);
+                double[] sqSum = sumHelper.featureSquaredSumsPerLbl.get(label);
 
                 for (int i = 0; i < featureCount; i++) {
                     means[lbl][i] = sum[i] / count;
@@ -164,22 +164,22 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                     double[] toMeans;
                     double[] sqSum;
 
-                    if (!res.featureSumPerLbl.containsKey(label)) {
+                    if (!res.featureSumsPerLbl.containsKey(label)) {
                         toMeans = new double[features.size()];
                         Arrays.fill(toMeans, 0.);
-                        res.featureSumPerLbl.put(label, toMeans);
+                        res.featureSumsPerLbl.put(label, toMeans);
                     }
-                    if (!res.featuresSquaredSumPerLbl.containsKey(label)) {
+                    if (!res.featureSquaredSumsPerLbl.containsKey(label)) {
                         sqSum = new double[features.size()];
-                        res.featuresSquaredSumPerLbl.put(label, sqSum);
+                        res.featureSquaredSumsPerLbl.put(label, sqSum);
                     }
-                    if (!res.featureCountPerLbl.containsKey(label)) {
-                        res.featureCountPerLbl.put(label, 0);
+                    if (!res.featureCountsPerLbl.containsKey(label)) {
+                        res.featureCountsPerLbl.put(label, 0);
                     }
-                    res.featureCountPerLbl.put(label, res.featureCountPerLbl.get(label) + 1);
+                    res.featureCountsPerLbl.put(label, res.featureCountsPerLbl.get(label) + 1);
 
-                    toMeans = res.featureSumPerLbl.get(label);
-                    sqSum = res.featuresSquaredSumPerLbl.get(label);
+                    toMeans = res.featureSumsPerLbl.get(label);
+                    sqSum = res.featureSquaredSumsPerLbl.get(label);
                     for (int j = 0; j < features.size(); j++) {
                         double x = features.get(j);
                         toMeans[j] += x;
@@ -201,17 +201,17 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
         /** Serial version uid. */
         private static final long serialVersionUID = 1L;
         /** Sum of all values for all features for each label */
-        Map<Double, double[]> featureSumPerLbl = new HashMap<>();
+        Map<Double, double[]> featureSumsPerLbl = new HashMap<>();
         /** Sum of all squared values for all features for each label */
-        Map<Double, double[]> featuresSquaredSumPerLbl = new HashMap<>();
+        Map<Double, double[]> featureSquaredSumsPerLbl = new HashMap<>();
         /** Rows count for each label */
-        Map<Double, Integer> featureCountPerLbl = new HashMap<>();
+        Map<Double, Integer> featureCountsPerLbl = new HashMap<>();
 
         /** Merge current */
         SumHelper merge(SumHelper other) {
-            featureSumPerLbl = MapUtil.mergeMaps(featureSumPerLbl, other.featureSumPerLbl, this::sum, HashMap::new);
-            featuresSquaredSumPerLbl = MapUtil.mergeMaps(featuresSquaredSumPerLbl, other.featuresSquaredSumPerLbl, this::sum, HashMap::new);
-            featureCountPerLbl = MapUtil.mergeMaps(featureCountPerLbl, other.featureCountPerLbl, (i1, i2) -> i1 + i2, HashMap::new);
+            featureSumsPerLbl = MapUtil.mergeMaps(featureSumsPerLbl, other.featureSumsPerLbl, this::sum, HashMap::new);
+            featureSquaredSumsPerLbl = MapUtil.mergeMaps(featureSquaredSumsPerLbl, other.featureSquaredSumsPerLbl, this::sum, HashMap::new);
+            featureCountsPerLbl = MapUtil.mergeMaps(featureCountsPerLbl, other.featureCountsPerLbl, (i1, i2) -> i1 + i2, HashMap::new);
             return this;
         }
 
