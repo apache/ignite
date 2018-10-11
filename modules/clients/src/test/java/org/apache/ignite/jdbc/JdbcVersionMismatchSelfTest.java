@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
@@ -89,21 +88,41 @@ public class JdbcVersionMismatchSelfTest extends GridCommonAbstractTest {
                 assertTrue(e.getMessage().contains("Cannot serialize transaction due to write conflict"));
             }
 
-            // Try executing any other statement from the same transaction.
-            // TODO
-            //assertEquals(1, executeQuery(conn1, "SELECT * FROM test").size());
+            // Subsequent call should cause exception due to TX being rolled back.
+            try {
+                executeQuery(conn1, "SELECT * FROM test").size();
 
-            //executeUpdate(conn1, "INSERT INTO test VALUES (3, 3, 'test_3')");
+                fail();
+            }
+            catch (SQLException e) {
+                assertEquals(SqlStateCode.TRANSACTION_STATE_EXCEPTION, e.getSQLState());
+                assertEquals(IgniteQueryErrorCode.TRANSACTION_COMPLETED, e.getErrorCode());
 
-            //executeUpdate(conn1, "ROLLBACK");
-            //conn1.rollback();
+                assertNotNull(e.getMessage());
+                assertTrue(e.getMessage().contains("Transaction is already completed"));
+            }
 
-            // TODO: Should throw exception!
-            executeUpdate(conn1, "COMMIT");
-            //conn1.commit();
+            // Commit should fail.
+            try {
+                conn1.commit();
+
+                fail();
+            }
+            catch (SQLException e) {
+                // Cannot pass proper error codes for now
+                assertEquals(SqlStateCode.INTERNAL_ERROR, e.getSQLState());
+                assertEquals(IgniteQueryErrorCode.UNKNOWN, e.getErrorCode());
+
+                assertNotNull(e.getMessage());
+                assertTrue(e.getMessage().contains("Failed to finish transaction because it has been rolled back"));
+            }
+
+            // Rollback should work.
+            conn1.rollback();
+
+            // Subsequent calls should work fine.
+            assertEquals(2, executeQuery(conn2, "SELECT * FROM test").size());
         }
-
-        // TODO: Ensure that thread state is cleared.
     }
 
     /**
