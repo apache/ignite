@@ -73,7 +73,7 @@ public class VisorThreadMonitorInfo extends VisorThreadLockInfo {
 
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return 1;
+        return V1;
     }
 
     /** {@inheritDoc} */

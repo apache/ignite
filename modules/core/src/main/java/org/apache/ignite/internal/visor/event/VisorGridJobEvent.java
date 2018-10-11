@@ -120,7 +120,7 @@ public class VisorGridJobEvent extends VisorGridEvent {
 
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return 1;
+        return V1;
     }
 
     /** {@inheritDoc} */

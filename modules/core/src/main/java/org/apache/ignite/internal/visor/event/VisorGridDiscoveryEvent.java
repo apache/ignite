@@ -121,7 +121,7 @@ public class VisorGridDiscoveryEvent extends VisorGridEvent {
 
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return 1;
+        return V1;
     }
 
     /** {@inheritDoc} */
