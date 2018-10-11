@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import java.sql.ResultSet;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -30,7 +31,10 @@ import org.jetbrains.annotations.Nullable;
  * Mapper query results.
  */
 class MapQueryResults {
-    /** H@ indexing. */
+    /** Logger. */
+    private final IgniteLogger log;
+
+    /** H2 indexing. */
     private final IgniteH2Indexing h2;
 
     /** */
@@ -66,6 +70,7 @@ class MapQueryResults {
     @SuppressWarnings("unchecked")
     MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable GridCacheContext<?, ?> cctx,
         @Nullable MapQueryLazyWorker lazyWorker, boolean forUpdate) {
+        this.log = h2.kernalContext().log(MapQueryResults.class);
         this.forUpdate = forUpdate;
         this.h2 = h2;
         this.qryReqId = qryReqId;
@@ -113,10 +118,7 @@ class MapQueryResults {
      * @param params Query arguments.
      */
     void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
-        MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params, lazyWorker);
-
-        if (lazyWorker != null)
-            lazyWorker.result(res);
+        MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params);
 
         if (!results.compareAndSet(qry, null, res))
             throw new IllegalStateException();
@@ -139,28 +141,43 @@ class MapQueryResults {
     /**
      * Cancels the query.
      */
-    void cancel(boolean forceQryCancel) {
+    void cancel() {
         if (cancelled)
             return;
 
         cancelled = true;
 
         for (int i = 0; i < results.length(); i++) {
-            MapQueryResult res = results.get(i);
+            GridQueryCancel cancel = cancels[i];
 
-            if (res != null) {
-                res.close();
+            if (cancel != null)
+                cancel.cancel();
+        }
+    }
 
-                continue;
+    /**
+     * Close the query.
+     */
+    void close() {
+        if (lazyWorker == null || !lazyWorker.isStarted() || MapQueryLazyWorker.currentWorker() != null) {
+            for (int i = 0; i < results.length(); i++) {
+                MapQueryResult res = results.get(i);
+
+                if (res != null)
+                    res.close();
             }
 
-            // NB: Cancel is already safe even for lazy queries (see implementation of passed Runnable).
-            if (forceQryCancel) {
-                GridQueryCancel cancel = cancels[i];
+            if (lazyWorker != null)
+                lazyWorker.stop(false);
+        }
+        else {
+            lazyWorker.submit(new Runnable() {
+                @Override public void run() {
+                    close();
+                }
+            });
 
-                if (cancel != null)
-                    cancel.cancel();
-            }
+            lazyWorker.awaitStop();
         }
     }
 

@@ -24,12 +24,15 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
@@ -37,8 +40,8 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
-import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.thread.IgniteThread;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.command.dml.Insert;
 import org.h2.engine.DbObject;
@@ -72,6 +75,9 @@ public class GridH2Table extends TableBase {
     /** Cache context. */
     private final GridCacheContext cctx;
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     /** */
     private final GridH2RowDescriptor desc;
 
@@ -89,6 +95,9 @@ public class GridH2Table extends TableBase {
 
     /** */
     private final ReadWriteLock lock;
+
+    /** */
+    private final AtomicInteger readLockCnt = new AtomicInteger();
 
     /** */
     private boolean destroyed;
@@ -134,6 +143,7 @@ public class GridH2Table extends TableBase {
 
         this.desc = desc;
         this.cctx = cctx;
+        this.log = cctx.logger(GridH2Table.class);
 
         if (desc.context() != null && !desc.context().customAffinityMapper()) {
             boolean affinityColExists = true;
@@ -257,6 +267,9 @@ public class GridH2Table extends TableBase {
         if (destroyed) {
             unlock(exclusive);
 
+            if (!exclusive)
+                readLockCnt.decrementAndGet();
+
             throw new IllegalStateException("Table " + identifierString() + " already destroyed.");
         }
 
@@ -264,6 +277,11 @@ public class GridH2Table extends TableBase {
         sessions.put(ses, exclusive);
 
         ses.addLock(this);
+
+        GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        if (qctx != null)
+           qctx.lockedTables().add(this);
 
         return false;
     }
@@ -291,16 +309,27 @@ public class GridH2Table extends TableBase {
         Lock l = exclusive ? lock.writeLock() : lock.readLock();
 
         try {
-            if (!exclusive || !GridMapQueryExecutor.FORCE_LAZY)
-                l.lockInterruptibly();
-            else {
-                for (;;) {
-                    if (l.tryLock(200, TimeUnit.MILLISECONDS))
-                        break;
-                    else
-                        Thread.yield();
+            if (!exclusive
+                && IgniteThread.current() != null
+                && IgniteThread.current().policy() == GridIoPolicy.QUERY_POOL) {
+                // Readlock in QUERY_POOL
+                if (!l.tryLock(200, TimeUnit.MILLISECONDS))
+                    throw new GridH2ReadLockTimeoutException();
+            }
+            else if (exclusive) {
+                for (; ; ) {
+                    if (l.tryLock(200, TimeUnit.MILLISECONDS)) {
+                        if (readLockCnt.get() == 0)
+                            break;
+                        else
+                            l.unlock();
+                    }
+
+                    Thread.yield();
                 }
             }
+            else
+                l.lockInterruptibly();
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -318,6 +347,53 @@ public class GridH2Table extends TableBase {
         Lock l = exclusive ? lock.writeLock() : lock.readLock();
 
         l.unlock();
+    }
+
+    /**
+     * @param ses Session to detach.
+     */
+    private void detachReadLockFromCurrentThread(Session ses) {
+        assert sessions.containsKey(ses) : "Detached session have not locked the table: " + getName();
+
+        if (!sessions.get(ses))
+            readLockCnt.incrementAndGet();
+
+        unlock(false);
+    }
+
+    /**
+     * @param ses Session to detach.
+     */
+    private void attachReadLockToCurrentThread(Session ses) {
+        assert sessions.containsKey(ses) : "Attached session have not locked the table: " + getName();
+
+        lock(false);
+
+        readLockCnt.decrementAndGet();
+    }
+
+    /**
+     * @param ses Session to detach.
+     */
+    public static void detachReadLocksFromCurrentThread(Session ses) {
+        GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        assert qctx != null;
+
+        for(GridH2Table tbl : qctx.lockedTables())
+            tbl.detachReadLockFromCurrentThread(ses);
+    }
+
+    /**
+     * @param ses Session to detach.
+     */
+    public static void attachReadLocksToCurrentThread(Session ses) {
+        GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        assert qctx != null;
+
+        for(GridH2Table tbl : qctx.lockedTables())
+            tbl.attachReadLockToCurrentThread(ses);
     }
 
     /**
@@ -409,6 +485,11 @@ public class GridH2Table extends TableBase {
 
         if (exclusive == null)
             return;
+
+        GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        if (qctx != null)
+            qctx.lockedTables().remove(this);
 
         unlock(exclusive);
     }

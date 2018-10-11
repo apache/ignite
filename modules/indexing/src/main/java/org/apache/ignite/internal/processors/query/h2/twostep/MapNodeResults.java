@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
-import java.util.concurrent.ConcurrentHashMap;
-
-import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
@@ -86,10 +85,14 @@ class MapNodeResults {
     public void cancelRequest(long reqId) {
         for (MapRequestKey key : res.keySet()) {
             if (key.requestId() == reqId) {
-                MapQueryResults removed = res.remove(key);
+                final MapQueryResults removed = res.remove(key);
 
-                if (removed != null)
-                    removed.cancel(true);
+                if (removed != null) {
+                    removed.cancel();
+
+                    if (removed.lazyWorker() == null || removed.lazyWorker().isStarted())
+                        removed.close();
+                }
             }
         }
 
@@ -143,8 +146,11 @@ class MapNodeResults {
      * Cancel all node queries.
      */
     public void cancelAll() {
-        for (MapQueryResults ress : res.values())
-            ress.cancel(true);
+        for (MapQueryResults ress : res.values()) {
+            ress.cancel();
+
+            ress.close();
+        }
 
         // Cancel update requests
         for (GridQueryCancel upd: updCancels.values())
