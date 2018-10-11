@@ -232,6 +232,35 @@ public class GridFunc {
     }
 
     /**
+     * NullPointerException safe invocation {@link Object#toString()} method.
+     *
+     * @param obj For toString() invocation.
+     * @return Result of toString() invocation or string "null", if {@code obj} is null.
+     */
+    public static String toString(Object obj){ return obj == null ? "null" : obj.toString(); }
+
+    /**
+     * Concatenate results of invocation {@link GridFunc#toString(Object)} to single string.
+     *
+     * @param objs Objects for concatenation of string representations.
+     * @return Concatenated string or string "null", if {@code objs} is null.
+     */
+    public static String concat(Object... objs) {
+        if(objs == null)
+            return "null";
+
+        if(objs.length == 0)
+            return "";
+
+        StringBuilder sb = new StringBuilder(16 * objs.length);
+
+        for(Object obj : objs)
+            sb.append(toString(obj));
+
+        return sb.toString();
+    }
+
+    /**
      * Gets reducer which always returns {@code true} from {@link org.apache.ignite.lang.IgniteReducer#collect(Object)}
      * method and passed in {@code element} from {@link org.apache.ignite.lang.IgniteReducer#reduce()} method.
      *

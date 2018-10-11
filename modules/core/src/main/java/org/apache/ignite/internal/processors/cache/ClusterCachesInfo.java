@@ -1091,7 +1091,7 @@ class ClusterCachesInfo {
             GridCacheConfigurationVersion fromGridVer = fromGrid.get(key);
 
             assert fromGridVer == null || fromGridVer.id() > locVer.id() || locVer.equals(fromGridVer) :
-                key + " local: " + cachesConfigurationVer + " fromGrid: " + fromGrid;
+                F.concat(" local: ", locVer, " fromGrid: ", fromGridVer);
         }
     }
 

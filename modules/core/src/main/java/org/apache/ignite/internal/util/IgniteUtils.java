@@ -7419,14 +7419,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * NullPointerException safe invocation {@link Object#toString()} method.
-     *
-     * @param obj For toString() invocation.
-     * @return Result of toString() invocation or string "null", if {@code obj} is null.
-     */
-    public static String toString(Object obj){ return obj == null ? "null" : obj.toString(); }
-
-    /**
      * Parses passed string with specified date.
      *
      * @param src String to parse.

@@ -2734,18 +2734,28 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
         cachesInfo.collectJoiningNodeData(dataBag);
+
+        log.error("IGNITE-8717 collectJoiningNodeData() common: " + F.toString(dataBag.commonData()) + " joining: " + F.toString(dataBag.joiningNodeData()));
     }
 
     /** {@inheritDoc} */
-    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) { cachesInfo.collectGridNodeData(dataBag); }
+    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        cachesInfo.collectGridNodeData(dataBag);
+
+        log.error("IGNITE-8717 collectGridNodeData() common: " + F.toString(dataBag.commonData()) + " joining: " + F.toString(dataBag.joiningNodeData()));
+    }
 
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data) {
+        log.error("IGNITE-8717 onJoiningNodeDataReceived() joining: " + F.toString(data));
+
         cachesInfo.onJoiningNodeDataReceived(data);
     }
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
+        log.error("IGNITE-8717 onGridDataReceived() common: " + F.toString(data.commonData()) + " node specific: " + F.toString(data.nodeSpecificData()));
+
         cachesInfo.onGridDataReceived(data);
 
         try {
@@ -2763,7 +2773,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteNodeValidationResult validateNode(
-        ClusterNode node, JoiningNodeDiscoveryData discoData
+        ClusterNode node,
+        JoiningNodeDiscoveryData discoData
     ) {
         if(!cachesInfo.isMergeConfigSupports(node))
             return null;
@@ -2828,22 +2839,60 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             for (String cacheName : cachesForRmv)
                 nodeData.caches().remove(cacheName);
 
-            Map<String, GridCacheConfigurationVersion> remoteNodeCfgs =
-                new HashMap<>(nodeData.cachesConfigurationVersion());
-
-            for (String verKey : cachesInfo.cachesVersion().keySet()) {
-                GridCacheConfigurationVersion remoteVer = remoteNodeCfgs.get(verKey);
-                GridCacheConfigurationVersion locVer = cachesInfo.cachesVersion().get(verKey);
-
-                if (remoteVer == null || remoteVer.id() < locVer.id())
-                    remoteNodeCfgs.put(verKey, locVer);
-            }
-
-            nodeData.cachesConfigurationVersion(remoteNodeCfgs);
-
+            applyVersionUpdates(nodeData);
         }
 
         return null;
+    }
+
+    private void applyVersionUpdates(CacheJoinNodeDiscoveryData nodeData) {
+        Map<String, GridCacheConfigurationVersion> remoteNodeVers = new HashMap<>(nodeData.cachesConfigurationVersion());
+
+        Set<GridCacheConfigurationVersion> versionsToStore = new HashSet<>(remoteNodeVers.keySet().size());
+        Set<String> verKeys = new HashSet<>(cachesInfo.cachesVersion().keySet().size() + remoteNodeVers.keySet().size());
+
+        verKeys.addAll(cachesInfo.cachesVersion().keySet());
+        verKeys.addAll(remoteNodeVers.keySet());
+
+        for (String verKey : verKeys) {
+            GridCacheConfigurationVersion remoteVer = remoteNodeVers.get(verKey);
+            GridCacheConfigurationVersion locVer = cachesInfo.cachesVersion().get(verKey);
+
+            if (remoteVer == null || remoteVer.id() < locVer.id())
+                remoteNodeVers.put(verKey, locVer);
+
+            if (locVer == null || locVer.id() < remoteVer.id()) {
+                cachesInfo.cachesVersion().put(verKey, remoteVer);
+
+                versionsToStore.add(remoteVer);
+
+                DynamicCacheDescriptor desc = cacheDescriptor(remoteVer.cacheName());
+
+                if (desc != null) {
+                    desc.version(remoteVer);
+
+                    DynamicCacheDescriptor descInRegistry = sharedCtx.affinity().caches().get(desc.cacheId());
+
+                    if (descInRegistry != null)
+                        descInRegistry.version(remoteVer);
+                }
+            }
+        }
+
+        if (!versionsToStore.isEmpty()) {
+            sharedCtx.kernalContext().closure().runLocalSafe(() -> {
+                for (GridCacheConfigurationVersion ver : versionsToStore) {
+                    try {
+                        sharedCtx.database().storeCacheConfigurationVersion(ver, true);
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to store cache configuration version " + ver, e);
+                    }
+                }
+            });
+        }
+
+        nodeData.cachesConfigurationVersion(remoteNodeVers);
     }
 
     /**

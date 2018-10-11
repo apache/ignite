@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -156,7 +157,12 @@ public class DynamicCacheDescriptor {
     /**
      * @param ver New cache configuration version.
      */
-    public void version(GridCacheConfigurationVersion ver){ this.ver = ver; }
+    public void version(GridCacheConfigurationVersion ver){
+        assert this.ver == null || (ver != null && this.ver.id() <= ver.id()) :
+            F.concat(this," ver: ", F.toString(ver));
+
+        this.ver = ver;
+    }
 
     /**
      * @return Cache group ID.
