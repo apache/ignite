@@ -20,8 +20,9 @@ package org.apache.ignite.ml.naivebayes.gaussian;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
@@ -200,17 +201,17 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
         /** Serial version uid. */
         private static final long serialVersionUID = 1L;
         /** Sum of all values for all features for each label */
-        ConcurrentHashMap<Double, double[]> featureSumPerLbl = new ConcurrentHashMap<>();
+        Map<Double, double[]> featureSumPerLbl = new HashMap<>();
         /** Sum of all squared values for all features for each label */
-        ConcurrentHashMap<Double, double[]> featuresSquaredSumPerLbl = new ConcurrentHashMap<>();
+        Map<Double, double[]> featuresSquaredSumPerLbl = new HashMap<>();
         /** Rows count for each label */
-        ConcurrentHashMap<Double, Integer> featureCountPerLbl = new ConcurrentHashMap<>();
+        Map<Double, Integer> featureCountPerLbl = new HashMap<>();
 
         /** Merge current */
         SumHelper merge(SumHelper other) {
-            featureSumPerLbl = MapUtil.mergeMaps(featureSumPerLbl, other.featureSumPerLbl, this::sum, ConcurrentHashMap::new);
-            featuresSquaredSumPerLbl = MapUtil.mergeMaps(featuresSquaredSumPerLbl, other.featuresSquaredSumPerLbl, this::sum, ConcurrentHashMap::new);
-            featureCountPerLbl = MapUtil.mergeMaps(featureCountPerLbl, other.featureCountPerLbl, (i1, i2) -> i1 + i2, ConcurrentHashMap::new);
+            featureSumPerLbl = MapUtil.mergeMaps(featureSumPerLbl, other.featureSumPerLbl, this::sum, HashMap::new);
+            featuresSquaredSumPerLbl = MapUtil.mergeMaps(featuresSquaredSumPerLbl, other.featuresSquaredSumPerLbl, this::sum, HashMap::new);
+            featureCountPerLbl = MapUtil.mergeMaps(featureCountPerLbl, other.featureCountPerLbl, (i1, i2) -> i1 + i2, HashMap::new);
             return this;
         }
 
