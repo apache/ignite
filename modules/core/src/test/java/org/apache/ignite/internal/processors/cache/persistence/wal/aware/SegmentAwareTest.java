@@ -38,45 +38,6 @@ public class SegmentAwareTest extends TestCase {
      * @throws IgniteCheckedException if failed.
      */
     public void testAvoidDeadlockArchiverAndLockStorage() throws IgniteCheckedException {
-        SegmentAware aware = new SegmentAware(10);
-
-        int iterationCnt = 100_000;
-        int segmentToHandle = 1;
-
-        IgniteInternalFuture archiverThread = GridTestUtils.runAsync(() -> {
-            int i = iterationCnt;
-
-            while (i-- > 0) {
-                try {
-                    aware.markAsMovedToArchive(segmentToHandle);
-                }
-                catch (IgniteInterruptedCheckedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
-
-        IgniteInternalFuture lockerThread = GridTestUtils.runAsync(() -> {
-            int i = iterationCnt;
-
-            while (i-- > 0) {
-                aware.lockWorkSegment(segmentToHandle);
-
-                aware.releaseWorkSegment(segmentToHandle);
-            }
-        });
-
-        archiverThread.get();
-        lockerThread.get();
-    }
-
-    /**
-     * Checking to avoid deadlock SegmentArchivedStorage.markAsMovedToArchive -> SegmentLockStorage.locked <->
-     * SegmentLockStorage.releaseWorkSegment -> SegmentArchivedStorage.onSegmentUnlocked
-     *
-     * @throws IgniteCheckedException if failed.
-     */
-    public void testAvoidDeadlockArchiverAndLockStorage() throws IgniteCheckedException {
         SegmentAware aware = new SegmentAware(10, false);
 
         int iterationCnt = 100_000;
