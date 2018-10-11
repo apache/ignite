@@ -37,17 +37,21 @@ import org.jetbrains.annotations.Nullable;
  * Task that will collect caches configuration matching with regex.
  */
 @GridInternal
-public class VisorCachesConfigurationTask
-    extends VisorMultiNodeTask<String, SortedMap<String, Map<String, Object>>, SortedMap<String, Map<String, Object>>> {
+public class VisorCachesConfigurationTask extends VisorMultiNodeTask<VisorCachesConfigurationTaskArg, SortedMap<String, Map<String, Object>>, SortedMap<String, Map<String, Object>>> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    @Override protected VisorJob<String, SortedMap<String, Map<String, Object>>> job(String regex) {
-        return new VisorCachesConfigurationJob(regex, debug);
+    /** {@inheritDoc} */
+    @Override protected VisorJob<VisorCachesConfigurationTaskArg, SortedMap<String, Map<String, Object>>> job(
+        VisorCachesConfigurationTaskArg arg
+    ) {
+        return new VisorCachesConfigurationJob(arg, debug);
     }
 
-    @Nullable @Override
-    protected SortedMap<String, Map<String, Object>> reduce0(List<ComputeJobResult> results) throws IgniteException {
+    /** {@inheritDoc} */
+    @Nullable @Override protected SortedMap<String, Map<String, Object>> reduce0(
+        List<ComputeJobResult> results
+    ) throws IgniteException {
         SortedMap<String, Map<String, Object>> resultMap = new TreeMap<>();
 
         for (ComputeJobResult res : results)
@@ -58,18 +62,20 @@ public class VisorCachesConfigurationTask
 
     /** Job that will find affinity node for key. */
     private static class VisorCachesConfigurationJob
-        extends VisorJob<String, SortedMap<String, Map<String, Object>>> {
+        extends VisorJob<VisorCachesConfigurationTaskArg, SortedMap<String, Map<String, Object>>> {
 
         /** Regex. */
         private String regex;
 
-        private VisorCachesConfigurationJob(String regex, boolean debug) {
-            super(regex, debug);
+        private VisorCachesConfigurationJob(VisorCachesConfigurationTaskArg arg, boolean debug) {
+            super(arg, debug);
 
-            this.regex = regex;
+            this.regex = arg.regex();
         }
 
-        @Override protected SortedMap<String, Map<String, Object>> run(@Nullable String arg) throws IgniteException {
+        @Override protected SortedMap<String, Map<String, Object>> run(
+            @Nullable VisorCachesConfigurationTaskArg arg
+        ) throws IgniteException {
             Pattern compiled = Pattern.compile(regex);
 
             SortedMap<String, Map<String, Object>> res = new TreeMap<>();

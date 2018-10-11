@@ -74,6 +74,7 @@ import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskArg;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
 import org.apache.ignite.internal.visor.cache.VisorCachesConfigurationTask;
+import org.apache.ignite.internal.visor.cache.VisorCachesConfigurationTaskArg;
 import org.apache.ignite.internal.visor.misc.VisorClusterNode;
 import org.apache.ignite.internal.visor.misc.VisorWalTask;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskArg;
@@ -632,7 +633,7 @@ public class CommandHandler {
         usage("  Validate custom indexes on idle cluster:", CACHE, " validate_indexes [cache1,...,cacheN] [nodeId] [checkFirst|checkThrough]");
         usage("  Collect partition distribution information:", CACHE, " distribution nodeId|null [cacheName1,...,cacheNameN] [--user-attributes attributeName1[,...,attributeNameN]]");
         usage("  Reset lost partitions:", CACHE, " reset_lost_partitions cacheName1[,...,cacheNameN]");
-        usage("  List caches configuration:", CACHE, CacheCommand.CONFIG.name(), "cacheNameRegexPattern [--human-readable]");
+        usage("  List caches configuration:", CACHE, " config", " cacheNameRegexPattern [--human-readable]");
 
         log("  If [nodeId] is not specified, contention and validate_indexes commands will be broadcasted to all server nodes.");
         log("  Another commands where [nodeId] is optional will run on a random server node.");
@@ -829,18 +830,19 @@ public class CommandHandler {
      * @param cacheArgs Cache args.
      */
     private void cachesConfig(GridClient client, CacheArguments cacheArgs) throws GridClientException {
-        final SortedMap<String, Map<String, String>> result =
-            client.compute().execute(VisorCachesConfigurationTask.class.getName(), cacheArgs.regex());
+        VisorCachesConfigurationTaskArg taskArg = new VisorCachesConfigurationTaskArg(cacheArgs.regex());
 
-        if (!F.isEmpty(result)) {
-            for (Map.Entry<String, Map<String, String>> entry : result.entrySet()) {
+        SortedMap<String, Map<String, Object>> res = executeTask(client, VisorCachesConfigurationTask.class, taskArg);
+
+        if (!F.isEmpty(res)) {
+            for (Map.Entry<String, Map<String, Object>> entry : res.entrySet()) {
                 String cacheName = entry.getKey();
-                Map<String, String> params = entry.getValue();
+                Map<String, Object> params = entry.getValue();
 
                 if (cacheArgs.humanReadableFormat()) {
                     System.out.printf("[cache = '%s']%n", cacheName);
 
-                    for (Map.Entry<String, String> innerEntry : params.entrySet())
+                    for (Map.Entry<String, Object> innerEntry : params.entrySet())
                         System.out.printf("%s: %s%n", innerEntry.getKey(), innerEntry.getValue());
 
                     System.out.println();
@@ -1682,6 +1684,15 @@ public class CommandHandler {
 
                 cacheArgs.regex(nextArg("Regex is expected"));
 
+                if(hasNextCacheArg()){
+                    String arg = nextArg("");
+
+                    if(!arg.equals("--human-readable"))
+                        throw new IllegalArgumentException(arg);
+
+                    cacheArgs.humanReadableFormat(true);
+                }
+
                 break;
 
             default:
@@ -2021,7 +2032,7 @@ public class CommandHandler {
                 }
             }
 
-            return 0;
+            return EXIT_CODE_OK;
         }
         catch (IllegalArgumentException e) {
             return error(EXIT_CODE_INVALID_ARGUMENTS, "Check arguments.", e);
