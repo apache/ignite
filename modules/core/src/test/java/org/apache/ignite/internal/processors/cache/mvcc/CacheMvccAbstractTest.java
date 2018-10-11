@@ -1534,6 +1534,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     protected void verifyOldVersionsCleaned() throws Exception {
         runVacuumSync();
 
+        awaitPartitionMapExchange();
+
         // Check versions.
         boolean cleaned = checkOldVersions(false);
 
@@ -1558,7 +1560,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             for (IgniteCacheProxy cache : ((IgniteKernal)node).caches()) {
                 GridCacheContext cctx = cache.context();
 
-                if (!cctx.userCache() || !cctx.group().mvccEnabled() || F.isEmpty(cctx.group().caches()))
+                if (!cctx.userCache() || !cctx.group().mvccEnabled() || F.isEmpty(cctx.group().caches()) || cctx.shared().closed(cctx))
                     continue;
 
                 for (Iterator it = cache.withKeepBinary().iterator(); it.hasNext(); ) {
