@@ -20,6 +20,9 @@ package org.apache.ignite.jdbc;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
@@ -79,6 +82,9 @@ public class JdbcVersionMismatchSelfTest extends GridCommonAbstractTest {
                 fail();
             }
             catch (SQLException e) {
+                assertEquals(SqlStateCode.SERIALIZATION_FAILURE, e.getSQLState());
+                assertEquals(IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR, e.getErrorCode());
+
                 assertNotNull(e.getMessage());
                 assertTrue(e.getMessage().contains("Cannot serialize transaction due to write conflict"));
             }
