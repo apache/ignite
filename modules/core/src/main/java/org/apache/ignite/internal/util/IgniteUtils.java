@@ -141,6 +141,7 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
@@ -212,16 +213,19 @@ import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoader;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.GridTuple;
+import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
@@ -10354,7 +10358,7 @@ public abstract class IgniteUtils {
     public static byte[] toBytes(Serializable obj) {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
              ObjectOutputStream oos = new ObjectOutputStream(bos)) {
-            
+
             oos.writeObject(obj);
             oos.flush();
 
@@ -10642,6 +10646,79 @@ public abstract class IgniteUtils {
             assert rndNode != null;
 
         return rndNode;
+    }
+
+    /**
+     * @param executorSvc Service for parallel execution.
+     * @param srcDatas List of data for parallelization.
+     * @param consumer Logic for execution of on each item of data.
+     * @param errHnd Optionan error handler. If not {@code null}, an error of each item execution will be passed to
+     *      this handler. If error handler is not {@code null}, the exception will not be thrown from this method.
+     * @param <T> Type of data.
+     * @return List of (item, execution future) tuples.
+     * @throws IgniteCheckedException If parallel execution failed and {@code errHnd} is {@code null}.
+     */
+    public static <T> List<T2<T, Future<Object>>> doInParallel(
+        ExecutorService executorSvc,
+        Collection<T> srcDatas,
+        IgniteInClosureX<T> consumer,
+        @Nullable IgniteBiInClosure<T, Throwable> errHnd
+    ) throws IgniteCheckedException {
+        List<T2<T, Future<Object>>> consumerFutures = srcDatas.stream()
+            .map(item -> new T2<>(
+                item,
+                executorSvc.submit(() -> {
+                    consumer.apply(item);
+
+                    return null;
+                })))
+            .collect(Collectors.toList());
+
+        IgniteCheckedException composite = null;
+
+        for (T2<T, Future<Object>> tup : consumerFutures) {
+            try {
+                getUninterruptibly(tup.get2());
+            }
+            catch (ExecutionException e) {
+                if (errHnd != null)
+                    errHnd.apply(tup.get1(), e.getCause());
+                else {
+                    if (composite == null)
+                        composite = new IgniteCheckedException("Failed to execute one of the tasks " +
+                            "(see suppressed exception for details)");
+
+                    composite.addSuppressed(e.getCause());
+                }
+            }
+        }
+
+        if (composite != null)
+            throw composite;
+
+        return consumerFutures;
+    }
+
+    /**
+     * @param fut Future to wait for completion.
+     * @throws ExecutionException If the future
+     */
+    private static void getUninterruptibly(Future fut) throws ExecutionException {
+        boolean interrupted = false;
+
+        while (true) {
+            try {
+                fut.get();
+
+                break;
+            }
+            catch (InterruptedException e) {
+                interrupted = true;
+            }
+        }
+
+        if (interrupted)
+            Thread.currentThread().interrupt();
     }
 
     /**

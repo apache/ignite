@@ -42,6 +42,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
@@ -103,6 +104,7 @@ import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -3272,43 +3274,59 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * Collects non local cache group descriptors.
+     *
+     * @return Collection of non local cache group descriptors.
+     */
+    private List<CacheGroupDescriptor> nonLocalCacheGroupDescriptors() {
+        return cctx.affinity().cacheGroups().values().stream()
+            .filter(grpDesc -> grpDesc.config().getCacheMode() != CacheMode.LOCAL)
+            .collect(Collectors.toList());
+    }
+
+    /**
      * Validates that partition update counters and cache sizes for all caches are consistent.
      */
     private void validatePartitionsState() {
         long time = System.currentTimeMillis();
 
-        for (Map.Entry<Integer, CacheGroupDescriptor> e : cctx.affinity().cacheGroups().entrySet()) {
-            CacheGroupDescriptor grpDesc = e.getValue();
-            if (grpDesc.config().getCacheMode() == CacheMode.LOCAL)
-                continue;
+        try {
+            U.doInParallel(
+                cctx.kernalContext().getSystemExecutorService(),
+                nonLocalCacheGroupDescriptors(),
+                new IgniteInClosureX<CacheGroupDescriptor>() {
+                    @Override public void applyx(CacheGroupDescriptor grpDesc) {
+                        CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpDesc.groupId());
 
-            int grpId = e.getKey();
+                        GridDhtPartitionTopology top = grpCtx != null
+                            ? grpCtx.topology()
+                            : cctx.exchange().clientTopology(grpDesc.groupId(), events().discoveryCache());
 
-            CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpId);
+                        // Do not validate read or write through caches or caches with disabled rebalance
+                        // or ExpiryPolicy is set or validation is disabled.
+                        if (grpCtx == null
+                            || grpCtx.config().isReadThrough()
+                            || grpCtx.config().isWriteThrough()
+                            || grpCtx.config().getCacheStoreFactory() != null
+                            || grpCtx.config().getRebalanceDelay() == -1
+                            || grpCtx.config().getRebalanceMode() == CacheRebalanceMode.NONE
+                            || grpCtx.config().getExpiryPolicyFactory() == null
+                            || SKIP_PARTITION_SIZE_VALIDATION)
+                            return;
 
-            GridDhtPartitionTopology top = grpCtx != null ?
-                    grpCtx.topology() :
-                    cctx.exchange().clientTopology(grpId, events().discoveryCache());
-
-            // Do not validate read or write through caches or caches with disabled rebalance
-            // or ExpiryPolicy is set or validation is disabled.
-            if (grpCtx == null
-                    || grpCtx.config().isReadThrough()
-                    || grpCtx.config().isWriteThrough()
-                    || grpCtx.config().getCacheStoreFactory() != null
-                    || grpCtx.config().getRebalanceDelay() == -1
-                    || grpCtx.config().getRebalanceMode() == CacheRebalanceMode.NONE
-                    || grpCtx.config().getExpiryPolicyFactory() == null
-                    || SKIP_PARTITION_SIZE_VALIDATION)
-                continue;
-
-            try {
-                validator.validatePartitionCountersAndSizes(this, top, msgs);
-            }
-            catch (IgniteCheckedException ex) {
-                log.warning("Partition states validation has failed for group: " + grpDesc.cacheOrGroupName() + ". " + ex.getMessage());
-                // TODO: Handle such errors https://issues.apache.org/jira/browse/IGNITE-7833
-            }
+                        try {
+                            validator.validatePartitionCountersAndSizes(GridDhtPartitionsExchangeFuture.this, top, msgs);
+                        }
+                        catch (IgniteCheckedException ex) {
+                            log.warning("Partition states validation has failed for group: " + grpCtx.cacheOrGroupName() + ". " + ex.getMessage());
+                            // TODO: Handle such errors https://issues.apache.org/jira/browse/IGNITE-7833
+                        }
+                    }
+                },
+                null);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to validate partitions state", e);
         }
 
         if (log.isInfoEnabled())
@@ -3321,21 +3339,28 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void assignPartitionsStates() {
         long time = System.currentTimeMillis();
 
-        for (Map.Entry<Integer, CacheGroupDescriptor> e : cctx.affinity().cacheGroups().entrySet()) {
-            CacheGroupDescriptor grpDesc = e.getValue();
-            if (grpDesc.config().getCacheMode() == CacheMode.LOCAL)
-                continue;
+        try {
+            U.doInParallel(
+                cctx.kernalContext().getSystemExecutorService(),
+                nonLocalCacheGroupDescriptors(),
+                new IgniteInClosureX<CacheGroupDescriptor>() {
+                    @Override public void applyx(CacheGroupDescriptor grpDesc) {
+                        CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpDesc.groupId());
 
-            CacheGroupContext grpCtx = cctx.cache().cacheGroup(e.getKey());
+                        GridDhtPartitionTopology top = grpCtx != null
+                            ? grpCtx.topology()
+                            : cctx.exchange().clientTopology(grpDesc.groupId(), events().discoveryCache());
 
-            GridDhtPartitionTopology top = grpCtx != null ?
-                grpCtx.topology() :
-                cctx.exchange().clientTopology(e.getKey(), events().discoveryCache());
-
-            if (!CU.isPersistentCache(grpDesc.config(), cctx.gridConfig().getDataStorageConfiguration()))
-                assignPartitionSizes(top);
-            else
-                assignPartitionStates(top);
+                        if (!CU.isPersistentCache(grpDesc.config(), cctx.gridConfig().getDataStorageConfiguration()))
+                            assignPartitionSizes(top);
+                        else
+                            assignPartitionStates(top);
+                    }
+                },
+                null);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to assign partition states", e);
         }
 
         if (log.isInfoEnabled())
