@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -43,7 +44,9 @@ public class ClientCacheDestroyRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.CACHE_DESTROY);
+        DynamicCacheDescriptor cacheDesc = ctx.kernalContext().cache().cacheDescriptor(cacheId);
+
+        authorize(cacheDesc != null ? cacheDesc.cacheName() : "Unknown cache", ctx, SecurityPermission.CACHE_DESTROY);
 
         String cacheName = ClientCacheRequest.cacheDescriptor(ctx, cacheId).cacheName();
 

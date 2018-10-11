@@ -73,7 +73,7 @@ public class GridOsSecurityProcessor extends GridProcessorAdapter implements Gri
     /** {@inheritDoc} */
     @Override public void authorize(String name, SecurityPermission perm, @Nullable SecurityContext securityCtx)
         throws SecurityException {
-        // No-op.
+        assert name != null;
     }
 
     /** {@inheritDoc} */

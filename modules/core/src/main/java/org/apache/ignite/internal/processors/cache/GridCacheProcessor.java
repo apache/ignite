@@ -2746,8 +2746,10 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                     if (secCtxBytes != null) {
                         SecurityContext secCtx = U.unmarshal(marsh, secCtxBytes, U.resolveClassLoader(ctx.config()));
 
-                        if (secCtx != null && cacheInfo.cacheType() == CacheType.USER)
-                            authorizeCacheCreate(cacheInfo.cacheData().config(), secCtx);
+                        if (secCtx != null && cacheInfo.cacheType() == CacheType.USER) {
+                            authorizeCacheCreate(cacheInfo.cacheData().config().getName(),
+                                cacheInfo.cacheData().config(), secCtx);
+                        }
                     }
                 }
                 catch (SecurityException | IgniteCheckedException ex) {
@@ -3723,11 +3725,12 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     /**
      * Authorize creating cache.
      *
+     * @param name Authorization object name.
      * @param cfg Cache configuration.
      * @param secCtx Optional security context.
      */
-    private void authorizeCacheCreate(CacheConfiguration cfg, SecurityContext secCtx) {
-        ctx.security().authorize(null, SecurityPermission.CACHE_CREATE, secCtx);
+    private void authorizeCacheCreate(String name, CacheConfiguration cfg, SecurityContext secCtx) {
+        ctx.security().authorize(name, SecurityPermission.CACHE_CREATE, secCtx);
 
         if (cfg != null && cfg.isOnheapCacheEnabled() &&
             IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_ONHEAP_CACHE))
@@ -3743,9 +3746,9 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         // Null security context means authorize this node.
         if (req.cacheType() == null || req.cacheType() == CacheType.USER) {
             if (req.stop())
-                ctx.security().authorize(null, SecurityPermission.CACHE_DESTROY, null);
+                ctx.security().authorize(req.cacheName(), SecurityPermission.CACHE_DESTROY, null);
             else
-                authorizeCacheCreate(req.startCacheConfiguration(), null);
+                authorizeCacheCreate(req.cacheName(), req.startCacheConfiguration(), null);
         }
     }
 

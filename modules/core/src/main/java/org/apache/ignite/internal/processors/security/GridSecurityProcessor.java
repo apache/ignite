@@ -79,7 +79,7 @@ public interface GridSecurityProcessor extends GridProcessor {
     /**
      * Authorizes grid operation.
      *
-     * @param name Cache name or task class name.
+     * @param name Authorization object name.
      * @param perm Permission to authorize.
      * @param securityCtx Optional security context.
      * @throws SecurityException If security check failed.

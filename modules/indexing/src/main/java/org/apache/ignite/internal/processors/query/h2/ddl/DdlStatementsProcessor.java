@@ -328,9 +328,9 @@ public class DdlStatementsProcessor {
                 }
             }
             else if (stmt0 instanceof GridSqlCreateTable) {
-                ctx.security().authorize(null, SecurityPermission.CACHE_CREATE, SecurityContextHolder.get());
-
                 GridSqlCreateTable cmd = (GridSqlCreateTable)stmt0;
+
+                ctx.security().authorize(cmd.cacheName(), SecurityPermission.CACHE_CREATE, SecurityContextHolder.get());
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
@@ -361,13 +361,15 @@ public class DdlStatementsProcessor {
                 }
             }
             else if (stmt0 instanceof GridSqlDropTable) {
-                ctx.security().authorize(null, SecurityPermission.CACHE_DESTROY, SecurityContextHolder.get());
-
                 GridSqlDropTable cmd = (GridSqlDropTable)stmt0;
 
-                isDdlOnSchemaSupported(cmd.schemaName());
-
                 GridH2Table tbl = dataTableWithRetry(cmd.schemaName(), cmd.tableName());
+
+                String cacheName = tbl != null ? tbl.cacheName() : "Unknown cache";
+
+                ctx.security().authorize(cacheName, SecurityPermission.CACHE_DESTROY, SecurityContextHolder.get());
+
+                isDdlOnSchemaSupported(cmd.schemaName());
 
                 if (tbl == null) {
                     if (!cmd.ifExists())

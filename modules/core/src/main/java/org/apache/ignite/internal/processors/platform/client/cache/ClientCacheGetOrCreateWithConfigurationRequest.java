@@ -50,7 +50,7 @@ public class ClientCacheGetOrCreateWithConfigurationRequest extends ClientReques
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.CACHE_CREATE);
+        authorize(cacheCfg.getName(), ctx, SecurityPermission.CACHE_CREATE);
 
         try {
             // Use security exception handler since the code authorizes "enable on-heap cache" permission

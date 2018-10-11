@@ -123,7 +123,7 @@ class ClientCacheRequest extends ClientRequest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void authorize(ClientConnectionContext ctx, SecurityPermission perm) {
+    @Override protected void authorize(String name, ClientConnectionContext ctx, SecurityPermission perm) {
         SecurityContext secCtx = ctx.securityContext();
 
         if (secCtx != null) {

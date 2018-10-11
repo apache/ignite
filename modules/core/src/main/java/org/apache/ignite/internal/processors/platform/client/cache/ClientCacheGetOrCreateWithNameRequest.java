@@ -43,7 +43,7 @@ public class ClientCacheGetOrCreateWithNameRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.CACHE_CREATE);
+        authorize(cacheName, ctx, SecurityPermission.CACHE_CREATE);
 
         ctx.kernalContext().grid().getOrCreateCache(cacheName);
 

@@ -80,11 +80,15 @@ public class ClientRequest implements ClientListenerRequest {
 
     /**
      * Authorize for specified permission.
+     *
+     * @param name Authorization object name.
+     * @param ctx Thin Client connection context.
+     * @param perm Security permission.
      */
-    protected void authorize(ClientConnectionContext ctx, SecurityPermission perm) {
+    protected void authorize(String name, ClientConnectionContext ctx, SecurityPermission perm) {
         SecurityContext secCtx = ctx.securityContext();
 
         if (secCtx != null)
-            runWithSecurityExceptionHandler(() -> ctx.kernalContext().security().authorize(null, perm, secCtx));
+            runWithSecurityExceptionHandler(() -> ctx.kernalContext().security().authorize(name, perm, secCtx));
     }
 }

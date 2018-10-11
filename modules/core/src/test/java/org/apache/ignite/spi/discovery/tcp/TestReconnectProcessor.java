@@ -83,7 +83,7 @@ public class TestReconnectProcessor extends GridProcessorAdapter implements Grid
     /** {@inheritDoc} */
     @Override public void authorize(String name, SecurityPermission perm,
         @Nullable SecurityContext securityCtx) throws SecurityException {
-
+        assert name != null;
     }
 
     /** {@inheritDoc} */
