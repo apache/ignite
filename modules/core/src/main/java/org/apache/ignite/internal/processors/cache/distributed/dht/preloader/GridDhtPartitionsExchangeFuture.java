@@ -826,8 +826,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (!cctx.kernalContext().clientNode())
             cctx.database().onDoneRestoreBinaryMemory();
 
-        cctx.cache().startCachesOnLocalJoin(initialVersion(), exchActions == null ? null : exchActions.localJoinContext());
-
         IgniteInternalFuture<?> cachesRegistrationFut = cctx.cache().startCachesOnLocalJoin(initialVersion(), exchActions.localJoinContext());
 
         return cachesRegistrationFut;
