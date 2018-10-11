@@ -702,11 +702,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert exchId.nodeId().equals(firstDiscoEvt.eventNode().id()) : this;
 
         try {
-            if (!changedAffinity()) {
-                assert lastFut != null;
-
+            if (!changedAffinity() && lastFut != null)
                 lastAffChangeTopVer = lastFut.lastAffinityChangeTopologyVersion();
-            }
 
             AffinityTopologyVersion topVer = initialVersion();
 
