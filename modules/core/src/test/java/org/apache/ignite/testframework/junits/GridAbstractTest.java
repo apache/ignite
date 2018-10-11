@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testframework.junits;
 
-import java.lang.annotation.Annotation;
 import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -104,6 +103,7 @@ import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
