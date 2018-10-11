@@ -93,7 +93,7 @@ namespace ignite
             };
 
             /**
-             * Implementtation of Readable interface for map.
+             * Implementation of Readable interface for map.
              *
              * @tparam T1 Type of the first element in the pair.
              * @tparam T2 Type of the second element in the pair.

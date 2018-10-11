@@ -109,7 +109,7 @@ namespace ignite
                  * Stores given key-value pairs in cache.
                  * If write-through is enabled, the stored values will be persisted to store.
                  *
-                 * @param begin Iterator pointing to the beggining of the key-value pair sequence.
+                 * @param begin Iterator pointing to the beginning of the key-value pair sequence.
                  * @param end Iterator pointing to the end of the key-value pair sequence.
                  */
                 template<typename InIter>
@@ -167,7 +167,7 @@ namespace ignite
                  * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
                  * will be loaded from persistent store.
                  *
-                 * @param begin Iterator pointing to the beggining of the key sequence.
+                 * @param begin Iterator pointing to the beginning of the key sequence.
                  * @param end Iterator pointing to the end of the key sequence.
                  * @param dst Output iterator. Should dereference to std::pair or CacheEntry.
                  */
@@ -243,7 +243,7 @@ namespace ignite
                 /**
                  * Check if cache contains mapping for these keys.
                  *
-                 * @param begin Iterator pointing to the beggining of the key sequence.
+                 * @param begin Iterator pointing to the beginning of the key sequence.
                  * @param end Iterator pointing to the end of the key sequence.
                  * @return True if cache contains mapping for all these keys.
                  */
@@ -304,7 +304,7 @@ namespace ignite
                  * Removes given key mappings from cache.
                  * If write-through is enabled, the value will be removed from store.
                  *
-                 * @param begin Iterator pointing to the beggining of the key sequence.
+                 * @param begin Iterator pointing to the beginning of the key sequence.
                  * @param end Iterator pointing to the end of the key sequence.
                  */
                 template<typename InIter>
@@ -362,7 +362,7 @@ namespace ignite
                  * Clear entries from the cache and swap storage, without notifying listeners or CacheWriters.
                  * Entry is cleared only if it is not currently locked, and is not participating in a transaction.
                  *
-                 * @param begin Iterator pointing to the beggining of the key sequence.
+                 * @param begin Iterator pointing to the beginning of the key sequence.
                  * @param end Iterator pointing to the end of the key sequence.
                  */
                 template<typename InIter>
