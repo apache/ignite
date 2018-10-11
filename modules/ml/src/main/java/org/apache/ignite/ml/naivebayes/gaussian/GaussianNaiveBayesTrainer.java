@@ -17,19 +17,15 @@
 
 package org.apache.ignite.ml.naivebayes.gaussian;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.util.MapUtil;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
@@ -77,26 +73,26 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
             (upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
-            SumHelper sumHelper = computeSums(dataset);
+            GaussianNaiveBayesSumsHolder GaussianNaiveBayesSumsHolder = computeSums(dataset);
 
-            List<Double> sortedLabels = new ArrayList<>(sumHelper.featureCountersPerLbl.keySet());
+            List<Double> sortedLabels = new ArrayList<>(GaussianNaiveBayesSumsHolder.featureCountersPerLbl.keySet());
             sortedLabels.sort(Double::compareTo);
 
             int labelCount = sortedLabels.size();
-            int featureCount = sumHelper.featureSumsPerLbl.get(sortedLabels.get(0)).length;
+            int featureCount = GaussianNaiveBayesSumsHolder.featureSumsPerLbl.get(sortedLabels.get(0)).length;
 
             double[][] means = new double[labelCount][featureCount];
             double[][] variances = new double[labelCount][featureCount];
             double[] classProbabilities = new double[labelCount];
             double[] labels = new double[labelCount];
 
-            long datasetSize = sumHelper.featureCountersPerLbl.values().stream().mapToInt(i -> i).sum();
+            long datasetSize = GaussianNaiveBayesSumsHolder.featureCountersPerLbl.values().stream().mapToInt(i -> i).sum();
 
             int lbl = 0;
             for (Double label : sortedLabels) {
-                int count = sumHelper.featureCountersPerLbl.get(label);
-                double[] sum = sumHelper.featureSumsPerLbl.get(label);
-                double[] sqSum = sumHelper.featureSquaredSumsPerLbl.get(label);
+                int count = GaussianNaiveBayesSumsHolder.featureCountersPerLbl.get(label);
+                double[] sum = GaussianNaiveBayesSumsHolder.featureSumsPerLbl.get(label);
+                double[] sqSum = GaussianNaiveBayesSumsHolder.featureSquaredSumsPerLbl.get(label);
 
                 for (int i = 0; i < featureCount; i++) {
                     means[lbl][i] = sum[i] / count;
@@ -152,10 +148,11 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
     /**
      * Calculates sums of all values of a particular feature and amount of rows for all labels
      */
-    private SumHelper computeSums(Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset) {
+    private GaussianNaiveBayesSumsHolder computeSums(
+        Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset) {
         return dataset.compute(
             data -> {
-                SumHelper res = new SumHelper();
+                GaussianNaiveBayesSumsHolder res = new GaussianNaiveBayesSumsHolder();
                 for (int i = 0; i < data.rowSize(); i++) {
                     LabeledVector row = data.getRow(i);
                     Vector features = row.features();
@@ -189,37 +186,10 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                 return res;
             }, (a, b) -> {
                 if (a == null)
-                    return b == null ? new SumHelper() : b;
+                    return b == null ? new GaussianNaiveBayesSumsHolder() : b;
                 if (b == null)
                     return a;
                 return a.merge(b);
             });
-    }
-
-    /** Service class is used to calculate meanses. */
-    private static class SumHelper implements Serializable {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 1L;
-        /** Sum of all values for all features for each label */
-        Map<Double, double[]> featureSumsPerLbl = new HashMap<>();
-        /** Sum of all squared values for all features for each label */
-        Map<Double, double[]> featureSquaredSumsPerLbl = new HashMap<>();
-        /** Rows count for each label */
-        Map<Double, Integer> featureCountersPerLbl = new HashMap<>();
-
-        /** Merge current */
-        SumHelper merge(SumHelper other) {
-            featureSumsPerLbl = MapUtil.mergeMaps(featureSumsPerLbl, other.featureSumsPerLbl, this::sum, HashMap::new);
-            featureSquaredSumsPerLbl = MapUtil.mergeMaps(featureSquaredSumsPerLbl, other.featureSquaredSumsPerLbl, this::sum, HashMap::new);
-            featureCountersPerLbl = MapUtil.mergeMaps(featureCountersPerLbl, other.featureCountersPerLbl, (i1, i2) -> i1 + i2, HashMap::new);
-            return this;
-        }
-
-        private double[] sum(double[] arr1, double[] arr2) {
-            for (int i = 0; i < arr1.length; i++) {
-                arr1[i] += arr2[i];
-            }
-            return arr1;
-        }
     }
 }

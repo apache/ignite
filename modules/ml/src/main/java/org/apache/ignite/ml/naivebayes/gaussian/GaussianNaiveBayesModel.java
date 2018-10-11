@@ -38,6 +38,7 @@ public class GaussianNaiveBayesModel implements Model<Vector, Double>, Exportabl
     private final double[] classProbabilities;
     /** Labels. */
     private final double[] labels;
+    private GaussianNaiveBayesSumsHolder sumsHolder;
 
     /**
      * @param means means of features for all classes
@@ -50,6 +51,20 @@ public class GaussianNaiveBayesModel implements Model<Vector, Double>, Exportabl
         this.variances = variances;
         this.classProbabilities = classProbabilities;
         this.labels = labels;
+    }
+
+    /**
+     * @param means means of features for all classes
+     * @param variances variances of features for all classes
+     * @param classProbabilities probabilities for all classes
+     */
+    public GaussianNaiveBayesModel(double[][] means, double[][] variances,
+        double[] classProbabilities, double[] labels, GaussianNaiveBayesSumsHolder sumsHolder) {
+        this.means = means;
+        this.variances = variances;
+        this.classProbabilities = classProbabilities;
+        this.labels = labels;
+        this.sumsHolder = sumsHolder;
     }
 
     /** {@inheritDoc} */
@@ -92,6 +107,10 @@ public class GaussianNaiveBayesModel implements Model<Vector, Double>, Exportabl
     /** */
     public double[] getClassProbabilities() {
         return classProbabilities;
+    }
+
+    public GaussianNaiveBayesSumsHolder getSumsHolder() {
+        return sumsHolder;
     }
 
     /** Gauus distribution */
