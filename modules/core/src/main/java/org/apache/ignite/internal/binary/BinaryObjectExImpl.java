@@ -105,9 +105,9 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
     @Nullable public abstract <F> F fieldByOrder(int order);
 
     /**
-     * Create field comparer.
+     * Create field comparator.
      *
-     * @return Comparer.
+     * @return Comparator.
      */
     public abstract BinarySerializedFieldComparator createFieldComparator();
 
@@ -245,7 +245,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
     private void appendValue(Object val, SB buf, BinaryReaderHandles ctx,
         IdentityHashMap<BinaryObject, Integer> handles) {
         if (val instanceof byte[])
-            buf.a(Arrays.toString((byte[]) val));
+            buf.a(Arrays.toString((byte[])val));
         else if (val instanceof short[])
             buf.a(Arrays.toString((short[])val));
         else if (val instanceof int[])
@@ -259,7 +259,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
         else if (val instanceof char[])
             buf.a(Arrays.toString((char[])val));
         else if (val instanceof boolean[])
-            buf.a(Arrays.toString((boolean[]) val));
+            buf.a(Arrays.toString((boolean[])val));
         else if (val instanceof BigDecimal[])
             buf.a(Arrays.toString((BigDecimal[])val));
         else if (val instanceof IgniteUuid)
@@ -335,5 +335,66 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
         }
         else
             buf.a(val);
+    }
+
+    /**
+     * Check if object graph has circular references.
+     *
+     * @return {@code true} if object has circular references.
+     */
+    public boolean hasCircularReferences() {
+        try {
+            BinaryReaderHandles ctx = new BinaryReaderHandles();
+
+            ctx.put(start(), this);
+
+            return hasCircularReferences(ctx, new IdentityHashMap<BinaryObject, Integer>());
+        }
+        catch (BinaryObjectException e) {
+            throw new IgniteException("Failed to check binary object for circular references", e);
+        }
+    }
+
+    /**
+     * @param ctx Reader context.
+     * @param handles Handles for already traversed objects.
+     * @return {@code true} if has circular reference.
+     */
+    private boolean hasCircularReferences(BinaryReaderHandles ctx, IdentityHashMap<BinaryObject, Integer> handles) {
+        BinaryType meta;
+
+        try {
+            meta = rawType();
+        }
+        catch (BinaryObjectException ignore) {
+            meta = null;
+        }
+
+        if (meta == null)
+            return false;
+
+        int idHash = System.identityHashCode(this);
+
+        handles.put(this, idHash);
+
+        if (meta.fieldNames() != null) {
+            ctx.put(start(), this);
+
+            for (String name : meta.fieldNames()) {
+                Object val = field(ctx, name);
+
+                if (val instanceof BinaryObjectExImpl) {
+                    BinaryObjectExImpl po = (BinaryObjectExImpl)val;
+
+                    Integer idHash0 = handles.get(val);
+
+                    // Check for circular reference.
+                    if (idHash0 != null || po.hasCircularReferences(ctx, handles))
+                        return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

@@ -59,6 +59,17 @@ AC_ARG_ENABLE([core],
     [core=true]
 )
 
+AC_ARG_ENABLE([thin-client],
+    [AS_HELP_STRING([--enable-thin-client],[build Thin C++ client [default=yes]])],
+    [ case "${enableval}" in
+        yes) thin_client=true ;;
+        no) thin_client=false ;;
+        *) AC_MSG_ERROR(bad value ${enableval} for --enable-thin-client) ;;
+        esac
+    ],
+    [thin_client=true]
+)
+
 AC_ARG_ENABLE([node],
     [AS_HELP_STRING([--enable-node],[build stand-alone node binary [default=yes]])],
     [ case "${enableval}" in
@@ -81,6 +92,7 @@ AC_ARG_ENABLE([tests],
 
 AM_CONDITIONAL([COND_ODBC], [test "x$odbc" = "xtrue"])
 AM_CONDITIONAL([COND_CORE], [test "x$core" = "xtrue"])
+AM_CONDITIONAL([COND_THIN_CLIENT], [test "x$thin_client" = "xtrue"])
 AM_CONDITIONAL([COND_NODE], [test "x$node" = "xtrue"])
 AM_CONDITIONAL([COND_TESTS], [test "x$tests" = "xtrue"])
 
@@ -102,6 +114,10 @@ AC_CONFIG_FILES([ \
     core/ignite.pc \
     jni/include/Makefile \
     jni/Makefile \
+    thin-client/include/Makefile \
+    thin-client/Makefile \
+    thin-client-test/include/Makefile \
+    thin-client-test/Makefile \
     ignite/Makefile \
 ])
 

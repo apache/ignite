@@ -24,8 +24,10 @@ import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -470,13 +472,18 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
         sem1.acquire();
 
+        final CountDownLatch createLatch = new CountDownLatch(1);
+
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
+            @Override public Void call() {
                 boolean failed = true;
 
                 IgniteSemaphore sem2 = i1.semaphore(STRUCTURE_NAME, 1, false, true);
 
                 try {
+                    // Guard the acquire call by count down latch to make sure that semaphore creation does not fail.
+                    createLatch.countDown();
+
                     sem2.acquire();
                 }
                 catch (Exception ignored){
@@ -491,10 +498,14 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
             }
         });
 
-        while(!sem1.hasQueuedThreads()){
+        assertTrue("Failed to wait for semaphore creation",
+            createLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+
+        while(!sem1.hasQueuedThreads()) {
             try {
                 Thread.sleep(1);
-            } catch (InterruptedException ignored) {
+            }
+            catch (InterruptedException ignored) {
                 fail();
             }
         }

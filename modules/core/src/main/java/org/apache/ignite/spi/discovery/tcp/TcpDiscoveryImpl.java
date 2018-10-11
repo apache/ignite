@@ -248,6 +248,13 @@ abstract class TcpDiscoveryImpl {
     }
 
     /**
+     * @return connection check interval.
+     */
+    public long connectionCheckInterval() {
+        return 0;
+    }
+
+    /**
      * @throws IgniteSpiException If failed.
      */
     public abstract void spiStop() throws IgniteSpiException;

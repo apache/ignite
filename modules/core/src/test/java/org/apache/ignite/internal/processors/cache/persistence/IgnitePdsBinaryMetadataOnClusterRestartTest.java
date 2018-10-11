@@ -629,7 +629,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
         File baseDirFile = new File(baseDir);
 
         for (File f : baseDirFile.listFiles())
-            deleteRecursively(U.resolveWorkDirectory(baseDir, f.getName(), false));
+            U.delete(U.resolveWorkDirectory(baseDir, f.getName(), false));
     }
 
     /**

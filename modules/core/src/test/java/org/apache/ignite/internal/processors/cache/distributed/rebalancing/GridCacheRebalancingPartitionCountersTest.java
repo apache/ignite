@@ -68,13 +68,13 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
     }
 
     /**
@@ -138,8 +138,9 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
 
         assertTrue(primaryRemoved);
 
-        ignite.active(true);
-        waitForRebalancing();
+        ignite.cluster().active(true);
+
+        awaitPartitionMapExchange();
 
         List<String> issues = new ArrayList<>();
         HashMap<Integer, Long> partMap = new HashMap<>();

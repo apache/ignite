@@ -150,7 +150,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
     private void cleanUpWorkingDir() throws Exception {
         String workDir = U.defaultWorkDirectory();
 
-        deleteRecursively(U.resolveWorkDirectory(workDir, "marshaller", false));
+        U.delete(U.resolveWorkDirectory(workDir, "marshaller", false));
     }
 
     /**

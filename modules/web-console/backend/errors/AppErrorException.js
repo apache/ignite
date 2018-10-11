@@ -23,8 +23,6 @@ class AppErrorException extends Error {
 
         this.name = this.constructor.name;
         this.code = 400;
-        this.httpCode = 400;
-        this.message = message;
 
         if (typeof Error.captureStackTrace === 'function')
             Error.captureStackTrace(this, this.constructor);

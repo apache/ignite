@@ -907,6 +907,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
      * Adds maximum possible fragment of the given row to this data page and sets respective link to the row.
      *
      * @param pageMem Page memory.
+     * @param pageId Page ID to use to construct a link.
      * @param pageAddr Page address.
      * @param row Data row.
      * @param written Number of bytes of row size that was already written.
@@ -917,18 +918,20 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
      */
     public int addRowFragment(
         PageMemory pageMem,
+        long pageId,
         long pageAddr,
         T row,
         int written,
         int rowSize,
         int pageSize
     ) throws IgniteCheckedException {
-        return addRowFragment(pageMem, pageAddr, written, rowSize, row.link(), row, null, pageSize);
+        return addRowFragment(pageMem, pageId, pageAddr, written, rowSize, row.link(), row, null, pageSize);
     }
 
     /**
      * Adds this payload as a fragment to this data page.
      *
+     * @param pageId Page ID to use to construct a link.
      * @param pageAddr Page address.
      * @param payload Payload bytes.
      * @param lastLink Link to the previous written fragment (link to the tail).
@@ -936,18 +939,20 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
      * @throws IgniteCheckedException If failed.
      */
     public void addRowFragment(
+        long pageId,
         long pageAddr,
         byte[] payload,
         long lastLink,
         int pageSize
     ) throws IgniteCheckedException {
-        addRowFragment(null, pageAddr, 0, 0, lastLink, null, payload, pageSize);
+        addRowFragment(null, pageId, pageAddr, 0, 0, lastLink, null, payload, pageSize);
     }
 
     /**
      * Adds maximum possible fragment of the given row to this data page and sets respective link to the row.
      *
      * @param pageMem Page memory.
+     * @param pageId Page ID to use to construct a link.
      * @param pageAddr Page address.
      * @param written Number of bytes of row size that was already written.
      * @param rowSize Row size.
@@ -960,6 +965,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
      */
     private int addRowFragment(
         PageMemory pageMem,
+        long pageId,
         long pageAddr,
         int written,
         int rowSize,
@@ -1004,20 +1010,9 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
         int itemId = addItem(pageAddr, fullEntrySize, directCnt, indirectCnt, dataOff, pageSize);
 
         if (row != null)
-            setLink(row, pageAddr, itemId);
+            setLinkByPageId(row, pageId, itemId);
 
         return payloadSize;
-    }
-
-    /**
-     * @param row Row to set link to.
-     * @param pageAddr Page address.
-     * @param itemId Item ID.
-     */
-    private void setLink(T row, long pageAddr, int itemId) {
-        long pageId = getPageId(pageAddr);
-
-        setLinkByPageId(row, pageId, itemId);
     }
 
     /**

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-// import _ from 'lodash';
+import {nonEmpty} from 'app/utils/lodashMixins';
 import { EmptyBean, Bean } from './Beans';
 
 export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatformDefaults', (JavaTypes, clusterDflts, cacheDflts) => {
@@ -219,7 +219,7 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
 
         // Generate events group.
         static clusterEvents(cluster, cfg = this.igniteConfigurationBean(cluster)) {
-            if (_.nonEmpty(cluster.includeEventTypes))
+            if (nonEmpty(cluster.includeEventTypes))
                 cfg.eventTypes('events', 'includeEventTypes', cluster.includeEventTypes);
 
             return cfg;
@@ -262,7 +262,7 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
         static clusterCaches(cluster, caches, igfss, isSrvCfg, cfg = this.igniteConfigurationBean(cluster)) {
             // const cfg = this.clusterGeneral(cluster, cfg);
             //
-            // if (_.nonEmpty(caches)) {
+            // if (nonEmpty(caches)) {
             //     const ccfgs = _.map(caches, (cache) => this.cacheConfiguration(cache));
             //
             //     cfg.collectionProperty('', '', ccfgs, );
@@ -285,7 +285,7 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
             ccfg.intProperty('copyOnRead');
 
             if (ccfg.valueOf('cacheMode') === 'PARTITIONED' && ccfg.valueOf('atomicityMode') === 'TRANSACTIONAL')
-                ccfg.intProperty('invalidate');
+                ccfg.intProperty('isInvalidate', 'invalidate');
 
             return ccfg;
         }

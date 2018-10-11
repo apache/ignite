@@ -186,7 +186,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration cfg1 = new DataStorageConfiguration();
 
-        cfg1.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(150 * 1024 * 1024L));
+        cfg1.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(512 * 1024 * 1024L));
 
         cfg.setDataStorageConfiguration(cfg1);
 
@@ -2052,8 +2052,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNoForceKeysRequests() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5510");
-
         cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
             @Override public CacheConfiguration[] apply(String s) {
                 return null;

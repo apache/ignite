@@ -110,6 +110,54 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         }
 
         /// <summary>
+        /// Tests the GroupBy with Where subquery.
+        /// </summary>
+        [Test]
+        public void TestGroupBySubquery()
+        {
+            var persons = GetPersonCache().AsCacheQueryable().Where(p => p.Value.OrganizationId == 1000);
+            var orgs = GetOrgCache().AsCacheQueryable();
+
+            // Simple, unordered
+            CollectionAssert.AreEquivalent(new[] { 1000 },
+                persons.GroupBy(x => x.Value.OrganizationId).Select(x => x.Key).ToArray());
+
+            // Aggregate
+            Assert.AreEqual(1000,
+                persons.GroupBy(x => x.Value.OrganizationId).Select(x => x.Key).OrderBy(x => x).First());
+
+            // Ordering and count
+            var res1 =
+                from p in persons
+                orderby p.Value.Name
+                group p by p.Value.OrganizationId
+                into gs
+                orderby gs.Key
+                where gs.Count() > 10
+                select new { Count = gs.Count(), OrgId = gs.Key, AvgAge = gs.Average(x => x.Value.Age) };
+
+            var resArr = res1.ToArray();
+
+            Assert.AreEqual(new[]
+            {
+                new {Count = PersonCount/2, OrgId = 1000, AvgAge = (double) PersonCount/2 - 1},
+            }, resArr);
+
+            // Join and sum
+            var res2 = persons.Join(orgs.Where(o => o.Key > 10), p => p.Value.OrganizationId, o => o.Key,
+                    (p, o) => new { p, o })
+                .GroupBy(x => x.o.Value.Name)
+                .Select(g => new { Org = g.Key, AgeSum = g.Select(x => x.p.Value.Age).Sum() });
+
+            var resArr2 = res2.ToArray();
+
+            Assert.AreEqual(new[]
+            {
+                new {Org = "Org_0", AgeSum = persons.Where(x => x.Value.OrganizationId == 1000).Sum(x => x.Value.Age)},
+            }, resArr2);
+        }
+
+        /// <summary>
         /// Tests the union.
         /// </summary>
         [Test]

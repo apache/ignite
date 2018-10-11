@@ -18,9 +18,15 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.authentication.AuthenticationConfigurationClusterTest;
+import org.apache.ignite.internal.processors.authentication.AuthenticationOnNotActiveClusterTest;
+import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorNPEOnStartTest;
+import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorNodeRestartTest;
+import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeAdvancedSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeCoordinatorNotAffinityNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheDataLossOnPartitionMoveTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CachePartitionStateTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
@@ -64,8 +70,16 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(WalModeChangeCoordinatorNotAffinityNodeSelfTest.class);
         suite.addTestSuite(WalModeChangeAdvancedSelfTest.class);
 
+        suite.addTestSuite(CacheDataLossOnPartitionMoveTest.class);
+
 //        TODO enable this test after IGNITE-6753, now it takes too long
 //        suite.addTestSuite(IgniteOutOfMemoryPropagationTest.class);
+
+        suite.addTestSuite(AuthenticationConfigurationClusterTest.class);
+        suite.addTestSuite(AuthenticationProcessorSelfTest.class);
+        suite.addTestSuite(AuthenticationOnNotActiveClusterTest.class);
+        suite.addTestSuite(AuthenticationProcessorNodeRestartTest.class);
+        suite.addTestSuite(AuthenticationProcessorNPEOnStartTest.class);
 
         return suite;
     }

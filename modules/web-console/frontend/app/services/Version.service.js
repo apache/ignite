@@ -16,6 +16,7 @@
  */
 
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import _ from 'lodash';
 
 /**
  * Utility service for version parsing and comparing
@@ -76,6 +77,14 @@ export default class IgniteVersion {
         this.webConsole = '2.4.0';
 
         this.supportedVersions = [
+            {
+                label: 'Ignite 2.6',
+                ignite: '2.6.0'
+            },
+            {
+                label: 'Ignite 2.5',
+                ignite: '2.5.0'
+            },
             {
                 label: 'Ignite 2.4',
                 ignite: '2.4.0'

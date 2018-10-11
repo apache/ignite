@@ -56,6 +56,9 @@ public class DiscoveryDataPacket implements Serializable {
     /** */
     private Map<UUID, Map<Integer, byte[]>> nodeSpecificData = new LinkedHashMap<>();
 
+    /** */
+    private transient boolean joiningNodeClient;
+
     /**
      * @param joiningNodeId Joining node id.
      */
@@ -114,7 +117,7 @@ public class DiscoveryDataPacket implements Serializable {
             boolean clientNode,
             IgniteLogger log
     ) {
-        DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId);
+        DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, joiningNodeClient);
 
         if (commonData != null && !commonData.isEmpty()) {
             Map<Integer, Serializable> unmarshCommonData = unmarshalData(commonData, marsh, clsLdr, clientNode, log);
@@ -154,7 +157,7 @@ public class DiscoveryDataPacket implements Serializable {
             boolean clientNode,
             IgniteLogger log
     ) {
-        DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId);
+        DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, joiningNodeClient);
 
         if (joiningNodeData != null && !joiningNodeData.isEmpty()) {
             unmarshalledJoiningNodeData = unmarshalData(
@@ -343,11 +346,18 @@ public class DiscoveryDataPacket implements Serializable {
      * (e.g. on nodes prior in cluster to the one where this method is called).
      */
     public DiscoveryDataBag bagForDataCollection() {
-        DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, commonData.keySet());
+        DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, commonData.keySet(), joiningNodeClient);
 
         if (unmarshalledJoiningNodeData != null)
             dataBag.joiningNodeData(unmarshalledJoiningNodeData);
 
         return dataBag;
+    }
+
+    /**
+     * @param joiningNodeClient Joining node is client flag.
+     */
+    public void joiningNodeClient(boolean joiningNodeClient) {
+        this.joiningNodeClient = joiningNodeClient;
     }
 }

@@ -19,7 +19,7 @@ import path from 'path';
 
 import testCfg from '../webpack/webpack.test';
 
-export default (config) => {
+export default (/** @type {import('karma').Config} */ config) => {
     config.set({
         // Base path that will be used to resolve all patterns (eg. files, exclude).
         basePath: path.resolve('./'),
@@ -30,12 +30,14 @@ export default (config) => {
         // List of files / patterns to load in the browser.
         files: [
             'node_modules/babel-polyfill/dist/polyfill.js',
-            'test/**/*.test.js',
-            'app/**/*.spec.js'
+            'node_modules/angular/angular.js',
+            'node_modules/angular-mocks/angular-mocks.js',
+            'app/**/*.spec.js',
+            'test/**/*.test.js'
         ],
 
         plugins: [
-            require('karma-phantomjs-launcher'),
+            require('karma-chrome-launcher'),
             require('karma-teamcity-reporter'),
             require('karma-mocha-reporter'),
             require('karma-webpack'),
@@ -45,7 +47,7 @@ export default (config) => {
         // Preprocess matching files before serving them to the browser
         // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor.
         preprocessors: {
-            '{app,test}/**/*.js': ['webpack']
+            '+(app|test)/**/*.js': ['webpack']
         },
 
         webpack: testCfg,
@@ -57,7 +59,7 @@ export default (config) => {
         // Test results reporter to use
         // possible values: 'dots', 'progress'
         // available reporters: https://npmjs.org/browse/keyword/karma-reporter.
-        reporters: ['mocha'],
+        reporters: [process.env.TEST_REPORTER || 'mocha'],
 
         mochaReporter: {
             showDiff: true
@@ -78,7 +80,21 @@ export default (config) => {
 
         // start these browsers
         // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-        browsers: ['PhantomJS'],
+        browsers: ['ChromeHeadlessNoSandbox'],
+        customLaunchers: {
+            ChromeHeadlessNoSandbox: {
+                base: 'ChromeHeadless',
+                flags: ['--no-sandbox']
+            },
+            ChromeDebug: {
+                base: 'Chrome',
+                flags: [
+                    '--start-maximized',
+                    '--auto-open-devtools-for-tabs'
+                ],
+                debug: true
+            }
+        },
 
         // Continuous Integration mode
         // if true, Karma captures browsers, runs the tests and exits

@@ -48,7 +48,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
 
                 return null;
             }
-        }, "08001", "Failed to connect to Ignite cluster [host=unknown.host");
+        }, "08001", "Failed to connect to server [host=unknown.host");
     }
 
     /**
@@ -63,7 +63,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
 
                 return null;
             }
-        }, "08001", "Property cannot be upper than 65535");
+        }, "08001", "port range contains invalid port 1000000");
     }
 
     /**

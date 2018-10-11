@@ -120,7 +120,9 @@ BOOST_AUTO_TEST_CASE(TestPutBinaryToString)
 
     uint8_t binary[] = { 0x21, 0x84, 0xF4, 0xDC, 0x01, 0x00, 0xFF, 0xF0 };
 
-    appBuf.PutBinaryData(binary, sizeof(binary));
+    int32_t written = 0;
+
+    appBuf.PutBinaryData(binary, sizeof(binary), written);
 
     BOOST_CHECK(!strcmp(buffer, "2184f4dc0100fff0"));
     BOOST_CHECK(reslen == strlen("2184f4dc0100fff0"));

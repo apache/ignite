@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.client.impl;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,6 +38,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientCacheMode;
 import org.apache.ignite.internal.client.GridClientClosedException;
+import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientCompute;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientData;
@@ -48,7 +47,6 @@ import org.apache.ignite.internal.client.GridClientDataConfiguration;
 import org.apache.ignite.internal.client.GridClientDisconnectedException;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
-import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientPartitionAffinity;
 import org.apache.ignite.internal.client.GridClientPredicate;
@@ -70,10 +68,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
  * Client implementation.
  */
 public class GridClientImpl implements GridClient {
-    /** Enterprise connection manager class name. */
-    private static final String ENT_CONN_MGR_CLS =
-        "org.apache.ignite.internal.client.impl.connection.GridClientConnectionManagerEntImpl";
-
     /** Null mask object. */
     private static final Object NULL_MASK = new Object();
 
@@ -445,25 +439,7 @@ public class GridClientImpl implements GridClient {
         GridClientConfiguration cfg, Collection<InetSocketAddress> routers, GridClientTopology top,
         @Nullable Byte marshId, boolean routerClient)
         throws GridClientException {
-        GridClientConnectionManager mgr;
-
-        try {
-            Class<?> cls = Class.forName(ENT_CONN_MGR_CLS);
-
-            Constructor<?> cons = cls.getConstructor(UUID.class, SSLContext.class, GridClientConfiguration.class,
-                Collection.class, GridClientTopology.class, Byte.class, boolean.class);
-
-            mgr = (GridClientConnectionManager)cons.newInstance(clientId, sslCtx, cfg, routers, top, marshId,
-                routerClient);
-        }
-        catch (ClassNotFoundException ignored) {
-            mgr = new GridClientConnectionManagerOsImpl(clientId, sslCtx, cfg, routers, top, marshId, routerClient);
-        }
-        catch (NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException e) {
-            throw new GridClientException("Failed to create client connection manager.", e);
-        }
-
-        return mgr;
+        return new GridClientConnectionManagerOsImpl(clientId, sslCtx, cfg, routers, top, marshId, routerClient);
     }
 
     /**

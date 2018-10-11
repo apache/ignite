@@ -23,11 +23,13 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -61,6 +63,17 @@ public class IgniteDiscoveryCacheReuseSelfTest extends GridCommonAbstractTest {
     public void testDiscoCacheReuseOnNodeJoin() throws Exception {
         startGridsMultiThreaded(2);
 
+        // The final topology version after 2 node joins and one CacheAffinityChange message.
+        AffinityTopologyVersion waited = new AffinityTopologyVersion(2, 1);
+
+        // Wait for this topology version on all grids.
+        GridTestUtils.waitForCondition(() -> {
+            boolean verChanged = true;
+            for (Ignite ignite : G.allGrids())
+                verChanged &= ((IgniteEx) ignite).context().discovery().topologyVersionEx().equals(waited);
+            return verChanged;
+        }, 5000);
+
         assertDiscoCacheReuse(new AffinityTopologyVersion(2, 0), new AffinityTopologyVersion(2, 1));
     }
 
@@ -90,7 +103,10 @@ public class IgniteDiscoveryCacheReuseSelfTest extends GridCommonAbstractTest {
                 assertSame(U.field(discoCache1, prop), U.field(discoCache2, prop));
 
             assertNotSame(U.field(discoCache1, "alives"), U.field(discoCache2, "alives"));
-            assertEquals(U.field(discoCache1, "alives"), U.field(discoCache2, "alives"));
+
+            GridConcurrentHashSet alives1 = U.field(discoCache1, "alives");
+            GridConcurrentHashSet alives2 = U.field(discoCache2, "alives");
+            assertEquals("Discovery caches are not equal", alives1, alives2);
         }
     }
 }

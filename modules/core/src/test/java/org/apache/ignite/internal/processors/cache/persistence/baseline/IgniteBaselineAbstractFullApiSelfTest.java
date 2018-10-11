@@ -19,10 +19,11 @@ package org.apache.ignite.internal.processors.cache.persistence.baseline;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
 
 /**
- *
+ * Abstract test class for Full API cache tests with presence of BaselineTopology.
  */
 public abstract class IgniteBaselineAbstractFullApiSelfTest extends GridCacheAbstractFullApiSelfTest {
     /** {@inheritDoc} */
@@ -32,10 +33,18 @@ public abstract class IgniteBaselineAbstractFullApiSelfTest extends GridCacheAbs
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
-                    .setMaxSize(200 * 1024 * 1024)
-                    .setPersistenceEnabled(true)));
+                    .setMaxSize(256 * 1024 * 1024)
+                    .setPersistenceEnabled(true))
+            .setWalMode(WALMode.LOG_ONLY));
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */

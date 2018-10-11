@@ -554,7 +554,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             }
             finally {
                 if (entry != null && tx == null)
-                    cctx.evicts().touch(entry, topVer);
+                    entry.touch(topVer);
             }
         }
 
@@ -655,7 +655,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 if (dhtEntry != null)
                     // Near cache is enabled, so near entry will be enlisted in the transaction.
                     // Always touch DHT entry in this case.
-                    dht.context().evicts().touch(dhtEntry, topVer);
+                    dhtEntry.touch(topVer);
             }
         }
     }
@@ -799,7 +799,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 entry.releaseEviction();
 
                 if (tx == null)
-                    cctx.evicts().touch(entry, topVer);
+                    entry.touch(topVer);
             }
         }
     }
@@ -936,21 +936,18 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 AffinityTopologyVersion updTopVer =
                     new AffinityTopologyVersion(Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
 
-                cctx.affinity().affinityReadyFuture(updTopVer).listen(
-                    new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                            try {
-                                // Remap.
-                                map(keys.keySet(), F.t(node, keys), fut.get());
+                cctx.shared().exchange().affinityReadyFuture(updTopVer).listen(f -> {
+                    try {
+                        // Remap.
+                        map(keys.keySet(), F.t(node, keys), f.get());
 
-                                onDone(Collections.<K, V>emptyMap());
-                            }
-                            catch (IgniteCheckedException e) {
-                                GridNearGetFuture.this.onDone(e);
-                            }
-                        }
+                        onDone(Collections.<K, V>emptyMap());
+
                     }
-                );
+                    catch (IgniteCheckedException e) {
+                        GridNearGetFuture.this.onDone(e);
+                    }
+                });
             }
         }
 
@@ -993,16 +990,13 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         }
                     }), F.t(node, keys), topVer);
 
-                    postProcessResult(res);
-
-                    // It is critical to call onDone after adding futures to compound list.
-                    onDone(loadEntries(node.id(), keys.keySet(), res.entries(), savedEntries, topVer));
+                    postProcessResultAndDone(res);
 
                     return;
                 }
 
                 // Need to wait for next topology version to remap.
-                IgniteInternalFuture<AffinityTopologyVersion> topFut = cctx.affinity().affinityReadyFuture(rmtTopVer);
+                IgniteInternalFuture<AffinityTopologyVersion> topFut =  cctx.shared().exchange().affinityReadyFuture(rmtTopVer);
 
                 topFut.listen(new CIX1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                     @Override public void applyx(
@@ -1016,17 +1010,29 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             }
                         }), F.t(node, keys), readyTopVer);
 
-                        postProcessResult(res);
-
-                        // It is critical to call onDone after adding futures to compound list.
-                        onDone(loadEntries(node.id(), keys.keySet(), res.entries(), savedEntries, topVer));
+                        postProcessResultAndDone(res);
                     }
                 });
             }
-            else {
+            else
+                postProcessResultAndDone(res);
+
+        }
+
+        /**
+         * Post processes result and done future.
+         *
+         * @param res Response.
+         */
+        private void postProcessResultAndDone(final GridNearGetResponse res){
+            try {
                 postProcessResult(res);
 
+                // It is critical to call onDone after adding futures to compound list.
                 onDone(loadEntries(node.id(), keys.keySet(), res.entries(), savedEntries, topVer));
+            }
+            catch (Exception ex) {
+                onDone(ex);
             }
         }
 

@@ -443,7 +443,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                 true);
                         }
 
-                        colocated.context().evicts().touch(entry, topVer);
+                        entry.touch(topVer);
 
                         // Entry was not in memory or in swap, so we remove it from cache.
                         if (v == null) {
@@ -600,7 +600,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             }
 
             if (canRemap) {
-                IgniteInternalFuture<AffinityTopologyVersion> topFut = cctx.affinity().affinityReadyFuture(rmtTopVer);
+                IgniteInternalFuture<AffinityTopologyVersion> topFut = cctx.shared().exchange().affinityReadyFuture(rmtTopVer);
 
                 topFut.listen(new CIX1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                     @Override public void applyx(IgniteInternalFuture<AffinityTopologyVersion> fut) {
@@ -744,7 +744,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             AffinityTopologyVersion updTopVer = new AffinityTopologyVersion(
                 Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
 
-            cctx.affinity().affinityReadyFuture(updTopVer).listen(
+            cctx.shared().exchange().affinityReadyFuture(updTopVer).listen(
                 new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                     @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                         try {

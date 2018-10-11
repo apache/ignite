@@ -62,6 +62,10 @@ import scala.language.{implicitConversions, reflectiveCalls}
  * +-------------------------------------------------------------------------------------------+
  * | cache -rebalance | Re-balance partitions for cache with specified name.                   |
  * +-------------------------------------------------------------------------------------------+
+ * | cache -slp       | Show list of lost partitions for specified cache.                      |
+ * +-------------------------------------------------------------------------------------------+
+ * | cache -rlp       | Reset lost partitions for specified cache.                             |
+ * +-------------------------------------------------------------------------------------------+
  *
  * }}}
  *
@@ -71,10 +75,12 @@ import scala.language.{implicitConversions, reflectiveCalls}
  *     cache -i {-system}
  *     cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=hi|mi|rd|wr|cn} {-a} {-r} {-system}
  *     cache -clear {-c=<cache-name>}
- *     cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>} {-system}
+ *     cache -scan -c=<cache-name> {-near} {-id=<node-id>|id8=<node-id8>} {-p=<page size>} {-system}
  *     cache -stop -c=<cache-name>
  *     cache -reset -c=<cache-name>
  *     cache -rebalance -c=<cache-name>
+ *     cache -slp -c=<cache-name>
+ *     cache -rlp -c=<cache-name>
  * }}}
  *
  * ====Arguments====
@@ -112,15 +118,21 @@ import scala.language.{implicitConversions, reflectiveCalls}
  *     -system
  *         Enable showing of information about system caches.
  *     -clear
- *          Clears cache.
+ *         Clears cache.
  *     -scan
- *          Prints list of all entries from cache.
+ *         Prints list of all entries from cache.
+ *     -near
+ *         Prints list of all entries from near cache of cache.
  *     -stop
  *          Stop cache with specified name.
  *     -reset
  *          Reset metrics for cache with specified name.
  *     -rebalance
  *          Re-balance partitions for cache with specified name.
+ *     -slp
+ *          Show list of lost partitions for specified cache.
+ *     -rlp
+ *          Reset lost partitions for specified cache.
  *     -p=<page size>
  *         Number of object to fetch from cache at once.
  *         Valid range from 1 to 100.
@@ -153,12 +165,18 @@ import scala.language.{implicitConversions, reflectiveCalls}
  *         with page of 50 items from all nodes with this cache.
  *     cache -scan -c=cache -id8=12345678
  *         Prints list entries from cache with name 'cache' and node '12345678' ID8.
+ *     cache -scan -c=cache -near -id8=12345678
+ *         Prints list entries from near cache of cache with name 'cache' and node '12345678' ID8.
  *     cache -stop -c=cache
  *         Stops cache with name 'cache'.
  *     cache -reset -c=cache
  *         Reset metrics for cache with name 'cache'.
  *     cache -rebalance -c=cache
  *         Re-balance partitions for cache with name 'cache'.
+ *     cache -slp -c=cache
+ *         Show list of lost partitions for cache with name 'cache'.
+ *     cache -rlp -c=cache
+ *         Reset lost partitions for cache with name 'cache'.
  *
  * }}}
  */
@@ -196,6 +214,9 @@ class VisorCacheCommand extends VisorConsoleCommand {
      * <ex>cache -scan -c=cache -id8=12345678</ex>
      *     Prints list entries from cache with name 'cache' and node '12345678' ID8.
      * <br>
+     * <ex>cache -scan -c=cache -near -id8=12345678</ex>
+     *     Prints list entries from near cache of cache with name 'cache' and node '12345678' ID8.
+     * <br>
      * <ex>cache -stop -c=@c0</ex>
      *     Stop cache with name taken from 'c0' memory variable.
      * <br>
@@ -227,7 +248,16 @@ class VisorCacheCommand extends VisorConsoleCommand {
 
                     return
 
-                case Right(n) => n
+                case Right(n) => n match {
+                    case None if hasArgName("scan", argLst) && hasArgName("near", argLst) =>
+                        askForNode("Select node from:") match {
+                            case None => return
+
+                            case nidOpt => nidOpt.map(ignite.cluster.node(_))
+                        }
+
+                    case _ => n
+                }
             }
 
             val showSystem = hasArgFlag("system", argLst)
@@ -249,7 +279,7 @@ class VisorCacheCommand extends VisorConsoleCommand {
             // Get cache stats data from all nodes.
             val aggrData = cacheData(node, cacheName, showSystem)
 
-            if (hasArgFlagIn("clear", "scan", "stop", "reset", "rebalance")) {
+            if (hasArgFlagIn("clear", "scan", "stop", "reset", "rebalance", "slp", "rlp")) {
                 if (cacheName.isEmpty)
                     askForCache("Select cache from:", node, showSystem
                         && !hasArgFlagIn("clear", "stop", "reset", "rebalance"), aggrData) match {
@@ -275,6 +305,10 @@ class VisorCacheCommand extends VisorConsoleCommand {
                                     VisorCacheResetCommand().reset(argLst, node)
                                 else if (hasArgFlag("rebalance", argLst))
                                     VisorCacheRebalanceCommand().rebalance(argLst, node)
+                                else if (hasArgFlag("slp", argLst))
+                                    VisorCacheLostPartitionsCommand().showLostPartitions(argLst, node)
+                                else if (hasArgFlag("rlp", argLst))
+                                    VisorCacheResetLostPartitionsCommand().resetLostPartitions(argLst, node)
                             }
                             else {
                                 if (hasArgFlag("scan", argLst))
@@ -700,17 +734,21 @@ object VisorCacheCommand {
             " ",
             "Clears cache.",
             " ",
-            "Prints list of all entries from cache."
+            "Prints list of all entries from cache.",
+            " ",
+            "Prints or clear list lost partitions from cache."
         ),
         spec = Seq(
             "cache",
             "cache -i",
             "cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=hi|mi|rd|wr} {-a} {-r}",
             "cache -clear {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}",
-            "cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}",
+            "cache -scan -c=<cache-name> {-near} {-id=<node-id>|id8=<node-id8>} {-p=<page size>}",
             "cache -stop -c=<cache-name>",
             "cache -reset -c=<cache-name>",
-            "cache -rebalance -c=<cache-name>"
+            "cache -rebalance -c=<cache-name>",
+            "cache -slp -c=<cache-name>",
+            "cache -rlp -c=<cache-name>"
   ),
         args = Seq(
             "-id8=<node-id>" -> Seq(
@@ -733,8 +771,11 @@ object VisorCacheCommand {
             "-clear" -> "Clears cache.",
             "-system" -> "Enable showing of information about system caches.",
             "-scan" -> "Prints list of all entries from cache.",
+            "-near" -> "Prints list of all entries from near cache of cache.",
             "-stop" -> "Stop cache with specified name.",
             "-reset" -> "Reset metrics of cache with specified name.",
+            "-slp" -> "Show list of lost partitions for specified cache.",
+            "-rlp" -> "Reset lost partitions for specified cache.",
             "-rebalance" -> "Re-balance partitions for cache with specified name.",
             "-s=hi|mi|rd|wr|cn" -> Seq(
                 "Defines sorting type. Sorted by:",
@@ -791,9 +832,13 @@ object VisorCacheCommand {
             "cache -scan -c=@c0 -p=50" -> ("Prints list entries from cache with name taken from 'c0' memory variable" +
                 " with page of 50 items from all nodes with this cache."),
             "cache -scan -c=cache -id8=12345678" -> "Prints list entries from cache with name 'cache' and node '12345678' ID8.",
+            "cache -scan -near -c=cache -id8=12345678" ->
+                "Prints list entries from near cache of cache with name 'cache' and node '12345678' ID8.",
             "cache -stop -c=@c0" -> "Stop cache with name taken from 'c0' memory variable.",
             "cache -reset -c=@c0" -> "Reset metrics for cache with name taken from 'c0' memory variable.",
-            "cache -rebalance -c=cache" -> "Re-balance partitions for cache with name 'cache'."
+            "cache -rebalance -c=cache" -> "Re-balance partitions for cache with name 'cache'.",
+            "cache -slp -c=@c0" -> "Show list of lost partitions for cache with name taken from 'c0' memory variable.",
+            "cache -rlp -c=@c0" -> "Reset lost partitions for cache with name taken from 'c0' memory variable."
         ),
         emptyArgs = cmd.cache,
         withArgs = cmd.cache
@@ -875,13 +920,13 @@ object VisorCacheCommand {
         cacheT += ("Rebalance Cache Order", rebalanceCfg.getRebalanceOrder)
 
         cacheT += ("Eviction Policy Enabled", bool2Str(evictCfg.getPolicy != null))
-        cacheT += ("Eviction Policy", safe(evictCfg.getPolicy))
+        cacheT += ("Eviction Policy Factory", safe(evictCfg.getPolicy))
         cacheT += ("Eviction Policy Max Size", safe(evictCfg.getPolicyMaxSize))
         cacheT += ("Eviction Filter", safe(evictCfg.getFilter))
 
         cacheT += ("Near Cache Enabled", bool2Str(nearCfg.isNearEnabled))
         cacheT += ("Near Start Size", nearCfg.getNearStartSize)
-        cacheT += ("Near Eviction Policy", safe(nearCfg.getNearEvictPolicy))
+        cacheT += ("Near Eviction Policy Factory", safe(nearCfg.getNearEvictPolicy))
         cacheT += ("Near Eviction Policy Max Size", safe(nearCfg.getNearEvictMaxSize))
 
         cacheT += ("Default Lock Timeout", cfg.getDefaultLockTimeout)

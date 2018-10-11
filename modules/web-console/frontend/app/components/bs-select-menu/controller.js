@@ -18,8 +18,11 @@
 export default class {
     static $inject = ['$scope'];
 
+    /**
+     * @param {ng.IScope} $scope
+     */
     constructor($scope) {
-        Object.assign(this, {$scope});
+        this.$scope = $scope;
     }
 
     areAllSelected() {

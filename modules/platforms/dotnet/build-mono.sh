@@ -20,10 +20,15 @@
 # Builds Java and .NET with Mono
 #
 
+# Fail on error.
+set -e
+
+# Build Java.
 pushd .
 cd ../../..
 mvn clean package -DskipTests -Dmaven.javadoc.skip=true -Plgpl,-examples,-clean-libs,-release,-scala,-clientDocs
 popd
 
+# Build .NET.
 nuget restore Apache.Ignite.sln
 msbuild Apache.Ignite.sln /p:RunCodeAnalysis=false

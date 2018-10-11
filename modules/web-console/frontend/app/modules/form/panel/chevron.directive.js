@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-const template = `<i class='fa' ng-class='isOpen ? "fa-chevron-circle-down" : "fa-chevron-circle-right"'></i>`; // eslint-disable-line quotes
+const template = `<img ng-src="{{ isOpen ? '/images/collapse.svg' : '/images/expand.svg' }}" style='width:13px;height:13px;' />`;
 
-export default ['igniteFormPanelChevron', [() => {
+export default ['igniteFormPanelChevron', ['$timeout', ($timeout) => {
     const controller = [() => {}];
 
     const link = ($scope, $element, $attrs, [bsCollapseCtrl]) => {
-        const $target = $element.parent().parent().find('.panel-collapse');
+        const $target = $element.parent().parent().find('[bs-collapse-target]');
 
-        bsCollapseCtrl.$viewChangeListeners.push(function() {
+        const listener = function() {
             const index = bsCollapseCtrl.$targets.reduce((acc, el, i) => {
                 if (el[0] === $target[0])
                     acc.push(i);
@@ -37,7 +37,10 @@ export default ['igniteFormPanelChevron', [() => {
 
             if ((active instanceof Array) && active.indexOf(index) !== -1 || active === index)
                 $scope.isOpen = true;
-        });
+        };
+
+        bsCollapseCtrl.$viewChangeListeners.push(listener);
+        $timeout(listener);
     };
 
     return {
@@ -46,8 +49,8 @@ export default ['igniteFormPanelChevron', [() => {
         link,
         template,
         controller,
-        replace: true,
-        transclude: true,
+        // replace: true,
+        // transclude: true,
         require: ['^bsCollapse']
     };
 }]];

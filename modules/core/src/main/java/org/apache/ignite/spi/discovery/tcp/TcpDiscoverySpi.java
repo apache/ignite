@@ -272,6 +272,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     /** Maximum ack timeout value for receiving message acknowledgement in milliseconds (value is <tt>600,000ms</tt>). */
     public static final long DFLT_MAX_ACK_TIMEOUT = 10 * 60 * 1000;
 
+    /** Default connection recovery timeout in ms. */
+    public static final long DFLT_CONNECTION_RECOVERY_TIMEOUT = IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT;
+
     /** Ssl message pattern for StreamCorruptedException. */
     private static Pattern sslMsgPattern = Pattern.compile("invalid stream header: 150\\d0\\d00");
 
@@ -305,6 +308,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
 
     /** Size of topology snapshots history. */
     protected int topHistSize = DFLT_TOP_HISTORY_SIZE;
+
+    /** Default connection recovery timeout in ms. */
+    protected long connRecoveryTimeout = DFLT_CONNECTION_RECOVERY_TIMEOUT;
 
     /** Grid discovery listener. */
     protected volatile DiscoverySpiListener lsnr;
@@ -979,6 +985,54 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
         return this;
     }
 
+    /**
+     * Gets timeout that defines how long server node would try to recovery connection.<br>
+     * See {@link #setConnectionRecoveryTimeout(long)} for details.
+     *
+     * @return Timeout that defines how long server node would try to recovery connection.
+     */
+    public long getConnectionRecoveryTimeout() {
+        return connRecoveryTimeout;
+    }
+
+    /**
+     * @return Connection recovery timeout that is not greater than failureDetectionTimeout if enabled.
+     */
+    long getEffectiveConnectionRecoveryTimeout() {
+        if (failureDetectionTimeoutEnabled() && failureDetectionTimeout() < connRecoveryTimeout)
+            return failureDetectionTimeout();
+
+        return connRecoveryTimeout;
+    }
+
+    /**
+     * Sets timeout that defines how long server node would try to recovery connection.
+     * <p>In case local node has temporary connectivity issues with part of the cluster,
+     * it may sequentially fail nodes one-by-one till successfully connect to one that
+     * has a fine connection with.
+     * This leads to fail of big number of nodes.
+     * </p>
+     * <p>
+     *     To overcome that issue, local node will do a sequential connection tries to next
+     *     nodes. But if new next node has connection to previous it forces local node to
+     *     retry connect to previous. These tries will last till timeout will not
+     *     finished. When timeout is over, but no success in connecting to nodes it will
+     *     segment itself.
+     * </p>
+     * <p>
+     *     Cannot be greater than {@link #failureDetectionTimeout()}.
+     * </p>
+     * <p>
+     *     Default is {@link #DFLT_CONNECTION_RECOVERY_TIMEOUT}.
+     * </p>
+     *
+     * @param connRecoveryTimeout Timeout that defines how long server node would try to recovery connection.
+     * {@code 0} means node will not recheck failed nodes.
+     */
+    public void setConnectionRecoveryTimeout(long connRecoveryTimeout) {
+        this.connRecoveryTimeout = connRecoveryTimeout;
+    }
+
     /** {@inheritDoc} */
     @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
         assert locNodeAttrs == null;
@@ -1425,18 +1479,25 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
 
         assert remAddr != null;
 
-        InetSocketAddress resolved = remAddr.isUnresolved() ?
-            new InetSocketAddress(InetAddress.getByName(remAddr.getHostName()), remAddr.getPort()) : remAddr;
+        try {
+            InetSocketAddress resolved = remAddr.isUnresolved() ?
+                new InetSocketAddress(InetAddress.getByName(remAddr.getHostName()), remAddr.getPort()) : remAddr;
 
-        InetAddress addr = resolved.getAddress();
+            InetAddress addr = resolved.getAddress();
 
-        assert addr != null;
+            assert addr != null;
 
-        sock.connect(resolved, (int)timeoutHelper.nextTimeoutChunk(sockTimeout));
+            sock.connect(resolved, (int)timeoutHelper.nextTimeoutChunk(sockTimeout));
 
-        writeToSocket(sock, null, U.IGNITE_HEADER, timeoutHelper.nextTimeoutChunk(sockTimeout));
+            writeToSocket(sock, null, U.IGNITE_HEADER, timeoutHelper.nextTimeoutChunk(sockTimeout));
 
-        return sock;
+            return sock;
+        } catch (IOException | IgniteSpiOperationTimeoutException e) {
+            if (sock != null)
+                U.closeQuiet(sock);
+
+            throw e;
+        }
     }
 
     /**
@@ -1446,18 +1507,25 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
      * @throws IOException If failed.
      */
     Socket createSocket() throws IOException {
-        Socket sock;
+        Socket sock = null;
 
-        if (isSslEnabled())
-            sock = sslSockFactory.createSocket();
-        else
-            sock = new Socket();
+        try {
+            if (isSslEnabled())
+                sock = sslSockFactory.createSocket();
+            else
+                sock = new Socket();
 
-        sock.bind(new InetSocketAddress(locHost, 0));
+            sock.bind(new InetSocketAddress(locHost, 0));
 
-        sock.setTcpNoDelay(true);
+            sock.setTcpNoDelay(true);
 
-        return sock;
+            return sock;
+        } catch (IOException e) {
+            if (sock != null)
+                U.closeQuiet(sock);
+
+            throw e;
+        }
     }
 
     /**
@@ -2185,7 +2253,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
      * <p>
      * This method is intended for test purposes only.
      */
-    protected void simulateNodeFailure() {
+    public void simulateNodeFailure() {
         impl.simulateNodeFailure();
     }
 
@@ -2194,6 +2262,19 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
      */
     public void brakeConnection() {
         impl.brakeConnection();
+    }
+
+    /**
+     * Checks whether local node is coordinator. Nodes that are leaving or failed
+     * (but are still in topology) are removed from search.
+     *
+     * @return {@code true} if local node is coordinator.
+     */
+    public boolean isLocalNodeCoordinator() {
+        if (impl instanceof ServerImpl)
+            return ((ServerImpl)impl).isLocalNodeCoordinator();
+
+        return false;
     }
 
     /**
@@ -2373,6 +2454,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
         /** {@inheritDoc} */
         @Override public int getReconnectCount() {
             return TcpDiscoverySpi.this.getReconnectCount();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getConnectionCheckInterval() {
+            return impl.connectionCheckInterval();
         }
 
         /** {@inheritDoc} */

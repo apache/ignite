@@ -65,7 +65,7 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
     }
 
     /** {@inheritDoc} */

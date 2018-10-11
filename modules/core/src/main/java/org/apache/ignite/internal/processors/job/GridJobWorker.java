@@ -678,7 +678,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         if (msg == null) {
             msg = "Failed to execute job due to unexpected runtime exception [jobId=" + ses.getJobId() +
-                ", ses=" + ses + ']';
+                ", ses=" + ses + ", err=" + e.getMessage() + ']';
 
             ex = new ComputeUserUndeclaredException(msg, e);
         }

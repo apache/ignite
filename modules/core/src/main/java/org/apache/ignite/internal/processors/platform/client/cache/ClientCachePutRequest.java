@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
  * Cache put request.
@@ -37,6 +38,8 @@ public class ClientCachePutRequest extends ClientCacheKeyValueRequest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
+        authorize(ctx, SecurityPermission.CACHE_PUT);
+
         cache(ctx).put(key(), val());
 
         return super.process(ctx);

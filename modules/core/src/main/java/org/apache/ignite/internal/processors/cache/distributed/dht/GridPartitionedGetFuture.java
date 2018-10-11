@@ -527,7 +527,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                 !deserializeBinary);
                         }
 
-                        cache.context().evicts().touch(entry, topVer);
+                        entry.touch(topVer);
 
                         // Entry was not in memory or in swap, so we remove it from cache.
                         if (v == null) {
@@ -731,7 +731,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 AffinityTopologyVersion updTopVer =
                     new AffinityTopologyVersion(Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
 
-                cctx.affinity().affinityReadyFuture(updTopVer).listen(
+                cctx.shared().exchange().affinityReadyFuture(updTopVer).listen(
                     new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                             try {
@@ -797,7 +797,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 }
 
                 // Need to wait for next topology version to remap.
-                IgniteInternalFuture<AffinityTopologyVersion> topFut = cctx.affinity().affinityReadyFuture(rmtTopVer);
+                IgniteInternalFuture<AffinityTopologyVersion> topFut = cctx.shared().exchange().affinityReadyFuture(rmtTopVer);
 
                 topFut.listen(new CIX1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                     @SuppressWarnings("unchecked")

@@ -19,6 +19,7 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.ComponentModel;
     using System.IO;
     using System.Linq;
@@ -239,6 +240,11 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(sql.ThreadPoolSize, resSql.ThreadPoolSize);
 
                 AssertExtensions.ReflectionEqual(cfg.DataStorageConfiguration, resCfg.DataStorageConfiguration);
+
+                Assert.IsNotNull(resCfg.SqlSchemas);
+                Assert.AreEqual(2, resCfg.SqlSchemas.Count);
+                Assert.IsTrue(resCfg.SqlSchemas.Contains("SCHEMA_3"));
+                Assert.IsTrue(resCfg.SqlSchemas.Contains("schema_4"));
             }
         }
 
@@ -490,6 +496,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(IgniteConfiguration.DefaultClientConnectorConfigurationEnabled, 
                 cfg.ClientConnectorConfigurationEnabled);
             Assert.AreEqual(IgniteConfiguration.DefaultRedirectJavaConsoleOutput, cfg.RedirectJavaConsoleOutput);
+            Assert.AreEqual(IgniteConfiguration.DefaultAuthenticationEnabled, cfg.AuthenticationEnabled);
 
             // Thread pools.
             Assert.AreEqual(IgniteConfiguration.DefaultManagementThreadPoolSize, cfg.ManagementThreadPoolSize);
@@ -825,7 +832,10 @@ namespace Apache.Ignite.Core.Tests
                             SwapPath = TestUtils.GetTempDirectoryName()
                         }
                     }
-                }
+                },
+                AuthenticationEnabled = false,
+
+                SqlSchemas = new List<string> { "SCHEMA_3", "schema_4" }
             };
         }
 

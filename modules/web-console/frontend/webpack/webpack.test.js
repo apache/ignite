@@ -20,14 +20,27 @@ import merge from 'webpack-merge';
 import commonCfg from './webpack.common';
 
 export default merge(commonCfg, {
+    mode: 'development',
     cache: true,
     node: {
-        fs: 'empty'
+        fs: 'empty',
+        child_process: 'empty'
     },
 
     // Entry points.
     entry: null,
 
     // Output system.
-    output: null
+    output: null,
+    optimization: {
+        splitChunks: {
+            chunks: 'async'
+        }
+    },
+    module: {
+        exprContextCritical: false,
+        rules: [
+            {test: /\.s?css$/, use: ['ignore-loader']}
+        ]
+    }
 });

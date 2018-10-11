@@ -79,6 +79,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTaskArg, VisorEit
                 qry.setPageSize(arg.getPageSize());
                 qry.setLocal(arg.isLocal());
                 qry.setDistributedJoins(arg.isDistributedJoins());
+                qry.setCollocated(arg.isCollocated());
                 qry.setEnforceJoinOrder(arg.isEnforceJoinOrder());
                 qry.setReplicatedOnly(arg.isReplicatedOnly());
                 qry.setLazy(arg.getLazy());

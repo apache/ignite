@@ -1780,7 +1780,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     @Nullable public CacheObject toCacheObject(@Nullable Object obj) {
         assert validObjectForCache(obj) : obj;
 
-        return cacheObjects().toCacheObject(cacheObjCtx, obj, true);
+        return cacheObjects().toCacheObject(cacheObjCtx, obj, true, grp.isTopologyLocked());
     }
 
     /**
@@ -1822,6 +1822,10 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @throws IgniteCheckedException, If validation fails.
      */
     public void validateKeyAndValue(KeyCacheObject key, CacheObject val) throws IgniteCheckedException {
+        // No validation for removal.
+        if (val == null)
+            return;
+
         if (!isQueryEnabled())
             return;
 
@@ -2049,7 +2053,7 @@ public class GridCacheContext<K, V> implements Externalizable {
             topology().partitionState(localNodeId(), part) == OWNING :
             "result=" + result + ", persistenceEnabled=" + group().persistenceEnabled() +
                 ", partitionState=" + topology().partitionState(localNodeId(), part) +
-                ", replicated=" + isReplicated();
+                ", replicated=" + isReplicated() + ", part=" + part;
 
         return result;
     }

@@ -84,7 +84,7 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
     @Override protected void beforeTestsStarted() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
 
         U.delete(new File(U.getIgniteHome(), DFLT_STORE_DIR));
     }
@@ -93,7 +93,7 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
     @Override protected void afterTest() throws Exception {
         G.stopAll(true);
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
 
         U.delete(new File(U.getIgniteHome(), DFLT_STORE_DIR));
     }

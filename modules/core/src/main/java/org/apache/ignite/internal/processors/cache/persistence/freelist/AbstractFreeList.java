@@ -233,7 +233,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             // Read last link before the fragment write, because it will be updated there.
             long lastLink = row.link();
 
-            int payloadSize = io.addRowFragment(pageMem, pageAddr, row, written, rowSize, pageSize());
+            int payloadSize = io.addRowFragment(pageMem, pageId, pageAddr, row, written, rowSize, pageSize());
 
             assert payloadSize > 0 : payloadSize;
 

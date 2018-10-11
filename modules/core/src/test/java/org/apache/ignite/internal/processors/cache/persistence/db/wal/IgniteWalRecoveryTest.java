@@ -179,7 +179,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
 
         cacheName = "partitioned";
     }
@@ -190,7 +190,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         logOnly = false;
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /**

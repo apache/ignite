@@ -346,6 +346,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             [QuerySqlField] public int AliasTest { get; set; }
 
+            [QuerySqlField] public bool Bool { get; set; }
+
             public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteInt("age1", Age);
@@ -354,6 +356,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                 writer.WriteObject("Address", Address);
                 writer.WriteTimestamp("Birthday", Birthday);
                 writer.WriteInt("AliasTest", AliasTest);
+                writer.WriteBoolean("Bool", Bool);
             }
 
             public void ReadBinary(IBinaryReader reader)
@@ -364,6 +367,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                 Address = reader.ReadObject<Address>("Address");
                 Birthday = reader.ReadTimestamp("Birthday");
                 AliasTest = reader.ReadInt("AliasTest");
+                Bool = reader.ReadBoolean("Bool");
             }
         }
 

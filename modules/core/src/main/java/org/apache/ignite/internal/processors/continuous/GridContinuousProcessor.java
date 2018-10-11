@@ -48,6 +48,7 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
@@ -313,6 +314,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         finally {
             processorStopLock.writeLock().unlock();
         }
+
+        cancelFutures(new NodeStoppingException("Failed to start continuous query (node is stopping)"));
     }
 
     /** {@inheritDoc} */
@@ -561,14 +564,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param rmtFilter Remote filter.
      * @param prjPred Projection predicate.
      * @return Routine ID.
-     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     public UUID registerStaticRoutine(
         String cacheName,
         CacheEntryUpdatedListener<?, ?> locLsnr,
         CacheEntryEventSerializableFilter rmtFilter,
-        @Nullable IgnitePredicate<ClusterNode> prjPred) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<ClusterNode> prjPred) {
         String topicPrefix = "CONTINUOUS_QUERY_STATIC" + "_" + cacheName;
 
         CacheContinuousQueryHandler hnd = new CacheContinuousQueryHandler(
@@ -668,32 +670,40 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         // Register per-routine notifications listener if ordered messaging is used.
         registerMessageListener(hnd);
 
-        StartFuture fut = new StartFuture(ctx, routineId);
-
-        startFuts.put(routineId, fut);
+        if (!lockStopping())
+            return new GridFinishedFuture<>(new NodeStoppingException("Failed to start continuous query (node is stopping)"));
 
         try {
-            if (locIncluded || hnd.isQuery())
-                registerHandler(ctx.localNodeId(), routineId, hnd, bufSize, interval, autoUnsubscribe, true);
+            StartFuture fut = new StartFuture(ctx, routineId);
 
-            ctx.discovery().sendCustomEvent(new StartRoutineDiscoveryMessage(routineId, reqData,
-                reqData.handler().keepBinary()));
-        }
-        catch (IgniteCheckedException e) {
-            startFuts.remove(routineId);
-            locInfos.remove(routineId);
+            startFuts.put(routineId, fut);
 
-            unregisterHandler(routineId, hnd, true);
+            try {
+                if (locIncluded || hnd.isQuery())
+                    registerHandler(ctx.localNodeId(), routineId, hnd, bufSize, interval, autoUnsubscribe, true);
 
-            fut.onDone(e);
+                ctx.discovery().sendCustomEvent(new StartRoutineDiscoveryMessage(routineId, reqData,
+                    reqData.handler().keepBinary()));
+            }
+            catch (IgniteCheckedException e) {
+                startFuts.remove(routineId);
+                locInfos.remove(routineId);
+
+                unregisterHandler(routineId, hnd, true);
+
+                fut.onDone(e);
+
+                return fut;
+            }
+
+            // Handler is registered locally.
+            fut.onLocalRegistered();
 
             return fut;
         }
-
-        // Handler is registered locally.
-        fut.onLocalRegistered();
-
-        return fut;
+        finally {
+            unlockStopping();
+        }
     }
 
     /**
@@ -734,46 +744,54 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         boolean doStop = false;
 
-        StopFuture fut = stopFuts.get(routineId);
+        if (!lockStopping())
+            return new GridFinishedFuture<>(new NodeStoppingException("Failed to stop continuous query (node is stopping)"));
 
-        // Only one thread will stop routine with provided ID.
-        if (fut == null) {
-            StopFuture old = stopFuts.putIfAbsent(routineId, fut = new StopFuture(ctx));
+        try {
+            StopFuture fut = stopFuts.get(routineId);
 
-            if (old != null)
-                fut = old;
-            else
-                doStop = true;
+            // Only one thread will stop routine with provided ID.
+            if (fut == null) {
+                StopFuture old = stopFuts.putIfAbsent(routineId, fut = new StopFuture(ctx));
+
+                if (old != null)
+                    fut = old;
+                else
+                    doStop = true;
+            }
+
+            if (doStop) {
+                // Unregister routine locally.
+                LocalRoutineInfo routine = locInfos.remove(routineId);
+
+                // Finish if routine is not found (wrong ID is provided).
+                if (routine == null) {
+                    stopFuts.remove(routineId);
+
+                    fut.onDone();
+
+                    return fut;
+                }
+
+                // Unregister handler locally.
+                unregisterHandler(routineId, routine.hnd, true);
+
+                try {
+                    ctx.discovery().sendCustomEvent(new StopRoutineDiscoveryMessage(routineId));
+                }
+                catch (IgniteCheckedException e) {
+                    fut.onDone(e);
+                }
+
+                if (ctx.isStopping())
+                    fut.onDone();
+            }
+
+            return fut;
         }
-
-        if (doStop) {
-            // Unregister routine locally.
-            LocalRoutineInfo routine = locInfos.remove(routineId);
-
-            // Finish if routine is not found (wrong ID is provided).
-            if (routine == null) {
-                stopFuts.remove(routineId);
-
-                fut.onDone();
-
-                return fut;
-            }
-
-            // Unregister handler locally.
-            unregisterHandler(routineId, routine.hnd, true);
-
-            try {
-                ctx.discovery().sendCustomEvent(new StopRoutineDiscoveryMessage(routineId));
-            }
-            catch (IgniteCheckedException e) {
-                fut.onDone(e);
-            }
-
-            if (ctx.isStopping())
-                fut.onDone();
+        finally {
+            unlockStopping();
         }
-
-        return fut;
     }
 
     /**
@@ -883,7 +901,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
         cancelFutures(new IgniteClientDisconnectedCheckedException(reconnectFut, "Client node disconnected."));
 
         if (log.isDebugEnabled()) {
@@ -1951,9 +1969,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * Future for stop routine.
      */
     private static class StopFuture extends GridFutureAdapter<Object> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Timeout object. */
         private volatile GridTimeoutObject timeoutObj;
 
@@ -1996,9 +2011,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * Synchronous message acknowledgement future.
      */
     private static class SyncMessageAckFuture extends GridFutureAdapter<Object> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** */
         private UUID nodeId;
 

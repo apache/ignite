@@ -42,6 +42,7 @@
 #include "test_type.h"
 #include "complex_type.h"
 #include "test_utils.h"
+#include "odbc_test_suite.h"
 
 using namespace ignite;
 using namespace ignite::cache;
@@ -59,83 +60,18 @@ using ignite::impl::binary::BinaryUtils;
 /**
  * Test setup fixture.
  */
-struct ErrorTestSuiteFixture 
+struct ErrorTestSuiteFixture : odbc::OdbcTestSuite
 {
-    /**
-     * Establish connection to node.
-     *
-     * @param connectStr Connection string.
-     */
-    void Connect(const std::string& connectStr)
-    {
-        // Allocate an environment handle
-        SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
-
-        BOOST_REQUIRE(env != NULL);
-
-        // We want ODBC 3 support
-        SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<void*>(SQL_OV_ODBC3), 0);
-
-        // Allocate a connection handle
-        SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
-
-        BOOST_REQUIRE(dbc != NULL);
-
-        // Connect string
-        std::vector<SQLCHAR> connectStr0;
-
-        connectStr0.reserve(connectStr.size() + 1);
-        std::copy(connectStr.begin(), connectStr.end(), std::back_inserter(connectStr0));
-
-        SQLCHAR outstr[ODBC_BUFFER_SIZE];
-        SQLSMALLINT outstrlen;
-
-        // Connecting to ODBC server.
-        SQLRETURN ret = SQLDriverConnect(dbc, NULL, &connectStr0[0], static_cast<SQLSMALLINT>(connectStr0.size()),
-            outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
-
-        if (!SQL_SUCCEEDED(ret))
-        {
-            Ignition::StopAll(true);
-
-            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc));
-        }
-
-        // Allocate a statement handle
-        SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
-
-        BOOST_REQUIRE(stmt != NULL);
-    }
-
-    void Disconnect()
-    {
-        // Releasing statement handle.
-        SQLFreeHandle(SQL_HANDLE_STMT, stmt);
-
-        // Disconneting from the server.
-        SQLDisconnect(dbc);
-
-        // Releasing allocated handles.
-        SQLFreeHandle(SQL_HANDLE_DBC, dbc);
-        SQLFreeHandle(SQL_HANDLE_ENV, env);
-    }
-
     static Ignite StartAdditionalNode(const char* name)
     {
-#ifdef IGNITE_TESTS_32
-        return StartNode("queries-test-32.xml", name);
-#else
-        return StartNode("queries-test.xml", name);
-#endif
+        return StartTestNode("queries-test.xml", name);
     }
 
     /**
      * Constructor.
      */
     ErrorTestSuiteFixture() :
-        env(NULL),
-        dbc(NULL),
-        stmt(NULL)
+        OdbcTestSuite()
     {
         // No-op.
     }
@@ -145,22 +81,8 @@ struct ErrorTestSuiteFixture
      */
     ~ErrorTestSuiteFixture()
     {
-        Disconnect();
-
-        Ignition::StopAll(true);
+        // No-op.
     }
-
-    /** Frist cache instance. */
-    //Cache<int64_t, TestType> cache;
-
-    /** ODBC Environment. */
-    SQLHENV env;
-
-    /** ODBC Connect. */
-    SQLHDBC dbc;
-
-    /** ODBC Statement. */
-    SQLHSTMT stmt;
 };
 
 BOOST_FIXTURE_TEST_SUITE(ErrorTestSuite, ErrorTestSuiteFixture)
@@ -181,7 +103,7 @@ BOOST_AUTO_TEST_CASE(TestConnectFail)
     BOOST_REQUIRE(dbc != NULL);
 
     // Connect string
-    SQLCHAR connectStr[] = "DRIVER={Apache Ignite};ADDRESS=127.0.0.1:9999;SCHEMA=cache";
+    SQLCHAR connectStr[] = "DRIVER={Apache Ignite};ADDRESS=127.0.0.1:1111;SCHEMA=cache";
 
     SQLCHAR outstr[ODBC_BUFFER_SIZE];
     SQLSMALLINT outstrlen;

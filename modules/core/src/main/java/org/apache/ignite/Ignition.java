@@ -20,12 +20,17 @@ package org.apache.ignite;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
+import org.apache.ignite.client.ClientException;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
@@ -569,5 +574,19 @@ public class Ignition {
      */
     public static boolean removeListener(IgnitionListener lsnr) {
         return IgnitionEx.removeListener(lsnr);
+    }
+
+    /**
+     * Initializes new instance of {@link IgniteClient}.
+     * <p>
+     * Server connection will be lazily initialized when first required.
+     *
+     * @param cfg Thin client configuration.
+     * @return Successfully opened thin client connection.
+     */
+    public static IgniteClient startClient(ClientConfiguration cfg) throws ClientException {
+        Objects.requireNonNull(cfg, "cfg");
+
+        return TcpIgniteClient.start(cfg);
     }
 }
