@@ -590,10 +590,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** {@inheritDoc} */
     @Override public AffinityTopologyVersion lastAffinityChangeTopologyVersion() {
-        if (changedAffinity() || lastAffChangeTopVer == null)
+        if (changedAffinity())
             return topologyVersion();
+        else if (!exchangeDone()) // TODO: initialVersion and topologyVersion are always equal now, but it should be fixed later.
+            return initialVersion();
         else
-            return lastAffChangeTopVer;
+            return topologyVersion();
     }
 
     /**
@@ -604,7 +606,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @return First event discovery event.
+     * @return First event discovery event.1
      *
      */
     public DiscoveryEvent firstEvent() {

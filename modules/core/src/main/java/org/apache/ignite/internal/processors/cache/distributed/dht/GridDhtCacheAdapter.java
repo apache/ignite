@@ -1260,8 +1260,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @return {@code True} if cache affinity changed and operation should be remapped.
      */
     protected final boolean needRemap(AffinityTopologyVersion expVer, AffinityTopologyVersion curVer,
-        Collection<KeyCacheObject> keys) {
-        if (expVer.equals(curVer))
+        AffinityTopologyVersion lastAffChangedTopVer, Collection<KeyCacheObject> keys) {
+        if (curVer.compareTo(lastAffChangedTopVer) >= 0 && curVer.compareTo(expVer) <= 0)
             return false;
 
         // TODO IGNITE-7164 check mvcc crd for mvcc enabled txs.
