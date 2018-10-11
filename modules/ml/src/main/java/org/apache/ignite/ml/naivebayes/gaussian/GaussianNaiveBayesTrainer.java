@@ -119,7 +119,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                 classProbabilities = priorProbabilities;
             }
 
-            return new GaussianNaiveBayesModel(means, variances, classProbabilities, labels);
+            return new GaussianNaiveBayesModel(means, variances, classProbabilities, labels, sumsHolder);
         }
         catch (Exception e) {
             throw new

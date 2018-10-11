@@ -58,14 +58,18 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
         singleLabeldata_2.put(1, new double[] {-5.0, -2.0, LABEL_2});
     }
 
+    private GaussianNaiveBayesTrainer trainer;
+
+    @Before
+    public void createTrainer() {
+        trainer = new GaussianNaiveBayesTrainer();
+    }
+
     @Test
     public void fit_LinearlySeparableData_retunsCorrectModel() {
         Map<Integer, double[]> cacheMock = new HashMap<>();
-
         for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
             cacheMock.put(i, twoLinearlySeparableClasses[i]);
-
-        GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer();
 
         GaussianNaiveBayesModel mdl = trainer.fit(
             cacheMock,
@@ -80,7 +84,6 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
 
     @Test
     public void fit_returnsCorrectLabelProbalities() {
-        GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer();
 
         GaussianNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
@@ -125,7 +128,6 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
 
     @Test
     public void fit_returnsCorrectMeans() {
-        GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer();
 
         GaussianNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(singleLabeldata_1, 2),
@@ -138,7 +140,6 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
 
     @Test
     public void fit_returnsCorrectVariances() {
-        GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer();
 
         GaussianNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(singleLabeldata_1, 2),
@@ -151,7 +152,23 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     }
 
     @Test
-    public void updateModel_returnsCorrectVariances() {
+    public void updateModel_returnsCorrectProbabilities() {
+        GaussianNaiveBayesModel model1 = trainer.fit(
+            new LocalDatasetBuilder<>(singleLabeldata_1, 2),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
+            (k, v) -> v[2]
+        );
+
+        GaussianNaiveBayesModel model2 = trainer.updateModel(model1,
+            new LocalDatasetBuilder<>(singleLabeldata_2, 2),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
+            (k, v) -> v[2]
+        );
+
+
+        Assert.assertEquals(3. / data.size(), model2.getClassProbabilities()[0], PRECISION);
+        Assert.assertEquals(2. / data.size(), model2.getClassProbabilities()[1], PRECISION);
+
 
     }
 }
