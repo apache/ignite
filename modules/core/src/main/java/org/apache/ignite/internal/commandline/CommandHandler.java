@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -832,7 +831,7 @@ public class CommandHandler {
     private void cachesConfig(GridClient client, CacheArguments cacheArgs) throws GridClientException {
         VisorCachesConfigurationTaskArg taskArg = new VisorCachesConfigurationTaskArg(cacheArgs.regex());
 
-        SortedMap<String, Map<String, Object>> res = executeTask(client, VisorCachesConfigurationTask.class, taskArg);
+        Map<String, Map<String, Object>> res = executeTask(client, VisorCachesConfigurationTask.class, taskArg);
 
         if (!F.isEmpty(res)) {
             for (Map.Entry<String, Map<String, Object>> entry : res.entrySet()) {
@@ -1684,10 +1683,10 @@ public class CommandHandler {
 
                 cacheArgs.regex(nextArg("Regex is expected"));
 
-                if(hasNextCacheArg()){
+                if (hasNextCacheArg()) {
                     String arg = nextArg("");
 
-                    if(!arg.equals("--human-readable"))
+                    if (!arg.equals("--human-readable"))
                         throw new IllegalArgumentException(arg);
 
                     cacheArgs.humanReadableFormat(true);

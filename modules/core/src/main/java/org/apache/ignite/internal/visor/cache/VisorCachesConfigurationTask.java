@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteException;
@@ -37,22 +36,22 @@ import org.jetbrains.annotations.Nullable;
  * Task that will collect caches configuration matching with regex.
  */
 @GridInternal
-public class VisorCachesConfigurationTask extends VisorMultiNodeTask<VisorCachesConfigurationTaskArg, SortedMap<String, Map<String, Object>>, SortedMap<String, Map<String, Object>>> {
+public class VisorCachesConfigurationTask extends VisorMultiNodeTask<VisorCachesConfigurationTaskArg, Map<String, Map<String, Object>>, Map<String, Map<String, Object>>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorCachesConfigurationTaskArg, SortedMap<String, Map<String, Object>>> job(
+    @Override protected VisorJob<VisorCachesConfigurationTaskArg, Map<String, Map<String, Object>>> job(
         VisorCachesConfigurationTaskArg arg
     ) {
         return new VisorCachesConfigurationJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected SortedMap<String, Map<String, Object>> reduce0(
+    @Nullable @Override protected Map<String, Map<String, Object>> reduce0(
         List<ComputeJobResult> results
     ) throws IgniteException {
-        SortedMap<String, Map<String, Object>> resultMap = new TreeMap<>();
+        Map<String, Map<String, Object>> resultMap = new TreeMap<>();
 
         for (ComputeJobResult res : results)
             resultMap.putAll(res.getData());
@@ -61,8 +60,7 @@ public class VisorCachesConfigurationTask extends VisorMultiNodeTask<VisorCaches
     }
 
     /** Job that will find affinity node for key. */
-    private static class VisorCachesConfigurationJob
-        extends VisorJob<VisorCachesConfigurationTaskArg, SortedMap<String, Map<String, Object>>> {
+    private static class VisorCachesConfigurationJob extends VisorJob<VisorCachesConfigurationTaskArg, Map<String, Map<String, Object>>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -75,12 +73,12 @@ public class VisorCachesConfigurationTask extends VisorMultiNodeTask<VisorCaches
             this.regex = arg.regex();
         }
 
-        @Override protected SortedMap<String, Map<String, Object>> run(
+        @Override protected Map<String, Map<String, Object>> run(
             @Nullable VisorCachesConfigurationTaskArg arg
         ) throws IgniteException {
             Pattern compiled = Pattern.compile(regex);
 
-            SortedMap<String, Map<String, Object>> res = new TreeMap<>();
+            Map<String, Map<String, Object>> res = new TreeMap<>();
 
             Collection<IgniteCacheProxy<?, ?>> caches = ignite.context().cache().jcaches();
 
