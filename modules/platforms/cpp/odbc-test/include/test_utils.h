@@ -29,6 +29,12 @@
 
 #include "ignite/ignition.h"
 
+#define ODBC_THROW_ON_ERROR(ret, type, handle)          \
+    if (!SQL_SUCCEEDED(ret))                            \
+    {                                                   \
+        throw ignite_test::GetOdbcError(type, handle);  \
+    }
+
 #define ODBC_FAIL_ON_ERROR(ret, type, handle)                       \
     if (!SQL_SUCCEEDED(ret))                                        \
     {                                                               \
@@ -43,11 +49,45 @@
         BOOST_FAIL(ignite_test::GetOdbcErrorMessage(type, handle) + ", msg = " + msg); \
     }
 
+/**
+ * Client ODBC erorr.
+ */
+class OdbcClientError
+{
+public:
+    /**
+     * Constructor
+     *
+     * @param sqlstate SQL state.
+     * @param message Error message.
+     */
+    OdbcClientError(const std::string& sqlstate, const std::string& message) :
+        sqlstate(sqlstate),
+        message(message)
+    {
+        // No-op.
+    }
+
+    /** SQL state. */
+    std::string sqlstate;
+
+    /** Error message. */
+    std::string message;
+};
 
 namespace ignite_test
 {
     /** Read buffer size. */
     enum { ODBC_BUFFER_SIZE = 1024 };
+
+    /**
+     * Extract error.
+     *
+     * @param handleType Type of the handle.
+     * @param handle Handle.
+     * @return Error.
+     */
+    OdbcClientError GetOdbcError(SQLSMALLINT handleType, SQLHANDLE handle);
 
     /**
      * Extract error state.
