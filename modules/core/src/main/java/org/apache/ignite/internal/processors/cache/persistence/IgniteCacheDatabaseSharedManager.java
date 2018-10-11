@@ -1139,6 +1139,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             }
 
             dataRegionsInitialized = false;
+
+            dataRegionsStarted = false;
         }
     }
 
