@@ -79,12 +79,12 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
@@ -128,6 +128,8 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.F0;
+import org.apache.ignite.internal.util.InitializationProtector;
+import org.apache.ignite.internal.util.ParallelExecutionException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -135,7 +137,6 @@ import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -181,6 +182,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_C
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
+import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 
 /**
  * Cache processor.
@@ -253,6 +255,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** MBean group for cache group metrics */
     private final String CACHE_GRP_METRICS_MBEAN_GRP = "Cache groups";
+
+    /** Protector of initialization of specific value. */
+    private final InitializationProtector initializationProtector = new InitializationProtector();
 
     /**
      * @param ctx Kernal context.
@@ -1477,7 +1482,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridCacheDrManager drMgr = pluginMgr.createComponent(GridCacheDrManager.class);
         CacheStoreManager storeMgr = pluginMgr.createComponent(CacheStoreManager.class);
 
-        storeMgr.initialize(cfgStore, sesHolders);
+        if (cfgStore == null)
+            storeMgr.initialize(cfgStore, sesHolders);
+        else
+            initializationProtector.protect(
+                cfgStore,
+                () -> storeMgr.initialize(cfgStore, sesHolders)
+            );
 
         GridCacheContext<?, ?> cacheCtx = new GridCacheContext(
             ctx,
@@ -1829,16 +1840,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgniteInternalFuture<?> res = sharedCtx.affinity().initCachesOnLocalJoin(
             locJoinCtx.cacheGroupDescriptors(), locJoinCtx.cacheDescriptors());
 
-        for (T2<DynamicCacheDescriptor, NearCacheConfiguration> t : locJoinCtx.caches()) {
-            DynamicCacheDescriptor desc = t.get1();
+        List<StartCacheInfo> startCacheInfos = locJoinCtx.caches().stream()
+            .map(cacheInfo -> new StartCacheInfo(cacheInfo.get1(), cacheInfo.get2(), exchTopVer, false))
+            .collect(Collectors.toList());
 
-            prepareCacheStart(
-                desc.cacheConfiguration(),
-                desc,
-                t.get2(),
-                exchTopVer,
-                false);
-        }
+        prepareCachesStartInParallel(startCacheInfos);
 
         if (log.isInfoEnabled())
             log.info("Starting caches on local join performed in " + (System.currentTimeMillis() - time) + " ms.");
@@ -1864,22 +1870,44 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public Collection<DynamicCacheDescriptor> startReceivedCaches(UUID nodeId, AffinityTopologyVersion exchTopVer)
         throws IgniteCheckedException {
-        List<DynamicCacheDescriptor> started = cachesInfo.cachesReceivedFromJoin(nodeId);
+        List<DynamicCacheDescriptor> receivedCaches = cachesInfo.cachesReceivedFromJoin(nodeId);
 
-        for (DynamicCacheDescriptor desc : started) {
-            IgnitePredicate<ClusterNode> filter = desc.groupDescriptor().config().getNodeFilter();
+        List<StartCacheInfo> startCacheInfos = receivedCaches.stream()
+            .filter(desc -> isLocalAffinity(desc.groupDescriptor().config()))
+            .map(desc -> new StartCacheInfo(desc, null, exchTopVer, false))
+            .collect(Collectors.toList());
 
-            if (CU.affinityNode(ctx.discovery().localNode(), filter)) {
-                prepareCacheStart(
-                    desc.cacheConfiguration(),
-                    desc,
-                    null,
-                    exchTopVer,
-                    false);
-            }
-        }
+        prepareCachesStartInParallel(startCacheInfos);
 
-        return started;
+        return receivedCaches;
+    }
+
+    /**
+     * @param cacheConfiguration Checked configuration.
+     * @return {@code true} if local node is affinity node for cache.
+     */
+    private boolean isLocalAffinity(CacheConfiguration cacheConfiguration) {
+        return CU.affinityNode(ctx.discovery().localNode(), cacheConfiguration.getNodeFilter());
+    }
+
+    /**
+     * Start all input caches in parallel.
+     *
+     * @param startCacheInfos All caches information for start.
+     * @throws ParallelExecutionException if execution was failed.
+     */
+    void prepareCachesStartInParallel(Collection<StartCacheInfo> startCacheInfos) throws ParallelExecutionException {
+        doInParallel(
+            sharedCtx.kernalContext().getSystemExecutorService(),
+            startCacheInfos,
+            startCacheInfo -> prepareCacheStart(
+                startCacheInfo.getCacheDescriptor().cacheConfiguration(),
+                startCacheInfo.getCacheDescriptor(),
+                startCacheInfo.getReqNearCfg(),
+                startCacheInfo.getExchangeTopVer(),
+                startCacheInfo.isDisabledAfterStart()
+            )
+        );
     }
 
     /**
@@ -1911,7 +1939,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             ccfg.setNearConfiguration(null);
         }
-        else if (CU.affinityNode(ctx.discovery().localNode(), desc.groupDescriptor().config().getNodeFilter()))
+        else if (isLocalAffinity(desc.groupDescriptor().config()))
             affNode = true;
         else {
             affNode = false;
@@ -1920,28 +1948,27 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (sharedCtx.pageStore() != null && affNode)
-            sharedCtx.pageStore().initializeForCache(desc.groupDescriptor(), desc.toStoredData());
+            initializationProtector.protect(
+                desc.groupDescriptor().groupId(),
+                ()-> sharedCtx.pageStore().initializeForCache(desc.groupDescriptor(), desc.toStoredData())
+            );
 
         String grpName = startCfg.getGroupName();
 
         CacheGroupContext grp = null;
 
         if (grpName != null) {
-            for (CacheGroupContext grp0 : cacheGrps.values()) {
-                if (grp0.sharedGroup() && grpName.equals(grp0.name())) {
-                    grp = grp0;
-
-                    break;
-                }
-            }
-
-            if (grp == null) {
-                grp = startCacheGroup(desc.groupDescriptor(),
+            grp = initializationProtector.protect(
+                desc.groupId(),
+                () -> findCacheGroup(grpName),
+                () -> startCacheGroup(
+                    desc.groupDescriptor(),
                     desc.cacheType(),
                     affNode,
                     cacheObjCtx,
-                    exchTopVer);
-            }
+                    exchTopVer
+                )
+            );
         }
         else {
             grp = startCacheGroup(desc.groupDescriptor(),
@@ -1984,6 +2011,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (cacheCtx.dataStructuresCache())
                 ctx.dataStructures().restart(proxy.internalProxy());
         }
+    }
+
+    /**
+     * @param grpName Group name.
+     * @return Found group or null.
+     */
+    private CacheGroupContext findCacheGroup(String grpName) {
+        for (CacheGroupContext grp0 : cacheGrps.values()) {
+            if (grp0.sharedGroup() && grpName.equals(grp0.name()))
+                return grp0;
+        }
+
+        return null;
     }
 
     /**
@@ -4438,7 +4478,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     // Check if we were asked to start a near cache.
                     if (nearCfg != null) {
-                        if (CU.affinityNode(ctx.discovery().localNode(), descCfg.getNodeFilter())) {
+                        if (isLocalAffinity(descCfg)) {
                             // If we are on a data node and near cache was enabled, return success, else - fail.
                             if (descCfg.getNearConfiguration() != null)
                                 return null;
@@ -4450,7 +4490,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             // If local node has near cache, return success.
                             req.clientStartOnly(true);
                     }
-                    else if (!CU.affinityNode(ctx.discovery().localNode(), descCfg.getNodeFilter()))
+                    else if (!isLocalAffinity(descCfg))
                         req.clientStartOnly(true);
 
                     req.deploymentId(desc.deploymentId());

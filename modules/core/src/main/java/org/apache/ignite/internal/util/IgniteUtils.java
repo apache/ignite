@@ -137,6 +137,7 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
@@ -213,6 +214,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -225,6 +227,7 @@ import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
@@ -10457,6 +10460,46 @@ public abstract class IgniteUtils {
             sb.append(U.hexLong(buf.getLong(i)));
 
         return sb.toString();
+    }
+
+    /**
+     * @param executorSvc Service for parallel execution.
+     * @param srcDatas List of data for parallelization.
+     * @param consumer Logic for execution of on each item of data.
+     * @param <T> Type of data.
+     * @throws ParallelExecutionException if parallel execution was failed. It contains actual exception in suppressed section.
+     */
+    public static <T> void doInParallel(ExecutorService executorSvc, Collection<T> srcDatas,
+        IgniteThrowableConsumer<T> consumer) throws ParallelExecutionException {
+
+        List<T2<T, Future<Object>>> consumerFutures = srcDatas.stream()
+            .map(item -> new T2<>(
+                item,
+                executorSvc.submit(() -> {
+                    consumer.accept(item);
+
+                    return null;
+                })))
+            .collect(Collectors.toList());
+
+        ParallelExecutionException executionE = null;
+
+        for (T2<T, Future<Object>> future : consumerFutures) {
+            try {
+                future.get2().get();
+            }
+            catch (Exception e) {
+                if (executionE == null)
+                    executionE = new ParallelExecutionException("Failed during parallel execution.");
+
+                executionE.addSuppressed(e);
+
+                executionE.addFailedData(future.get1());
+            }
+        }
+
+        if (executionE != null)
+            throw executionE;
     }
 
     /**
