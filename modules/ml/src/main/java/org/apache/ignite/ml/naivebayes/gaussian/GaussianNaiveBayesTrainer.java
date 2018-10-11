@@ -113,6 +113,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                 else {
                     classProbabilities[lbl] = (double)count / datasetSize;
                 }
+
                 labels[lbl] = label;
                 ++lbl;
             }
