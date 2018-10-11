@@ -17,15 +17,10 @@
 
 package org.apache.ignite.jdbc;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.transactions.Transaction;
 
-import javax.cache.CacheException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -33,9 +28,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * JDBC version mismatch test.
@@ -123,56 +115,6 @@ public class JdbcVersionMismatchSelfTest extends GridCommonAbstractTest {
             // Subsequent calls should work fine.
             assertEquals(2, executeQuery(conn2, "SELECT * FROM test").size());
         }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testVersionMismatchNative() throws Exception {
-        Ignite ignite = grid();
-
-        IgniteCache cache = ignite.cache("TEST");
-
-        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            // Start first transaction and observe some values.
-            assertEquals(1, cache.query(new SqlFieldsQuery("SELECT * FROM test")).getAll().size());
-
-            // Change values while first transaction is still in progress.
-            Thread thread = new Thread(new Runnable() {
-                @Override public void run() {
-                    try (Transaction txOther = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        assertEquals(1, cache.query(new SqlFieldsQuery("SELECT * FROM test")).getAll().size());
-
-                        cache.query(new SqlFieldsQuery("INSERT INTO test VALUES (2, 2, 'test_2')")).getAll();
-
-                        assertEquals(2, cache.query(new SqlFieldsQuery("SELECT * FROM test")).getAll().size());
-
-                        txOther.commit();
-                    }
-                }
-            });
-
-            thread.start();
-            thread.join();
-
-            // Force version mismatch.
-            try {
-                cache.query(new SqlFieldsQuery("INSERT INTO test VALUES (2, 2, 'test_2')")).getAll();
-
-                fail();
-            }
-            catch (CacheException e) {
-                assertNotNull(e.getMessage());
-                assertTrue(e.getMessage().contains("Cannot serialize transaction due to write conflict"));
-            }
-
-            // Try executing any other statement from the same transaction.
-            //assertEquals(1, cache.query(new SqlFieldsQuery("SELECT * FROM test")).getAll().size());
-
-            tx.rollback();
-        }
-
-        // TODO: Ensure that thread state is cleared.
     }
 
     /**
