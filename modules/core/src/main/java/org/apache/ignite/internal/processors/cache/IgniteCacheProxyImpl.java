@@ -142,7 +142,11 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /** Flag indicates that proxy is closed. */
     private volatile boolean closed;
 
-    /** Proxy initialization latch. */
+    /** Proxy initialization latch used for await final completion after proxy created, as an example,
+     * a proxy may be created but the exchange is not completed and if we try to perform some cache
+     * the operation we get last finished exchange future (need for validation)
+     * for the previous version but not for current.
+     */
     private final CountDownLatch initLatch = new CountDownLatch(1);
 
     /**
