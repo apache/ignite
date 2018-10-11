@@ -797,8 +797,11 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             cfg.setSqlConnectorConfiguration(readSqlConnectorConfiguration(in));
 
-        if (in.readBoolean())
+        if (in.readBoolean()) {
             cfg.setClientConnectorConfiguration(readClientConnectorConfiguration(in));
+
+            System.err.println("++++++ Read thread pool size: " + cfg.getClientConnectorConfiguration().getThreadPoolSize());
+        }
 
         if (!in.readBoolean())  // ClientConnectorConfigurationEnabled override
             cfg.setClientConnectorConfiguration(null);

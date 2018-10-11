@@ -361,6 +361,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 cliConnCfg.setTcpNoDelay(sqlConnCfg.isTcpNoDelay());
                 cliConnCfg.setThreadPoolSize(sqlConnCfg.getThreadPoolSize());
 
+                System.err.println("+++++ Set thread pool size from sql: " + cliConnCfg.getThreadPoolSize());
+
                 U.warn(log, "Automatically converted deprecated " + SqlConnectorConfiguration.class.getSimpleName() +
                     " to " + ClientConnectorConfiguration.class.getSimpleName() + ".");
 
@@ -377,6 +379,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 cliConnCfg.setPort(hostAndPort.portFrom());
                 cliConnCfg.setPortRange(hostAndPort.portTo() - hostAndPort.portFrom());
                 cliConnCfg.setThreadPoolSize(odbcCfg.getThreadPoolSize());
+
+                System.err.println("+++++ Set thread pool size from odbc: " + cliConnCfg.getThreadPoolSize());
+
                 cliConnCfg.setSocketSendBufferSize(odbcCfg.getSocketSendBufferSize());
                 cliConnCfg.setSocketReceiveBufferSize(odbcCfg.getSocketReceiveBufferSize());
                 cliConnCfg.setMaxOpenCursorsPerConnection(odbcCfg.getMaxOpenCursors());

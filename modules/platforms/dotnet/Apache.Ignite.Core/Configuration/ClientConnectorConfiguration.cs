@@ -112,6 +112,9 @@ namespace Apache.Ignite.Core.Configuration
             TcpNoDelay = reader.ReadBoolean();
             MaxOpenCursorsPerConnection = reader.ReadInt();
             ThreadPoolSize = reader.ReadInt();
+
+            Console.WriteLine("Read thread pool size: {0}", ThreadPoolSize);
+
             IdleTimeout = reader.ReadLongAsTimespan();
 
             ThinClientEnabled = reader.ReadBoolean();
