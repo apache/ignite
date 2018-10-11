@@ -2923,7 +2923,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (desc == null) {
                 GridCacheConfigurationVersion ver = cctx.cache().cacheVersion(cacheId);
 
-                assert ver != null || ver.lastAction() == DESTROY : U.toString(ver);
+                assert ver != null && ver.lastAction() == DESTROY : U.toString(ver);
             }
             else if (!ignoreGrps.contains(desc.groupId())) {
                 GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
