@@ -846,8 +846,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     assert false;
             }
 
-            if (cctx.localNode().isClient())
-                tryToPerformLocalSnapshotOperation();
+            if (cctx.localNode().isClient()) {
+                cctx.exchange().exchangerBlockingSectionBegin();
+
+                try {
+                    tryToPerformLocalSnapshotOperation();
+                }
+                finally {
+                    cctx.exchange().exchangerBlockingSectionEnd();
+                }
+            }
 
             if (exchLog.isInfoEnabled())
                 exchLog.info("Finished exchange init [topVer=" + topVer + ", crd=" + crdNode + ']');
@@ -1571,8 +1579,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * Try to start local snapshot operation if it is needed by discovery event
      */
     private void tryToPerformLocalSnapshotOperation() {
-        cctx.exchange().exchangerBlockingSectionBegin();
-
         try {
             long start = U.currentTimeMillis();
 
@@ -1590,9 +1596,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Error while starting snapshot operation", e);
-        }
-        finally {
-            cctx.exchange().exchangerBlockingSectionEnd();
         }
     }
 
@@ -2140,14 +2143,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (!cacheCtx.affinityNode() || cacheCtx.isLocal())
                     continue;
 
-                cctx.exchange().exchangerBlockingSectionBegin();
-
-                try {
-                    cacheCtx.continuousQueries().flushBackupQueue(res);
-                }
-                finally {
-                    cctx.exchange().exchangerBlockingSectionEnd();
-                }
+                cacheCtx.continuousQueries().flushBackupQueue(res);
             }
         }
 
@@ -2161,22 +2157,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     boolean needRefresh = false;
 
-                    cctx.exchange().exchangerBlockingSectionBegin();
-
                     try {
-                        try {
-                            needRefresh = grp.topology().initPartitionsWhenAffinityReady(res, this);
-                        }
-                        catch (IgniteInterruptedCheckedException e) {
-                            U.error(log, "Failed to initialize partitions.", e);
-                        }
+                        needRefresh = grp.topology().initPartitionsWhenAffinityReady(res, this);
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
+                        U.error(log, "Failed to initialize partitions.", e);
+                    }
 
-                        if (needRefresh)
-                            cctx.exchange().refreshPartitions();
-                    }
-                    finally {
-                        cctx.exchange().exchangerBlockingSectionEnd();
-                    }
+                    if (needRefresh)
+                        cctx.exchange().refreshPartitions();
                 }
             }
 
@@ -2184,30 +2173,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 GridCacheContext drCacheCtx = cacheCtx.isNear() ? cacheCtx.near().dht().context() : cacheCtx;
 
                 if (drCacheCtx.isDrEnabled()) {
-                    cctx.exchange().exchangerBlockingSectionBegin();
-
                     try {
                         drCacheCtx.dr().onExchange(res, exchId.isLeft());
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to notify DR: " + e, e);
                     }
-                    finally {
-                        cctx.exchange().exchangerBlockingSectionEnd();
-                    }
                 }
             }
 
-            if (serverNodeDiscoveryEvent()) {
-                cctx.exchange().exchangerBlockingSectionBegin();
-
-                try {
-                    detectLostPartitions(res);
-                }
-                finally {
-                    cctx.exchange().exchangerBlockingSectionEnd();
-                }
-            }
+            if (serverNodeDiscoveryEvent())
+                detectLostPartitions(res);
 
             Map<Integer, CacheValidation> m = U.newHashMap(cctx.cache().cacheGroups().size());
 
@@ -2217,24 +2193,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             grpValidRes = m;
         }
 
-        cctx.exchange().exchangerBlockingSectionBegin();
+        if (!cctx.localNode().isClient())
+            tryToPerformLocalSnapshotOperation();
 
-        try {
-            if (!cctx.localNode().isClient())
-                tryToPerformLocalSnapshotOperation();
+        if (err == null)
+            cctx.coordinators().onExchangeDone(exchCtx.newMvccCoordinator(), exchCtx.events().discoveryCache(),
+                exchCtx.activeQueries());
 
-            if (err == null)
-                cctx.coordinators().onExchangeDone(exchCtx.newMvccCoordinator(), exchCtx.events().discoveryCache(),
-                    exchCtx.activeQueries());
+        // Create and destory caches and cache proxies.
+        cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
 
-            // Create and destory caches and cache proxies.
-            cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
-
-            cctx.kernalContext().authentication().onActivate();
-        }
-        finally {
-            cctx.exchange().exchangerBlockingSectionEnd();
-        }
+        cctx.kernalContext().authentication().onActivate();
 
         Map<T2<Integer, Integer>, Long> localReserved = partHistSuppliers.getReservations(cctx.localNodeId());
 
@@ -2252,29 +2221,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         cctx.database().releaseHistoryForExchange();
 
-        cctx.exchange().exchangerBlockingSectionBegin();
-
-        try {
-            cctx.database().rebuildIndexesIfNeeded(this);
-        }
-        finally {
-            cctx.exchange().exchangerBlockingSectionEnd();
-        }
+        cctx.database().rebuildIndexesIfNeeded(this);
 
         if (err == null) {
-            cctx.exchange().exchangerBlockingSectionBegin();
-
-            try {
-                for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                    if (!grp.isLocal())
-                        grp.topology().onExchangeDone(this, grp.affinity().readyAffinity(res), false);
-                }
-
-                cctx.walState().changeLocalStatesOnExchangeDone(res);
+            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+                if (!grp.isLocal())
+                    grp.topology().onExchangeDone(this, grp.affinity().readyAffinity(res), false);
             }
-            finally {
-                cctx.exchange().exchangerBlockingSectionEnd();
-            }
+
+            cctx.walState().changeLocalStatesOnExchangeDone(res);
         }
 
         final Throwable err0 = err;
@@ -2297,54 +2252,47 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.kernalContext().state().onStateChangeExchangeDone(exchActions.stateChangeRequest());
         });
 
-        cctx.exchange().exchangerBlockingSectionBegin();
+        if (super.onDone(res, err)) {
+            afterLsnrCompleteFut.onDone();
 
-        try {
-            if (super.onDone(res, err)) {
-                afterLsnrCompleteFut.onDone();
+            if (log.isDebugEnabled())
+                log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this +
+                    ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
+            else if (log.isInfoEnabled())
+                log.info("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange=" + shortInfo() +
+                    ", topVer=" + topologyVersion() + ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
 
-                if (log.isDebugEnabled())
-                    log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this +
-                        ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
-                else if (log.isInfoEnabled())
-                    log.info("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange=" + shortInfo() +
-                        ", topVer=" + topologyVersion() + ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
+            initFut.onDone(err == null);
 
-                initFut.onDone(err == null);
+            if (exchCtx != null && exchCtx.events().hasServerLeft()) {
+                ExchangeDiscoveryEvents evts = exchCtx.events();
 
-                if (exchCtx != null && exchCtx.events().hasServerLeft()) {
+                for (DiscoveryEvent evt : evts.events()) {
+                    if (serverLeftEvent(evt)) {
+                        for (CacheGroupContext grp : cctx.cache().cacheGroups())
+                            grp.affinityFunction().removeNode(evt.eventNode().id());
+                    }
+                }
+            }
+
+            exchActions = null;
+
+            if (firstDiscoEvt instanceof DiscoveryCustomEvent)
+                ((DiscoveryCustomEvent)firstDiscoEvt).customMessage(null);
+
+            if (err == null) {
+                if (exchCtx != null && (exchCtx.events().hasServerLeft() || exchCtx.events().hasServerJoin())) {
                     ExchangeDiscoveryEvents evts = exchCtx.events();
 
                     for (DiscoveryEvent evt : evts.events()) {
-                        if (serverLeftEvent(evt)) {
-                            for (CacheGroupContext grp : cctx.cache().cacheGroups())
-                                grp.affinityFunction().removeNode(evt.eventNode().id());
-                        }
+                        if (serverLeftEvent(evt) || serverJoinEvent(evt))
+                            logExchange(evt);
                     }
                 }
 
-                exchActions = null;
-
-                if (firstDiscoEvt instanceof DiscoveryCustomEvent)
-                    ((DiscoveryCustomEvent)firstDiscoEvt).customMessage(null);
-
-                if (err == null) {
-                    if (exchCtx != null && (exchCtx.events().hasServerLeft() || exchCtx.events().hasServerJoin())) {
-                        ExchangeDiscoveryEvents evts = exchCtx.events();
-
-                        for (DiscoveryEvent evt : evts.events()) {
-                            if (serverLeftEvent(evt) || serverJoinEvent(evt))
-                                logExchange(evt);
-                        }
-                    }
-
-                }
-
-                return true;
             }
-        }
-        finally {
-            cctx.exchange().exchangerBlockingSectionEnd();
+
+            return true;
         }
 
         return false;
