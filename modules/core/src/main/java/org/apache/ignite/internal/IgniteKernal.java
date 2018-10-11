@@ -1116,7 +1116,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     catch (IgniteNeedReconnectException e) {
                         ClusterNode locNode = ctx.discovery().localNode();
 
-                        assert CU.clientNode(locNode);
+                        assert locNode.isClient();
 
                         if (!locNode.isClient())
                             throw new IgniteCheckedException("Client node in forceServerMode " +

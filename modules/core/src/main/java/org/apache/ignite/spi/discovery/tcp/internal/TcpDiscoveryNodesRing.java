@@ -61,7 +61,9 @@ public class TcpDiscoveryNodesRing {
     /** Client nodes filter. */
     private static final PN CLIENT_NODES = new PN() {
         @Override public boolean apply(ClusterNode node) {
-            return node.isClient();
+            assert node instanceof TcpDiscoveryNode : node;
+
+            return ((TcpDiscoveryNode) node).clientRouterNodeId() != null;
         }
     };
 
@@ -200,7 +202,7 @@ public class TcpDiscoveryNodesRing {
                 return false;
 
             for (TcpDiscoveryNode node : nodes)
-                if (!node.isClient() && !node.id().equals(locNode.id()))
+                if (node.clientRouterNodeId() == null && !node.id().equals(locNode.id()))
                     return true;
 
             return false;
@@ -607,7 +609,7 @@ public class TcpDiscoveryNodesRing {
 
         return F.view(nodes, new P1<TcpDiscoveryNode>() {
             @Override public boolean apply(TcpDiscoveryNode node) {
-                return !node.isClient() && (excludedEmpty || !excluded.contains(node));
+                return node.clientRouterNodeId() == null && (excludedEmpty || !excluded.contains(node));
             }
         });
     }

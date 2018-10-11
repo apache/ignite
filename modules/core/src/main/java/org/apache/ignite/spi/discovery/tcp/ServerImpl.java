@@ -565,7 +565,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         if (log.isInfoEnabled())
             log.info("Finished node ping [nodeId=" + nodeId + ", res=" + res + ", time=" + (end - start) + "ms]");
 
-        if (!res && !node.isClient() && nodeAlive(nodeId)) {
+        if (!res && node.clientRouterNodeId() == null && nodeAlive(nodeId)) {
             LT.warn(log, "Failed to ping node (status check will be initiated): " + nodeId);
 
             msgWorker.addMessage(new TcpDiscoveryStatusCheckMessage(locNode, node.id()));
@@ -588,7 +588,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         UUID clientNodeId = null;
 
-        if (node.isClient()) {
+        if (node.clientRouterNodeId() != null) {
             clientNodeId = node.id();
 
             node = ring.node(node.clientRouterNodeId());
@@ -1973,7 +1973,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         ring.allNodes(),
                         new C1<TcpDiscoveryNode, Collection<InetSocketAddress>>() {
                             @Override public Collection<InetSocketAddress> apply(TcpDiscoveryNode node) {
-                                return !node.isClient() ? spi.getNodeAddresses(node) :
+                                return node.clientRouterNodeId() == null ? spi.getNodeAddresses(node) :
                                     Collections.<InetSocketAddress>emptyList();
                             }
                         }
@@ -2162,7 +2162,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 TcpDiscoveryNode node = addedMsg.node();
 
-                if (node.isClient() && !msgs.contains(msg)) {
+                if (node.clientRouterNodeId() != null && !msgs.contains(msg)) {
                     Collection<TcpDiscoveryNode> allNodes = ring.allNodes();
 
                     Collection<TcpDiscoveryNode> top = new ArrayList<>(allNodes.size());
@@ -2251,7 +2251,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         @Nullable Collection<TcpDiscoveryAbstractMessage> messages(@Nullable IgniteUuid lastMsgId,
             TcpDiscoveryNode node)
         {
-            assert node != null && node.isClient() : node;
+            assert node != null && node.clientRouterNodeId() != null : node;
 
             if (lastMsgId == null) {
                 // Client connection failed before it received TcpDiscoveryNodeAddedMessage.
@@ -3617,7 +3617,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 authFailedMsg = "Authentication subject is not serializable";
                             }
-                            else if (!node.isClient() &&
+                            else if (node.clientRouterNodeId() == null &&
                                 !subj.systemOperationAllowed(SecurityPermission.JOIN_AS_SERVER))
                                 authFailedMsg = "Node is not authorised to join as a server node";
 
@@ -4026,13 +4026,13 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         private void trySendMessageDirectly(TcpDiscoveryNode node, TcpDiscoveryAbstractMessage msg)
             throws IgniteSpiException {
-            if (node.isClient()) {
+            if (node.clientRouterNodeId() != null) {
                 TcpDiscoveryNode routerNode = ring.node(node.clientRouterNodeId());
 
                 if (routerNode == null)
                     throw new IgniteSpiException("Router node for client does not exist: " + node);
 
-                if (routerNode.isClient())
+                if (routerNode.clientRouterNodeId() != null)
                     throw new IgniteSpiException("Router node is a client node: " + node);
 
                 if (routerNode.id().equals(getLocalNodeId())) {
@@ -4114,7 +4114,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     TcpDiscoveryNodeAddFinishedMessage addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(locNodeId,
                         node.id());
 
-                    if (node.isClient()) {
+                    if (node.clientRouterNodeId() != null) {
                         addFinishMsg.clientDiscoData(msg.gridDiscoveryData());
 
                         addFinishMsg.clientNodeAttributes(node.attributes());
@@ -4502,7 +4502,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     notifyDiscovery(EVT_NODE_JOINED, topVer, node);
 
                 try {
-                    if (spi.ipFinder.isShared() && locNodeCoord && !node.isClient())
+                    if (spi.ipFinder.isShared() && locNodeCoord && node.clientRouterNodeId() == null)
                         spi.ipFinder.registerAddresses(node.socketAddresses());
                 }
                 catch (IgniteSpiException e) {
@@ -6372,7 +6372,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             TcpDiscoveryNode node = ring.node(nodeId);
 
-            assert node == null || node.isClient();
+            assert node == null || node.clientRouterNodeId() != null;
 
             if (node != null) {
                 node.clientRouterNodeId(msg.routerNodeId());
