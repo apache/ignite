@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeFailureMessage;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.ExchangeContext;
@@ -332,6 +333,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** Latest (by update sequences) full message with exchangeId == null, need to be processed right after future is done. */
     private GridDhtPartitionsFullMessage delayedLatestMsg;
+
+    /** Future for wait all exchange listeners comepleted. */
+    private final GridFutureAdapter<?> afterLsnrCompleteFut = new GridFutureAdapter<>();
 
     /**
      * @param cctx Cache context.
@@ -809,6 +813,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         onServerNodeEvent(crdNode);
                 }
             }
+
+            cctx.cache().registrateProxyRestart(resolveCacheRequests(exchActions), afterLsnrCompleteFut);
 
             updateTopologies(crdNode, cctx.coordinators().currentCoordinator());
 
@@ -2112,6 +2118,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable AffinityTopologyVersion res, @Nullable Throwable err) {
+        assert res != null || err != null : "TopVer=" + res + ", err=" + err;
+
         if (isDone() || !done.compareAndSet(false, true))
             return false;
 
@@ -2219,17 +2227,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.coordinators().onExchangeDone(exchCtx.newMvccCoordinator(), exchCtx.events().discoveryCache(),
                     exchCtx.activeQueries());
 
+            // Create and destory caches and cache proxies.
             cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
 
-            cctx.exchange().onExchangeDone(res, initialVersion(), err);
-
             cctx.kernalContext().authentication().onActivate();
-
-            if (exchActions != null && err == null)
-                exchActions.completeRequestFutures(cctx, null);
-
-            if (stateChangeExchange() && err == null)
-                cctx.kernalContext().state().onStateChangeExchangeDone(exchActions.stateChangeRequest());
         }
         finally {
             cctx.exchange().exchangerBlockingSectionEnd();
@@ -2276,10 +2277,32 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
+        final Throwable err0 = err;
+
+        // Should execute this listener first, before any external listeners.
+        // Listeners use stack as data structure.
+        listen(f -> {
+            // Update last finished future in the first.
+            cctx.exchange().lastFinishedFuture(this);
+
+            // Complete any affReady futures and update last exchange done version.
+            cctx.exchange().onExchangeDone(res, initialVersion(), err0);
+
+            cctx.cache().completeProxyRestart(resolveCacheRequests(exchActions), initialVersion(), res);
+
+            if (exchActions != null && err0 == null)
+                exchActions.completeRequestFutures(cctx, null);
+
+            if (stateChangeExchange() && err0 == null)
+                cctx.kernalContext().state().onStateChangeExchangeDone(exchActions.stateChangeRequest());
+        });
+
         cctx.exchange().exchangerBlockingSectionBegin();
 
         try {
             if (super.onDone(res, err)) {
+                afterLsnrCompleteFut.onDone();
+
                 if (log.isDebugEnabled())
                     log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this +
                         ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
@@ -2306,8 +2329,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     ((DiscoveryCustomEvent)firstDiscoEvt).customMessage(null);
 
                 if (err == null) {
-                    cctx.exchange().lastFinishedFuture(this);
-
                     if (exchCtx != null && (exchCtx.events().hasServerLeft() || exchCtx.events().hasServerJoin())) {
                         ExchangeDiscoveryEvents evts = exchCtx.events();
 
@@ -2327,6 +2348,20 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         return false;
+    }
+
+    /**
+     * @param exchangeActions Exchange actions.
+     * @return Map of cache names and start descriptors.
+     */
+    private Map<String, DynamicCacheChangeRequest> resolveCacheRequests(ExchangeActions exchangeActions) {
+        if (exchangeActions == null)
+            return Collections.emptyMap();
+
+        return exchangeActions.cacheStartRequests()
+            .stream()
+            .map(ExchangeActions.CacheActionData::request)
+            .collect(Collectors.toMap(DynamicCacheChangeRequest::cacheName, r -> r));
     }
 
     /**
