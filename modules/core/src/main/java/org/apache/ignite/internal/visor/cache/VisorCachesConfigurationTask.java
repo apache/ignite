@@ -63,6 +63,8 @@ public class VisorCachesConfigurationTask extends VisorMultiNodeTask<VisorCaches
     /** Job that will find affinity node for key. */
     private static class VisorCachesConfigurationJob
         extends VisorJob<VisorCachesConfigurationTaskArg, SortedMap<String, Map<String, Object>>> {
+        /** */
+        private static final long serialVersionUID = 0L;
 
         /** Regex. */
         private String regex;
