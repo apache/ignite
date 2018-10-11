@@ -206,31 +206,31 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
         }
 
         switch (writer.state()) {
-            case 3:
+            case 4:
                 if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 5:
                 if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 6:
                 if (!writer.writeLong("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 7:
                 if (!writer.writeMessage("res", res))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 8:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
@@ -252,7 +252,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
             return false;
 
         switch (reader.state()) {
-            case 3:
+            case 4:
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
@@ -260,7 +260,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
 
                 reader.incrementState();
 
-            case 4:
+            case 5:
                 flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
@@ -268,7 +268,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
 
                 reader.incrementState();
 
-            case 5:
+            case 6:
                 futId = reader.readLong("futId");
 
                 if (!reader.isLastRead())
@@ -276,7 +276,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
 
                 reader.incrementState();
 
-            case 6:
+            case 7:
                 res = reader.readMessage("res");
 
                 if (!reader.isLastRead())
@@ -284,7 +284,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
 
                 reader.incrementState();
 
-            case 7:
+            case 8:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -309,7 +309,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 9;
     }
 
     /** {@inheritDoc} */
