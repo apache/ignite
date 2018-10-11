@@ -54,7 +54,7 @@ namespace ignite
                     loc(false),
                     distributedJoins(false),
                     enforceJoinOrder(false),
-                    lazy(false),
+                    lazy(true),
                     args()
                 {
                     // No-op.
@@ -73,7 +73,7 @@ namespace ignite
                     loc(false),
                     distributedJoins(false),
                     enforceJoinOrder(false),
-                    lazy(false),
+                    lazy(true),
                     args()
                 {
                     // No-op.

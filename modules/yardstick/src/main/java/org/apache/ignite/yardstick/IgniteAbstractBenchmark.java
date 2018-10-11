@@ -17,9 +17,10 @@
 
 package org.apache.ignite.yardstick;
 
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteState;
 import org.apache.ignite.Ignition;
@@ -29,6 +30,7 @@ import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkDriverAdapter;
 import org.yardstickframework.BenchmarkUtils;
 
+import static org.apache.ignite.events.EventType.EVTS_DISCOVERY;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.yardstickframework.BenchmarkUtils.jcommander;
 import static org.yardstickframework.BenchmarkUtils.println;
@@ -37,6 +39,8 @@ import static org.yardstickframework.BenchmarkUtils.println;
  * Abstract class for Ignite benchmarks.
  */
 public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
+    private static final long WAIT_NODES_TIMEOUT = TimeUnit.SECONDS.toMillis(30);
+
     /** Arguments. */
     protected final IgniteBenchmarkArguments args = new IgniteBenchmarkArguments();
 
@@ -126,22 +130,30 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
      * @throws Exception If failed.
      */
     private void waitForNodes() throws Exception {
-        final CountDownLatch nodesStartedLatch = new CountDownLatch(1);
+        IgniteCountDownLatch allNodesReady = ignite().countDownLatch("allNodesReady", 1, false, true);
 
+        // wait for condition when all nodes are ready and release distributed barrier.
         ignite().events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event gridEvt) {
-                if (nodesStarted())
-                    nodesStartedLatch.countDown();
+                if (nodesStarted()) {
+                    allNodesReady.countDown();
+                    // todo: return false so unregister?
+                }
 
                 return true;
             }
-        }, EVT_NODE_JOINED);
+        }, EVTS_DISCOVERY);
 
-        if (!nodesStarted()) {
-            println(cfg, "Waiting for " + (args.nodes() - 1) + " nodes to start...");
+        if (nodesStarted())
+            allNodesReady.countDown();
 
-            nodesStartedLatch.await();
-        }
+        // block on distributed barrier till member 0 release it.
+        println(cfg, "Start waiting for cluster to contain " + args.nodes() + ".");
+
+        //todo: timeouts?
+        allNodesReady.await();
+
+        println(cfg, "Cluster is ready.");
     }
 
     /**

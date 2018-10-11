@@ -46,7 +46,7 @@ namespace
     const bool testEnforceJoinOrder = true;
     const bool testReplicatedOnly = true;
     const bool testCollocated = true;
-    const bool testLazy = true;
+    const bool testLazy = false;
     const bool testSkipReducerOnUpdate = true;
 
     const std::string testAddressStr = testServerHost + ':' + ignite::common::LexicalCast<std::string>(testServerPort);
@@ -234,7 +234,7 @@ void CheckDsnConfig(const Configuration& cfg)
     BOOST_CHECK_EQUAL(cfg.IsEnforceJoinOrder(), false);
     BOOST_CHECK_EQUAL(cfg.IsReplicatedOnly(), false);
     BOOST_CHECK_EQUAL(cfg.IsCollocated(), false);
-    BOOST_CHECK_EQUAL(cfg.IsLazy(), false);
+    BOOST_CHECK_EQUAL(cfg.IsLazy(), true);
     BOOST_CHECK_EQUAL(cfg.IsSkipReducerOnUpdate(), false);
     BOOST_CHECK(cfg.GetAddresses().empty());
 }
