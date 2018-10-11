@@ -39,7 +39,8 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
 
     /** Data. */
     private static final Map<Integer, double[]> data = new HashMap<>();
-    private static final Map<Integer, double[]> singleLabeldata = new HashMap<>();
+    private static final Map<Integer, double[]> singleLabeldata_1 = new HashMap<>();
+    private static final Map<Integer, double[]> singleLabeldata_2 = new HashMap<>();
 
     static {
         data.put(0, new double[] {1.0, -1.0, LABEL_1});
@@ -48,9 +49,12 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
         data.put(3, new double[] {-3.0, 2.0, LABEL_2});
         data.put(4, new double[] {-5.0, -2.0, LABEL_2});
 
-        singleLabeldata.put(0, new double[] {1.0, -1.0, LABEL_1});
-        singleLabeldata.put(1, new double[] {-1.0, 2.0, LABEL_1});
-        singleLabeldata.put(2, new double[] {6.0, 1.0, LABEL_1});
+        singleLabeldata_1.put(0, new double[] {1.0, -1.0, LABEL_1});
+        singleLabeldata_1.put(1, new double[] {-1.0, 2.0, LABEL_1});
+        singleLabeldata_1.put(2, new double[] {6.0, 1.0, LABEL_1});
+
+        singleLabeldata_1.put(0, new double[] {-3.0, 2.0, LABEL_2});
+        singleLabeldata_1.put(1, new double[] {-5.0, -2.0, LABEL_2});
     }
 
     @Test
@@ -76,6 +80,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     @Test
     public void fit_returnsCorrectLabelProbalities() {
         GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer();
+
         GaussianNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
@@ -87,10 +92,42 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     }
 
     @Test
+    public void fit_setEquiprobableClasses_returnsEquivalentProbalities() {
+        GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer()
+            .withEquiprobableClasses();
+
+        GaussianNaiveBayesModel model = trainer.fit(
+            new LocalDatasetBuilder<>(data, 2),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
+            (k, v) -> v[2]
+        );
+
+        Assert.assertEquals(.5, model.getClassProbabilities()[0], PRECISION);
+        Assert.assertEquals(.5, model.getClassProbabilities()[1], PRECISION);
+    }
+
+    @Test
+    public void fit_setPriorProbabilities_returnsPresetProbalities() {
+        double[] priorProbabilities = new double[] {.35, .65};
+        GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer()
+            .setPriorProbabilities(priorProbabilities);
+
+        GaussianNaiveBayesModel model = trainer.fit(
+            new LocalDatasetBuilder<>(data, 2),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
+            (k, v) -> v[2]
+        );
+
+        Assert.assertEquals(priorProbabilities[0], model.getClassProbabilities()[0], PRECISION);
+        Assert.assertEquals(priorProbabilities[1], model.getClassProbabilities()[1], PRECISION);
+    }
+
+    @Test
     public void fit_returnsCorrectMeans() {
         GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer();
+
         GaussianNaiveBayesModel model = trainer.fit(
-            new LocalDatasetBuilder<>(singleLabeldata, 2),
+            new LocalDatasetBuilder<>(singleLabeldata_1, 2),
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         );
@@ -103,7 +140,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
         GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer();
 
         GaussianNaiveBayesModel model = trainer.fit(
-            new LocalDatasetBuilder<>(singleLabeldata, 2),
+            new LocalDatasetBuilder<>(singleLabeldata_1, 2),
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         );
@@ -111,4 +148,5 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
         double[] expectedVars = {8.666666666666666, 1.5555555555555556};
         Assert.assertArrayEquals(expectedVars, model.getVariances()[0], PRECISION);
     }
+
 }
