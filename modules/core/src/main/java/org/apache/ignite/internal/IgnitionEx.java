@@ -1830,7 +1830,7 @@ public class IgnitionEx {
                                 new IgniteException(S.toString(GridWorker.class, deadWorker))));
                     }
                 },
-                180_000, // todo TXDR remove
+                cfg.getFailureDetectionTimeout(),
                 log);
 
             stripedExecSvc = new StripedExecutor(
