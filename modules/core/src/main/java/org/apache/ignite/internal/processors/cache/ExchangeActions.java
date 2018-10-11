@@ -130,7 +130,7 @@ public class ExchangeActions {
      * @param map Actions map.
      * @param ctx Context.
      */
-    private void completeRequestFutures(Map<String, CacheActionData> map, GridCacheSharedContext ctx) {
+    public void completeRequestFutures(Map<String, CacheActionData> map, GridCacheSharedContext ctx) {
         if (map != null) {
             for (CacheActionData req : map.values())
                 ctx.cache().completeCacheStartFuture(req.req, true, null);
