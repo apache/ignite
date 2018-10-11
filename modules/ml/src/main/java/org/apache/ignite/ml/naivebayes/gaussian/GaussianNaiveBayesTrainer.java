@@ -92,35 +92,37 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
             double[] labels = new double[labelCount];
 
             long datasetSize = mean.featureCountPerLbl.values().stream().mapToInt(i -> i).sum();
-            Map<Double, double[]> meansHolder = new HashMap<>();
+//            Map<Double, double[]> meansHolder = new HashMap<>();
 
             int lbl = 0;
             for (Double label : sortedFeatures) {
                 int count = mean.featureCountPerLbl.get(label);
-                double[] tmp = mean.featureSumPerLbl.get(label);
+                double[] sum = mean.featureSumPerLbl.get(label);
+                double[] sqSum = mean.squaredSumPerLbl.get(label);
 
                 for (int i = 0; i < featureCount; i++) {
-                    means[lbl][i] = tmp[i] / count;
+                    means[lbl][i] = sum[i] / count;
+                    variances[lbl][i] = (sqSum[i] - sum[i] * sum[i] / count) / count;
                 }
 
-                meansHolder.put(label, means[lbl]);
+//                meansHolder.put(label, means[lbl]);
                 classProbabilities[lbl] = (double)count / datasetSize;
                 labels[lbl] = label;
                 ++lbl;
             }
 
-            VarianceHelper variance = computeVariance(dataset, meansHolder);
-
-            lbl = 0;
-            for (Double label : sortedFeatures) {
-                int count = mean.featureCountPerLbl.get(label);
-                double[] tmp = variance.featureDiff.get(label);
-
-                for (int i = 0; i < featureCount; i++) {
-                    variances[lbl][i] = tmp[i] / (count - 1);
-                }
-                ++lbl;
-            }
+//            VarianceHelper variance = computeVariance(dataset, meansHolder);
+//
+//            lbl = 0;
+//            for (Double label : sortedFeatures) {
+//                int count = mean.featureCountPerLbl.get(label);
+//                double[] tmp = variance.featureDiff.get(label);
+//
+//                for (int i = 0; i < featureCount; i++) {
+//                    variances[lbl][i] = tmp[i] / (count - 1);
+//                }
+//                ++lbl;
+//            }
             if (equiprobableClasses) {
                 int k = classProbabilities.length;
                 for (int i = 0; i < k; i++) {
@@ -196,7 +198,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                     for (int j = 0; j < features.size(); j++) {
                         double x = features.get(j);
                         toMeans[j] += x;
-                        sqSum[j] += x*x;
+                        sqSum[j] += x * x;
                     }
                 }
                 return res;
