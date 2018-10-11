@@ -103,20 +103,18 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                     variances[lbl][i] = (sqSum[i] - sum[i] * sum[i] / count) / count;
                 }
 
-                classProbabilities[lbl] = (double)count / datasetSize;
+                if (equiprobableClasses) {
+                    classProbabilities[lbl] = 1. / labelCount;
+                }
+                else if (priorProbabilities != null) {
+                    assert classProbabilities.length == priorProbabilities.length;
+                    classProbabilities[lbl] = priorProbabilities[lbl];
+                }
+                else {
+                    classProbabilities[lbl] = (double)count / datasetSize;
+                }
                 labels[lbl] = label;
                 ++lbl;
-            }
-
-            if (equiprobableClasses) {
-                int k = classProbabilities.length;
-                for (int i = 0; i < k; i++) {
-                    classProbabilities[i] = 1. / k;
-                }
-            }
-            else if (priorProbabilities != null) {
-                assert classProbabilities.length == priorProbabilities.length;
-                classProbabilities = priorProbabilities;
             }
 
             return new GaussianNaiveBayesModel(means, variances, classProbabilities, labels, sumsHolder);
