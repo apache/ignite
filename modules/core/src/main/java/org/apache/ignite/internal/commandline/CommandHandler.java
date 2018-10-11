@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -72,6 +73,7 @@ import org.apache.ignite.internal.visor.baseline.VisorBaselineOperation;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskArg;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
+import org.apache.ignite.internal.visor.cache.VisorCachesConfigurationListTask;
 import org.apache.ignite.internal.visor.misc.VisorClusterNode;
 import org.apache.ignite.internal.visor.misc.VisorWalTask;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskArg;
@@ -606,6 +608,11 @@ public class CommandHandler {
 
                 break;
 
+            case CONFIG_LIST:
+                cachesConfigList(client, cacheArgs);
+
+                break;
+
             default:
                 cacheView(client, cacheArgs);
 
@@ -625,6 +632,7 @@ public class CommandHandler {
         usage("  Validate custom indexes on idle cluster:", CACHE, " validate_indexes [cache1,...,cacheN] [nodeId] [checkFirst|checkThrough]");
         usage("  Collect partition distribution information:", CACHE, " distribution nodeId|null [cacheName1,...,cacheNameN] [--user-attributes attributeName1[,...,attributeNameN]]");
         usage("  Reset lost partitions:", CACHE, " reset_lost_partitions cacheName1[,...,cacheNameN]");
+        usage("  List caches configuration:", CACHE, CacheCommand.CONFIG_LIST.name(), "cacheNameRegexPattern [--human-readable]");
 
         log("  If [nodeId] is not specified, contention and validate_indexes commands will be broadcasted to all server nodes.");
         log("  Another commands where [nodeId] is optional will run on a random server node.");
@@ -814,6 +822,33 @@ public class CommandHandler {
         CacheDistributionTaskResult res = executeTaskByNameOnNode(client, CacheDistributionTask.class.getName(), taskArg, nodeId);
 
         res.print(System.out);
+    }
+
+    /**
+     * @param client Client.
+     * @param cacheArgs Cache args.
+     */
+    private void cachesConfigList(GridClient client, CacheArguments cacheArgs) throws GridClientException {
+        final SortedMap<String, Map<String, String>> result =
+            client.compute().execute(VisorCachesConfigurationListTask.class.getName(), cacheArgs.regex());
+
+        if (!F.isEmpty(result)) {
+            for (Map.Entry<String, Map<String, String>> entry : result.entrySet()) {
+                String cacheName = entry.getKey();
+                Map<String, String> params = entry.getValue();
+
+                if (cacheArgs.humanReadableFormat()) {
+                    System.out.printf("[cache = '%s']%n", cacheName);
+
+                    for (Map.Entry<String, String> innerEntry : params.entrySet())
+                        System.out.printf("%s: %s%n", innerEntry.getKey(), innerEntry.getValue());
+
+                    System.out.println();
+                }
+                else
+                    System.out.printf("%s: %s%n", entry.getKey(), entry.getValue());
+            }
+        }
     }
 
     /**
@@ -1618,12 +1653,12 @@ public class CommandHandler {
                 while (hasNextCacheArg()) {
                     String nextArg = nextArg("");
 
-                    if (CMD_USER_ATTRIBUTES.equals(nextArg)){
+                    if (CMD_USER_ATTRIBUTES.equals(nextArg)) {
                         nextArg = nextArg("User attributes are expected to be separated by commas");
 
                         Set<String> userAttributes = new HashSet();
 
-                        for (String userAttribute:nextArg.split(","))
+                        for (String userAttribute : nextArg.split(","))
                             userAttributes.add(userAttribute.trim());
 
                         cacheArgs.setUserAttributes(userAttributes);
@@ -1632,7 +1667,7 @@ public class CommandHandler {
 
                     }
 
-                    if (nextArg!=null)
+                    if (nextArg != null)
                         parseCacheNames(nextArg, cacheArgs);
                 }
 
@@ -1640,6 +1675,12 @@ public class CommandHandler {
 
             case RESET_LOST_PARTITIONS:
                 parseCacheNames(nextArg("Cache name expected"), cacheArgs);
+
+                break;
+
+            case CONFIG_LIST:
+
+                cacheArgs.regex(nextArg("Regex is expected"));
 
                 break;
 
