@@ -234,12 +234,12 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         /**
          * Number of milliseconds to warmup reading process. Used to lower fluctuations in run time. Might be 0.
          */
-        long warmup() default 1500L;
+        long warmup() default 2000L;
 
         /**
          * Number of milliseconds to wait on the potentially blocking operation.
          */
-        long timeout() default 2000L;
+        long timeout() default 3000L;
 
         /**
          * Cache atomicity mode.
@@ -318,7 +318,13 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override public void afterTest() throws Exception {
-        baseline.get(0).cluster().active(false);
+        baseline.clear();
+
+        srvs.clear();
+
+        clients.clear();
+
+        grid(0).cluster().active(false);
 
         stopAllGrids();
 
@@ -556,7 +562,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(baseline = 4, timeout = 3000L, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Params(baseline = 4, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
     public void testRestartBaselineAtomicPartitioned() throws Exception {
         testRestartBaselineTransactionalReplicated();
     }
@@ -564,7 +570,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(baseline = 4, timeout = 3000L, atomicityMode = ATOMIC, cacheMode = REPLICATED)
+    @Params(baseline = 4, atomicityMode = ATOMIC, cacheMode = REPLICATED)
     public void testRestartBaselineAtomicReplicated() throws Exception {
         testRestartBaselineTransactionalReplicated();
     }
@@ -572,7 +578,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(baseline = 4, timeout = 3000L, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Params(baseline = 4, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
     public void testRestartBaselineTransactionalPartitioned() throws Exception {
         testRestartBaselineTransactionalReplicated();
     }
@@ -580,7 +586,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(baseline = 4, timeout = 3000L, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
+    @Params(baseline = 4, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
     public void testRestartBaselineTransactionalReplicated() throws Exception {
         doTest(
             asMessagePredicate(discoEvt -> discoEvt.type() == EventType.EVT_NODE_JOINED),
@@ -653,7 +659,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(baseline = 9, timeout = 3000L, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Params(baseline = 9, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
     public void testStopBaselineAtomicPartitioned() throws Exception {
         testStopBaselineTransactionalReplicated();
     }
@@ -661,7 +667,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(baseline = 9, timeout = 3000L, atomicityMode = ATOMIC, cacheMode = REPLICATED)
+    @Params(baseline = 9, atomicityMode = ATOMIC, cacheMode = REPLICATED)
     public void testStopBaselineAtomicReplicated() throws Exception {
         testStopBaselineTransactionalReplicated();
     }
@@ -669,7 +675,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(baseline = 9, timeout = 3000L, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Params(baseline = 9, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
     public void testStopBaselineTransactionalPartitioned() throws Exception {
         testStopBaselineTransactionalReplicated();
     }
@@ -677,7 +683,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(baseline = 9, timeout = 3000L, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
+    @Params(baseline = 9, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
     public void testStopBaselineTransactionalReplicated() throws Exception {
         AtomicInteger cntDownCntr = new AtomicInteger(0);
 
