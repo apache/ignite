@@ -89,7 +89,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -2155,9 +2154,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 if (canRunVacuum(part, curCacheId))
                     throw e; // Unexpected error.
 
-                if (log.isDebugEnabled())
-                    log.debug("Error occurred during the vacuum. Skip vacuuming for the current partition. " +
-                        "[part=" + part + ", err=" + X.getFullStackTrace(e) + ']');
+                U.warn(log, "Error occurred during the vacuum. Skip vacuuming for the current partition. " +
+                    "[cacheId=" + curCacheId + ", part=" + part + ", err=" + e.getMessage() + ']', e);
 
                 return new VacuumMetrics();
             }
