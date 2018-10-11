@@ -17,9 +17,6 @@
 
 package org.apache.ignite.util;
 
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
@@ -42,6 +39,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
@@ -111,6 +111,12 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
  * Command line handler test.
  */
 public class GridCommandHandlerTest extends GridCommonAbstractTest {
+    /** Search all regexp. */
+    private static final String SEARCH_ALL_REGEXP = ".*";
+
+    /** Cache name. */
+    private static final String CACHE_NAME = "test-" + DEFAULT_CACHE_NAME;
+
     /** System out. */
     protected PrintStream sysOut;
 
@@ -1204,6 +1210,53 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertTrue(testOut.toString().contains("testSeq2"));
     }
 
+    public void testCacheConfigAllHumanReadable() throws Exception {
+        testCacheConfig(SEARCH_ALL_REGEXP, true, CACHE_NAME);
+    }
+
+    public void testCacheConfigAll() throws Exception {
+        testCacheConfig(SEARCH_ALL_REGEXP, false, CACHE_NAME);
+    }
+
+    public void testCacheConfigUserHumanReadable() throws Exception {
+        testCacheConfig(CACHE_NAME, true, CACHE_NAME);
+    }
+
+    public void testCacheConfigUser() throws Exception {
+        testCacheConfig(CACHE_NAME, false, CACHE_NAME);
+    }
+
+    private void testCacheConfig(String regex, boolean humanReadable, String userCacheName) throws Exception {
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName());
+
+        if (userCacheName != null)
+            cfg.setCacheConfiguration(new CacheConfiguration().setName(userCacheName));
+
+        Ignite ignite = startGrid(cfg);
+
+        ignite.cluster().active(true);
+
+        injectTestSystemOut();
+
+        final int execCode;
+
+        if (humanReadable)
+            execCode = execute("--cache", "config", regex, "--human-readable");
+        else
+            execCode = execute("--cache", "config", regex);
+
+        assertEquals(EXIT_CODE_OK, execCode);
+
+        assertEquals(humanReadable, testOut.toString().contains("[cache = "));
+
+        if (regex.equals(SEARCH_ALL_REGEXP))
+            assertTrue(testOut.toString().contains("ignite-sys-cache"));
+
+        if (userCacheName != null)
+            assertTrue(testOut.toString().contains(userCacheName));
+
+    }
+
     /**
      *
      */
@@ -1294,7 +1347,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertTrue(lastRowIndex > 0);
 
         // Last row is empty, but the previous line contains data
-        lastRowIndex = log.lastIndexOf('\n', lastRowIndex-1);
+        lastRowIndex = log.lastIndexOf('\n', lastRowIndex - 1);
 
         assertTrue(lastRowIndex > 0);
 

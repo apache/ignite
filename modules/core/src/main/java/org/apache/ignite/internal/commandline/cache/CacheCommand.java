@@ -56,7 +56,12 @@ public enum CacheCommand {
     /**
      * Reset lost partitions
      */
-    RESET_LOST_PARTITIONS("reset_lost_partitions");
+    RESET_LOST_PARTITIONS("reset_lost_partitions"),
+
+    /**
+     * Prints caches configuration.
+     */
+    CONFIG("config");
 
     /** Enumerated values. */
     private static final CacheCommand[] VALS = values();

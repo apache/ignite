@@ -64,6 +64,9 @@ public class CacheArguments {
     /** Additional user attributes in result. Set of attribute names whose values will be searched in ClusterNode.attributes(). */
     private Set<String> userAttributes;
 
+    /** config_list '--human-readable' flag. */
+    private boolean humanReadableFormat;
+
     /**
      * @return Command.
      */
@@ -245,4 +248,14 @@ public class CacheArguments {
     public void setUserAttributes(Set<String> userAttrs) {
         userAttributes = userAttrs;
     }
+
+    /**
+     * @return Human readable format flag.
+     */
+    public boolean humanReadableFormat() { return humanReadableFormat; }
+
+    /**
+     * @param humanReadableFormat New human readable format flag.
+     */
+    public void humanReadableFormat(boolean humanReadableFormat) { this.humanReadableFormat = humanReadableFormat; }
 }
