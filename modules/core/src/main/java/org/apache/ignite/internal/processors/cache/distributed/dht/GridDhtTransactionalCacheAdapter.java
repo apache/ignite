@@ -922,8 +922,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             if (!req.inTx()) {
                 GridDhtPartitionTopology top = null;
 
-                if (req.firstClientRequest()) {
-                    assert CU.clientNode(nearNode);
+            if (req.firstClientRequest()) {
+                assert nearNode.isClient();
 
                     top = topology();
 
@@ -1028,7 +1028,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     GridDhtPartitionTopology top = null;
 
                     if (req.firstClientRequest()) {
-                        assert CU.clientNode(nearNode);
+                        assert nearNode.isClient();
 
                         top = topology();
 

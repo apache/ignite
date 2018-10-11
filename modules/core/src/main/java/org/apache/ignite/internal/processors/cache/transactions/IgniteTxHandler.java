@@ -362,7 +362,7 @@ public class IgniteTxHandler {
 
             if (req.firstClientRequest()) {
                 assert req.concurrency() == OPTIMISTIC : req;
-                assert CU.clientNode(nearNode) : nearNode;
+                assert nearNode.isClient() : nearNode;
 
                 top = firstEntry.context().topology();
 
