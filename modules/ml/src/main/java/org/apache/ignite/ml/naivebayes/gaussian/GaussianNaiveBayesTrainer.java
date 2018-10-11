@@ -80,24 +80,24 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
         )) {
             MeanHelper mean = computeMeans(dataset);
 
-            List<Double> sortedFeatures = new ArrayList<>(mean.featureCount.keySet());
+            List<Double> sortedFeatures = new ArrayList<>(mean.featureCountPerLbl.keySet());
             sortedFeatures.sort(Double::compareTo);
 
             int labelCount = sortedFeatures.size();
-            int featureCount = mean.featureSum.get(sortedFeatures.get(0)).length;
+            int featureCount = mean.featureSumPerLbl.get(sortedFeatures.get(0)).length;
 
             double[][] means = new double[labelCount][featureCount];
             double[][] variances = new double[labelCount][featureCount];
             double[] classProbabilities = new double[labelCount];
             double[] labels = new double[labelCount];
 
-            long datasetSize = mean.featureCount.values().stream().mapToInt(i -> i).sum();
+            long datasetSize = mean.featureCountPerLbl.values().stream().mapToInt(i -> i).sum();
             Map<Double, double[]> meansHolder = new HashMap<>();
 
             int lbl = 0;
             for (Double label : sortedFeatures) {
-                int count = mean.featureCount.get(label);
-                double[] tmp = mean.featureSum.get(label);
+                int count = mean.featureCountPerLbl.get(label);
+                double[] tmp = mean.featureSumPerLbl.get(label);
 
                 for (int i = 0; i < featureCount; i++) {
                     means[lbl][i] = tmp[i] / count;
@@ -113,7 +113,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
 
             lbl = 0;
             for (Double label : sortedFeatures) {
-                int count = mean.featureCount.get(label);
+                int count = mean.featureCountPerLbl.get(label);
                 double[] tmp = variance.featureDiff.get(label);
 
                 for (int i = 0; i < featureCount; i++) {
@@ -121,14 +121,14 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                 }
                 ++lbl;
             }
-            if(equiprobableClasses){
+            if (equiprobableClasses) {
                 int k = classProbabilities.length;
                 for (int i = 0; i < k; i++) {
-                    classProbabilities[i] = 1./k;
+                    classProbabilities[i] = 1. / k;
                 }
             }
-            if (priorProbabilities != null){
-                assert  classProbabilities.length == priorProbabilities.length;
+            if (priorProbabilities != null) {
+                assert classProbabilities.length == priorProbabilities.length;
                 classProbabilities = priorProbabilities;
             }
 
@@ -147,6 +147,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
         equiprobableClasses = true;
         return this;
     }
+
     /** Sets prior probabilities. */
     public GaussianNaiveBayesTrainer setPriorProbabilities(double[] priorProbabilities) {
         resetSettings();
@@ -160,6 +161,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
         priorProbabilities = null;
         return this;
     }
+
     /**
      * Calculates sums of all values of a particular feature and amount of rows for all labels
      */
@@ -173,21 +175,28 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                     Double label = (Double)row.label();
 
                     double[] toMeans;
+                    double[] sqSum;
 
-                    if (!res.featureSum.containsKey(label)) {
+                    if (!res.featureSumPerLbl.containsKey(label)) {
                         toMeans = new double[features.size()];
                         Arrays.fill(toMeans, 0.);
-                        res.featureSum.put(label, toMeans);
+                        res.featureSumPerLbl.put(label, toMeans);
                     }
-
-                    if (!res.featureCount.containsKey(label)) {
-                        res.featureCount.put(label, 0);
+                    if (!res.squaredSumPerLbl.containsKey(label)) {
+                        sqSum = new double[features.size()];
+                        res.squaredSumPerLbl.put(label, sqSum);
                     }
-                    res.featureCount.put(label, res.featureCount.get(label) + 1);
+                    if (!res.featureCountPerLbl.containsKey(label)) {
+                        res.featureCountPerLbl.put(label, 0);
+                    }
+                    res.featureCountPerLbl.put(label, res.featureCountPerLbl.get(label) + 1);
 
-                    toMeans = res.featureSum.get(label);
+                    toMeans = res.featureSumPerLbl.get(label);
+                    sqSum = res.squaredSumPerLbl.get(label);
                     for (int j = 0; j < features.size(); j++) {
-                        toMeans[j] += features.get(j);
+                        double x = features.get(j);
+                        toMeans[j] += x;
+                        sqSum[j] += x*x;
                     }
                 }
                 return res;
@@ -246,14 +255,18 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
         /** Serial version uid. */
         private static final long serialVersionUID = 1L;
         /** Sum of all values for all features for each label */
-        ConcurrentHashMap<Double, double[]> featureSum = new ConcurrentHashMap<>();
+        ConcurrentHashMap<Double, double[]> featureSumPerLbl = new ConcurrentHashMap<>();
+
+        /** Sum of all values for all features for each label */
+        ConcurrentHashMap<Double, double[]> squaredSumPerLbl = new ConcurrentHashMap<>();
         /** Rows count for each label */
-        ConcurrentHashMap<Double, Integer> featureCount = new ConcurrentHashMap<>();
+        ConcurrentHashMap<Double, Integer> featureCountPerLbl = new ConcurrentHashMap<>();
 
         /** Merge current */
         MeanHelper merge(MeanHelper other) {
-            featureSum = MapUtil.mergeMaps(featureSum, other.featureSum, this::sum, ConcurrentHashMap::new);
-            featureCount = MapUtil.mergeMaps(featureCount, other.featureCount, (i1, i2) -> i1 + i2, ConcurrentHashMap::new);
+            featureSumPerLbl = MapUtil.mergeMaps(featureSumPerLbl, other.featureSumPerLbl, this::sum, ConcurrentHashMap::new);
+            squaredSumPerLbl = MapUtil.mergeMaps(squaredSumPerLbl, other.squaredSumPerLbl, this::sum, ConcurrentHashMap::new);
+            featureCountPerLbl = MapUtil.mergeMaps(featureCountPerLbl, other.featureCountPerLbl, (i1, i2) -> i1 + i2, ConcurrentHashMap::new);
             return this;
         }
 
