@@ -21,14 +21,72 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
+import org.yardstickframework.BenchmarkConfiguration;
+import org.yardstickframework.BenchmarkUtils;
+
+import static org.apache.ignite.yardstick.jdbc.JdbcUtils.fillData;
+import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
  * Native sql benchmark that performs select operations.
  */
-public class NativeSqlQueryRangeBenchmark extends AbstractNativeBenchmark {
+public class NativeSqlCacheQueryRangeBenchmark extends IgniteAbstractBenchmark {
+    private IgniteCache cache;
+
+    /** {@inheritDoc} */
+    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
+        super.setUp(cfg);
+
+        fillData();
+
+        BenchmarkUtils.println("Lazy mode: " + args.isLazy());
+    }
+
+    /**
+     *
+     */
+    private void fillData() {
+        IgniteEx ignite = (IgniteEx)ignite();
+
+        IgniteSemaphore sem = ignite.semaphore("data-setup", 1, true, true);
+
+        cache = ignite.getOrCreateCache("test").withKeepBinary();
+
+        try {
+            if (sem.tryAcquire()) {
+
+                println(cfg, "Populate data...");
+
+                for (long l = 1; l <= args.range(); ++l) {
+                    cache.query(
+                        new SqlFieldsQuery("insert into test_long(id, val) values (?, ?)")
+                            .setArgs(l, l + 1));
+
+                    if (l % 10000 == 0)
+                        println(cfg, "Populate " + l);
+                }
+
+                println(cfg, "Finished populating data");
+            }
+            else {
+                // Acquire (wait setup by other client) and immediately release/
+                println(cfg, "Waits for setup...");
+
+                sem.acquire();
+            }
+        }
+        finally {
+            sem.release();
+        }
+    }
+
     /**
      * Benchmarked action that performs selects and validates results.
      *
@@ -66,8 +124,7 @@ public class NativeSqlQueryRangeBenchmark extends AbstractNativeBenchmark {
 
         long rsSize = 0;
 
-        try (FieldsQueryCursor<List<?>> cursor = ((IgniteEx)ignite()).context().query()
-                .querySqlFields(qry, false)) {
+        try (FieldsQueryCursor<List<?>> cursor = cache.query(qry)) {
             Iterator<List<?>> it = cursor.iterator();
 
             while (it.hasNext()) {
