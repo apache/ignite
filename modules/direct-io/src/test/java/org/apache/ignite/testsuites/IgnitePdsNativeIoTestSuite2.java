@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteNativeIoPdsRecoveryAfterFileCorruptionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.FsyncWalRolloverDoesNotBlockTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteNativeIoWalFlushFsyncSelfTest;
 
 /**
@@ -40,6 +41,8 @@ public class IgnitePdsNativeIoTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest.class);
 
         suite.addTestSuite(IgniteNativeIoWalFlushFsyncSelfTest.class);
+
+        suite.addTestSuite(FsyncWalRolloverDoesNotBlockTest.class);
 
         return suite;
     }
