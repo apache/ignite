@@ -670,7 +670,8 @@ final class BinaryMetadataTransport {
                     do {
                         oldHolder = metaLocCache.get(typeId);
 
-                        if (oldHolder != null && obsoleteUpdate(
+                        // typeId metadata cannot be removed after initialization.
+                        if (obsoleteUpdate(
                                 oldHolder.pendingVersion(),
                                 oldHolder.acceptedVersion(),
                                 newHolder.pendingVersion(),
