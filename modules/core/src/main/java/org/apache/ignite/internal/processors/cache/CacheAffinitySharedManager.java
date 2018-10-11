@@ -940,15 +940,15 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             .distinct()
             .collect(Collectors.toList());
 
-        try {
-            U.doInParallel(
-                cctx.kernalContext().getSystemExecutorService(),
-                startedGroups,
-                groupDesc -> {
+        U.doInParallel(
+            cctx.kernalContext().getSystemExecutorService(),
+            startedGroups,
+            new IgniteInClosureX<CacheGroupDescriptor>() {
+                @Override public void applyx(CacheGroupDescriptor grpDesc) throws IgniteCheckedException {
                     if (crd)
-                        initStartedGroupOnCoordinator(fut, groupDesc);
+                        initStartedGroupOnCoordinator(fut, grpDesc);
                     else {
-                        CacheGroupContext grp = cctx.cache().cacheGroup(groupDesc.groupId());
+                        CacheGroupContext grp = cctx.cache().cacheGroup(grpDesc.groupId());
 
                         if (grp != null && !grp.isLocal() && grp.localStartVersion().equals(fut.initialVersion())) {
                             assert grp.affinity().lastVersion().equals(AffinityTopologyVersion.NONE) : grp.affinity().lastVersion();
@@ -956,14 +956,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                             initAffinity(cachesRegistry.group(grp.groupId()), grp.affinity(), fut);
                         }
                     }
-                });
-        }
-        catch (IgniteInterruptedCheckedException ie) {
-            Thread.currentThread().interrupt();
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to initialiaze affinity for starting cache groups", e);
-        }
+                }
+            },
+            null);
     }
 
     /**
@@ -972,7 +967,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param fut Exchange future.
      * @param crd Coordinator flag.
      * @param exchActions Cache change requests.
-     * @param forceClose
+     * @param forceClose Force close flag.
      * @return Set of cache groups to be stopped.
      */
     private Set<Integer> processCacheStopRequests(
@@ -1212,18 +1207,15 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param closure Cache closure.
+     * @param c Cache closure.
      */
-    private void forAllRegisteredCacheGroups(IgniteInClosureX<CacheGroupDescriptor> closure) {
+    private void forAllRegisteredCacheGroups(IgniteInClosureX<CacheGroupDescriptor> c) {
         Collection<CacheGroupDescriptor> affinityCaches = cachesRegistry.allGroups().values().stream()
             .filter(desc -> desc.config().getCacheMode() != LOCAL)
             .collect(Collectors.toList());
 
         try {
-            U.doInParallel(cctx.kernalContext().getSystemExecutorService(), affinityCaches, closure::apply);
-        }
-        catch (IgniteInterruptedCheckedException ie) {
-            Thread.currentThread().interrupt();
+            U.doInParallel(cctx.kernalContext().getSystemExecutorService(), affinityCaches, c, null);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to execute affinity operation on cache groups", e);
@@ -1232,9 +1224,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
     /**
      * @param crd Coordinator flag.
-     * @param closure Closure.
+     * @param c Closure.
      */
-    private void forAllCacheGroups(boolean crd, IgniteInClosureX<GridAffinityAssignmentCache> closure) {
+    private void forAllCacheGroups(boolean crd, IgniteInClosureX<GridAffinityAssignmentCache> c) {
         Collection<GridAffinityAssignmentCache> affinityCaches;
 
         if (crd) {
@@ -1250,10 +1242,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         try {
-            U.doInParallel(cctx.kernalContext().getSystemExecutorService(), affinityCaches, closure::apply);
-        }
-        catch (IgniteInterruptedCheckedException ie) {
-            Thread.currentThread().interrupt();
+            U.doInParallel(cctx.kernalContext().getSystemExecutorService(), affinityCaches, c, null);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to execute affinity operation on cache groups", e);

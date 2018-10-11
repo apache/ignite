@@ -315,9 +315,14 @@ public class CacheGroupDescriptor {
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
         CacheGroupDescriptor that = (CacheGroupDescriptor) o;
+
         return grpId == that.grpId;
     }
 
