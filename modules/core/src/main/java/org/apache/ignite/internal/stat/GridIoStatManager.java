@@ -57,20 +57,20 @@ public class GridIoStatManager {
             Map<PageType, Map<String, LongAdder>> physWriteMap = new EnumMap<>(PageType.class);
 
             for (PageType pageType : PageType.values()) {
-                if (statType == StatType.GLOBAL) {
+                if (statType == StatType.LOCAL_NODE) {
                     logReadMap.put(pageType, new HashMap<>(2));
 
                     physReadMap.put(pageType, new HashMap<>(2));
 
                     physWriteMap.put(pageType, new HashMap<>(2));
 
-                    //Predefined values for global statistics.
+                    //Predefined values for local node statistics.
                     {
-                        logReadMap.get(pageType).put(KEY_FOR_GLOBAL_STAT, new LongAdder());
+                        logReadMap.get(pageType).put(KEY_FOR_LOCAL_NODE_STAT, new LongAdder());
 
-                        physReadMap.get(pageType).put(KEY_FOR_GLOBAL_STAT, new LongAdder());
+                        physReadMap.get(pageType).put(KEY_FOR_LOCAL_NODE_STAT, new LongAdder());
 
-                        physWriteMap.get(pageType).put(KEY_FOR_GLOBAL_STAT, new LongAdder());
+                        physWriteMap.get(pageType).put(KEY_FOR_LOCAL_NODE_STAT, new LongAdder());
                     }
                 }
                 else {
@@ -88,8 +88,8 @@ public class GridIoStatManager {
         }
     }
 
-    /** Key for GLOBAL statistics. */
-    public static String KEY_FOR_GLOBAL_STAT = StatType.GLOBAL.name();
+    /** Key for local node statistics. */
+    public static String KEY_FOR_LOCAL_NODE_STAT = StatType.LOCAL_NODE.name();
 
     /** Time of since statistics start gathering. */
     private volatile LocalDateTime statsSince = LocalDateTime.now();
@@ -118,9 +118,9 @@ public class GridIoStatManager {
     public void resetStats() {
         Stream.of(TRACK_LOGICAL_READS, TRACK_PHYSICAL_READS, TRACK_PHYSICAL_WRITES).forEach(stat -> {
             for (Map.Entry<StatType, Map<PageType, Map<String, LongAdder>>> entry : stat.entrySet()) {
-                    if (entry.getKey() == StatType.GLOBAL) {
+                if (entry.getKey() == StatType.LOCAL_NODE) {
                         for (Map<String, LongAdder> value : entry.getValue().values())
-                            value.get(KEY_FOR_GLOBAL_STAT).reset();
+                            value.get(KEY_FOR_LOCAL_NODE_STAT).reset();
                     }
                     else {
                         for (Map<String, LongAdder> value : entry.getValue().values())
@@ -191,9 +191,9 @@ public class GridIoStatManager {
         if (pageIoType > 0) { // To skip not set type.
             PageType pageType = PageType.derivePageType(pageIoType);
 
-            mapToTrack.get(StatType.GLOBAL).get(pageType).get(KEY_FOR_GLOBAL_STAT).increment();
+            mapToTrack.get(StatType.LOCAL_NODE).get(pageType).get(KEY_FOR_LOCAL_NODE_STAT).increment();
 
-            // We shouldn't track anything except global statistics for physical writes operations.
+            // We shouldn't track anything except local node statistics for physical writes operations.
             if (mapToTrack == TRACK_PHYSICAL_WRITES)
                 return;
 
@@ -225,22 +225,22 @@ public class GridIoStatManager {
     /**
      * @return Tracked physical reads by types since last reset statistics.
      */
-    public Map<PageType, Long> physicalReadsGlobal() {
-        return extractStat(TRACK_PHYSICAL_READS, StatType.GLOBAL, KEY_FOR_GLOBAL_STAT);
+    public Map<PageType, Long> physicalReadsLocalNode() {
+        return extractStat(TRACK_PHYSICAL_READS, StatType.LOCAL_NODE, KEY_FOR_LOCAL_NODE_STAT);
     }
 
     /**
      * @return Tracked physical writes by types since last reset statistics.
      */
-    public Map<PageType, Long> physicalWritesGlobal() {
-        return extractStat(TRACK_PHYSICAL_WRITES, StatType.GLOBAL, KEY_FOR_GLOBAL_STAT);
+    public Map<PageType, Long> physicalWritesLocalNode() {
+        return extractStat(TRACK_PHYSICAL_WRITES, StatType.LOCAL_NODE, KEY_FOR_LOCAL_NODE_STAT);
     }
 
     /**
-     * @return Tracked global logical reads by types since last reset statistics.
+     * @return Tracked local node logical reads by types since last reset statistics.
      */
-    public Map<PageType, Long> logicalReadsGlobal() {
-        return extractStat(TRACK_LOGICAL_READS, StatType.GLOBAL, KEY_FOR_GLOBAL_STAT);
+    public Map<PageType, Long> logicalReadsLocalNode() {
+        return extractStat(TRACK_LOGICAL_READS, StatType.LOCAL_NODE, KEY_FOR_LOCAL_NODE_STAT);
     }
 
     /**

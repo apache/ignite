@@ -27,7 +27,7 @@ import java.util.function.BiFunction;
 import org.apache.ignite.mxbean.IoStatMetricsMXBean;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.internal.stat.GridIoStatManager.KEY_FOR_GLOBAL_STAT;
+import static org.apache.ignite.internal.stat.GridIoStatManager.KEY_FOR_LOCAL_NODE_STAT;
 
 /**
  * JMX bean to expose local node IO statistics.
@@ -54,37 +54,37 @@ public class IoStatMetricsLocalMXBeanImpl implements IoStatMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Long> getPhysicalReadsGlobal() {
-        return convertStat(statMgr.physicalReadsGlobal());
+    @Override public Map<String, Long> getPhysicalReads() {
+        return convertStat(statMgr.physicalReadsLocalNode());
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Long> getPhysicalWritesGlobal() {
-        return convertStat(statMgr.physicalWritesGlobal());
+    @Override public Map<String, Long> getPhysicalWrites() {
+        return convertStat(statMgr.physicalWritesLocalNode());
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Long> getLogicalReadsGlobal() {
-        return convertStat(statMgr.logicalReadsGlobal());
+    @Override public Map<String, Long> getLogicalReads() {
+        return convertStat(statMgr.logicalReadsLocalNode());
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Long> getAggregatedPhysicalReadsGlobal() {
-        Map<AggregatePageType, AtomicLong> aggregatedStat = statMgr.aggregate(statMgr.physicalReadsGlobal());
+    @Override public Map<String, Long> getAggregatedPhysicalReads() {
+        Map<AggregatePageType, AtomicLong> aggregatedStat = statMgr.aggregate(statMgr.physicalReadsLocalNode());
 
         return convertAggregatedStat(aggregatedStat);
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Long> getAggregatedPhysicalWritesGlobal() {
-        Map<AggregatePageType, AtomicLong> aggregatedStat = statMgr.aggregate(statMgr.physicalWritesGlobal());
+    @Override public Map<String, Long> getAggregatedPhysicalWrites() {
+        Map<AggregatePageType, AtomicLong> aggregatedStat = statMgr.aggregate(statMgr.physicalWritesLocalNode());
 
         return convertAggregatedStat(aggregatedStat);
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Long> getAggregatedLogicalReadsGlobal() {
-        Map<AggregatePageType, AtomicLong> aggregatedStat = statMgr.aggregate(statMgr.logicalReadsGlobal());
+    @Override public Map<String, Long> getAggregatedLogicalReads() {
+        Map<AggregatePageType, AtomicLong> aggregatedStat = statMgr.aggregate(statMgr.logicalReadsLocalNode());
 
         return convertAggregatedStat(aggregatedStat);
     }
@@ -136,8 +136,8 @@ public class IoStatMetricsLocalMXBeanImpl implements IoStatMetricsMXBean {
 
         String subType;
 
-        if (type == StatType.GLOBAL)
-            subType = KEY_FOR_GLOBAL_STAT;
+        if (type == StatType.LOCAL_NODE)
+            subType = KEY_FOR_LOCAL_NODE_STAT;
         else
             subType = subTypeFilter;
 

@@ -26,7 +26,7 @@ import org.apache.ignite.internal.stat.StatType;
 /**
  * This interface defines JMX view for IO statistics.
  */
-@MXBeanDescription("MBean that provides access to local IO statistics metrics.")
+@MXBeanDescription("MBean that provides access IO statistics metrics.")
 public interface IoStatMetricsMXBean {
 
     /**
@@ -94,38 +94,38 @@ public interface IoStatMetricsMXBean {
     /**
      * @return Number of physical reads splitted by type.
      */
-    @MXBeanDescription("Physical reads GLOBAL IO statistics.")
-    public Map<String, Long> getPhysicalReadsGlobal();
+    @MXBeanDescription("Physical reads IO statistics.")
+    public Map<String, Long> getPhysicalReads();
 
     /**
      * @return Number of physical writes splitted by type.
      */
-    @MXBeanDescription("Physical writes GLOBAL IO statistics.")
-    public Map<String, Long> getPhysicalWritesGlobal();
+    @MXBeanDescription("Physical writes statistics.")
+    public Map<String, Long> getPhysicalWrites();
 
     /**
      * @return Number of logical reads splitted by type.
      */
-    @MXBeanDescription("Logical reads GLOBAL IO statistics.")
-    public Map<String, Long> getLogicalReadsGlobal();
+    @MXBeanDescription("Logical reads IO statistics.")
+    public Map<String, Long> getLogicalReads();
 
     /**
      * @return Number of physical reads splitted by aggregated types.
      */
-    @MXBeanDescription("Aggregated physical reads GLOBAL IO statistics.")
-    public Map<String, Long> getAggregatedPhysicalReadsGlobal();
+    @MXBeanDescription("Aggregated physical reads IO statistics.")
+    public Map<String, Long> getAggregatedPhysicalReads();
 
     /**
      * @return Number of physical writes splitted by aggregated types.
      */
-    @MXBeanDescription("Aggregated physical writes GLOBAL IO statistics.")
-    public Map<String, Long> getAggregatedPhysicalWritesGlobal();
+    @MXBeanDescription("Aggregated physical writes IO statistics.")
+    public Map<String, Long> getAggregatedPhysicalWrites();
 
     /**
      * @return Number of logical reads splitted by aggregated types.
      */
-    @MXBeanDescription("Aggregated logical reads GLOBAL IO statistics.")
-    public Map<String, Long> getAggregatedLogicalReadsGlobal();
+    @MXBeanDescription("Aggregated logical reads IO statistics.")
+    public Map<String, Long> getAggregatedLogicalReads();
 
     /**
      * @return Names of indexes which have logical reads IO statistics.

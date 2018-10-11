@@ -32,7 +32,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 
 /**
@@ -166,7 +165,7 @@ public class IoStatCacheTest extends GridCommonAbstractTest {
 
         Assert.assertEquals(3, statisticCacheNames.size());
 
-        Map<AggregatePageType, AtomicLong> aggregateGlobal = ioStatMgr.aggregate(ioStatMgr.logicalReadsGlobal());
+        Map<AggregatePageType, AtomicLong> aggregateGlobal = ioStatMgr.aggregate(ioStatMgr.logicalReadsLocalNode());
 
         statisticCacheNames.forEach((cacheName) -> {
             Map<PageType, Long> cacheStat = ioStatMgr.logicalReads(StatType.CACHE, cacheName);
@@ -202,7 +201,7 @@ public class IoStatCacheTest extends GridCommonAbstractTest {
 
         Map<AggregatePageType, AtomicLong> cacheStatAggregate = ioStatMgr.aggregate(cacheStat);
 
-        Map<AggregatePageType, AtomicLong> aggregateGlobal = ioStatMgr.aggregate(ioStatMgr.logicalReadsGlobal());
+        Map<AggregatePageType, AtomicLong> aggregateGlobal = ioStatMgr.aggregate(ioStatMgr.logicalReadsLocalNode());
 
         checkAggregatedStatIsNotEmpty(cacheStatAggregate);
 

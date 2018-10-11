@@ -49,7 +49,7 @@ public class GridIoStatManagerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test GLOBAL statistics tracking for persistent cache.
+     * Test LOCAL_NODE statistics tracking for persistent cache.
      *
      * @throws Exception In case of failure.
      */
@@ -58,7 +58,7 @@ public class GridIoStatManagerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test GLOBAL statistics tracking for not persistent cache.
+     * Test LOCAL_NODE statistics tracking for not persistent cache.
      *
      * @throws Exception In case of failure.
      */
@@ -67,7 +67,7 @@ public class GridIoStatManagerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check GLOBAL statistics tracking.
+     * Check LOCAL_NODE statistics tracking.
      *
      * @param isPersistent {@code true} in case persistence should be enable.
      * @throws Exception In case of failure.
@@ -75,9 +75,9 @@ public class GridIoStatManagerTest extends GridCommonAbstractTest {
     private void ioStatGlobalPageTrackTest(boolean isPersistent) throws Exception {
         GridIoStatManager ioStatMgr = prepareData(isPersistent);
 
-        long physicalReadsCnt = ioStatMgr.physicalReadsGlobal().values().stream().reduce(Long::sum).get();
+        long physicalReadsCnt = ioStatMgr.physicalReadsLocalNode().values().stream().reduce(Long::sum).get();
 
-        long physicalWritesCnt = ioStatMgr.physicalWritesGlobal().values().stream().reduce(Long::sum).get();
+        long physicalWritesCnt = ioStatMgr.physicalWritesLocalNode().values().stream().reduce(Long::sum).get();
 
         if (isPersistent) {
             Assert.assertTrue(physicalReadsCnt>0);
@@ -90,7 +90,7 @@ public class GridIoStatManagerTest extends GridCommonAbstractTest {
             Assert.assertEquals(0, physicalWritesCnt);
         }
 
-        Map<AggregatePageType, AtomicLong> aggLogReads = ioStatMgr.aggregate(ioStatMgr.logicalReadsGlobal());
+        Map<AggregatePageType, AtomicLong> aggLogReads = ioStatMgr.aggregate(ioStatMgr.logicalReadsLocalNode());
 
         Assert.assertTrue(aggLogReads.containsKey(AggregatePageType.INDEX));
 

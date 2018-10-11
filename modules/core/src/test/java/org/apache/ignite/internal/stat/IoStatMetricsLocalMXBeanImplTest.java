@@ -37,9 +37,9 @@ import static org.apache.ignite.internal.stat.PageType.T_DATA;
 import static org.apache.ignite.internal.stat.PageType.T_DATA_REF_LEAF;
 
 /**
- * Test of IO statistics MX bean.
+ * Test of local node IO statistics MX bean.
  */
-public class IoStatMetricsMXBeanImplTest extends GridCommonAbstractTest {
+public class IoStatMetricsLocalMXBeanImplTest extends GridCommonAbstractTest {
 
     /** */
     private static IgniteEx ignite;
@@ -84,15 +84,15 @@ public class IoStatMetricsMXBeanImplTest extends GridCommonAbstractTest {
 
         Assert.assertNotNull(bean.getStartGatheringStatistics());
 
-        checkAggregatedStatIsEmpty(bean.getAggregatedLogicalReadsGlobal());
+        checkAggregatedStatIsEmpty(bean.getAggregatedLogicalReads());
 
-        checkAggregatedStatIsEmpty(bean.getAggregatedPhysicalReadsGlobal());
+        checkAggregatedStatIsEmpty(bean.getAggregatedPhysicalReads());
 
-        checkAggregatedStatIsEmpty(bean.getAggregatedPhysicalWritesGlobal());
+        checkAggregatedStatIsEmpty(bean.getAggregatedPhysicalWrites());
 
         populateCache(ignite, 100);
 
-        checkAggregatedStatIsNotEmpty(bean.getAggregatedLogicalReadsGlobal());
+        checkAggregatedStatIsNotEmpty(bean.getAggregatedLogicalReads());
     }
 
     /**
@@ -109,26 +109,25 @@ public class IoStatMetricsMXBeanImplTest extends GridCommonAbstractTest {
 
         populateCache(ignite, cnt);
 
-        Map<String, Long> globalAggregated = bean.getLogicalReadStatistics(StatType.GLOBAL.name(), null, true);
+        Map<String, Long> locNodeAggregated = bean.getLogicalReadStatistics(StatType.LOCAL_NODE.name(), null, true);
 
-        checkAggregatedStatIsNotEmpty(globalAggregated);
+        checkAggregatedStatIsNotEmpty(locNodeAggregated);
 
-        Assert.assertEquals(Long.valueOf(cnt), globalAggregated.get(INDEX.name()));
+        Assert.assertEquals(Long.valueOf(cnt), locNodeAggregated.get(INDEX.name()));
 
+        Map<String, Long> locNodePlain = bean.getLogicalReadStatistics(StatType.LOCAL_NODE.name(), null, false);
 
-        Map<String, Long> globalPlain = bean.getLogicalReadStatistics(StatType.GLOBAL.name(), null, false);
+        Assert.assertEquals(locNodeAggregated.get(DATA.name()), locNodePlain.get(T_DATA.name()));
 
-        Assert.assertEquals(globalAggregated.get(DATA.name()), globalPlain.get(T_DATA.name()));
-
-        Assert.assertEquals(globalAggregated.get(INDEX.name()), globalPlain.get(T_DATA_REF_LEAF.name()));
+        Assert.assertEquals(locNodeAggregated.get(INDEX.name()), locNodePlain.get(T_DATA_REF_LEAF.name()));
 
 
         // existed cache
         Map<String, Long> cacheAggregated = bean.getLogicalReadStatistics(StatType.CACHE.name(), DEFAULT_CACHE_NAME, true);
 
-        Assert.assertEquals(cacheAggregated.get(DATA.name()), globalPlain.get(T_DATA.name()));
+        Assert.assertEquals(cacheAggregated.get(DATA.name()), locNodePlain.get(T_DATA.name()));
 
-        Assert.assertEquals(cacheAggregated.get(INDEX.name()), globalPlain.get(T_DATA_REF_LEAF.name()));
+        Assert.assertEquals(cacheAggregated.get(INDEX.name()), locNodePlain.get(T_DATA_REF_LEAF.name()));
 
 
         //unknown cache

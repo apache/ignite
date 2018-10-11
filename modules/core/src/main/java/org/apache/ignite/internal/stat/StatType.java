@@ -23,13 +23,15 @@ package org.apache.ignite.internal.stat;
  */
 public enum StatType {
     /** */
-    GLOBAL,
-    /** */
     INDEX,
     /** */
     CACHE,
     /** */
     TABLE,
     /** */
-    SQL
+    SQL,
+    /** */
+    LOCAL_NODE,
+    /** */
+    CLUSTER
 }
