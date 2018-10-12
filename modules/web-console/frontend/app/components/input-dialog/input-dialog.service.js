@@ -116,4 +116,34 @@ export default class InputDialog {
     number(options) {
         return this.dialogFabric({mode: 'number', ...options});
     }
+
+    /**
+     * Open input dialog to configure custom date value.
+     *
+     * @param {Object} options Settings for rendering date input.
+     * @returns {Promise.<Date>} User input.
+     */
+    date(options) {
+        return this.dialogFabric({mode: 'date', ...options});
+    }
+
+    /**
+     * Open input dialog to configure custom time value.
+     *
+     * @param {Object} options Settings for rendering time input.
+     * @returns {Promise.<Date>} User input.
+     */
+    time(options) {
+        return this.dialogFabric({mode: 'time', ...options});
+    }
+
+    /**
+     * Open input dialog to configure custom date and time value.
+     *
+     * @param {Object} options Settings for rendering date and time inputs.
+     * @returns {Promise.<Date>} User input.
+     */
+    dateTime(options) {
+        return this.dialogFabric({mode: 'date-and-time', ...options});
+    }
 }
