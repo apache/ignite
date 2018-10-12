@@ -130,7 +130,7 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
             boolean clientFirst = false;
 
             // Need to unlock topology to avoid deadlock with binary descriptors registration.
-            if(cctx.topology().holdsLock())
+            if(!topLocked && cctx.topology().holdsLock())
                 cctx.topology().readUnlock();
 
             for (ClusterNode node : F.view(primary, F.remoteNodes(cctx.localNodeId()))) {

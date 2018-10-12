@@ -150,6 +150,10 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
 
             boolean first = (nodeId != null);
 
+            // Need to unlock topology to avoid deadlock with binary descriptors registration.
+            if(!topLocked && cctx.topology().holdsLock())
+                cctx.topology().readUnlock();
+
             for (Batch batch : next) {
                 ClusterNode node = batch.node();
 
@@ -384,10 +388,6 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
         boolean clientFirst = first && cctx.localNode().isClient() && !topLocked && !tx.hasRemoteLocks();
 
         int batchId = batchCntr.incrementAndGet();
-
-        // Need to unlock topology to avoid deadlock with binary descriptors registration.
-        if(cctx.topology().holdsLock())
-            cctx.topology().readUnlock();
 
         if (node.isLocal())
             enlistLocal(batchId, node.id(), batch);

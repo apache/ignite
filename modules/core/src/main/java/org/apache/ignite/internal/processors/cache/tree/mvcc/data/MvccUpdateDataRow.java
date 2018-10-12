@@ -188,7 +188,6 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
         this.mvccSnapshot = mvccSnapshot;
         this.cctx = cctx;
         this.filter = filter;
-        keyAbsentBeforeFlag(primary); // True for primary and false for backup (backups do not use this flag).
 
         assert !lockOnly || val == null;
 
@@ -213,6 +212,8 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
             flags |= NEED_PREV_VALUE;
 
         setFlags(flags);
+
+        keyAbsentBeforeFlag(primary); // True for primary and false for backup (backups do not use this flag).
     }
 
     /** {@inheritDoc} */
