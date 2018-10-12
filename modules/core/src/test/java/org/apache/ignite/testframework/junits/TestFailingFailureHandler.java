@@ -21,6 +21,7 @@ import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.StopNodeFailureHandler;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Stops node and fails test.
@@ -33,5 +34,10 @@ public class TestFailingFailureHandler extends StopNodeFailureHandler {
         TestCase.fail(failureCtx.toString());
 
         return nodeStopped;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TestFailingFailureHandler.class, this);
     }
 }
