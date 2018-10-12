@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -135,7 +137,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     protected final MvccSnapshot mvccSnapshot;
 
     /** New DHT nodes. */
-    protected Set<UUID> newDhtNodes = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    protected Set<UUID> newDhtNodes = new HashSet<>();
 
     /** Near node ID. */
     protected final UUID nearNodeId;
@@ -406,7 +408,23 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
                     assert !entry.detached();
 
-                    CacheObject val = op.isDeleteOrLock() ? null : cctx.toCacheObject(((IgniteBiTuple)cur).getValue());
+                    CacheObject val = op.isDeleteOrLock() || op.isInvoke()
+                        ? null : cctx.toCacheObject(((IgniteBiTuple)cur).getValue());
+
+                    GridInvokeValue invokeVal = null;
+                    EntryProcessor entryProc = null;
+                    Object[] invokeArgs = null;
+
+                    if(op.isInvoke()) {
+                        assert needResult();
+
+                        invokeVal = (GridInvokeValue)((IgniteBiTuple)cur).getValue();
+
+                        entryProc = invokeVal.entryProcessor();
+                        invokeArgs = invokeVal.invokeArgs();
+                    }
+
+                    assert entryProc != null || !op.isInvoke();
 
                     tx.markQueryEnlisted(mvccSnapshot);
 
@@ -430,12 +448,15 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                                     break;
 
                                 case INSERT:
+                                case TRANSFORM:
                                 case UPSERT:
                                 case UPDATE:
                                     res = entry.mvccSet(
                                         tx,
                                         cctx.localNodeId(),
                                         val,
+                                        entryProc,
+                                        invokeArgs,
                                         0,
                                         topVer,
                                         mvccSnapshot,
@@ -471,11 +492,12 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
                     IgniteInternalFuture<GridCacheUpdateTxResult> updateFut = res.updateFuture();
 
+                    final Message val0 = invokeVal != null ? invokeVal : val;
+
                     if (updateFut != null) {
                         if (updateFut.isDone())
                             res = updateFut.get();
                         else {
-                            CacheObject val0 = val;
                             GridDhtCacheEntry entry0 = entry;
 
                             it.beforeDetach();
@@ -498,7 +520,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                         }
                     }
 
-                    processEntry(entry, op, res, val);
+                    processEntry(entry, op, res, val0);
                 }
 
                 if (!hasNext0()) {
@@ -595,7 +617,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      * @throws IgniteCheckedException If failed.
      */
     private void processEntry(GridDhtCacheEntry entry, EnlistOperation op,
-        GridCacheUpdateTxResult updRes, CacheObject val) throws IgniteCheckedException {
+        GridCacheUpdateTxResult updRes, Message val) throws IgniteCheckedException {
         checkCompleted();
 
         assert updRes != null && updRes.updateFuture() == null;
@@ -621,8 +643,9 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      * @param key Key.
      * @param val Value.
      * @param hist History rows.
+     * @param cacheId Cache Id.
      */
-    private void addToBatch(KeyCacheObject key, CacheObject val, List<MvccLinkAwareSearchRow> hist,
+    private void addToBatch(KeyCacheObject key, Message val, List<MvccLinkAwareSearchRow> hist,
         int cacheId) throws IgniteCheckedException {
         List<ClusterNode> backups = backupNodes(key);
 
@@ -896,9 +919,10 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             for (int i = 0; i < parts.length; i++) {
                 GridDhtLocalPartition p = top.localPartition(parts[i]);
 
-                if (p == null || p.state() != GridDhtPartitionState.OWNING)
+                if (p == null || p.state() != GridDhtPartitionState.OWNING) {
                     throw new ClusterTopologyCheckedException("Cannot run update query. " +
-                        "Node must own all the necessary partitions."); // TODO IGNITE-7185 Send retry instead.
+                        "Node must own all the necessary partitions.");
+                }
             }
         }
         finally {
@@ -1098,7 +1122,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
          * @param val Value or preload entries collection.
          */
         public void add(KeyCacheObject key, Message val) {
-            assert val == null || val instanceof CacheObject || val instanceof CacheEntryInfoCollection;
+            assert val == null || val instanceof GridInvokeValue || val instanceof CacheObject
+                || val instanceof CacheEntryInfoCollection;
 
             if (keys == null)
                 keys = new ArrayList<>();
