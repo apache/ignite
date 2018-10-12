@@ -1062,5 +1062,7 @@ public interface IgniteCacheOffheapManager {
          * @throws IgniteCheckedException
          */
         PendingEntriesTree pendingTree();
+
+        void finalizeUpdateCounter();
     }
 }

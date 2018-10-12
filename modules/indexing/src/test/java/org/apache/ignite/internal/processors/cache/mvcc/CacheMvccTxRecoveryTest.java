@@ -21,7 +21,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -37,6 +39,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
@@ -48,6 +51,10 @@ import org.apache.ignite.internal.processors.cache.transactions.TransactionProxy
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 
@@ -563,6 +570,173 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
         stopGrid(srvCnt, true);
 
         assertConditionEventually(() -> txs.stream().allMatch(tx -> tx.state() == ROLLED_BACK));
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testCountersInterchangeNearFailed() throws Exception {
+        // t0d0
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testCountersInterchangeServerFailed() throws Exception {
+        int srvCnt = 3;
+
+        startGridsMultiThreaded(srvCnt);
+
+        client = true;
+
+        IgniteEx ign = startGrid(srvCnt);
+
+        IgniteCache<Object, Object> cache = ign.getOrCreateCache(new CacheConfiguration<>("test")
+            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
+            .setCacheMode(PARTITIONED)
+            .setBackups(2)
+            .setIndexedTypes(Integer.class, Integer.class));
+
+        ArrayList<Integer> keys = new ArrayList<>();
+
+        int vid = 2;
+
+        IgniteEx victim = grid(vid);
+
+        for (int i = 0; i < 1000; i++) {
+            if (ign.affinity("test").isPrimary(victim.localNode(), i)) {
+                keys.add(i);
+                break;
+            }
+        }
+
+        assert keys.size() == 1;
+
+        TestRecordingCommunicationSpi comm = (TestRecordingCommunicationSpi)victim.configuration().getCommunicationSpi();
+
+        // prevent prepare on one backup
+        comm.blockMessages(GridDhtTxPrepareRequest.class, grid(0).name());
+
+        Transaction nearTx = ign.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
+
+        for (Integer k : keys)
+            cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, 42)").setArgs(k));
+
+        List<IgniteInternalTx> txs = IntStream.range(0, srvCnt)
+            .mapToObj(this::grid)
+            .filter(g -> g != victim)
+            .map(g -> g.context().cache().context().tm().activeTransactions().iterator().next())
+            .collect(Collectors.toList());
+
+        ((TransactionProxyImpl)nearTx).tx().prepareNearTxLocal();
+
+        // await tx partially prepared
+        TimeUnit.SECONDS.sleep(1);
+
+        // drop primary
+        stopGrid(victim.name(), true);
+
+        // drop primary (temporary mean because failed only primary freezes grid)
+        ign.close();
+
+        assertConditionEventually(() -> txs.stream().allMatch(tx -> tx.state() == ROLLED_BACK));
+
+        for (int i = 0; i < srvCnt; i++) {
+            if (i == vid) continue;
+
+            for (Integer k : keys)
+                System.err.println(k + " -> " + updateCounter(grid(i).cachex("test").context(), k));
+
+            System.err.println(grid(i).cache("test").query(new SqlFieldsQuery("select * from Integer").setLocal(true)).getAll());
+        }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testUpdateCountersGapIsClosed() throws Exception {
+        int srvCnt = 3;
+
+        startGridsMultiThreaded(srvCnt);
+
+        client = true;
+
+        IgniteEx ign = startGrid(srvCnt);
+
+        IgniteCache<Object, Object> cache = ign.getOrCreateCache(new CacheConfiguration<>("test")
+            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
+            .setCacheMode(PARTITIONED)
+            .setBackups(2)
+            .setIndexedTypes(Integer.class, Integer.class));
+
+        int vid = 1;
+
+        IgniteEx victim = grid(vid);
+
+        ArrayList<Integer> keys = new ArrayList<>();
+
+        Integer part = null;
+
+        Affinity<Object> aff = ign.affinity("test");
+
+        for (int i = 0; i < 2000; i++) {
+            int p = aff.partition(i);
+            if (aff.isPrimary(victim.localNode(), i)) {
+                if (part == null) part = p;
+                if (p == part) keys.add(i);
+                if (keys.size() == 2) break;
+            }
+        }
+
+        assert keys.size() == 2;
+
+        Transaction txA = ign.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
+
+        // prevent first transaction prepare on one backup
+        ((TestRecordingCommunicationSpi)victim.configuration().getCommunicationSpi())
+            .blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                final AtomicInteger limiter = new AtomicInteger();
+                @Override public boolean apply(ClusterNode node, Message msg) {
+                    if (msg instanceof GridDhtTxPrepareRequest)
+                        return limiter.getAndIncrement() < 2;
+                    return false;
+                }
+            });
+
+        cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, 42)").setArgs(keys.get(0)));
+
+        IgniteFuture<Void> futA = txA.commitAsync();
+
+        // await tx partially prepared
+        TimeUnit.SECONDS.sleep(1);
+
+        CompletableFuture.runAsync(() -> {
+            try (Transaction txB = ign.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, 42)").setArgs(keys.get(1)));
+
+                txB.commit();
+            }
+        }).join();
+
+        for (int i = 0; i < srvCnt; i++) {
+            for (Integer k : keys)
+                System.err.println(k + " -> " + updateCounter(grid(i).cachex("test").context(), k));
+        }
+
+        // drop primary
+        stopGrid(victim.name(), true);
+
+//        assertConditionEventually(() -> txs.stream().allMatch(tx -> tx.state() == ROLLED_BACK));
+        TimeUnit.SECONDS.sleep(3);
+
+        for (int i = 0; i < srvCnt; i++) {
+            if (i == vid) continue;
+
+            for (Integer k : keys)
+                System.err.println(k + " -> " + updateCounter(grid(i).cachex("test").context(), k));
+
+            System.err.println(grid(i).cache("test").query(new SqlFieldsQuery("select * from Integer").setLocal(true)).getAll());
+        }
     }
 
     /** */

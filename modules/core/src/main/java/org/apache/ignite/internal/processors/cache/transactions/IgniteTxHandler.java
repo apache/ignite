@@ -64,6 +64,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxRemote;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
@@ -243,6 +245,12 @@ public class IgniteTxHandler {
                     processCheckPreparedTxResponse(nodeId, res);
                 }
             });
+
+        ctx.io().addCacheHandler(0, PartitionCountersNeighborcastRequest.class,
+            (CI2<UUID, PartitionCountersNeighborcastRequest>)this::processPartitionCountersRequest);
+
+        ctx.io().addCacheHandler(0, PartitionCountersNeighborcastResponse.class,
+            (CI2<UUID, PartitionCountersNeighborcastResponse>)this::processPartitionCountersResponse);
     }
 
     /**
@@ -1985,6 +1993,34 @@ public class IgniteTxHandler {
         }
         else
             res.txState(fut.tx().txState());
+
+        fut.onResult(nodeId, res);
+    }
+
+    private void processPartitionCountersRequest(UUID nodeId, PartitionCountersNeighborcastRequest req) {
+        ctx.tm().applyPartitionsUpdatesCounters(req.updateCounters());
+
+        try {
+            ctx.io().send(nodeId, new PartitionCountersNeighborcastResponse(req.futId(), req.miniId()), SYSTEM_POOL);
+        }
+        // t0d0
+        catch (ClusterTopologyCheckedException ignored) {
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Error ", e);
+        }
+    }
+
+    private void processPartitionCountersResponse(UUID nodeId, PartitionCountersNeighborcastResponse res) {
+        PartitionCountersNeighborcastFuture fut = ((PartitionCountersNeighborcastFuture)ctx.mvcc().future(res.futId()));
+
+        if (fut == null) {
+            // t0d0
+            if (log.isInfoEnabled())
+                log.info("Failed ...");
+
+            return;
+        }
 
         fut.onResult(nodeId, res);
     }

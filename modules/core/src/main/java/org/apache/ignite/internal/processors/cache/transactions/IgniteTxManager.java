@@ -62,8 +62,11 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLo
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
+import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockFuture;
@@ -2046,8 +2049,63 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         if (commit)
             tx.commitAsync().listen(new CommitListener(tx));
-        else
-            tx.rollbackAsync();
+        else {
+            // t0d0 if mvcc
+            TxCounters txCntrs = tx.txCounters(false);
+            Collection<PartitionUpdateCountersMessage> updCntrs = txCntrs != null ? txCntrs.updateCounters() : null;
+            // t0d0 when update counters can be null for prepared transaction?
+            if (!tx.txState().mvccEnabled() || updCntrs == null)
+                tx.rollbackAsync();
+            else {
+                Map<UUID, Collection<UUID>> txNodes = tx.transactionNodes();
+                assert txNodes != null;
+                // we need to receive all sibling backups here
+                UUID locNodeId = cctx.localNodeId();
+                HashSet<UUID> peers = new HashSet<>();
+                txNodes.values().stream().forEach(backups -> {
+                    if (backups.contains(locNodeId))
+                        peers.addAll(backups);
+                });
+                peers.remove(locNodeId);
+
+                PartitionCountersNeighborcastFuture fut = new PartitionCountersNeighborcastFuture(cctx);
+                fut.listen(fut0 -> tx.rollbackAsync());
+                fut.init(peers, updCntrs);
+            }
+        }
+    }
+
+    /**
+     * Applies partition counters updates for mvcc transactions.
+     *
+     * @param counters Counters values to be updated.
+     */
+    public void applyPartitionsUpdatesCounters(Iterable<PartitionUpdateCountersMessage> counters) {
+        if (counters == null)
+            return;
+
+        int cacheId = CU.UNDEFINED_CACHE_ID;
+        GridDhtPartitionTopology top = null;
+
+        for (PartitionUpdateCountersMessage counter : counters) {
+            if (counter.cacheId() != cacheId) {
+                GridCacheContext ctx0 = cctx.cacheContext(cacheId = counter.cacheId());
+
+                assert ctx0.mvccEnabled();
+
+                top = ctx0.topology();
+            }
+
+            assert top != null;
+
+            for (int i = 0; i < counter.size(); i++) {
+                GridDhtLocalPartition part = top.localPartition(counter.partition(i));
+
+                assert part != null;
+
+                part.updateCounter(counter.initialCounter(i), counter.updatesCount(i));
+            }
+        }
     }
 
     /**
@@ -2469,7 +2527,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                         // Await only mvcc transactions initiated by failed client node.
                         if (discoEvt.eventNode().isClient() && tx.eventNodeId().equals(evtNodeId)
-                            && tx.mvccSnapshot() != null)
+                            && tx.txState().mvccEnabled())
                             allTxFinFut.add(tx.finishFuture());
                     }
                 }

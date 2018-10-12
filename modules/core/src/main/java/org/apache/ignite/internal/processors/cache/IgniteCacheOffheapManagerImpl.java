@@ -1551,6 +1551,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             pCntr.update(start, delta);
         }
 
+        @Override public void finalizeUpdateCounter() {
+            pCntr.finalizeUpdateCounter();
+        }
+
         /** {@inheritDoc} */
         @Override public String name() {
             return name;
