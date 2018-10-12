@@ -20,36 +20,48 @@ import controller from './input-dialog.controller';
 import templateUrl from './input-dialog.tpl.pug';
 import {CancellationError} from 'app/errors/CancellationError';
 
+type InputModes = 'text' | 'number' | 'date' | 'time' | 'date-and-time';
+interface ValidationFunction<T> {
+    (value: T): boolean
+}
+
+/**
+ * Options for rendering inputs
+ */
+interface InputOptions<T> {
+    /** Input type */
+    mode?: InputModes,
+    /** Dialog title */
+    title?: string,
+    /** Input field label */
+    label?: string,
+    /** Message for tooltip in label */
+    tip?: string,
+    /** Default value */
+    value: T,
+    /** Placeholder for input */
+    placeholder?: string,
+    /** Validator function */
+    toValidValue?: ValidationFunction<T>,
+    /** Min value for number input */
+    min?: number,
+    /** Max value for number input */
+    max?: number,
+    /** Postfix for units in numer input */
+    postfix?: string
+}
+
 export default class InputDialog {
     static $inject = ['$modal', '$q'];
 
-    /**
-     * @param {mgcrea.ngStrap.modal.IModalService} $modal
-     * @param {ng.IQService} $q
-     */
-    constructor($modal, $q) {
-        this.$modal = $modal;
-        this.$q = $q;
-    }
+    constructor(private $modal: mgcrea.ngStrap.modal.IModalService, private $q: ng.IQService) {}
 
     /**
      * Fabric for creating modal instance with different input types.
-     *
-     * @param {Object} args Options for rendering inputs:
-     * @param {'text'|'number'} args.mode Input type.
-     * @param {String} args.title Dialog title.
-     * @param {String} args.label Input field label.
-     * @param {String} args.tip Message for tooltip in label.
-     * @param {String|Number} args.value Default value.
-     * @param {String} args.placeholder Placeholder for input.
-     * @param {Function} [args.toValidValue] Validator function.
-     * @param {Number} args.min Min value for number input.
-     * @param {Number} args.max Max value for number input.
-     * @param {String} args.postfix Postfix for units in numer input.
-     * @return {Promise.<String>} User input.
+     * @returns User input.
      */
-    dialogFabric(args) {
-        const deferred = this.$q.defer();
+    private dialogFabric<T>(args: InputOptions<T>) {
+        const deferred = this.$q.defer<T>();
 
         const modal = this.$modal({
             templateUrl,
@@ -72,25 +84,24 @@ export default class InputDialog {
     /**
      * Open input dialog to configure custom value.
      *
-     * @param {String} title Dialog title.
-     * @param {String} label Input field label.
-     * @param {String} value Default value.
-     * @param {Function} [toValidValue] Validator function.
-     * @param {'text'|'number'} mode Input type.
-     * @returns {ng.IPromise<string>} User input.
+     * @param title Dialog title.
+     * @param label Input field label.
+     * @param value Default value.
+     * @param toValidValue Validator function.
+     * @param mode Input type.
      */
-    input(title, label, value, toValidValue, mode = 'text') {
-        return this.dialogFabric({title, label, value, toValidValue, mode});
+    input<T>(title: string, label: string, value: T, toValidValue?: ValidationFunction<T>, mode: InputModes = 'text') {
+        return this.dialogFabric<T>({title, label, value, toValidValue, mode});
     }
 
     /**
      * Open input dialog to configure cloned object name.
      *
-     * @param {String} srcName Name of source object.
-     * @param {Array.<String>} names List of already exist names.
-     * @returns {ng.IPromise<string>} New name.
+     * @param srcName Name of source object.
+     * @param names List of already exist names.
+     * @returns New name.
      */
-    clone(srcName, names) {
+    clone(srcName: string, names: Array<string>) {
         const uniqueName = (value) => {
             let num = 1;
             let tmpName = value;
@@ -104,46 +115,46 @@ export default class InputDialog {
             return tmpName;
         };
 
-        return this.input('Clone', 'New name', uniqueName(srcName), uniqueName);
+        return this.input<string>('Clone', 'New name', uniqueName(srcName), uniqueName);
     }
 
     /**
      * Open input dialog to configure custom number value.
      *
-     * @param {Object} options Object with settings for rendering number input.
-     * @returns {Promise.<String>} User input.
+     * @param options Object with settings for rendering number input.
+     * @returns User input.
      */
-    number(options) {
+    number(options: InputOptions<number>) {
         return this.dialogFabric({mode: 'number', ...options});
     }
 
     /**
      * Open input dialog to configure custom date value.
      *
-     * @param {Object} options Settings for rendering date input.
-     * @returns {Promise.<Date>} User input.
+     * @param options Settings for rendering date input.
+     * @returns User input.
      */
-    date(options) {
+    date(options: InputOptions<Date>) {
         return this.dialogFabric({mode: 'date', ...options});
     }
 
     /**
      * Open input dialog to configure custom time value.
      *
-     * @param {Object} options Settings for rendering time input.
-     * @returns {Promise.<Date>} User input.
+     * @param options Settings for rendering time input.
+     * @returns User input.
      */
-    time(options) {
+    time(options: InputOptions<Date>) {
         return this.dialogFabric({mode: 'time', ...options});
     }
 
     /**
      * Open input dialog to configure custom date and time value.
      *
-     * @param {Object} options Settings for rendering date and time inputs.
-     * @returns {Promise.<Date>} User input.
+     * @param options Settings for rendering date and time inputs.
+     * @returns User input.
      */
-    dateTime(options) {
+    dateTime(options: InputOptions<Date>) {
         return this.dialogFabric({mode: 'date-and-time', ...options});
     }
 }
