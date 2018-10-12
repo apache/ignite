@@ -368,6 +368,10 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
         if (!DONE_UPD.compareAndSet(this, 0, 1))
             return false;
 
+        // Need to unlock topology to avoid deadlock with binary descriptors registration.
+        if(cctx.topology().holdsLock())
+            cctx.topology().readUnlock();
+
         cctx.tm().txContext(tx);
 
         Throwable ex0 = ex;

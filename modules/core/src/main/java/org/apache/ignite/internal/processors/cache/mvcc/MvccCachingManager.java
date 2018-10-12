@@ -118,7 +118,7 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
             throw new IgniteCheckedException("Transaction is too large. Consider reducing transaction size or " +
                 "turning off continuous queries and datacenter replication [size=" + cntr.get() + ", txXid=" + ver + ']');
 
-        MvccTxEnlistEntry e = new MvccTxEnlistEntry(key, val, ttl, expireTime, ver, oldVal, primary, topVer, mvccVer, cacheId);
+        MvccTxEntry e = new MvccTxEntry(key, val, ttl, expireTime, ver, oldVal, primary, topVer, mvccVer, cacheId);
 
         EnlistBuffer cached = enlistCache.computeIfAbsent(ver, v -> new EnlistBuffer());
 
@@ -144,7 +144,7 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
         if (buf == null)
             return;
 
-        Map<KeyCacheObject, MvccTxEnlistEntry> cached = buf.getCached();
+        Map<KeyCacheObject, MvccTxEntry> cached = buf.getCached();
 
         if (F.isEmpty(cached) || !commit)
             return;
@@ -173,8 +173,8 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
         }
 
         // Feed CQ & DR with entries.
-        for (Map.Entry<KeyCacheObject, MvccTxEnlistEntry> entry : cached.entrySet()) {
-            MvccTxEnlistEntry e = entry.getValue();
+        for (Map.Entry<KeyCacheObject, MvccTxEntry> entry : cached.entrySet()) {
+            MvccTxEntry e = entry.getValue();
 
             assert e.key().partition() != -1;
 
@@ -268,10 +268,10 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
         private IgniteUuid lastFutId;
 
         /** Main buffer for entries. */
-        private Map<KeyCacheObject, MvccTxEnlistEntry> cached = new LinkedHashMap<>();
+        private Map<KeyCacheObject, MvccTxEntry> cached = new LinkedHashMap<>();
 
         /** Pending entries. */
-        private SortedMap<Integer, Map<KeyCacheObject, MvccTxEnlistEntry>> pending;
+        private SortedMap<Integer, Map<KeyCacheObject, MvccTxEntry>> pending;
 
         /**
          * Adds entry to caching buffer.
@@ -281,7 +281,7 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
          * @param key Key.
          * @param e Entry.
          */
-        synchronized void add(IgniteUuid futId, int batchNum, KeyCacheObject key, MvccTxEnlistEntry e) {
+        synchronized void add(IgniteUuid futId, int batchNum, KeyCacheObject key, MvccTxEntry e) {
             if (batchNum >= 0) {
                 /*
                  * Assume that batches within one future may be reordered. But batches between futures cannot be
@@ -298,7 +298,7 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
                 if (pending == null)
                     pending = new TreeMap<>() ;
 
-                MvccTxEnlistEntry prev = pending.computeIfAbsent(batchNum, k -> new LinkedHashMap<>()).put(key, e);
+                MvccTxEntry prev = pending.computeIfAbsent(batchNum, k -> new LinkedHashMap<>()).put(key, e);
 
                 if (prev != null && prev.oldValue() != null)
                     e.oldValue(prev.oldValue());
@@ -306,7 +306,7 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
             else { // batchNum == -1 means no reordering (e.g. this is a primary node).
                 assert batchNum == -1;
 
-                MvccTxEnlistEntry prev = cached.put(key, e);
+                MvccTxEntry prev = cached.put(key, e);
 
                 if (prev != null && prev.oldValue() != null)
                     e.oldValue(prev.oldValue());
@@ -316,7 +316,7 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
         /**
          * @return Cached entries map.
          */
-        synchronized Map<KeyCacheObject, MvccTxEnlistEntry> getCached() {
+        synchronized Map<KeyCacheObject, MvccTxEntry> getCached() {
             flushPending();
 
             return cached;
@@ -329,8 +329,8 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
             if (F.isEmpty(pending))
                 return;
 
-            for (Map.Entry<Integer, Map<KeyCacheObject, MvccTxEnlistEntry>> entry : pending.entrySet()) {
-                Map<KeyCacheObject, MvccTxEnlistEntry> vals = entry.getValue();
+            for (Map.Entry<Integer, Map<KeyCacheObject, MvccTxEntry>> entry : pending.entrySet()) {
+                Map<KeyCacheObject, MvccTxEntry> vals = entry.getValue();
 
                 cached.putAll(vals);
             }

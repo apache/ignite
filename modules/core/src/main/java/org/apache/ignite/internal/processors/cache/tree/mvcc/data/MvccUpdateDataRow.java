@@ -188,7 +188,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
         this.mvccSnapshot = mvccSnapshot;
         this.cctx = cctx;
         this.filter = filter;
-        keyAbsentBefore0(primary); // True for primary and false for backup (backups do not use this flag).
+        keyAbsentBeforeFlag(primary); // True for primary and false for backup (backups do not use this flag).
 
         assert !lockOnly || val == null;
 
@@ -286,7 +286,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
                 // Copy new key flag from the previous row version if it was created by the current tx.
                 if (isFlagsSet(PRIMARY))
-                    keyAbsentBefore0(row.isKeyAbsentBefore0());
+                    keyAbsentBeforeFlag(row.keyAbsentBeforeFlag());
             }
         }
 
@@ -335,7 +335,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                     else {
                         res = ResultType.PREV_NOT_NULL;
 
-                        keyAbsentBefore0(false);
+                        keyAbsentBeforeFlag(false);
 
                         // Actually, full row can be omitted for replace(k,newval) and putIfAbsent, but
                         // operation context is not available here and full row required if filter is set.
@@ -542,20 +542,25 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
         switch (resultType()) {
             case VERSION_FOUND:
             case PREV_NULL:
-
                 return new MvccVersionImpl(mvccCoordinatorVersion(), mvccCounter(), mvccOperationCounter());
+
             case PREV_NOT_NULL:
             case REMOVED_NOT_NULL:
-
                 return new MvccVersionImpl(oldRow.mvccCoordinatorVersion(), oldRow.mvccCounter(), oldRow.mvccOperationCounter());
+
             case LOCKED:
             case VERSION_MISMATCH:
-
                 assert resCrd != MVCC_CRD_COUNTER_NA && resCntr != MVCC_COUNTER_NA;
 
                 return new MvccVersionImpl(resCrd, resCntr, MVCC_OP_COUNTER_NA);
-            default:
 
+            case FILTERED:
+                if (oldRow != null)
+                    return new MvccVersionImpl(oldRow.mvccCoordinatorVersion(), oldRow.mvccCounter(), oldRow.mvccOperationCounter());
+                else
+                    return new MvccVersionImpl(mvccCoordinatorVersion(), mvccCounter(), mvccOperationCounter());
+
+            default:
                 throw new IllegalStateException("Unexpected result type: " + resultType());
         }
     }
@@ -582,7 +587,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
     /** {@inheritDoc} */
     @Override public boolean isKeyAbsentBefore() {
-        return isKeyAbsentBefore0();
+        return keyAbsentBeforeFlag();
     }
 
     /** */

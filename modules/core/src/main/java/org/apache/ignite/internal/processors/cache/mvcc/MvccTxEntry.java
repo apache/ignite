@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Holder for the enlisted entries data.
  */
-public class MvccTxEnlistEntry {
+public class MvccTxEntry {
     /** */
     private KeyCacheObject key;
 
@@ -73,7 +73,7 @@ public class MvccTxEnlistEntry {
      * @param mvccVer Mvcc version.
      * @param cacheId Cache id.
      */
-    public MvccTxEnlistEntry(KeyCacheObject key,
+    public MvccTxEntry(KeyCacheObject key,
         @Nullable CacheObject val,
         long ttl,
         long expireTime,
@@ -198,6 +198,6 @@ public class MvccTxEnlistEntry {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MvccTxEnlistEntry.class, this);
+        return S.toString(MvccTxEntry.class, this);
     }
 }

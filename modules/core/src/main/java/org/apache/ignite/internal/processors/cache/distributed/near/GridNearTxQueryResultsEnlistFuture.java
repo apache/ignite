@@ -385,6 +385,10 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
 
         int batchId = batchCntr.incrementAndGet();
 
+        // Need to unlock topology to avoid deadlock with binary descriptors registration.
+        if(cctx.topology().holdsLock())
+            cctx.topology().readUnlock();
+
         if (node.isLocal())
             enlistLocal(batchId, node.id(), batch);
         else
