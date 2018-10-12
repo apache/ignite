@@ -43,9 +43,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.NearTx
  * Cache lock future.
  */
 @SuppressWarnings("ForLoopReplaceableByForEach")
-public class GridNearTxQueryEnlistFuture extends GridNearTxAbstractEnlistFuture {
-    /** */
-    private static final long serialVersionUID = -2155104765461405820L;
+public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFuture {
     /** Involved cache ids. */
     private final int[] cacheIds;
 
@@ -118,9 +116,8 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxAbstractEnlistFuture 
             else {
                 primary = assignment.primaryPartitionNodes();
 
-                for (ClusterNode pNode : primary) {
+                for (ClusterNode pNode : primary)
                     updateMappings(pNode);
-                }
             }
 
             boolean locallyMapped = primary.contains(cctx.localNode());
@@ -373,8 +370,12 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxAbstractEnlistFuture 
                 if (node.isLocal())
                     tx.colocatedLocallyMapped(false);
             }
-            else if (res != null && res.result() > 0 && !node.isLocal())
-                tx.hasRemoteLocks(true);
+            else if (res != null) {
+                tx.mappings().get(node.id()).addBackups(res.newDhtNodes());
+
+                if (res.result() > 0 && !node.isLocal())
+                    tx.hasRemoteLocks(true);
+            }
 
             return err != null ? onDone(err) : onDone(res.result(), res.error());
         }
