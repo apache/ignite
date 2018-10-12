@@ -71,7 +71,11 @@ public final class FastCrc {
     public static int calcCrc(ByteBuffer buf, int len) {
         CRC32 crcAlgo = CRC.get();
 
-        return calcCrc(crcAlgo, buf, len);
+        int res = calcCrc(crcAlgo, buf, len);
+
+        crcAlgo.reset();
+
+        return res;
     }
 
     /**
