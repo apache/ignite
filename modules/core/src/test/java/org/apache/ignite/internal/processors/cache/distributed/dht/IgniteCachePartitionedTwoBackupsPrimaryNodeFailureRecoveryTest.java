@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
 
 /**
  *
@@ -34,9 +33,5 @@ public class IgniteCachePartitionedTwoBackupsPrimaryNodeFailureRecoveryTest
         ccfg.setBackups(2);
 
         return ccfg;
-    }
-
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return null;
     }
 }

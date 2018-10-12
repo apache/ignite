@@ -22,9 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
@@ -32,19 +30,13 @@ import javax.cache.integration.CacheWriterException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -54,7 +46,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -84,8 +76,7 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
-            .setCommunicationSpi(new MyCommunication());
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
@@ -107,7 +98,6 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void testRecovery1() throws Exception {
-        fail("hangs sometimes");
         checkRecovery(1, false);
     }
 
@@ -115,23 +105,22 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void testRecovery2() throws Exception {
-        fail("hangs sometimes");
         checkRecovery(2, false);
     }
 
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testRecoveryStoreEnabled1() throws Exception {
-//        checkRecovery(1, true);
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testRecoveryStoreEnabled2() throws Exception {
-//        checkRecovery(2, true);
-//    }
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRecoveryStoreEnabled1() throws Exception {
+        checkRecovery(1, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRecoveryStoreEnabled2() throws Exception {
+        checkRecovery(2, true);
+    }
 
     /**
      * @param backups Number of cache backups.
@@ -157,7 +146,7 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
 
         assertFalse(srv.configuration().isClientMode());
 
-        for (Boolean pessimistic : Arrays.asList(true)) {
+        for (Boolean pessimistic : Arrays.asList(false, true)) {
             checkRecovery(backupKey(srv.cache(DEFAULT_CACHE_NAME)), srv, pessimistic, useStore);
 
             checkRecovery(nearKey(srv.cache(DEFAULT_CACHE_NAME)), srv, pessimistic, useStore);
@@ -181,7 +170,6 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
         final Ignite ignite,
         final boolean pessimistic,
         final boolean useStore) throws Exception {
-        commitStartedLatch = null;
         Ignite primary = primaryNode(key, DEFAULT_CACHE_NAME);
 
         assertNotSame(ignite, primary);
@@ -192,10 +180,8 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
 
         final Set<String> backupNames = new HashSet<>();
 
-        for (Ignite node : backups) {
-//            if (node != ignite)
-                backupNames.add(node.name());
-        }
+        for (Ignite node : backups)
+            backupNames.add(node.name());
 
         log.info("Check recovery [key=" + key +
             ", pessimistic=" + pessimistic +
@@ -259,8 +245,6 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
 
         fut.get();
 
-        commitStartedLatch = null;
-
         for (Ignite node : G.allGrids())
             assertEquals(1, node.cache(DEFAULT_CACHE_NAME).get(key));
 
@@ -282,29 +266,6 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
         awaitPartitionMapExchange();
     }
 
-    private static class MyCommunication extends TcpCommunicationSpi {
-        @Override public void sendMessage(ClusterNode node, Message msg,
-            IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
-            if (commitStartedLatch != null && msg instanceof GridIoMessage) {
-                Message msg0 = ((GridIoMessage)msg).message();
-                if (msg0 instanceof GridDhtTxFinishResponse) {
-                    commitStartedLatch.countDown();
-                    CompletableFuture.runAsync(() -> {
-                        try {
-                            assert commitFinishLatch.await(10, TimeUnit.SECONDS);
-                        }
-                        catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                        }
-                        super.sendMessage(node, msg, ackC);
-                    });
-                    return;
-                }
-            }
-            super.sendMessage(node, msg, ackC);
-        }
-    }
-
     /**
      *
      */
@@ -324,37 +285,37 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
 
         /** {@inheritDoc} */
         @Override public Void process(MutableEntry<Integer, Integer> entry, Object... args) {
-//            Ignite ignite = entry.unwrap(Ignite.class);
-//
-//            System.out.println(Thread.currentThread().getName() + " process [node=" + ignite.name() +
-//                ", commit=" + commit + ", skipFirst=" + skipFirst + ']');
-//
-//            boolean skip = false;
-//
-//            if (commit && ignite.name().equals(skipFirst)) {
-//                skipFirst = null;
-//
-//                skip = true;
-//            }
-//
-//            if (!skip && commit && nodeNames.contains(ignite.name())) {
-//                try {
-//                    System.out.println(Thread.currentThread().getName() + " start process invoke.");
-//
-//                    assertTrue(commitStartedLatch != null && commitStartedLatch.getCount() > 0);
-//
-//                    commitStartedLatch.countDown();
-//
-//                    assertTrue(commitFinishLatch.await(10, SECONDS));
-//
-//                    System.out.println(Thread.currentThread().getName() + " end process invoke.");
-//                }
-//                catch (InterruptedException e) {
-//                    throw new RuntimeException(e);
-//                }
-//            }
-//            else
-//                System.out.println(Thread.currentThread().getName() + " invoke set value.");
+            Ignite ignite = entry.unwrap(Ignite.class);
+
+            System.out.println(Thread.currentThread().getName() + " process [node=" + ignite.name() +
+                ", commit=" + commit + ", skipFirst=" + skipFirst + ']');
+
+            boolean skip = false;
+
+            if (commit && ignite.name().equals(skipFirst)) {
+                skipFirst = null;
+
+                skip = true;
+            }
+
+            if (!skip && commit && nodeNames.contains(ignite.name())) {
+                try {
+                    System.out.println(Thread.currentThread().getName() + " start process invoke.");
+
+                    assertTrue(commitStartedLatch != null && commitStartedLatch.getCount() > 0);
+
+                    commitStartedLatch.countDown();
+
+                    assertTrue(commitFinishLatch.await(10, SECONDS));
+
+                    System.out.println(Thread.currentThread().getName() + " end process invoke.");
+                }
+                catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            else
+                System.out.println(Thread.currentThread().getName() + " invoke set value.");
 
             entry.setValue(1);
 
@@ -370,12 +331,10 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
     private CacheConfiguration<Object, Object> cacheConfiguration(int backups, boolean useStore) {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
-        ccfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
-//        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setBackups(backups);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setRebalanceMode(SYNC);
-        ccfg.setReadFromBackup(false);
 
         if (useStore) {
             ccfg.setCacheStoreFactory(new TestStoreFactory());
