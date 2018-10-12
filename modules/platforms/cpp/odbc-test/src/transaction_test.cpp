@@ -85,7 +85,7 @@ struct TransactionTestSuiteFixture : public odbc::OdbcTestSuite
      * @param key Key.
      * @param value Value.
      */
-    void InsertTestValue(SQLHSTMT stmt, int64_t key, const std::string& value)
+    static void InsertTestValue(SQLHSTMT stmt, int64_t key, const std::string& value)
     {
         SQLCHAR insertReq[] = "INSERT INTO TestType(_key, strField) VALUES(?, ?)";
 
@@ -145,7 +145,7 @@ struct TransactionTestSuiteFixture : public odbc::OdbcTestSuite
      * @param key Key.
      * @param value Value.
      */
-    void UpdateTestValue(SQLHSTMT stmt, int64_t key, const std::string& value)
+    static void UpdateTestValue(SQLHSTMT stmt, int64_t key, const std::string& value)
     {
         SQLCHAR insertReq[] = "UPDATE TestType SET strField=? WHERE _key=?";
 
@@ -203,7 +203,7 @@ struct TransactionTestSuiteFixture : public odbc::OdbcTestSuite
      * @param stmt Statement.
      * @param key Key.
      */
-    void DeleteTestValue(SQLHSTMT stmt, int64_t key)
+    static void DeleteTestValue(SQLHSTMT stmt, int64_t key)
     {
         SQLCHAR insertReq[] = "DELETE FROM TestType WHERE _key=?";
 
@@ -251,7 +251,7 @@ struct TransactionTestSuiteFixture : public odbc::OdbcTestSuite
      * @param key Key.
      * @param expect Expected value.
      */
-    void CheckTestValue(SQLHSTMT stmt, int64_t key, const std::string& expect)
+    static void CheckTestValue(SQLHSTMT stmt, int64_t key, const std::string& expect)
     {
         // Just selecting everything to make sure everything is OK
         SQLCHAR selectReq[] = "SELECT strField FROM TestType WHERE _key = ?";
@@ -305,7 +305,7 @@ struct TransactionTestSuiteFixture : public odbc::OdbcTestSuite
      * @param stmt Statement.
      * @param key Key.
      */
-    void CheckNoTestValue(SQLHSTMT stmt, int64_t key)
+    static void CheckNoTestValue(SQLHSTMT stmt, int64_t key)
     {
         // Just selecting everything to make sure everything is OK
         SQLCHAR selectReq[] = "SELECT strField FROM TestType WHERE _key = ?";
@@ -352,7 +352,7 @@ struct TransactionTestSuiteFixture : public odbc::OdbcTestSuite
      *
      * @param stmt Statement.
      */
-    void ResetStatement(SQLHSTMT stmt)
+    static void ResetStatement(SQLHSTMT stmt)
     {
         SQLRETURN ret = SQLFreeStmt(stmt, SQL_RESET_PARAMS);
 
@@ -775,7 +775,7 @@ BOOST_AUTO_TEST_CASE(TransactionEnvironmentTxModeCommit)
     CheckTestValue(42, "Some");
 }
 
-BOOST_AUTO_TEST_CASE(TransactionAlreadyCompleteError)
+BOOST_AUTO_TEST_CASE(TransactionVersionMismatchError)
 {
     Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
@@ -813,9 +813,34 @@ BOOST_AUTO_TEST_CASE(TransactionAlreadyCompleteError)
     }
     catch (OdbcClientError& err)
     {
-        BOOST_CHECK_EQUAL(err.message, "Cannot serialize transaction due to write conflict");
+        BOOST_CHECK(err.message.find("Cannot serialize transaction due to write conflict") != err.message.npos);
         BOOST_CHECK_EQUAL(err.sqlstate, "40001");
+
+        ResetStatement(stmt);
     }
+
+    try
+    {
+        CheckTestValue(1, "test_1");
+
+        BOOST_FAIL("Exception is expected");
+    }
+    catch (OdbcClientError& err)
+    {
+        BOOST_CHECK(err.message.find("Transaction is already completed") != err.message.npos);
+        BOOST_CHECK_EQUAL(err.sqlstate, "25000");
+
+        ResetStatement(stmt);
+    }
+
+    ret = SQLEndTran(SQL_HANDLE_DBC, dbc, SQL_ROLLBACK);
+    ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    SQLFreeHandle(SQL_HANDLE_STMT, stmt2);
+
+    SQLDisconnect(dbc2);
+
+    SQLFreeHandle(SQL_HANDLE_DBC, dbc2);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
