@@ -24,6 +24,7 @@ import org.apache.ignite.spark.impl.sqlTableInfo
 import org.apache.ignite.testframework.GridTestUtils.resolveIgnitePath
 import org.apache.spark.sql.SaveMode.{Append, Ignore, Overwrite}
 import org.apache.spark.sql.{DataFrame, SaveMode}
+import org.junit.Assert.assertEquals
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.apache.spark.sql.functions._
@@ -220,7 +221,7 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
                     .save()
             }
 
-            val tblInfo = sqlTableInfo[Any, Any](client, PERSON_TBL_NAME)
+            val tblInfo = sqlTableInfo[Any, Any](client, PERSON_TBL_NAME, None)
 
             assert(tblInfo.isDefined, s"Table $PERSON_TBL_NAME should exists.")
         }
@@ -236,7 +237,7 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
                     .save()
             }
 
-            val tblInfo = sqlTableInfo[Any, Any](client, PERSON_TBL_NAME)
+            val tblInfo = sqlTableInfo[Any, Any](client, PERSON_TBL_NAME, None)
 
             assert(tblInfo.isDefined, s"Table $PERSON_TBL_NAME should exists.")
         }
@@ -252,7 +253,7 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
                     .save()
             }
 
-            val tblInfo = sqlTableInfo[Any, Any](client, PERSON_TBL_NAME)
+            val tblInfo = sqlTableInfo[Any, Any](client, PERSON_TBL_NAME, None)
 
             assert(tblInfo.isDefined, s"Table $PERSON_TBL_NAME should exists.")
         }
@@ -331,6 +332,22 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
                     .mode(Overwrite)
                     .save()
             }
+        }
+
+        it("Should throw exception if saving data frame as a new table with non-PUBLIC schema") {
+            val ex = intercept[IgniteException] {
+                personDataFrame.write
+                    .format(FORMAT_IGNITE)
+                    .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+                    .option(OPTION_TABLE, "nonexistant-table-name")
+                    .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id")
+                    .option(OPTION_SCHEMA, "mySchema")
+                    .save()
+            }
+
+            assertEquals(ex.getMessage,
+                "Creating new tables in schema mySchema is not valid, tables must only be created in " +
+                org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA)
         }
     }
 

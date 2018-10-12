@@ -1082,6 +1082,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 // First of all, write page to disk.
                 storeMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag);
 
+                pageBuf.rewind();
+
                 // Only after write we can write page into snapshot.
                 snapshotMgr.flushDirtyPageHandler(fullId, pageBuf, tag);
 
@@ -1376,16 +1378,24 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         assert usrFut != null : "Missing user future for cache: " + cacheCtx.name();
 
                         rebuildFut.listen(new CI1<IgniteInternalFuture>() {
-                            @Override public void apply(IgniteInternalFuture igniteInternalFut) {
+                            @Override public void apply(IgniteInternalFuture fut) {
                                 idxRebuildFuts.remove(cacheId, usrFut);
 
-                                usrFut.onDone(igniteInternalFut.error());
+                                Throwable err = fut.error();
+
+                                usrFut.onDone(err);
 
                                 CacheConfiguration ccfg = cacheCtx.config();
 
                                 if (ccfg != null) {
-                                    log().info("Finished indexes rebuilding for cache [name=" + ccfg.getName()
-                                        + ", grpName=" + ccfg.getGroupName() + ']');
+                                    if (err == null)
+                                        log().info("Finished indexes rebuilding for cache [name=" + ccfg.getName()
+                                            + ", grpName=" + ccfg.getGroupName() + ']');
+                                    else {
+                                        if (!(err instanceof NodeStoppingException))
+                                            log().error("Failed to rebuild indexes for cache  [name=" + ccfg.getName()
+                                                + ", grpName=" + ccfg.getGroupName() + ']', err);
+                                    }
                                 }
                             }
                         });
@@ -1428,6 +1438,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             grpIds.add(tup.get1().groupId());
 
             pageMem.onCacheGroupDestroyed(tup.get1().groupId());
+
+            if (tup.get2())
+                cctx.kernalContext().encryption().onCacheGroupDestroyed(gctx.groupId());
         }
 
         Collection<IgniteInternalFuture<Void>> clearFuts = new ArrayList<>(destroyed.size());

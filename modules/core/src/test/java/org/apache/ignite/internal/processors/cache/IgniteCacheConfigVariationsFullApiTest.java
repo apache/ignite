@@ -4063,10 +4063,9 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     }
 
     /**
-     * TODO GG-11133.
      * @throws Exception In case of error.
      */
-    public void _testEvictExpired() throws Exception {
+    public void testEvictExpired() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
         final String key = primaryKeysForCache(1).get(0);
@@ -4213,10 +4212,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      * @throws Exception If failed.
      */
     private void checkTtl(boolean inTx, boolean oldEntry) throws Exception {
-        // TODO GG-11133.
-        if (true)
-            return;
-
         int ttl = 1000;
 
         final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
@@ -4280,7 +4275,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                 assertNotNull(curEntryTtl.get1());
                 assertNotNull(curEntryTtl.get2());
-                assertEquals(ttl, (long)curEntryTtl.get1());
                 assertTrue(curEntryTtl.get2() > startTime);
                 expireTimes[i] = curEntryTtl.get2();
             }
@@ -4308,7 +4302,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                 assertNotNull(curEntryTtl.get1());
                 assertNotNull(curEntryTtl.get2());
-                assertEquals(ttl, (long)curEntryTtl.get1());
                 assertTrue(curEntryTtl.get2() > startTime);
                 expireTimes[i] = curEntryTtl.get2();
             }
@@ -4336,7 +4329,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                 assertNotNull(curEntryTtl.get1());
                 assertNotNull(curEntryTtl.get2());
-                assertEquals(ttl, (long)curEntryTtl.get1());
                 assertTrue(curEntryTtl.get2() > startTime);
                 expireTimes[i] = curEntryTtl.get2();
             }
@@ -4368,7 +4360,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                 assertNotNull(curEntryTtl.get1());
                 assertNotNull(curEntryTtl.get2());
-                assertEquals(ttl, (long)curEntryTtl.get1());
                 assertEquals(expireTimes[i], (long)curEntryTtl.get2());
             }
         }
@@ -6320,11 +6311,16 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             if (internalCache.context().isNear())
                 internalCache = internalCache.context().near().dht();
 
-            GridCacheEntryEx entry = internalCache.peekEx(key);
+            GridCacheEntryEx entry = internalCache.entryEx(key);
 
-            return entry != null ?
-                new IgnitePair<>(entry.ttl(), entry.expireTime()) :
-                new IgnitePair<Long>(null, null);
+            entry.unswap();
+
+            IgnitePair<Long> pair = new IgnitePair<>(entry.ttl(), entry.expireTime());
+
+            if (!entry.isNear())
+                entry.context().cache().removeEntry(entry);
+
+            return  pair;
         }
     }
 

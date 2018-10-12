@@ -116,9 +116,8 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
             else {
                 primary = assignment.primaryPartitionNodes();
 
-                for (ClusterNode pNode : primary) {
+                for (ClusterNode pNode : primary)
                     updateMappings(pNode);
-                }
             }
 
             boolean locallyMapped = primary.contains(cctx.localNode());
@@ -371,8 +370,12 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
                 if (node.isLocal())
                     tx.colocatedLocallyMapped(false);
             }
-            else if (res != null && res.result() > 0 && !node.isLocal())
-                tx.hasRemoteLocks(true);
+            else if (res != null) {
+                tx.mappings().get(node.id()).addBackups(res.newDhtNodes());
+
+                if (res.result() > 0 && !node.isLocal())
+                    tx.hasRemoteLocks(true);
+            }
 
             return err != null ? onDone(err) : onDone(res.result(), res.error());
         }

@@ -26,7 +26,10 @@
 .wch-content
     connected-clusters(ng-if='$ctrl.$rootScope.user && !$ctrl.$rootScope.IgniteDemoMode && $ctrl.isConnectedClustersVisible && !$root.user.becomeUsed')
 
-    a(ui-sref='landing')
+    a(ui-sref='default-state' ng-if='$ctrl.isAuthorized()').wch-logo-anchor
+        img.wch-logo(ng-src='{{::$ctrl.branding.headerLogo}}')
+
+    a(ui-sref='landing' ng-if='!$ctrl.isAuthorized()').wch-logo-anchor
         img.wch-logo(ng-src='{{::$ctrl.branding.headerLogo}}')
 
     .wch-slot.wch-slot-left(ng-transclude='slotLeft')

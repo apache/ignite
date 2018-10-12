@@ -47,11 +47,13 @@ import org.apache.kafka.connect.runtime.ConnectorConfig;
 import org.apache.kafka.connect.runtime.Herder;
 import org.apache.kafka.connect.runtime.Worker;
 import org.apache.kafka.connect.runtime.WorkerConfig;
+import org.apache.kafka.connect.runtime.isolation.Plugins;
 import org.apache.kafka.connect.runtime.rest.entities.ConnectorInfo;
 import org.apache.kafka.connect.runtime.standalone.StandaloneConfig;
 import org.apache.kafka.connect.runtime.standalone.StandaloneHerder;
 import org.apache.kafka.connect.storage.MemoryOffsetBackingStore;
 import org.apache.kafka.connect.util.Callback;
+import org.apache.kafka.connect.util.ConnectUtils;
 import org.apache.kafka.connect.util.FutureCallback;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
@@ -98,15 +100,16 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         kafkaBroker = new TestKafkaBroker();
 
-        WorkerConfig workerCfg = new StandaloneConfig(makeWorkerProps());
+        Map<String, String> props = makeWorkerProps();
+        WorkerConfig workerCfg = new StandaloneConfig(props);
 
         MemoryOffsetBackingStore offBackingStore = new MemoryOffsetBackingStore();
         offBackingStore.configure(workerCfg);
 
-        worker = new Worker(WORKER_ID, new SystemTime(), workerCfg, offBackingStore);
+        worker = new Worker(WORKER_ID, new SystemTime(), new Plugins(props), workerCfg, offBackingStore);
         worker.start();
 
-        herder = new StandaloneHerder(worker);
+        herder = new StandaloneHerder(worker, ConnectUtils.lookupKafkaClusterId(workerCfg));
         herder.start();
     }
 
@@ -250,6 +253,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "test-grp");
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         props.put(ConsumerConfig.FETCH_MIN_BYTES_CONFIG, 1);
+        props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 20000);
         props.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 10000);
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
             "org.apache.kafka.common.serialization.StringDeserializer");

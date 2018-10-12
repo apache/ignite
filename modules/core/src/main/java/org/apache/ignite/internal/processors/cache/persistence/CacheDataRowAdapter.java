@@ -155,7 +155,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
                     DataPagePayload data = io.readPayload(pageAddr,
                         itemId(nextLink),
-                        pageMem.pageSize());
+                        pageMem.realPageSize(grpId));
 
                     nextLink = data.nextLink();
 

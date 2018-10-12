@@ -96,8 +96,6 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
      *
      */
     public void testSelectForUpdateDistributed() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9724");
-
         doTestSelectForUpdateDistributed("Person", false);
     }
 
@@ -162,6 +160,8 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
      * @throws Exception If failed.
      */
     void doTestSelectForUpdateDistributed(String cacheName, boolean outsideTx) throws Exception {
+        awaitPartitionMapExchange();
+
         Ignite node = grid(0);
 
         IgniteCache<Integer, ?> cache = node.cache(cacheName);

@@ -36,12 +36,14 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Rule;
@@ -231,7 +233,8 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
         DirectMemoryProvider provider = new UnsafeMemoryProvider(log);
 
         PageMemoryImpl memory = new PageMemoryImpl(provider, sizes, sctx, pageSize,
-            pageWriter, null, () -> true, memMetrics, PageMemoryImpl.ThrottlingPolicy.DISABLED, null);
+            pageWriter, null, () -> true, memMetrics, PageMemoryImpl.ThrottlingPolicy.DISABLED,
+            mock(CheckpointWriteProgressSupplier.class));
 
         memory.start();
         return memory;
@@ -243,6 +246,8 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
      */
     @NotNull private IgniteConfiguration getConfiguration(long overallSize) {
         IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setEncryptionSpi(new NoopEncryptionSpi());
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()

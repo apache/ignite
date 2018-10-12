@@ -262,7 +262,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         for (CacheStoreHolder holder : idxCacheStores.values()) {
             holder.idxStore.beginRecover();
 
-            for (FilePageStore partStore : holder.partStores)
+            for (PageStore partStore : holder.partStores)
                 partStore.beginRecover();
         }
     }
@@ -273,7 +273,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             for (CacheStoreHolder holder : idxCacheStores.values()) {
                 holder.idxStore.finishRecover();
 
-                for (FilePageStore partStore : holder.partStores)
+                for (PageStore partStore : holder.partStores)
                     partStore.finishRecover();
             }
         }
@@ -292,7 +292,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 new File(storeWorkDir, workingDir),
                 cacheId,
                 partitions,
-                tracker
+                tracker,
+                cctx.cacheContext(cacheId) != null && cctx.cacheContext(cacheId).config().isEncryptionEnabled()
             );
 
             CacheStoreHolder old = idxCacheStores.put(cacheId, holder);
@@ -321,9 +322,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         if (!idxCacheStores.containsKey(grpId)) {
             CacheStoreHolder holder = initDir(
                 new File(storeWorkDir, META_STORAGE_NAME),
-                grpId,
-                1,
-                AllocatedPageTracker.NO_OP );
+                    grpId,
+                    1,
+                    AllocatedPageTracker.NO_OP,
+                    false);
 
             CacheStoreHolder old = idxCacheStores.put(grpId, holder);
 
@@ -400,9 +402,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         PageStore store = getStore(grpId, partId);
 
-        assert store instanceof FilePageStore : store;
-
-        ((FilePageStore)store).truncate(tag);
+        store.truncate(tag);
     }
 
     /** {@inheritDoc} */
@@ -521,7 +521,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             cacheWorkDir,
             grpDesc.groupId(),
             grpDesc.config().getAffinity().partitions(),
-            allocatedTracker
+            allocatedTracker,
+            ccfg.isEncryptionEnabled()
         );
     }
 
@@ -530,13 +531,15 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param grpId Group ID.
      * @param partitions Number of partitions.
      * @param allocatedTracker Metrics updater.
+     * @param encrypted {@code True} if this cache encrypted.
      * @return Cache store holder.
      * @throws IgniteCheckedException If failed.
      */
     private CacheStoreHolder initDir(File cacheWorkDir,
         int grpId,
         int partitions,
-        AllocatedPageTracker allocatedTracker) throws IgniteCheckedException {
+        AllocatedPageTracker allocatedTracker,
+        boolean encrypted) throws IgniteCheckedException {
         try {
             boolean dirExisted = checkAndInitCacheWorkDir(cacheWorkDir);
 
@@ -545,19 +548,48 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             if (dirExisted && !idxFile.exists())
                 grpsWithoutIdx.add(grpId);
 
-            FilePageStoreFactory pageStoreFactory = new FileVersionCheckingFactory(
-                pageStoreFileIoFactory, pageStoreV1FileIoFactory, igniteCfg.getDataStorageConfiguration());
 
-            FilePageStore idxStore =
+            FileIOFactory pageStoreFileIoFactory = this.pageStoreFileIoFactory;
+            FileIOFactory pageStoreV1FileIoFactory = this.pageStoreV1FileIoFactory;
+
+            if (encrypted) {
+                pageStoreFileIoFactory = new EncryptedFileIOFactory(
+                    this.pageStoreFileIoFactory,
+                    grpId,
+                    pageSize(),
+                    cctx.kernalContext().encryption(),
+                    cctx.gridConfig().getEncryptionSpi());
+
+                pageStoreV1FileIoFactory = new EncryptedFileIOFactory(
+                    this.pageStoreV1FileIoFactory,
+                    grpId,
+                    pageSize(),
+                    cctx.kernalContext().encryption(),
+                    cctx.gridConfig().getEncryptionSpi());
+            }
+
+            FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(
+                pageStoreFileIoFactory,
+                pageStoreV1FileIoFactory,
+                igniteCfg.getDataStorageConfiguration());
+
+            if (encrypted) {
+                int headerSize = pageStoreFactory.headerSize(pageStoreFactory.latestVersion());
+
+                ((EncryptedFileIOFactory)pageStoreFileIoFactory).headerSize(headerSize);
+                ((EncryptedFileIOFactory)pageStoreV1FileIoFactory).headerSize(headerSize);
+            }
+
+            PageStore idxStore =
             pageStoreFactory.createPageStore(
                 PageMemory.FLAG_IDX,
                 idxFile,
                 allocatedTracker);
 
-            FilePageStore[] partStores = new FilePageStore[partitions];
+            PageStore[] partStores = new PageStore[partitions];
 
             for (int partId = 0; partId < partStores.length; partId++) {
-                FilePageStore partStore =
+                PageStore partStore =
                     pageStoreFactory.createPageStore(
                         PageMemory.FLAG_DATA,
                         getPartitionFile(cacheWorkDir, partId),
@@ -885,7 +917,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         @Nullable IgniteCheckedException aggr) {
         aggr = shutdown(holder.idxStore, cleanFile, aggr);
 
-        for (FilePageStore store : holder.partStores) {
+        for (PageStore store : holder.partStores) {
             if (store != null)
                 aggr = shutdown(store, cleanFile, aggr);
         }
@@ -942,7 +974,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param aggr Aggregating exception.
      * @return Aggregating exception, if error occurred.
      */
-    private IgniteCheckedException shutdown(FilePageStore store, boolean cleanFile, IgniteCheckedException aggr) {
+    private IgniteCheckedException shutdown(PageStore store, boolean cleanFile, IgniteCheckedException aggr) {
         try {
             if (store != null)
                 store.stop(cleanFile);
@@ -978,7 +1010,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         if (partId > PageIdAllocator.MAX_PARTITION_ID)
             throw new IgniteCheckedException("Partition ID is reserved: " + partId);
 
-        FilePageStore store = holder.partStores[partId];
+        PageStore store = holder.partStores[partId];
 
         if (store == null)
             throw new IgniteCheckedException("Failed to get page store for the given partition ID " +
@@ -1038,15 +1070,15 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      */
     private static class CacheStoreHolder {
         /** Index store. */
-        private final FilePageStore idxStore;
+        private final PageStore idxStore;
 
         /** Partition stores. */
-        private final FilePageStore[] partStores;
+        private final PageStore[] partStores;
 
         /**
          *
          */
-        CacheStoreHolder(FilePageStore idxStore, FilePageStore[] partStores) {
+        public CacheStoreHolder(PageStore idxStore, PageStore[] partStores) {
             this.idxStore = idxStore;
             this.partStores = partStores;
         }

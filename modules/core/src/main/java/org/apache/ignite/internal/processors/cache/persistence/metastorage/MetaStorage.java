@@ -361,6 +361,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                         // Initialize new page.
                         PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.latest();
 
+                        //MetaStorage never encrypted so realPageSize == pageSize.
                         io.initNewPage(pageAddr, partMetaId, pageMem.pageSize());
 
                         treeRoot = pageMem.allocatePage(METASTORAGE_CACHE_ID, partId, PageMemory.FLAG_DATA);
@@ -537,6 +538,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                     try {
                         SimpleDataPageIO io = (SimpleDataPageIO)ioVersions().forPage(pageAddr);
 
+                        //MetaStorage never encrypted so realPageSize == pageSize.
                         DataPagePayload data = io.readPayload(pageAddr, itemId(nextLink), pageMem.pageSize());
 
                         nextLink = data.nextLink();

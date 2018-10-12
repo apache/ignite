@@ -68,7 +68,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
-import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
@@ -1258,7 +1257,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             if (req.requestMvccCounter()) {
                 assert last;
 
-                assert tx.txState().mvccEnabled(cctx);
+                assert tx.txState().mvccEnabled();
 
                 try {
                     // Request snapshot locally only because
@@ -1343,7 +1342,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             }
         }
 
-        assert !tx.txState().mvccEnabled(cctx) || !tx.onePhaseCommit() || tx.mvccSnapshot() != null;
+        assert !tx.txState().mvccEnabled() || !tx.onePhaseCommit() || tx.mvccSnapshot() != null;
 
         int miniId = 0;
 

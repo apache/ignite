@@ -289,6 +289,12 @@ public class IgniteBenchmarkArguments {
     @GridToStringInclude
     public long mvccContentionRange = 10_000;
 
+    /** */
+    @Parameter(names = {"--lazy"},
+        arity = 1,
+        description = "Lazy mode for SQL query execution (default true).")
+    private boolean lazy = true;
+
     /**
      * @return {@code True} if need set {@link DataStorageConfiguration}.
      */
@@ -710,6 +716,13 @@ public class IgniteBenchmarkArguments {
      */
     public long mvccContentionRange() {
         return mvccContentionRange;
+    }
+
+    /**
+     * @return Lazy query execution mode.
+     */
+    public boolean isLazy() {
+        return lazy;
     }
 
     /** {@inheritDoc} */

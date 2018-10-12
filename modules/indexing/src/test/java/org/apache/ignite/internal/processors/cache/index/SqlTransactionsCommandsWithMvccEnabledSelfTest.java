@@ -263,33 +263,6 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
             return arg.getClass();
     }
 
-    /**
-     * Test that attempting to perform a cache PUT operation from within an SQL transaction fails.
-     */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public void testCacheOperationsFromSqlTransaction() {
-        checkCacheOperationThrows("invoke", 1, ENTRY_PROC, X.EMPTY_OBJECT_ARRAY);
-
-        checkCacheOperationThrows("invoke", 1, CACHE_ENTRY_PROC, X.EMPTY_OBJECT_ARRAY);
-
-        checkCacheOperationThrows("invokeAsync", 1, ENTRY_PROC, X.EMPTY_OBJECT_ARRAY);
-
-        checkCacheOperationThrows("invokeAsync", 1, CACHE_ENTRY_PROC, X.EMPTY_OBJECT_ARRAY);
-
-        checkCacheOperationThrows("invokeAll", Collections.singletonMap(1, CACHE_ENTRY_PROC), X.EMPTY_OBJECT_ARRAY);
-
-        checkCacheOperationThrows("invokeAll", Collections.singleton(1), CACHE_ENTRY_PROC, X.EMPTY_OBJECT_ARRAY);
-
-        checkCacheOperationThrows("invokeAll", Collections.singleton(1), ENTRY_PROC, X.EMPTY_OBJECT_ARRAY);
-
-        checkCacheOperationThrows("invokeAllAsync", Collections.singletonMap(1, CACHE_ENTRY_PROC),
-            X.EMPTY_OBJECT_ARRAY);
-
-        checkCacheOperationThrows("invokeAllAsync", Collections.singleton(1), CACHE_ENTRY_PROC, X.EMPTY_OBJECT_ARRAY);
-
-        checkCacheOperationThrows("invokeAllAsync", Collections.singleton(1), ENTRY_PROC, X.EMPTY_OBJECT_ARRAY);
-    }
-
     /** */
     private final static EntryProcessor<Integer, Integer, Object> ENTRY_PROC =
         new EntryProcessor<Integer, Integer, Object>() {

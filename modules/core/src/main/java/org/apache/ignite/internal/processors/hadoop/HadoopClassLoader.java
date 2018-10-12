@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
+import java.util.Collections;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.ClassCache;
@@ -176,11 +177,24 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
         }
 
         // Link libraries to class loader.
-        Vector<Object> ldrLibs = nativeLibraries(this);
+        Object ldrLibsObj = nativeLibraries(this);
 
-        synchronized (ldrLibs) {
-            ldrLibs.addAll(res);
+        if (ldrLibsObj instanceof Vector) {
+            Vector<Object> ldrLibs = (Vector<Object>)ldrLibsObj;
+
+            synchronized (ldrLibs) {
+                ldrLibs.addAll(res);
+            }
         }
+        else if (ldrLibsObj instanceof ConcurrentHashMap) {
+            ConcurrentHashMap<Object, Object> ldrLibs = (ConcurrentHashMap<Object, Object>)ldrLibsObj;
+
+            synchronized (ldrLibs) {
+                for (Object nl : res)
+                    ldrLibs.put(nativeLibraryName(nl), nl);
+            }
+        }
+
     }
 
     /**
@@ -213,9 +227,17 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
                 ClassLoader ldr = APP_CLS_LDR;
 
                 while (ldr != null) {
-                    Vector<Object> ldrLibObjs = nativeLibraries(ldr);
+                    Object ldrLibObject = nativeLibraries(ldr);
 
-                    synchronized (ldrLibObjs) {
+                    Collection ldrLibObjs = null;
+                    if (ldrLibObject instanceof Vector)
+                        ldrLibObjs = (Vector<Object>)ldrLibObject;
+                    else if (ldrLibObject instanceof ConcurrentHashMap)
+                        ldrLibObjs = ((ConcurrentHashMap)ldrLibObject).values();
+                    else
+                        ldrLibObjs = Collections.emptySet();
+
+                    synchronized (ldrLibObject) {
                         for (Object ldrLibObj : ldrLibObjs) {
                             String name = nativeLibraryName(ldrLibObj);
 
@@ -225,7 +247,8 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
 
                                     break;
                                 }
-                            } else {
+                            }
+                            else {
                                 if (name.contains(libName)) {
                                     libObj = ldrLibObj;
 
@@ -264,7 +287,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
      * @param ldr Class loaded.
      * @return Native libraries.
      */
-    private static Vector<Object> nativeLibraries(ClassLoader ldr) {
+    private static Object nativeLibraries(ClassLoader ldr) {
         assert ldr != null;
 
         return U.field(ldr, "nativeLibraries");

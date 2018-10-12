@@ -80,12 +80,12 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
-    @Override public void _testReaderTtlNoTx() throws Exception {
+    @Override public void testReaderTtlNoTx() {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void _testReaderTtlTx() throws Exception {
+    @Override public void testReaderTtlTx() {
         // No-op.
     }
 

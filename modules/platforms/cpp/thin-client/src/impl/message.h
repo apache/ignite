@@ -375,12 +375,12 @@ namespace ignite
             };
 
             /**
-             * Cache key request.
+             * Cache value request.
              *
-             * Request to cache containing single key.
+             * Request to cache containing writable value.
              */
             template<int32_t OpCode>
-            class CacheKeyRequest : public CacheRequest<OpCode>
+            class CacheValueRequest : public CacheRequest<OpCode>
             {
             public:
                 /**
@@ -388,11 +388,11 @@ namespace ignite
                  *
                  * @param cacheId Cache ID.
                  * @param binary Binary cache flag.
-                 * @param key Key.
+                 * @param value Value.
                  */
-                CacheKeyRequest(int32_t cacheId, bool binary, const Writable& key) :
+                CacheValueRequest(int32_t cacheId, bool binary, const Writable& value) :
                     CacheRequest<OpCode>(cacheId, binary),
-                    key(key)
+                    value(value)
                 {
                     // No-op.
                 }
@@ -400,7 +400,7 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                virtual ~CacheKeyRequest()
+                virtual ~CacheValueRequest()
                 {
                     // No-op.
                 }
@@ -414,18 +414,19 @@ namespace ignite
                 {
                     CacheRequest<OpCode>::Write(writer, ver);
 
-                    key.Write(writer);
+                    value.Write(writer);
                 }
 
             private:
                 /** Key. */
-                const Writable& key;
+                const Writable& value;
             };
 
             /**
-             * Cache put request.
+             * Cache key value request.
              */
-            class CachePutRequest : public CacheKeyRequest<RequestType::CACHE_PUT>
+            template<int32_t OpCode>
+            class CacheKeyValueRequest : public CacheValueRequest<OpCode>
             {
             public:
                 /**
@@ -436,12 +437,17 @@ namespace ignite
                  * @param key Key.
                  * @param value Value.
                  */
-                CachePutRequest(int32_t cacheId, bool binary, const Writable& key, const Writable& value);
+                CacheKeyValueRequest(int32_t cacheId, bool binary, const Writable& key, const Writable& value) :
+                    CacheValueRequest<OpCode>(cacheId, binary, key),
+                    value(value)
+                {
+                    // No-op.
+                }
 
                 /**
                  * Destructor.
                  */
-                virtual ~CachePutRequest()
+                virtual ~CacheKeyValueRequest()
                 {
                     // No-op.
                 }
@@ -451,7 +457,12 @@ namespace ignite
                  * @param writer Writer.
                  * @param ver Version.
                  */
-                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
+                {
+                    CacheValueRequest<OpCode>::Write(writer, ver);
+
+                    value.Write(writer);
+                }
 
             private:
                 /** Value. */
@@ -621,9 +632,9 @@ namespace ignite
             };
 
             /**
-             * Cache get response.
+             * Cache value response.
              */
-            class CacheGetResponse : public Response
+            class CacheValueResponse : public Response
             {
             public:
                 /**
@@ -631,12 +642,12 @@ namespace ignite
                  *
                  * @param value Value.
                  */
-                CacheGetResponse(Readable& value);
+                CacheValueResponse(Readable& value);
 
                 /**
                  * Destructor.
                  */
-                virtual ~CacheGetResponse();
+                virtual ~CacheValueResponse();
 
                 /**
                  * Read data if response status is ResponseStatus::SUCCESS.

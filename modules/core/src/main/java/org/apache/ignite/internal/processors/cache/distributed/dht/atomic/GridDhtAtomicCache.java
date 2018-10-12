@@ -1793,7 +1793,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         // This call will convert entry processor invocation results to cache object instances.
                         // Must be done outside topology read lock to avoid deadlocks.
-                        res.returnValue().marshalResult(ctx);
+                        if (res.returnValue() != null)
+                            res.returnValue().marshalResult(ctx);
 
                         break;
                     }

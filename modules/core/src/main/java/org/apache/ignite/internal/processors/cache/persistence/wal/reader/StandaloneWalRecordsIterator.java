@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRe
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.ReadFileHandle;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordDataV1Serializer.EncryptedDataEntry;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentFileInputFactory;
@@ -375,6 +376,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         final IgniteCacheObjectProcessor processor,
         final CacheObjectContext fakeCacheObjCtx,
         final DataEntry dataEntry) throws IgniteCheckedException {
+        if(dataEntry instanceof EncryptedDataEntry)
+            return dataEntry;
 
         final KeyCacheObject key;
         final CacheObject val;

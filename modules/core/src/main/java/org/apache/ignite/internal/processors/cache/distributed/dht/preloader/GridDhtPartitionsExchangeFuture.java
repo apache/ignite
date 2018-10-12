@@ -42,6 +42,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
@@ -72,6 +73,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeFailureMessage;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.ExchangeContext;
@@ -102,6 +104,7 @@ import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -332,6 +335,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** Latest (by update sequences) full message with exchangeId == null, need to be processed right after future is done. */
     private GridDhtPartitionsFullMessage delayedLatestMsg;
+
+    /** Future for wait all exchange listeners comepleted. */
+    private final GridFutureAdapter<?> afterLsnrCompleteFut = new GridFutureAdapter<>();
 
     /**
      * @param cctx Cache context.
@@ -774,6 +780,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
 
+            cctx.cache().registrateProxyRestart(resolveCacheRequests(exchActions), afterLsnrCompleteFut);
+
             updateTopologies(crdNode, cctx.coordinators().currentCoordinator());
 
             switch (exchange) {
@@ -1051,6 +1059,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     assert registerCachesFuture == null : "No caches registration should be scheduled before new caches have started.";
 
                     registerCachesFuture = cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
+
+                    cctx.kernalContext().encryption().onDeActivate(cctx.kernalContext());
 
                     if (log.isInfoEnabled()) {
                         log.info("Successfully deactivated data structures, services and caches [" +
@@ -1828,6 +1838,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable AffinityTopologyVersion res, @Nullable Throwable err) {
+        assert res != null || err != null : "TopVer=" + res + ", err=" + err;
+
         if (isDone() || !done.compareAndSet(false, true))
             return false;
 
@@ -1905,17 +1917,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             cctx.coordinators().onExchangeDone(exchCtx.newMvccCoordinator(), exchCtx.events().discoveryCache(),
                 exchCtx.activeQueries());
 
+        // Create and destory caches and cache proxies.
         cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
 
-        cctx.exchange().onExchangeDone(res, initialVersion(), err);
-
         cctx.kernalContext().authentication().onActivate();
-
-        if (exchActions != null && err == null)
-            exchActions.completeRequestFutures(cctx, null);
-
-        if (stateChangeExchange() && err == null)
-            cctx.kernalContext().state().onStateChangeExchangeDone(exchActions.stateChangeRequest());
 
         Map<T2<Integer, Integer>, Long> localReserved = partHistSuppliers.getReservations(cctx.localNodeId());
 
@@ -1944,7 +1949,29 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             cctx.walState().changeLocalStatesOnExchangeDone(res);
         }
 
+        final Throwable err0 = err;
+
+        // Should execute this listener first, before any external listeners.
+        // Listeners use stack as data structure.
+        listen(f -> {
+            // Update last finished future in the first.
+            cctx.exchange().lastFinishedFuture(this);
+
+            // Complete any affReady futures and update last exchange done version.
+            cctx.exchange().onExchangeDone(res, initialVersion(), err0);
+
+            cctx.cache().completeProxyRestart(resolveCacheRequests(exchActions), initialVersion(), res);
+
+            if (exchActions != null && err0 == null)
+                exchActions.completeRequestFutures(cctx, null);
+
+            if (stateChangeExchange() && err0 == null)
+                cctx.kernalContext().state().onStateChangeExchangeDone(exchActions.stateChangeRequest());
+        });
+
         if (super.onDone(res, err)) {
+            afterLsnrCompleteFut.onDone();
+
             if (log.isDebugEnabled())
                 log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this +
                     ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
@@ -1971,8 +1998,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 ((DiscoveryCustomEvent)firstDiscoEvt).customMessage(null);
 
             if (err == null) {
-                cctx.exchange().lastFinishedFuture(this);
-
                 if (exchCtx != null && (exchCtx.events().hasServerLeft() || exchCtx.events().hasServerJoin())) {
                     ExchangeDiscoveryEvents evts = exchCtx.events();
 
@@ -1988,6 +2013,20 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         return false;
+    }
+
+    /**
+     * @param exchangeActions Exchange actions.
+     * @return Map of cache names and start descriptors.
+     */
+    private Map<String, DynamicCacheChangeRequest> resolveCacheRequests(ExchangeActions exchangeActions) {
+        if (exchangeActions == null)
+            return Collections.emptyMap();
+
+        return exchangeActions.cacheStartRequests()
+            .stream()
+            .map(ExchangeActions.CacheActionData::request)
+            .collect(Collectors.toMap(DynamicCacheChangeRequest::cacheName, r -> r));
     }
 
     /**
@@ -3235,43 +3274,59 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * Collects non local cache group descriptors.
+     *
+     * @return Collection of non local cache group descriptors.
+     */
+    private List<CacheGroupDescriptor> nonLocalCacheGroupDescriptors() {
+        return cctx.affinity().cacheGroups().values().stream()
+            .filter(grpDesc -> grpDesc.config().getCacheMode() != CacheMode.LOCAL)
+            .collect(Collectors.toList());
+    }
+
+    /**
      * Validates that partition update counters and cache sizes for all caches are consistent.
      */
     private void validatePartitionsState() {
         long time = System.currentTimeMillis();
 
-        for (Map.Entry<Integer, CacheGroupDescriptor> e : cctx.affinity().cacheGroups().entrySet()) {
-            CacheGroupDescriptor grpDesc = e.getValue();
-            if (grpDesc.config().getCacheMode() == CacheMode.LOCAL)
-                continue;
+        try {
+            U.doInParallel(
+                cctx.kernalContext().getSystemExecutorService(),
+                nonLocalCacheGroupDescriptors(),
+                new IgniteInClosureX<CacheGroupDescriptor>() {
+                    @Override public void applyx(CacheGroupDescriptor grpDesc) {
+                        CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpDesc.groupId());
 
-            int grpId = e.getKey();
+                        GridDhtPartitionTopology top = grpCtx != null
+                            ? grpCtx.topology()
+                            : cctx.exchange().clientTopology(grpDesc.groupId(), events().discoveryCache());
 
-            CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpId);
+                        // Do not validate read or write through caches or caches with disabled rebalance
+                        // or ExpiryPolicy is set or validation is disabled.
+                        if (grpCtx == null
+                            || grpCtx.config().isReadThrough()
+                            || grpCtx.config().isWriteThrough()
+                            || grpCtx.config().getCacheStoreFactory() != null
+                            || grpCtx.config().getRebalanceDelay() == -1
+                            || grpCtx.config().getRebalanceMode() == CacheRebalanceMode.NONE
+                            || grpCtx.config().getExpiryPolicyFactory() == null
+                            || SKIP_PARTITION_SIZE_VALIDATION)
+                            return;
 
-            GridDhtPartitionTopology top = grpCtx != null ?
-                    grpCtx.topology() :
-                    cctx.exchange().clientTopology(grpId, events().discoveryCache());
-
-            // Do not validate read or write through caches or caches with disabled rebalance
-            // or ExpiryPolicy is set or validation is disabled.
-            if (grpCtx == null
-                    || grpCtx.config().isReadThrough()
-                    || grpCtx.config().isWriteThrough()
-                    || grpCtx.config().getCacheStoreFactory() != null
-                    || grpCtx.config().getRebalanceDelay() == -1
-                    || grpCtx.config().getRebalanceMode() == CacheRebalanceMode.NONE
-                    || grpCtx.config().getExpiryPolicyFactory() == null
-                    || SKIP_PARTITION_SIZE_VALIDATION)
-                continue;
-
-            try {
-                validator.validatePartitionCountersAndSizes(this, top, msgs);
-            }
-            catch (IgniteCheckedException ex) {
-                log.warning("Partition states validation has failed for group: " + grpDesc.cacheOrGroupName() + ". " + ex.getMessage());
-                // TODO: Handle such errors https://issues.apache.org/jira/browse/IGNITE-7833
-            }
+                        try {
+                            validator.validatePartitionCountersAndSizes(GridDhtPartitionsExchangeFuture.this, top, msgs);
+                        }
+                        catch (IgniteCheckedException ex) {
+                            log.warning("Partition states validation has failed for group: " + grpCtx.cacheOrGroupName() + ". " + ex.getMessage());
+                            // TODO: Handle such errors https://issues.apache.org/jira/browse/IGNITE-7833
+                        }
+                    }
+                },
+                null);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to validate partitions state", e);
         }
 
         if (log.isInfoEnabled())
@@ -3284,21 +3339,28 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void assignPartitionsStates() {
         long time = System.currentTimeMillis();
 
-        for (Map.Entry<Integer, CacheGroupDescriptor> e : cctx.affinity().cacheGroups().entrySet()) {
-            CacheGroupDescriptor grpDesc = e.getValue();
-            if (grpDesc.config().getCacheMode() == CacheMode.LOCAL)
-                continue;
+        try {
+            U.doInParallel(
+                cctx.kernalContext().getSystemExecutorService(),
+                nonLocalCacheGroupDescriptors(),
+                new IgniteInClosureX<CacheGroupDescriptor>() {
+                    @Override public void applyx(CacheGroupDescriptor grpDesc) {
+                        CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpDesc.groupId());
 
-            CacheGroupContext grpCtx = cctx.cache().cacheGroup(e.getKey());
+                        GridDhtPartitionTopology top = grpCtx != null
+                            ? grpCtx.topology()
+                            : cctx.exchange().clientTopology(grpDesc.groupId(), events().discoveryCache());
 
-            GridDhtPartitionTopology top = grpCtx != null ?
-                grpCtx.topology() :
-                cctx.exchange().clientTopology(e.getKey(), events().discoveryCache());
-
-            if (!CU.isPersistentCache(grpDesc.config(), cctx.gridConfig().getDataStorageConfiguration()))
-                assignPartitionSizes(top);
-            else
-                assignPartitionStates(top);
+                        if (!CU.isPersistentCache(grpDesc.config(), cctx.gridConfig().getDataStorageConfiguration()))
+                            assignPartitionSizes(top);
+                        else
+                            assignPartitionStates(top);
+                    }
+                },
+                null);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to assign partition states", e);
         }
 
         if (log.isInfoEnabled())

@@ -28,6 +28,7 @@ import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
@@ -423,6 +424,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Indexing manager.
      */
     public GridIndexingManager indexing();
+
+    /**
+     * Gets encryption manager.
+     *
+     * @return Encryption manager.
+     */
+    public GridEncryptionManager encryption();
 
     /**
      * Gets workers registry.

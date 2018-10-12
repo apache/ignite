@@ -63,10 +63,12 @@ class SegmentArchivedStorage extends SegmentObservable {
     /**
      * @param lastAbsArchivedIdx New value of last archived segment index.
      */
-    synchronized void setLastArchivedAbsoluteIndex(long lastAbsArchivedIdx) {
-        this.lastAbsArchivedIdx = lastAbsArchivedIdx;
+    void setLastArchivedAbsoluteIndex(long lastAbsArchivedIdx) {
+        synchronized (this) {
+            this.lastAbsArchivedIdx = lastAbsArchivedIdx;
 
-        notifyAll();
+            notifyAll();
+        }
 
         notifyObservers(lastAbsArchivedIdx);
     }

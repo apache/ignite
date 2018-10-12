@@ -1830,6 +1830,9 @@ public class GridNioServer<T> {
                 }
                 else if (err != null)
                     lsnr.onFailure(SYSTEM_WORKER_TERMINATION, err);
+                else
+                    // In case of closed == true, prevent general-case termination handling.
+                    cancel();
             }
         }
 
@@ -2906,6 +2909,9 @@ public class GridNioServer<T> {
                     lsnr.onFailure(CRITICAL_ERROR, err);
                 else if (err != null)
                     lsnr.onFailure(SYSTEM_WORKER_TERMINATION, err);
+                else
+                    // In case of closed == true, prevent general-case termination handling.
+                    cancel();
             }
         }
 

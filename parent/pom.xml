@@ -89,7 +89,7 @@
         <jsonlib.bundle.version>2.4_1</jsonlib.bundle.version>
         <jsonlib.version>2.4</jsonlib.version>
         <jtidy.version>r938</jtidy.version>
-        <kafka.version>0.10.0.1</kafka.version>
+        <kafka.version>1.1.1</kafka.version>
         <karaf.version>4.0.2</karaf.version>
         <log4j.version>2.11.0</log4j.version>
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
@@ -491,7 +491,7 @@
                         </groups>
                         <header>
                             <![CDATA[
-                                    Ignite - In-Memory Data Fabric
+                                    Ignite - In-Memory Database and Caching Platform
                                 ]]>
                         </header>
                         <bottom>
@@ -519,7 +519,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <b>Ignite Fabric</b>
+                                                            <b>Ignite Database and Caching Platform</b>
                                                         </td>
                                                         <td>:&nbsp;&nbsp;
                                                             ver. <strong>${project.version}</strong>

@@ -22,9 +22,12 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -55,8 +58,24 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
 
                 return res;
             }
+
             case SQL:
                 return getAllSql(cache);
+
+            case INVOKE: {
+                Map<Integer, MvccTestAccount> res = new HashMap<>();
+
+                CacheEntryProcessor<Integer, MvccTestAccount, MvccTestAccount> ep = new GetEntryProcessor();
+
+                for (Integer key : keys) {
+                    MvccTestAccount val = cache.cache.invoke(key, ep);
+
+                    if(val != null)
+                        res.put(key, val);
+                }
+
+                return res;
+            }
             default:
                 fail();
         }
@@ -65,7 +84,7 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
     }
 
     /** {@inheritDoc} */
-    protected void updateEntries(
+    @Override protected void updateEntries(
         TestCache<Integer, MvccTestAccount> cache,
         Map<Integer, MvccTestAccount> entries,
         WriteMode writeMode) {
@@ -79,6 +98,7 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
 
                 break;
             }
+
             case DML: {
                 for (Map.Entry<Integer, MvccTestAccount> e : entries.entrySet()) {
                     if (e.getValue() == null)
@@ -88,13 +108,23 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
                 }
                 break;
             }
+
+            case INVOKE: {
+                GetAndPutEntryProcessor<Integer, MvccTestAccount> ep = new GetAndPutEntryProcessor<>();
+
+                for (final Map.Entry<Integer, MvccTestAccount> e : entries.entrySet())
+                    cache.cache.invoke(e.getKey(), ep, e.getValue());
+
+                break;
+            }
+
             default:
                 fail();
         }
     }
 
     /** {@inheritDoc} */
-    protected void removeEntries(
+    @Override protected void removeEntries(
         TestCache<Integer, MvccTestAccount> cache,
         Set<Integer> keys,
         WriteMode writeMode) {
@@ -108,6 +138,14 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
             case DML: {
                 for (Integer key : keys)
                     removeSql(cache, key);
+
+                break;
+            }
+            case INVOKE: {
+                CacheEntryProcessor<Integer, MvccTestAccount, MvccTestAccount> ep = new RemoveEntryProcessor<>();
+
+                for (Integer key : keys)
+                    cache.cache.invoke(key, ep);
 
                 break;
             }

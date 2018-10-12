@@ -298,13 +298,13 @@ public class GridFunc {
      * @param delim Delimiter (optional).
      * @return Concatenated string.
      */
-    public static String concat(Iterable<String> c, @Nullable String delim) {
+    public static String concat(Iterable<?> c, @Nullable String delim) {
         A.notNull(c, "c");
 
         IgniteReducer<? super String, String> f = new StringConcatReducer(delim);
 
-        for (String x : c)
-            if (!f.collect(x))
+        for (Object x : c)
+            if (!f.collect(x == null ? null : x.toString()))
                 break;
 
         return f.reduce();

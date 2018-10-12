@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.tree.mvcc.data;
 
 import java.util.List;
+import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 
@@ -50,4 +51,10 @@ public interface MvccUpdateResult {
      * @return Flag whether tx has overridden it's own update.
      */
     public boolean isOwnValueOverridden();
+
+    /**
+     *
+     * @return Entry processor invoke result.
+     */
+    CacheInvokeResult invokeResult();
 }

@@ -498,7 +498,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             return;
         }
 
-        assert !tx.txState().mvccEnabled(cctx) || mvccCrd != null;
+        assert !tx.txState().mvccEnabled() || mvccCrd != null;
 
         if (mvccCrd != null)
             initMvccVersionFuture(keyLockFut != null ? 2 : 1, remap);
