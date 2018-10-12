@@ -834,7 +834,8 @@ public class CommandHandler {
 
         VisorCachesConfigurationTaskArg taskArg = new VisorCachesConfigurationTaskArg(cacheArgs.regex());
 
-        Map<String, Map<String, Object>> res = executeTask(client, VisorCachesConfigurationTask.class, taskArg);
+        Map<String, Map<String, Object>> res =
+            executeTaskByNameOnNode(client, VisorCachesConfigurationTask.class.getName(), taskArg, BROADCAST_UUID);
 
         if (!F.isEmpty(res)) {
             for (Map.Entry<String, Map<String, Object>> entry : res.entrySet()) {
