@@ -63,53 +63,9 @@ public class IgniteCacheTestSuite5 extends TestSuite {
 
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 5");
 
-        suite.addTestSuite(CacheSerializableTransactionsTest.class);
-        suite.addTestSuite(CacheNearReaderUpdateTest.class);
-        suite.addTestSuite(IgniteCacheStoreCollectionTest.class);
-        suite.addTestSuite(IgniteCacheWriteBehindNoUpdateSelfTest.class);
-        suite.addTestSuite(IgniteCachePutStackOverflowSelfTest.class);
-        suite.addTestSuite(CacheKeepBinaryTransactionTest.class);
+        for (int i = 0; i < 100; i++)
+            suite.addTestSuite(IgniteCacheAtomicProtocolTest.class);
 
-        suite.addTestSuite(CacheLateAffinityAssignmentTest.class);
-        suite.addTestSuite(CacheLateAffinityAssignmentNodeJoinValidationTest.class);
-        suite.addTestSuite(EntryVersionConsistencyReadThroughTest.class);
-        suite.addTestSuite(IgniteCacheSyncRebalanceModeSelfTest.class);
-
-        suite.addTest(IgniteCacheReadThroughEvictionsVariationsSuite.suite());
-        suite.addTestSuite(IgniteCacheTxIteratorSelfTest.class);
-
-        suite.addTestSuite(ClusterStatePartitionedSelfTest.class);
-        suite.addTestSuite(ClusterStateReplicatedSelfTest.class);
-        suite.addTestSuite(ClusterReadOnlyModeTest.class);
-        suite.addTestSuite(IgniteCachePartitionLossPolicySelfTest.class);
-        suite.addTestSuite(IgniteCacheGroupsPartitionLossPolicySelfTest.class);
-
-        suite.addTestSuite(CacheRebalancingSelfTest.class);
-        suite.addTestSuite(CacheManualRebalancingTest.class);
-
-        // Affinity tests.
-        suite.addTestSuite(GridCacheAffinityBackupsSelfTest.class);
-        suite.addTestSuite(IgniteCacheAffinitySelfTest.class);
-        suite.addTestSuite(AffinityClientNodeSelfTest.class);
-        suite.addTestSuite(LocalAffinityFunctionTest.class);
-        suite.addTestSuite(AffinityHistoryCleanupTest.class);
-
-        suite.addTestSuite(AffinityDistributionLoggingTest.class);
-
-        suite.addTestSuite(IgniteCacheAtomicProtocolTest.class);
-
-        suite.addTestSuite(PartitionsExchangeOnDiscoveryHistoryOverflowTest.class);
-
-        suite.addTestSuite(GridCachePartitionExchangeManagerHistSizeTest.class);
-
-        suite.addTestSuite(NotMappedPartitionInTxTest.class);
-
-        suite.addTestSuite(ConcurrentCacheStartTest.class);
-
-
-        //suite.addTestSuite(GridCacheAtomicPreloadSelfTest.class);
-        //suite.addTestSuite(IgniteCacheContainsKeyColocatedAtomicSelfTest.class);
-        //suite.addTestSuite(IgniteCacheContainsKeyNearAtomicSelfTest.class);
         return suite;
     }
 }

@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeMan
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxyImpl;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
@@ -795,6 +796,30 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         }
 
         log.info("awaitPartitionMapExchange finished");
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @param minorTopVer Minor topology version
+     * @throws IgniteCheckedException If failed to wait.
+     */
+    protected void awaitForAffinityTopology(int topVer, int minorTopVer) throws IgniteCheckedException {
+        awaitForAffinityTopology(new AffinityTopologyVersion(topVer, minorTopVer));
+    }
+
+    /**
+     * @param ver Affinity topology version.
+     * @throws IgniteCheckedException If failed to wait.
+     */
+    protected void awaitForAffinityTopology(AffinityTopologyVersion ver) throws IgniteCheckedException {
+        new AffinityTopologyVersion(2, 1);
+        for (Ignite ignite : G.allGrids()) {
+            IgniteInternalFuture<?> fut = ((IgniteEx)ignite).context().cache().context().exchange()
+                .affinityReadyFuture(ver);
+
+            if (fut != null)
+                fut.get(getTestTimeout());
+        }
     }
 
     /**
