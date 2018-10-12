@@ -2570,6 +2570,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (partitions == null && twoStepQry.derivedPartitions() != null) {
             try {
                 partitions = calculateQueryPartitions(twoStepQry.derivedPartitions(), qry.getArgs());
+                if (partitions.length == 0) //here we know that result of requested query is empty
+                    return new QueryCursorImpl<List<?>>(new Iterable<List<?>>(){
+                        @Override public Iterator<List<?>> iterator() {
+                            return new Iterator<List<?>>(){
+
+                                @Override public boolean hasNext() {
+                                    return false;
+                                }
+
+                                @Override public List<?> next() {
+                                    return null;
+                                }
+                            };
+                        }
+                    });
             }
             catch (IgniteCheckedException e) {
                 throw new CacheException("Failed to calculate derived partitions: [qry=" + qry.getSql() + ", params=" +
@@ -3628,28 +3643,65 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         ArrayList<Integer> list = new ArrayList<>(partInfoList.length);
 
         for (CacheQueryPartitionInfo partInfo: partInfoList) {
-            int partId = (partInfo.partition() >= 0) ? partInfo.partition() :
-                bindPartitionInfoParameter(partInfo, params);
+            int[] partIds = new int[1];
 
-            int i = 0;
+            if (partInfo.partition() >= 0)
+                partIds[0] = partInfo.partition();
+            else if (partInfo.intersections() == null)
+                partIds[0] = bindPartitionInfoParameter(partInfo, params);
+            else{//Case when AND logic is processed for parameterised query
+                if (partInfo.intersections().length == 0)
+                    continue;
+                else if (partInfo.intersections().length == 1)
+                    partIds = calculateQueryPartitions(partInfo.intersections()[0], params);
+                else {
+                    int[] extracted = calculateQueryPartitions(partInfo.intersections()[0], params);
 
-            while (i < list.size() && list.get(i) < partId)
-                i++;
+                    ArrayList<Integer> tmpRes = new ArrayList<>(extracted.length);
 
-            if (i < list.size()) {
-                if (list.get(i) > partId)
-                    list.add(i, partId);
+                    for (int extr : extracted)
+                        tmpRes.add(extr);
+
+                    for (int j=1; j<partInfo.intersections().length; j++){
+                        int[] bJ = calculateQueryPartitions(partInfo.intersections()[j], params);
+
+                        ArrayList<Integer> innerResult = new ArrayList<>(tmpRes.size() + bJ.length);
+
+                        //intersect tmpRes and bJ
+                        for (Integer a : tmpRes)
+                            for (int b : bJ)
+                                if (a == b)
+                                    innerResult.add(a);
+
+                        tmpRes = innerResult;
+                    }
+                    partIds = new int[tmpRes.size()];
+
+                    for (int i = 0; i < tmpRes.size(); i++)
+                        partIds[i] = tmpRes.get(i);
+                }
             }
-            else
-                list.add(partId);
+
+            for(int partId : partIds) {
+                int i = 0;
+
+                while (i < list.size() && list.get(i) < partId)
+                    i++;
+
+                if (i < list.size())
+                    if (list.get(i) > partId)
+                        list.add(i, partId);
+                else
+                    list.add(partId);
+            }
         }
 
-        int[] result = new int[list.size()];
+        int[] res = new int[list.size()];
 
         for (int i = 0; i < list.size(); i++)
-            result[i] = list.get(i);
+            res[i] = list.get(i);
 
-        return result;
+        return res;
     }
 
     /**

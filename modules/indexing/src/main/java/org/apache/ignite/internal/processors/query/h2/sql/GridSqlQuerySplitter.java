@@ -2320,7 +2320,7 @@ public class GridSqlQuerySplitter {
                 CacheQueryPartitionInfo[] partsRight = extractPartition(op.child(1), ctx);
 
                 if (partsLeft != null && partsRight != null)
-                    return null; //kind of conflict (_key = 1) and (_key = 2)
+                    return intersectPartitionInfo(partsLeft, partsRight);
 
                 if (partsLeft != null)
                     return partsLeft;
@@ -2378,8 +2378,8 @@ public class GridSqlQuerySplitter {
      * @param ctx Kernal Context.
      * @return partition info, or {@code null} if none identified
      */
-    private static CacheQueryPartitionInfo extractPartitionFromEquality(GridSqlOperation op, GridKernalContext ctx)
-        throws IgniteCheckedException {
+    private static CacheQueryPartitionInfo extractPartitionFromEquality(GridSqlOperation op,
+        GridKernalContext ctx) throws IgniteCheckedException {
 
         assert op.operationType() == GridSqlOperationType.EQUAL;
 
@@ -2427,6 +2427,86 @@ public class GridSqlQuerySplitter {
                 col.getType(), GridSqlParameter.class.cast(cnstOrPar).index());
         }
         return null;
+    }
+
+    /**
+     * Merges two partition info arrays, removing duplicates
+     *
+     * @param a Partition info array.
+     * @param b Partition info array.
+     * @return Result.
+     */
+    private static CacheQueryPartitionInfo[] intersectPartitionInfo(
+        CacheQueryPartitionInfo[] a,
+        CacheQueryPartitionInfo[] b) {
+        assert a != null;
+        assert b != null;
+
+        if (a.length == 0 || b.length == 0)
+            return new CacheQueryPartitionInfo[0];
+
+        ArrayList<CacheQueryPartitionInfo> aWithParams = findParameterized(a);
+        ArrayList<CacheQueryPartitionInfo> bWithParams = findParameterized(b);
+
+        if (aWithParams.size() > 0 && bWithParams.size() > 0){
+            CacheQueryPartitionInfo[][] holder = new CacheQueryPartitionInfo[2][];
+
+            holder[0] = a;
+
+            holder[1] = b;
+
+            CacheQueryPartitionInfo[] res = new CacheQueryPartitionInfo[1];
+
+            res[0] = new CacheQueryPartitionInfo(holder);
+
+            return res;
+        } else if(aWithParams.size() > 0) {
+            CacheQueryPartitionInfo[][] holder = new CacheQueryPartitionInfo[2][];
+
+            holder[0] = aWithParams.toArray(new CacheQueryPartitionInfo[0]);
+
+            holder[1] = b;
+
+            CacheQueryPartitionInfo[] res = new CacheQueryPartitionInfo[1];
+
+            res[0] = new CacheQueryPartitionInfo(holder);
+
+            return res;
+        } else if(bWithParams.size() > 0){
+            CacheQueryPartitionInfo[][] holder = new CacheQueryPartitionInfo[2][];
+
+            holder[0] = a;
+
+            holder[1] = bWithParams.toArray(new CacheQueryPartitionInfo[0]);
+
+            CacheQueryPartitionInfo[] res = new CacheQueryPartitionInfo[1];
+
+            res[0] = new CacheQueryPartitionInfo(holder);
+
+            return res;
+        } else {
+            ArrayList<CacheQueryPartitionInfo> list = new ArrayList<>(a.length + b.length);
+
+            for (CacheQueryPartitionInfo partA : a) {
+                for (CacheQueryPartitionInfo partB : b) {
+                    if (partA.equals(partB))
+                        list.add(partA);
+                }
+            }
+
+            return list.toArray(new CacheQueryPartitionInfo[0]);
+        }
+    }
+
+    private static ArrayList<CacheQueryPartitionInfo> findParameterized(CacheQueryPartitionInfo[] parts){
+        ArrayList<CacheQueryPartitionInfo> res = new ArrayList<CacheQueryPartitionInfo>(parts.length);
+
+        for (CacheQueryPartitionInfo p : parts) {
+            if (p.partition() < 0)
+                res.add(p);
+        }
+
+        return res;
     }
 
     /**

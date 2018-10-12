@@ -54,6 +54,15 @@ public class CacheQueryPartitionInfo {
     private final int paramIdx;
 
     /**
+     * @param intersections Arrays to be calculated by AND logic
+     */
+    private final CacheQueryPartitionInfo[][] intersections;
+
+    public CacheQueryPartitionInfo(CacheQueryPartitionInfo[][] intersections) {
+        this(-1, null, null, -1, -1, intersections);
+    }
+
+    /**
      * @param partId Partition id, or -1 if parameter binding required.
      * @param cacheName Cache name required for partition calculation.
      * @param tableName Table name required for proper type conversion.
@@ -61,14 +70,28 @@ public class CacheQueryPartitionInfo {
      * @param paramIdx Query parameter index required for partition calculation.
      */
     public CacheQueryPartitionInfo(int partId, String cacheName, String tableName, int dataType, int paramIdx) {
+        this(partId, cacheName, tableName, dataType, paramIdx, null);
+    }
+
+    /**
+     * @param partId Partition id, or -1 if parameter binding required.
+     * @param cacheName Cache name required for partition calculation.
+     * @param tableName Table name required for proper type conversion.
+     * @param dataType Required data type id for the query parameter.
+     * @param paramIdx Query parameter index required for partition calculation.
+     * @param intersections Arrays to be calculated by AND logic
+     */
+    public CacheQueryPartitionInfo(int partId, String cacheName, String tableName, int dataType, int paramIdx,
+        CacheQueryPartitionInfo[][] intersections) {
         // In case partition is not known, both cacheName and tableName must be provided.
-        assert (partId >= 0) ^ ((cacheName != null) && (tableName != null));
+        assert (partId >= 0) ^ ((cacheName != null) && (tableName != null)) ^ (intersections != null);
 
         this.partId = partId;
         this.cacheName = cacheName;
         this.tableName = tableName;
         this.dataType = dataType;
         this.paramIdx = paramIdx;
+        this.intersections = intersections;
     }
 
     /**
@@ -100,17 +123,24 @@ public class CacheQueryPartitionInfo {
     }
 
     /**
+     * @return Intersecting sets required for partition calculation.
+     */
+    public CacheQueryPartitionInfo[][] intersections() {
+        return intersections;
+    }
+
+    /**
      * @return Query parameter index required for partition calculation.
      */
     public int paramIdx() {
         return paramIdx;
     }
-
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return partId ^ dataType ^ paramIdx ^
             (cacheName == null ? 0 : cacheName.hashCode()) ^
-            (tableName == null ? 0 : tableName.hashCode());
+            (tableName == null ? 0 : tableName.hashCode()) ^
+            (intersections == null ? 0 : intersections.hashCode());
     }
 
     /** {@inheritDoc} */
@@ -127,7 +157,7 @@ public class CacheQueryPartitionInfo {
         if (partId >= 0)
             return partId == other.partId;
 
-        if (other.cacheName == null || other.tableName == null)
+        if (other.cacheName == null || other.tableName == null || other.intersections != null || intersections != null)
             return false;
 
         return other.cacheName.equals(cacheName) &&

@@ -473,6 +473,8 @@ public class GridReduceQueryExecutor {
      */
     private Map<ClusterNode, IntArray> stableDataNodes(boolean isReplicatedOnly, AffinityTopologyVersion topVer,
         List<Integer> cacheIds, int[] parts, long qryId) {
+        assert !F.isEmpty(cacheIds);
+
         GridCacheContext<?, ?> cctx = cacheContext(cacheIds.get(0));
 
         // If the first cache is not partitioned, find it (if it's present) and move it to index 0.
@@ -1730,7 +1732,7 @@ public class GridReduceQueryExecutor {
         try {
             Session ses = (Session)conn.getSession();
 
-            CreateTableData data  = new CreateTableData();
+            CreateTableData data = new CreateTableData();
 
             data.tableName = "T___";
             data.schema = ses.getDatabase().getSchema(ses.getCurrentSchemaName());
@@ -1918,7 +1920,8 @@ public class GridReduceQueryExecutor {
                 rq.queryPartitions(toArray(partsMap.get(node)));
 
                 return rq;
-            } else if (msg instanceof GridH2DmlRequest) {
+            }
+            else if (msg instanceof GridH2DmlRequest) {
                 GridH2DmlRequest rq = new GridH2DmlRequest((GridH2DmlRequest)msg);
 
                 rq.queryPartitions(toArray(partsMap.get(node)));
