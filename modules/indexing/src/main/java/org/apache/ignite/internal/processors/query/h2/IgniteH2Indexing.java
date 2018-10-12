@@ -2330,6 +2330,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Prepared prepared = prep.prepared();
 
+        if (GridSqlQueryParser.isExplainUpdate(prepared))
+            throw new IgniteSQLException("Explains of update queries are not supported.",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
         checkQueryType(qry, prepared.isQuery());
 
         String remainingSql = prep.remainingSql();
