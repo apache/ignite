@@ -272,13 +272,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     /** Decompressor. */
     private volatile FileDecompressor decompressor;
 
-    /**
-     * Position of the last seen WAL pointer can be stored in-memory only and should survive
-     * activate\deactivate node events. Used for resumming logging from the last WAL pointer.
-     * Can be assigned only by {@link FileWriteHandle#position()}.
-     */
-    private volatile  WALPointer walTail;
-
     /** */
     private final ThreadLocal<WALPointer> lastWALPtr = new ThreadLocal<>();
 
@@ -498,8 +491,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         stop0(true);
 
-        walTail = currentHnd.position();
-
         currentHnd = null;
     }
 
@@ -514,18 +505,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /** {@inheritDoc} */
-    @Override public void resumeLogging() throws IgniteCheckedException {
-        assert walTail != null;
-
-        resumeLogging(walTail);
-    }
-
-    /** {@inheritDoc} */
     @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
         assert currentHnd == null;
         assert lastPtr == null || lastPtr instanceof FileWALPointer;
-        assert (isArchiverEnabled() && archiver != null) || (!isArchiverEnabled() && archiver == null) :
-            "Trying to restore FileWriteHandle on deactivated write ahead log manager";
 
         FileWALPointer filePtr = (FileWALPointer)lastPtr;
 
@@ -550,11 +532,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         if (walAutoArchiveAfterInactivity > 0)
             scheduleNextInactivityPeriodElapsedCheck();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void suspendLogging() throws IgniteCheckedException {
-        onDeActivate(cctx.kernalContext());
     }
 
     /**

@@ -176,18 +176,15 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         boolean activationFailed = false;
         try {
             grid = startGrid(0);
+            grid.cluster().active(true);
         }
-        catch (IgniteCheckedException e) {
-            boolean interrupted = Thread.interrupted();
-
-            if (interrupted)
-                log.warning("Ignore interrupted excpetion [" +
-                    "thread=" + Thread.currentThread().getName() + ']', e);
+        catch (IgniteException e) {
+            log.warning("Activation test exception", e);
 
             activationFailed = true;
         }
 
-        Assert.assertTrue("Ignite instance startup must be failed", activationFailed);
+        Assert.assertTrue("Activation must be failed", activationFailed);
 
         // Grid should be automatically stopped after checkpoint fail.
         awaitStop(grid);
