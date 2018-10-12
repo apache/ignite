@@ -85,8 +85,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
 
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
-        return TRANSACTIONAL_SNAPSHOT;
-//        return TRANSACTIONAL;
+        return TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */
@@ -118,33 +117,42 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
         stopAllGrids();
     }
 
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testOptimisticPrimaryNodeFailureRecovery1() throws Exception {
-//        primaryNodeFailure(false, false, true);
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testOptimisticPrimaryNodeFailureRecovery2() throws Exception {
-//        primaryNodeFailure(true, false, true);
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testOptimisticPrimaryNodeFailureRollback1() throws Exception {
-//        primaryNodeFailure(false, true, true);
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testOptimisticPrimaryNodeFailureRollback2() throws Exception {
-//        primaryNodeFailure(true, true, true);
-//    }
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticPrimaryNodeFailureRecovery1() throws Exception {
+        if (atomicityMode() == TRANSACTIONAL_SNAPSHOT) return;
+
+        primaryNodeFailure(false, false, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticPrimaryNodeFailureRecovery2() throws Exception {
+        if (atomicityMode() == TRANSACTIONAL_SNAPSHOT) return;
+
+        primaryNodeFailure(true, false, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticPrimaryNodeFailureRollback1() throws Exception {
+        if (atomicityMode() == TRANSACTIONAL_SNAPSHOT) return;
+
+        primaryNodeFailure(false, true, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticPrimaryNodeFailureRollback2() throws Exception {
+        if (atomicityMode() == TRANSACTIONAL_SNAPSHOT) return;
+
+        primaryNodeFailure(true, true, true);
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -270,50 +278,41 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
         checkKey(key2, rollback, key2Nodes, 0);
     }
 
-    /** */
-    private static long updateCoutner(Ignite ign, Object key) {
-        return dataStore(((IgniteEx)ign).cachex(DEFAULT_CACHE_NAME).context(), key)
-            .map(IgniteCacheOffheapManager.CacheDataStore::updateCounter)
-            .orElse(0L);
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticPrimaryAndOriginatingNodeFailureRecovery1() throws Exception {
+        if (atomicityMode() == TRANSACTIONAL_SNAPSHOT) return;
+
+        primaryAndOriginatingNodeFailure(false, false, true);
     }
 
-    /** */
-    private static Optional<IgniteCacheOffheapManager.CacheDataStore> dataStore(
-        GridCacheContext<?, ?> cctx, Object key) {
-        int p = cctx.affinity().partition(key);
-        IgniteCacheOffheapManager offheap = cctx.offheap();
-        return StreamSupport.stream(offheap.cacheDataStores().spliterator(), false)
-            .filter(ds -> ds.partId() == p)
-            .findFirst();
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticPrimaryAndOriginatingNodeFailureRecovery2() throws Exception {
+        if (atomicityMode() == TRANSACTIONAL_SNAPSHOT) return;
+
+        primaryAndOriginatingNodeFailure(true, false, true);
     }
 
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testOptimisticPrimaryAndOriginatingNodeFailureRecovery1() throws Exception {
-//        primaryAndOriginatingNodeFailure(false, false, true);
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testOptimisticPrimaryAndOriginatingNodeFailureRecovery2() throws Exception {
-//        primaryAndOriginatingNodeFailure(true, false, true);
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testOptimisticPrimaryAndOriginatingNodeFailureRollback1() throws Exception {
-//        primaryAndOriginatingNodeFailure(false, true, true);
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testOptimisticPrimaryAndOriginatingNodeFailureRollback2() throws Exception {
-//        primaryAndOriginatingNodeFailure(true, true, true);
-//    }
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticPrimaryAndOriginatingNodeFailureRollback1() throws Exception {
+        if (atomicityMode() == TRANSACTIONAL_SNAPSHOT) return;
+
+        primaryAndOriginatingNodeFailure(false, true, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticPrimaryAndOriginatingNodeFailureRollback2() throws Exception {
+        if (atomicityMode() == TRANSACTIONAL_SNAPSHOT) return;
+
+        primaryAndOriginatingNodeFailure(true, true, true);
+    }
 
     /**
      * @throws Exception If failed.
@@ -352,13 +351,13 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     private void primaryAndOriginatingNodeFailure(final boolean locBackupKey,
         final boolean rollback,
         boolean optimistic)
-        throws Exception
-    {
+        throws Exception {
         // TODO IGNITE-6174: when exchanges can be merged test fails because of IGNITE-6174.
         System.setProperty(IGNITE_EXCHANGE_COMPATIBILITY_VER_1, "true");
 
         try {
             int orig = 0;
+
             IgniteCache<Integer, Integer> origCache = jcache(orig);
 
             Affinity<Integer> aff = ignite(0).affinity(DEFAULT_CACHE_NAME);
@@ -452,11 +451,13 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     /** */
     private void checkKey(Integer key, boolean rollback, Collection<ClusterNode> keyNodes, long initUpdCntr) {
         if (rollback) {
-//            for (Ignite ignite : G.allGrids()) {
-//                IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
-//
-//                assertNull("Unexpected value for: " + ignite.name(), cache.localPeek(key));
-//            }
+            if (atomicityMode() != TRANSACTIONAL_SNAPSHOT) {
+                for (Ignite ignite : G.allGrids()) {
+                    IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+                    assertNull("Unexpected value for: " + ignite.name(), cache.localPeek(key));
+                }
+            }
 
             for (Ignite ignite : G.allGrids()) {
                 IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
@@ -486,10 +487,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
 
             assertTrue("Failed to find key node.", found);
         }
-        else {
-            if (keyNodes.isEmpty())
-                return;
-
+        else if (!keyNodes.isEmpty()) {
             boolean found = false;
 
             long cntr0 = -1;
@@ -552,6 +550,23 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
         }, 5000);
 
         assertTrue("Failed to wait for tx.", wait);
+    }
+
+    /** */
+    private static long updateCoutner(Ignite ign, Object key) {
+        return dataStore(((IgniteEx)ign).cachex(DEFAULT_CACHE_NAME).context(), key)
+            .map(IgniteCacheOffheapManager.CacheDataStore::updateCounter)
+            .orElse(0L);
+    }
+
+    /** */
+    private static Optional<IgniteCacheOffheapManager.CacheDataStore> dataStore(
+        GridCacheContext<?, ?> cctx, Object key) {
+        int p = cctx.affinity().partition(key);
+
+        return StreamSupport.stream(cctx.offheap().cacheDataStores().spliterator(), false)
+            .filter(ds -> ds.partId() == p)
+            .findFirst();
     }
 
     /**
