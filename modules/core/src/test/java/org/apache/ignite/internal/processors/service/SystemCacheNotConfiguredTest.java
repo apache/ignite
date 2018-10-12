@@ -26,8 +26,6 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -36,9 +34,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
     /** */
     private final ByteArrayOutputStream errContent = new ByteArrayOutputStream();
-
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private final PrintStream originalErr = System.err;
@@ -54,7 +49,7 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
 
         TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
 
-        discoverySpi.setIpFinder(ipFinder);
+        discoverySpi.setIpFinder(LOCAL_IP_FINDER);
         cfg.setDiscoverySpi(discoverySpi);
 
         if("server".equals(igniteInstanceName))
