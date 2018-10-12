@@ -15,21 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor;
+package org.apache.ignite.internal.dto;
 
 import java.io.IOException;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
-import org.apache.ignite.internal.dto.IgniteDataTransferObjectOutput;
 import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Wrapper for object output.
- * @deprecated Use {@link IgniteDataTransferObjectOutput} instead. This class may be removed in Ignite 3.0.
  */
-public class VisorDataTransferObjectOutput implements ObjectOutput {
+public class IgniteDataTransferObjectOutput implements ObjectOutput {
     /** */
     private final ObjectOutput out;
 
@@ -45,7 +43,7 @@ public class VisorDataTransferObjectOutput implements ObjectOutput {
      * @param out Target stream.
      * @throws IOException If an I/O error occurs.
      */
-    public VisorDataTransferObjectOutput(ObjectOutput out) throws IOException {
+    public IgniteDataTransferObjectOutput(ObjectOutput out) throws IOException {
         this.out = out;
 
         bos = new GridByteArrayOutputStream();
