@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -332,19 +331,15 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
                 map(false);
             }
             else {
-                fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                        try {
-                            fut.get();
-
+                cctx.time().waitAsync(fut, tx.remainingTime(), (e, timedOut) -> {
+                    try {
+                        if (e != null || timedOut)
+                            onDone(timedOut ? tx.timeoutException() : e);
+                        else
                             mapOnTopology();
-                        }
-                        catch (IgniteCheckedException e) {
-                            onDone(e);
-                        }
-                        finally {
-                            cctx.shared().txContextReset();
-                        }
+                    }
+                    finally {
+                        cctx.shared().txContextReset();
                     }
                 });
             }
