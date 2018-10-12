@@ -330,7 +330,7 @@ public class DdlStatementsProcessor {
             else if (stmt0 instanceof GridSqlCreateTable) {
                 GridSqlCreateTable cmd = (GridSqlCreateTable)stmt0;
 
-                ctx.security().authorize(cmd.cacheName(), SecurityPermission.CACHE_CREATE, SecurityContextHolder.get());
+                ctx.security().authorize(cmd.tableName(), SecurityPermission.CACHE_CREATE, SecurityContextHolder.get());
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
@@ -365,7 +365,7 @@ public class DdlStatementsProcessor {
 
                 GridH2Table tbl = dataTableWithRetry(cmd.schemaName(), cmd.tableName());
 
-                String cacheName = tbl != null ? tbl.cacheName() : "Unknown cache";
+                String cacheName = tbl != null ? tbl.cacheName() : cmd.tableName();
 
                 ctx.security().authorize(cacheName, SecurityPermission.CACHE_DESTROY, SecurityContextHolder.get());
 
