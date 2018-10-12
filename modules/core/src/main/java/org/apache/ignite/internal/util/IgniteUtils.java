@@ -563,7 +563,6 @@ public abstract class IgniteUtils {
     private static boolean devOnlyLogDisabled =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DEV_ONLY_LOGGING_DISABLED);
 
-
     /** JDK9: jdk.internal.loader.URLClassPath. */
     private static Class clsURLClassPath;
 
