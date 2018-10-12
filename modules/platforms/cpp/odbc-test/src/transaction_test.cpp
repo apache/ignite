@@ -329,9 +329,12 @@ struct TransactionTestSuiteFixture : public odbc::OdbcTestSuite
 
         BOOST_CHECK_EQUAL(ret, SQL_NO_DATA);
 
-        ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+        if (ret != SQL_NO_DATA)
+            ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
 
         ret = SQLMoreResults(stmt);
+
+        BOOST_CHECK_EQUAL(ret, SQL_NO_DATA);
 
         if (ret != SQL_NO_DATA)
             ODBC_THROW_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);

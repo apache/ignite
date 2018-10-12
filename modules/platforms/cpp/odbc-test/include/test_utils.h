@@ -52,7 +52,7 @@
 /**
  * Client ODBC erorr.
  */
-class OdbcClientError
+class OdbcClientError : public std::exception
 {
 public:
     /**
@@ -66,6 +66,17 @@ public:
         message(message)
     {
         // No-op.
+    }
+
+    /**
+     * Implementation of the standard std::exception::what() method.
+     * Synonym for GetText() method.
+     *
+     * @return Error message string.
+     */
+    virtual const char* what() const IGNITE_NO_THROW
+    {
+        return message.c_str();
     }
 
     /** SQL state. */
