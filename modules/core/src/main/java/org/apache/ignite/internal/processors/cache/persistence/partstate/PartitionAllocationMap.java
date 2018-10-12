@@ -43,6 +43,9 @@ public class PartitionAllocationMap {
     @GridToStringInclude
     private final Set<GroupPartitionId> skippedParts = new GridConcurrentHashSet<>();
 
+    /** Cached map size. */
+    private int size;
+
     /**
      * Returns the value to which the specified key is mapped,
      * or {@code null} if this map contains no mapping for the key.
@@ -78,7 +81,7 @@ public class PartitionAllocationMap {
 
     /** @return the number of key-value mappings in this map. */
     public int size() {
-        return map.size();
+        return size;
     }
 
     /** @return keys (all caches partitions) */
@@ -138,6 +141,13 @@ public class PartitionAllocationMap {
      */
     public PagesAllocationRange put(GroupPartitionId key, PagesAllocationRange val) {
         return !skippedParts.contains(key) ? map.put(key, val) : null;
+    }
+
+    /**
+     * Compute map size once for performance reasons.
+     */
+    public void computeSize() {
+        this.size = map.size();
     }
 
     /** {@inheritDoc} */
