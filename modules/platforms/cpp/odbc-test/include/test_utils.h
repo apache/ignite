@@ -69,6 +69,14 @@ public:
     }
 
     /**
+     * Destructor.
+     */
+    virtual ~OdbcClientError() IGNITE_NO_THROW
+    {
+         // No-op.
+    }
+
+    /**
      * Implementation of the standard std::exception::what() method.
      * Synonym for GetText() method.
      *
