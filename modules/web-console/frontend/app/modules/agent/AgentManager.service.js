@@ -18,7 +18,7 @@
 import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import {BehaviorSubject} from 'rxjs/BehaviorSubject';
 import 'rxjs/add/operator/first';
 import 'rxjs/add/operator/partition';
 import 'rxjs/add/operator/takeUntil';
@@ -34,7 +34,7 @@ import {ClusterSecretsManager} from './types/ClusterSecretsManager';
 import ClusterLoginService from './components/cluster-login/service';
 
 const State = {
-    DISCONNECTED: 'DISCONNECTED',
+    INIT: 'INIT',
     AGENT_DISCONNECTED: 'AGENT_DISCONNECTED',
     CLUSTER_DISCONNECTED: 'CLUSTER_DISCONNECTED',
     CONNECTED: 'CONNECTED'
@@ -59,10 +59,9 @@ const SuccessStatus = {
 
 class ConnectionState {
     constructor(cluster) {
-        this.agents = [];
         this.cluster = cluster;
         this.clusters = [];
-        this.state = State.DISCONNECTED;
+        this.state = State.INIT;
     }
 
     updateCluster(cluster) {
@@ -73,10 +72,6 @@ class ConnectionState {
     }
 
     update(demo, count, clusters) {
-        _.forEach(clusters, (cluster) => {
-            cluster.name = cluster.id;
-        });
-
         this.clusters = clusters;
 
         if (_.isEmpty(this.clusters))
@@ -107,13 +102,11 @@ class ConnectionState {
     }
 
     disconnect() {
-        this.agents = [];
-
         if (this.cluster)
             this.cluster.disconnect = true;
 
         this.clusters = [];
-        this.state = State.DISCONNECTED;
+        this.state = State.AGENT_DISCONNECTED;
     }
 }
 
@@ -246,7 +239,8 @@ export default class AgentManager {
     saveToStorage(cluster = this.connectionSbj.getValue().cluster) {
         try {
             localStorage.cluster = JSON.stringify(cluster);
-        } catch (ignore) {
+        }
+        catch (ignore) {
             // No-op.
         }
     }
@@ -389,7 +383,11 @@ export default class AgentManager {
             }
         });
 
-        this.$transitions.onExit({}, () => this.stopWatch());
+        const stopWatchUnsubscribe = this.$transitions.onExit({}, () => {
+            this.stopWatch();
+
+            stopWatchUnsubscribe();
+        });
 
         return this.awaitCluster();
     }

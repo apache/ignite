@@ -58,7 +58,7 @@ public class IgniteProvider {
     private static final String APACHE_MIRROR_URL = "https://www.apache.org/dyn/closer.cgi?as_json=1";
 
     /** Ignite on Apache URL path. */
-    private static final String IGNITE_PATH = "/ignite/%s/apache-ignite-fabric-%s-bin.zip";
+    private static final String IGNITE_PATH = "/ignite/%s/apache-ignite-%s-bin.zip";
 
     /** Version pattern. */
     private static final Pattern VERSION_PATTERN = Pattern.compile("(?<=version=).*\\S+");
