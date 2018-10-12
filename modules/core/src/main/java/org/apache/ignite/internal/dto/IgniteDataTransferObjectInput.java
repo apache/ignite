@@ -15,21 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor;
+package org.apache.ignite.internal.dto;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
-import org.apache.ignite.internal.dto.IgniteDataTransferObjectInput;
 import org.apache.ignite.internal.util.io.GridByteArrayInputStream;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Wrapper for object input.
- * @deprecated Use {@link IgniteDataTransferObjectInput} instead. This class may be removed in Ignite 3.0.
  */
-public class VisorDataTransferObjectInput implements ObjectInput {
+public class IgniteDataTransferObjectInput implements ObjectInput {
     /** */
     private final ObjectInputStream ois;
 
@@ -37,7 +35,7 @@ public class VisorDataTransferObjectInput implements ObjectInput {
      * @param in Target input.
      * @throws IOException If an I/O error occurs.
      */
-    public VisorDataTransferObjectInput(ObjectInput in) throws IOException {
+    public IgniteDataTransferObjectInput(ObjectInput in) throws IOException {
         byte[] buf = U.readByteArray(in);
 
         /* */
