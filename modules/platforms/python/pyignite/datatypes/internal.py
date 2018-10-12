@@ -226,6 +226,8 @@ class AnyDataObject:
     Not an actual Ignite type, but contains a guesswork
     on serializing Python data or parsing an unknown Ignite data object.
     """
+    _python_map = None
+    _python_array_map = None
 
     @staticmethod
     def get_subtype(iterable, allow_none=False):
@@ -280,16 +282,18 @@ class AnyDataObject:
         return data_class.to_python(ctype_object)
 
     @classmethod
-    def map_python_type(cls, value):
+    def _init_python_map(cls):
+        """
+        Optimizes Python types→Ignite types map creation for speed.
+
+        Local imports seem inevitable here.
+        """
         from pyignite.datatypes import (
             LongObject, DoubleObject, String, BoolObject, Null, UUIDObject,
-            DateObject, TimeObject, DecimalObject, LongArrayObject,
-            DoubleArrayObject, StringArrayObject, BoolArrayObject,
-            UUIDArrayObject, DateArrayObject, TimeArrayObject,
-            DecimalArrayObject, MapObject, ObjectArrayObject, BinaryObject,
+            DateObject, TimeObject, DecimalObject,
         )
 
-        python_map = {
+        cls._python_map = {
             int: LongObject,
             float: DoubleObject,
             str: String,
@@ -303,7 +307,18 @@ class AnyDataObject:
             decimal.Decimal: DecimalObject,
         }
 
-        python_array_map = {
+    @classmethod
+    def _init_python_array_map(cls):
+        """
+        Optimizes  Python types→Ignite array types map creation for speed.
+        """
+        from pyignite.datatypes import (
+            LongArrayObject, DoubleArrayObject, StringArrayObject,
+            BoolArrayObject, UUIDArrayObject, DateArrayObject, TimeArrayObject,
+            DecimalArrayObject,
+        )
+
+        cls._python_array_map = {
             int: LongArrayObject,
             float: DoubleArrayObject,
             str: StringArrayObject,
@@ -316,11 +331,22 @@ class AnyDataObject:
             decimal.Decimal: DecimalArrayObject,
         }
 
+    @classmethod
+    def map_python_type(cls, value):
+        from pyignite.datatypes import (
+            MapObject, ObjectArrayObject, BinaryObject,
+        )
+
+        if cls._python_map is None:
+            cls._init_python_map()
+        if cls._python_array_map is None:
+            cls._init_python_array_map()
+
         value_type = type(value)
         if is_iterable(value) and value_type is not str:
             value_subtype = cls.get_subtype(value)
-            if value_subtype in python_array_map:
-                return python_array_map[value_subtype]
+            if value_subtype in cls._python_array_map:
+                return cls._python_array_map[value_subtype]
 
             # a little heuristics (order may be important)
             if all([
@@ -346,8 +372,8 @@ class AnyDataObject:
         if is_binary(value):
             return BinaryObject
 
-        if value_type in python_map:
-            return python_map[value_type]
+        if value_type in cls._python_map:
+            return cls._python_map[value_type]
         raise TypeError(
             'Type `{}` is invalid.'.format(value_type)
         )

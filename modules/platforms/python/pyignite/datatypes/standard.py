@@ -231,20 +231,23 @@ class UUIDObject(StandardObject):
     (GUID). Payload takes up 16 bytes.
     """
     type_code = TC_UUID
+    _object_c_type = None
 
     @classmethod
     def build_c_type(cls):
-        return type(
-            cls.__name__,
-            (ctypes.LittleEndianStructure,),
-            {
-                '_pack_': 1,
-                '_fields_': [
-                    ('type_code', ctypes.c_byte),
-                    ('value', ctypes.c_byte * 16),
-                ],
-            }
-        )
+        if cls._object_c_type is None:
+            cls._object_c_type = type(
+                cls.__name__,
+                (ctypes.LittleEndianStructure,),
+                {
+                    '_pack_': 1,
+                    '_fields_': [
+                        ('type_code', ctypes.c_byte),
+                        ('value', ctypes.c_byte * 16),
+                    ],
+                }
+            )
+        return cls._object_c_type
 
     @classmethod
     def from_python(cls, value: uuid.UUID):
@@ -282,21 +285,24 @@ class TimestampObject(StandardObject):
     type_code = TC_TIMESTAMP
     pythonic = tuple
     default = (datetime(1970, 1, 1), 0)
+    _object_c_type = None
 
     @classmethod
     def build_c_type(cls):
-        return type(
-            cls.__name__,
-            (ctypes.LittleEndianStructure,),
-            {
-                '_pack_': 1,
-                '_fields_': [
-                    ('type_code', ctypes.c_byte),
-                    ('epoch', ctypes.c_long),
-                    ('fraction', ctypes.c_int),
-                ],
-            }
-        )
+        if cls._object_c_type is None:
+            cls._object_c_type = type(
+                cls.__name__,
+                (ctypes.LittleEndianStructure,),
+                {
+                    '_pack_': 1,
+                    '_fields_': [
+                        ('type_code', ctypes.c_byte),
+                        ('epoch', ctypes.c_long),
+                        ('fraction', ctypes.c_int),
+                    ],
+                }
+            )
+        return cls._object_c_type
 
     @classmethod
     def from_python(cls, value: tuple):
@@ -335,20 +341,23 @@ class DateObject(StandardObject):
     type_code = TC_DATE
     pythonic = datetime
     default = datetime(1970, 1, 1)
+    _object_c_type = None
 
     @classmethod
     def build_c_type(cls):
-        return type(
-            cls.__name__,
-            (ctypes.LittleEndianStructure,),
-            {
-                '_pack_': 1,
-                '_fields_': [
-                    ('type_code', ctypes.c_byte),
-                    ('epoch', ctypes.c_long),
-                ],
-            }
-        )
+        if cls._object_c_type is None:
+            cls._object_c_type = type(
+                cls.__name__,
+                (ctypes.LittleEndianStructure,),
+                {
+                    '_pack_': 1,
+                    '_fields_': [
+                        ('type_code', ctypes.c_byte),
+                        ('epoch', ctypes.c_long),
+                    ],
+                }
+            )
+        return cls._object_c_type
 
     @classmethod
     def from_python(cls, value: [date, datetime]):
@@ -384,20 +393,23 @@ class TimeObject(StandardObject):
     type_code = TC_TIME
     pythonic = timedelta
     default = timedelta()
+    _object_c_type = None
 
     @classmethod
     def build_c_type(cls):
-        return type(
-            cls.__name__,
-            (ctypes.LittleEndianStructure,),
-            {
-                '_pack_': 1,
-                '_fields_': [
-                    ('type_code', ctypes.c_byte),
-                    ('value', ctypes.c_long),
-                ],
-            }
-        )
+        if cls._object_c_type is None:
+            cls._object_c_type = type(
+                cls.__name__,
+                (ctypes.LittleEndianStructure,),
+                {
+                    '_pack_': 1,
+                    '_fields_': [
+                        ('type_code', ctypes.c_byte),
+                        ('value', ctypes.c_long),
+                    ],
+                }
+            )
+        return cls._object_c_type
 
     @classmethod
     def from_python(cls, value: timedelta):
@@ -431,21 +443,24 @@ class EnumObject(StandardObject):
     interoperability though), so it represented by tuple(int, int) in Python.
     """
     type_code = TC_ENUM
+    _object_c_type = None
 
     @classmethod
     def build_c_type(cls):
-        return type(
-            cls.__name__,
-            (ctypes.LittleEndianStructure,),
-            {
-                '_pack_': 1,
-                '_fields_': [
-                    ('type_code', ctypes.c_byte),
-                    ('type_id', ctypes.c_int),
-                    ('ordinal', ctypes.c_int),
-                ],
-            }
-        )
+        if cls._object_c_type is None:
+            cls._object_c_type = type(
+                cls.__name__,
+                (ctypes.LittleEndianStructure,),
+                {
+                    '_pack_': 1,
+                    '_fields_': [
+                        ('type_code', ctypes.c_byte),
+                        ('type_id', ctypes.c_int),
+                        ('ordinal', ctypes.c_int),
+                    ],
+                }
+            )
+        return cls._object_c_type
 
     @classmethod
     def from_python(cls, value: tuple):

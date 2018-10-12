@@ -39,25 +39,28 @@ from .op_codes import *
 @attr.s
 class Response:
     following = attr.ib(type=list, factory=list)
+    _response_header = None
 
     def __attrs_post_init__(self):
         # replace None with empty list
         self.following = self.following or []
 
-    @staticmethod
-    def build_header():
-        return type(
-            'ResponseHeader',
-            (ctypes.LittleEndianStructure,),
-            {
-                '_pack_': 1,
-                '_fields_': [
-                    ('length', ctypes.c_int),
-                    ('query_id', ctypes.c_long),
-                    ('status_code', ctypes.c_int),
-                ],
-            },
-        )
+    @classmethod
+    def build_header(cls):
+        if cls._response_header is None:
+            cls._response_header = type(
+                'ResponseHeader',
+                (ctypes.LittleEndianStructure,),
+                {
+                    '_pack_': 1,
+                    '_fields_': [
+                        ('length', ctypes.c_int),
+                        ('query_id', ctypes.c_long),
+                        ('status_code', ctypes.c_int),
+                    ],
+                },
+            )
+        return cls._response_header
 
     def parse(self, client: 'Client'):
         header_class = self.build_header()
@@ -98,7 +101,7 @@ class Response:
 
 
 @attr.s
-class SQLResponse:
+class SQLResponse(Response):
     """
     The response class of SQL functions is special in the way the row-column
     data is counted in it. Basically, Ignite thin client API is following a
@@ -107,21 +110,6 @@ class SQLResponse:
     """
     include_field_names = attr.ib(type=bool, default=False)
     has_cursor = attr.ib(type=bool, default=False)
-
-    @staticmethod
-    def build_header():
-        return type(
-            'ResponseHeader',
-            (ctypes.LittleEndianStructure,),
-            {
-                '_pack_': 1,
-                '_fields_': [
-                    ('length', ctypes.c_int),
-                    ('query_id', ctypes.c_long),
-                    ('status_code', ctypes.c_int),
-                ],
-            },
-        )
 
     def fields_or_field_count(self):
         if self.include_field_names:
@@ -239,21 +227,24 @@ class Query:
     op_code = attr.ib(type=int)
     following = attr.ib(type=list, factory=list)
     query_id = attr.ib(type=int, default=None)
+    _query_c_type = None
 
     @classmethod
     def build_c_type(cls):
-        return type(
-            cls.__name__,
-            (ctypes.LittleEndianStructure,),
-            {
-                '_pack_': 1,
-                '_fields_': [
-                    ('length', ctypes.c_int),
-                    ('op_code', ctypes.c_short),
-                    ('query_id', ctypes.c_long),
-                ],
-            },
-        )
+        if cls._query_c_type is None:
+            cls._query_c_type = type(
+                cls.__name__,
+                (ctypes.LittleEndianStructure,),
+                {
+                    '_pack_': 1,
+                    '_fields_': [
+                        ('length', ctypes.c_int),
+                        ('op_code', ctypes.c_short),
+                        ('query_id', ctypes.c_long),
+                    ],
+                },
+            )
+        return cls._query_c_type
 
     def from_python(self, values: dict=None):
         if values is None:
@@ -306,22 +297,25 @@ class ConfigQuery(Query):
     """
     This is a special query, used for creating caches with configuration.
     """
+    _query_c_type = None
 
     @classmethod
     def build_c_type(cls):
-        return type(
-            cls.__name__,
-            (ctypes.LittleEndianStructure,),
-            {
-                '_pack_': 1,
-                '_fields_': [
-                    ('length', ctypes.c_int),
-                    ('op_code', ctypes.c_short),
-                    ('query_id', ctypes.c_long),
-                    ('config_length', ctypes.c_int),
-                ],
-            },
-        )
+        if cls._query_c_type is None:
+            cls._query_c_type = type(
+                cls.__name__,
+                (ctypes.LittleEndianStructure,),
+                {
+                    '_pack_': 1,
+                    '_fields_': [
+                        ('length', ctypes.c_int),
+                        ('op_code', ctypes.c_short),
+                        ('query_id', ctypes.c_long),
+                        ('config_length', ctypes.c_int),
+                    ],
+                },
+            )
+        return cls._query_c_type
 
     def from_python(self, values: dict = None):
         if values is None:
