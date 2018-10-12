@@ -28,10 +28,15 @@ import org.apache.ignite.spi.checkpoint.s3.S3SessionCheckpointSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderAwsCredentialsProviderSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderAwsCredentialsSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderBucketEndpointSelfTest;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderClientSideEncryptionSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderKeyPrefixSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderSSEAlgorithmSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.client.DummyObjectListingTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.client.DummyS3ClientTest;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.encrypt.AsymmetricKeyEncryptionServiceTest;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.encrypt.AwsKmsEncryptionServiceTest;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.encrypt.MockEncryptionServiceTest;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.encrypt.SymmetricKeyEncryptionServiceTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**
@@ -40,9 +45,8 @@ import org.apache.ignite.testframework.IgniteTestSuite;
 public class IgniteS3TestSuite extends TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new IgniteTestSuite("S3 Integration Test Suite");
 
         // Checkpoint SPI.
@@ -54,6 +58,12 @@ public class IgniteS3TestSuite extends TestSuite {
         suite.addTestSuite(S3CheckpointSpiStartStopBucketEndpointSelfTest.class);
         suite.addTestSuite(S3CheckpointSpiStartStopSSEAlgorithmSelfTest.class);
 
+        // S3 Encryption tests.
+        suite.addTestSuite(MockEncryptionServiceTest.class);
+        suite.addTestSuite(AwsKmsEncryptionServiceTest.class);
+        suite.addTestSuite(SymmetricKeyEncryptionServiceTest.class);
+        suite.addTestSuite(AsymmetricKeyEncryptionServiceTest.class);
+
         // S3 IP finder.
         suite.addTestSuite(DummyS3ClientTest.class);
         suite.addTestSuite(DummyObjectListingTest.class);
@@ -62,6 +72,7 @@ public class IgniteS3TestSuite extends TestSuite {
         suite.addTestSuite(TcpDiscoveryS3IpFinderBucketEndpointSelfTest.class);
         suite.addTestSuite(TcpDiscoveryS3IpFinderSSEAlgorithmSelfTest.class);
         suite.addTestSuite(TcpDiscoveryS3IpFinderKeyPrefixSelfTest.class);
+        suite.addTestSuite(TcpDiscoveryS3IpFinderClientSideEncryptionSelfTest.class);
 
         return suite;
     }
@@ -80,12 +91,20 @@ public class IgniteS3TestSuite extends TestSuite {
         return getRequiredEnvVar("test.amazon.secret.key");
     }
 
-    public static String getBucketName(final String defaultBucketName) {
-        String value = System.getenv("test.s3.bucket.name");
+    /**
+     * @param dfltBucketName Default bucket name.
+     * @return Bucket name.
+     */
+    public static String getBucketName(final String dfltBucketName) {
+        String val = System.getenv("test.s3.bucket.name");
 
-        return value == null ? defaultBucketName : value;
+        return val == null ? dfltBucketName : val;
     }
 
+    /**
+     * @param name Name of environment.
+     * @return Environment variable value.
+     */
     private static String getRequiredEnvVar(String name) {
         String key = System.getenv(name);
 

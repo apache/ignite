@@ -16,6 +16,6 @@
  */
 
 /**
- * <!-- Package description. --> Contains AWS S3-based IP finder.
+ * <!-- Package description. --> Contains internal tests or test related classes and interfaces.
  */
-package org.apache.ignite.spi.discovery.tcp.ipfinder.s3;
+package org.apache.ignite.spi.discovery.tcp.ipfinder.s3.encrypt;

@@ -16,6 +16,6 @@
  */
 
 /**
- * <!-- Package description. --> Contains AWS S3-based IP finder.
+ * <!-- Package description. --> Contains Encryption services.
  */
-package org.apache.ignite.spi.discovery.tcp.ipfinder.s3;
+package org.apache.ignite.spi.discovery.tcp.ipfinder.s3.encrypt;

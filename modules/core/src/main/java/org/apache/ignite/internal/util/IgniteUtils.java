@@ -84,6 +84,8 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.AccessController;
+import java.security.InvalidKeyException;
+import java.security.Key;
 import java.security.KeyManagementException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -146,6 +148,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
+import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
 import javax.management.DynamicMBean;
 import javax.management.JMException;
 import javax.management.MBeanRegistrationException;
@@ -10876,6 +10880,24 @@ public abstract class IgniteUtils {
          */
         public long getLockUnlockCounter() {
             return cnt.get();
+        }
+    }
+
+    /**
+     * @param key Cipher Key.
+     * @param encMode Enc mode see {@link Cipher#ENCRYPT_MODE}, {@link Cipher#DECRYPT_MODE}, etc.
+     */
+    public static Cipher createCipher(Key key, int encMode) {
+        if (key == null)
+            throw new IgniteException("Cipher Key cannot be null");
+
+        try {
+            Cipher cipher = Cipher.getInstance(key.getAlgorithm());
+            cipher.init(encMode, key);
+            return cipher;
+        }
+        catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e) {
+            throw new IgniteException(e);
         }
     }
 }
