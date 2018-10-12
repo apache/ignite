@@ -101,7 +101,9 @@ public class IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest extend
         }
 
         try (QueryCursor<List<?>> ignored = cursor) {
-            cursor.iterator();
+            cursor.getAll();
+
+            fail("Query not canceled");
         }
         catch (CacheException ex) {
             log().error("Got expected exception", ex);
