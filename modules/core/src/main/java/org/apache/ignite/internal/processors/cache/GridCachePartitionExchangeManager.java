@@ -1112,6 +1112,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         time = System.currentTimeMillis();
 
+        Collection<ClusterNode> failedNodes = U.newHashSet(nodes.size());
+
         for (ClusterNode node : nodes) {
             try {
                 assert !node.equals(cctx.localNode());
@@ -1119,17 +1121,24 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 cctx.io().sendNoRetry(node, m, SYSTEM_POOL);
             }
             catch (ClusterTopologyCheckedException ignore) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to send partition update to node because it left grid (will ignore) [node=" +
-                        node.id() + ", msg=" + m + ']');
+                if (log.isDebugEnabled()) {
+                    log.debug("Failed to send partition update to node because it left grid (will ignore) " +
+                        "[node=" + node.id() + ", msg=" + m + ']');
+                }
             }
             catch (IgniteCheckedException e) {
-                U.warn(log, "Failed to send partitions full message [node=" + node + ", err=" + e + ']');
+                failedNodes.add(node);
+
+                U.warn(log, "Failed to send partitions full message [node=" + node + ", err=" + e + ']', e);
             }
         }
 
-        if (log.isInfoEnabled())
-            log.info("Sending Full Message for " + msgTopVer + " performed in " + (System.currentTimeMillis() - time) + " ms.");
+        if (log.isInfoEnabled()) {
+            long latency = System.currentTimeMillis() - time;
+
+            log.info("Sending Full Message for " + msgTopVer + " performed in " + latency + " ms." +
+                (failedNodes.isEmpty() ? "" : (" Messages weren't sent to next nodes: " + U.nodeIds(failedNodes))));
+        }
     }
 
     /**
