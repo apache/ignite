@@ -78,6 +78,7 @@ import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.IgniteH2QueryMemoryManager;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSortColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlType;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
@@ -923,7 +924,9 @@ public class GridReduceQueryExecutor {
                         H2Utils.setupConnection(r.connection(), false, enforceJoinOrder);
 
                         GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE)
-                            .pageSize(r.pageSize()).distributedJoinMode(OFF));
+                            .pageSize(r.pageSize())
+                            .distributedJoinMode(OFF)
+                            .queryMemoryManager(new IgniteH2QueryMemoryManager()));
 
                         try {
                             if (qry.explain())

@@ -78,6 +78,7 @@ import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
+import org.apache.ignite.internal.processors.query.h2.opt.IgniteH2QueryMemoryManager;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
@@ -873,7 +874,8 @@ public class GridMapQueryExecutor {
                 .topologyVersion(topVer)
                 .reservations(reserved)
                 .mvccSnapshot(mvccSnapshot)
-                .lazyWorker(worker);
+                .lazyWorker(worker)
+                .queryMemoryManager(new IgniteH2QueryMemoryManager());
 
             Connection conn = h2.connectionForSchema(schemaName);
 

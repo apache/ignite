@@ -91,6 +91,9 @@ public class GridH2QueryContext {
     /** */
     private MapQueryLazyWorker lazyWorker;
 
+    /** */
+    private IgniteH2QueryMemoryManager qryMem;
+
     /**
      * @param locNodeId Local node ID.
      * @param nodeId The node who initiated the query.
@@ -528,6 +531,23 @@ public class GridH2QueryContext {
      */
     public GridH2QueryContext lazyWorker(MapQueryLazyWorker lazyWorker) {
         this.lazyWorker = lazyWorker;
+
+        return this;
+    }
+
+    /**
+     * @return Query memory manager.
+     */
+    public IgniteH2QueryMemoryManager queryMemoryManager() {
+        return qryMem;
+    }
+
+    /**
+     * @param qryMem Query memory manager.
+     * @return {@code this} for chain.
+     */
+    public GridH2QueryContext queryMemoryManager(IgniteH2QueryMemoryManager qryMem) {
+        this.qryMem = qryMem;
 
         return this;
     }

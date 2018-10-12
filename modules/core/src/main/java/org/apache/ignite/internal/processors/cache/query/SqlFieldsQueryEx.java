@@ -46,6 +46,9 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
     /** Batched arguments list. */
     private List<Object[]> batchedArgs;
 
+    /** Max memory available for query local results per node. */
+    private long maxMemory = Long.MAX_VALUE;
+
     /**
      * @param sql SQL query.
      * @param isQry Flag indicating whether this object denotes a query or an update operation.
@@ -238,5 +241,21 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
      */
     public boolean isBatched() {
         return !F.isEmpty(batchedArgs);
+    }
+
+    /**
+     * Maximum memory available for query local results per node.
+     *
+     * @return Maximum memory size.
+     */
+    public long maxMemory() {
+        return maxMemory;
+    }
+
+    /**
+     * @param maxMemory Maximum memory available for query local results per node.
+     */
+    public void maxMemory(long maxMemory) {
+        this.maxMemory = maxMemory;
     }
 }

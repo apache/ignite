@@ -88,6 +88,12 @@ public class IgniteH2LocalResult implements LocalResult {
     /** Contains lobs. */
     private boolean containsLobs;
 
+    /** Query context. */
+    private final GridH2QueryContext qctx = GridH2QueryContext.get();
+
+    /** Allocated memory. */
+    private long allocMem;
+
     /**
      * Construct a local result object.
      */
@@ -295,19 +301,50 @@ public class IgniteH2LocalResult implements LocalResult {
     }
 
     /** {@inheritDoc} */
-    @Override public void addRow(Value[] values) {
-        cloneLobs(values);
+    @Override public void addRow(Value[] row) {
+        cloneLobs(row);
+
         if (isAnyDistinct()) {
             if (distinctRows != null) {
-                ValueArray array = getArrayOfDistinct(values);
-                distinctRows.putIfAbsent(array, values);
+                ValueArray distinctKey = getArrayOfDistinct(row);
+
+                int prevSize = distinctRows.size();
+
+                distinctRows.putIfAbsent(distinctKey, row);
+
                 rowCount = distinctRows.size();
+
+                if (rowCount != prevSize) {
+                    checkAvailableMemory(distinctKey);
+
+                    checkAvailableMemory(row);
+                }
             }
         }
         else {
-            rows.add(values);
+            checkAvailableMemory(row);
+
+            rows.add(row);
 
             rowCount++;
+        }
+    }
+
+    /**
+     * @param row Row.
+     */
+    private void checkAvailableMemory(Value... row) {
+        IgniteH2QueryMemoryManager mem = qctx.queryMemoryManager();
+
+        if (mem == null)
+            return;
+
+        for (Value v : row) {
+            int size = v.getMemory();
+
+            allocMem += size;
+
+            mem.allocate(size);
         }
     }
 
@@ -434,6 +471,11 @@ public class IgniteH2LocalResult implements LocalResult {
     /** {@inheritDoc} */
     @Override public void close() {
         closed = true;
+
+        IgniteH2QueryMemoryManager mem = qctx.queryMemoryManager();
+
+        if (mem != null)
+            mem.free(allocMem);
     }
 
     /** {@inheritDoc} */
