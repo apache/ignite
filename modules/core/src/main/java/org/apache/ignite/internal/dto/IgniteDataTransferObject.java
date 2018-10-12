@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor;
+package org.apache.ignite.internal.dto;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -26,17 +26,14 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Base class for data transfer objects for Visor tasks.
- *
- * @deprecated Use {@link IgniteDataTransferObject} instead. This class may be removed in Ignite 3.0.
+ * Base class for data transfer objects.
  */
-public abstract class VisorDataTransferObject implements Externalizable {
+public abstract class IgniteDataTransferObject implements Externalizable {
     /** */
-    private static final long serialVersionUID = 6920203681702514010L;
+    private static final long serialVersionUID = 0L;
 
     /** Magic number to detect correct transfer objects. */
     private static final int MAGIC = 0x42BEEF00;
@@ -49,6 +46,12 @@ public abstract class VisorDataTransferObject implements Externalizable {
 
     /** Version 3. */
     protected static final byte V3 = 3;
+
+    /** Version 4. */
+    protected static final byte V4 = 4;
+
+    /** Version 5. */
+    protected static final byte V5 = 5;
 
     /**
      * @param col Source collection.
@@ -95,7 +98,7 @@ public abstract class VisorDataTransferObject implements Externalizable {
 
         out.writeInt(hdr);
 
-        try (VisorDataTransferObjectOutput dtout = new VisorDataTransferObjectOutput(out)) {
+        try (IgniteDataTransferObjectOutput dtout = new IgniteDataTransferObjectOutput(out)) {
             writeExternalData(dtout);
         }
     }
@@ -115,12 +118,12 @@ public abstract class VisorDataTransferObject implements Externalizable {
         int hdr = in.readInt();
 
         if ((hdr & MAGIC) != MAGIC)
-            throw new IOException("Unexpected VisorDataTransferObject header " +
+            throw new IOException("Unexpected IgniteDataTransferObject header " +
                 "[actual=" + Integer.toHexString(hdr) + ", expected=" + Integer.toHexString(MAGIC) + "]");
 
         byte ver = (byte)(hdr & 0xFF);
 
-        try (VisorDataTransferObjectInput dtin = new VisorDataTransferObjectInput(in)) {
+        try (IgniteDataTransferObjectInput dtin = new IgniteDataTransferObjectInput(in)) {
             readExternalData(ver, dtin);
         }
     }
