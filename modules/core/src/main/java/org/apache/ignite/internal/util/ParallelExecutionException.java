@@ -30,7 +30,7 @@ public class ParallelExecutionException extends IgniteCheckedException {
     /** List of failed data. */
     private final List<Object> failedDatas = new ArrayList<>();
 
-    /** {@inheritDoc} */
+    /** @param msg Message. */
     public ParallelExecutionException(String msg) {
         super(msg);
     }
