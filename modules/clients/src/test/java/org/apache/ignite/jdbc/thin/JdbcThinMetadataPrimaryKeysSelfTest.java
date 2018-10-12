@@ -42,7 +42,7 @@ public class JdbcThinMetadataPrimaryKeysSelfTest extends GridCommonAbstractTest 
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrid(2);
+        startGrid(1);
     }
 
     /**

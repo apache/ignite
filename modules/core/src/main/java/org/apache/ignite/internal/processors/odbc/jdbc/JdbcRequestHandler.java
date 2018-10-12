@@ -1013,7 +1013,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                         table.keyFieldName();
 
                     if (fields.isEmpty()) {
-                        String keyColName = table.keyFieldName() == null ? QueryUtils.KEY_FIELD_NAME : table.keyFieldName();
+                        String keyColName =
+                            table.keyFieldName() == null ? QueryUtils.KEY_FIELD_NAME : table.keyFieldName();
 
                         meta.add(new JdbcPrimaryKeyMeta(table.schemaName(), table.tableName(), keyName,
                             Collections.singletonList(keyColName)));
