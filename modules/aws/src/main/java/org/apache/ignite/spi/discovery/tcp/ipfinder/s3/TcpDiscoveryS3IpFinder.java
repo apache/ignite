@@ -26,14 +26,10 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
-import java.io.ByteArrayInputStream;
-import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.StringTokenizer;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Pattern;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -46,6 +42,17 @@ import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.Optional;
+import java.util.StringTokenizer;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 
 /**
  * AWS S3-based IP finder.
@@ -77,26 +84,30 @@ import org.jetbrains.annotations.Nullable;
  * Note that this finder is shared by default (see {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder#isShared()}.
  */
 public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
-    /** Delimiter to use in S3 entries name. */
+    /**
+     * Delimiter to use in S3 entries name.
+     */
     public static final String DELIM = "#";
 
-    /** Entry content. */
-    private static final byte[] ENTRY_CONTENT = new byte[] {1};
+    @GridToStringExclude
+    private static HttpClient httpClient = HttpClientBuilder.create().build();
 
+    @GridToStringExclude
+    private final byte[] DEFAULT_ENTRY_CONTENT = new byte[]{1};
     /** Entry metadata. */
     @GridToStringExclude
     private final ObjectMetadata objMetadata = new ObjectMetadata();
-
+    /** Init latch. */
+    @GridToStringExclude
+    private final CountDownLatch initLatch = new CountDownLatch(1);
+    @GridToStringExclude
+    private byte[] entryContent = DEFAULT_ENTRY_CONTENT;
     /** Grid logger. */
     @LoggerResource
     private IgniteLogger log;
-
     /** Client to interact with S3 storage. */
     @GridToStringExclude
     private AmazonS3 s3;
-
-    /** Bucket name. */
-    private String bucketName;
 
     /** Bucket endpoint. */
     @Nullable private String bucketEndpoint;
@@ -106,15 +117,17 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
 
     /** Sub-folder name to write node addresses. */
     @Nullable private String keyPrefix;
+    /**
+     * Bucket name.
+     */
+    private String bucketName;
 
     /** Init guard. */
     @GridToStringExclude
     private final AtomicBoolean initGuard = new AtomicBoolean();
-
-    /** Init latch. */
+    /** Do create public ip to private Map */
     @GridToStringExclude
-    private final CountDownLatch initLatch = new CountDownLatch(1);
-
+    private boolean isPublicIpMapRequired = false;
     /** Amazon client configuration. */
     private ClientConfiguration cfg;
 
@@ -133,8 +146,11 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
         setShared(true);
     }
 
-    /** {@inheritDoc} */
-    @Override public Collection<InetSocketAddress> getRegisteredAddresses() throws IgniteSpiException {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Collection<InetSocketAddress> getRegisteredAddresses() throws IgniteSpiException {
         initClient();
 
         Collection<InetSocketAddress> addrs = new LinkedList<>();
@@ -187,16 +203,18 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
                 else
                     break;
             }
-        }
-        catch (AmazonClientException e) {
+        } catch (AmazonClientException e) {
             throw new IgniteSpiException("Failed to list objects in the bucket: " + bucketName, e);
         }
 
         return addrs;
     }
 
-    /** {@inheritDoc} */
-    @Override public void registerAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void registerAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
         assert !F.isEmpty(addrs);
 
         initClient();
@@ -205,17 +223,19 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
             String key = key(addr);
 
             try {
-                s3.putObject(bucketName, key, new ByteArrayInputStream(ENTRY_CONTENT), objMetadata);
-            }
-            catch (AmazonClientException e) {
+                s3.putObject(bucketName, key, new ByteArrayInputStream(getEntryContents()), objMetadata);
+            } catch (AmazonClientException e) {
                 throw new IgniteSpiException("Failed to put entry [bucketName=" + bucketName +
-                    ", entry=" + key + ']', e);
+                        ", entry=" + key + ']', e);
             }
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void unregisterAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void unregisterAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
         assert !F.isEmpty(addrs);
 
         initClient();
@@ -225,10 +245,9 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
 
             try {
                 s3.deleteObject(bucketName, key);
-            }
-            catch (AmazonClientException e) {
+            } catch (AmazonClientException e) {
                 throw new IgniteSpiException("Failed to delete entry [bucketName=" + bucketName +
-                    ", entry=" + key + ']', e);
+                        ", entry=" + key + ']', e);
             }
         }
     }
@@ -250,8 +269,8 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
             sb.a(keyPrefix);
 
         sb.a(addrStr)
-            .a(DELIM)
-            .a(addr.getPort());
+                .a(DELIM)
+                .a(addr.getPort());
 
         return sb.toString();
     }
@@ -274,7 +293,9 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
                 if (F.isEmpty(bucketName))
                     throw new IgniteSpiException("Bucket name is null or empty (provide bucket name and restart).");
 
-                objMetadata.setContentLength(ENTRY_CONTENT.length);
+                this.isPublicIpMapRequired = Optional.of(this.isPublicIpMapRequired).orElse(false);
+
+                this.objMetadata.setContentLength((long) getEntryContents().length);
 
                 if (!F.isEmpty(sseAlg))
                     objMetadata.setSSEAlgorithm(sseAlg);
@@ -291,12 +312,10 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
                         while (!s3.doesBucketExist(bucketName))
                             try {
                                 U.sleep(200);
-                            }
-                            catch (IgniteInterruptedCheckedException e) {
+                            } catch (IgniteInterruptedCheckedException e) {
                                 throw new IgniteSpiException("Thread has been interrupted.", e);
                             }
-                    }
-                    catch (AmazonClientException e) {
+                    } catch (AmazonClientException e) {
                         if (!s3.doesBucketExist(bucketName)) {
                             s3 = null;
 
@@ -304,15 +323,13 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
                         }
                     }
                 }
-            }
-            finally {
+            } finally {
                 initLatch.countDown();
             }
         else {
             try {
                 U.await(initLatch);
-            }
-            catch (IgniteInterruptedCheckedException e) {
+            } catch (IgniteInterruptedCheckedException e) {
                 throw new IgniteSpiException("Thread has been interrupted.", e);
             }
 
@@ -328,14 +345,11 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
      */
     AmazonS3Client createAmazonS3Client() {
         AmazonS3Client cln = cfg != null
-            ? (cred != null ? new AmazonS3Client(cred, cfg) : new AmazonS3Client(credProvider, cfg))
-            : (cred != null ? new AmazonS3Client(cred) : new AmazonS3Client(credProvider));
-
-        if (!F.isEmpty(bucketEndpoint))
-            cln.setEndpoint(bucketEndpoint);
-
+                ? (cred != null ? new AmazonS3Client(cred, cfg) : new AmazonS3Client(credProvider, cfg))
+                : (cred != null ? new AmazonS3Client(cred) : new AmazonS3Client(credProvider));
         return cln;
     }
+
 
     /**
      * Sets bucket name for IP finder.
@@ -441,15 +455,46 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
         return this;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * This can be thought of as the private ip to public ip map .
+     * <p>
+     * In case need to access out side of vpc/aws network need public ip to interact with the node  you much use S3 address resolver {@link org.apache.ignite.configuration.S3AddressResolver)
+     * <a href="https://docs.aws.amazon.com/AmazonS3/latest/dev/ListingKeysHierarchy.html"/>
+     *
+     * @param publicIpMapRequired AWS credentials provider.
+     * @return {@code this} for chaining.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public TcpDiscoveryS3IpFinder setPublicIpMapRequired(boolean publicIpMapRequired) {
+        isPublicIpMapRequired = publicIpMapRequired;
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override public TcpDiscoveryS3IpFinder setShared(boolean shared) {
         super.setShared(shared);
 
         return this;
     }
 
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryS3IpFinder.class, this, "super", super.toString());
+    }
+
+    private byte[] getEntryContents() {
+        try {
+            if (isPublicIpMapRequired && DEFAULT_ENTRY_CONTENT.equals(entryContent)) {
+                this.entryContent = httpClient.execute(new HttpGet("http://169.254.169.254/latest/meta-data/public-ipv4")).getEntity().getContent().toString().getBytes();
+            }
+            return entryContent;
+        } catch (ClientProtocolException e) {
+            throw new IgniteSpiException("Failed to get public IP", e);
+        } catch (IOException e) {
+            throw new IgniteSpiException("Failed to get public IP", e);
+        }
     }
 }
