@@ -864,7 +864,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
                     assert waitVer != null;
 
-                    retryFut = cctx.affinity().affinityReadyFuture(waitVer);
+                    retryFut = cctx.shared().exchange().affinityReadyFuture(waitVer);
                 }
                 else if (e.hasCause(ClusterTopologyCheckedException.class)) {
                     ClusterTopologyCheckedException topEx = X.cause(e, ClusterTopologyCheckedException.class);
