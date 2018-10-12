@@ -21,19 +21,23 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
+import java.util.regex.Pattern;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Argument for {@link VisorCacheConfigurationCollectorTask}.
  */
-public class VisorCacheConfigurationCollectorTaskArg extends VisorDataTransferObject {
+public class VisorCacheConfigurationCollectorTaskArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Collection of cache deployment IDs. */
+    /** Collection of cache names. */
     private Collection<String> cacheNames;
+
+    /** Cache name regexp. */
+    private String regex;
 
     /**
      * Default constructor.
@@ -50,20 +54,42 @@ public class VisorCacheConfigurationCollectorTaskArg extends VisorDataTransferOb
     }
 
     /**
+     * @param regex Cache name regexp.
+     */
+    public VisorCacheConfigurationCollectorTaskArg(String regex) {
+        // Checks, that regex is correct.
+        Pattern.compile(regex);
+
+        this.regex = regex;
+    }
+
+    /**
      * @return Collection of cache deployment IDs.
      */
     public Collection<String> getCacheNames() {
         return cacheNames;
     }
 
+    /**
+     * @return Cache name regexp.
+     */
+    public String regex() { return regex; }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeCollection(out, cacheNames);
+
+        out.writeUTF(regex == null ? "" : regex);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         cacheNames = U.readCollection(in);
+
+        String str = in.readUTF();
+
+        if(!str.isEmpty())
+            regex = str;
     }
 
     /** {@inheritDoc} */
