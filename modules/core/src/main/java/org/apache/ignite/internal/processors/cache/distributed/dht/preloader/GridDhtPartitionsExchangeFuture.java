@@ -1884,7 +1884,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
 
                 if (needRefresh)
-                        cctx.exchange().refreshPartitions();
+                    cctx.exchange().refreshPartitions();
             }
 
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
