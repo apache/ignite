@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.zip.CRC32;
 
 /**
+ * This CRC calculation implementation workf much faster then {@link PureJavaCrc32}
  */
 public final class FastCrc {
     /** CRC algo. */
@@ -34,12 +35,13 @@ public final class FastCrc {
      */
     private int val;
 
+    /** */
     public FastCrc() {
         reset();
     }
 
     /**
-     * preparation for further calculations
+     * Preparation for further calculations.
      */
     public void reset() {
         val = 0xffffffff;
@@ -48,23 +50,23 @@ public final class FastCrc {
     }
 
     /**
-     * return crc value.
+     * @return crc value.
      */
     public int getValue() {
         return val;
     }
 
     /**
-     * @param b B.
-     * @param len Length.
+     * @param buf Input buffer.
+     * @param len Data length.
      */
-    public void update(final ByteBuffer b, final int len) {
-        val = calcCrc(crc, b, len);
+    public void update(final ByteBuffer buf, final int len) {
+        val = calcCrc(crc, buf, len);
     }
 
     /**
      * @param buf Input buffer.
-     * @param len Buffer length.
+     * @param len Data length.
      *
      * @return Crc checksum.
      */
