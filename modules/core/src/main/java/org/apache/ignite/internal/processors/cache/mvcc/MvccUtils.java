@@ -242,7 +242,7 @@ public class MvccUtils {
         if (mvccCntr > snapshotCntr) // we don't see future updates
             return false;
 
-        if (mvccCntr == snapshotCntr) {
+        if (mvccCntr == snapshotCntr && snapshotOpCntr != MVCC_READ_OP_CNTR) { // t0d0
             assert opCntr <= snapshotOpCntr : "rowVer=" + mvccVersion(mvccCrd, mvccCntr, opCntr) + ", snapshot=" + snapshot;
 
             return opCntr < snapshotOpCntr; // we don't see own pending updates

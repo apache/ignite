@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -39,7 +38,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
@@ -53,7 +51,6 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -195,37 +192,43 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
 
         assert keys.size() == 2;
 
-        TestRecordingCommunicationSpi nearComm = (TestRecordingCommunicationSpi)nearNode.configuration().getCommunicationSpi();
+        TestRecordingCommunicationSpi nearComm
+            = (TestRecordingCommunicationSpi)nearNode.configuration().getCommunicationSpi();
 
         if (!commit)
             nearComm.blockMessages(GridNearTxPrepareRequest.class, grid(1).name());
 
-        GridNearTxLocal nearTx
-            = ((TransactionProxyImpl)nearNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)).tx();
+        GridTestUtils.runAsync(() -> {
+            // run in separate thread to exclude tx from thread-local map
+            GridNearTxLocal nearTx
+                = ((TransactionProxyImpl)nearNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)).tx();
 
-        for (Integer k : keys)
-            cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, 42)").setArgs(k));
+            for (Integer k : keys)
+                cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, 42)").setArgs(k));
 
-        List<IgniteInternalTx> txs = IntStream.range(0, baseCnt)
-            .mapToObj(i -> txsOnNode(grid(i), nearTx.xidVersion()))
-            .flatMap(Collection::stream)
-            .collect(Collectors.toList());
+            List<IgniteInternalTx> txs = IntStream.range(0, baseCnt)
+                .mapToObj(i -> txsOnNode(grid(i), nearTx.xidVersion()))
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
 
-        IgniteInternalFuture<?> prepareFut = nearTx.prepareNearTxLocal();
+            IgniteInternalFuture<?> prepareFut = nearTx.prepareNearTxLocal();
 
-        if (commit)
-            prepareFut.get();
-        else
-            assertConditionEventually(() -> txs.stream().anyMatch(tx -> tx.state() == PREPARED));
+            if (commit)
+                prepareFut.get();
+            else
+                assertConditionEventually(() -> txs.stream().anyMatch(tx -> tx.state() == PREPARED));
 
-        // drop near
-        nearNode.close();
+            // drop near
+            nearNode.close();
 
-        assertConditionEventually(() -> txs.stream().allMatch(tx -> tx.state() == (commit ? COMMITTED : ROLLED_BACK)));
+            assertConditionEventually(() -> txs.stream().allMatch(tx -> tx.state() == (commit ? COMMITTED : ROLLED_BACK)));
+
+            return null;
+        }).get();
 
         if (commit) {
             assertConditionEventually(() -> {
-                int rowsCnt = G.allGrids().get(0).cache(DEFAULT_CACHE_NAME)
+                int rowsCnt = grid(0).cache(DEFAULT_CACHE_NAME)
                     .query(new SqlFieldsQuery("select * from Integer")).getAll().size();
                 return rowsCnt == keys.size();
             });
@@ -332,6 +335,8 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
         // drop victim
         grid(victim).close();
 
+        awaitPartitionMapExchange();
+
         assertConditionEventually(() -> txs.stream().allMatch(tx -> tx.state() == (commit ? COMMITTED : ROLLED_BACK)));
 
         assert victimComm.hasBlockedMessages();
@@ -398,21 +403,22 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
         ign.cluster().forServers().nodes()
             .forEach(node -> keys.add(keyForNode(ign.affinity("test"), keyCntr, node)));
 
-        Transaction tx = ign.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
+        GridTestUtils.runAsync(() -> {
+            // run in separate thread to exclude tx from thread-local map
+            Transaction tx = ign.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
-        for (Integer k : keys)
-            cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, 42)").setArgs(k));
+            for (Integer k : keys)
+                cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, 42)").setArgs(k));
 
-        ((TransactionProxyImpl)tx).tx().prepareNearTxLocal();
+            ((TransactionProxyImpl)tx).tx().prepareNearTxLocal().get();
+
+            return null;
+        }).get();
 
         // drop near
         stopGrid(2, true);
 
-        // t0d0 fail if condition is still unmet
         IgniteEx srvNode = grid(0);
-
-        // t0d0 check "select count(1)" consistency
-        System.err.println(srvNode.cache("test").query(new SqlFieldsQuery("select * from Integer")).getAll().size());
 
         assertConditionEventually(
             () -> srvNode.cache("test").query(new SqlFieldsQuery("select * from Integer")).getAll().size() == 2

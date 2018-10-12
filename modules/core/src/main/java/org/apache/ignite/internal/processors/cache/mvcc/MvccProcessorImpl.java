@@ -1878,8 +1878,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                     .collect(Collectors.toList());
             }
 
-            // t0d0 finish queries as well?
-            recoveredTxs.forEach(txCntr -> onTxDone(txCntr, ballotBox.committed(txCntr)));
+            // t0d0 study committed counter change logic
+//            recoveredTxs.forEach(txCntr -> onTxDone(txCntr, ballotBox.committed(txCntr)));
+            recoveredTxs.forEach(txCntr -> onTxDone(txCntr, true));
 
             recoveryBallotBoxes.remove(nearNodeId);
         }
