@@ -2858,10 +2858,10 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             GridCacheConfigurationVersion remoteVer = remoteNodeVers.get(verKey);
             GridCacheConfigurationVersion locVer = cachesInfo.cachesVersion().get(verKey);
 
-            if (remoteVer == null || remoteVer.id() < locVer.id())
+            if ((locVer != null) && (remoteVer == null || remoteVer.id() < locVer.id()))
                 remoteNodeVers.put(verKey, locVer);
 
-            if (locVer == null || locVer.id() < remoteVer.id()) {
+            if ((remoteVer != null) && (locVer == null || locVer.id() < remoteVer.id())) {
                 cachesInfo.cachesVersion().put(verKey, remoteVer);
 
                 versionsToStore.add(remoteVer);
