@@ -19,12 +19,12 @@ package org.apache.ignite.internal.visor.cache;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /**
  *
  */
-public class VisorCachesConfigurationTaskArg extends VisorDataTransferObject {
+public class VisorCachesConfigurationTaskArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -34,15 +34,13 @@ public class VisorCachesConfigurationTaskArg extends VisorDataTransferObject {
     /**
      * For externalization only.
      */
-    public VisorCachesConfigurationTaskArg(){
+    public VisorCachesConfigurationTaskArg() {
     }
 
     /**
      * @param regex Cache name regexp.
      */
-    public VisorCachesConfigurationTaskArg(String regex){
-        this.regex = regex;
-    }
+    public VisorCachesConfigurationTaskArg(String regex) { this.regex = regex; }
 
     /**
      * @return Cache name regexp.
@@ -50,12 +48,13 @@ public class VisorCachesConfigurationTaskArg extends VisorDataTransferObject {
     public String regex() { return regex; }
 
     /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeUTF(regex);
-    }
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException { out.writeUTF(regex); }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(
+        byte protoVer,
+        ObjectInput in
+    ) throws IOException, ClassNotFoundException {
         regex = in.readUTF();
     }
 }

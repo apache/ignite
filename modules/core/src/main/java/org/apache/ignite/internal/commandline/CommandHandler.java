@@ -836,6 +836,7 @@ public class CommandHandler {
         if (!F.isEmpty(res)) {
             for (Map.Entry<String, Map<String, Object>> entry : res.entrySet()) {
                 String cacheName = entry.getKey();
+
                 Map<String, Object> params = entry.getValue();
 
                 if (cacheArgs.humanReadableFormat()) {
