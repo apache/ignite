@@ -829,6 +829,9 @@ public class CommandHandler {
      * @param cacheArgs Cache args.
      */
     private void cachesConfig(GridClient client, CacheArguments cacheArgs) throws GridClientException {
+        // Checks, that regex is correct.
+        Pattern.compile(cacheArgs.regex());
+
         VisorCachesConfigurationTaskArg taskArg = new VisorCachesConfigurationTaskArg(cacheArgs.regex());
 
         Map<String, Map<String, Object>> res = executeTask(client, VisorCachesConfigurationTask.class, taskArg);
