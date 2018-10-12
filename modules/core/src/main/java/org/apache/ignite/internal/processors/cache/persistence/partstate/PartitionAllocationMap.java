@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.persistence.partstate;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -37,14 +39,14 @@ import org.jetbrains.annotations.Nullable;
 public class PartitionAllocationMap {
     /** Maps following pairs: (groupId, partId) -> (lastAllocatedCount, allocatedCount) */
     @GridToStringInclude
-    private final NavigableMap<GroupPartitionId, PagesAllocationRange> map = new ConcurrentSkipListMap<>();
+    private final Map<GroupPartitionId, PagesAllocationRange> writeMap = new ConcurrentHashMap<>();
+
+    /** Map used by snapshot executor. */
+    private NavigableMap<GroupPartitionId, PagesAllocationRange> map;
 
     /** Partitions forced to be skipped. */
     @GridToStringInclude
     private final Set<GroupPartitionId> skippedParts = new GridConcurrentHashSet<>();
-
-    /** Cached map size. */
-    private int size;
 
     /**
      * Returns the value to which the specified key is mapped,
@@ -81,7 +83,7 @@ public class PartitionAllocationMap {
 
     /** @return the number of key-value mappings in this map. */
     public int size() {
-        return size;
+        return map.size();
     }
 
     /** @return keys (all caches partitions) */
@@ -106,11 +108,7 @@ public class PartitionAllocationMap {
      * @return {@code true} if skipped partition was added to the ignore list during this call.
      */
     public boolean forceSkipIndexPartition(int grpId) {
-        GroupPartitionId idxId = new GroupPartitionId(grpId, PageIdAllocator.INDEX_PARTITION);
-
-        map.remove(idxId);
-
-        return skippedParts.add(idxId);
+        return skippedParts.add(new GroupPartitionId(grpId, PageIdAllocator.INDEX_PARTITION));
     }
 
     /**
@@ -140,14 +138,22 @@ public class PartitionAllocationMap {
      * <tt>key</tt>.
      */
     public PagesAllocationRange put(GroupPartitionId key, PagesAllocationRange val) {
-        return !skippedParts.contains(key) ? map.put(key, val) : null;
+        return writeMap.put(key, val);
     }
 
     /**
-     * Compute map size once for performance reasons.
+     * Prepare map for snapshot.
      */
-    public void computeSize() {
-        this.size = map.size();
+    public void prepareForSnapshot() {
+        map = new TreeMap<>();
+
+        for (Map.Entry<GroupPartitionId, PagesAllocationRange> entry : writeMap.entrySet()) {
+            if (!skippedParts.contains(entry.getKey()))
+                map.put(entry.getKey(), entry.getValue());
+        }
+
+        skippedParts.clear();
+        writeMap.clear();
     }
 
     /** {@inheritDoc} */
