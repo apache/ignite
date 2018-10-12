@@ -1722,7 +1722,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Failure handler implementation.
      */
     protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
+        return new TestFailingFailureHandler();
     }
 
     /**
