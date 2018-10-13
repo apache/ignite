@@ -423,6 +423,9 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
             assertFalse(e.getValue().isEmpty());
 
+            if (atomicityMode() == TRANSACTIONAL_SNAPSHOT)
+                continue;
+
             for (ClusterNode node : e.getValue()) {
                 final UUID checkNodeId = node.id();
 
@@ -436,10 +439,8 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
                         assertNotNull(cache);
 
-                        if (atomicityMode() != TRANSACTIONAL_SNAPSHOT) {
-                            assertEquals("Failed to check entry value on node: " + checkNodeId,
-                                !commmit ? initVal : val, cache.localPeek(key));
-                        }
+                        assertEquals("Failed to check entry value on node: " + checkNodeId,
+                            !commmit ? initVal : val, cache.localPeek(key));
 
                         return null;
                     }
