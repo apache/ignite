@@ -784,6 +784,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Method will perform invalidate for previously resotred PageMemory for each cache partition.
+     */
+    public void cleanupCachesPageMemory() {
+        // No-op.
+    }
+
+    /**
      * Clean checkpoint directory {@link GridCacheDatabaseSharedManager#cpDir}. The operation
      * is necessary when local node joined to baseline topology with different consistentId.
      */

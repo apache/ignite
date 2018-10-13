@@ -518,6 +518,29 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
+    @Override public void cleanupCachesPageMemory() {
+        if (dataRegionMap == null)
+            return;
+
+        for (CacheGroupDescriptor grpDesc : cctx.cache().cacheGroupDescriptors().values()) {
+            DataRegion region = dataRegionMap.get(grpDesc.config().getDataRegionName());
+
+            if (region == null)
+                continue;
+
+            int partitions = grpDesc.config().getAffinity().partitions();
+
+            PageMemoryEx memEx = (PageMemoryEx)region.pageMemory();
+
+            for (int partId = 0; partId < partitions; partId++) {
+                memEx.invalidate(grpDesc.groupId(), partId);
+
+                schedulePartitionDestroy(grpDesc.groupId(), partId);
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void cleanupCheckpointDirectory() throws IgniteCheckedException {
         try {
             try (DirectoryStream<Path> files = Files.newDirectoryStream(cpDir.toPath())) {
@@ -837,10 +860,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (!cpHistory.isInit())
                 cpHistory.initialize(retreiveHistory());
 
+            cctx.wal().notchLastCheckpointPtr(cctx.wal().tailWalPointer());
+
             // Memory restored at startup, just resume logging from last seen WAL pointer.
             cctx.wal().resumeLogging();
 
-            final MetaStorage storage = new MetaStorage(
+            metaStorage = new MetaStorage(
                 cctx,
                 dataRegionMap.get(METASTORE_DATA_REGION_NAME),
                 (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME),
@@ -849,9 +874,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             // Init metastore only after WAL logging resumed. Can't do it earlier because
             // MetaStorage first initialization also touches WAL, look at #isWalDeltaRecordNeeded.
-            storage.init(this);
-
-            metaStorage = storage;
+            metaStorage.init(this);
 
             notifyMetastorageReadyForReadWrite();
 

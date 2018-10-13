@@ -835,6 +835,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     private IgniteInternalFuture<?> initCachesOnLocalJoin() throws IgniteCheckedException {
         if (isLocalNodeNotInBaseline()) {
+            cctx.database().cleanupCachesPageMemory();
+
             cctx.cache().cleanupCachesDirectories();
 
             cctx.database().cleanupCheckpointDirectory();
