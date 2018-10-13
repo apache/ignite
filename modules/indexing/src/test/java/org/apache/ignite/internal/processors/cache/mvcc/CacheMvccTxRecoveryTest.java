@@ -28,6 +28,7 @@ import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -167,11 +168,8 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
 
         IgniteEx nearNode = startGrid(baseCnt);
 
-        IgniteCache<Object, Object> cache = nearNode.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
-            .setCacheMode(PARTITIONED)
-            .setBackups(1)
-            .setIndexedTypes(Integer.class, Integer.class));
+        IgniteCache<Object, Object> cache = nearNode.getOrCreateCache(basicCcfg()
+            .setBackups(1));
 
         Affinity<Object> aff = nearNode.affinity(DEFAULT_CACHE_NAME);
 
@@ -257,11 +255,8 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
 
         IgniteEx nearNode = startGrid(baseCnt);
 
-        IgniteCache<Object, Object> cache = nearNode.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
-            .setCacheMode(PARTITIONED)
-            .setBackups(1)
-            .setIndexedTypes(Integer.class, Integer.class));
+        IgniteCache<Object, Object> cache = nearNode.getOrCreateCache(basicCcfg()
+            .setBackups(1));
 
         Affinity<Object> aff = nearNode.affinity(DEFAULT_CACHE_NAME);
 
@@ -352,19 +347,13 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
      * @throws Exception if failed.
      */
     public void testRecoveryCommit() throws Exception {
-        // tx is commited
-        // mvcc tracker is closed
-        // partition counters are consistent
         startGridsMultiThreaded(2);
 
         client = true;
 
         IgniteEx ign = startGrid(2);
 
-        IgniteCache<Object, Object> cache = ign.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
-            .setCacheMode(PARTITIONED)
-            .setIndexedTypes(Integer.class, Integer.class));
+        IgniteCache<Object, Object> cache = ign.getOrCreateCache(basicCcfg());
 
         AtomicInteger keyCntr = new AtomicInteger();
 
@@ -394,12 +383,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
             () -> srvNode.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("select * from Integer")).getAll().size() == 2
         );
 
-        for (int i = 0; i < 2; i++) {
-            for (Integer k : keys) {
-                dataStore(grid(i).cachex(DEFAULT_CACHE_NAME).context(), k)
-                    .ifPresent(ds -> System.err.println(k + " -> " + ds.updateCounter()));
-            }
-        }
+        assertPartitionCountersAreConsistent(keys, G.allGrids());
     }
 
     /**
@@ -414,11 +398,8 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
 
         IgniteEx ign = startGrid(srvCnt);
 
-        IgniteCache<Object, Object> cache = ign.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
-            .setCacheMode(PARTITIONED)
-            .setBackups(2)
-            .setIndexedTypes(Integer.class, Integer.class));
+        IgniteCache<Object, Object> cache = ign.getOrCreateCache(basicCcfg()
+            .setBackups(2));
 
         ArrayList<Integer> keys = new ArrayList<>();
 
@@ -492,74 +473,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    public void testRecoveryOrphanedRemoteTx() throws Exception {
-        // tx is rolled back
-        // mvcc tracker is closed
-        // partition counters are consistent
-        int srvCnt = 2;
-
-        startGridsMultiThreaded(srvCnt);
-
-        client = true;
-
-        IgniteEx ign = startGrid(srvCnt);
-
-        IgniteCache<Object, Object> cache = ign.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
-            .setCacheMode(PARTITIONED)
-            .setBackups(1)
-            .setIndexedTypes(Integer.class, Integer.class));
-
-        ArrayList<Integer> keys = new ArrayList<>();
-
-        for (int i = 0; i < 1000; i++) {
-            Affinity<Object> aff = ign.affinity(DEFAULT_CACHE_NAME);
-            List<ClusterNode> nodes = new ArrayList<>(aff.mapKeyToPrimaryAndBackups(i));
-            ClusterNode primary = nodes.get(0);
-            ClusterNode backup = nodes.get(1);
-            if (grid(0).localNode().equals(primary) && grid(1).localNode().equals(backup))
-                keys.add(i);
-            if (grid(1).localNode().equals(primary) && grid(0).localNode().equals(backup))
-                keys.add(i);
-            if (keys.size() == 2)
-                break;
-        }
-
-        assert keys.size() == 2;
-
-        TestRecordingCommunicationSpi comm = (TestRecordingCommunicationSpi)ign.configuration().getCommunicationSpi();
-
-        // t0d0 choose node wisely and messages to block
-        comm.blockMessages(GridNearTxPrepareRequest.class, grid(1).name());
-
-        Transaction nearTx = ign.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
-
-        for (Integer k : keys)
-            cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, 42)").setArgs(k));
-
-        List<IgniteInternalTx> txs = IntStream.range(0, srvCnt)
-            .mapToObj(i -> grid(i).context().cache().context().tm().activeTransactions().iterator().next())
-            .collect(Collectors.toList());
-
-        ((TransactionProxyImpl)nearTx).tx().prepareNearTxLocal();
-
-        // drop near
-        stopGrid(srvCnt, true);
-
-        assertConditionEventually(() -> txs.stream().allMatch(tx -> tx.state() == ROLLED_BACK));
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    public void testCountersInterchangeNearFailed() throws Exception {
-        // t0d0
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    public void testCountersInterchangeServerFailed() throws Exception {
+    public void testCountersNeighborcastServerFailed() throws Exception {
         int srvCnt = 3;
 
         startGridsMultiThreaded(srvCnt);
@@ -568,11 +482,8 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
 
         IgniteEx ign = startGrid(srvCnt);
 
-        IgniteCache<Object, Object> cache = ign.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
-            .setCacheMode(PARTITIONED)
-            .setBackups(2)
-            .setIndexedTypes(Integer.class, Integer.class));
+        IgniteCache<Object, Object> cache = ign.getOrCreateCache(basicCcfg()
+            .setBackups(2));
 
         ArrayList<Integer> keys = new ArrayList<>();
 
@@ -594,7 +505,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
         // prevent prepare on one backup
         comm.blockMessages(GridDhtTxPrepareRequest.class, grid(0).name());
 
-        Transaction nearTx = ign.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
+        GridNearTxLocal nearTx = ((TransactionProxyImpl)ign.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)).tx();
 
         for (Integer k : keys)
             cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, 42)").setArgs(k));
@@ -602,30 +513,27 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
         List<IgniteInternalTx> txs = IntStream.range(0, srvCnt)
             .mapToObj(this::grid)
             .filter(g -> g != victim)
-            .map(g -> g.context().cache().context().tm().activeTransactions().iterator().next())
+            .map(g -> txsOnNode(g, nearTx.xidVersion()))
+            .flatMap(Collection::stream)
             .collect(Collectors.toList());
 
-        ((TransactionProxyImpl)nearTx).tx().prepareNearTxLocal();
+        nearTx.commitAsync();
 
         // await tx partially prepared
-        TimeUnit.SECONDS.sleep(1);
+        txs.stream().anyMatch(tx -> tx.state() == PREPARED);
 
         // drop primary
-        stopGrid(victim.name(), true);
-
-        // drop primary (temporary mean because failed only primary freezes grid)
-        ign.close();
+        victim.close();
 
         assertConditionEventually(() -> txs.stream().allMatch(tx -> tx.state() == ROLLED_BACK));
 
-        for (int i = 0; i < srvCnt; i++) {
-            if (i == vid) continue;
+        List<IgniteEx> keyNodes = grids(srvCnt, i -> i != vid);
 
-            for (Integer k : keys)
-                System.err.println(k + " -> " + updateCounter(grid(i).cachex(DEFAULT_CACHE_NAME).context(), k));
+        assertConditionEventually(() -> keyNodes.stream()
+            .map(node -> node.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("select * from Integer")).getAll())
+            .allMatch(Collection::isEmpty));
 
-            System.err.println(grid(i).cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("select * from Integer").setLocal(true)).getAll());
-        }
+        assertPartitionCountersAreConsistent(keys, keyNodes);
     }
 
     /**
@@ -640,11 +548,8 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
 
         IgniteEx ign = startGrid(srvCnt);
 
-        IgniteCache<Object, Object> cache = ign.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
-            .setCacheMode(PARTITIONED)
-            .setBackups(2)
-            .setIndexedTypes(Integer.class, Integer.class));
+        IgniteCache<Object, Object> cache = ign.getOrCreateCache(
+            basicCcfg().setBackups(2));
 
         int vid = 1;
 
@@ -748,11 +653,13 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
     }
 
     /** */
-    private void assertPartitionCountersAreConsistent(Iterable<Integer> keys, Iterable<IgniteEx> nodes) {
+    private void assertPartitionCountersAreConsistent(Iterable<Integer> keys, Iterable<? extends Ignite> nodes) {
         for (Integer key : keys) {
             long cntr0 = -1;
 
-            for (IgniteEx node : nodes) {
+            for (Ignite n : nodes) {
+                IgniteEx node = ((IgniteEx)n);
+
                 if (node.affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(node.localNode(), key)) {
                     long cntr = updateCounter(node.cachex(DEFAULT_CACHE_NAME).context(), key);
                     if (cntr0 == -1)
