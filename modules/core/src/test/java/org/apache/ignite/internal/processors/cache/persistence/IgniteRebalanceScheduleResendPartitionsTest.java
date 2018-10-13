@@ -128,6 +128,8 @@ public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstr
 
         AtomicInteger cnt = new AtomicInteger();
 
+        AtomicBoolean listen = new AtomicBoolean(true);
+
         CountDownLatch latch = new CountDownLatch(1);
 
         runAsync(() -> {
@@ -138,6 +140,8 @@ public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstr
                 Thread.sleep(super.getPartitionMapExchangeTimeout());
 
                 log.info("Await completed, continue rebalance.");
+
+                listen.set(false);
 
                 unwrapSPI(ig3).resume();
             }
@@ -151,6 +155,9 @@ public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstr
 
         // Pause rebalance and count of single map messages.
         unwrapSPI(ig3).pause(GridDhtPartitionDemandMessage.class, (msg) -> {
+            if (!listen.get())
+                return;
+
             System.out.println("Send partition single message:" + msg);
 
             // Continue after baseline changed exchange occurred.
