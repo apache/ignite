@@ -24,8 +24,9 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * An {@link ExecutorService} that executes submitted tasks using pooled grid threads.
@@ -33,6 +34,9 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
  * In addition to what it allows to track all enqueued tasks completion or failure during execution.
  */
 public class IgniteTaskTrackingThreadPoolExecutor extends IgniteThreadPoolExecutor {
+    /** */
+    @Nullable private final IgniteLogger log;
+
     /** */
     private final LongAdder pendingTaskCnt = new LongAdder();
 
@@ -57,9 +61,18 @@ public class IgniteTaskTrackingThreadPoolExecutor extends IgniteThreadPoolExecut
      * @param workQ The queue to use for holding tasks before they are executed. This queue will hold only
      *      runnable tasks submitted by the {@link #execute(Runnable)} method.
      */
-    public IgniteTaskTrackingThreadPoolExecutor(String threadNamePrefix, String igniteInstanceName, int corePoolSize,
-        int maxPoolSize, long keepAliveTime, BlockingQueue<Runnable> workQ) {
+    public IgniteTaskTrackingThreadPoolExecutor(
+        String threadNamePrefix,
+        String igniteInstanceName,
+        int corePoolSize,
+        int maxPoolSize,
+        long keepAliveTime,
+        BlockingQueue<Runnable> workQ,
+        IgniteLogger log
+    ) {
         super(threadNamePrefix, igniteInstanceName, corePoolSize, maxPoolSize, keepAliveTime, workQ);
+
+        this.log = log;
     }
 
     /**
@@ -76,10 +89,19 @@ public class IgniteTaskTrackingThreadPoolExecutor extends IgniteThreadPoolExecut
      * @param plc {@link GridIoPolicy} for thread pool.
      * @param eHnd Uncaught exception handler for thread pool.
      */
-    public IgniteTaskTrackingThreadPoolExecutor(String threadNamePrefix, String igniteInstanceName, int corePoolSize,
-        int maxPoolSize, long keepAliveTime, BlockingQueue<Runnable> workQ, byte plc,
-        UncaughtExceptionHandler eHnd) {
+    public IgniteTaskTrackingThreadPoolExecutor(
+        String threadNamePrefix,
+        String igniteInstanceName,
+        int corePoolSize,
+        int maxPoolSize,
+        long keepAliveTime,
+        BlockingQueue<Runnable> workQ, byte plc,
+        UncaughtExceptionHandler eHnd,
+        IgniteLogger log
+    ) {
         super(threadNamePrefix, igniteInstanceName, corePoolSize, maxPoolSize, keepAliveTime, workQ, plc, eHnd);
+
+        this.log = log;
     }
 
     /**
@@ -93,9 +115,17 @@ public class IgniteTaskTrackingThreadPoolExecutor extends IgniteThreadPoolExecut
      *      runnable tasks submitted by the {@link #execute(Runnable)} method.
      * @param threadFactory Thread factory.
      */
-    public IgniteTaskTrackingThreadPoolExecutor(int corePoolSize, int maxPoolSize, long keepAliveTime,
-        BlockingQueue<Runnable> workQ, ThreadFactory threadFactory) {
+    public IgniteTaskTrackingThreadPoolExecutor(
+        int corePoolSize,
+        int maxPoolSize,
+        long keepAliveTime,
+        BlockingQueue<Runnable> workQ,
+        ThreadFactory threadFactory,
+        IgniteLogger log
+    ) {
         super(corePoolSize, maxPoolSize, keepAliveTime, workQ, threadFactory);
+
+        this.log = log;
     }
 
     /** {@inheritDoc} */
@@ -152,9 +182,20 @@ public class IgniteTaskTrackingThreadPoolExecutor extends IgniteThreadPoolExecut
      */
     public final synchronized void awaitDone() throws IgniteCheckedException {
         // There are no guarantee what all enqueued tasks will be finished if an error has occurred.
-        while(!isError() && !isDone()) {
+        while (!isError() && !isDone()) {
             try {
-                wait();
+                if (log != null && log.isInfoEnabled()) {
+                    log.info(
+                        "Await checkpoint pool tasks comleted, " +
+                            "pendingTaskCnt=" + pendingTaskCnt.longValue() + ", " +
+                            "completedTaskCnt=" + completedTaskCnt.longValue() + ", " +
+                            "initialized=" + initialized + ", " +
+                            "err=" + err.get() + ", " +
+                            "activeCnt=" + getActiveCount()
+                    );
+                }
+
+                wait(2000);
             }
             catch (InterruptedException e) {
                 err.set(e);

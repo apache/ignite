@@ -40,10 +40,16 @@ public class IgniteTaskTrackingThreadPoolExecutorTest extends TestCase {
     @Override protected void setUp() throws Exception {
         int procs = Runtime.getRuntime().availableProcessors();
 
-        executor = new IgniteTaskTrackingThreadPoolExecutor("test", "default",
-            procs * 2, procs * 2, 30_000, new LinkedBlockingQueue<>(), GridIoPolicy.UNDEFINED, (t, e) -> {
+        executor = new IgniteTaskTrackingThreadPoolExecutor(
+            "test",
+            "default",
+            procs * 2,
+            procs * 2, 30_000,
+            new LinkedBlockingQueue<>(),
+            GridIoPolicy.UNDEFINED,
+            (t, e) -> {
                 // No-op.
-            });
+            }, null);
     }
 
     /** {@inheritDoc} */

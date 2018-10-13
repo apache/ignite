@@ -736,7 +736,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 30_000, // A value is ignored if corePoolSize equals to maxPoolSize
                 new LinkedBlockingQueue<Runnable>(),
                 GridIoPolicy.UNDEFINED,
-                cctx.kernalContext().uncaughtExceptionHandler()
+                cctx.kernalContext().uncaughtExceptionHandler(),
+                log
             );
     }
 
