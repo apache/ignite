@@ -21,8 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
@@ -52,7 +50,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -385,90 +382,6 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
         );
 
         assertPartitionCountersAreConsistent(keys, G.allGrids());
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    public void testRecoveryRollbackInconsistentBackups() throws Exception {
-        int srvCnt = 3;
-
-        startGridsMultiThreaded(srvCnt);
-
-        client = true;
-
-        IgniteEx ign = startGrid(srvCnt);
-
-        IgniteCache<Object, Object> cache = ign.getOrCreateCache(basicCcfg()
-            .setBackups(2));
-
-        ArrayList<Integer> keys = new ArrayList<>();
-
-        Affinity<Object> aff = ign.affinity(DEFAULT_CACHE_NAME);
-
-        int victim = 2;
-        int missedPrepare = 1;
-
-        for (int i = 0; i < 100; i++) {
-            if (aff.isPrimary(grid(victim).localNode(), i)) {
-                keys.add(i);
-                break;
-            }
-        }
-
-        assert keys.size() == 1;
-
-        ((TestRecordingCommunicationSpi)grid(victim).configuration().getCommunicationSpi())
-            .blockMessages(GridDhtTxPrepareRequest.class, grid(missedPrepare).name());
-
-        List<IgniteInternalTx> txs = new ArrayList<>();
-
-        GridTestUtils.runAsync(() -> {
-            // run in separate thread to exclude tx from thread-local map
-            GridNearTxLocal nearTx
-                = ((TransactionProxyImpl)ign.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)).tx();
-
-            for (Integer k : keys)
-                cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, 42)").setArgs(k));
-
-            nearTx.commitAsync();
-
-            IntStream.range(0, srvCnt)
-                .filter(i -> i != victim)
-                .mapToObj(i -> txsOnNode(grid(i), nearTx.xidVersion()))
-                .flatMap(Collection::stream)
-                .forEach(txs::add);
-
-            return null;
-        }).get();
-
-        assertConditionEventually(() -> txs.stream().anyMatch(tx -> tx.state() == PREPARED));
-
-        // drop near
-        ign.close();
-
-        // delay between node failures
-        Thread.sleep(200);
-
-        // drop primary
-        grid(victim).close();
-
-        try {
-            assertConditionEventually(() -> txs.stream().allMatch(tx -> tx.state() == ROLLED_BACK));
-        }
-        finally {
-            System.err.println(txs.stream().map(IgniteInternalTx::state).collect(Collectors.toList()));
-        }
-
-        for (int i = 0; i < srvCnt; i++) {
-            if (i == victim) continue;
-
-            IgniteCache<Object, Object> c = grid(i).cache(DEFAULT_CACHE_NAME);
-
-            assertTrue(c.query(new SqlFieldsQuery("select * from Integer")).getAll().isEmpty());
-        }
-
-        assertPartitionCountersAreConsistent(keys, grids(srvCnt, i -> i != victim));
     }
 
     /**
