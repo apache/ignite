@@ -67,6 +67,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
+import static org.apache.ignite.transactions.TransactionState.PREPARING;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 
 /** */
@@ -574,7 +575,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
 
         Transaction txA = ign.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
-        // prevent first transaction prepare on one backup
+        // prevent first transaction prepare on backups
         ((TestRecordingCommunicationSpi)victim.configuration().getCommunicationSpi())
             .blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
                 final AtomicInteger limiter = new AtomicInteger();
@@ -587,38 +588,49 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
 
         cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, 42)").setArgs(keys.get(0)));
 
-        IgniteFuture<Void> futA = txA.commitAsync();
+        txA.commitAsync();
 
-        // await tx partially prepared
-        TimeUnit.SECONDS.sleep(1);
+        GridCacheVersion aXidVer = ((TransactionProxyImpl)txA).tx().xidVersion();
 
-        CompletableFuture.runAsync(() -> {
+        assertConditionEventually(() -> txsOnNode(victim, aXidVer).stream()
+            .anyMatch(tx -> tx.state() == PREPARING));
+
+        GridTestUtils.runAsync(() -> {
             try (Transaction txB = ign.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, 42)").setArgs(keys.get(1)));
 
                 txB.commit();
             }
-        }).join();
+        }).get();
 
-        for (int i = 0; i < srvCnt; i++) {
-            for (Integer k : keys)
-                System.err.println(k + " -> " + updateCounter(grid(i).cachex(DEFAULT_CACHE_NAME).context(), k));
-        }
+        long victimUpdCntr = updateCounter(victim.cachex(DEFAULT_CACHE_NAME).context(), keys.get(0));
+
+        System.err.println(victimUpdCntr);
+
+        List<IgniteEx> backupNodes = grids(srvCnt, i -> i != vid);
+
+        List<IgniteInternalTx> backupTxsA = backupNodes.stream()
+            .map(node -> txsOnNode(node, aXidVer))
+            .flatMap(Collection::stream)
+            .collect(Collectors.toList());
 
         // drop primary
         stopGrid(victim.name(), true);
 
-//        assertConditionEventually(() -> txs.stream().allMatch(tx -> tx.state() == ROLLED_BACK));
-        TimeUnit.SECONDS.sleep(3);
+        assertConditionEventually(() -> backupTxsA.stream().allMatch(tx -> tx.state() == ROLLED_BACK));
 
-        for (int i = 0; i < srvCnt; i++) {
-            if (i == vid) continue;
+        backupNodes.stream()
+            .map(node -> node.cache(DEFAULT_CACHE_NAME))
+            .forEach(c -> System.err.println(c.query(new SqlFieldsQuery("select * from Integer").setLocal(true)).getAll()));
 
+        backupNodes.stream()
+            .map(node -> node.cache(DEFAULT_CACHE_NAME))
+            .forEach(c -> assertEquals(1, c.query(new SqlFieldsQuery("select * from Integer").setLocal(true)).getAll().size()));
+
+        backupNodes.forEach(node -> {
             for (Integer k : keys)
-                System.err.println(k + " -> " + updateCounter(grid(i).cachex(DEFAULT_CACHE_NAME).context(), k));
-
-            System.err.println(grid(i).cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("select * from Integer").setLocal(true)).getAll());
-        }
+                assertEquals(victimUpdCntr, updateCounter(node.cachex(DEFAULT_CACHE_NAME).context(), k));
+        });
     }
 
     /** */
