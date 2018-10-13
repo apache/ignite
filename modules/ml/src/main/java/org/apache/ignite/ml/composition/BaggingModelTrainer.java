@@ -17,13 +17,6 @@
 
 package org.apache.ignite.ml.composition;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
@@ -33,22 +26,22 @@ import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedDatasetPartit
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.logging.MLLogger;
-import org.apache.ignite.ml.environment.parallelism.Promise;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.selection.split.mapper.SHA256UniformMapper;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.util.Utils;
-import org.jetbrains.annotations.NotNull;
+
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Abstract trainer implementing bagging logic. In each learning iteration the algorithm trains one model on subset of
  * learning sample and subspace of features space. Each model is produced from same model-class [e.g. Decision Trees].
  */
-public abstract class BaggingModelTrainer extends DatasetTrainer<ModelsComposition, Double> {
+public abstract class BaggingModelTrainer<M extends Model<Vector, Double>, R, X> extends DatasetTrainer<ModelsComposition, Double> {
     /**
      * Predictions aggregator.
      */
@@ -102,48 +95,20 @@ public abstract class BaggingModelTrainer extends DatasetTrainer<ModelsCompositi
 
         Long startTs = System.currentTimeMillis();
 
-        List<IgniteSupplier<ModelOnFeaturesSubspace>> tasks = new ArrayList<>();
-        for(int i = 0; i < ensembleSize; i++)
-            tasks.add(() -> learnModel(datasetBuilder, featureExtractor, lbExtractor));
-
-        List<Model<Vector, Double>> models = environment.parallelismStrategy().submit(tasks)
-            .stream().map(Promise::unsafeGet)
-            .collect(Collectors.toList());
-
-        double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
-        log.log(MLLogger.VerboseLevel.LOW, "The training time was %.2fs", learningTime);
-        log.log(MLLogger.VerboseLevel.LOW, "Learning finished");
-        return new ModelsComposition(models, predictionsAggregator);
-    }
-
-    /**
-     * Trains one model on part of sample and features subspace.
-     *
-     * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
-     */
-    @NotNull private <K, V> ModelOnFeaturesSubspace learnModel(
-        DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
-
         Random rnd = new Random();
         long featureExtractorSeed = rnd.nextLong();
         Map<Integer, Integer> featuresMapping = createFeaturesMapping(featureExtractorSeed, featureVectorSize);
 
-        Long startTs = System.currentTimeMillis();
-
         try(Dataset<EmptyContext, BootstrappedDatasetPartition> dataset = datasetBuilder.build(
-                new EmptyContextBuilder<>(),
-                new BootstrappedDatasetBuilder<>(wrapFeatureExtractor(featureExtractor, featuresMapping),
-                        lbExtractor, ensembleSize, samplePartSizePerMdl)
+            new EmptyContextBuilder<>(),
+            new BootstrappedDatasetBuilder<>(wrapFeatureExtractor(featureExtractor, featuresMapping),
+                lbExtractor, ensembleSize, samplePartSizePerMdl)
         )) {
-            Model<Vector, Double> mdl = doTrainOneModel(dataset);
             double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
-            environment.logger(getClass()).log(MLLogger.VerboseLevel.HIGH, "One model training time was %.2fs", learningTime);
+            log.log(MLLogger.VerboseLevel.LOW, "The training time was %.2fs", learningTime);
+            log.log(MLLogger.VerboseLevel.LOW, "Learning finished");
 
-            return new ModelOnFeaturesSubspace(featuresMapping, mdl);
+            return trainEnsemble(dataset);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -165,8 +130,101 @@ public abstract class BaggingModelTrainer extends DatasetTrainer<ModelsCompositi
         return locFeaturesMapping;
     }
 
-    // TODO: Check if we should pass here a sample index.
-    protected abstract Model<Vector, Double> doTrainOneModel(Dataset<EmptyContext, BootstrappedDatasetPartition> ds);
+    /**
+     * Initialize a single model from the ensemble.
+     *
+     * @return Initial state of a single model in the ensemble.
+     */
+    protected abstract M init();
+
+    /**
+     * Method representing one local iteration of a single model.
+     *
+     * @param partitionIdx Index of partition.
+     * @param part Partition.
+     * @param modelIdx Index of trained model.
+     * @param subspace Subspace on which to train given model.
+     * @param meta Metadata used for training.
+     * @return Result of one local iteration of training of model.
+     */
+    protected abstract R trainingIteration(
+        int partitionIdx,
+        BootstrappedDatasetPartition part,
+        int modelIdx,
+        Set<Integer> subspace,
+        X meta);
+
+    /**
+     * Method used to reduce training results.
+     *
+     * @param res1 First result.
+     * @param res2 Second result.
+     * @return Result of reduction.
+     */
+    protected abstract R reduceTrainingResults(R res1, R res2);
+
+    /**
+     * Identity for binary operator reducing training results.
+     *
+     * @return Identity for binary operator reducing training results.
+     */
+    protected abstract R identity();
+
+    /**
+     * Method describing how training results should be applied to models.
+     *
+     * @param model Model.
+     * @param res Training result.
+     * @return Updated model.
+     */
+    protected abstract M applyTrainingResultsToModel(M model, R res);
+
+    /**
+     * Create metadata which is used during one local iteration.
+     *
+     * @param models Trained models.
+     * @return Metadata which is used during one local iteration.
+     */
+    protected abstract X getMeta(List<M> models);
+
+    /**
+     * Criterion for stopping global iterations.
+     *
+     * @param models Models.
+     * @param meta Metadata.
+     * @return Should global iterations loop should stop.
+     */
+    protected abstract boolean shouldStop(List<M> models, X meta);
+
+    private final ModelsComposition trainEnsemble(Dataset<EmptyContext, BootstrappedDatasetPartition> ds) {
+        List<M> models = IntStream.range(0, ensembleSize).mapToObj(i -> init()).collect(Collectors.toList());
+        X meta = getMeta(models);
+
+        while (!shouldStop(models, meta)) {
+            List<R> identities = IntStream.range(0, ensembleSize).mapToObj(i -> identity()).collect(Collectors.toList());
+
+            List<R> trainingResults = ds.compute((data, partIdx) -> {
+                // TODO: check parallelization. Should we use environment here?
+                int totalFeaturesCnt = data.iterator().next().features().size();
+                List<Integer> allFeatureIds = IntStream.range(0, totalFeaturesCnt).boxed().collect(Collectors.toList());
+
+                return IntStream
+                    .range(0, ensembleSize)
+                    .mapToObj(modelIdx -> {
+                            Collections.shuffle(allFeatureIds);
+                            Set<Integer> subspace = allFeatureIds.stream().limit(featureVectorSize).collect(Collectors.toSet());
+
+                            return trainingIteration(partIdx, data, modelIdx, subspace, meta);
+                        }
+                    )
+                    .collect(Collectors.toList());
+            }, (l1, l2) -> zipWith(l1, l2, this::reduceTrainingResults), identities);
+
+            models = zipWith(models, trainingResults, this::applyTrainingResultsToModel);
+        }
+
+        return new ModelsComposition(models, predictionsAggregator);
+    }
 
     /**
      * Wraps the original feature extractor with features subspace mapping applying.
@@ -203,5 +261,29 @@ public abstract class BaggingModelTrainer extends DatasetTrainer<ModelsCompositi
         newModels.addAll(fit(datasetBuilder, featureExtractor, lbExtractor).getModels());
 
         return new ModelsComposition(newModels, predictionsAggregator);
+    }
+
+    /**
+     * Creates the list which contains results of application of a given bi-function to entries on same positions
+     * on given lists. Resulting list size is size of shortest list.
+     *
+     * @param l1 First list.
+     * @param l2 Second list.
+     * @param f Bi-function to apply.
+     * @param <X> Type of entries of the first list.
+     * @param <Y> Type of entries of the second list.
+     * @param <Z> Type of entries of resulting list.
+     * @return List which contains results of application of a given bi-function to entries on same positions
+     * on given lists.
+     */
+    private static <X, Y, Z> List<Z> zipWith(List<X> l1, List<Y> l2, IgniteBiFunction<X, Y, Z> f) {
+        int lim = Math.min(l1.size(), l2.size());
+        List<Z> res = new LinkedList<>();
+
+        for (int i = 0; i < lim; i++) {
+            res.add(f.apply(l1.get(i), l2.get(i)));
+        }
+
+        return res;
     }
 }

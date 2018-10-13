@@ -39,6 +39,10 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 public interface PartitionContextBuilder<K, V, C extends Serializable> extends Serializable {
     /**
      * Builds a new partition {@code context} from an {@code upstream} data.
+     * Important: there is no guarantee that there will be no more than one UpstreamEntry with given key,
+     * UpstreamEntry should be thought rather as a container saving all data from upstream, but omitting uniqueness
+     * constraint. This constraint is omitted to allow upstream data transformers in {@link DatasetBuilder} replicating
+     * entries. For example it can be useful for bootstrapping.
      *
      * @param upstreamData Partition {@code upstream} data.
      * @param upstreamDataSize Partition {@code upstream} data size.

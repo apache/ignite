@@ -132,6 +132,7 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
 
         IgniteCache<Integer, C> datasetCache = ignite.createCache(datasetCacheConfiguration);
 
+        // TODO: Make seed personal to each node.
         List<?> data = transformerDataSuppliers.stream().map(Supplier::get).collect(Collectors.toList());
 
         ComputeUtils.initContext(
