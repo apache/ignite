@@ -459,6 +459,8 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMergeServerAndClientJoin1() throws Exception {
+        fail("Failed after https://issues.apache.org/jira/browse/IGNITE-9558, client and server merge is not allowed");
+
         final IgniteEx srv0 = startGrid(0);
 
         mergeExchangeWaitVersion(srv0, 3);
@@ -678,8 +680,6 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMergeServersJoin1() throws Exception {
-        fail("Failed after https://issues.apache.org/jira/browse/IGNITE-9558, client and server merge is not allowed");
-
         IgniteEx srv0 = startGrid(0);
 
         mergeExchangeWaitVersion(srv0, 3);
