@@ -530,12 +530,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             int partitions = grpDesc.config().getAffinity().partitions();
 
-            PageMemoryEx memEx = (PageMemoryEx)region.pageMemory();
+            if (region.pageMemory() instanceof PageMemoryEx) {
+                PageMemoryEx memEx = (PageMemoryEx)region.pageMemory();
 
-            for (int partId = 0; partId < partitions; partId++) {
-                memEx.invalidate(grpDesc.groupId(), partId);
+                for (int partId = 0; partId < partitions; partId++) {
+                    memEx.invalidate(grpDesc.groupId(), partId);
 
-                schedulePartitionDestroy(grpDesc.groupId(), partId);
+                    schedulePartitionDestroy(grpDesc.groupId(), partId);
+                }
             }
         }
     }
