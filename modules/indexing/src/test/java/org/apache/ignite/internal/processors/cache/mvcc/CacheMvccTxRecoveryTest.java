@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
@@ -436,9 +437,6 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
      * @throws Exception if failed.
      */
     public void testRecoveryRollbackInconsistentBackups() throws Exception {
-        // tx is rolled back
-        // mvcc tracker is closed
-        // partition counters are consistent
         int srvCnt = 3;
 
         startGridsMultiThreaded(srvCnt);
@@ -469,53 +467,57 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
 
         assert keys.size() == 1;
 
-        // t0d0 choose node wisely and messages to block
-        // t0d0 check problem with visibility inconsistency on different nodes in various cases
         ((TestRecordingCommunicationSpi)grid(victim).configuration().getCommunicationSpi())
             .blockMessages(GridDhtTxPrepareRequest.class, grid(missedPrepare).name());
 
-        Transaction nearTx = ign.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
+        List<IgniteInternalTx> txs = new ArrayList<>();
 
-        for (Integer k : keys)
-            cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, 42)").setArgs(k));
+        GridTestUtils.runAsync(() -> {
+            // run in separate thread to exclude tx from thread-local map
+            GridNearTxLocal nearTx
+                = ((TransactionProxyImpl)ign.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)).tx();
 
-        List<IgniteInternalTx> txs = IntStream.range(0, srvCnt)
-            .filter(i -> i != victim)
-            .mapToObj(i -> grid(i).context().cache().context().tm().activeTransactions().iterator().next())
-            .collect(Collectors.toList());
+            for (Integer k : keys)
+                cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, 42)").setArgs(k));
 
-        ((TransactionProxyImpl)nearTx).tx().prepareNearTxLocal();
+            nearTx.commitAsync();
+
+            IntStream.range(0, srvCnt)
+                .filter(i -> i != victim)
+                .mapToObj(i -> txsOnNode(grid(i), nearTx.xidVersion()))
+                .flatMap(Collection::stream)
+                .forEach(txs::add);
+
+            return null;
+        }).get();
+
+        assertConditionEventually(() -> txs.stream().anyMatch(tx -> tx.state() == PREPARED));
 
         // drop near
         ign.close();
-        // t0d0 delay between multiple failures makes sense (check possible commit + rollback problem)
+
+        // delay between node failures
+        Thread.sleep(200);
+
         // drop primary
-        // t0d0 update started voting on mvcc coordinator
         grid(victim).close();
 
-        for (int i = 0; i < srvCnt; i++) {
-            if (i == victim) continue;
-
-            for (Integer k : keys) {
-                dataStore(grid(i).cachex("test").context(), k)
-                    .ifPresent(ds -> System.err.println(k + " -> " + ds.updateCounter()));
-            }
+        try {
+            assertConditionEventually(() -> txs.stream().allMatch(tx -> tx.state() == ROLLED_BACK));
         }
-
-        assertConditionEventually(() -> txs.stream().allMatch(tx -> tx.state() == ROLLED_BACK));
-
-        TimeUnit.SECONDS.sleep(5);
+        finally {
+            System.err.println(txs.stream().map(IgniteInternalTx::state).collect(Collectors.toList()));
+        }
 
         for (int i = 0; i < srvCnt; i++) {
             if (i == victim) continue;
 
-            for (Integer k : keys) {
-                dataStore(grid(i).cachex("test").context(), k)
-                    .ifPresent(ds -> System.err.println(k + " -> " + ds.updateCounter()));
-            }
+            IgniteCache<Object, Object> c = grid(i).cache("test");
 
-            System.err.println(grid(i).cache("test").query(new SqlFieldsQuery("select * from Integer").setLocal(true)).getAll());
+            assertTrue(c.query(new SqlFieldsQuery("select * from Integer").setLocal(true)).getAll().isEmpty());
         }
+
+        assertPartitionCountersAreConsistent(keys, grids(srvCnt, i -> i != victim));
     }
 
     /**
@@ -759,7 +761,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
             .peek(tx -> assertEquals(xidVer, tx.nearXidVersion()))
             .collect(Collectors.toList());
 
-        assertFalse(txs.isEmpty());
+        assert !txs.isEmpty();
 
         return txs;
     }
@@ -769,6 +771,28 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
         throws IgniteInterruptedCheckedException {
         if (!GridTestUtils.waitForCondition(p, 5_000))
             fail();
+    }
+
+    /** */
+    private List<IgniteEx> grids(int cnt, IntPredicate p) {
+        return IntStream.range(0, cnt).filter(p).mapToObj(this::grid).collect(Collectors.toList());
+    }
+
+    /** */
+    private void assertPartitionCountersAreConsistent(Iterable<Integer> keys, Iterable<IgniteEx> nodes) {
+        for (Integer key : keys) {
+            long cntr0 = -1;
+
+            for (IgniteEx node : nodes) {
+                if (node.affinity("test").isPrimaryOrBackup(node.localNode(), key)) {
+                    long cntr = updateCounter(node.cachex("test").context(), key);
+                    if (cntr0 == -1)
+                        cntr0 = cntr;
+
+                    assertEquals(cntr0, cntr);
+                }
+            }
+        }
     }
 
     /** */
