@@ -145,6 +145,9 @@ public class PartitionAllocationMap {
      * Prepare map for snapshot.
      */
     public void prepareForSnapshot() {
+        if (readMap != null)
+            return;
+
         readMap = new TreeMap<>();
 
         for (Map.Entry<GroupPartitionId, PagesAllocationRange> entry : writeMap.entrySet()) {
