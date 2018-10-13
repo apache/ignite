@@ -655,7 +655,7 @@ public class IgniteTxHandler {
     private boolean needRemap(AffinityTopologyVersion expVer,
         AffinityTopologyVersion curVer,
         GridNearTxPrepareRequest req) {
-        if (expVer.compareTo(req.lastAffinityChangedTopologyVersion()) >= 0 && expVer.compareTo(curVer) <= 0)
+        if (curVer.compareTo(expVer) <= 0 && curVer.compareTo(req.lastAffinityChangedTopologyVersion()) >= 0)
             return false;
 
         for (IgniteTxEntry e : F.concat(false, req.reads(), req.writes())) {
