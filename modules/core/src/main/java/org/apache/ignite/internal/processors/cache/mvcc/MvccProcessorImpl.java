@@ -28,11 +28,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.expiry.EternalExpiryPolicy;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -59,7 +57,7 @@ import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryCntr;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryId;
@@ -79,7 +77,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
@@ -114,7 +111,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker.MVCC_TRACKER_ID_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
@@ -259,31 +256,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public void validateCacheConfiguration(CacheConfiguration ccfg) throws IgniteCheckedException {
+    @Override public void validateCacheConfiguration(CacheConfiguration ccfg) {
         if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
             if (!mvccSupported)
                 throw new IgniteException("Cannot start MVCC transactional cache. " +
                     "MVCC is unsupported by the cluster.");
-
-            if (ccfg.getCacheStoreFactory() != null) {
-                throw new IgniteCheckedException("Transactional cache may not have a third party cache store when " +
-                    "MVCC is enabled.");
-            }
-
-            if (ccfg.getExpiryPolicyFactory() != null && !(ccfg.getExpiryPolicyFactory().create() instanceof
-                EternalExpiryPolicy)) {
-                throw new IgniteCheckedException("Transactional cache may not have expiry policy when " +
-                    "MVCC is enabled.");
-            }
-
-            if (ccfg.getInterceptor() != null) {
-                throw new IgniteCheckedException("Transactional cache may not have an interceptor when " +
-                    "MVCC is enabled.");
-            }
-
-            if (ccfg.getCacheMode() == CacheMode.LOCAL)
-                throw new IgniteCheckedException("Local caches are not supported by MVCC engine. Use " +
-                    "CacheAtomicityMode.TRANSACTIONAL for local caches.");
 
             mvccEnabled = true;
         }
@@ -333,7 +310,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public void afterInitialise(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
+    @Override public void afterInitialise(IgniteCacheDatabaseSharedManager mgr) {
         // No-op.
     }
 
@@ -348,7 +325,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public void afterMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
+    @Override public void afterMemoryRestore(IgniteCacheDatabaseSharedManager mgr) {
         // No-op.
     }
 
@@ -1233,7 +1210,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                                             for (TxKey key : waitMap.keySet()) {
                                                 assert key.major() == snapshot.coordinatorVersion()
                                                     && key.minor() > snapshot.cleanupVersion()
-                                                    || key.major() > snapshot.coordinatorVersion();
+                                                    || key.major() > snapshot.coordinatorVersion() :
+                                                    "key=" + key + ", snapshot=" + snapshot;
                                             }
                                         }
 
@@ -2100,8 +2078,10 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
             VacuumMetrics metrics = new VacuumMetrics();
 
-            if (part == null || part.state() != OWNING || !part.reserve())
+            if (!canRunVacuum(part, null) || !part.reserve())
                 return metrics;
+
+            int curCacheId = CU.UNDEFINED_CACHE_ID;
 
             try {
                 GridCursor<? extends CacheDataRow> cursor = part.dataStore().cursor(KEY_ONLY);
@@ -2115,8 +2095,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 MvccSnapshot snapshot = task.snapshot();
 
                 GridCacheContext cctx = null;
-
-                int curCacheId = CU.UNDEFINED_CACHE_ID;
 
                 boolean shared = part.group().sharedGroup();
 
@@ -2133,8 +2111,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                         prevKey = row.key();
 
                     if (cctx == null) {
-                        assert shared;
-
                         cctx = part.group().shared().cacheContext(curCacheId = row.cacheId());
 
                         if (cctx == null)
@@ -2174,9 +2150,61 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
                 return metrics;
             }
+            catch (Exception e) {
+                if (canRunVacuum(part, curCacheId))
+                    throw e; // Unexpected error.
+
+                U.warn(log, "Error occurred during the vacuum. Skip vacuuming for the current partition. " +
+                    "[cacheId=" + curCacheId + ", part=" + part + ", err=" + e.getMessage() + ']', e);
+
+                return new VacuumMetrics();
+            }
             finally {
                 part.release();
             }
+        }
+
+        /**
+         * @param part Partition.
+         * @param cacheId Cache id.
+         * @return {@code True} if we can vacuum given partition.
+         */
+        private boolean canRunVacuum(GridDhtLocalPartition part, Integer cacheId) {
+            if (part == null || part.state() != OWNING)
+                return false;
+
+            CacheGroupContext grp = part.group();
+
+            assert grp != null;
+
+            List<GridCacheContext> caches = grp.caches();
+
+            if (F.isEmpty(caches))
+                return false;
+
+            if (grp.shared().kernalContext().isStopping())
+                return false;
+
+            if (cacheId == null && grp.sharedGroup())
+                return true; // Cache context is unknown, but we can try to run vacuum.
+
+            GridCacheContext ctx0;
+
+            if (grp.sharedGroup()) {
+                assert cacheId != null && cacheId != CU.UNDEFINED_CACHE_ID;
+
+                if (!grp.cacheIds().contains(cacheId))
+                    return false;
+
+                ctx0 = grp.shared().cacheContext(cacheId);
+            }
+            else
+                ctx0 = caches.get(0);
+
+            if (ctx0 == null)
+                return false;
+
+            return !grp.shared().closed(ctx0);
         }
 
         /** */

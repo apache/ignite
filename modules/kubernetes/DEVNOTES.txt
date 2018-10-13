@@ -10,7 +10,7 @@ Building Apache Ignite
 =========================
 
 Use the command below to assemble an Apache Ignite binary:
-    mvn clean package -Prelease -Dignite.edition=fabric-lgpl -DskipTests
+    mvn clean package -Prelease -Dignite.edition=apache-ignite-lgpl -DskipTests
 
 Note, if you alter the build instruction somehow make sure to update the files under 'config' folder if needed.
 

@@ -559,8 +559,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "PUBLIC.TEST.PK_PUBLIC_TEST.ID",
                 "PUBLIC.TEST.PK_PUBLIC_TEST.NAME",
                 "PUBLIC.Quoted.PK_PUBLIC_Quoted.Id",
-                "PUBLIC.TEST_DECIMAL_COLUMN.ID._KEY",
-                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION.ID._KEY"));
+                "PUBLIC.TEST_DECIMAL_COLUMN.ID.ID",
+                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION.ID.ID"));
 
             Set<String> actualPks = new HashSet<>(expectedPks.size());
 

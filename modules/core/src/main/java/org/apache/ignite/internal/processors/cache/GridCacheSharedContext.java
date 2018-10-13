@@ -42,8 +42,8 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionsEvictManager;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
@@ -171,6 +171,9 @@ public class GridCacheSharedContext<K, V> {
     /** */
     private final List<IgniteChangeGlobalStateSupport> stateAwareMgrs;
 
+    /** Cluster is in read-only mode. */
+    private volatile boolean readOnlyMode;
+
     /**
      * @param kernalCtx  Context.
      * @param txMgr Transaction manager.
@@ -266,8 +269,13 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     public void activate() throws IgniteCheckedException {
+        long time = System.currentTimeMillis();
+
         for (IgniteChangeGlobalStateSupport mgr : stateAwareMgrs)
             mgr.onActivate(kernalCtx);
+
+        if (msgLog.isInfoEnabled())
+            msgLog.info("Components activation performed in " + (System.currentTimeMillis() - time) + " ms.");
     }
 
     /**
@@ -1102,5 +1110,19 @@ public class GridCacheSharedContext<K, V> {
      */
     private int dhtAtomicUpdateIndex(GridCacheVersion ver) {
         return U.safeAbs(ver.hashCode()) % dhtAtomicUpdCnt.length();
+    }
+
+    /**
+     * @return {@code true} if cluster is in read-only mode.
+     */
+    public boolean readOnlyMode() {
+        return readOnlyMode;
+    }
+
+    /**
+     * @param readOnlyMode Read-only flag.
+     */
+    public void readOnlyMode(boolean readOnlyMode) {
+        this.readOnlyMode = readOnlyMode;
     }
 }

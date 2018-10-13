@@ -38,6 +38,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxRemoteAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -413,14 +415,27 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
 
             try {
                 CacheObject val = null;
+                EntryProcessor entryProc = null;
+                Object[] invokeArgs = null;
 
                 Message val0 = vals != null ? vals.get(i) : null;
 
                 CacheEntryInfoCollection entries =
                     val0 instanceof CacheEntryInfoCollection ? (CacheEntryInfoCollection)val0 : null;
 
-                if (entries == null && !op.isDeleteOrLock())
+                if (entries == null && !op.isDeleteOrLock() && !op.isInvoke())
                     val = (val0 instanceof CacheObject) ? (CacheObject)val0 : null;
+
+                if(entries == null && op.isInvoke()) {
+                    assert val0 instanceof GridInvokeValue;
+
+                    GridInvokeValue invokeVal = (GridInvokeValue)val0;
+
+                    entryProc = invokeVal.entryProcessor();
+                    invokeArgs = invokeVal.invokeArgs();
+                }
+
+                assert entryProc != null || !op.isInvoke();
 
                 GridDhtCacheEntry entry = dht.entryExx(key, topologyVersion());
 
@@ -438,22 +453,29 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                         ctx.localNodeId(),
                                         topologyVersion(),
                                         snapshot,
+                                        false,
+                                        null,
                                         false);
 
                                     break;
 
                                 case INSERT:
+                                case TRANSFORM:
                                 case UPSERT:
                                 case UPDATE:
                                     updRes = entry.mvccSet(
                                         this,
                                         ctx.localNodeId(),
                                         val,
+                                        entryProc,
+                                        invokeArgs,
                                         0,
                                         topologyVersion(),
                                         snapshot,
                                         op.cacheOperation(),
                                         false,
+                                        false,
+                                        null,
                                         false);
 
                                     break;
