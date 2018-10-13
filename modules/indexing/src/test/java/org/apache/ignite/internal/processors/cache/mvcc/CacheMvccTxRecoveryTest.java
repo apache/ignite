@@ -465,7 +465,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
 
             IgniteCache<Object, Object> c = grid(i).cache(DEFAULT_CACHE_NAME);
 
-            assertTrue(c.query(new SqlFieldsQuery("select * from Integer").setLocal(true)).getAll().isEmpty());
+            assertTrue(c.query(new SqlFieldsQuery("select * from Integer")).getAll().isEmpty());
         }
 
         assertPartitionCountersAreConsistent(keys, grids(srvCnt, i -> i != victim));
@@ -605,8 +605,6 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
 
         long victimUpdCntr = updateCounter(victim.cachex(DEFAULT_CACHE_NAME).context(), keys.get(0));
 
-        System.err.println(victimUpdCntr);
-
         List<IgniteEx> backupNodes = grids(srvCnt, i -> i != vid);
 
         List<IgniteInternalTx> backupTxsA = backupNodes.stream()
@@ -615,24 +613,21 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
             .collect(Collectors.toList());
 
         // drop primary
-        stopGrid(victim.name(), true);
+        victim.close();
 
         assertConditionEventually(() -> backupTxsA.stream().allMatch(tx -> tx.state() == ROLLED_BACK));
 
         backupNodes.stream()
             .map(node -> node.cache(DEFAULT_CACHE_NAME))
-            .forEach(c -> System.err.println(c.query(new SqlFieldsQuery("select * from Integer").setLocal(true)).getAll()));
-
-        backupNodes.stream()
-            .map(node -> node.cache(DEFAULT_CACHE_NAME))
-            .forEach(c -> assertEquals(1, c.query(new SqlFieldsQuery("select * from Integer").setLocal(true)).getAll().size()));
+            .forEach(c -> {
+                assertEquals(1, c.query(new SqlFieldsQuery("select * from Integer")).getAll().size());
+            });
 
         backupNodes.forEach(node -> {
             for (Integer k : keys)
                 assertEquals(victimUpdCntr, updateCounter(node.cachex(DEFAULT_CACHE_NAME).context(), k));
         });
     }
-
     /** */
     private static CacheConfiguration<Object, Object> basicCcfg() {
         return new CacheConfiguration<>(DEFAULT_CACHE_NAME)
