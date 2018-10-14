@@ -2655,9 +2655,22 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param type Checkpoint entry type.
      * @throws StorageException If failed to write checkpoint entry.
      */
-    public void writeCheckpointEntry(ByteBuffer entryBuf, CheckpointEntry cp, CheckpointEntryType type) throws StorageException {
+    public void writeCheckpointEntry(
+        ByteBuffer entryBuf,
+        CheckpointEntry cp,
+        CheckpointEntryType type
+    ) throws StorageException {
         String fileName = checkpointFileName(cp, type);
         String tmpFileName = fileName + FilePageStoreManager.TMP_SUFFIX;
+
+        File chpTmpFile = Paths.get(cpDir.getAbsolutePath(), tmpFileName).toFile();
+
+        if (chpTmpFile.exists()) {
+            if (chpTmpFile.delete())
+                log.info("Checkpoint tmp file deleted, path=" + chpTmpFile.getAbsolutePath());
+            else
+                log.info("Checkpoint tmp file failed to deleted, path=" + chpTmpFile.getAbsolutePath());
+        }
 
         try {
             try (FileIO io = ioFactory.create(Paths.get(cpDir.getAbsolutePath(), skipSync ? fileName : tmpFileName).toFile(),
