@@ -241,6 +241,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         initDataRegions0(memCfg);
 
         dataRegionsInitialized = true;
+
+        U.log(log, "Configured data regions initialized successfully [total=" + dataRegionMap.size() + ']');
     }
 
     /**
@@ -849,7 +851,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * Perform memory restore before {@link GridDiscoveryManager} start.
      */
-    public void startMemoryRestore() throws IgniteCheckedException {
+    public void startMemoryRestore(GridKernalContext kctx) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -1156,27 +1158,32 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        if (cctx.kernalContext().clientNode() && cctx.kernalContext().config().getDataStorageConfiguration() == null)
+        if (kctx.clientNode() && kctx.config().getDataStorageConfiguration() == null)
             return;
 
-        DataStorageConfiguration memCfg = cctx.kernalContext().config().getDataStorageConfiguration();
-
-        assert memCfg != null;
-
-        initDataRegions(memCfg);
-
-        startDataRegions(memCfg);
+        initAndStartRegions(kctx.config().getDataStorageConfiguration());
 
         for (DatabaseLifecycleListener lsnr : getDatabaseListeners(kctx))
             lsnr.afterInitialise(this);
     }
 
     /**
-     * Start data regions and init memory structures.
-     *
-     * @param cfg Regions configuration.
+     * @param cfg Current data storage configuration.
+     * @throws IgniteCheckedException If fails.
      */
-    protected void startDataRegions(DataStorageConfiguration cfg) throws IgniteCheckedException {
+    protected void initAndStartRegions(DataStorageConfiguration cfg) throws IgniteCheckedException {
+        assert cfg != null;
+
+        initDataRegions(cfg);
+
+        startDataRegions(cfg);
+    }
+
+    /**
+     * @param cfg Regions configuration.
+     * @throws IgniteCheckedException If fails.
+     */
+    private void startDataRegions(DataStorageConfiguration cfg) throws IgniteCheckedException {
         if (dataRegionsStarted)
             return;
 
@@ -1189,6 +1196,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         initPageMemoryDataStructures(cfg);
 
         dataRegionsStarted = true;
+
+        U.log(log, "Configured data regions started successfully [total=" + dataRegionMap.size() + ']');
     }
 
     /** {@inheritDoc} */

@@ -533,11 +533,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (region.pageMemory() instanceof PageMemoryEx) {
                 PageMemoryEx memEx = (PageMemoryEx)region.pageMemory();
 
-                for (int partId = 0; partId < partitions; partId++) {
+                for (int partId = 0; partId < partitions; partId++)
                     memEx.invalidate(grpDesc.groupId(), partId);
-
-                    schedulePartitionDestroy(grpDesc.groupId(), partId);
-                }
             }
         }
     }
@@ -861,8 +858,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             if (!cpHistory.isInit())
                 cpHistory.initialize(retreiveHistory());
-
-            cctx.wal().notchLastCheckpointPtr(cctx.wal().tailWalPointer());
 
             // Memory restored at startup, just resume logging from last seen WAL pointer.
             cctx.wal().resumeLogging();
@@ -2010,18 +2005,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public void startMemoryRestore() throws IgniteCheckedException {
-        if (cctx.kernalContext().clientNode())
+    @Override public void startMemoryRestore(GridKernalContext kctx) throws IgniteCheckedException {
+        if (kctx.clientNode())
             return;
+
+        // Preform early regions startup before restoring state.
+        initAndStartRegions(kctx.config().getDataStorageConfiguration());
 
         // Only presistence caches to start.
         for (DynamicCacheDescriptor desc : cctx.cache().cacheDescriptors().values()) {
             if (CU.isPersistentCache(desc.cacheConfiguration(), cctx.gridConfig().getDataStorageConfiguration()))
                 storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
         }
-
-        // Preform early regions startup before restoring state.
-        startDataRegions(cctx.kernalContext().config().getDataStorageConfiguration());
 
         WALPointer restoredPtr = restoreBinaryMemory(cctx.cache().cacheGroupDescriptors().keySet());
 
@@ -2366,9 +2361,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         for (DataEntry dataEntry : dataRec.writeEntries()) {
                             int cacheId = dataEntry.cacheId();
 
-                            int grpId = cctx.cache().cacheDescriptor(cacheId).groupId();
+                            DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptor(cacheId);
 
-                            if (!ignoreGrps.contains(grpId)) {
+                            // Can empty in case recovery node on blt changed.
+                            if (cacheDesc == null)
+                                continue;
+
+                            if (!ignoreGrps.contains(cacheDesc.groupId())) {
                                 GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
                                 applyUpdate(cacheCtx, dataEntry);

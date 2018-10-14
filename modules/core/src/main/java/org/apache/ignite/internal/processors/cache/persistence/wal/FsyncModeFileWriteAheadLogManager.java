@@ -958,6 +958,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
     /** {@inheritDoc} */
     @Override public void tailWalPointer(WALPointer pointer) {
+        assert currentHnd == null;
+
         walTail = pointer;
     }
 

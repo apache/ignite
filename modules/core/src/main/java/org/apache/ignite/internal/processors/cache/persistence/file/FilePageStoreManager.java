@@ -235,14 +235,15 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             .filter(e -> cacheGrpPred.test(e.getKey()))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        U.log(log, "Cleanup provided cache store holders by predicate [grps=" + filteredStores.keySet() + ']');
-
         IgniteCheckedException ex = shutdown(filteredStores.values(), cleanFiles);
 
         if (ex != null)
             U.error(log, "Failed to gracefully stop page store managers", ex);
 
         idxCacheStores.entrySet().removeIf(e -> cacheGrpPred.test(e.getKey()));
+
+        U.log(log, "Cleanup cache store holders [total=" + filteredStores.keySet().size() +
+            ", left=" + idxCacheStores.size() + ']');
     }
 
     /** {@inheritDoc} */
@@ -301,6 +302,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** {@inheritDoc} */
     @Override public void initialize(int cacheId, int partitions, String workingDir, AllocatedPageTracker tracker)
         throws IgniteCheckedException {
+        assert storeWorkDir != null;
+
         if (!idxCacheStores.containsKey(cacheId)) {
             CacheStoreHolder holder = initDir(
                 new File(storeWorkDir, workingDir),
@@ -318,6 +321,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void initializeForCache(CacheGroupDescriptor grpDesc, StoredCacheData cacheData) throws IgniteCheckedException {
+        assert storeWorkDir != null;
+
         int grpId = grpDesc.groupId();
 
         if (!idxCacheStores.containsKey(grpId)) {
@@ -331,6 +336,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void initializeForMetastorage() throws IgniteCheckedException {
+        assert storeWorkDir != null;
+
         int grpId = MetaStorage.METASTORAGE_CACHE_ID;
 
         if (!idxCacheStores.containsKey(grpId)) {

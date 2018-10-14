@@ -1049,6 +1049,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public void tailWalPointer(WALPointer pointer) {
+        assert currHnd == null;
+
         walTail = pointer;
     }
 
