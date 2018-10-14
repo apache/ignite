@@ -2001,7 +2001,7 @@ public class IgniteTxHandler {
         ctx.tm().applyPartitionsUpdatesCounters(req.updateCounters());
 
         try {
-            ctx.io().send(nodeId, new PartitionCountersNeighborcastResponse(req.futId(), req.miniId()), SYSTEM_POOL);
+            ctx.io().send(nodeId, new PartitionCountersNeighborcastResponse(req.futId()), SYSTEM_POOL);
         }
         // t0d0
         catch (ClusterTopologyCheckedException ignored) {
@@ -2022,6 +2022,6 @@ public class IgniteTxHandler {
             return;
         }
 
-        fut.onResult(nodeId, res);
+        fut.onResult(nodeId);
     }
 }

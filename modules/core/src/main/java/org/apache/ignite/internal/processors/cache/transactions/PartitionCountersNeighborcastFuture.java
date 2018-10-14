@@ -18,20 +18,25 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastResponse;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 
+/**
+ * Represents partition update counters delivery to remote nodes.
+ */
 public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdentityFuture<Void> {
     /** */
     private final IgniteUuid futId = IgniteUuid.randomUuid();
@@ -39,81 +44,126 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
     private boolean trackable = true;
     /** */
     private final GridCacheSharedContext<?, ?> cctx;
+    /** */
+    private final IgniteLogger log;
 
     /** */
     public PartitionCountersNeighborcastFuture(GridCacheSharedContext<?, ?> cctx) {
         super(null);
+
         this.cctx = cctx;
+
+        log = cctx.logger(getClass());
     }
 
-    public void init(Iterable<UUID> peers, Collection<PartitionUpdateCountersMessage> cntrs) {
+    /**
+     * Starts processing.
+     *
+     * @param peers Peers to which update update counters will be sent.
+     * @param cntrs Partition update counters to send.
+     */
+    public void init(Set<UUID> peers, Collection<PartitionUpdateCountersMessage> cntrs) {
         assert cntrs != null;
+
+        cctx.mvcc().addFuture(this, futId);
 
         for (UUID peer : peers) {
             MiniFuture miniFut = new MiniFuture(peer);
+
             try {
-                cctx.io().send(peer, new PartitionCountersNeighborcastRequest(cntrs, futId, miniFut.miniId), SYSTEM_POOL);
+                cctx.io().send(peer, new PartitionCountersNeighborcastRequest(cntrs, futId), SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
+                if (!(e instanceof ClusterTopologyCheckedException))
+                    log.warning("Failed to send partition counters to remote node [node=" + peer + ']', e);
+                else
+                    logNodeLeft(peer);
+
                 miniFut.onDone();
-                // t0d0
             }
         }
-
-        cctx.mvcc().addFuture(this, futId);
 
         markInitialized();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err) {
         boolean comp = super.onDone(res, err);
+
         if (comp)
             cctx.mvcc().removeFuture(futId);
+
         return comp;
     }
 
-    @Override public IgniteUuid futureId() {
-        return futId;
+    /**
+     * Processes a response from a remote peer. Completes a mini future for that peer.
+     *
+     * @param nodeId Remote peer node id.
+     */
+    public void onResult(UUID nodeId) {
+        if (log.isInfoEnabled())
+            log.info("Remote peer acked partition counters delivery [node=" + nodeId + ']');
+
+        completeMini(nodeId);
     }
 
-    public void onResult(UUID id, PartitionCountersNeighborcastResponse res) {
-        for (IgniteInternalFuture<?> fut : futures()) {
-            if (fut instanceof MiniFuture) {
-                final MiniFuture f = (MiniFuture)fut;
-
-                if (f.miniId.equals(res.miniId()))
-                    cctx.kernalContext().closure().runLocalSafe(f::onDone);
-            }
-        }
-    }
-
+    /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
-        for (IgniteInternalFuture<?> fut : futures()) {
-            if (fut instanceof MiniFuture) {
-                final MiniFuture f = (MiniFuture)fut;
+        logNodeLeft(nodeId);
 
-                if (f.nodeId.equals(nodeId))
-                    cctx.kernalContext().closure().runLocalSafe(f::onDone);
-            }
-        }
+        // if a left node is one of remote peers then a mini future for it is completed successfully
+        completeMini(nodeId);
 
         return true;
     }
 
+    /** */
+    private void completeMini(UUID nodeId) {
+        for (IgniteInternalFuture<?> fut : futures()) {
+            assert fut instanceof MiniFuture;
+
+            MiniFuture mini = (MiniFuture)fut;
+
+            if (mini.nodeId.equals(nodeId)) {
+                cctx.kernalContext().closure().runLocalSafe(mini::onDone);
+
+                break;
+            }
+        }
+    }
+
+    /** */
+    private void logNodeLeft(UUID nodeId) {
+        if (log.isInfoEnabled()) {
+            log.info("Failed during partition counters delivery to remote node. " +
+                "Node left cluster (will ignore) [node=" + nodeId + ']');
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteUuid futureId() {
+        return futId;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean trackable() {
         return trackable;
     }
 
+    /** {@inheritDoc} */
     @Override public void markNotTrackable() {
         trackable = false;
     }
 
-    private class MiniFuture extends GridFutureAdapter<Void> {
-        /** */
-        private final IgniteUuid miniId = IgniteUuid.randomUuid();
+    /**
+     * Component of compound parent future. Represents interaction with one of remote peers.
+     */
+    private static class MiniFuture extends GridFutureAdapter<Void> {
         /** */
         private final UUID nodeId;
 
+        /** */
         private MiniFuture(UUID nodeId) {
             this.nodeId = nodeId;
         }
