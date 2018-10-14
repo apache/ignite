@@ -27,32 +27,44 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
-// t0d0
+/** */
 public class PartitionCountersNeighborcastRequest extends GridCacheIdMessage {
+    /** */
     private static final long serialVersionUID = -1893577108462486998L;
+
+    /** */
     @GridDirectCollection(PartitionUpdateCountersMessage.class)
     private Collection<PartitionUpdateCountersMessage> updCntrs;
 
-    /** Future ID. */
+    /** */
     private IgniteUuid futId;
 
+    /** */
     public PartitionCountersNeighborcastRequest() {
     }
 
+    /** */
     public PartitionCountersNeighborcastRequest(
         Collection<PartitionUpdateCountersMessage> updCntrs, IgniteUuid futId) {
         this.updCntrs = updCntrs;
         this.futId = futId;
     }
 
+    /**
+     * @return Partition update counters for remote node.
+     */
     public Collection<PartitionUpdateCountersMessage> updateCounters() {
         return updCntrs;
     }
 
+    /**
+     * @return Sending future id.
+     */
     public IgniteUuid futId() {
         return futId;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -84,6 +96,7 @@ public class PartitionCountersNeighborcastRequest extends GridCacheIdMessage {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
@@ -115,19 +128,18 @@ public class PartitionCountersNeighborcastRequest extends GridCacheIdMessage {
         return reader.afterMessageRead(PartitionCountersNeighborcastRequest.class);
     }
 
+    /** {@inheritDoc} */
     @Override public short directType() {
         return 165;
     }
 
+    /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 5;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return false;
-    }
-
-    @Override public void onAckReceived() {
-
     }
 }

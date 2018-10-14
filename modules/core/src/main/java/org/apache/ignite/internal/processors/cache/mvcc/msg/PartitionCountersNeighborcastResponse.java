@@ -18,39 +18,36 @@
 package org.apache.ignite.internal.processors.cache.mvcc.msg;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
-import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
-// t0d0
+/** */
 public class PartitionCountersNeighborcastResponse extends GridCacheIdMessage {
+    /** */
     private static final long serialVersionUID = -8731050539139260521L;
-    @GridDirectCollection(PartitionUpdateCountersMessage.class)
-    private Collection<PartitionUpdateCountersMessage> updCntrs;
 
-    /** Future ID. */
+    /** */
     private IgniteUuid futId;
 
+    /** */
     public PartitionCountersNeighborcastResponse() {
     }
 
+    /** */
     public PartitionCountersNeighborcastResponse(IgniteUuid futId) {
         this.futId = futId;
     }
 
-    public Collection<PartitionUpdateCountersMessage> updateCounters() {
-        return updCntrs;
-    }
-
+    /**
+     * @return Sending future id.
+     */
     public IgniteUuid futId() {
         return futId;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -71,17 +68,12 @@ public class PartitionCountersNeighborcastResponse extends GridCacheIdMessage {
 
                 writer.incrementState();
 
-            case 4:
-                if (!writer.writeCollection("updCntrs", updCntrs, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
         }
 
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
@@ -100,28 +92,23 @@ public class PartitionCountersNeighborcastResponse extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 4:
-                updCntrs = reader.readCollection("updCntrs", MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
         }
 
         return reader.afterMessageRead(PartitionCountersNeighborcastResponse.class);
     }
 
+    /** {@inheritDoc} */
     @Override public short directType() {
         return 166;
     }
 
-    @Override public boolean addDeploymentInfo() {
-        return false;
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 4;
     }
 
-    @Override public byte fieldsCount() {
-        return 5;
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return false;
     }
 }
