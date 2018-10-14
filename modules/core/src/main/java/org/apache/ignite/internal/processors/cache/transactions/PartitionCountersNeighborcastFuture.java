@@ -28,7 +28,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFutu
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastRequest;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -53,17 +55,22 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
 
         this.cctx = cctx;
 
-        log = cctx.logger(getClass());
+        log = cctx.logger(CU.TX_MSG_RECOVERY_LOG_CATEGORY);
     }
 
     /**
      * Starts processing.
-     *
      * @param peers Peers to which update update counters will be sent.
      * @param cntrs Partition update counters to send.
+     * @param txId Transaction id.
      */
-    public void init(Set<UUID> peers, Collection<PartitionUpdateCountersMessage> cntrs) {
+    public void init(Set<UUID> peers, Collection<PartitionUpdateCountersMessage> cntrs, GridCacheVersion txId) {
         assert cntrs != null;
+
+        if (log.isInfoEnabled()) {
+            log.info("Starting delivery partition countres to remote nodes [txId=" + txId +
+                ", futId=" + futId);
+        }
 
         cctx.mvcc().addFuture(this, futId);
 
@@ -103,7 +110,8 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
      */
     public void onResult(UUID nodeId) {
         if (log.isInfoEnabled())
-            log.info("Remote peer acked partition counters delivery [node=" + nodeId + ']');
+            log.info("Remote peer acked partition counters delivery [futId=" + futId +
+                ", node=" + nodeId + ']');
 
         completeMini(nodeId);
     }
@@ -137,7 +145,8 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
     private void logNodeLeft(UUID nodeId) {
         if (log.isInfoEnabled()) {
             log.info("Failed during partition counters delivery to remote node. " +
-                "Node left cluster (will ignore) [node=" + nodeId + ']');
+                "Node left cluster (will ignore) [futId=" + futId +
+                ", node=" + nodeId + ']');
         }
     }
 
