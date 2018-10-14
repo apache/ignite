@@ -213,7 +213,6 @@ import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
-import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -10502,66 +10501,6 @@ public abstract class IgniteUtils {
             sb.append(U.hexLong(buf.getLong(i)));
 
         return sb.toString();
-    }
-
-    /**
-     * @param executorSvc Service for parallel execution.
-     * @param srcDatas List of data for parallelization.
-     * @param consumer Logic for execution of on each item of data.
-     * @param <T> Type of data.
-     * @throws ParallelExecutionException if parallel execution was failed. It contains actual exception in suppressed section.
-     */
-    public static <T> void doInParallel(int parallelismLvl, ExecutorService executorSvc, Collection<T> srcDatas,
-        IgniteThrowableConsumer<T> consumer) throws ParallelExecutionException {
-
-        List<List<T>> batches = new ArrayList<>(parallelismLvl);
-
-        for (int i = 0; i < parallelismLvl; i++)
-            batches.add(new ArrayList<>());
-
-        int i = 0;
-
-        for (T src : srcDatas) {
-            int idx = i % parallelismLvl;
-
-            List<T> batch = batches.get(idx);
-
-            batch.add(src);
-
-            i++;
-        }
-
-        List<T2<List<T>, Future<Object>>> consumerFutures = batches.stream()
-            .filter(batch -> !batch.isEmpty())
-            .map(batch -> new T2<>(
-                batch,
-                executorSvc.submit(() -> {
-                    for (T item : batch)
-                        consumer.accept(item);
-
-                    return null;
-                })))
-            .collect(Collectors.toList());
-
-        ParallelExecutionException executionE = null;
-
-        for (T2<List<T>, Future<Object>> future : consumerFutures) {
-            try {
-                future.get2().get();
-            }
-            catch (Exception e) {
-                if (executionE == null)
-                    executionE = new ParallelExecutionException("Failed during parallel execution.");
-
-                executionE.addSuppressed(e);
-
-                for (T failedData : future.get1())
-                    executionE.addFailedData(failedData);
-            }
-        }
-
-        if (executionE != null)
-            throw executionE;
     }
 
     /**

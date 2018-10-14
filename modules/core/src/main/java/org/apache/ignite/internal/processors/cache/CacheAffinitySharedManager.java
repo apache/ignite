@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -65,7 +64,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
-import org.apache.ignite.internal.util.ParallelExecutionException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -432,37 +430,19 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         Map<Integer, Boolean> startedInfos = U.newHashMap(startDescs.size());
 
-        List<StartCacheInfo> startCacheInfos = startDescs.stream()
-            .map(desc -> {
-                DynamicCacheChangeRequest changeReq = startReqs.get(desc.cacheName());
-
-                return new StartCacheInfo(
-                    desc,
-                    changeReq.nearCacheConfiguration(),
-                    topVer,
-                    changeReq.disabledAfterStart()
-                );
-            })
-            .collect(Collectors.toList());
-
-        try {
-            cctx.cache().prepareCachesStartInParallel(startCacheInfos);
-        }
-        catch (ParallelExecutionException e) {
-            cctx.cache().closeCaches(startedCaches, false);
-
-            cctx.cache().completeClientCacheChangeFuture(msg.requestId(), e);
-
-            return null;
-        }
-
-        for (StartCacheInfo startCacheInfo : startCacheInfos) {
+        for (DynamicCacheDescriptor desc : startDescs) {
             try {
-                DynamicCacheDescriptor desc = startCacheInfo.getCacheDescriptor();
-
                 startedCaches.add(desc.cacheName());
 
-                startedInfos.put(desc.cacheId(), startCacheInfo.getReqNearCfg() != null);
+                DynamicCacheChangeRequest startReq = startReqs.get(desc.cacheName());
+
+                cctx.cache().prepareCacheStart(desc.cacheConfiguration(),
+                    desc,
+                    startReq.nearCacheConfiguration(),
+                    topVer,
+                    startReq.disabledAfterStart());
+
+                startedInfos.put(desc.cacheId(), startReq.nearCacheConfiguration() != null);
 
                 CacheGroupContext grp = cctx.cache().cacheGroup(desc.groupId());
 
@@ -861,8 +841,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         final ExchangeDiscoveryEvents evts = fut.context().events();
 
-        Map<StartCacheInfo, DynamicCacheChangeRequest> startCacheInfos = new LinkedHashMap<>();
-
         long time = System.currentTimeMillis();
 
         for (ExchangeActions.CacheActionData action : exchActions.cacheStartRequests()) {
@@ -884,7 +862,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 assert cctx.cacheContext(cacheDesc.cacheId()) == null
                     : "Starting cache has not null context: " + cacheDesc.cacheName();
 
-                IgniteCacheProxyImpl cacheProxy = (IgniteCacheProxyImpl)cctx.cache().jcacheProxy(req.cacheName());
+                IgniteCacheProxyImpl cacheProxy = (IgniteCacheProxyImpl) cctx.cache().jcacheProxy(req.cacheName());
 
                 // If it has proxy then try to start it
                 if (cacheProxy != null) {
@@ -900,35 +878,27 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 }
             }
 
-            if (startCache) {
-                startCacheInfos.put(new StartCacheInfo(
-                    req.startCacheConfiguration(),
-                    cacheDesc,
-                    nearCfg,
-                    evts.topologyVersion(),
-                    req.disabledAfterStart()
-                ), req);
+            try {
+                if (startCache) {
+                    cctx.cache().prepareCacheStart(req.startCacheConfiguration(),
+                        cacheDesc,
+                        nearCfg,
+                        evts.topologyVersion(),
+                        req.disabledAfterStart());
 
-                if (fut.cacheAddedOnExchange(cacheDesc.cacheId(), cacheDesc.receivedFrom())) {
-                    if (fut.events().discoveryCache().cacheGroupAffinityNodes(cacheDesc.groupId()).isEmpty())
-                        U.quietAndWarn(log, "No server nodes found for cache client: " + req.cacheName());
+                    if (fut.cacheAddedOnExchange(cacheDesc.cacheId(), cacheDesc.receivedFrom())) {
+                        if (fut.events().discoveryCache().cacheGroupAffinityNodes(cacheDesc.groupId()).isEmpty())
+                            U.quietAndWarn(log, "No server nodes found for cache client: " + req.cacheName());
+                    }
                 }
             }
-        }
-
-        try {
-            cctx.cache().prepareCachesStartInParallel(startCacheInfos.keySet());
-        }
-        catch (ParallelExecutionException e) {
-            for (Object data : e.getFailedDatas()) {
-                StartCacheInfo startCacheInfo = (StartCacheInfo)data;
-
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to initialize cache. Will try to rollback cache start routine. " +
-                    "[cacheName=" + startCacheInfo.getStartedConfiguration().getName() + ']', e);
+                    "[cacheName=" + req.cacheName() + ']', e);
 
-                cctx.cache().closeCaches(Collections.singleton(startCacheInfo.getStartedConfiguration().getName()), false);
+                cctx.cache().closeCaches(Collections.singleton(req.cacheName()), false);
 
-                cctx.cache().completeCacheStartFuture(startCacheInfos.get(startCacheInfo), false, e);
+                cctx.cache().completeCacheStartFuture(req, false, e);
             }
         }
 

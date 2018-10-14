@@ -1344,21 +1344,21 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         if (msgIdx != -1) {
             Map<Integer, IgniteBiInClosure[]> idxClsHandlers0 = msgHandlers.idxClsHandlers;
 
-            IgniteBiInClosure[] cacheClsHandlers = idxClsHandlers0.compute(hndId, (key, clsHandlers) -> {
-                if (clsHandlers == null)
-                    clsHandlers = new IgniteBiInClosure[GridCacheMessage.MAX_CACHE_MSG_LOOKUP_INDEX];
+            IgniteBiInClosure[] cacheClsHandlers = idxClsHandlers0.get(hndId);
 
-                if(clsHandlers[msgIdx] != null)
-                    return null;
+            if (cacheClsHandlers == null) {
+                cacheClsHandlers = new IgniteBiInClosure[GridCacheMessage.MAX_CACHE_MSG_LOOKUP_INDEX];
 
-                clsHandlers[msgIdx] = c;
+                idxClsHandlers0.put(hndId, cacheClsHandlers);
+            }
 
-                return clsHandlers;
-            });
-
-            if (cacheClsHandlers == null)
+            if (cacheClsHandlers[msgIdx] != null)
                 throw new IgniteException("Duplicate cache message ID found [hndId=" + hndId +
                     ", type=" + type + ']');
+
+            cacheClsHandlers[msgIdx] = c;
+
+            msgHandlers.idxClsHandlers = idxClsHandlers0;
 
             return;
         }
@@ -1576,7 +1576,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      */
     static class MessageHandlers {
         /** Indexed class handlers. */
-        volatile Map<Integer, IgniteBiInClosure[]> idxClsHandlers = new ConcurrentHashMap<>();
+        volatile Map<Integer, IgniteBiInClosure[]> idxClsHandlers = new HashMap<>();
 
         /** Handler registry. */
         ConcurrentMap<ListenerKey, IgniteBiInClosure<UUID, GridCacheMessage>>
