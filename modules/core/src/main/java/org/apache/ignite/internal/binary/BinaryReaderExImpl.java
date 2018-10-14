@@ -227,6 +227,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             int len = in.readInt();
             schemaId = in.readInt();
+
             int offset = in.readInt();
 
             // Get trivial flag values.
@@ -2042,6 +2043,11 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             assert schema != null;
 
             ctx.schemaRegistry(typeId).addSchema(schemaId, schema);
+        }
+        else {
+            if (schemaId == 189212685) {
+                System.out.println();
+            }
         }
 
         return schema;

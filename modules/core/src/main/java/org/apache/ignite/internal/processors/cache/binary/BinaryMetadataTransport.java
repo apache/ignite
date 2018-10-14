@@ -16,7 +16,9 @@
  */
 package org.apache.ignite.internal.processors.cache.binary;
 
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -85,6 +87,9 @@ final class BinaryMetadataTransport {
 
     /** */
     private final ConcurrentMap<Integer, ClientMetadataRequestFuture> clientReqSyncMap = new ConcurrentHashMap<>();
+
+    /** */
+    private final ConcurrentMap<SyncKey, GridFutureAdapter<?>> schemaWaitFuts = new ConcurrentHashMap<>();
 
     /** */
     private volatile boolean stopping;
@@ -204,6 +209,21 @@ final class BinaryMetadataTransport {
             resFut.onDone(MetadataUpdateResult.createSuccessfulResult());
 
         return resFut;
+    }
+
+    /**
+     * Await specific schema update.
+     * @param typeId Type id.
+     * @param schemaId Schema id.
+     * @return Future which will be completed when schema is received.
+     */
+    GridFutureAdapter<?> awaitSchemaUpdate(int typeId, int schemaId) {
+        GridFutureAdapter<Object> fut = new GridFutureAdapter<>();
+
+        // Use version for schemaId.
+        GridFutureAdapter<?> oldFut = schemaWaitFuts.putIfAbsent(new SyncKey(typeId, schemaId), fut);
+
+        return oldFut == null ? fut : oldFut;
     }
 
     /**
@@ -481,8 +501,26 @@ final class BinaryMetadataTransport {
 
             GridFutureAdapter<MetadataUpdateResult> fut = syncMap.get(new SyncKey(typeId, newAcceptedVer));
 
+            holder = metaLocCache.get(typeId);
+
             if (log.isDebugEnabled())
-                log.debug("Completing future " + fut + " for " + metaLocCache.get(typeId));
+                log.debug("Completing future " + fut + " for " + holder);
+
+            if (!schemaWaitFuts.isEmpty()) {
+                Iterator<Map.Entry<SyncKey, GridFutureAdapter<?>>> iter = schemaWaitFuts.entrySet().iterator();
+
+                while (iter.hasNext()) {
+                    Map.Entry<SyncKey, GridFutureAdapter<?>> entry = iter.next();
+
+                    SyncKey key = entry.getKey();
+
+                    if (key.typeId() == typeId && holder.metadata().hasSchema(key.version())) {
+                        entry.getValue().onDone();
+
+                        iter.remove();
+                    }
+                }
+            }
 
             if (fut != null)
                 fut.onDone(MetadataUpdateResult.createSuccessfulResult());

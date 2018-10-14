@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -162,7 +163,7 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
 
         Ignite victim = startGrid("node2");
 
-        crd.cluster().active();
+        crd.cluster().active(true);
 
         awaitPartitionMapExchange();
 
@@ -176,6 +177,88 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
 
         // Generate 5 schemas to disable inlining
         cache1.put(0, obj0);
+
+        // Store schema id.
+        int storeSchemaId = localMetadata(victim, typeId).schemas().iterator().next().schemaId();
+
+        // Add more schemas, disable inlining.
+        cache1.put(0, build(client, "val", 1));
+        cache1.put(0, build(client, "val", 2));
+        cache1.put(0, build(client, "val", 3));
+        cache1.put(0, build(client, "val", 4));
+        cache1.put(0, build(client, "val", 5));
+
+        // Simulate metadata loss.
+        clearSchema(victim, typeId, storeSchemaId);
+
+        //BlockTcpDiscoverySpi spi = (BlockTcpDiscoverySpi)mid.configuration().getDiscoverySpi();
+
+//        CountDownLatch l = new CountDownLatch(1);
+
+//        spi.blockOnNextMessage(new IgniteBiPredicate<ClusterNode, DiscoveryCustomMessage>() {
+//            @Override public boolean apply(ClusterNode snd, DiscoveryCustomMessage msg) {
+//                if (msg instanceof MetadataUpdateAcceptedMessage) {
+//                    MetadataUpdateAcceptedMessage acc = (MetadataUpdateAcceptedMessage)msg;
+//                    if (acc.acceptedVersion() == 2) {
+//                        l.countDown();
+//
+//                        log.info("Block custom message: [from=" + snd + ", msg=" + msg + ']');
+//
+//                        return true;
+//                    }
+//                }
+//
+//                return false;
+//            }
+//        });
+
+        Integer key = primaryKey(victim.cache(DEFAULT_CACHE_NAME));
+
+        final Ignite finalClient = client;
+
+        IgniteInternalFuture fut0 = GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try (Transaction tx = finalClient.transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+                    cache1.put(key, build(finalClient, "newVal", 0));
+
+                    tx.commit();
+                }
+                catch (Throwable t) {
+                    log.error("err", t);
+                }
+
+            }
+        });
+
+        doSleep(3000);
+
+        // Trigger another update which will bring lost update.
+        IgniteInternalFuture fut1 = GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try (Transaction tx = finalClient.transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+                    cache1.put(key, build(finalClient, "newVal", 0, 1));
+
+                    tx.commit();
+                }
+                catch (Throwable t) {
+                    log.error("err", t);
+                }
+            }
+        });
+
+        fut0.get();
+        fut1.get();
+
+        checkSchemas(crd, typeId, storeSchemaId);
+        checkSchemas(mid, typeId, storeSchemaId);
+        checkSchemas(victim, typeId, storeSchemaId);
+    }
+
+    private void checkSchemas(Ignite ignite, int typeId, int schemaId) {
+        BinaryMetadata metadata = localMetadata(ignite, typeId);
+
+        assertEquals("Schemas count not as expected", 7, metadata.schemas().size());
+        assertTrue("Schema not present: " + schemaId, metadata.hasSchema(schemaId));
     }
 
     private BinaryContext binaryContext(Ignite ignite) {
@@ -183,6 +266,28 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
             ((IgniteBinaryImpl)ignite.binary()).processor();
 
         return processor.binaryContext();
+    }
+
+    private void clearSchema(Ignite victim, int typeId, int storeSchemaId) {
+        BinaryContext ctx = binaryContext(victim);
+
+        BinaryMetadata meta0 = ((BinaryTypeImpl)ctx.metadata(typeId)).metadata();
+
+        Collection<BinarySchema> knownSchemas = U.field(meta0, "schemas");
+
+        Set<Integer> schemaIds = U.field(meta0, "schemaIds");
+
+        schemaIds.remove(storeSchemaId);
+
+        knownSchemas.removeIf(schema -> schema.schemaId() == storeSchemaId);
+
+        BinaryMetadata meta = localMetadata(victim, typeId);
+
+        meta.schemas().removeIf(schema -> schema.schemaId() == storeSchemaId);
+
+        schemaIds = U.field(meta0, "schemaIds");
+
+        schemaIds.remove(storeSchemaId);
     }
 
     private BinaryMetadata localMetadata(Ignite ignite, int typeId) {
@@ -309,5 +414,12 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
 //
 //            super.writeToSocket(msg, sock, res, timeout);
 //        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cleanPersistenceDir();
     }
 }

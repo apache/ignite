@@ -346,6 +346,10 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             // Update metadata if needed.
             int schemaId = writer.schemaId();
 
+            if (schemaId == 336815281) {
+                System.out.println();
+            }
+
             BinarySchemaRegistry schemaReg = ctx.schemaRegistry(typeId);
 
             if (schemaReg.schema(schemaId) == null) {

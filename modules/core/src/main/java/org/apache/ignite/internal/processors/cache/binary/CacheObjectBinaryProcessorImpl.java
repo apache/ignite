@@ -30,6 +30,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -41,6 +42,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.binary.BinaryContext;
@@ -89,6 +91,7 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAIT_SCHEMA_UPDATE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.BINARY_PROC;
@@ -119,6 +122,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
      * In this case folder for metadata is composed from work directory and consistentId <br>
      */
     @Nullable private File binaryMetadataFileStoreDir;
+
+    /** */
+    private long waitSchemaTimeout = IgniteSystemProperties.getLong(IGNITE_WAIT_SCHEMA_UPDATE, 3000);
 
     /** */
     @GridToStringExclude
@@ -593,6 +599,32 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                 try {
                     fut.get();
+                }
+                catch (IgniteCheckedException e) {
+                    log.error("Failed to wait for metadata update: [typeId=" + typeId + ", schemaId=" + schemaId + ']', e);
+                }
+
+                holder = metadataLocCache.get(typeId);
+            }
+            else if (!holder.metadata().hasSchema(schemaId)) {
+                if (log.isDebugEnabled())
+                    log.debug("");
+
+                GridFutureAdapter<?> fut = transport.awaitSchemaUpdate(typeId, schemaId);
+
+                if (log.isDebugEnabled() && !fut.isDone())
+                    log.debug("Waiting for update for" +
+                        " [typeId=" + typeId
+                        + ", schemaId=" + schemaId
+                        + ", pendingVer=" + holder.pendingVersion()
+                        + ", acceptedVer=" + holder.acceptedVersion() + "]");
+
+                try {
+                    fut.get(waitSchemaTimeout);
+                }
+                catch (IgniteFutureTimeoutCheckedException e) {
+                    log.error("Timed out while waiting for schema update: [typeId=" + typeId + ", schemaId=" +
+                        schemaId + ']');
                 }
                 catch (IgniteCheckedException ignored) {
                     // No-op.

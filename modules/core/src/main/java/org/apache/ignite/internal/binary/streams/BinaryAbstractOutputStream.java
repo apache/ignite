@@ -118,6 +118,10 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
 
     /** {@inheritDoc} */
     @Override public void writeInt(int val) {
+        if (val == 336815281) {
+            System.out.println();
+        }
+
         ensureCapacity(pos + 4);
 
         writeIntFast(val);

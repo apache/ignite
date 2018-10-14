@@ -999,6 +999,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_REUSE_MEMORY_ON_DEACTIVATE = "IGNITE_REUSE_MEMORY_ON_DEACTIVATE";
 
     /**
+     * Timeout for waiting schema update if not found.
+     */
+    public static final String IGNITE_WAIT_SCHEMA_UPDATE = "IGNITE_WAIT_SCHEMA_UPDATE";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
