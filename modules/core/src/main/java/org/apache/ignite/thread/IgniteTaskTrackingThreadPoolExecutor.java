@@ -208,7 +208,7 @@ public class IgniteTaskTrackingThreadPoolExecutor extends IgniteThreadPoolExecut
             }
         }
 
-        if (log != null && log.isInfoEnabled()) {
+        if (!first && log != null && log.isInfoEnabled()) {
             log.info(
                 "After await checkpoint pool tasks comleted, " +
                     "pendingTaskCnt=" + pendingTaskCnt.longValue() + ", " +
