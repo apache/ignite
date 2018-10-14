@@ -2044,11 +2044,6 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             ctx.schemaRegistry(typeId).addSchema(schemaId, schema);
         }
-        else {
-            if (schemaId == 189212685) {
-                System.out.println();
-            }
-        }
 
         return schema;
     }
