@@ -229,7 +229,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 // Start and stop to bump topology version.
                 Ignition.Start(cfg2);
-                Ignition.Stop(cfg2.IgniteInstanceName);
+                Ignition.Stop(cfg2.IgniteInstanceName, false);
 
                 var cluster = ignite.GetCluster();
                 Assert.AreEqual(3, cluster.TopologyVersion);
