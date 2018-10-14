@@ -26,6 +26,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
@@ -156,7 +157,7 @@ public abstract class BinaryFieldAccessor {
             write0(obj, writer);
         }
         catch (Exception ex) {
-            if (ex instanceof UnregisteredClassException)
+            if (ex instanceof UnregisteredClassException || ex instanceof UnregisteredBinaryTypeException)
                 throw ex;
 
             if (S.INCLUDE_SENSITIVE && !F.isEmpty(name))
