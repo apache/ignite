@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.Latches;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -531,6 +532,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                     transport.requestUpToDateMetadata(typeId).get();
 
                     holder = metadataLocCache.get(typeId);
+
+                    Latches.initMetaReq.countDown();
+                    U.awaitQuiet(Latches.initMetaReq);
                 }
                 catch (IgniteCheckedException ignored) {
                     // No-op.
@@ -547,9 +551,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                 if (log.isDebugEnabled() && !fut.isDone())
                     log.debug("Waiting for update for" +
-                            " [typeId=" + typeId +
-                            ", pendingVer=" + holder.pendingVersion() +
-                            ", acceptedVer=" + holder.acceptedVersion() + "]");
+                        " [typeId=" + typeId +
+                        ", pendingVer=" + holder.pendingVersion() +
+                        ", acceptedVer=" + holder.acceptedVersion() + "]");
 
                 try {
                     fut.get();
@@ -592,10 +596,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                 if (log.isDebugEnabled() && !fut.isDone())
                     log.debug("Waiting for update for" +
-                            " [typeId=" + typeId
-                            + ", schemaId=" + schemaId
-                            + ", pendingVer=" + holder.pendingVersion()
-                            + ", acceptedVer=" + holder.acceptedVersion() + "]");
+                        " [typeId=" + typeId
+                        + ", schemaId=" + schemaId
+                        + ", pendingVer=" + holder.pendingVersion()
+                        + ", acceptedVer=" + holder.acceptedVersion() + "]");
 
                 try {
                     fut.get();

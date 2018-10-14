@@ -608,6 +608,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                     try {
                         while (true) {
+                            log.info("entry: " + txEntry);
+
                             try {
                                 GridCacheEntryEx cached = txEntry.cached();
 

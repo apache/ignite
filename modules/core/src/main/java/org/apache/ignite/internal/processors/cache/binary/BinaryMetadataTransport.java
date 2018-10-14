@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.Latches;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -279,6 +280,8 @@ final class BinaryMetadataTransport {
 
         /** {@inheritDoc} */
         @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MetadataUpdateProposedMessage msg) {
+            log.info("Received MetadataUpdateProposedListener: locNode=" + ctx.localNodeId() + ", msg=" + msg);
+
             int typeId = msg.typeId();
 
             BinaryMetadataHolder holder = metaLocCache.get(typeId);
@@ -297,11 +300,11 @@ final class BinaryMetadataTransport {
                     acceptedVer = 0;
                 }
 
-                if (log.isDebugEnabled())
-                    log.debug("Versions are stamped on coordinator" +
-                        " [typeId=" + typeId +
-                        ", pendingVer=" + pendingVer +
-                        ", acceptedVer=" + acceptedVer + "]"
+                if (log.isInfoEnabled())
+                    log.info("Versions are stamped on coordinator" +
+                            " [typeId=" + typeId +
+                            ", pendingVer=" + pendingVer +
+                            ", acceptedVer=" + acceptedVer + "]"
                     );
 
                 msg.pendingVersion(pendingVer);

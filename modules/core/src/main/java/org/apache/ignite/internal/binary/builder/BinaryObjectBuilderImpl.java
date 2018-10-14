@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary.builder;
 
+import org.apache.ignite.Latches;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -346,10 +347,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             // Update metadata if needed.
             int schemaId = writer.schemaId();
 
-            if (schemaId == 336815281) {
-                System.out.println();
-            }
-
             BinarySchemaRegistry schemaReg = ctx.schemaRegistry(typeId);
 
             if (schemaReg.schema(schemaId) == null) {
@@ -367,6 +364,12 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
                 if (affFieldName0 == null)
                     affFieldName0 = ctx.affinityKeyFieldName(typeId);
+
+                if (Latches.lockT.get() != null) {
+                    U.awaitQuiet(Latches.proposedClLock);
+
+                    System.out.println();
+                }
 
                 ctx.registerUserClassName(typeId, typeName);
 

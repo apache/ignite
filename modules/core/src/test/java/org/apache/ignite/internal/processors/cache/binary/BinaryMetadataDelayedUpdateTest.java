@@ -23,20 +23,15 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CyclicBarrier;
-import java.util.function.Predicate;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Latches;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -45,26 +40,13 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryMetadataHandler;
-import org.apache.ignite.internal.binary.BinarySchema;
-import org.apache.ignite.internal.binary.BinaryTypeImpl;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -75,8 +57,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-
-import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 
 /**
  * Test scenario:
@@ -119,9 +99,9 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
         cfg.setClientFailureDetectionTimeout(600_000);
         cfg.setFailureDetectionTimeout(600_000);
 
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration().
-            setWalMode(LOG_ONLY).setPageSize(1024).setWalSegmentSize(16 * MB).
-            setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true).setMaxSize(50 * MB)));
+//        cfg.setDataStorageConfiguration(new DataStorageConfiguration().
+//            setWalMode(LOG_ONLY).setPageSize(1024).setWalSegmentSize(16 * MB).
+//            setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true).setMaxSize(50 * MB)));
 
         QueryEntity qryEntity = new QueryEntity("java.lang.Integer", "Value");
 
@@ -152,74 +132,85 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
     }
 
     public void testMissingSchemaUpdate() throws Exception {
-        Ignite client = null;
-
         // Start order is important.
-        Ignite crd = startGrid("node0");
+        Ignite node0 = startGrid("node0");
 
-        Ignite mid = startGrid("node1");
+        Ignite node1 = startGrid("node1");
 
-        client = startGrid("client");
+        Ignite client0 = startGrid("client0");
 
-        Ignite victim = startGrid("node2");
+        Ignite node2 = startGrid("node2");
 
-        crd.cluster().active(true);
+        Ignite node3 = startGrid("node3");
+
+        Ignite client1 = startGrid("client1");
+
+        node0.cluster().active(true);
 
         awaitPartitionMapExchange();
 
-        assertNotNull(client);
 
-        IgniteCache<Object, Object> cache1 = client.cache(DEFAULT_CACHE_NAME);
+        BlockTcpDiscoverySpi spi1 = (BlockTcpDiscoverySpi)node1.configuration().getDiscoverySpi();
 
-        BinaryObject obj0 = build(client, "val", 0);
+        CountDownLatch srvL = new CountDownLatch(1);
+        CountDownLatch clL = new CountDownLatch(1);
 
-        int typeId = obj0.type().typeId();
+        AtomicBoolean clientWait = new AtomicBoolean();
+        AtomicBoolean srvWait = new AtomicBoolean();
 
-        // Generate 5 schemas to disable inlining
-        cache1.put(0, obj0);
+        final Object clientMux = new Object();
+        final Object srvMux = new Object();
 
-        // Store schema id.
-        int storeSchemaId = localMetadata(victim, typeId).schemas().iterator().next().schemaId();
+        spi1.setBlockPredicate(new IgniteBiPredicate<ClusterNode, DiscoveryCustomMessage>() {
+            @Override public boolean apply(ClusterNode snd, DiscoveryCustomMessage msg) {
+                if (msg instanceof MetadataUpdateProposedMessage) {
+                    if (Thread.currentThread().getName().contains("client")) {
+                        log.info("Block custom message to client: [locNode=" + snd + ", msg=" + msg + ']');
 
-        // Add more schemas, disable inlining.
-        cache1.put(0, build(client, "val", 1));
-        cache1.put(0, build(client, "val", 2));
-        cache1.put(0, build(client, "val", 3));
-        cache1.put(0, build(client, "val", 4));
-        cache1.put(0, build(client, "val", 5));
+                        clL.countDown();
 
-        // Simulate metadata loss.
-        clearSchema(victim, typeId, storeSchemaId);
+                        // Message to client
+                        synchronized (clientMux) {
+                            while (!clientWait.get())
+                                try {
+                                    clientMux.wait();
+                                }
+                                catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                        }
 
-        //BlockTcpDiscoverySpi spi = (BlockTcpDiscoverySpi)mid.configuration().getDiscoverySpi();
+                    }
+                    else {
+                        log.info("Block custom message to server: [locNode=" + snd + ", msg=" + msg + ']');
 
-//        CountDownLatch l = new CountDownLatch(1);
+                        srvL.countDown();
 
-//        spi.blockOnNextMessage(new IgniteBiPredicate<ClusterNode, DiscoveryCustomMessage>() {
-//            @Override public boolean apply(ClusterNode snd, DiscoveryCustomMessage msg) {
-//                if (msg instanceof MetadataUpdateAcceptedMessage) {
-//                    MetadataUpdateAcceptedMessage acc = (MetadataUpdateAcceptedMessage)msg;
-//                    if (acc.acceptedVersion() == 2) {
-//                        l.countDown();
-//
-//                        log.info("Block custom message: [from=" + snd + ", msg=" + msg + ']');
-//
-//                        return true;
-//                    }
-//                }
-//
-//                return false;
-//            }
-//        });
+                        // Message to server
+                        synchronized (srvMux) {
+                            while (!srvWait.get())
+                                try {
+                                    srvMux.wait();
+                                }
+                                catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                        }
+                    }
 
-        Integer key = primaryKey(victim.cache(DEFAULT_CACHE_NAME));
+                    return true;
+                }
 
-        final Ignite finalClient = client;
+                return false;
+            }
+        });
+
+        Integer key = primaryKey(node2.cache(DEFAULT_CACHE_NAME));
 
         IgniteInternalFuture fut0 = GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
-                try (Transaction tx = finalClient.transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
-                    cache1.put(key, build(finalClient, "newVal", 0));
+                try (Transaction tx = client1.transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+                    client1.cache(DEFAULT_CACHE_NAME).put(key, build(client1, "val", 0));
 
                     tx.commit();
                 }
@@ -230,13 +221,37 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
             }
         });
 
-        doSleep(3000);
-
-        // Trigger another update which will bring lost update.
         IgniteInternalFuture fut1 = GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
-                try (Transaction tx = finalClient.transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
-                    cache1.put(key, build(finalClient, "newVal", 0, 1));
+                U.awaitQuiet(Latches.initMetaReq);
+
+                // Await client block latch.
+                U.awaitQuiet(clL);
+//
+//                Latches.lock = true;
+//
+//                Latches.l2.countDown();
+//                U.awaitQuiet(Latches.l2);
+
+                clientWait.set(true);
+
+                synchronized (clientMux) {
+                    clientMux.notify();
+                }
+
+                doSleep(3000);
+
+                Latches.proposedClLock.countDown();
+            }
+        });
+
+        IgniteInternalFuture fut2 = GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                Latches.lockT.set(true);
+
+                try (Transaction tx = client0.transactions().
+                    txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, 0, 1)) {
+                    client0.cache(DEFAULT_CACHE_NAME).put(key, build(client0, "val", 0));
 
                     tx.commit();
                 }
@@ -248,62 +263,7 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
 
         fut0.get();
         fut1.get();
-
-        checkSchemas(crd, typeId, storeSchemaId);
-        checkSchemas(mid, typeId, storeSchemaId);
-        checkSchemas(victim, typeId, storeSchemaId);
-    }
-
-    private void checkSchemas(Ignite ignite, int typeId, int schemaId) {
-        BinaryMetadata metadata = localMetadata(ignite, typeId);
-
-        assertEquals("Schemas count not as expected", 7, metadata.schemas().size());
-        assertTrue("Schema not present: " + schemaId, metadata.hasSchema(schemaId));
-    }
-
-    private BinaryContext binaryContext(Ignite ignite) {
-        CacheObjectBinaryProcessorImpl processor = (CacheObjectBinaryProcessorImpl)
-            ((IgniteBinaryImpl)ignite.binary()).processor();
-
-        return processor.binaryContext();
-    }
-
-    private void clearSchema(Ignite victim, int typeId, int storeSchemaId) {
-        BinaryContext ctx = binaryContext(victim);
-
-        BinaryMetadata meta0 = ((BinaryTypeImpl)ctx.metadata(typeId)).metadata();
-
-        Collection<BinarySchema> knownSchemas = U.field(meta0, "schemas");
-
-        Set<Integer> schemaIds = U.field(meta0, "schemaIds");
-
-        schemaIds.remove(storeSchemaId);
-
-        knownSchemas.removeIf(schema -> schema.schemaId() == storeSchemaId);
-
-        BinaryMetadata meta = localMetadata(victim, typeId);
-
-        meta.schemas().removeIf(schema -> schema.schemaId() == storeSchemaId);
-
-        schemaIds = U.field(meta0, "schemaIds");
-
-        schemaIds.remove(storeSchemaId);
-    }
-
-    private BinaryMetadata localMetadata(Ignite ignite, int typeId) {
-        CacheObjectBinaryProcessorImpl processor = (CacheObjectBinaryProcessorImpl)
-            ((IgniteBinaryImpl)ignite.binary()).processor();
-
-        ConcurrentMap<Integer, Object> cache = U.field(processor, "metadataLocCache");
-
-        Object val = cache.get(typeId);
-
-        if (val == null)
-            return null;
-
-        BinaryMetadata meta = U.field(val, "metadata");
-
-        return meta;
+        fut2.get();
     }
 
     protected BinaryObject build(Ignite ignite, String prefix, int... fields) {
@@ -329,15 +289,8 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
         /**
          * @param blockPred Block predicate.
          */
-        public void blockOnNextMessage(IgniteBiPredicate<ClusterNode, DiscoveryCustomMessage> blockPred) {
+        public void setBlockPredicate(IgniteBiPredicate<ClusterNode, DiscoveryCustomMessage> blockPred) {
             this.blockPred = blockPred;
-        }
-
-        /** */
-        public synchronized void stopBlock() {
-            blockPred = null;
-
-            notifyAll();
         }
 
         /**
@@ -362,20 +315,8 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
                 throw new RuntimeException(throwable);
             }
 
-            while (blockPred != null && blockPred.apply(addr, delegate)) {
-                try {
-                    wait();
-                }
-                catch (InterruptedException e) {
-                    stopBlock();
-
-                    Thread.currentThread().interrupt();
-
-                    log.info("Discovery thread was interrupted, finish blocking ");
-
-                    return;
-                }
-            }
+            if (blockPred != null)
+                blockPred.apply(addr, delegate);
         }
 
         /** {@inheritDoc} */
