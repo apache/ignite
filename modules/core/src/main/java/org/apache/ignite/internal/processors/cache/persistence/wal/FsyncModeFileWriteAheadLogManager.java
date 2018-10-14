@@ -295,6 +295,12 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     /** Decompressor. */
     private volatile FileDecompressor decompressor;
 
+    /**
+     * Position of the last seen WAL pointer can be stored in-memory only and should survive
+     * activate\deactivate node events. Used for resumming logging from the last WAL pointer.
+     */
+    private volatile WALPointer walTail;
+
     /** */
     private final ThreadLocal<WALPointer> lastWALPtr = new ThreadLocal<>();
 
@@ -519,6 +525,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         stop0(true);
 
+        if (currentHnd != null)
+            tailWalPointer(currentHnd.position());
+
         currentHnd = null;
     }
 
@@ -533,11 +542,13 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /** {@inheritDoc} */
-    @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
+    @Override public void resumeLogging() throws IgniteCheckedException {
         assert currentHnd == null;
-        assert lastPtr == null || lastPtr instanceof FileWALPointer;
+        assert walTail == null || walTail instanceof FileWALPointer;
+        assert (isArchiverEnabled() && archiver != null) || (!isArchiverEnabled() && archiver == null) :
+            "Trying to restore FileWriteHandle on deactivated write ahead log manager";
 
-        FileWALPointer filePtr = (FileWALPointer)lastPtr;
+        FileWALPointer filePtr = (FileWALPointer)walTail;
 
         currentHnd = restoreWriteHandle(filePtr);
 
@@ -943,6 +954,18 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     /** {@inheritDoc} */
     @Override public long lastArchivedSegment() {
         return archiver.lastArchivedAbsoluteIndex();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void tailWalPointer(WALPointer pointer) {
+        assert currentHnd == null;
+
+        walTail = pointer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public WALPointer tailWalPointer() {
+        return walTail;
     }
 
     /** {@inheritDoc} */

@@ -17,15 +17,23 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.baseline;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -102,5 +110,71 @@ public class IgniteAbsentEvictionNodeOutOfBaselineTest extends GridCommonAbstrac
         List<GridDhtLocalPartition> partitions = ignite2.cachex(TEST_CACHE_NAME).context().topology().localPartitions();
 
         assertTrue("Should be empty : " + partitions, partitions.isEmpty());
+    }
+
+    /** */
+    public void testBaselineTopologySetNewBasedOnHistory() throws Exception {
+        IgniteEx igA = (IgniteEx)startGridWithCons(1, "A");
+
+        // Start and stop to bump topology version.
+        startGridWithCons(2, "B");
+        stopGrid(2, true);
+
+        final IgniteCluster cluster = igA.cluster();
+        assertEquals(cluster.topologyVersion(), 3);
+
+        cluster.active(true);
+        // Set with version.
+        IgniteCache<Object, Object> cache = igA.getOrCreateCache(TEST_CACHE_NAME);
+
+        for(int i = 0; i< 100; i++)
+            cache.put(i, i);
+
+        cluster.setBaselineTopology(2);
+
+        long affVer = cluster.topologyVersion();
+
+        cluster.setBaselineTopology(1);
+
+        cluster.setBaselineTopology(affVer);
+
+        cluster.setBaselineTopology(cluster.topology(1));
+
+        // Set to two nodes.
+        cluster.setBaselineTopology(cluster.topology(2));
+
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)igA
+            .context().cache().context().database();
+
+        CheckpointEntry cpEntry = dbMgr.checkpointHistory().lastCheckpoint();
+
+        String cpEndFileName = GridCacheDatabaseSharedManager.checkpointFileName(cpEntry,
+            CheckpointEntryType.END);
+
+        Files.delete(Paths.get(dbMgr.checkpointDirectory().getAbsolutePath(), cpEndFileName));
+
+        log.info("Checkpoint marker removed [cpEndFileName=" + cpEndFileName + ']');
+
+        stopGrid(1, true);
+
+        Ignite igA2 = startGridWithCons(1, "A");
+        startGridWithCons(2, "B");
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return igA2.cluster().active();
+            }
+        }, 10_000);
+
+        stopGrid(2, true);
+
+        stopGrid(1, true);
+    }
+
+    /** */
+    private Ignite startGridWithCons(int idx, String consId) throws Exception {
+        String igName = getTestIgniteInstanceName(idx);
+
+        return startGrid(igName, getConfiguration(igName).setConsistentId(consId));
     }
 }

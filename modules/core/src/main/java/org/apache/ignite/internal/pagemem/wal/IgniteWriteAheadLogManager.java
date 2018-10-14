@@ -46,8 +46,10 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     /**
      * Resumes logging after start. When WAL manager is started, it will skip logging any updates until this
      * method is called to avoid logging changes induced by the state restore procedure.
+     *
+     * @throws IgniteCheckedException If fails.
      */
-    public void resumeLogging(WALPointer lastWrittenPtr) throws IgniteCheckedException;
+    public void resumeLogging() throws IgniteCheckedException;
 
     /**
      * Appends the given log entry to the write-ahead log.
@@ -127,6 +129,16 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @return Last archived segment index.
      */
     public long lastArchivedSegment();
+
+    /**
+     * @param pointer Last file handler WAL pointer to set.
+     */
+    public void tailWalPointer(WALPointer pointer);
+
+    /**
+     * @return Last seen file handler WAL pointer.
+     */
+    public WALPointer tailWalPointer();
 
     /**
      * @return Last compacted segment index.

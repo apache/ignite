@@ -56,6 +56,9 @@ public class CheckpointHistory {
     /** Cache shared context. */
     private final GridCacheSharedContext<?, ?> cctx;
 
+    /** Boolean flag {@code True} if history was initialized. */
+    private boolean init;
+
     /**
      * Maps checkpoint's timestamp (from CP file name) to CP entry.
      * Using TS provides historical order of CP entries in map ( first is oldest )
@@ -89,8 +92,20 @@ public class CheckpointHistory {
      * @param checkpoints Checkpoints.
      */
     public void initialize(List<CheckpointEntry> checkpoints) {
+        if (init)
+            return;
+
         for (CheckpointEntry e : checkpoints)
             histMap.put(e.timestamp(), e);
+
+        init = true;
+    }
+
+    /**
+     * @return {@code True} if checkpoint history was previously initialized.
+     */
+    public boolean isInit() {
+        return init;
     }
 
     /**
