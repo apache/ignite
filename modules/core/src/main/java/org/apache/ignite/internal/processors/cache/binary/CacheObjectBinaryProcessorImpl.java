@@ -533,8 +533,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                     holder = metadataLocCache.get(typeId);
 
-                    Latches.initMetaReq.countDown();
-                    U.awaitQuiet(Latches.initMetaReq);
+                    if (Latches.lock) {
+                        Latches.initMetaReq.countDown();
+                        U.awaitQuiet(Latches.initMetaReq);
+                    }
                 }
                 catch (IgniteCheckedException ignored) {
                     // No-op.

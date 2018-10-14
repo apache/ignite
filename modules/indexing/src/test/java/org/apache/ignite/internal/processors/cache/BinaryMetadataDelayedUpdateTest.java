@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.binary;
+package org.apache.ignite.internal.processors.cache;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Latches;
@@ -40,11 +41,15 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -85,6 +90,7 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
 
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+        cfg.setIncludeEventTypes(EventType.EVTS_DISCOVERY);
 
         BlockTcpDiscoverySpi spi = new BlockTcpDiscoverySpi();
         spi.skipAddressesRandomization = true;
@@ -121,6 +127,8 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
 
         qryEntity.setIndexes(indexes);
 
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(50 * 1024 * 1024)));
+
         cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME).
             setBackups(0).
             setQueryEntities(Collections.singleton(qryEntity)).
@@ -143,12 +151,15 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
 
         Ignite node3 = startGrid("node3");
 
+        Ignite node4 = startGrid("node4");
+
         Ignite client1 = startGrid("client1");
 
         node0.cluster().active(true);
 
         awaitPartitionMapExchange();
 
+        Latches.lock = true;
 
         BlockTcpDiscoverySpi spi1 = (BlockTcpDiscoverySpi)node1.configuration().getDiscoverySpi();
 
@@ -156,16 +167,13 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
         CountDownLatch clL = new CountDownLatch(1);
 
         AtomicBoolean clientWait = new AtomicBoolean();
-        AtomicBoolean srvWait = new AtomicBoolean();
-
         final Object clientMux = new Object();
-        final Object srvMux = new Object();
 
         spi1.setBlockPredicate(new IgniteBiPredicate<ClusterNode, DiscoveryCustomMessage>() {
             @Override public boolean apply(ClusterNode snd, DiscoveryCustomMessage msg) {
                 if (msg instanceof MetadataUpdateProposedMessage) {
                     if (Thread.currentThread().getName().contains("client")) {
-                        log.info("Block custom message to client: [locNode=" + snd + ", msg=" + msg + ']');
+                        log.info("Block custom message to client0: [locNode=" + snd + ", msg=" + msg + ']');
 
                         clL.countDown();
 
@@ -181,22 +189,6 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
                         }
 
                     }
-                    else {
-                        log.info("Block custom message to server: [locNode=" + snd + ", msg=" + msg + ']');
-
-                        srvL.countDown();
-
-                        // Message to server
-                        synchronized (srvMux) {
-                            while (!srvWait.get())
-                                try {
-                                    srvMux.wait();
-                                }
-                                catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                }
-                        }
-                    }
 
                     return true;
                 }
@@ -205,7 +197,22 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
             }
         });
 
-        Integer key = primaryKey(node2.cache(DEFAULT_CACHE_NAME));
+        BlockTcpDiscoverySpi spi2 = (BlockTcpDiscoverySpi)node2.configuration().getDiscoverySpi();
+        spi2.setBlockPredicate(new IgniteBiPredicate<ClusterNode, DiscoveryCustomMessage>() {
+            @Override public boolean apply(ClusterNode snd, DiscoveryCustomMessage msg) {
+                if (msg instanceof MetadataUpdateProposedMessage) {
+                    log.info("Block custom message to next server: [locNode=" + snd + ", msg=" + msg + ']');
+
+                    LockSupport.park();
+
+                    return true;
+                }
+
+                return false;
+            }
+        });
+
+        Integer key = primaryKey(node3.cache(DEFAULT_CACHE_NAME));
 
         IgniteInternalFuture fut0 = GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
@@ -258,6 +265,8 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
                 catch (Throwable t) {
                     log.error("err", t);
                 }
+
+                System.out.println();
             }
         });
 
