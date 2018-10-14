@@ -25,8 +25,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.function.Predicate;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -48,7 +51,10 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinaryMetadataHandler;
 import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -147,17 +153,16 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
     public void testMissingSchemaUpdate() throws Exception {
         Ignite client = null;
 
-        IgniteEx crd = startGrid(0);
+        // Start order is important.
+        Ignite crd = startGrid("node0");
 
-        crd.cluster().active(true);
-
-        IgniteEx mid = startGrid(1);
+        Ignite mid = startGrid("node1");
 
         client = startGrid("client");
 
-        IgniteEx victim = startGrid(3);
+        Ignite victim = startGrid("node2");
 
-        crd.cluster().setBaselineTopology(4);
+        crd.cluster().active();
 
         awaitPartitionMapExchange();
 
@@ -165,90 +170,45 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
 
         IgniteCache<Object, Object> cache1 = client.cache(DEFAULT_CACHE_NAME);
 
-        BinaryObject build = build(client, 0);
+        BinaryObject obj0 = build(client, "val", 0);
 
-        int typeId = build.type().typeId();
+        int typeId = obj0.type().typeId();
 
-        cache1.put(0, build);
-
-        BinaryMarshaller marshaller = (BinaryMarshaller)victim.context().cache().context().marshaller();
-
-        GridBinaryMarshaller impl = U.field(marshaller, "impl");
-
-        // Simulate metadata loss.
-        BinaryTypeImpl metadata = (BinaryTypeImpl)impl.context().metadata(typeId);
-        Collection<BinarySchema> schemas = metadata.metadata().schemas();
-        schemas.clear();
-
-        BlockTcpDiscoverySpi spi = (BlockTcpDiscoverySpi)mid.configuration().getDiscoverySpi();
-
-        CountDownLatch l = new CountDownLatch(1);
-
-        spi.blockOnNextMessage(new IgniteBiPredicate<ClusterNode, DiscoveryCustomMessage>() {
-            @Override public boolean apply(ClusterNode snd, DiscoveryCustomMessage msg) {
-                if (msg instanceof MetadataUpdateAcceptedMessage) {
-                    MetadataUpdateAcceptedMessage acc = (MetadataUpdateAcceptedMessage)msg;
-                    if (acc.acceptedVersion() == 2) {
-                        l.countDown();
-
-                        log.info("Block custom message: [from=" + snd + ", msg=" + msg + ']');
-
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-        });
-
-        Integer key = primaryKey(victim.cache(DEFAULT_CACHE_NAME));
-
-        CyclicBarrier b = new CyclicBarrier(2);
-
-        final Ignite finalClient = client;
-        GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                try (Transaction tx = finalClient.transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
-                    cache1.put(key, build(finalClient, 0));
-
-                    tx.commit();
-                }
-                catch (Throwable t) {
-                    log.error("err", t);
-                }
-
-            }
-        }).get();
-
-//        IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
-//            @Override public void run() {
-//                // Wait while message is blocked
-//                try {
-//                    l.await();
-//                }
-//                catch (InterruptedException e) {
-//                    fail();
-//                }
-//
-//                U.awaitQuiet(b);
-//
-//                System.out.println();
-//
-//                //spi.stopBlock();
-//            }
-//        });
-//
-//        fut.get();
+        // Generate 5 schemas to disable inlining
+        cache1.put(0, obj0);
     }
 
-    protected BinaryObject build(Ignite ignite, int... fields) {
+    private BinaryContext binaryContext(Ignite ignite) {
+        CacheObjectBinaryProcessorImpl processor = (CacheObjectBinaryProcessorImpl)
+            ((IgniteBinaryImpl)ignite.binary()).processor();
+
+        return processor.binaryContext();
+    }
+
+    private BinaryMetadata localMetadata(Ignite ignite, int typeId) {
+        CacheObjectBinaryProcessorImpl processor = (CacheObjectBinaryProcessorImpl)
+            ((IgniteBinaryImpl)ignite.binary()).processor();
+
+        ConcurrentMap<Integer, Object> cache = U.field(processor, "metadataLocCache");
+
+        Object val = cache.get(typeId);
+
+        if (val == null)
+            return null;
+
+        BinaryMetadata meta = U.field(val, "metadata");
+
+        return meta;
+    }
+
+    protected BinaryObject build(Ignite ignite, String prefix, int... fields) {
         BinaryObjectBuilder builder = ignite.binary().builder("Value");
 
         for (int i = 0; i < fields.length; i++) {
             int field = fields[i];
 
             builder.setField("i" + field, field);
-            builder.setField("s" + field, "testVal" + field);
+            builder.setField("s" + field, prefix + field);
         }
 
         return builder.build();

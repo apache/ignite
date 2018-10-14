@@ -600,6 +600,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                  * Commit to cache. Note that for 'near' transaction we loop through all the entries.
                  */
                 for (IgniteTxEntry txEntry : commitEntries) {
+                    log.info("entry: " + txEntry);
+
                     GridCacheContext cacheCtx = txEntry.context();
 
                     GridDrType drType = cacheCtx.isDrEnabled() ? DR_PRIMARY : DR_NONE;
