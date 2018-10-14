@@ -87,8 +87,7 @@ public class IgniteSink extends AbstractSink implements Configurable {
     /**
      * Starts a grid and initializes an event transformer.
      */
-    @SuppressWarnings("unchecked")
-    @Override synchronized public void start() {
+    @Override @SuppressWarnings("unchecked") public synchronized void start() {
         A.notNull(springCfgPath, "Ignite config file");
         A.notNull(cacheName, "Cache name");
         A.notNull(eventTransformerCls, "Event transformer class");
@@ -122,7 +121,7 @@ public class IgniteSink extends AbstractSink implements Configurable {
     /**
      * Stops the grid.
      */
-    @Override synchronized public void stop() {
+    @Override public synchronized void stop() {
         if (ignite != null)
             ignite.close();
 
