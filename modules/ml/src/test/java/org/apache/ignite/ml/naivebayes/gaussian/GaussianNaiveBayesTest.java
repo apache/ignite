@@ -79,7 +79,7 @@ public class GaussianNaiveBayesTest {
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
             (k, v) -> v[0]
         );
-        Vector observation = new DenseVector(new double[] {-0.8, -1});
+        Vector observation = VectorUtils.of(-0.8, -1);
 
         Assert.assertEquals(one, model.apply(observation), PRECISION);
     }

@@ -39,14 +39,14 @@ public class GaussianNaiveBayesModel implements Model<Vector, Double>, Exportabl
     /** Labels. */
     private final double[] labels;
     /** feature sum, squared sum and cound per label */
-    private GaussianNaiveBayesSumsHolder sumsHolder;
+    private final GaussianNaiveBayesSumsHolder sumsHolder;
 
     /**
-     * @param means means of features for all classes
-     * @param variances variances of features for all classes
-     * @param classProbabilities probabilities for all classes
-     * @param labels labels
-     * @param sumsHolder feature sum, squared sum and count sum per label. This data is used for future model updating.
+     * @param means Means of features for all classes.
+     * @param variances Variances of features for all classes.
+     * @param classProbabilities Probabilities for all classes.
+     * @param labels Labels.
+     * @param sumsHolder Feature sum, squared sum and count sum per label. This data is used for future model updating.
      */
     public GaussianNaiveBayesModel(double[][] means, double[][] variances,
         double[] classProbabilities, double[] labels, GaussianNaiveBayesSumsHolder sumsHolder) {
@@ -99,6 +99,7 @@ public class GaussianNaiveBayesModel implements Model<Vector, Double>, Exportabl
         return classProbabilities;
     }
 
+    /** */
     public GaussianNaiveBayesSumsHolder getSumsHolder() {
         return sumsHolder;
     }
