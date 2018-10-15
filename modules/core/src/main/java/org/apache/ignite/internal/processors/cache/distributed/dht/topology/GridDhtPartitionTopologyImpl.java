@@ -2047,6 +2047,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         }
                     }
 
+                    if (!recentlyLost.isEmpty()) {
+                        U.warn(log, "Detected lost partitions [grp=" + grp.cacheOrGroupName()
+                            + ", parts=" + S.compact(recentlyLost)
+                            + ", plc=" + plc + "]");
+                    }
+
                     // Update partition state on all nodes.
                     for (Integer part : lost) {
                         long updSeq = updateSeq.incrementAndGet();
