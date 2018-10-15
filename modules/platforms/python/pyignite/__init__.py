@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -15,5 +13,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
-java -Xmx4G -DIGNITE_QUIET=false -cp "$SCRIPT_PATH:$SCRIPT_PATH/lib/*" org.apache.ignite.tensorflow.submitter.JobSubmitter "$@"
+from pyignite.client import Client
+from pyignite.binary import GenericObjectMeta
