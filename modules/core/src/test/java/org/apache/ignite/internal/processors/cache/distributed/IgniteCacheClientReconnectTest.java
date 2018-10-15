@@ -130,6 +130,8 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
      * @throws Exception If failed
      */
     public void testClientReconnectOnExchangeHistoryExhaustion() throws Exception {
+        fail("//TODO");
+
         System.setProperty(IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, "1");
 
         try {

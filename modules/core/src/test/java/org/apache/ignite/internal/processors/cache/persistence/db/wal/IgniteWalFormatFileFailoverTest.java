@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAhea
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
@@ -143,6 +144,9 @@ public class IgniteWalFormatFileFailoverTest extends GridCommonAbstractTest {
         failMtdNameRef.set(formatFile);
 
         grid(0).cluster().active(true);
+
+        Assert.assertTrue(grid(0).cluster().active());
+        Assert.assertTrue(grid(1).cluster().active());
 
         checkCause(failureHandler(0).awaitFailure(2000).error());
         checkCause(failureHandler(1).awaitFailure(2000).error());

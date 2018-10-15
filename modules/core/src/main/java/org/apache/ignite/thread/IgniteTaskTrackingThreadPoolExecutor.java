@@ -182,9 +182,11 @@ public class IgniteTaskTrackingThreadPoolExecutor extends IgniteThreadPoolExecut
      */
     public final synchronized void awaitDone() throws IgniteCheckedException {
         // There are no guarantee what all enqueued tasks will be finished if an error has occurred.
+        boolean first = true;
+
         while (!isError() && !isDone()) {
             try {
-                if (log != null && log.isInfoEnabled()) {
+                if (!first && log != null && log.isInfoEnabled()) {
                     log.info(
                         "Await checkpoint pool tasks comleted, " +
                             "pendingTaskCnt=" + pendingTaskCnt.longValue() + ", " +
@@ -196,12 +198,25 @@ public class IgniteTaskTrackingThreadPoolExecutor extends IgniteThreadPoolExecut
                 }
 
                 wait(2000);
+
+                first = false;
             }
             catch (InterruptedException e) {
                 err.set(e);
 
                 Thread.currentThread().interrupt();
             }
+        }
+
+        if (!first && log != null && log.isInfoEnabled()) {
+            log.info(
+                "After await checkpoint pool tasks comleted, " +
+                    "pendingTaskCnt=" + pendingTaskCnt.longValue() + ", " +
+                    "completedTaskCnt=" + completedTaskCnt.longValue() + ", " +
+                    "initialized=" + initialized + ", " +
+                    "err=" + err.get() + ", " +
+                    "activeCnt=" + getActiveCount()
+            );
         }
 
         if (isError())
