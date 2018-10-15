@@ -54,7 +54,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -64,14 +64,12 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /** */
 public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
-    /** */
-    private static final int GRIDS = 3;
-
     /** */
     private static final int FIELDS = 2;
 
@@ -193,7 +191,7 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
         AtomicBoolean srvWait = new AtomicBoolean();
         final Object srvMux = new Object();
 
-        ((BlockTcpDiscoverySpi)node1.configuration().getDiscoverySpi()).setBlockPredicate((snd, msg) -> {
+        ((BlockTcpDiscoverySpi)node1.configuration().getDiscoverySpi()).setClosure((snd, msg) -> {
             if (msg instanceof MetadataUpdateProposedMessage) {
                 if (Thread.currentThread().getName().contains("client")) {
                     log.info("Block custom message to client0: [locNode=" + snd + ", msg=" + msg + ']');
@@ -211,14 +209,12 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
                             }
                     }
                 }
-
-                return true;
             }
 
-            return false;
+            return null;
         });
 
-        ((BlockTcpDiscoverySpi)node2.configuration().getDiscoverySpi()).setBlockPredicate((snd, msg) -> {
+        ((BlockTcpDiscoverySpi)node2.configuration().getDiscoverySpi()).setClosure((snd, msg) -> {
             if (msg instanceof MetadataUpdateProposedMessage) {
                 MetadataUpdateProposedMessage msg0 = (MetadataUpdateProposedMessage)msg;
 
@@ -226,7 +222,7 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
 
                 // Should not block propose messages until they reach coordinator.
                 if (pendingVer == 0)
-                    return false;
+                    return null;
 
                 log.info("Block custom message to next server: [locNode=" + snd + ", msg=" + msg + ']');
 
@@ -240,75 +236,67 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
                             e.printStackTrace();
                         }
                 }
-
-                return true;
             }
 
-            return false;
+            return null;
         });
 
         Integer key = primaryKey(node3.cache(DEFAULT_CACHE_NAME));
 
-        IgniteInternalFuture fut0 = GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                try (Transaction tx = client0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    client0.cache(DEFAULT_CACHE_NAME).put(key, build(client0, "val", 0));
+        IgniteInternalFuture fut0 = runAsync(() -> {
+            try (Transaction tx = client0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                client0.cache(DEFAULT_CACHE_NAME).put(key, build(client0, "val", 0));
 
-                    tx.commit();
-                }
-                catch (Throwable t) {
-                    log.error("err", t);
-                }
-
+                tx.commit();
             }
+            catch (Throwable t) {
+                log.error("err", t);
+            }
+
         });
 
         // Implements test logic.
-        IgniteInternalFuture fut1 = GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                // Wait for initial metadata received. It should be initial version: pending=0, accepted=0
-                U.awaitQuiet(initMetaReq);
+        IgniteInternalFuture fut1 = runAsync(() -> {
+            // Wait for initial metadata received. It should be initial version: pending=0, accepted=0
+            U.awaitQuiet(initMetaReq);
 
-                // Wait for blocking proposal message to client node.
-                U.awaitQuiet(clientProposeMsgBlockedLatch);
+            // Wait for blocking proposal message to client node.
+            U.awaitQuiet(clientProposeMsgBlockedLatch);
 
-                // Ublock proposal message to client.
-                clientWait.set(true);
+            // Ublock proposal message to client.
+            clientWait.set(true);
 
-                synchronized (clientMux) {
-                    clientMux.notify();
-                }
+            synchronized (clientMux) {
+                clientMux.notify();
+            }
 
-                // Give some time to apply update.
-                doSleep(3000);
+            // Give some time to apply update.
+            doSleep(3000);
 
-                // Unblock second transaction for metadata update.
-                localMetaUpdatedLatch.countDown();
+            // Unblock second transaction for metadata update.
+            localMetaUpdatedLatch.countDown();
 
-                // This tx will start committing and should fail because metadata is not present on node3.
-                U.awaitQuiet(txFinishLatch);
+            // This tx will start committing and should fail because metadata is not present on node3.
+            U.awaitQuiet(txFinishLatch);
 
-                //
-                srvWait.set(true);
-                synchronized (srvMux) {
-                    srvMux.notify();
-                }
+            //
+            srvWait.set(true);
+            synchronized (srvMux) {
+                srvMux.notify();
             }
         });
 
-        IgniteInternalFuture fut2 = GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                delayMetadataUpdateThreadLoc.set(true);
+        IgniteInternalFuture fut2 = runAsync(() -> {
+            delayMetadataUpdateThreadLoc.set(true);
 
-                try (Transaction tx = client0.transactions().
-                    txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
-                    client0.cache(DEFAULT_CACHE_NAME).put(key, build(client0, "val", 0));
+            try (Transaction tx = client0.transactions().
+                txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
+                client0.cache(DEFAULT_CACHE_NAME).put(key, build(client0, "val", 0));
 
-                    tx.commit();
-                }
-                finally {
-                    txFinishLatch.countDown();
-                }
+                tx.commit();
+            }
+            finally {
+                txFinishLatch.countDown();
             }
         });
 
@@ -317,11 +305,18 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
         fut2.get();
     }
 
+    /**
+     * @param ignite Ignite.
+     * @param prefix Prefix.
+     * @param fields Fields.
+     */
     protected BinaryObject build(Ignite ignite, String prefix, int... fields) {
         BinaryObjectBuilder builder = ignite.binary().builder("Value");
 
         for (int i = 0; i < fields.length; i++) {
             int field = fields[i];
+
+            assertTrue(field < FIELDS);
 
             builder.setField("i" + field, field);
             builder.setField("s" + field, prefix + field);
@@ -334,21 +329,21 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
      * Discovery SPI which can simulate network split.
      */
     protected class BlockTcpDiscoverySpi extends TcpDiscoverySpi {
-        /** Block predicate. */
-        private volatile IgniteBiPredicate<ClusterNode, DiscoveryCustomMessage> blockPred;
+        /** Closure. */
+        private volatile IgniteBiClosure<ClusterNode, DiscoveryCustomMessage, Void> clo;
 
         /**
-         * @param blockPred Block predicate.
+         * @param clo Closure.
          */
-        public void setBlockPredicate(IgniteBiPredicate<ClusterNode, DiscoveryCustomMessage> blockPred) {
-            this.blockPred = blockPred;
+        public void setClosure(IgniteBiClosure<ClusterNode, DiscoveryCustomMessage, Void> clo) {
+            this.clo = clo;
         }
 
         /**
          * @param addr Address.
          * @param msg Message.
          */
-        private synchronized void block(ClusterNode addr, TcpDiscoveryAbstractMessage msg) {
+        private synchronized void apply(ClusterNode addr, TcpDiscoveryAbstractMessage msg) {
             if (!(msg instanceof TcpDiscoveryCustomEventMessage))
                 return;
 
@@ -366,8 +361,8 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
                 throw new RuntimeException(throwable);
             }
 
-            if (blockPred != null)
-                blockPred.apply(addr, delegate);
+            if (clo != null)
+                clo.apply(addr, delegate);
         }
 
         /** {@inheritDoc} */
@@ -378,7 +373,7 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
             long timeout
         ) throws IOException {
             if (spiCtx != null)
-                block(spiCtx.localNode(), msg);
+                apply(spiCtx.localNode(), msg);
 
             super.writeToSocket(sock, msg, data, timeout);
         }
@@ -389,23 +384,10 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
             TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (spiCtx != null)
-                block(spiCtx.localNode(), msg);
-
-            //doSleep(500);
+                apply(spiCtx.localNode(), msg);
 
             super.writeToSocket(sock, out, msg, timeout);
         }
-
-        /** {@inheritDoc} */
-//        @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
-//            long timeout) throws IOException {
-//            if (spiCtx != null)
-//                block(spiCtx.localNode(), msg);
-//
-//            //doSleep(500);
-//
-//            super.writeToSocket(msg, sock, res, timeout);
-//        }
     }
 
     /** {@inheritDoc} */
@@ -415,15 +397,12 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
         System.setProperty(IgniteSystemProperties.IGNITE_TEST_FEATURES_ENABLED, "true");
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
         System.clearProperty(IgniteSystemProperties.IGNITE_TEST_FEATURES_ENABLED);
 
         stopAllGrids();
-    }
-
-    public BinaryContext binaryContext(IgniteEx ex) {
-        return ((CacheObjectBinaryProcessorImpl)ex.context().cacheObjects()).binaryContext();
     }
 }
