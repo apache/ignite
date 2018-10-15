@@ -47,7 +47,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
@@ -64,8 +63,9 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessa
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
+
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /** */
 public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
@@ -91,17 +91,7 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(spi.setIpFinder(ipFinder));
 
-        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
-
         cfg.setClientMode(igniteInstanceName.startsWith("client"));
-
-        cfg.setMetricsUpdateFrequency(600_000);
-        cfg.setClientFailureDetectionTimeout(600_000);
-        cfg.setFailureDetectionTimeout(600_000);
-
-//        cfg.setDataStorageConfiguration(new DataStorageConfiguration().
-//            setWalMode(LOG_ONLY).setPageSize(1024).setWalSegmentSize(16 * MB).
-//            setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true).setMaxSize(50 * MB)));
 
         QueryEntity qryEntity = new QueryEntity("java.lang.Integer", "Value");
 
@@ -121,7 +111,8 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
 
         qryEntity.setIndexes(indexes);
 
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(50 * 1024 * 1024)));
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration().
+            setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(50 * MB)));
 
         cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME).
             setBackups(0).
@@ -133,14 +124,22 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** Flag to start syncing metadata requests. Should skip on exchange. */
     private volatile boolean syncMeta;
 
+    /** Metadata init latch. Both threads must request initial metadata. */
     private CountDownLatch initMetaReq = new CountDownLatch(2);
 
-    private ThreadLocal<Boolean> lockT = new ThreadLocal<>();
+    /** Thread local flag for need of waiting local metadata update. */
+    private ThreadLocal<Boolean> delayMetadataUpdateThreadLoc = new ThreadLocal<>();
 
-    public static final CountDownLatch proposedClLock = new CountDownLatch(1);
+    /** Latch for waiting local metadata update. */
+    public static final CountDownLatch localMetaUpdatedLatch = new CountDownLatch(1);
 
+    /** Latch for waiting for tx finish (error or success). */
+    public static final CountDownLatch txFinishLatch = new CountDownLatch(1);
+
+    /** */
     public void testMissingSchemaUpdate() throws Exception {
         // Start order is important.
         Ignite node0 = startGrid("node0");
@@ -150,7 +149,8 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
         IgniteEx client0 = startGrid("client0");
 
         CacheObjectBinaryProcessorImpl.TestBinaryContext clientCtx =
-            (CacheObjectBinaryProcessorImpl.TestBinaryContext)((CacheObjectBinaryProcessorImpl)client0.context().cacheObjects()).binaryContext();
+            (CacheObjectBinaryProcessorImpl.TestBinaryContext)((CacheObjectBinaryProcessorImpl)client0.context().
+                cacheObjects()).binaryContext();
 
         clientCtx.addListener(new CacheObjectBinaryProcessorImpl.TestBinaryContext.TestBinaryContextListener() {
             @Override public void onAfterMetadataRequest(int typeId, BinaryType type) {
@@ -166,14 +166,10 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
                 }
             }
 
-            @Override public void onAfterSchemaRequest(int typeId, int schemaId, BinaryType type) {
-
-            }
-
             @Override public void onBeforeMetadataUpdate(int typeId, BinaryMetadata metadata) {
                 // Delay one of updates until schema is locally updated on propose message.
-                if (lockT.get() != null)
-                    U.awaitQuiet(proposedClLock);
+                if (delayMetadataUpdateThreadLoc.get() != null)
+                    U.awaitQuiet(localMetaUpdatedLatch);
             }
         });
 
@@ -183,18 +179,13 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
 
         Ignite node4 = startGrid("node4");
 
-        //Ignite client1 = startGrid("client1");
-
         node0.cluster().active(true);
 
         awaitPartitionMapExchange();
 
         syncMeta = true;
 
-        BlockTcpDiscoverySpi spi1 = (BlockTcpDiscoverySpi)node1.configuration().getDiscoverySpi();
-
-        CountDownLatch srvL = new CountDownLatch(1);
-        CountDownLatch clL = new CountDownLatch(1);
+        CountDownLatch clientProposeMsgBlockedLatch = new CountDownLatch(1);
 
         AtomicBoolean clientWait = new AtomicBoolean();
         final Object clientMux = new Object();
@@ -202,69 +193,65 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
         AtomicBoolean srvWait = new AtomicBoolean();
         final Object srvMux = new Object();
 
-        spi1.setBlockPredicate(new IgniteBiPredicate<ClusterNode, DiscoveryCustomMessage>() {
-            @Override public boolean apply(ClusterNode snd, DiscoveryCustomMessage msg) {
-                if (msg instanceof MetadataUpdateProposedMessage) {
-                    if (Thread.currentThread().getName().contains("client")) {
-                        log.info("Block custom message to client0: [locNode=" + snd + ", msg=" + msg + ']');
+        ((BlockTcpDiscoverySpi)node1.configuration().getDiscoverySpi()).setBlockPredicate((snd, msg) -> {
+            if (msg instanceof MetadataUpdateProposedMessage) {
+                if (Thread.currentThread().getName().contains("client")) {
+                    log.info("Block custom message to client0: [locNode=" + snd + ", msg=" + msg + ']');
 
-                        clL.countDown();
-
-                        // Message to client
-                        synchronized (clientMux) {
-                            while (!clientWait.get())
-                                try {
-                                    clientMux.wait();
-                                }
-                                catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                }
-                        }
-                    }
-
-                    return true;
-                }
-
-                return false;
-            }
-        });
-
-        BlockTcpDiscoverySpi spi2 = (BlockTcpDiscoverySpi)node2.configuration().getDiscoverySpi();
-        spi2.setBlockPredicate(new IgniteBiPredicate<ClusterNode, DiscoveryCustomMessage>() {
-            @Override public boolean apply(ClusterNode snd, DiscoveryCustomMessage msg) {
-                if (msg instanceof MetadataUpdateProposedMessage) {
-                    MetadataUpdateProposedMessage msg0 = (MetadataUpdateProposedMessage)msg;
-
-                    int pendingVer = U.field(msg0, "pendingVer");
-
-                    if (pendingVer == 0)
-                        return false;
-
-                    log.info("Block custom message to next server: [locNode=" + snd + ", msg=" + msg + ']');
+                    clientProposeMsgBlockedLatch.countDown();
 
                     // Message to client
-                    synchronized (srvMux) {
-                        while (!srvWait.get())
+                    synchronized (clientMux) {
+                        while (!clientWait.get())
                             try {
-                                srvMux.wait();
+                                clientMux.wait();
                             }
                             catch (InterruptedException e) {
                                 e.printStackTrace();
                             }
                     }
-
-                    return true;
                 }
 
-                return false;
+                return true;
             }
+
+            return false;
+        });
+
+        ((BlockTcpDiscoverySpi)node2.configuration().getDiscoverySpi()).setBlockPredicate((snd, msg) -> {
+            if (msg instanceof MetadataUpdateProposedMessage) {
+                MetadataUpdateProposedMessage msg0 = (MetadataUpdateProposedMessage)msg;
+
+                int pendingVer = U.field(msg0, "pendingVer");
+
+                // Should not block propose messages until they reach coordinator.
+                if (pendingVer == 0)
+                    return false;
+
+                log.info("Block custom message to next server: [locNode=" + snd + ", msg=" + msg + ']');
+
+                // Message to client
+                synchronized (srvMux) {
+                    while (!srvWait.get())
+                        try {
+                            srvMux.wait();
+                        }
+                        catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                }
+
+                return true;
+            }
+
+            return false;
         });
 
         Integer key = primaryKey(node3.cache(DEFAULT_CACHE_NAME));
 
         IgniteInternalFuture fut0 = GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
-                try (Transaction tx = client0.transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+                try (Transaction tx = client0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     client0.cache(DEFAULT_CACHE_NAME).put(key, build(client0, "val", 0));
 
                     tx.commit();
@@ -276,25 +263,32 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
             }
         });
 
+        // Implements test logic.
         IgniteInternalFuture fut1 = GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
+                // Wait for initial metadata received. It should be initial version: pending=0, accepted=0
                 U.awaitQuiet(initMetaReq);
 
-                // Await client block latch.
-                U.awaitQuiet(clL);
+                // Wait for blocking proposal message to client node.
+                U.awaitQuiet(clientProposeMsgBlockedLatch);
 
+                // Ublock proposal message to client.
                 clientWait.set(true);
 
                 synchronized (clientMux) {
                     clientMux.notify();
                 }
 
+                // Give some time to apply update.
                 doSleep(3000);
 
-                proposedClLock.countDown();
+                // Unblock second transaction for metadata update.
+                localMetaUpdatedLatch.countDown();
 
-                doSleep(3000);
+                // This tx will start committing and should fail because metadata is not present on node3.
+                U.awaitQuiet(txFinishLatch);
 
+                //
                 srvWait.set(true);
                 synchronized (srvMux) {
                     srvMux.notify();
@@ -304,13 +298,16 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture fut2 = GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
-                lockT.set(true);
+                delayMetadataUpdateThreadLoc.set(true);
 
                 try (Transaction tx = client0.transactions().
-                    txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, 0, 1)) {
+                    txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
                     client0.cache(DEFAULT_CACHE_NAME).put(key, build(client0, "val", 0));
 
                     tx.commit();
+                }
+                finally {
+                    txFinishLatch.countDown();
                 }
             }
         });

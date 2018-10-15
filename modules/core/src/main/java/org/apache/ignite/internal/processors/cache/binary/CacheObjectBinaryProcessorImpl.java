@@ -1197,19 +1197,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
             return metadata;
         }
-
-        /** {@inheritDoc} */
-        @Override public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
-            BinaryType metadata = super.metadata(typeId, schemaId);
-
-            if (listeners != null) {
-                for (TestBinaryContextListener listener : listeners)
-                    listener.onAfterSchemaRequest(typeId, schemaId, metadata);
-            }
-
-            return metadata;
-        }
-
         /** {@inheritDoc} */
         @Override public void updateMetadata(int typeId, BinaryMetadata meta,
             boolean failIfUnregistered) throws BinaryObjectException {
@@ -1228,13 +1215,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
              * @param type Type.
              */
             void onAfterMetadataRequest(int typeId, BinaryType type);
-
-            /**
-             * @param typeId Type id.
-             * @param schemaId Schema id.
-             * @param type Type.
-             */
-            void onAfterSchemaRequest(int typeId, int schemaId, BinaryType type);
 
             /**
              * @param typeId Type id.
