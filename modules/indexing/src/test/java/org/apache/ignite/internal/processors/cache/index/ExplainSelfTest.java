@@ -41,15 +41,14 @@ public class ExplainSelfTest extends GridCommonAbstractTest {
         execute("CREATE TABLE TEST (ID LONG PRIMARY KEY, VAL LONG);");
     }
 
-    /**
-     * Executes sql query using native sql api.
-     *
-     * @param sql sql query.
-     * @return fully fetched result of query.
-     * @throws Exception on error.
-     */
-    private List<List<?>> execute(String sql) throws Exception {
-        return ignite.context().query().querySqlFields(new SqlFieldsQuery(sql), false).getAll();
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        try {
+            stopAllGrids();
+        }
+        finally {
+            super.afterTestsStopped();
+        }
     }
 
     /**
@@ -65,8 +64,18 @@ public class ExplainSelfTest extends GridCommonAbstractTest {
     /**
      * Check that EXPLAIN SELECT queries doesn't cause errors.
      */
-    public void testExplainSelect() throws Exception {
+    public void testExplainSelect() {
         execute("EXPLAIN SELECT * FROM TEST;");
+    }
+
+    /**
+     * Executes sql query using native sql api.
+     *
+     * @param sql sql query.
+     * @return fully fetched result of query.
+     */
+    private List<List<?>> execute(String sql) {
+        return ignite.context().query().querySqlFields(new SqlFieldsQuery(sql), false).getAll();
     }
 
     /**
@@ -83,15 +92,5 @@ public class ExplainSelfTest extends GridCommonAbstractTest {
 
         assertEquals("Operation error code is not correct.",
             IgniteQueryErrorCode.UNSUPPORTED_OPERATION, sqlExc.statusCode());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        try {
-            stopAllGrids();
-        }
-        finally {
-            super.afterTestsStopped();
-        }
     }
 }
