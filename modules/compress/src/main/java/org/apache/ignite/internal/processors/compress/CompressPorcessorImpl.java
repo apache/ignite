@@ -13,11 +13,18 @@ public class CompressPorcessorImpl extends CompressProcessor {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isPageCompressionEnabled() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public ByteBuffer compressPage(long pageId, ByteBuffer page) {
         assert page.position() == 0;
         assert page.limit() == page.capacity();
 
         ByteBuffer dst = ByteBuffer.allocateDirect(page.capacity() * 3);
+
+
 
         // TODO drop garbage
 
@@ -42,16 +49,14 @@ public class CompressPorcessorImpl extends CompressProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public ByteBuffer uncompressPage(ByteBuffer compressedPage, int pageSize) {
+    @Override public void decompressPage(ByteBuffer compressedPage) {
         assert compressedPage.position() == 0;
         assert compressedPage.limit() == compressedPage.capacity();
 
-        ByteBuffer dst = ByteBuffer.allocateDirect(pageSize);
+        ByteBuffer dst = ByteBuffer.allocateDirect(0); // FIXME
 
         Zstd.decompress(dst, toDirect(compressedPage));
 
         // TODO resurrect garbage
-
-        return compressedPage;
     }
 }

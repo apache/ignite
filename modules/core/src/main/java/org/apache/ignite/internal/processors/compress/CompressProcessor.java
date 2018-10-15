@@ -12,11 +12,15 @@ public class CompressProcessor extends GridProcessorAdapter {
         super(ctx);
     }
 
+    public boolean isPageCompressionEnabled() {
+        return false;
+    }
+
     public ByteBuffer compressPage(long pageId, ByteBuffer page) {
         return page;
     }
 
-    public ByteBuffer uncompressPage(ByteBuffer page, int pageSize) {
-        return page;
+    public void decompressPage(ByteBuffer page) {
+        // No-op.
     }
 }
