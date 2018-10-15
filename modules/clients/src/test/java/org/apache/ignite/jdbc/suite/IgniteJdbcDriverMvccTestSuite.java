@@ -18,12 +18,13 @@
 package org.apache.ignite.jdbc.suite;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.jdbc.JdbcVersionMismatchSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionMvccEnabledSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsClientAutoCommitComplexSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsClientNoAutoCommitComplexSelfTest;
-import org.apache.ignite.jdbc.thin.JdbcThinTransactionsWithMvccEnabledSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsServerAutoCommitComplexSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsServerNoAutoCommitComplexSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinTransactionsWithMvccEnabledSelfTest;
 
 public class IgniteJdbcDriverMvccTestSuite extends TestSuite {
     /**
@@ -34,6 +35,7 @@ public class IgniteJdbcDriverMvccTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite JDBC Driver Test Suite");
 
         suite.addTest(new TestSuite(JdbcThinConnectionMvccEnabledSelfTest.class));
+        suite.addTest(new TestSuite(JdbcVersionMismatchSelfTest.class));
         
         // Transactions
         suite.addTest(new TestSuite(JdbcThinTransactionsWithMvccEnabledSelfTest.class));
