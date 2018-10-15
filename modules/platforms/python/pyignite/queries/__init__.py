@@ -24,7 +24,6 @@ used internally by :mod:`pyignite.api` module. They, in turn, based on
 from collections import OrderedDict
 import ctypes
 from random import randint
-from typing import Type
 
 import attr
 

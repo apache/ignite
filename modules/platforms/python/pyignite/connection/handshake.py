@@ -13,11 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import ctypes
 from typing import Optional
 
 from pyignite.constants import *
-
+from pyignite.datatypes import Byte, Int, Short, String
+from pyignite.datatypes.internal import Struct
 
 OP_HANDSHAKE = 1
 
@@ -31,9 +31,6 @@ class HandshakeRequest:
     def __init__(
         self, username: Optional[str]=None, password: Optional[str]=None
     ):
-        from pyignite.datatypes import Byte, Int, Short, String
-        from pyignite.datatypes.internal import Struct
-
         fields = [
             ('length', Int),
             ('op_code', Byte),
@@ -74,9 +71,6 @@ class HandshakeRequest:
 
 
 def read_response(client):
-    from pyignite.datatypes import Byte, Int, Short, String
-    from pyignite.datatypes.internal import Struct
-
     response_start = Struct([
         ('length', Int),
         ('op_code', Byte),

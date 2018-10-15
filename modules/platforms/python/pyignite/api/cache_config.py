@@ -27,7 +27,9 @@ from typing import Union
 
 from pyignite.datatypes.cache_config import cache_config_struct
 from pyignite.datatypes.cache_properties import prop_map
-from pyignite.datatypes import Int, Byte, Short, String, StringArray
+from pyignite.datatypes import (
+    Int, Byte, prop_codes, Short, String, StringArray,
+)
 from pyignite.queries import Query, ConfigQuery
 from pyignite.queries.op_codes import *
 from pyignite.utils import cache_id
@@ -42,8 +44,6 @@ def compact_cache_config(cache_config: dict) -> dict:
     :return: the same dict, but with property codes as keys,
      like {PROP_IS_ONHEAPCACHE_ENABLED: 1}.
     """
-    from pyignite.datatypes import prop_codes
-
     result = {}
     for k, v in cache_config.items():
         if k == 'length':

@@ -220,8 +220,6 @@ class Map:
 
     @classmethod
     def parse(cls, client: 'Client'):
-        from .internal import AnyDataObject
-
         header_class = cls.build_header()
         buffer = client.recv(ctypes.sizeof(header_class))
         header = header_class.from_buffer_copy(buffer)
@@ -244,8 +242,6 @@ class Map:
 
     @classmethod
     def to_python(cls, ctype_object, *args, **kwargs):
-        from .internal import AnyDataObject
-
         map_type = getattr(ctype_object, 'type', cls.HASH_MAP)
         result = OrderedDict() if map_type == cls.LINKED_HASH_MAP else {}
 
@@ -263,8 +259,6 @@ class Map:
 
     @classmethod
     def from_python(cls, value, type_id=None):
-        from .internal import AnyDataObject
-
         header_class = cls.build_header()
         header = header_class()
         length = len(value)
@@ -473,7 +467,7 @@ class BinaryObject:
             finally:
                 del frame
 
-        compact_footer = True
+        compact_footer = True  # this is actually used
         client = find_client()
         if client:
             # if no client can be found, the class of the `value` is discarded

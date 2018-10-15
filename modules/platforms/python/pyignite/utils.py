@@ -75,7 +75,7 @@ def unwrap_binary(client: 'Client', wrapped: tuple):
     :param wrapped: `WrappedDataObject` value,
     :return: dict representing wrapped BinaryObject.
     """
-    from pyignite.datatypes import BinaryObject
+    from pyignite.datatypes.complex import BinaryObject
 
     blob, offset = wrapped
     client_clone = client.clone(prefetch=blob)

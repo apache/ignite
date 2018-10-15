@@ -31,7 +31,7 @@ from .type_codes import *
 __all__ = ['AnyDataArray', 'AnyDataObject', 'Struct', 'StructArray', 'tc_map']
 
 
-def tc_map(key: bytes):
+def tc_map(key: bytes, _memo_map: dict={}):
     """
     Returns a default parser/generator class for the given type code.
 
@@ -40,66 +40,72 @@ def tc_map(key: bytes):
     reason.
 
     :param key: Ignite type code,
+    :param _memo_map: do not use this parameter, it is for memoization
+     of the “type code-type class” mapping,
     :return: parser/generator class for the type code.
     """
-    from pyignite.datatypes import (
-        Null, ByteObject, ShortObject, IntObject, LongObject, FloatObject,
-        DoubleObject, CharObject, BoolObject, UUIDObject, DateObject,
-        TimestampObject, TimeObject, EnumObject, BinaryEnumObject,
-        ByteArrayObject, ShortArrayObject, IntArrayObject, LongArrayObject,
-        FloatArrayObject, DoubleArrayObject, CharArrayObject, BoolArrayObject,
-        UUIDArrayObject, DateArrayObject, TimestampArrayObject,
-        TimeArrayObject, EnumArrayObject, String, StringArrayObject,
-        DecimalObject, DecimalArrayObject, ObjectArrayObject, CollectionObject,
-        MapObject, BinaryObject, WrappedDataObject,
-    )
+    if not _memo_map:
+        from pyignite.datatypes import (
+            Null, ByteObject, ShortObject, IntObject, LongObject, FloatObject,
+            DoubleObject, CharObject, BoolObject, UUIDObject, DateObject,
+            TimestampObject, TimeObject, EnumObject, BinaryEnumObject,
+            ByteArrayObject, ShortArrayObject, IntArrayObject, LongArrayObject,
+            FloatArrayObject, DoubleArrayObject, CharArrayObject,
+            BoolArrayObject,
+            UUIDArrayObject, DateArrayObject, TimestampArrayObject,
+            TimeArrayObject, EnumArrayObject, String, StringArrayObject,
+            DecimalObject, DecimalArrayObject, ObjectArrayObject,
+            CollectionObject,
+            MapObject, BinaryObject, WrappedDataObject,
+        )
 
-    return {
-        TC_NULL: Null,
+        _memo_map = {
+            TC_NULL: Null,
 
-        TC_BYTE: ByteObject,
-        TC_SHORT: ShortObject,
-        TC_INT: IntObject,
-        TC_LONG: LongObject,
-        TC_FLOAT: FloatObject,
-        TC_DOUBLE: DoubleObject,
-        TC_CHAR: CharObject,
-        TC_BOOL: BoolObject,
+            TC_BYTE: ByteObject,
+            TC_SHORT: ShortObject,
+            TC_INT: IntObject,
+            TC_LONG: LongObject,
+            TC_FLOAT: FloatObject,
+            TC_DOUBLE: DoubleObject,
+            TC_CHAR: CharObject,
+            TC_BOOL: BoolObject,
 
-        TC_UUID: UUIDObject,
-        TC_DATE: DateObject,
-        TC_TIMESTAMP: TimestampObject,
-        TC_TIME: TimeObject,
-        TC_ENUM: EnumObject,
-        TC_BINARY_ENUM: BinaryEnumObject,
+            TC_UUID: UUIDObject,
+            TC_DATE: DateObject,
+            TC_TIMESTAMP: TimestampObject,
+            TC_TIME: TimeObject,
+            TC_ENUM: EnumObject,
+            TC_BINARY_ENUM: BinaryEnumObject,
 
-        TC_BYTE_ARRAY: ByteArrayObject,
-        TC_SHORT_ARRAY: ShortArrayObject,
-        TC_INT_ARRAY: IntArrayObject,
-        TC_LONG_ARRAY: LongArrayObject,
-        TC_FLOAT_ARRAY: FloatArrayObject,
-        TC_DOUBLE_ARRAY: DoubleArrayObject,
-        TC_CHAR_ARRAY: CharArrayObject,
-        TC_BOOL_ARRAY: BoolArrayObject,
+            TC_BYTE_ARRAY: ByteArrayObject,
+            TC_SHORT_ARRAY: ShortArrayObject,
+            TC_INT_ARRAY: IntArrayObject,
+            TC_LONG_ARRAY: LongArrayObject,
+            TC_FLOAT_ARRAY: FloatArrayObject,
+            TC_DOUBLE_ARRAY: DoubleArrayObject,
+            TC_CHAR_ARRAY: CharArrayObject,
+            TC_BOOL_ARRAY: BoolArrayObject,
 
-        TC_UUID_ARRAY: UUIDArrayObject,
-        TC_DATE_ARRAY: DateArrayObject,
-        TC_TIMESTAMP_ARRAY: TimestampArrayObject,
-        TC_TIME_ARRAY: TimeArrayObject,
-        TC_ENUM_ARRAY: EnumArrayObject,
+            TC_UUID_ARRAY: UUIDArrayObject,
+            TC_DATE_ARRAY: DateArrayObject,
+            TC_TIMESTAMP_ARRAY: TimestampArrayObject,
+            TC_TIME_ARRAY: TimeArrayObject,
+            TC_ENUM_ARRAY: EnumArrayObject,
 
-        TC_STRING: String,
-        TC_STRING_ARRAY: StringArrayObject,
-        TC_DECIMAL: DecimalObject,
-        TC_DECIMAL_ARRAY: DecimalArrayObject,
+            TC_STRING: String,
+            TC_STRING_ARRAY: StringArrayObject,
+            TC_DECIMAL: DecimalObject,
+            TC_DECIMAL_ARRAY: DecimalArrayObject,
 
-        TC_OBJECT_ARRAY: ObjectArrayObject,
-        TC_COLLECTION: CollectionObject,
-        TC_MAP: MapObject,
+            TC_OBJECT_ARRAY: ObjectArrayObject,
+            TC_COLLECTION: CollectionObject,
+            TC_MAP: MapObject,
 
-        TC_COMPLEX_OBJECT: BinaryObject,
-        TC_ARRAY_WRAPPED_OBJECTS: WrappedDataObject,
-    }[key]
+            TC_COMPLEX_OBJECT: BinaryObject,
+            TC_ARRAY_WRAPPED_OBJECTS: WrappedDataObject,
+        }
+    return _memo_map[key]
 
 
 @attr.s
