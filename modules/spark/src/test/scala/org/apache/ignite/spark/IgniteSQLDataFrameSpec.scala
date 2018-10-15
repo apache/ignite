@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spark
 
+import com.google.common.collect.Iterators
 import org.apache.ignite.spark.AbstractDataFrameSpec.TEST_CONFIG_FILE
 import org.apache.ignite.spark.IgniteDataFrameSettings._
 import org.apache.spark.sql.DataFrame
@@ -269,6 +270,44 @@ class IgniteSQLDataFrameSpec extends AbstractDataFrameSpec {
 
             persons(0).getAs[Long]("city_id") should equal(2)
             persons(0).getAs[Long]("count(1)") should equal(3)
+        }
+
+        it("should use the schema name where one is specified") {
+            // `employeeCache1` is created in the schema matching the name of the cache, ie. `employeeCache1`.
+            createEmployeeCache(client, "employeeCache1")
+
+            spark.read
+                .format(FORMAT_IGNITE)
+                .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+                .option(OPTION_TABLE, "employee")
+                .option(OPTION_SCHEMA, "employeeCache1")
+                .load()
+                .createOrReplaceTempView("employeeWithSchema")
+
+            // `employeeCache2` is created with a custom schema of `employeeSchema`.
+            createEmployeeCache(client, "employeeCache2", Some("employeeSchema"))
+
+            Iterators.size(client.cache("employeeCache2").iterator()) should equal(3)
+
+            // Remove a value from `employeeCache2` so that we know whether the select statement picks up the
+            // correct cache, ie. it should now have 2 values compared to 3 in `employeeCache1`.
+            client.cache("employeeCache2").remove("key1") shouldBe true
+
+            spark.read
+                .format(FORMAT_IGNITE)
+                .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+                .option(OPTION_TABLE, "employee")
+                .option(OPTION_SCHEMA, "employeeSchema")
+                .load()
+                .createOrReplaceTempView("employeeWithSchema2")
+
+            val res = spark.sqlContext.sql("SELECT id FROM employeeWithSchema").rdd
+
+            res.count should equal(3)
+
+            val res2 = spark.sqlContext.sql("SELECT id FROM employeeWithSchema2").rdd
+
+            res2.count should equal(2)
         }
     }
 
