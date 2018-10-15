@@ -287,7 +287,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
             startVacuumWorkers();
 
-            log.info("Mvcc processor started.");
+            if (log.isInfoEnabled())
+                log.info("Mvcc processor started.");
         }
     }
 
@@ -380,8 +381,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
             crdVer = crd.coordinatorVersion();
 
-            log.info("Initialize local node as mvcc coordinator [node=" + ctx.localNodeId() +
-                ", crdVer=" + crdVer + ']');
+            if (log.isInfoEnabled())
+                log.info("Initialize local node as mvcc coordinator [node=" + ctx.localNodeId() +
+                    ", crdVer=" + crdVer + ']');
 
             prevCrdQueries.init(activeQueries, F.view(discoCache.allNodes(), this::supportsMvcc), ctx.discovery());
 

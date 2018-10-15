@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -50,9 +51,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWra
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -818,6 +819,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                             if (txCntrs != null)
                                 applyPartitionsUpdatesCounters(txCntrs.updateCounters());
 
+                            cctx.mvccCaching().onTxFinished(this, true);
+
                             if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null) {
                                 // Set new update counters for data entries received from persisted tx entries.
                                 List<DataEntry> entriesWithCounters = dataEntries.stream()
@@ -839,8 +842,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     }
                     finally {
                         cctx.database().checkpointReadUnlock();
-
-                        notifyDrManager(state() == COMMITTING && err == null);
 
                         if (wrapper != null)
                             wrapper.initialize(ret);
@@ -933,8 +934,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** {@inheritDoc} */
     @Override public final void rollbackRemoteTx() {
         try {
-            notifyDrManager(false);
-
             // Note that we don't evict near entries here -
             // they will be deleted by their corresponding transactions.
             if (state(ROLLING_BACK) || state() == UNKNOWN) {
@@ -946,6 +945,13 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     applyPartitionsUpdatesCounters(counters.updateCounters());
 
                 state(ROLLED_BACK);
+
+                try {
+                    cctx.mvccCaching().onTxFinished(this, false);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
             }
         }
         catch (RuntimeException | Error e) {
