@@ -365,11 +365,8 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 if (affFieldName0 == null)
                     affFieldName0 = ctx.affinityKeyFieldName(typeId);
 
-                if (Latches.lockT.get() != null) {
+                if (Latches.lockT.get() != null)
                     U.awaitQuiet(Latches.proposedClLock);
-
-                    System.out.println();
-                }
 
                 ctx.registerUserClassName(typeId, typeName);
 
