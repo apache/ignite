@@ -40,6 +40,7 @@ import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cluster.ClusterNode;
@@ -318,9 +319,16 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
         return new CacheConfiguration("test-cache-cq")
             .setBackups(1)
             .setNodeFilter(filter)
-            .setAtomicityMode(ATOMIC)
+            .setAtomicityMode(atomicityMode())
             .setWriteSynchronizationMode(FULL_SYNC)
             .setCacheMode(PARTITIONED);
+    }
+
+    /**
+     * @return Atomicity mode.
+     */
+    protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
     }
 
     /** */
