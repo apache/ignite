@@ -683,8 +683,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                 holder = metadataLocCache.get(typeId);
 
-                if (log.isInfoEnabled() && holder != null && holder.metadata().hasSchema(schemaId))
-                    log.info("Found the schema after wait:" +
+                if (log.isDebugEnabled() && holder != null && holder.metadata().hasSchema(schemaId))
+                    log.debug("Found the schema after wait:" +
                         " [typeId=" + typeId
                         + ", waitTime=" + NANOSECONDS.convert(System.nanoTime() - t0, MILLISECONDS) + "ms"
                         + ", schemaId=" + schemaId

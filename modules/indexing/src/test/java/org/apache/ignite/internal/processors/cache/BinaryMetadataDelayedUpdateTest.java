@@ -77,6 +77,7 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
         cfg.setIncludeEventTypes(EventType.EVTS_DISCOVERY);
