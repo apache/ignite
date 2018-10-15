@@ -344,7 +344,7 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
                             catch (Exception e) {
                                 assertTrue(e.getMessage(), e.getMessage() != null &&
                                     (e.getMessage().contains("Transaction has been rolled back") ||
-                                        e.getMessage().contains("Mvcc version mismatch.")));
+                                        e.getMessage().contains("Cannot serialize transaction due to write conflict")));
 
                                 // Wait MVCC updates become visible.
                                 doSleep(50);
@@ -511,7 +511,7 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
                     catch (Exception ex) {
                         assertTrue(ex.getMessage(), ex.getMessage() != null &&
                             (ex.getMessage().contains("Transaction has been rolled back") ||
-                                ex.getMessage().contains("Mvcc version mismatch.")));
+                                ex.getMessage().contains("Cannot serialize transaction due to write conflict")));
 
                         // Wait MVCC updates become visible.
                         doSleep(50);
@@ -609,7 +609,7 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
                             catch (Exception ex) {
                                 assertTrue(ex.getMessage(), ex.getMessage() != null &&
                                     (ex.getMessage().contains("Transaction has been rolled back") ||
-                                        ex.getMessage().contains("Mvcc version mismatch.")));
+                                        ex.getMessage().contains("Cannot serialize transaction due to write conflict")));
                             }
                             finally {
                                 if (tx != null)

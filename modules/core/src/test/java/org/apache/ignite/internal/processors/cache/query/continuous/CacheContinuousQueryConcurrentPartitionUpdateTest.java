@@ -218,7 +218,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                                     }
                                     catch (CacheException e) {
                                         assertTrue(e.getMessage() != null &&
-                                            e.getMessage().contains("Mvcc version mismatch."));
+                                            e.getMessage().contains("Cannot serialize transaction due to write conflict"));
                                     }
                                 }
                             }
@@ -407,7 +407,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                                         }
                                         catch (CacheException e) {
                                             assertTrue(e.getMessage() != null &&
-                                                e.getMessage().contains("Mvcc version mismatch."));
+                                                e.getMessage().contains("Cannot serialize transaction due to write conflict"));
                                         }
                                     }
                                 }
@@ -456,7 +456,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                                     }
                                     catch (CacheException e) {
                                         assertTrue(e.getMessage() != null &&
-                                            e.getMessage().contains("Mvcc version mismatch."));
+                                            e.getMessage().contains("Cannot serialize transaction due to write conflict"));
                                     }
                                 }
                             }

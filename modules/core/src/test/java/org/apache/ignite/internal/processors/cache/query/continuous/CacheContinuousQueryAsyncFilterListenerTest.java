@@ -492,7 +492,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                                         }
                                         catch (Exception ex) {
                                             assertTrue(ex.toString(),
-                                                ex.getMessage() != null && ex.getMessage().contains("Mvcc version mismatch."));
+                                                ex.getMessage() != null && ex.getMessage().contains("Cannot serialize transaction due to write conflict"));
                                         }
                                     }
                                 }
@@ -649,7 +649,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                                         }
                                         catch (Exception ex) {
                                             assertTrue(ex.toString(),
-                                                ex.getMessage() != null && ex.getMessage().contains("Mvcc version mismatch."));
+                                                ex.getMessage() != null && ex.getMessage().contains("Cannot serialize transaction due to write conflict"));
                                         }
                                     }
                                 }

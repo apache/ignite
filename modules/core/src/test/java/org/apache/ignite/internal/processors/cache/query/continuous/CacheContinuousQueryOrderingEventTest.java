@@ -403,7 +403,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
                             catch (Exception e) {
                                 assertTrue(e.getMessage(), e.getMessage() != null &&
                                     (e.getMessage().contains("Transaction has been rolled back") ||
-                                        e.getMessage().contains("Mvcc version mismatch.")));
+                                        e.getMessage().contains("Cannot serialize transaction due to write conflict")));
                             }
                             finally {
                                 if (tx != null)
