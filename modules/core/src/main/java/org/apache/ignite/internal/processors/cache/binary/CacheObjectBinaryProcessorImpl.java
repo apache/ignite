@@ -48,6 +48,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.binary.BinaryContext;
@@ -481,10 +482,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
             BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0, changedSchemas);
 
-            //metadata requested to be added is exactly the same as already presented in the cache
-            if (mergedMeta == oldMeta)
-                return;
-
             if (failIfUnregistered)
                 throw new UnregisteredBinaryTypeException(
                     "Attempted to update binary metadata inside a critical synchronization block (will be " +
@@ -667,39 +664,40 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                 holder = metadataLocCache.get(typeId);
             }
-//            else if (holder == null || !holder.metadata().hasSchema(schemaId)) {
-//                log.warning("Schema is missing while no metadata updates are in progress. " +
-//                    "Waiting for schema in subsequent updates for " + waitSchemaTimeout + " ms:" +
-//                    " [typeId=" + typeId
-//                    + ", missingSchemaId=" + schemaId
-//                    + ", pendingVer=" + (holder == null ? "NA" : holder.pendingVersion())
-//                    + ", acceptedVer=" + (holder == null ? "NA" : holder.acceptedVersion()) + ']');
-//
-//                long t0 = System.nanoTime();
-//
-//                GridFutureAdapter<?> fut = transport.awaitSchemaUpdate(typeId, schemaId);
-//
-//                try {
-//                    fut.get(waitSchemaTimeout);
-//                }
-//                catch (IgniteFutureTimeoutCheckedException e) {
-//                    log.error("Timed out while waiting for schema update: [typeId=" + typeId + ", schemaId=" +
-//                        schemaId + ']');
-//                }
-//                catch (IgniteCheckedException ignored) {
-//                    // No-op.
-//                }
-//
-//                holder = metadataLocCache.get(typeId);
-//
-//                if (log.isDebugEnabled() && holder != null && holder.metadata().hasSchema(schemaId))
-//                    log.debug("Found the schema after wait:" +
-//                        " [typeId=" + typeId
-//                        + ", waitTime=" + NANOSECONDS.convert(System.nanoTime() - t0, MILLISECONDS) + "ms"
-//                        + ", schemaId=" + schemaId
-//                        + ", pendingVer=" + holder.pendingVersion()
-//                        + ", acceptedVer=" + holder.acceptedVersion() + ']');
-//            }
+            else if (holder == null || !holder.metadata().hasSchema(schemaId)) {
+                // Last resort waiting.
+                log.warning("Schema is missing while no metadata updates are in progress. " +
+                    "Waiting for schema in subsequent updates for " + waitSchemaTimeout + " ms:" +
+                    " [typeId=" + typeId
+                    + ", missingSchemaId=" + schemaId
+                    + ", pendingVer=" + (holder == null ? "NA" : holder.pendingVersion())
+                    + ", acceptedVer=" + (holder == null ? "NA" : holder.acceptedVersion()) + ']');
+
+                long t0 = System.nanoTime();
+
+                GridFutureAdapter<?> fut = transport.awaitSchemaUpdate(typeId, schemaId);
+
+                try {
+                    fut.get(waitSchemaTimeout);
+                }
+                catch (IgniteFutureTimeoutCheckedException e) {
+                    log.error("Timed out while waiting for schema update: [typeId=" + typeId + ", schemaId=" +
+                        schemaId + ']');
+                }
+                catch (IgniteCheckedException ignored) {
+                    // No-op.
+                }
+
+                holder = metadataLocCache.get(typeId);
+
+                if (log.isDebugEnabled() && holder != null && holder.metadata().hasSchema(schemaId))
+                    log.debug("Found the schema after wait:" +
+                        " [typeId=" + typeId
+                        + ", waitTime=" + NANOSECONDS.convert(System.nanoTime() - t0, MILLISECONDS) + "ms"
+                        + ", schemaId=" + schemaId
+                        + ", pendingVer=" + holder.pendingVersion()
+                        + ", acceptedVer=" + holder.acceptedVersion() + ']');
+            }
         }
 
         return holder != null ? holder.metadata().wrap(binaryCtx) : null;

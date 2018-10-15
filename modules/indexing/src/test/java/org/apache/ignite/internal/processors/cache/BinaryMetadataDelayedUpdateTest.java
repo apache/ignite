@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -62,6 +63,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessa
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -72,10 +74,12 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Scenario is the following:
  *
  * <ul>
- *     <li>Start 4 nodes, connect client to node 2 in topology order.</li>
- *     <li>Start two transactions from client node producing same schema update.</li>
- *     <li>Delay second update until first update will return to client with propose message and writes to local metadata cache</li>
- *     <li>Unblock second update. It should correctly wait until same metadata is applied on all nodes or tx will fail on commit.</li>
+ *     <li>Start 4 nodes, connect client to node 2 in topology order (starrting from 1).</li>
+ *     <li>Start two concurrent transactions from client node producing same schema update.</li>
+ *     <li>Delay second update until first update will return to client with stamped propose message and writes new
+ *     schema to local metadata cache</li>
+ *     <li>Unblock second update. It should correctly wait until the metadata is applied on all
+ *     nodes or tx will fail on commit.</li>
  * </ul>
  */
 public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
@@ -143,9 +147,6 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
     /** Latch for waiting local metadata update. */
     public static final CountDownLatch localMetaUpdatedLatch = new CountDownLatch(1);
 
-    /** Latch for waiting for tx finish (error or success). */
-    public static final CountDownLatch txFinishLatch = new CountDownLatch(1);
-
     /** */
     public void testMissingSchemaUpdate() throws Exception {
         // Start order is important.
@@ -176,7 +177,7 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
             @Override public void onBeforeMetadataUpdate(int typeId, BinaryMetadata metadata) {
                 // Delay one of updates until schema is locally updated on propose message.
                 if (delayMetadataUpdateThreadLoc.get() != null)
-                    U.awaitQuiet(localMetaUpdatedLatch);
+                    await(localMetaUpdatedLatch, 5000);
             }
         });
 
@@ -267,10 +268,10 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
         // Implements test logic.
         IgniteInternalFuture fut1 = runAsync(() -> {
             // Wait for initial metadata received. It should be initial version: pending=0, accepted=0
-            U.awaitQuiet(initMetaReq);
+            await(initMetaReq, 5000);
 
             // Wait for blocking proposal message to client node.
-            U.awaitQuiet(clientProposeMsgBlockedLatch);
+            await(clientProposeMsgBlockedLatch, 5000);
 
             // Unblock proposal message to client.
             clientWait.set(true);
@@ -282,14 +283,15 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
             // Give some time to apply update.
             doSleep(3000);
 
-            // Unblock second transaction for metadata update.
+            // Unblock second metadata update.
             localMetaUpdatedLatch.countDown();
 
-            // This tx will start committing and should fail because metadata is not present on node3.
-            U.awaitQuiet(txFinishLatch);
+            // Give some time for tx to complete (success or fail). fut2 will throw an error if tx has failed on commit.
+            doSleep(3000);
 
-            //
+            // Unblock metadata message and allow for correct version acceptance.
             srvWait.set(true);
+
             synchronized (srvMux) {
                 srvMux.notify();
             }
@@ -304,9 +306,6 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
 
                 tx.commit();
             }
-            finally {
-                txFinishLatch.countDown();
-            }
         });
 
         fut0.get();
@@ -315,8 +314,26 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param latch Latch.
+     * @param timeout Timeout.
+     */
+    private void await(CountDownLatch latch, long timeout) {
+        try {
+            latch.await(5000, MILLISECONDS);
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        long cnt = initMetaReq.getCount();
+
+        if (cnt != 0)
+            throw new RuntimeException("Invalid latch count after wait: " + cnt);
+    }
+
+    /**
      * @param ignite Ignite.
-     * @param prefix Prefix.
+     * @param prefix Value prefix.
      * @param fields Fields.
      */
     protected BinaryObject build(Ignite ignite, String prefix, int... fields) {
