@@ -290,7 +290,7 @@ public class CommandHandler {
     private static final String TX_KILL = "kill";
 
     /** */
-    private static final String HUMAN_READABLE_FLAG = "--human-readable";
+    private static final String CACHES_CONFIG_HUMAN_READABLE_FLAG = "--human-readable";
 
     /** */
     private Iterator<String> argsIt;
@@ -660,7 +660,7 @@ public class CommandHandler {
         usage("  Validate custom indexes on idle cluster:", CACHE, " validate_indexes [cache1,...,cacheN] [nodeId] [checkFirst|checkThrough]");
         usage("  Collect partition distribution information:", CACHE, " distribution nodeId|null [cacheName1,...,cacheNameN] [--user-attributes attributeName1[,...,attributeNameN]]");
         usage("  Reset lost partitions:", CACHE, " reset_lost_partitions cacheName1[,...,cacheNameN]");
-        usage("  List caches configuration:", CACHE, " config", " cacheNameRegexPattern [" + HUMAN_READABLE_FLAG + "]");
+        usage("  List caches configuration:", CACHE, " config", " cacheNameRegexPattern [" + CACHES_CONFIG_HUMAN_READABLE_FLAG + "]");
 
         log("  If [nodeId] is not specified, contention and validate_indexes commands will be broadcasted to all server nodes.");
         log("  Another commands where [nodeId] is optional will run on a random server node.");
@@ -1715,7 +1715,7 @@ public class CommandHandler {
                 if (hasNextCacheArg()) {
                     String arg = nextArg("");
 
-                    if (!arg.equalsIgnoreCase(HUMAN_READABLE_FLAG))
+                    if (!arg.equalsIgnoreCase(CACHES_CONFIG_HUMAN_READABLE_FLAG))
                         throw new IllegalArgumentException(arg);
 
                     cacheArgs.humanReadableFormat(true);
