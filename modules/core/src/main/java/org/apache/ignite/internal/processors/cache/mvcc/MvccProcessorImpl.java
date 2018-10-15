@@ -230,6 +230,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     private volatile boolean mvccSupported = true;
 
     /**
+     * Maps failed node id to votes accumulator for that node.
+     */
+    private final ConcurrentHashMap<UUID, RecoveryBallotBox> recoveryBallotBoxes = new ConcurrentHashMap<>();
+
+    /**
      * @param ctx Context.
      */
     public MvccProcessorImpl(GridKernalContext ctx) {
@@ -1743,7 +1748,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             prevCrdQueries.onNodeFailed(nodeId);
 
             recoveryBallotBoxes.forEach((nearNodeId, ballotBox) -> {
-                // Put synthetic vote from failed node
+                // Put synthetic vote from another failed node
                 ballotBox.vote(nodeId, Collections.emptyMap());
 
                 tryFinishRecoveryVoting(nearNodeId, ballotBox);
@@ -1824,22 +1829,36 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         }
     }
 
-    // near node -> remote node -> remote note voting result for all txs
-    private final ConcurrentHashMap<UUID, RecoveryBallotBox> recoveryBallotBoxes = new ConcurrentHashMap<>();
-
+    /**
+     * Accumulates transaction recovery votes for a node left the cluster.
+     * Transactions started by the left node are considered not active
+     * when each cluster server node aknowledges that is has finished transactions for the left node.
+     */
     private static class RecoveryBallotBox {
+        /** */
         List<UUID> voters;
+        /** */
         final Map<UUID, Map<Long, Boolean>> ballots = new HashMap<>();
 
+        /**
+         * @param voters Nodes which can have transaction started by the left node.
+         */
         synchronized void voters(List<UUID> voters) {
             this.voters = voters;
         }
 
+        /**
+         * @param nodeId Voting node id.
+         * @param vote Voting node decision.
+         */
         synchronized void vote(UUID nodeId, Map<Long, Boolean> vote) {
             // t0d0 merge votes from different nodes? remove duplicates?
             ballots.put(nodeId, vote);
         }
 
+        /**
+         * @return {@code True} if all nodes expected to vote done it.
+         */
         synchronized boolean isVotingDone() {
             if (voters == null)
                 return false;
@@ -1847,6 +1866,10 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             return ballots.keySet().containsAll(voters);
         }
 
+        /**
+         * @param txCntr Transaction counter.
+         * @return {@code True} if transaction was committed, {@code False} is it was rolled back.
+         */
         synchronized boolean committed(Long txCntr) {
             // t0d0 check and log related invariants
             return ballots.values().stream()
@@ -1857,6 +1880,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         }
     }
 
+    /**
+     * Process message that one node has finished with transactions for the left node.
+     * @param nodeId Node sent the message.
+     * @param msg Message.
+     */
     private void processRecoveryFinishedMessage(UUID nodeId, MvccRecoveryFinishedMessage msg) {
         UUID nearNodeId = msg.nearNodeId();
 
@@ -1867,6 +1895,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         tryFinishRecoveryVoting(nearNodeId, ballotBox);
     }
 
+    /**
+     * Finishes recovery on coordinator by removing transactions started by the left node
+     * @param nearNodeId Left node.
+     * @param ballotBox Votes accumulator for the left node.
+     */
     private void tryFinishRecoveryVoting(UUID nearNodeId, RecoveryBallotBox ballotBox) {
         if (ballotBox.isVotingDone()) {
             List<Long> recoveredTxs;

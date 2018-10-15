@@ -2533,6 +2533,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                 allTxFinFut.markInitialized();
 
+                // Send vote to mvcc coordinator when all recovering transactions have finished.
                 allTxFinFut.listen(fut -> {
                     try {
                         fut.get();
@@ -2544,6 +2545,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     finally {
                         MvccCoordinator mvccCrd = cctx.coordinators().currentCoordinator();
 
+                        // If mvcc coordinator issued snapshot for recovering transaction has failed during recovery,
+                        // then there is no need to send messages to new coordinator.
+                        // New coordinator knows nothing about recovering transactions and cannot treat them as active.
                         if (mvccCrd.topologyVersion().topologyVersion() <= discoEvt.topologyVersion()) {
                             try {
                                 cctx.kernalContext().io().sendToGridTopic(
@@ -2555,8 +2559,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                             catch (IgniteCheckedException e) {
                                 log.warning("Failed to notify mvcc coordinator that all recovering transactions were " +
                                     "finished. Old mvcc coordinator migh have been failed, " +
-                                    "notification is not needed in this case " +
-                                    "[locNodeId=" + cctx.localNodeId() + ", failedNodeId=" + evtNodeId +
+                                    "notification is not needed in this case [locNodeId=" + cctx.localNodeId() +
+                                    ", failedNodeId=" + evtNodeId +
                                     ", mvccCrdNodeId=" + mvccCrd.nodeId() + ']', e);
                             }
                         }

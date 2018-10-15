@@ -25,38 +25,52 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
+/** */
 public class MvccRecoveryFinishedMessage implements MvccMessage {
+    /** */
     private static final long serialVersionUID = -505062368078979867L;
 
+    /** */
     private UUID nearNodeId;
     // t0d0 get rid
     @GridDirectMap(keyType = Long.class, valueType = Boolean.class)
     private Map<Long, Boolean> resolution;
 
+    /** */
     public MvccRecoveryFinishedMessage() {
     }
 
+    /** */
     public MvccRecoveryFinishedMessage(UUID nearNodeId, Map<Long, Boolean> resolution) {
         this.nearNodeId = nearNodeId;
         this.resolution = resolution;
     }
 
+    /**
+     * @return Left node id for which transactions were recovered.
+     */
     public UUID nearNodeId() {
         return nearNodeId;
     }
 
+    /**
+     * @return Resolution defining whether transactions for the left node were committed or rolled back.
+     */
     public Map<Long, Boolean> recoveryResolution() {
         return resolution;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean waitForCoordinatorInit() {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean processedFromNioThread() {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -85,6 +99,7 @@ public class MvccRecoveryFinishedMessage implements MvccMessage {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
@@ -113,15 +128,17 @@ public class MvccRecoveryFinishedMessage implements MvccMessage {
         return reader.afterMessageRead(MvccRecoveryFinishedMessage.class);
     }
 
+    /** {@inheritDoc} */
     @Override public short directType() {
         return 164;
     }
 
+    /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 2;
     }
 
+    /** {@inheritDoc} */
     @Override public void onAckReceived() {
-
     }
 }
