@@ -89,7 +89,7 @@
         <jsonlib.bundle.version>2.4_1</jsonlib.bundle.version>
         <jsonlib.version>2.4</jsonlib.version>
         <jtidy.version>r938</jtidy.version>
-        <kafka.version>0.10.0.1</kafka.version>
+        <kafka.version>1.1.1</kafka.version>
         <karaf.version>4.0.2</karaf.version>
         <log4j.version>2.11.0</log4j.version>
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
@@ -487,6 +487,10 @@
                             <group>
                                 <title>Ignite ML</title>
                                 <packages>org.apache.ignite.ml*</packages>
+                            </group>
+                            <group>
+                                <title>Encryption SPI</title>
+                                <packages>org.apache.ignite.spi.encryption*</packages>
                             </group>
                         </groups>
                         <header>
@@ -926,7 +930,6 @@
                                         <exclude>**/obj/x86/**</exclude>
                                         <exclude>**/bin/x64/**</exclude>
                                         <exclude>**/bin/x86/**</exclude>
-										<exclude>**/Doxyfile</exclude>
                                         <exclude>**/*.dxg</exclude>
                                         <exclude>**/*.cmd</exclude>
                                         <exclude>**/*.ps1</exclude>
