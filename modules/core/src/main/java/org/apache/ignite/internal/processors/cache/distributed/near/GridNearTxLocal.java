@@ -769,7 +769,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         try {
             Set<?> keys = map != null ? map.keySet() : invokeMap.keySet();
 
-            final Map<KeyCacheObject, Message> enlisted = new HashMap<>(keys.size());
+            final Map<KeyCacheObject, Message> enlisted = new LinkedHashMap<>(keys.size());
 
             for (Object key : keys) {
                 if (isRollbackOnly())
