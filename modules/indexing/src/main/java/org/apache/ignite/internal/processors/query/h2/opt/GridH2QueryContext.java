@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -89,7 +91,7 @@ public class GridH2QueryContext {
     private MvccSnapshot mvccSnapshot;
 
     /** */
-    private MapQueryLazyWorker lazyWorker;
+    private Set<GridH2Table> lockedTables = new HashSet<>();
 
     /** */
     private IgniteH2QueryMemoryManager qryMem;
@@ -354,7 +356,8 @@ public class GridH2QueryContext {
          assert qctx.get() == null;
 
          // We need MAP query context to be available to other threads to run distributed joins.
-         if (x.key.type == MAP && x.distributedJoinMode() != OFF && qctxs.putIfAbsent(x.key, x) != null)
+         if (x.key.type == MAP && x.distributedJoinMode() != OFF && qctxs.putIfAbsent(x.key, x) != null
+             && MapQueryLazyWorker.currentWorker() == null)
              throw new IllegalStateException("Query context is already set.");
 
          qctx.set(x);
@@ -404,10 +407,7 @@ public class GridH2QueryContext {
 
         assert x.key.equals(key);
 
-        if (x.lazyWorker() != null)
-            x.lazyWorker().stop(nodeStop);
-        else
-            x.clearContext(nodeStop);
+        x.clearContext(nodeStop);
 
         return true;
     }
@@ -416,7 +416,10 @@ public class GridH2QueryContext {
      * @param nodeStop Node is stopping.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    public void clearContext(boolean nodeStop) {
+    public synchronized void clearContext(boolean nodeStop) {
+        if (cleared)
+            return;
+
         cleared = true;
 
         List<GridReservable> r = reservations;
@@ -519,20 +522,10 @@ public class GridH2QueryContext {
     }
 
     /**
-     * @return Lazy worker, if any, or {@code null} if none.
+     * @return The set of tables have been locked by current thread.
      */
-    public MapQueryLazyWorker lazyWorker() {
-        return lazyWorker;
-    }
-
-    /**
-     * @param lazyWorker Lazy worker, if any, or {@code null} if none.
-     * @return {@code this}.
-     */
-    public GridH2QueryContext lazyWorker(MapQueryLazyWorker lazyWorker) {
-        this.lazyWorker = lazyWorker;
-
-        return this;
+    public Set<GridH2Table> lockedTables() {
+        return lockedTables;
     }
 
     /**
