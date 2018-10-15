@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -82,7 +81,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *     nodes or tx will fail on commit.</li>
  * </ul>
  */
-public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
+public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbstractTest {
     /** */
     private static final int FIELDS = 2;
 
