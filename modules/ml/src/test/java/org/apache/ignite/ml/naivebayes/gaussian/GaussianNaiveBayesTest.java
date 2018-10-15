@@ -61,9 +61,7 @@ public class GaussianNaiveBayesTest {
         Assert.assertEquals(female, model.apply(observation), PRECISION);
     }
 
-    /**
-     * Dataset from Gaussaian NB example in the scilit learn docu,mentation http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.GaussianNB.html
-     */
+    /** Dataset from Gaussian NB example in the scikit-learn documentation */
     @Test
     public void scikitLearnExample() {
         Map<Integer, double[]> data = new HashMap<>();
