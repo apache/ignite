@@ -32,11 +32,15 @@ import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuil
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
- * Trainer for the naive Bayes classification model.
+ * Trainer for the naive Bayes classification model. The trainer calculates prior probabilities from the input dataset.
+ * Prior probabilities can be also set by {@code setPriorProbabilities} or {@code withEquiprobableClasses}. If {@code
+ * equiprobableClasses} is set, the probalilities of all classes will be {@code 1/k}, where {@code k} is classes count.
  */
 public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<GaussianNaiveBayesModel> {
 
+    /* Preset prior probabilities. */
     private double[] priorProbabilities;
+    /* Sets equivalent probability for all classes. */
     private boolean equiprobableClasses;
 
     /**
