@@ -941,41 +941,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         return prepFut;
     }
 
-    /**
-     * @param node Backup node.
-     * @return Partition counters map for the given backup node.
-     */
-    public List<PartitionUpdateCountersMessage> filterUpdateCountersForBackupNode(ClusterNode node) {
-        TxCounters txCntrs = txCounters(false);
-
-        if (txCntrs == null || F.isEmpty(txCntrs.updateCounters()))
-            return null;
-
-        Collection<PartitionUpdateCountersMessage> updCntrs = txCntrs.updateCounters();
-
-        List<PartitionUpdateCountersMessage> res = new ArrayList<>(updCntrs.size());
-
-        AffinityTopologyVersion top = topologyVersionSnapshot();
-
-        for (PartitionUpdateCountersMessage partCntrs : updCntrs) {
-            GridCacheAffinityManager affinity = cctx.cacheContext(partCntrs.cacheId()).affinity();
-
-            PartitionUpdateCountersMessage resCntrs = new PartitionUpdateCountersMessage(partCntrs.cacheId(), partCntrs.size());
-
-            for (int i = 0; i < partCntrs.size(); i++) {
-                int part = partCntrs.partition(i);
-
-                if (affinity.backupByPartition(node, part, top))
-                    resCntrs.add(part, partCntrs.initialCounter(i), partCntrs.updatesCount(i));
-            }
-
-            if (resCntrs.size() > 0)
-                res.add(resCntrs);
-        }
-
-        return res;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(GridDhtTxLocalAdapter.class, this, "nearNodes", nearMap.keySet(),

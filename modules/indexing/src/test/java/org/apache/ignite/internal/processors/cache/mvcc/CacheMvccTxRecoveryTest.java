@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
@@ -388,7 +389,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
      * @throws Exception if failed.
      */
     public void testCountersNeighborcastServerFailed() throws Exception {
-        int srvCnt = 3;
+        int srvCnt = 4;
 
         startGridsMultiThreaded(srvCnt);
 
@@ -401,23 +402,31 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
 
         ArrayList<Integer> keys = new ArrayList<>();
 
-        int vid = 2;
+        int vid = 3;
 
         IgniteEx victim = grid(vid);
 
+        Affinity<Object> aff = ign.affinity(DEFAULT_CACHE_NAME);
+
         for (int i = 0; i < 1000; i++) {
-            if (ign.affinity(DEFAULT_CACHE_NAME).isPrimary(victim.localNode(), i)) {
+            if (aff.isPrimary(victim.localNode(), i) && !aff.isBackup(grid(0).localNode(), i)) {
                 keys.add(i);
                 break;
             }
         }
 
-        assert keys.size() == 1;
+        for (int i = 0; i < 1000; i++) {
+            if (aff.isPrimary(victim.localNode(), i) && !aff.isBackup(grid(1).localNode(), i)) {
+                keys.add(i);
+                break;
+            }
+        }
 
-        TestRecordingCommunicationSpi comm = (TestRecordingCommunicationSpi)victim.configuration().getCommunicationSpi();
+        assert keys.size() == 2 && !keys.contains(99);
 
         // prevent prepare on one backup
-        comm.blockMessages(GridDhtTxPrepareRequest.class, grid(0).name());
+        ((TestRecordingCommunicationSpi)victim.configuration().getCommunicationSpi())
+            .blockMessages(GridDhtTxPrepareRequest.class, grid(0).name());
 
         GridNearTxLocal nearTx = ((TransactionProxyImpl)ign.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)).tx();
 
@@ -434,20 +443,44 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
         nearTx.commitAsync();
 
         // await tx partially prepared
-        txs.stream().anyMatch(tx -> tx.state() == PREPARED);
+        assertConditionEventually(() -> txs.stream().anyMatch(tx -> tx.state() == PREPARED));
+
+        CountDownLatch latch1 = new CountDownLatch(1);
+        CountDownLatch latch2 = new CountDownLatch(1);
+
+        // t0d0 check that topology is locked
+        IgniteInternalFuture<Object> backgroundTxFut = GridTestUtils.runAsync(() -> {
+            try (Transaction ignored = ign.transactions().txStart()) {
+//                cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, 11)").setArgs(99));
+                cache.put(99, 11);
+
+                latch1.countDown();
+
+                latch2.await();
+            }
+
+            return null;
+        });
+
+        latch1.await();
 
         // drop primary
-        victim.close();
+        stopGrid(vid);
 
+        // do all assertions before rebalance
         assertConditionEventually(() -> txs.stream().allMatch(tx -> tx.state() == ROLLED_BACK));
 
-        List<IgniteEx> keyNodes = grids(srvCnt, i -> i != vid);
+        List<IgniteEx> liveNodes = grids(srvCnt, i -> i != vid);
 
-        assertConditionEventually(() -> keyNodes.stream()
+        assertTrue(liveNodes.stream()
             .map(node -> node.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("select * from Integer")).getAll())
             .allMatch(Collection::isEmpty));
 
-        assertPartitionCountersAreConsistent(keys, keyNodes);
+        assertPartitionCountersAreConsistent(keys, liveNodes);
+
+        latch2.countDown();
+
+        backgroundTxFut.get();
     }
 
     /**
@@ -492,9 +525,11 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
         ((TestRecordingCommunicationSpi)victim.configuration().getCommunicationSpi())
             .blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
                 final AtomicInteger limiter = new AtomicInteger();
+
                 @Override public boolean apply(ClusterNode node, Message msg) {
                     if (msg instanceof GridDhtTxPrepareRequest)
                         return limiter.getAndIncrement() < 2;
+
                     return false;
                 }
             });
@@ -541,6 +576,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
                 assertEquals(victimUpdCntr, updateCounter(node.cachex(DEFAULT_CACHE_NAME).context(), k));
         });
     }
+
     /** */
     private static CacheConfiguration<Object, Object> basicCcfg() {
         return new CacheConfiguration<>(DEFAULT_CACHE_NAME)
@@ -582,6 +618,7 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
 
                 if (node.affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(node.localNode(), key)) {
                     long cntr = updateCounter(node.cachex(DEFAULT_CACHE_NAME).context(), key);
+//                    System.err.println(node.localNode().consistentId() + " " + key + " -> " + cntr);
                     if (cntr0 == -1)
                         cntr0 = cntr;
 

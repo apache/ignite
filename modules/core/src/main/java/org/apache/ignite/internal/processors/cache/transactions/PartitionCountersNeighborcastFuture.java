@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
-import java.util.Set;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -28,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFutu
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastRequest;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteUuid;
@@ -47,11 +48,16 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
     /** */
     private final GridCacheSharedContext<?, ?> cctx;
     /** */
+    private final IgniteInternalTx tx;
+    /** */
     private final IgniteLogger log;
 
     /** */
-    public PartitionCountersNeighborcastFuture(GridCacheSharedContext<?, ?> cctx) {
+    public PartitionCountersNeighborcastFuture(
+        IgniteInternalTx tx, GridCacheSharedContext<?, ?> cctx) {
         super(null);
+
+        this.tx = tx;
 
         this.cctx = cctx;
 
@@ -60,24 +66,24 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
 
     /**
      * Starts processing.
-     * @param peers Peers to which update update counters will be sent.
-     * @param cntrs Partition update counters to send.
-     * @param txId Transaction id.
      */
-    public void init(Set<UUID> peers, Collection<PartitionUpdateCountersMessage> cntrs, GridCacheVersion txId) {
-        assert cntrs != null;
-
+    public void init() {
         if (log.isInfoEnabled()) {
-            log.info("Starting delivery partition countres to remote nodes [txId=" + txId +
+            log.info("Starting delivery partition countres to remote nodes [txId=" + tx.nearXidVersion() +
                 ", futId=" + futId);
         }
 
+        HashSet<UUID> siblings = siblingBackups();
+
         cctx.mvcc().addFuture(this, futId);
 
-        for (UUID peer : peers) {
+        for (UUID peer : siblings) {
             MiniFuture miniFut = new MiniFuture(peer);
 
             try {
+                List<PartitionUpdateCountersMessage> cntrs = cctx.tm()
+                    .filterUpdateCountersForBackupNode(tx, cctx.node(peer));
+
                 cctx.io().send(peer, new PartitionCountersNeighborcastRequest(cntrs, futId), SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
@@ -91,6 +97,25 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
         }
 
         markInitialized();
+    }
+
+    /** */
+    private HashSet<UUID> siblingBackups() {
+        Map<UUID, Collection<UUID>> txNodes = tx.transactionNodes();
+
+        assert txNodes != null;
+
+        UUID locNodeId = cctx.localNodeId();
+
+        HashSet<UUID> siblings = new HashSet<>();
+
+        txNodes.values().stream()
+            .filter(backups -> backups.contains(locNodeId))
+            .forEach(siblings::addAll);
+
+        siblings.remove(locNodeId);
+
+        return siblings;
     }
 
     /** {@inheritDoc} */

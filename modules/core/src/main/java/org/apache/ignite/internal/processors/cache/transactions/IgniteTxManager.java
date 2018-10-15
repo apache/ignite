@@ -45,6 +45,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectsReleaseFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -2047,30 +2048,63 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         if (commit)
             tx.commitAsync().listen(new CommitListener(tx));
-        else {
-            // t0d0 if mvcc
-            TxCounters txCntrs = tx.txCounters(false);
-            Collection<PartitionUpdateCountersMessage> updCntrs = txCntrs != null ? txCntrs.updateCounters() : null;
-            // t0d0 when update counters can be null for prepared transaction?
-            if (!tx.txState().mvccEnabled() || updCntrs == null)
-                tx.rollbackAsync();
-            else {
-                Map<UUID, Collection<UUID>> txNodes = tx.transactionNodes();
-                assert txNodes != null;
-                // we need to receive all sibling backups here
-                UUID locNodeId = cctx.localNodeId();
-                HashSet<UUID> peers = new HashSet<>();
-                txNodes.values().stream().forEach(backups -> {
-                    if (backups.contains(locNodeId))
-                        peers.addAll(backups);
-                });
-                peers.remove(locNodeId);
+        else if (tx.mvccSnapshot() != null && !tx.local())
+            // remote (backup) mvcc transaction sends partition counters to other backup transaction
+            // in order to keep counters consistent
+            neighborcastPartitionCountersAndRollback(tx);
+        else
+            tx.rollbackAsync();
+    }
 
-                PartitionCountersNeighborcastFuture fut = new PartitionCountersNeighborcastFuture(cctx);
-                fut.listen(fut0 -> tx.rollbackAsync());
-                fut.init(peers, updCntrs, tx.nearXidVersion());
+    /** */
+    private void neighborcastPartitionCountersAndRollback(IgniteInternalTx tx) {
+        TxCounters txCounters = tx.txCounters(false);
+
+        if (txCounters == null || txCounters.updateCounters() == null)
+            tx.rollbackAsync();
+
+        PartitionCountersNeighborcastFuture fut = new PartitionCountersNeighborcastFuture(tx, cctx);
+
+        fut.listen(fut0 -> tx.rollbackAsync());
+
+        fut.init();
+    }
+
+    /**
+     * @param tx Transaction.
+     * @param node Backup node.
+     * @return Partition counters for the given backup node.
+     */
+    public List<PartitionUpdateCountersMessage> filterUpdateCountersForBackupNode(
+        IgniteInternalTx tx, ClusterNode node) {
+        TxCounters txCntrs = tx.txCounters(false);
+
+        if (txCntrs == null || F.isEmpty(txCntrs.updateCounters()))
+            return null;
+
+        Collection<PartitionUpdateCountersMessage> updCntrs = txCntrs.updateCounters();
+
+        List<PartitionUpdateCountersMessage> res = new ArrayList<>(updCntrs.size());
+
+        AffinityTopologyVersion top = tx.topologyVersionSnapshot();
+
+        for (PartitionUpdateCountersMessage partCntrs : updCntrs) {
+            GridCacheAffinityManager affinity = cctx.cacheContext(partCntrs.cacheId()).affinity();
+
+            PartitionUpdateCountersMessage resCntrs = new PartitionUpdateCountersMessage(partCntrs.cacheId(), partCntrs.size());
+
+            for (int i = 0; i < partCntrs.size(); i++) {
+                int part = partCntrs.partition(i);
+
+                if (affinity.backupByPartition(node, part, top))
+                    resCntrs.add(part, partCntrs.initialCounter(i), partCntrs.updatesCount(i));
             }
+
+            if (resCntrs.size() > 0)
+                res.add(resCntrs);
         }
+
+        return res;
     }
 
     /**
@@ -2492,7 +2526,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                         // Await only mvcc transactions initiated by failed client node.
                         if (discoEvt.eventNode().isClient() && tx.eventNodeId().equals(evtNodeId)
-                            && tx.txState().mvccEnabled())
+                            && tx.mvccSnapshot() != null)
                             allTxFinFut.add(tx.finishFuture());
                     }
                 }
