@@ -118,6 +118,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicR
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.NO_KEY;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.CONCURRENT_UPDATE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_BACKUP;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
@@ -277,6 +278,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** {@inheritDoc} */
     @Override public boolean isLocal() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isMvcc() {
+        return cctx.mvccEnabled();
     }
 
     /** {@inheritDoc} */
@@ -1042,6 +1048,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         IgniteInternalTx tx,
         UUID affNodeId,
         CacheObject val,
+        EntryProcessor entryProc,
+        Object[] invokeArgs,
         long ttl0,
         AffinityTopologyVersion topVer,
         MvccSnapshot mvccVer,
@@ -1053,6 +1061,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert tx != null;
 
         final boolean valid = valid(tx.topologyVersion());
+
+        final boolean invoke = entryProc != null;
 
         final GridCacheVersion newVer;
 
@@ -1087,10 +1097,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             // Detach value before index update.
             val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
 
-            assert val != null;
+            assert val != null || invoke;
 
-            res = cctx.offheap().mvccUpdate(
-                this, val, newVer, expireTime, mvccVer, tx.local(), needHistory, noCreate, filter, retVal);
+            res = cctx.offheap().mvccUpdate(this, val, newVer, expireTime, mvccVer, tx.local(), needHistory, noCreate,
+                filter, retVal, entryProc, invokeArgs);
 
             assert res != null;
 
@@ -1102,8 +1112,18 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             assert res.resultType() != ResultType.PREV_NOT_NULL || op != CREATE || tx.local();
 
             if (res.resultType() == ResultType.VERSION_MISMATCH)
-                throw new IgniteSQLException("Mvcc version mismatch.", CONCURRENT_UPDATE);
-            else if (res.resultType() == ResultType.FILTERED || (noCreate && res.resultType() == ResultType.PREV_NULL))
+                throw serializationError();
+            else if (res.resultType() == ResultType.FILTERED) {
+                GridCacheUpdateTxResult updRes = new GridCacheUpdateTxResult(invoke);
+
+                assert !invoke || res.invokeResult() != null;
+
+                if(invoke) // No-op invoke happened.
+                    updRes.invokeResult(res.invokeResult());
+
+                return updRes;
+            }
+            else if(noCreate && !invoke && res.resultType() == ResultType.PREV_NULL)
                 return new GridCacheUpdateTxResult(false);
             else if (res.resultType() == ResultType.LOCKED) {
                 unlockEntry();
@@ -1115,7 +1135,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 IgniteInternalFuture<?> lockFut = cctx.kernalContext().coordinators().waitFor(cctx, lockVer);
 
                 lockFut.listen(new MvccUpdateLockListener(tx, this, affNodeId, topVer, val, ttl0, mvccVer,
-                    op, needHistory, noCreate, filter, retVal, resFut));
+                    op, needHistory, noCreate, filter, retVal, resFut, entryProc, invokeArgs));
 
                 return new GridCacheUpdateTxResult(false, resFut);
             }
@@ -1143,13 +1163,26 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 counters.incrementUpdateCounter(cctx.cacheId(), partition());
             }
+            else if (res.resultType() == ResultType.REMOVED_NOT_NULL) {
+                TxCounters counters = tx.txCounters(true);
+
+                if (res.isOwnValueOverridden()) {
+                    if (res.isKeyAbsentBefore()) // Do not count own update removal.
+                        counters.decrementUpdateCounter(cctx.cacheId(), partition());
+                }
+                else
+                    counters.incrementUpdateCounter(cctx.cacheId(), partition());
+
+                counters.accumulateSizeDelta(cctx.cacheId(), partition(), -1);
+            }
 
             if (cctx.group().persistenceEnabled() && cctx.group().walEnabled()) {
                 logPtr = cctx.shared().wal().log(new DataRecord(new DataEntry(
                     cctx.cacheId(),
                     key,
                     val,
-                    res.resultType() == ResultType.PREV_NULL ? CREATE : UPDATE,
+                    res.resultType() == ResultType.PREV_NULL ? CREATE :
+                        (res.resultType() == ResultType.REMOVED_NOT_NULL) ? DELETE : UPDATE,
                     tx.nearXidVersion(),
                     newVer,
                     expireTime,
@@ -1182,6 +1215,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             assert oldRow != null;
 
             updRes.prevValue(oldRow.value());
+        }
+
+        if(invoke) {
+            assert res.invokeResult() != null;
+
+            updRes.invokeResult(res.invokeResult());
         }
 
         updRes.mvccHistory(res.history());
@@ -1223,7 +1262,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             assert res != null;
 
             if (res.resultType() == ResultType.VERSION_MISMATCH)
-                throw new IgniteSQLException("Mvcc version mismatch.", CONCURRENT_UPDATE);
+                throw serializationError();
             else if (res.resultType() == ResultType.PREV_NULL || res.resultType() == ResultType.FILTERED)
                 return new GridCacheUpdateTxResult(false);
             else if (res.resultType() == ResultType.LOCKED) {
@@ -1320,7 +1359,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             assert res != null;
 
             if (res.resultType() == ResultType.VERSION_MISMATCH)
-                throw new IgniteSQLException("Mvcc version mismatch.", CONCURRENT_UPDATE);
+                throw serializationError();
             else if (res.resultType() == ResultType.LOCKED) {
                 unlockEntry();
 
@@ -5031,7 +5070,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 assert res != null;
 
                 if (res.resultType() == ResultType.VERSION_MISMATCH) {
-                    resFut.onDone(new IgniteSQLException("Mvcc version mismatch.", CONCURRENT_UPDATE));
+                    resFut.onDone(serializationError());
 
                     return;
                 }
@@ -5174,7 +5213,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 assert res != null;
 
                 if (res.resultType() == ResultType.VERSION_MISMATCH) {
-                    resFut.onDone(new IgniteSQLException("Mvcc version mismatch.", CONCURRENT_UPDATE));
+                    resFut.onDone(serializationError());
 
                     return;
                 }
@@ -5237,14 +5276,20 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         /** */
         private GridCacheOperation op;
 
+        /** Entry processor. */
+        private final EntryProcessor entryProc;
+
+        /** Invoke arguments. */
+        private final Object[] invokeArgs;
+
+        /** Filter. */
+        private final CacheEntryPredicate filter;
+
         /** */
         private final boolean needHistory;
 
         /** */
         private final boolean noCreate;
-
-        /** Filter. */
-        private final CacheEntryPredicate filter;
 
         /** Need previous value flag.*/
         private final boolean needVal;
@@ -5262,7 +5307,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             boolean noCreate,
             CacheEntryPredicate filter,
             boolean needVal,
-            GridFutureAdapter<GridCacheUpdateTxResult> resFut) {
+            GridFutureAdapter<GridCacheUpdateTxResult> resFut,
+            EntryProcessor entryProc,
+            Object[] invokeArgs) {
             this.tx = tx;
             this.entry = entry;
             this.affNodeId = affNodeId;
@@ -5276,6 +5323,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             this.filter = filter;
             this.needVal = needVal;
             this.resFut = resFut;
+            this.entryProc = entryProc;
+            this.invokeArgs = invokeArgs;
         }
 
         /** {@inheritDoc} */
@@ -5285,6 +5334,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             GridCacheContext cctx = entry.context();
             GridCacheVersion newVer = tx.writeVersion();
+
+            final boolean invoke = entryProc != null;
 
             MvccUpdateResult res;
 
@@ -5322,8 +5373,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 cctx.shared().database().checkpointReadLock();
 
                 try {
-                    res = cctx.offheap().mvccUpdate(
-                        entry, val, newVer, expireTime, mvccVer, tx.local(), needHistory, noCreate, filter, needVal);
+                    res = cctx.offheap().mvccUpdate(entry, val, newVer, expireTime, mvccVer, tx.local(), needHistory,
+                        noCreate, filter, needVal, entryProc, invokeArgs);
                 }
                 finally {
                     cctx.shared().database().checkpointReadUnlock();
@@ -5332,7 +5383,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 assert res != null;
 
                 if (res.resultType() == ResultType.VERSION_MISMATCH) {
-                    resFut.onDone(new IgniteSQLException("Mvcc version mismatch.", CONCURRENT_UPDATE));
+                    resFut.onDone(serializationError());
 
                     return;
                 }
@@ -5340,6 +5391,19 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     entry.unlockEntry();
 
                     cctx.kernalContext().coordinators().waitFor(cctx, res.resultVersion()).listen(this);
+
+                    return;
+                }
+                else if (res.resultType() == ResultType.FILTERED) {
+                    GridCacheUpdateTxResult updRes = new GridCacheUpdateTxResult(invoke);
+
+                    if (invoke) { // No-op invoke happened.
+                        assert res.invokeResult() != null;
+
+                        updRes.invokeResult(res.invokeResult());
+                    }
+
+                    resFut.onDone(updRes);
 
                     return;
                 }
@@ -5371,13 +5435,26 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     counters.incrementUpdateCounter(cctx.cacheId(), entry.partition());
                 }
+                else if (res.resultType() == ResultType.REMOVED_NOT_NULL) {
+                    TxCounters counters = tx.txCounters(true);
+
+                    if (res.isOwnValueOverridden()) {
+                        if (res.isKeyAbsentBefore()) // Do not count own update removal.
+                            counters.decrementUpdateCounter(cctx.cacheId(), entry.partition());
+                    }
+                    else
+                        counters.incrementUpdateCounter(cctx.cacheId(), entry.partition());
+
+                    counters.accumulateSizeDelta(cctx.cacheId(), entry.partition(), -1);
+                }
 
                 if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
                     logPtr = cctx.shared().wal().log(new DataRecord(new DataEntry(
                         cctx.cacheId(),
                         entry.key(),
                         val,
-                        res.resultType() == ResultType.PREV_NULL ? CREATE : UPDATE,
+                       res.resultType() == ResultType.PREV_NULL ? CREATE :
+                        (res.resultType() == ResultType.REMOVED_NOT_NULL) ? DELETE : UPDATE,
                         tx.nearXidVersion(),
                         newVer,
                         expireTime,
@@ -5407,6 +5484,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             GridCacheUpdateTxResult updRes = valid ? new GridCacheUpdateTxResult(true, 0L, logPtr)
                 : new GridCacheUpdateTxResult(false, logPtr);
+
+            if(invoke) {
+                assert res.invokeResult() != null;
+
+                updRes.invokeResult(res.invokeResult());
+            }
 
             updRes.mvccHistory(res.history());
 
@@ -6571,5 +6654,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
 
         return new GridCacheUpdateTxResult(true, logPtr);
+    }
+
+    /**
+     * @return Common serialization error.
+     */
+    @SuppressWarnings("UnnecessaryReturnStatement")
+    private static IgniteSQLException serializationError() {
+        return new IgniteSQLException("Cannot serialize transaction due to write conflict (transaction is marked for rollback)", TRANSACTION_SERIALIZATION_ERROR);
     }
 }
