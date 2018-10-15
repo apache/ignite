@@ -983,7 +983,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         GridDhtPartitionsExchangeFuture exchFut = exchFuts.get(topVer);
 
-        if (exchFut == null || exchFut.changedAffinity())
+        if (exchFut == null || exchFut.firstEvent() == null || exchFut.changedAffinity())
             return topVer;
 
         return exchFut.lastAffinityChangeTopologyVersion();
