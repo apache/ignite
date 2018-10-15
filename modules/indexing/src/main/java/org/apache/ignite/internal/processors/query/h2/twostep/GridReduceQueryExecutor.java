@@ -1223,9 +1223,8 @@ public class GridReduceQueryExecutor {
             }
         }
 
-        CacheException e = new CacheException("Query is canceled.", new QueryCancelledException());
-
-        r.setStateOnException(ctx.localNodeId(), e);
+        r.setStateOnException(ctx.localNodeId(),
+            new CacheException("Query is canceled.", new QueryCancelledException()));
 
         if (!runs.remove(qryReqId, r))
             U.warn(log, "Query run was already removed: " + qryReqId);
