@@ -496,6 +496,10 @@
                                 <title>Encryption SPI</title>
                                 <packages>org.apache.ignite.spi.encryption*</packages>
                             </group>
+                            <group>
+                                <title>Ignite Web Console</title>
+                                <packages>org.apache.ignite.console*</packages>
+                            </group>
                         </groups>
                         <header>
                             <![CDATA[
