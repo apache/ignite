@@ -1133,12 +1133,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (log.isInfoEnabled()) {
             long latency = System.currentTimeMillis() - time;
 
-            if (latency > 100 || log.isDebugEnabled())
-                log.info("Full Message creating for " + msgTopVer + " performed in " + latency + " ms.");
+            if (latency > 100 || log.isDebugEnabled()){
+                log.info("Full Message creating for " + msgTopVer + " and cache groups " + grps + " performed in " +
+                        latency + " ms."
+                );
+            }
         }
 
         if (log.isTraceEnabled())
-            log.trace("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", msg=" + m + ']');
+            log.trace("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", cacheGroups=" + grps + ", msg=" + m + ']');
 
         time = System.currentTimeMillis();
 
@@ -1166,8 +1169,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (log.isInfoEnabled()) {
             long latency = System.currentTimeMillis() - time;
 
-            log.info("Sending Full Message for " + msgTopVer + " performed in " + latency + " ms." +
-                (failedNodes.isEmpty() ? "" : (" Messages weren't sent to next nodes: " + U.nodeIds(failedNodes))));
+            log.info("Sending Full Message for " + msgTopVer + " and cache groups:" + grps + " performed in " +
+                latency + " ms." +
+                (failedNodes.isEmpty() ? "" : (" Messages weren't sent to next nodes: " + U.nodeIds(failedNodes)))
+            );
         }
     }
 
