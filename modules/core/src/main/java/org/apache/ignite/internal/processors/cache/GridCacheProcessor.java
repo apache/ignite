@@ -64,6 +64,7 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -1295,71 +1296,6 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     }
 
     /**
-     * @param cache Cache to start.
-     * @param schema Cache schema.
-     * @throws IgniteCheckedException If failed to start cache.
-     */
-    @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
-    private void startCache(GridCacheAdapter<?, ?> cache, QuerySchema schema) throws IgniteCheckedException {
-        GridCacheContext<?, ?> cacheCtx = cache.context();
-
-        CacheConfiguration cfg = cacheCtx.config();
-
-        // Intentionally compare Boolean references using '!=' below to check if the flag has been explicitly set.
-        if (cfg.isStoreKeepBinary() && cfg.isStoreKeepBinary() != CacheConfiguration.DFLT_STORE_KEEP_BINARY
-            && !(ctx.config().getMarshaller() instanceof BinaryMarshaller))
-            U.warn(log, "CacheConfiguration.isStoreKeepBinary() configuration property will be ignored because " +
-                "BinaryMarshaller is not used");
-
-        // Start managers.
-        for (GridCacheManager mgr : F.view(cacheCtx.managers(), F.notContains(dhtExcludes(cacheCtx))))
-            mgr.start(cacheCtx);
-
-        cacheCtx.initConflictResolver();
-
-        if (cfg.getCacheMode() != LOCAL && GridCacheUtils.isNearEnabled(cfg)) {
-            GridCacheContext<?, ?> dhtCtx = cacheCtx.near().dht().context();
-
-            // Start DHT managers.
-            for (GridCacheManager mgr : dhtManagers(dhtCtx))
-                mgr.start(dhtCtx);
-
-            dhtCtx.initConflictResolver();
-
-            // Start DHT cache.
-            dhtCtx.cache().start();
-
-            if (log.isDebugEnabled())
-                log.debug("Started DHT cache: " + dhtCtx.cache().name());
-        }
-
-        ctx.continuous().onCacheStart(cacheCtx);
-
-        cacheCtx.cache().start();
-
-        ctx.query().onCacheStart(cacheCtx, schema);
-
-        cacheCtx.onStarted();
-
-        String memPlcName = cfg.getDataRegionName();
-
-        if (memPlcName == null && ctx.config().getDataStorageConfiguration() != null)
-            memPlcName = ctx.config().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName();
-
-        if (log.isInfoEnabled()) {
-            log.info("Started cache [name=" + cfg.getName() +
-                ", id=" + cacheCtx.cacheId() +
-                (cfg.getGroupName() != null ? ", group=" + cfg.getGroupName() : "") +
-                ", memoryPolicyName=" + memPlcName +
-                ", mode=" + cfg.getCacheMode() +
-                ", atomicity=" + cfg.getAtomicityMode() +
-                ", backups=" + cfg.getBackups() +
-                ", mvcc=" + cacheCtx.mvccEnabled() +']' +
-                ", encryptionEnabled=" + cfg.isEncryptionEnabled() +']');
-        }
-    }
-
-    /**
      * @param cache Cache to stop.
      * @param cancel Cancel flag.
      * @param destroy Destroy data flag. Setting to <code>true</code> will remove all cache data.
@@ -2155,19 +2091,24 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 parallelismLvl,
                 sharedCtx.kernalContext().getSystemExecutorService(),
                 startCacheInfos,
-                startCacheInfo -> cacheStartFailHandler.handle(
-                    startCacheInfo,
-                    cacheInfo -> {
-                        GridCacheContext cacheCtx = prepareCacheContext(
-                            cacheInfo.getCacheDescriptor().cacheConfiguration(),
-                            cacheInfo.getCacheDescriptor(),
-                            cacheInfo.getReqNearCfg(),
-                            cacheInfo.getExchangeTopVer(),
-                            cacheInfo.isDisabledAfterStart()
+                new IgniteInClosureX<StartCacheInfo>() {
+                    @Override public void applyx(StartCacheInfo startCacheInfo) throws IgniteCheckedException {
+                        cacheStartFailHandler.handle(
+                            startCacheInfo,
+                            cacheInfo -> {
+                                GridCacheContext cacheCtx = prepareCacheContext(
+                                    cacheInfo.getCacheDescriptor().cacheConfiguration(),
+                                    cacheInfo.getCacheDescriptor(),
+                                    cacheInfo.getReqNearCfg(),
+                                    cacheInfo.getExchangeTopVer(),
+                                    cacheInfo.isDisabledAfterStart()
+                                );
+                                cacheContexts.put(cacheInfo, cacheCtx);
+                            }
                         );
-                        cacheContexts.put(cacheInfo, cacheCtx);
                     }
-                ));
+                }
+            );
 
             /*
              * This hack required because we can't start sql schema in parallel by folowing reasons:
@@ -2198,10 +2139,15 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 parallelismLvl,
                 sharedCtx.kernalContext().getSystemExecutorService(),
                 cacheContexts.entrySet(),
-                cacheCtxEntry -> cacheStartFailHandler.handle(
-                    cacheCtxEntry.getKey(),
-                    cacheInfo -> onCacheStarted(cacheCtxEntry.getValue())
-                )
+                new IgniteInClosureX<Map.Entry<StartCacheInfo, GridCacheContext>>() {
+                    @Override public void applyx(
+                        Map.Entry<StartCacheInfo, GridCacheContext> cacheCtxEntry) throws IgniteCheckedException {
+                        cacheStartFailHandler.handle(
+                            cacheCtxEntry.getKey(),
+                            cacheInfo -> onCacheStarted(cacheCtxEntry.getValue())
+                        );
+                    }
+                }
             );
         }
     }

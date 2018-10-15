@@ -57,6 +57,7 @@ import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
+import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -890,12 +891,14 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         IgniteUtils.doInParallel(3,
             Executors.newFixedThreadPool(3),
             Arrays.asList(1, 2, 3),
-            (i) -> {
-                try {
-                    barrier.await(1, TimeUnit.SECONDS);
-                }
-                catch (Exception e) {
-                    throw new IgniteCheckedException(e);
+            new IgniteInClosureX<Integer>(){
+                @Override public void applyx(Integer info) throws IgniteCheckedException {
+                    try {
+                        barrier.await(1, TimeUnit.SECONDS);
+                    }
+                    catch (Exception e) {
+                        throw new IgniteCheckedException(e);
+                    }
                 }
             });
     }
@@ -910,12 +913,14 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             IgniteUtils.doInParallel(2,
                 Executors.newFixedThreadPool(3),
                 Arrays.asList(1, 2, 3),
-                (i) -> {
-                    try {
-                        barrier.await(400, TimeUnit.MILLISECONDS);
-                    }
-                    catch (Exception e) {
-                        throw new IgniteCheckedException(e);
+                new IgniteInClosureX<Integer>() {
+                    @Override public void applyx(Integer integer) throws IgniteCheckedException {
+                        try {
+                            barrier.await(400, TimeUnit.MILLISECONDS);
+                        }
+                        catch (Exception e) {
+                            throw new IgniteCheckedException(e);
+                        }
                     }
                 });
 
@@ -936,9 +941,11 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             IgniteUtils.doInParallel(3,
                 Executors.newFixedThreadPool(1),
                 Arrays.asList(1, 2, 3),
-                (i) -> {
-                    if (i == 1)
-                        throw new IgniteCheckedException(expectedException);
+                new IgniteInClosureX<Integer>() {
+                    @Override public void applyx(Integer i) throws IgniteCheckedException {
+                        if (i == 1)
+                            throw new IgniteCheckedException(expectedException);
+                    }
                 });
 
             fail("Should throw ParallelExecutionException");

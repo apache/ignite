@@ -1000,8 +1000,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         }
                     }
                 }
-            },
-            null);
+            });
     }
 
     /**
@@ -1258,7 +1257,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             .collect(Collectors.toList());
 
         try {
-            U.doInParallel(cctx.kernalContext().getSystemExecutorService(), affinityCaches, c, null);
+            U.doInParallel(cctx.kernalContext().getSystemExecutorService(), affinityCaches, c);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to execute affinity operation on cache groups", e);
@@ -1285,7 +1284,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         try {
-            U.doInParallel(cctx.kernalContext().getSystemExecutorService(), affinityCaches, c, null);
+            U.doInParallel(cctx.kernalContext().getSystemExecutorService(), affinityCaches, c);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to execute affinity operation on cache groups", e);

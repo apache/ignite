@@ -3322,8 +3322,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             // TODO: Handle such errors https://issues.apache.org/jira/browse/IGNITE-7833
                         }
                     }
-                },
-                null);
+                });
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to validate partitions state", e);
@@ -3356,8 +3355,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         else
                             assignPartitionStates(top);
                     }
-                },
-                null);
+                });
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to assign partition states", e);
