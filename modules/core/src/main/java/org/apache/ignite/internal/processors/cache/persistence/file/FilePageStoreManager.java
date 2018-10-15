@@ -242,8 +242,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         idxCacheStores.entrySet().removeIf(e -> cacheGrpPred.test(e.getKey()));
 
-        U.log(log, "Cleanup cache store holders [total=" + filteredStores.keySet().size() +
-            ", left=" + idxCacheStores.size() + ']');
+        U.log(log, "Cleanup cache stores [total=" + filteredStores.keySet().size() +
+            ", left=" + idxCacheStores.size() + ", cleanFiles=" + cleanFiles + ']');
     }
 
     /** {@inheritDoc} */

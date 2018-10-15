@@ -287,7 +287,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private final Collection<DbCheckpointListener> lsnrs = new CopyOnWriteArrayList<>();
 
     /** */
-    private volatile boolean stopping;
+    private boolean stopping;
 
     /** Checkpoint runner thread pool. If null tasks are to be run in single thread */
     @Nullable private IgniteTaskTrackingThreadPoolExecutor asyncRunner;
@@ -1050,6 +1050,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
         super.stop0(cancel);
+
+        onKernalStop0(cancel);
 
         if (!cctx.kernalContext().clientNode()) {
             if (fileLockHolder != null) {

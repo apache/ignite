@@ -249,7 +249,8 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
     public void cleanupPersistentSpace() throws IgniteCheckedException;
 
     /**
-     * Clean up cache store whether it matches the provided predicate.
+     * Cleanup cache store whether it matches the provided predicate and if matched
+     * store was previously initizlized.
      *
      * @param cacheGrpPred Predicate to match by id cache group stores to clean.
      * @param cleanFiles {@code True} to delete all persisted files related to particular store.

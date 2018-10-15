@@ -852,7 +852,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (cctx.wal() != null)
                 cctx.wal().cleanupWalDirectories();
 
-            // Create node recovery record from scratch.
+            // Perform start node routine from scratch.
             cctx.database().startMemoryRestore(cctx.kernalContext());
         }
 
@@ -1919,9 +1919,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         cctx.database().releaseHistoryForExchange();
 
-        cctx.database().rebuildIndexesIfNeeded(this);
-
         if (err == null) {
+            cctx.database().rebuildIndexesIfNeeded(this);
+
             for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                 if (!grp.isLocal())
                     grp.topology().onExchangeDone(this, grp.affinity().readyAffinity(res), false);
