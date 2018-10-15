@@ -747,7 +747,7 @@ public class JdbcThinConnection implements Connection {
             JdbcResponse res = cliIo.sendRequest(req);
 
             if (res.status() != ClientListenerResponse.STATUS_SUCCESS)
-                throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()));
+                throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()), res.status());
 
             return (R)res.response();
         }
