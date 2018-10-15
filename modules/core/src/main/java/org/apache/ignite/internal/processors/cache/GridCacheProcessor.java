@@ -63,6 +63,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.binary.BinaryContext;
@@ -135,6 +136,7 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
+import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -207,7 +209,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER, false);
 
     /** Enables start caches in parallel. */
-    private static final boolean IGNITE_ALLOW_START_CACHES_IN_PARALLEL =
+    private final boolean IGNITE_ALLOW_START_CACHES_IN_PARALLEL =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_ALLOW_START_CACHES_IN_PARALLEL, true);
 
     /** Shared cache context. */
@@ -1894,14 +1896,57 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      * @param startCacheInfos All caches information for start.
      */
     void prepareStartCaches(Collection<StartCacheInfo> startCacheInfos) throws IgniteCheckedException {
+        prepareStartCaches(startCacheInfos, (data, operation) -> {
+            operation.accept(data);// PROXY
+        });
+    }
+
+    /**
+     * Trying to start all input caches in parallel and skip failed caches.
+     *
+     * @param startCacheInfos Caches info for start.
+     * @return Caches which was failed.
+     * @throws IgniteCheckedException if failed.
+     */
+    Map<StartCacheInfo, IgniteCheckedException> prepareStartCachesIfPossible(Collection<StartCacheInfo> startCacheInfos) throws IgniteCheckedException {
+        HashMap<StartCacheInfo, IgniteCheckedException> failedCaches = new HashMap<>();
+
+        prepareStartCaches(startCacheInfos, (data, operation) -> {
+            try {
+                operation.accept(data);
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                throw e;
+            }
+            catch (IgniteCheckedException e) {
+                log.warning("Cache can not be started : cache=" + data.getStartedConfiguration().getName());
+
+                failedCaches.put(data, e);
+            }
+        });
+
+        return failedCaches;
+    }
+
+    /**
+     * Start all input caches in parallel.
+     *
+     * @param startCacheInfos All caches information for start.
+     * @param cacheStartFailHandler Fail handler for one cache start.
+     */
+    private void prepareStartCaches(Collection<StartCacheInfo> startCacheInfos,
+        StartCacheFailHandler<StartCacheInfo> cacheStartFailHandler) throws IgniteCheckedException {
         if (!IGNITE_ALLOW_START_CACHES_IN_PARALLEL || startCacheInfos.size() <= 1) {
             for (StartCacheInfo startCacheInfo : startCacheInfos) {
-                prepareCacheStart(
-                    startCacheInfo.getCacheDescriptor().cacheConfiguration(),
-                    startCacheInfo.getCacheDescriptor(),
-                    startCacheInfo.getReqNearCfg(),
-                    startCacheInfo.getExchangeTopVer(),
-                    startCacheInfo.isDisabledAfterStart()
+                cacheStartFailHandler.handle(
+                    startCacheInfo,
+                    cacheInfo -> prepareCacheStart(
+                        cacheInfo.getCacheDescriptor().cacheConfiguration(),
+                        cacheInfo.getCacheDescriptor(),
+                        cacheInfo.getReqNearCfg(),
+                        cacheInfo.getExchangeTopVer(),
+                        cacheInfo.isDisabledAfterStart()
+                    )
                 );
             }
         }
@@ -1917,17 +1962,19 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 parallelismLvl,
                 sharedCtx.kernalContext().getSystemExecutorService(),
                 startCacheInfos,
-                startCacheInfo -> {
-                    GridCacheContext cacheCtx = prepareCacheContext(
-                        startCacheInfo.getCacheDescriptor().cacheConfiguration(),
-                        startCacheInfo.getCacheDescriptor(),
-                        startCacheInfo.getReqNearCfg(),
-                        startCacheInfo.getExchangeTopVer(),
-                        startCacheInfo.isDisabledAfterStart()
-                    );
-
-                    cacheContexts.put(startCacheInfo, cacheCtx);
-                });
+                startCacheInfo -> cacheStartFailHandler.handle(
+                    startCacheInfo,
+                    cacheInfo -> {
+                        GridCacheContext cacheCtx = prepareCacheContext(
+                            cacheInfo.getCacheDescriptor().cacheConfiguration(),
+                            cacheInfo.getCacheDescriptor(),
+                            cacheInfo.getReqNearCfg(),
+                            cacheInfo.getExchangeTopVer(),
+                            cacheInfo.isDisabledAfterStart()
+                        );
+                        cacheContexts.put(cacheInfo, cacheCtx);
+                    }
+                ));
 
             /*
              * This hack required because we can't start sql schema in parallel by folowing reasons:
@@ -1936,20 +1983,32 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
              *
              * TODO IGNITE-9729
              */
-            for (StartCacheInfo startCacheInfo : startCacheInfos) {
-                ctx.query().onCacheStart(
-                    cacheContexts.get(startCacheInfo),
-                    startCacheInfo.getCacheDescriptor().schema() != null
-                        ? startCacheInfo.getCacheDescriptor().schema()
-                        : new QuerySchema()
+            Set<StartCacheInfo> successfullyPreparedCaches = cacheContexts.keySet();
+
+            List<StartCacheInfo> cacheInfosInOriginalOrder = startCacheInfos.stream()
+                .filter(successfullyPreparedCaches::contains)
+                .collect(Collectors.toList());
+
+            for (StartCacheInfo startCacheInfo : cacheInfosInOriginalOrder) {
+                cacheStartFailHandler.handle(
+                    startCacheInfo,
+                    cacheInfo -> ctx.query().onCacheStart(
+                        cacheContexts.get(cacheInfo),
+                        cacheInfo.getCacheDescriptor().schema() != null
+                            ? cacheInfo.getCacheDescriptor().schema()
+                            : new QuerySchema()
+                    )
                 );
             }
 
             doInParallel(
                 parallelismLvl,
                 sharedCtx.kernalContext().getSystemExecutorService(),
-                cacheContexts.values(),
-                this::onCacheStarted
+                cacheContexts.entrySet(),
+                cacheCtxEntry -> cacheStartFailHandler.handle(
+                    cacheCtxEntry.getKey(),
+                    cacheInfo -> onCacheStarted(cacheCtxEntry.getValue())
+                )
             );
         }
     }
@@ -4880,6 +4939,22 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 return U.unmarshal(marsh, U.marshal(marsh, obj), U.resolveClassLoader(ctx.config()));
             }
         });
+    }
+
+    /**
+     * Handle of fail during cache start.
+     *
+     * @param <T> Type of started data.
+     */
+    private static interface StartCacheFailHandler<T> {
+        /**
+         * Handle of fail.
+         *
+         * @param data Start data.
+         * @param startCacheOperation Operation for start cache.
+         * @throws IgniteCheckedException if failed.
+         */
+        void handle(T data, IgniteThrowableConsumer<T> startCacheOperation) throws IgniteCheckedException;
     }
 
     /**

@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -68,7 +69,6 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -872,6 +872,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         long time = System.currentTimeMillis();
 
+        Map<StartCacheInfo, DynamicCacheChangeRequest> startCacheInfos = new LinkedHashMap<>();
+
         for (ExchangeActions.CacheActionData action : exchActions.cacheStartRequests()) {
             DynamicCacheDescriptor cacheDesc = action.descriptor();
 
@@ -907,27 +909,41 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 }
             }
 
-            try {
-                if (startCache) {
-                    cctx.cache().prepareCacheStart(req.startCacheConfiguration(),
+            if (startCache) {
+                startCacheInfos.put(
+                    new StartCacheInfo(
+                        req.startCacheConfiguration(),
                         cacheDesc,
                         nearCfg,
                         evts.topologyVersion(),
-                        req.disabledAfterStart());
-
-                    if (fut.cacheAddedOnExchange(cacheDesc.cacheId(), cacheDesc.receivedFrom())) {
-                        if (fut.events().discoveryCache().cacheGroupAffinityNodes(cacheDesc.groupId()).isEmpty())
-                            U.quietAndWarn(log, "No server nodes found for cache client: " + req.cacheName());
-                    }
-                }
+                        req.disabledAfterStart()
+                    ),
+                    req
+                );
             }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to initialize cache. Will try to rollback cache start routine. " +
-                    "[cacheName=" + req.cacheName() + ']', e);
+        }
 
-                cctx.cache().closeCaches(Collections.singleton(req.cacheName()), false);
+        Map<StartCacheInfo, IgniteCheckedException> failedCaches = cctx.cache().prepareStartCachesIfPossible(startCacheInfos.keySet());
 
-                cctx.cache().completeCacheStartFuture(req, false, e);
+        failedCaches.forEach((cacheInfo, exception) -> {
+            U.error(log, "Failed to initialize cache. Will try to rollback cache start routine. " +
+                "[cacheName=" + cacheInfo.getStartedConfiguration().getName() + ']', exception);
+
+            cctx.cache().closeCaches(Collections.singleton(cacheInfo.getStartedConfiguration().getName()), false);
+
+            cctx.cache().completeCacheStartFuture(startCacheInfos.get(cacheInfo), false, exception);
+        });
+
+        Set<StartCacheInfo> failedCacheInfos = failedCaches.keySet();
+
+        List<StartCacheInfo> cacheInfos = startCacheInfos.keySet().stream()
+            .filter(failedCacheInfos::contains)
+            .collect(Collectors.toList());
+
+        for (StartCacheInfo info : cacheInfos) {
+            if (fut.cacheAddedOnExchange(info.getCacheDescriptor().cacheId(), info.getCacheDescriptor().receivedFrom())) {
+                if (fut.events().discoveryCache().cacheGroupAffinityNodes(info.getCacheDescriptor().groupId()).isEmpty())
+                    U.quietAndWarn(log, "No server nodes found for cache client: " + info.getCacheDescriptor().cacheName());
             }
         }
 
