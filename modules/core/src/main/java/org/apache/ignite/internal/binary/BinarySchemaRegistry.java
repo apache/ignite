@@ -24,8 +24,11 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashMap;
 
 /**
- * Binary schema registry. Contains all well-known object schemas. <p> We rely on the fact that usually object has only
- * few different schemas. For this reason we inline several of them with optional fallback to normal hash map lookup.
+ * Binary schema registry. Contains all well-known object schemas.
+ * <p>
+ * We rely on the fact that usually object has only few different schemas. For this reason we inline several
+ * of them with optional fallback to normal hash map lookup.
+ *
  */
 public class BinarySchemaRegistry {
     /** Empty schema ID. */
@@ -62,8 +65,8 @@ public class BinarySchemaRegistry {
     private volatile HashMap<Integer, BinarySchema> schemas;
 
     /**
-     * Get schema for the given ID. We rely on very relaxed memory semantics here assuming that it is not critical to
-     * return false-positive {@code null} values.
+     * Get schema for the given ID. We rely on very relaxed memory semantics here assuming that it is not critical
+     * to return false-positive {@code null} values.
      *
      * @param schemaId Schema ID.
      * @return Schema or {@code null}.

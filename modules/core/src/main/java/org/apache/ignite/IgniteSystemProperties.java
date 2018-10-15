@@ -1008,7 +1008,7 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_REUSE_MEMORY_ON_DEACTIVATE = "IGNITE_REUSE_MEMORY_ON_DEACTIVATE";
 
     /**
-     * Timeout for waiting schema update if not found.
+     * Timeout for waiting schema update if schema was not found for last accepted version.
      */
     public static final String IGNITE_WAIT_SCHEMA_UPDATE = "IGNITE_WAIT_SCHEMA_UPDATE";
 

@@ -227,7 +227,6 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             int len = in.readInt();
             schemaId = in.readInt();
-
             int offset = in.readInt();
 
             // Get trivial flag values.
