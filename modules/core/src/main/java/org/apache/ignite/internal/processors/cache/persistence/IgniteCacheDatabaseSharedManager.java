@@ -786,9 +786,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Method will perform invalidate for previously resotred PageMemory for each cache partition.
+     * Method will perform cleanup cache page memory and each cache partition store.
      */
-    public void cleanupCachesPageMemory() {
+    public void cleanupRestoredCaches() {
         // No-op.
     }
 

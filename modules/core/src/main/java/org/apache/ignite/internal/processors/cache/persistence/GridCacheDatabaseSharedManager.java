@@ -518,7 +518,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public void cleanupCachesPageMemory() {
+    @Override public void cleanupRestoredCaches() {
         if (dataRegionMap == null)
             return;
 
@@ -537,6 +537,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     memEx.invalidate(grpDesc.groupId(), partId);
             }
         }
+
+        storeMgr.cleanupPageStoreIfMatch(
+            new Predicate<Integer>() {
+                @Override public boolean test(Integer grpId) {
+                    return MetaStorage.METASTORAGE_CACHE_ID != grpId;
+                }
+            },
+            true);
     }
 
     /** {@inheritDoc} */
