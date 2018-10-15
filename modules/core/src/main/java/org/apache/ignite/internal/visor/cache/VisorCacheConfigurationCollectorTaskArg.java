@@ -22,14 +22,14 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.regex.Pattern;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Argument for {@link VisorCacheConfigurationCollectorTask}.
  */
-public class VisorCacheConfigurationCollectorTaskArg extends IgniteDataTransferObject {
+public class VisorCacheConfigurationCollectorTaskArg extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -73,23 +73,28 @@ public class VisorCacheConfigurationCollectorTaskArg extends IgniteDataTransferO
     /**
      * @return Cache name regexp.
      */
-    public String regex() { return regex; }
+    public String getRegex() {
+        return regex;
+    }
+
+    @Override public byte getProtocolVersion() {
+        return V2;
+    }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeCollection(out, cacheNames);
 
-        out.writeUTF(regex == null ? "" : regex);
+        U.writeString(out, regex);
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(byte protoVer,
+        ObjectInput in) throws IOException, ClassNotFoundException {
         cacheNames = U.readCollection(in);
 
-        String str = in.readUTF();
-
-        if(!str.isEmpty())
-            regex = str;
+        if (getProtocolVersion() >= V2)
+            regex = U.readString(in);
     }
 
     /** {@inheritDoc} */

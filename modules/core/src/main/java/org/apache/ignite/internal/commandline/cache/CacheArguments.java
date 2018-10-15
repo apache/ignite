@@ -64,7 +64,7 @@ public class CacheArguments {
     /** Additional user attributes in result. Set of attribute names whose values will be searched in ClusterNode.attributes(). */
     private Set<String> userAttributes;
 
-    /** config_list '--human-readable' flag. */
+    /** Human readable formant enabled lag. */
     private boolean humanReadableFormat;
 
     /**

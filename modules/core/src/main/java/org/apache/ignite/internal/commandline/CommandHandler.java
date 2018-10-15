@@ -290,6 +290,9 @@ public class CommandHandler {
     private static final String TX_KILL = "kill";
 
     /** */
+    private static final String HUMAN_READABLE_FLAG = "--human-readable";
+
+    /** */
     private Iterator<String> argsIt;
 
     /** */
@@ -311,6 +314,23 @@ public class CommandHandler {
      */
     private void log(String s) {
         System.out.println(s);
+    }
+
+    /**
+     * Format and output specified string to console.
+     *
+     * @param format A format string as described in Format string syntax.
+     * @param args Arguments referenced by the format specifiers in the format string.
+     */
+    private void log(String format, Object... args) {
+        System.out.printf(format, args);
+    }
+
+    /**
+     * Output terminate line symbol to console.
+     */
+    private void log() {
+        System.out.println();
     }
 
     /**
@@ -640,7 +660,7 @@ public class CommandHandler {
         usage("  Validate custom indexes on idle cluster:", CACHE, " validate_indexes [cache1,...,cacheN] [nodeId] [checkFirst|checkThrough]");
         usage("  Collect partition distribution information:", CACHE, " distribution nodeId|null [cacheName1,...,cacheNameN] [--user-attributes attributeName1[,...,attributeNameN]]");
         usage("  Reset lost partitions:", CACHE, " reset_lost_partitions cacheName1[,...,cacheNameN]");
-        usage("  List caches configuration:", CACHE, " config", " cacheNameRegexPattern [--human-readable]");
+        usage("  List caches configuration:", CACHE, " config", " cacheNameRegexPattern [" + HUMAN_READABLE_FLAG + "]");
 
         log("  If [nodeId] is not specified, contention and validate_indexes commands will be broadcasted to all server nodes.");
         log("  Another commands where [nodeId] is optional will run on a random server node.");
@@ -849,15 +869,15 @@ public class CommandHandler {
                 Map<String, Object> params = mapToPairs(entry.getValue());
 
                 if (cacheArgs.humanReadableFormat()) {
-                    System.out.printf("[cache = '%s']%n", cacheName);
+                    log("[cache = '%s']%n", cacheName);
 
                     for (Map.Entry<String, Object> innerEntry : params.entrySet())
-                        System.out.printf("%s: %s%n", innerEntry.getKey(), innerEntry.getValue());
+                        log("%s: %s%n", innerEntry.getKey(), innerEntry.getValue());
 
-                    System.out.println();
+                    log();
                 }
                 else
-                    System.out.printf("%s: %s%n", entry.getKey(), entry.getValue());
+                    log("%s: %s%n", entry.getKey(), entry.getValue());
             }
         }
     }
@@ -1690,13 +1710,12 @@ public class CommandHandler {
                 break;
 
             case CONFIG:
-
                 cacheArgs.regex(nextArg("Regex is expected"));
 
                 if (hasNextCacheArg()) {
                     String arg = nextArg("");
 
-                    if (!arg.equals("--human-readable"))
+                    if (!arg.equalsIgnoreCase(HUMAN_READABLE_FLAG))
                         throw new IllegalArgumentException(arg);
 
                     cacheArgs.humanReadableFormat(true);

@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -49,9 +50,9 @@ public class VisorCacheConfigurationCollectorJob
     @Override protected Map<String, VisorCacheConfiguration> run(VisorCacheConfigurationCollectorTaskArg arg) {
         Collection<IgniteCacheProxy<?, ?>> caches = ignite.context().cache().jcaches();
 
-        Pattern pattern = arg.regex() != null ? Pattern.compile(arg.regex()) : null;
+        Pattern pattern = arg.getRegex() != null ? Pattern.compile(arg.getRegex()) : null;
 
-        boolean all = arg.getCacheNames() != null && arg.getCacheNames().isEmpty();
+        boolean all = F.isEmpty(arg.getCacheNames());
 
         Map<String, VisorCacheConfiguration> res = U.newHashMap(caches.size());
 
