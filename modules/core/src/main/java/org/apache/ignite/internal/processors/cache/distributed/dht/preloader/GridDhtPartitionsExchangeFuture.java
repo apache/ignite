@@ -1868,14 +1868,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (centralizedAff || forceAffReassignment) {
                 assert !exchCtx.mergeExchanges();
 
-                boolean needRefresh = false;
+                Collection<CacheGroupContext> grpToRefresh = U.newHashSet(cctx.cache().cacheGroups().size());
 
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                     if (grp.isLocal())
                         continue;
 
                     try {
-                        needRefresh = grp.topology().initPartitionsWhenAffinityReady(res, this) || needRefresh;
+                        if (grp.topology().initPartitionsWhenAffinityReady(res, this))
+                            grpToRefresh.add(grp);
                     }
                     catch (IgniteInterruptedCheckedException e) {
                         U.error(log, "Failed to initialize partitions.", e);
@@ -1883,8 +1884,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 }
 
-                if (needRefresh)
-                    cctx.exchange().refreshPartitions();
+                if (!grpToRefresh.isEmpty())
+                    cctx.exchange().refreshPartitions(grpToRefresh);
             }
 
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {

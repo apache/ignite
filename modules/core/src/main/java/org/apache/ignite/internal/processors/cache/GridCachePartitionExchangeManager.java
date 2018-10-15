@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -1028,14 +1029,23 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * Partition refresh callback.
+     * Partition refresh callback for selected cache groups.
      * For coordinator causes {@link GridDhtPartitionsFullMessage FullMessages} send,
      * for non coordinator -  {@link GridDhtPartitionsSingleMessage SingleMessages} send
+     *
+     * @param grps Cache groups for partitions refresh.
      */
-    public void refreshPartitions() {
+    public void refreshPartitions(@NotNull Collection<CacheGroupContext> grps) {
         // TODO https://issues.apache.org/jira/browse/IGNITE-6857
         if (cctx.snapshot().snapshotOperationInProgress()) {
             scheduleResendPartitions();
+
+            return;
+        }
+
+        if(grps.isEmpty()) {
+            if (log.isDebugEnabled())
+                log.debug("Skip partitions refresh, there are no cache groups for partition refresh.");
 
             return;
         }
@@ -1049,8 +1059,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             return;
         }
 
-        if (log.isDebugEnabled())
-            log.debug("Refreshing partitions [oldest=" + oldest.id() + ", loc=" + cctx.localNodeId() + ']');
+        if (log.isDebugEnabled()) {
+            log.debug("Refreshing partitions [oldest=" + oldest.id() + ", loc=" + cctx.localNodeId() +
+                "], cache groups: " + grps);
+        }
 
         // If this is the oldest node.
         if (oldest.id().equals(cctx.localNodeId())) {
@@ -1068,35 +1080,53 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             // No need to send to nodes which did not finish their first exchange.
             AffinityTopologyVersion rmtTopVer =
-                lastFut != null ? (lastFut.isDone() ? lastFut.topologyVersion() : lastFut.initialVersion()) : AffinityTopologyVersion.NONE;
+                lastFut != null ?
+                    (lastFut.isDone() ? lastFut.topologyVersion() : lastFut.initialVersion())
+                    : AffinityTopologyVersion.NONE;
 
-            Collection<ClusterNode> rmts = cctx.discovery().remoteAliveNodesWithCaches(rmtTopVer);
+
+            Set<ClusterNode> rmts = U.newHashSet(cctx.discovery().aliveServerNodes().size());
+
+            for(CacheGroupContext grp : grps)
+                rmts.addAll(cctx.discovery().cacheGroupAffinityNodes(grp.groupId(),rmtTopVer));
+
+            // No need to send to local node.
+            rmts.remove(cctx.localNode());
 
             if (log.isDebugEnabled())
                 log.debug("Refreshing partitions from oldest node: " + cctx.localNodeId());
 
-            sendAllPartitions(rmts, rmtTopVer);
+            sendAllPartitions(rmts, rmtTopVer, grps);
         }
         else {
             if (log.isDebugEnabled())
                 log.debug("Refreshing local partitions from non-oldest node: " +
                     cctx.localNodeId());
 
-            sendLocalPartitions(oldest, null);
+            sendLocalPartitions(oldest, null, grps);
         }
     }
 
     /**
+     * Partition refresh callback.
+     * For coordinator causes {@link GridDhtPartitionsFullMessage FullMessages} send,
+     * for non coordinator -  {@link GridDhtPartitionsSingleMessage SingleMessages} send
+     */
+    public void refreshPartitions() { refreshPartitions(cctx.cache().cacheGroups()); }
+
+    /**
      * @param nodes Nodes.
      * @param msgTopVer Topology version. Will be added to full message.
+     * @param grps Selected cache groups.
      */
     private void sendAllPartitions(
         Collection<ClusterNode> nodes,
-        AffinityTopologyVersion msgTopVer
+        AffinityTopologyVersion msgTopVer,
+        Collection<CacheGroupContext> grps
     ) {
         long time = System.currentTimeMillis();
 
-        GridDhtPartitionsFullMessage m = createPartitionsFullMessage(true, false, null, null, null, null);
+        GridDhtPartitionsFullMessage m = createPartitionsFullMessage(true, false, null, null, null, null, grps);
 
         m.topologyVersion(msgTopVer);
 
@@ -1142,8 +1172,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
+     * Creates partitions full message for all cache groups.
+     *
      * @param compress {@code True} if possible to compress message (properly work only if prepareMarshall/
-     *     finishUnmarshall methods are called).
+     * finishUnmarshall methods are called).
      * @param newCntrMap {@code True} if possible to use {@link CachePartitionFullCountersMap}.
      * @param exchId Non-null exchange ID if message is created for exchange.
      * @param lastVer Last version.
@@ -1159,18 +1191,43 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         @Nullable IgniteDhtPartitionHistorySuppliersMap partHistSuppliers,
         @Nullable IgniteDhtPartitionsToReloadMap partsToReload
     ) {
-        final GridDhtPartitionsFullMessage m = new GridDhtPartitionsFullMessage(exchId,
-            lastVer,
-            exchId != null ? exchId.topologyVersion() : AffinityTopologyVersion.NONE,
-            partHistSuppliers,
-            partsToReload
-            );
+        Collection<CacheGroupContext> grps = cctx.cache().cacheGroups();
+
+        return createPartitionsFullMessage(compress, newCntrMap, exchId, lastVer, partHistSuppliers, partsToReload, grps);
+    }
+
+    /**
+     * Creates partitions full message for selected cache groups.
+     *
+     * @param compress {@code True} if possible to compress message (properly work only if prepareMarshall/
+     *     finishUnmarshall methods are called).
+     * @param newCntrMap {@code True} if possible to use {@link CachePartitionFullCountersMap}.
+     * @param exchId Non-null exchange ID if message is created for exchange.
+     * @param lastVer Last version.
+     * @param partHistSuppliers Partition history suppliers map.
+     * @param partsToReload Partitions to reload map.
+     * @param grps Selected cache groups.
+     * @return Message.
+     */
+    public GridDhtPartitionsFullMessage createPartitionsFullMessage(
+        boolean compress,
+        boolean newCntrMap,
+        @Nullable final GridDhtPartitionExchangeId exchId,
+        @Nullable GridCacheVersion lastVer,
+        @Nullable IgniteDhtPartitionHistorySuppliersMap partHistSuppliers,
+        @Nullable IgniteDhtPartitionsToReloadMap partsToReload,
+        Collection<CacheGroupContext> grps
+    ) {
+        AffinityTopologyVersion ver = exchId != null ? exchId.topologyVersion() : AffinityTopologyVersion.NONE;
+
+        final GridDhtPartitionsFullMessage m =
+            new GridDhtPartitionsFullMessage(exchId, lastVer, ver, partHistSuppliers, partsToReload);
 
         m.compress(compress);
 
         final Map<Object, T2<Integer, GridDhtPartitionFullMap>> dupData = new HashMap<>();
 
-        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+        for (CacheGroupContext grp : grps) {
             if (!grp.isLocal()) {
                 if (exchId != null) {
                     AffinityTopologyVersion startTopVer = grp.localStartVersion();
@@ -1183,14 +1240,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 GridDhtPartitionFullMap locMap = grp.topology().partitionMap(true);
 
-                if (locMap != null) {
-                    addFullPartitionsMap(m,
-                        dupData,
-                        compress,
-                        grp.groupId(),
-                        locMap,
-                        affCache.similarAffinityKey());
-                }
+                if (locMap != null)
+                    addFullPartitionsMap(m, dupData, compress, grp.groupId(), locMap, affCache.similarAffinityKey());
 
                 m.addPartitionSizes(grp.groupId(), grp.topology().globalPartSizes());
 
@@ -1211,14 +1262,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         for (GridClientPartitionTopology top : cctx.exchange().clientTopologies()) {
             GridDhtPartitionFullMap map = top.partitionMap(true);
 
-            if (map != null) {
-                addFullPartitionsMap(m,
-                    dupData,
-                    compress,
-                    top.groupId(),
-                    map,
-                    top.similarAffinityKey());
-            }
+            if (map != null)
+                addFullPartitionsMap(m, dupData, compress, top.groupId(), map, top.similarAffinityKey());
 
             if (exchId != null) {
                 CachePartitionFullCountersMap cntrsMap = top.fullUpdateCounters();
@@ -1278,13 +1323,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * @param node Destination cluster node.
      * @param id Exchange ID.
+     * @param grps Cache groups for send partitions.
      */
-    private void sendLocalPartitions(ClusterNode node, @Nullable GridDhtPartitionExchangeId id) {
-        GridDhtPartitionsSingleMessage m = createPartitionsSingleMessage(id,
-            cctx.kernalContext().clientNode(),
-            false,
-            false,
-            null);
+    private void sendLocalPartitions(
+        ClusterNode node,
+        @Nullable GridDhtPartitionExchangeId id,
+        @NotNull Collection<CacheGroupContext> grps
+    ) {
+        GridDhtPartitionsSingleMessage m =
+            createPartitionsSingleMessage(id, cctx.kernalContext().clientNode(), false, false, null, grps);
 
         if (log.isTraceEnabled())
             log.trace("Sending local partitions [nodeId=" + node.id() + ", msg=" + m + ']');
@@ -1303,6 +1350,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
+     * Creates partitions single message for all cache groups.
+     *
      * @param exchangeId Exchange ID.
      * @param clientOnlyExchange Client exchange flag.
      * @param sndCounters {@code True} if need send partition update counters.
@@ -1316,6 +1365,29 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         boolean newCntrMap,
         ExchangeActions exchActions
     ) {
+        Collection<CacheGroupContext> grps = cctx.cache().cacheGroups();
+
+        return createPartitionsSingleMessage(exchangeId, clientOnlyExchange, sndCounters, newCntrMap, exchActions, grps);
+    }
+
+    /**
+     * Creates partitions single message for selected cache groups.
+     *
+     * @param exchangeId Exchange ID.
+     * @param clientOnlyExchange Client exchange flag.
+     * @param sndCounters {@code True} if need send partition update counters.
+     * @param newCntrMap {@code True} if possible to use {@link CachePartitionPartialCountersMap}.
+     * @param grps Selected cache groups.
+     * @return Message.
+     */
+    public GridDhtPartitionsSingleMessage createPartitionsSingleMessage(
+        @Nullable GridDhtPartitionExchangeId exchangeId,
+        boolean clientOnlyExchange,
+        boolean sndCounters,
+        boolean newCntrMap,
+        ExchangeActions exchActions,
+        Collection<CacheGroupContext> grps
+    ) {
         GridDhtPartitionsSingleMessage m = new GridDhtPartitionsSingleMessage(exchangeId,
             clientOnlyExchange,
             cctx.versions().last(),
@@ -1323,7 +1395,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         Map<Object, T2<Integer, GridPartitionStateMap>> dupData = new HashMap<>();
 
-        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+        for (CacheGroupContext grp : grps) {
             if (!grp.isLocal() && (exchActions == null || !exchActions.cacheGroupStopping(grp.groupId()))) {
                 GridDhtPartitionMap locMap = grp.topology().localPartitionMap();
 
