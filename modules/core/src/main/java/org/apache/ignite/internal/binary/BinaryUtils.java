@@ -48,6 +48,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryCollectionFactory;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
@@ -958,10 +959,30 @@ public class BinaryUtils {
      * @throws BinaryObjectException If merge failed due to metadata conflict.
      */
     public static BinaryMetadata mergeMetadata(@Nullable BinaryMetadata oldMeta, BinaryMetadata newMeta) {
+        return mergeMetadata(oldMeta, newMeta, null);
+    }
+
+    /**
+     * Merge old and new metas.
+     *
+     * @param oldMeta Old meta.
+     * @param newMeta New meta.
+     * @param changedSchemas Set for holding changed schemas.
+     * @return New meta if old meta was null, old meta if no changes detected, merged meta otherwise.
+     * @throws BinaryObjectException If merge failed due to metadata conflict.
+     */
+    public static BinaryMetadata mergeMetadata(@Nullable BinaryMetadata oldMeta, BinaryMetadata newMeta,
+        @Nullable Set<Integer> changedSchemas) {
         assert newMeta != null;
 
-        if (oldMeta == null)
+        if (oldMeta == null) {
+            if (changedSchemas != null) {
+                for (BinarySchema schema : newMeta.schemas())
+                    changedSchemas.add(schema.schemaId());
+            }
+
             return newMeta;
+        }
         else {
             assert oldMeta.typeId() == newMeta.typeId();
 
@@ -1036,8 +1057,14 @@ public class BinaryUtils {
             Collection<BinarySchema> mergedSchemas = new HashSet<>(oldMeta.schemas());
 
             for (BinarySchema newSchema : newMeta.schemas()) {
-                if (mergedSchemas.add(newSchema))
+                if (mergedSchemas.add(newSchema)) {
                     changed = true;
+
+                    if (changedSchemas != null) {
+                        for (BinarySchema schema : newMeta.schemas())
+                            changedSchemas.add(schema.schemaId());
+                    }
+                }
             }
 
             // Return either old meta if no changes detected, or new merged meta.

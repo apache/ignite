@@ -17,9 +17,11 @@
 package org.apache.ignite.internal.processors.cache.binary;
 
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -27,7 +29,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.Latches;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -301,20 +302,23 @@ final class BinaryMetadataTransport {
                     acceptedVer = 0;
                 }
 
-                if (log.isInfoEnabled())
-                    log.info("Versions are stamped on coordinator" +
-                            " [typeId=" + typeId +
-                            ", pendingVer=" + pendingVer +
-                            ", acceptedVer=" + acceptedVer + "]"
-                    );
-
                 msg.pendingVersion(pendingVer);
                 msg.acceptedVersion(acceptedVer);
 
                 BinaryMetadata locMeta = holder != null ? holder.metadata() : null;
 
                 try {
-                    BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(locMeta, msg.metadata());
+                    Set<Integer> changedSchemas = new LinkedHashSet<>();
+
+                    BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(locMeta, msg.metadata(), changedSchemas);
+
+                    if (log.isInfoEnabled())
+                        log.info("Versions are stamped on coordinator" +
+                                " [typeId=" + typeId +
+                                ", changedSchemas=" + changedSchemas +
+                                ", pendingVer=" + pendingVer +
+                                ", acceptedVer=" + acceptedVer + "]"
+                        );
 
                     msg.metadata(mergedMeta);
                 }
@@ -382,8 +386,10 @@ final class BinaryMetadataTransport {
                 if (!msg.rejected()) {
                     BinaryMetadata locMeta = holder != null ? holder.metadata() : null;
 
+                    Set<Integer> changedSchemas = new LinkedHashSet<>();
+
                     try {
-                        BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(locMeta, msg.metadata());
+                        BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(locMeta, msg.metadata(), changedSchemas);
 
                         BinaryMetadataHolder newHolder = new BinaryMetadataHolder(mergedMeta, pendingVer, acceptedVer);
 
@@ -406,7 +412,8 @@ final class BinaryMetadataTransport {
                         }
                         else {
                             if (log.isDebugEnabled())
-                                log.debug("Updated metadata on server node: " + newHolder);
+                                log.debug("Updated metadata on server node: [holder=" + newHolder +
+                                    ", changedSchemas=" + changedSchemas + ']');
 
                             metaLocCache.put(typeId, newHolder);
                         }

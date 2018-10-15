@@ -22,7 +22,9 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -465,7 +467,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
             BinaryMetadata oldMeta = metaHolder != null ? metaHolder.metadata() : null;
 
-            BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0);
+            Set<Integer> changedSchemas = new LinkedHashSet<>();
+
+            BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0, changedSchemas);
 
             if (failIfUnregistered)
                 throw new UnregisteredBinaryTypeException(
@@ -486,7 +490,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                 log.debug("Completed metadata update [typeId=" + typeId +
                     ", typeName=" + newMeta.typeName() +
-                    ", schemaChanged=" + (mergedMeta != oldMeta) +
+                    ", changedSchemas=" + changedSchemas +
                     ", waitTime=" + MILLISECONDS.convert(System.nanoTime() - t0, NANOSECONDS) + "ms" +
                     ", holder=" + metaHolder +
                     ", fut=" + fut +
