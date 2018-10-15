@@ -26,13 +26,13 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.Latches;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -45,10 +45,14 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -129,13 +133,49 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    private volatile boolean syncMeta;
+
+    private CountDownLatch initMetaReq = new CountDownLatch(2);
+
+    private ThreadLocal<Boolean> lockT = new ThreadLocal<>();
+
+    public static final CountDownLatch proposedClLock = new CountDownLatch(1);
+
     public void testMissingSchemaUpdate() throws Exception {
         // Start order is important.
         Ignite node0 = startGrid("node0");
 
         Ignite node1 = startGrid("node1");
 
-        Ignite client0 = startGrid("client0");
+        IgniteEx client0 = startGrid("client0");
+
+        CacheObjectBinaryProcessorImpl.TestBinaryContext clientCtx =
+            (CacheObjectBinaryProcessorImpl.TestBinaryContext)((CacheObjectBinaryProcessorImpl)client0.context().cacheObjects()).binaryContext();
+
+        clientCtx.addListener(new CacheObjectBinaryProcessorImpl.TestBinaryContext.TestBinaryContextListener() {
+            @Override public void onAfterMetadataRequest(int typeId, BinaryType type) {
+                if (syncMeta) {
+                    try {
+                        initMetaReq.countDown();
+
+                        initMetaReq.await();
+                    }
+                    catch (Exception e) {
+                        throw new BinaryObjectException(e);
+                    }
+                }
+            }
+
+            @Override public void onAfterSchemaRequest(int typeId, int schemaId, BinaryType type) {
+
+            }
+
+            @Override public void onBeforeMetadataUpdate(int typeId, BinaryMetadata metadata) {
+                // Delay one of updates until schema is locally updated on propose message.
+                if (lockT.get() != null)
+                    U.awaitQuiet(proposedClLock);
+            }
+        });
 
         Ignite node2 = startGrid("node2");
 
@@ -149,7 +189,7 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        Latches.lock = true;
+        syncMeta = true;
 
         BlockTcpDiscoverySpi spi1 = (BlockTcpDiscoverySpi)node1.configuration().getDiscoverySpi();
 
@@ -238,15 +278,10 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture fut1 = GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
-                U.awaitQuiet(Latches.initMetaReq);
+                U.awaitQuiet(initMetaReq);
 
                 // Await client block latch.
                 U.awaitQuiet(clL);
-//
-//                Latches.lock = true;
-//
-//                Latches.l2.countDown();
-//                U.awaitQuiet(Latches.l2);
 
                 clientWait.set(true);
 
@@ -256,7 +291,7 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
 
                 doSleep(3000);
 
-                Latches.proposedClLock.countDown();
+                proposedClLock.countDown();
 
                 doSleep(3000);
 
@@ -269,7 +304,7 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture fut2 = GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
-                Latches.lockT.set(true);
+                lockT.set(true);
 
                 try (Transaction tx = client0.transactions().
                     txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, 0, 1)) {
@@ -380,6 +415,18 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        cleanPersistenceDir();
+        System.setProperty(IgniteSystemProperties.IGNITE_TEST_FEATURES_ENABLED, "true");
+    }
+
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_TEST_FEATURES_ENABLED);
+
+        stopAllGrids();
+    }
+
+    public BinaryContext binaryContext(IgniteEx ex) {
+        return ((CacheObjectBinaryProcessorImpl)ex.context().cacheObjects()).binaryContext();
     }
 }

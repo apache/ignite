@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.binary.builder;
 
-import org.apache.ignite.Latches;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -364,9 +363,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
                 if (affFieldName0 == null)
                     affFieldName0 = ctx.affinityKeyFieldName(typeId);
-
-                if (Latches.lockT.get() != null)
-                    U.awaitQuiet(Latches.proposedClLock);
 
                 ctx.registerUserClassName(typeId, typeName);
 
