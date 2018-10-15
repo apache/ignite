@@ -63,18 +63,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
-/**
- * Test scenario:
- *
- * <ul>
- *     <li>3 nodes in the grid</li>
- *     <li>client is connected to node with order=2</li>
- *     <li>client initiates update version=1</li>
- *     <li>Update is removed from node with order=3</li>
- *     <li>Tx is released and wait for missing update</li>
- *     <li>client starts new metadata change which contains previous update</li>
- * </ul>
- */
+/** */
 public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
     /** */
     private static final int GRIDS = 3;
