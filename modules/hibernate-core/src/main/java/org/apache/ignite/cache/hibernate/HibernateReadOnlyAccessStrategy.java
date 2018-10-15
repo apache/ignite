@@ -20,6 +20,8 @@ package org.apache.ignite.cache.hibernate;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 
+import static java.lang.String.format;
+
 /**
  * Implementation of READ_ONLY cache access strategy.
  * <p>
@@ -50,6 +52,7 @@ import org.apache.ignite.IgniteCheckedException;
  *
  */
 public class HibernateReadOnlyAccessStrategy extends HibernateAccessStrategyAdapter {
+
     /**
      * @param ignite Node.
      * @param cache Cache.
@@ -68,9 +71,11 @@ public class HibernateReadOnlyAccessStrategy extends HibernateAccessStrategyAdap
 
     /** {@inheritDoc} */
     @Override public boolean afterInsert(Object key, Object val) {
+        if (log.isDebugEnabled())
+            log.debug(format("put into cache %s afterInsert, key %s", cache.name(), key));
+
         try {
             cache.put(key, val);
-
             return true;
         }
         catch (IgniteCheckedException e) {

@@ -17,15 +17,19 @@
 
 package org.apache.ignite.cache.hibernate;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+
+import static java.lang.String.format;
 
 /**
  * Implementation of NONSTRICT_READ_WRITE cache access strategy.
@@ -56,6 +60,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * </pre>
  */
 public class HibernateNonStrictAccessStrategy extends HibernateAccessStrategyAdapter {
+    private final IgniteLogger log;
+
     /** */
     private final ThreadLocal<WriteContext> writeCtx;
 
@@ -65,22 +71,19 @@ public class HibernateNonStrictAccessStrategy extends HibernateAccessStrategyAda
      * @param writeCtx Thread local instance used to track updates done during one Hibernate transaction.
      * @param eConverter Exception converter.
      */
-    HibernateNonStrictAccessStrategy(Ignite ignite,
-        HibernateCacheProxy cache,
-        ThreadLocal writeCtx,
-        HibernateExceptionConverter eConverter) {
+    HibernateNonStrictAccessStrategy(Ignite ignite, HibernateCacheProxy cache,
+                                     ThreadLocal writeCtx, HibernateExceptionConverter eConverter) {
         super(ignite, cache, eConverter);
-
         this.writeCtx = (ThreadLocal<WriteContext>)writeCtx;
+        this.log = ignite.log().getLogger(getClass());
     }
 
     /** {@inheritDoc} */
     @Override public void lock(Object key) {
         WriteContext ctx = writeCtx.get();
-
-        if (ctx == null)
+        if (ctx == null) {
             writeCtx.set(ctx = new WriteContext());
-
+        }
         ctx.locked(key);
     }
 
@@ -88,14 +91,11 @@ public class HibernateNonStrictAccessStrategy extends HibernateAccessStrategyAda
     @Override public void unlock(Object key) {
         try {
             WriteContext ctx = writeCtx.get();
-
             if (ctx != null && ctx.unlocked(key)) {
                 writeCtx.remove();
-
                 ctx.updateCache(cache);
             }
-        }
-        catch (IgniteCheckedException e) {
+        } catch (IgniteCheckedException e) {
             throw convertException(e);
         }
     }
@@ -109,11 +109,12 @@ public class HibernateNonStrictAccessStrategy extends HibernateAccessStrategyAda
     @Override public boolean afterUpdate(Object key, Object val) {
         WriteContext ctx = writeCtx.get();
 
+        if (log.isDebugEnabled())
+            log.debug(format("put object into cache %s afterUpdate, key %s, val %s", cache.name(), key, val));
+
         if (ctx != null) {
             ctx.updated(key, val);
-
             unlock(key);
-
             return true;
         }
 
@@ -127,12 +128,13 @@ public class HibernateNonStrictAccessStrategy extends HibernateAccessStrategyAda
 
     /** {@inheritDoc} */
     @Override public boolean afterInsert(Object key, Object val) {
+        if (log.isDebugEnabled())
+            log.debug(format("put object into cache %s afterInsert, key %s, val %s", cache.name(), key, val));
+
         try {
             cache.put(key, val);
-
             return true;
-        }
-        catch (IgniteCheckedException e) {
+        } catch (IgniteCheckedException e) {
             throw convertException(e);
         }
     }
@@ -143,6 +145,7 @@ public class HibernateNonStrictAccessStrategy extends HibernateAccessStrategyAda
 
         if (ctx != null)
             ctx.removed(key);
+
     }
 
     /**
@@ -179,7 +182,6 @@ public class HibernateNonStrictAccessStrategy extends HibernateAccessStrategyAda
          */
         boolean unlocked(Object key) {
             locked.remove(key);
-
             return locked.isEmpty();
         }
 
@@ -220,6 +222,7 @@ public class HibernateNonStrictAccessStrategy extends HibernateAccessStrategyAda
 
             if (!F.isEmpty(updates))
                 cache.putAll(updates);
+
         }
 
         /** {@inheritDoc} */

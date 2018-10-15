@@ -31,6 +31,8 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.String.format;
+
 /**
  * Common interface used to implement Hibernate L2 cache access strategies.
  * <p>
@@ -100,9 +102,8 @@ public abstract class HibernateAccessStrategyAdapter {
      * @param cache Cache.
      * @param eConverter Exception converter.
      */
-    protected HibernateAccessStrategyAdapter(Ignite ignite,
-        HibernateCacheProxy cache,
-        HibernateExceptionConverter eConverter) {
+    protected HibernateAccessStrategyAdapter(Ignite ignite, HibernateCacheProxy cache,
+                                             HibernateExceptionConverter eConverter) {
         this.cache = cache;
         this.ignite = ignite;
         this.eConverter = eConverter;
@@ -124,7 +125,12 @@ public abstract class HibernateAccessStrategyAdapter {
      */
     @Nullable public Object get(Object key) {
         try {
-            return cache.get(key);
+            Object rtn = cache.get(key);
+
+            if (log.isDebugEnabled())
+                log.debug(format("get from cache %s, key %s, miss %s", cache.name(), key.toString(), rtn == null));
+
+            return rtn;
         }
         catch (IgniteCheckedException e) {
             throw convertException(e);
@@ -147,6 +153,9 @@ public abstract class HibernateAccessStrategyAdapter {
      * @param val Value.
      */
     public void putFromLoad(Object key, Object val) {
+        if (log.isDebugEnabled())
+            log.debug(format("put into cache %s, key %s", cache.name(), key.toString()));
+
         try {
             cache.put(key, val);
         }
@@ -225,6 +234,9 @@ public abstract class HibernateAccessStrategyAdapter {
      * Called to remove all data from cache without regard to transaction.
      */
     public void evictAll() {
+        if (log.isDebugEnabled())
+            log.debug(format("evictAll cache %s", cache.name()));
+
         try {
             evictAll(cache);
         }

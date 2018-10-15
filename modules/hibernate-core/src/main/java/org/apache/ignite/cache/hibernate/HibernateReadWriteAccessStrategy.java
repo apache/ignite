@@ -17,13 +17,15 @@
 
 package org.apache.ignite.cache.hibernate;
 
-import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.GridLeanSet;
 
+import java.util.Set;
+
+import static java.lang.String.format;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -65,12 +67,9 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
      * @param txCtx Thread local instance used to track updates done during one Hibernate transaction.
      * @param eConverter Exception converter.
      */
-    protected HibernateReadWriteAccessStrategy(Ignite ignite,
-        HibernateCacheProxy cache,
-        ThreadLocal txCtx,
-        HibernateExceptionConverter eConverter) {
+    protected HibernateReadWriteAccessStrategy(Ignite ignite, HibernateCacheProxy cache,
+                                               ThreadLocal txCtx, HibernateExceptionConverter eConverter) {
         super(ignite, cache, eConverter);
-
         this.txCtx = (ThreadLocal<TxContext>)txCtx;
     }
 
@@ -78,11 +77,12 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
     @Override public Object get(Object key) {
         boolean success = false;
 
+        if (log.isDebugEnabled())
+            log.debug(format("retrieving object from cache %s, key %s", cache.name(), key));
+
         try {
             Object o = cache.get(key);
-
             success = true;
-
             return o;
         }
         catch (IgniteCheckedException e) {
@@ -98,9 +98,11 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
     @Override public void putFromLoad(Object key, Object val) {
         boolean success = false;
 
+        if (log.isDebugEnabled())
+            log.debug(format("adding object to cache %s, key %s, val %s", cache.name(), key, val));
+
         try {
             cache.put(key, val);
-
             success = true;
         }
         catch (IgniteCheckedException e) {
@@ -116,6 +118,9 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
     @Override public void lock(Object key) {
         boolean success = false;
 
+        if (log.isDebugEnabled())
+            log.debug(format("locking object in cache %s, key %s", cache.name(), key));
+
         try {
             TxContext ctx = txCtx.get();
 
@@ -123,23 +128,25 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
                 txCtx.set(ctx = new TxContext());
 
             lockKey(key);
-
             ctx.locked(key);
-
             success = true;
         }
         catch (IgniteCheckedException e) {
             throw convertException(e);
         }
         finally {
-            if (!success)
+            if (!success) {
                 rollbackCurrentTx();
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public void unlock(Object key) {
         boolean success = false;
+
+        if (log.isDebugEnabled())
+            log.debug(format("unlocking object in cache %s, key %s", cache.name(), key));
 
         try {
             TxContext ctx = txCtx.get();
@@ -155,6 +162,7 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
         finally {
             if (!success)
                 rollbackCurrentTx();
+
         }
     }
 
@@ -168,19 +176,17 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
         boolean success = false;
         boolean res = false;
 
+        if (log.isDebugEnabled())
+            log.debug(format("put object into cache %s afterUpdate, key %s, val %s", cache.name(), key, val));
+
         try {
             TxContext ctx = txCtx.get();
-
             if (ctx != null) {
                 cache.put(key, val);
-
                 unlock(ctx, key);
-
                 res = true;
             }
-
             success = true;
-
             return res;
         }
         catch (Exception e) {
@@ -201,11 +207,12 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
     @Override public boolean afterInsert(Object key, Object val) {
         boolean success = false;
 
+        if (log.isDebugEnabled())
+            log.debug(format("put object into cache %s afterInsert, key %s, val %s", cache.name(), key, val));
+
         try {
             cache.put(key, val);
-
             success = true;
-
             return true;
         }
         catch (IgniteCheckedException e) {
@@ -221,12 +228,14 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
     @Override public void remove(Object key) {
         boolean success = false;
 
+        if (log.isDebugEnabled())
+            log.debug(format("remove object from cache %s, key %s", cache.name(), key));
+
         try {
             TxContext ctx = txCtx.get();
-
-            if (ctx != null)
+            if (ctx != null) {
                 cache.remove(key);
-
+            }
             success = true;
         }
         catch (IgniteCheckedException e) {
@@ -246,18 +255,14 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
     private void unlock(TxContext ctx, Object key) {
         if (ctx.unlocked(key)) { // Finish transaction if last key is unlocked.
             txCtx.remove();
-
             GridNearTxLocal tx = cache.tx();
-
             assert tx != null;
-
             try {
                 tx.proxy().commit();
             }
             finally {
                 tx.proxy().close();
             }
-
             assert cache.tx() == null;
         }
     }
@@ -268,12 +273,9 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
     private void rollbackCurrentTx() {
         try {
             TxContext ctx = txCtx.get();
-
             if (ctx != null) {
                 txCtx.remove();
-
                 GridNearTxLocal tx = cache.tx();
-
                 if (tx != null)
                     tx.proxy().rollback();
             }
@@ -319,7 +321,6 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
          */
         boolean unlocked(Object key) {
             locked.remove(key);
-
             return locked.isEmpty();
         }
     }

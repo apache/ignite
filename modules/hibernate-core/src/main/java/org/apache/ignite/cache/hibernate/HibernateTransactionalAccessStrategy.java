@@ -22,6 +22,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.String.format;
+
 /**
  * Implementation of {TRANSACTIONAL cache access strategy.
  * <p>
@@ -67,6 +69,9 @@ public class HibernateTransactionalAccessStrategy extends HibernateAccessStrateg
 
     /** {@inheritDoc} */
     @Nullable @Override public Object get(Object key) {
+        if (log.isDebugEnabled())
+            log.debug(format("get from cache %s, key %s", cache.name(), key));
+
         try {
             return cache.get(key);
         }
@@ -77,6 +82,9 @@ public class HibernateTransactionalAccessStrategy extends HibernateAccessStrateg
 
     /** {@inheritDoc} */
     @Override public void putFromLoad(Object key, Object val) {
+        if (log.isDebugEnabled())
+            log.debug(format("put info cache %s, key %s, val %s", cache.name(), key, val));
+
         try {
             cache.put(key, val);
         }
@@ -97,9 +105,11 @@ public class HibernateTransactionalAccessStrategy extends HibernateAccessStrateg
 
     /** {@inheritDoc} */
     @Override public boolean update(Object key, Object val) {
+        if (log.isDebugEnabled())
+            log.debug(format("put info cache %s, key %s, val %s", cache.name(), key, val));
+
         try {
             cache.put(key, val);
-
             return true;
         }
         catch (IgniteCheckedException e) {
@@ -114,9 +124,11 @@ public class HibernateTransactionalAccessStrategy extends HibernateAccessStrateg
 
     /** {@inheritDoc} */
     @Override public boolean insert(Object key, Object val) {
+        if (log.isDebugEnabled())
+            log.debug(format("put info cache %s, key %s, val %s", cache.name(), key, val));
+
         try {
             cache.put(key, val);
-
             return true;
         }
         catch (IgniteCheckedException e) {

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+
+<!--
+    Command line grid configuration.
+-->
+<beans>
+    <description>Main Spring file for grid configuration.</description>
+
+    <!--
+        Grid configuration.
+    -->
+    <bean id="grid.cfg.1" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="igniteInstanceName" value="grid-factory-test-1"/>
+
+        <property name="connectorConfiguration"><null/></property>
+
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <property name="ipFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
+                        <property name="multicastGroup" value="228.111.111.111"/>
+                        <property name="multicastPort" value="54535"/>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+    </bean>
+
+    <bean id="grid.cfg.2" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="igniteInstanceName" value="grid-factory-test-2"/>
+
+        <property name="connectorConfiguration"><null/></property>
+
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <property name="ipFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
+                        <property name="multicastGroup" value="228.111.111.111"/>
+                        <property name="multicastPort" value="54535"/>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+    </bean>
+</beans>
