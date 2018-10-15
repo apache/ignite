@@ -45,6 +45,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
@@ -568,6 +569,11 @@ final class BinaryMetadataTransport {
         void key(SyncKey key) {
             this.key = key;
         }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(MetadataUpdateResultFuture.class, this);
+        }
     }
 
     /**
@@ -620,6 +626,11 @@ final class BinaryMetadataTransport {
             SyncKey that = (SyncKey) o;
 
             return (typeId == that.typeId) && (ver == that.ver);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(SyncKey.class, this);
         }
     }
 

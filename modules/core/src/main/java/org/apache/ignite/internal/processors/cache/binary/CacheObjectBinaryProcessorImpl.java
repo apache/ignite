@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
@@ -68,6 +69,8 @@ import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -79,6 +82,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T1;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
@@ -91,6 +95,8 @@ import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAIT_SCHEMA_UPDATE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -124,8 +130,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
      */
     @Nullable private File binaryMetadataFileStoreDir;
 
-    /** */
-    private long waitSchemaTimeout = IgniteSystemProperties.getLong(IGNITE_WAIT_SCHEMA_UPDATE, 3000);
+    /** How long to wait for schema if no updates in progress. */
+    private long waitSchemaTimeout = IgniteSystemProperties.getLong(IGNITE_WAIT_SCHEMA_UPDATE, 30_000);
 
     /** */
     @GridToStringExclude
@@ -469,7 +475,24 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                         "dev-list.",
                     typeId, mergedMeta);
 
-            MetadataUpdateResult res = transport.requestMetadataUpdate(mergedMeta).get();
+            long t0 = System.nanoTime();
+
+            GridFutureAdapter<MetadataUpdateResult> fut = transport.requestMetadataUpdate(mergedMeta);
+
+            MetadataUpdateResult res = fut.get();
+
+            if (log.isDebugEnabled()) {
+                IgniteInternalTx tx = ctx.cache().context().tm().tx();
+
+                log.debug("Completed metadata update [typeId=" + typeId +
+                    ", typeName=" + newMeta.typeName() +
+                    ", schemaChanged=" + (mergedMeta != oldMeta) +
+                    ", waitTime=" + MILLISECONDS.convert(System.nanoTime() - t0, NANOSECONDS) + "ms" +
+                    ", holder=" + metaHolder +
+                    ", fut=" + fut +
+                    ", tx=" + CU.txString(tx) +
+                    ']');
+            }
 
             assert res != null;
 
@@ -573,31 +596,46 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
         if (ctx.clientNode()) {
             if (holder == null || !holder.metadata().hasSchema(schemaId)) {
+                if (log.isDebugEnabled())
+                    log.debug("Waiting for client metadata update:" +
+                        " [typeId=" + typeId
+                        + ", schemaId=" + schemaId
+                        + ", pendingVer=" + (holder == null ? "NA" : holder.pendingVersion())
+                        + ", acceptedVer=" + (holder == null ? "NA" :holder.acceptedVersion()) + ']');
+
                 try {
                     transport.requestUpToDateMetadata(typeId).get();
-
-                    holder = metadataLocCache.get(typeId);
                 }
                 catch (IgniteCheckedException ignored) {
                     // No-op.
                 }
+
+                holder = metadataLocCache.get(typeId);
+
+                if (log.isDebugEnabled())
+                    log.debug("Finished waiting for client metadata update:" +
+                        " [typeId=" + typeId
+                        + ", schemaId=" + schemaId
+                        + ", pendingVer=" + (holder == null ? "NA" : holder.pendingVersion())
+                        + ", acceptedVer=" + (holder == null ? "NA" :holder.acceptedVersion()) + ']');
             }
         }
-        else if (holder != null) {
-            if (IgniteThread.current() instanceof IgniteDiscoveryThread)
+        else {
+            if (holder != null && IgniteThread.current() instanceof IgniteDiscoveryThread)
                 return holder.metadata().wrap(binaryCtx);
-
-            if (holder.pendingVersion() - holder.acceptedVersion() > 0) {
-                GridFutureAdapter<MetadataUpdateResult> fut = transport.awaitMetadataUpdate(
-                        typeId,
-                        holder.pendingVersion());
-
-                if (log.isDebugEnabled() && !fut.isDone())
-                    log.debug("Waiting for update for" +
+            else if (holder != null && (holder.pendingVersion() - holder.acceptedVersion() > 0)) {
+                if (log.isDebugEnabled())
+                    log.debug("Waiting for metadata update:" +
                         " [typeId=" + typeId
                         + ", schemaId=" + schemaId
                         + ", pendingVer=" + holder.pendingVersion()
-                        + ", acceptedVer=" + holder.acceptedVersion() + "]");
+                        + ", acceptedVer=" + holder.acceptedVersion() + ']');
+
+                long t0 = System.nanoTime();
+
+                GridFutureAdapter<MetadataUpdateResult> fut = transport.awaitMetadataUpdate(
+                    typeId,
+                    holder.pendingVersion());
 
                 try {
                     fut.get();
@@ -606,20 +644,27 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                     log.error("Failed to wait for metadata update: [typeId=" + typeId + ", schemaId=" + schemaId + ']', e);
                 }
 
-                holder = metadataLocCache.get(typeId);
-            }
-            else if (!holder.metadata().hasSchema(schemaId)) {
                 if (log.isDebugEnabled())
-                    log.debug("");
-
-                GridFutureAdapter<?> fut = transport.awaitSchemaUpdate(typeId, schemaId);
-
-                if (log.isDebugEnabled() && !fut.isDone())
-                    log.debug("Waiting for update for" +
+                    log.debug("Finished waiting for metadata update:" +
                         " [typeId=" + typeId
+                        + ", waitTime=" + NANOSECONDS.convert(System.nanoTime() - t0, MILLISECONDS) + "ms"
                         + ", schemaId=" + schemaId
                         + ", pendingVer=" + holder.pendingVersion()
-                        + ", acceptedVer=" + holder.acceptedVersion() + "]");
+                        + ", acceptedVer=" + holder.acceptedVersion() + ']');
+
+                holder = metadataLocCache.get(typeId);
+            }
+            else if (holder == null || !holder.metadata().hasSchema(schemaId)) {
+                log.warning("Schema is missing while no metadata updates are in progress. " +
+                    "Waiting for schema in subsequent updates for " + waitSchemaTimeout + " ms:" +
+                    " [typeId=" + typeId
+                    + ", missingSchemaId=" + schemaId
+                    + ", pendingVer=" + (holder == null ? "NA" : holder.pendingVersion())
+                    + ", acceptedVer=" + (holder == null ? "NA" : holder.acceptedVersion()) + ']');
+
+                long t0 = System.nanoTime();
+
+                GridFutureAdapter<?> fut = transport.awaitSchemaUpdate(typeId, schemaId);
 
                 try {
                     fut.get(waitSchemaTimeout);
@@ -633,6 +678,14 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 }
 
                 holder = metadataLocCache.get(typeId);
+
+                if (log.isInfoEnabled() && holder != null && holder.metadata().hasSchema(schemaId))
+                    log.info("Found the schema after wait:" +
+                        " [typeId=" + typeId
+                        + ", waitTime=" + NANOSECONDS.convert(System.nanoTime() - t0, MILLISECONDS) + "ms"
+                        + ", schemaId=" + schemaId
+                        + ", pendingVer=" + holder.pendingVersion()
+                        + ", acceptedVer=" + holder.acceptedVersion() + ']');
             }
         }
 
