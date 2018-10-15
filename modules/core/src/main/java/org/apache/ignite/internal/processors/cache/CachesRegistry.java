@@ -76,7 +76,11 @@ public class CachesRegistry {
         Map<Integer, CacheGroupDescriptor> groupDescriptors,
         Map<String, DynamicCacheDescriptor> cacheDescriptors
     ) {
-        unregisterAll();
+        if (!registeredGrps.isEmpty()) {
+            groupDescriptors.keySet().forEach(this::unregisterGroup);
+        }
+        else
+            unregisterAll();
 
         return registerAllCachesAndGroups(groupDescriptors.values(), cacheDescriptors.values());
     }
