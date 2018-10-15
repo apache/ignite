@@ -485,7 +485,12 @@ public final class IgniteSystemProperties {
     /** Disable fallback to H2 SQL parser if the internal SQL parser fails to parse the statement. */
     public static final String IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK = "IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK";
 
-    /** Force all SQL queries to be processed lazily regardless of what clients request. */
+    /**
+     *  Force all SQL queries to be processed lazily regardless of what clients request.
+     *
+     * @deprecated Since version 2.7.
+     */
+    @Deprecated
     public static final String IGNITE_SQL_FORCE_LAZY_RESULT_SET = "IGNITE_SQL_FORCE_LAZY_RESULT_SET";
 
     /** Disable SQL system views. */
@@ -992,6 +997,11 @@ public final class IgniteSystemProperties {
      * Number of attempts to reconnect to ZooKeeper.
      */
     public static final String IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT = "IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT";
+
+    /**
+     * Try reuse memory on deactivation. Useful in case of huge page memory region size.
+     */
+    public static final String IGNITE_REUSE_MEMORY_ON_DEACTIVATE = "IGNITE_REUSE_MEMORY_ON_DEACTIVATE";
 
     /**
      * Enforces singleton.

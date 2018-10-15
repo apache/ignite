@@ -577,7 +577,8 @@ public class MvccUtils {
             try{
                 DataPageIO dataIo = DataPageIO.VERSIONS.forPage(pageAddr);
 
-                int offset = dataIo.getPayloadOffset(pageAddr, itemId(link), pageMem.pageSize(), MVCC_INFO_SIZE);
+                int offset = dataIo.getPayloadOffset(pageAddr, itemId(link), pageMem.realPageSize(grpId),
+                    MVCC_INFO_SIZE);
 
                 long mvccCrd = dataIo.mvccCoordinator(pageAddr, offset);
                 long mvccCntr = dataIo.mvccCounter(pageAddr, offset);
