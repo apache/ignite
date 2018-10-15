@@ -301,7 +301,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void _testBenchInvoke() throws IgniteCheckedException {
+    public void testBenchInvoke() throws IgniteCheckedException {
         MAX_PER_PAGE = 10;
 
         TestTree tree = createTestTree(true);
