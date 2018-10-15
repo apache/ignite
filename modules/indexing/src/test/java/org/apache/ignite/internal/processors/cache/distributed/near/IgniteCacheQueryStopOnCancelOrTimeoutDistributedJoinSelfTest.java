@@ -101,7 +101,8 @@ public class IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest extend
         }
 
         try (QueryCursor<List<?>> ignored = cursor) {
-            log.info("Result set size=" + cursor.getAll().size());
+            for (List<?> row : cursor)
+                U.sleep(10);
 
             if (checkCanceled)
                 fail("Query not canceled");
