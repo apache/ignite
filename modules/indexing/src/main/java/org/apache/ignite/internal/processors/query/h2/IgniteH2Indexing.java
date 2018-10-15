@@ -2020,7 +2020,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return Collections.singletonList(H2Utils.zeroCursor());
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.getSql() + ']', e);
+            throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.getSql() +
+                ", err=" + e.getMessage() + ']', e);
         }
     }
 
@@ -2106,7 +2107,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("ThrowFromFinallyBlock")
     private void doCommit(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
         try {
-            if (!tx.isRollbackOnly())
+            // TODO: Why checking for rollback only?
+            //if (!tx.isRollbackOnly())
                 tx.commit();
         }
         finally {
