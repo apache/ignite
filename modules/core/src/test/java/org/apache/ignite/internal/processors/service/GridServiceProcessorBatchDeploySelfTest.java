@@ -129,11 +129,9 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     }
 
     /**
-     * TODO: enable when IGNITE-6259 is fixed.
-     *
      * @throws Exception If failed.
      */
-    public void _testDeployAllTopologyChange() throws Exception {
+    public void testDeployAllTopologyChange() throws Exception {
         Ignite client = grid(CLIENT_NODE_NAME);
 
         final AtomicBoolean finished = new AtomicBoolean();
@@ -183,11 +181,9 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     }
 
     /**
-     * TODO: enable when IGNITE-6259 is fixed.
-     *
      * @throws Exception If failed.
      */
-    public void _testDeployAllTopologyChangeFail() throws Exception {
+    public void testDeployAllTopologyChangeFail() throws Exception {
         final Ignite client = grid(CLIENT_NODE_NAME);
 
         final AtomicBoolean finished = new AtomicBoolean();
@@ -436,11 +432,9 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
     }
 
     /**
-     * TODO: enable when IGNITE-6259 is fixed.
-     *
      * @throws Exception If failed.
      */
-    public void _testCancelAllTopologyChange() throws Exception {
+    public void testCancelAllTopologyChange() throws Exception {
         Ignite client = grid(CLIENT_NODE_NAME);
 
         int numServices = 500;
