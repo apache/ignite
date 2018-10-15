@@ -590,8 +590,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** {@inheritDoc} */
     @Override public AffinityTopologyVersion lastAffinityChangeTopologyVersion() {
-        if (changedAffinity())
-            return topologyVersion();
+        if (!changedAffinity())
+            return lastAffChangeTopVer;
         else if (!exchangeDone()) // TODO: initialVersion and topologyVersion are always equal now, but it should be fixed later.
             return initialVersion();
         else
