@@ -40,32 +40,32 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public class IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest extends IgniteCacheQueryAbstractDistributedJoinSelfTest {
     /** */
     public void testCancel1() throws Exception {
-        testQueryCancel(grid(0), "pe", QRY_0, 1, TimeUnit.MILLISECONDS, false, true);
+        testQueryCancel(grid(0), "pe", QRY_LONG, 1, TimeUnit.MILLISECONDS, false, true);
     }
 
     /** */
     public void testCancel2() throws Exception {
-        testQueryCancel(grid(0), "pe", QRY_0, 50, TimeUnit.MILLISECONDS, false, true);
+        testQueryCancel(grid(0), "pe", QRY_LONG, 50, TimeUnit.MILLISECONDS, false, true);
     }
 
     /** */
     public void testCancel3() throws Exception {
-        testQueryCancel(grid(0), "pe", QRY_LONG, 100, TimeUnit.MILLISECONDS, false, true);
+        testQueryCancel(grid(0), "pe", QRY_LONG, 100, TimeUnit.MILLISECONDS, false, false);
     }
 
     /** */
     public void testCancel4() throws Exception {
-        testQueryCancel(grid(0), "pe", QRY_LONG, 500, TimeUnit.MILLISECONDS, false, true);
+        testQueryCancel(grid(0), "pe", QRY_LONG, 500, TimeUnit.MILLISECONDS, false, false);
     }
 
     /** */
     public void testTimeout1() throws Exception {
-        testQueryCancel(grid(0), "pe", QRY_0, 1, TimeUnit.MILLISECONDS, true, true);
+        testQueryCancel(grid(0), "pe", QRY_LONG, 1, TimeUnit.MILLISECONDS, true, true);
     }
 
     /** */
     public void testTimeout2() throws Exception {
-        testQueryCancel(grid(0), "pe", QRY_0, 50, TimeUnit.MILLISECONDS, true, true);
+        testQueryCancel(grid(0), "pe", QRY_LONG, 50, TimeUnit.MILLISECONDS, true, true);
     }
 
     /** */
@@ -101,8 +101,7 @@ public class IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest extend
         }
 
         try (QueryCursor<List<?>> ignored = cursor) {
-            for (List<?> row : cursor)
-                U.sleep(10);
+            cursor.getAll();
 
             if (checkCanceled)
                 fail("Query not canceled");
