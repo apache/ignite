@@ -47,7 +47,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -60,7 +59,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
@@ -68,7 +66,18 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
-/** */
+/**
+ * Tests scenario for too early metadata update completion in case of multiple concurrent updates for the same schema.
+ *
+ * Scenario is the following:
+ *
+ * <ul>
+ *     <li>Start 4 nodes, connect client to node 2 in topology order.</li>
+ *     <li>Start two transactions from client node producing same schema update.</li>
+ *     <li>Delay second update until first update will return to client with propose message and writes to local metadata cache</li>
+ *     <li>Unblock second update. It should correctly wait until same metadata is applied on all nodes or tx will fail on commit.</li>
+ * </ul>
+ */
 public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
     /** */
     private static final int FIELDS = 2;
@@ -95,7 +104,7 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
 
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
-        Collection<QueryIndex> indexes = new ArrayList<QueryIndex>(FIELDS);
+        Collection<QueryIndex> indexes = new ArrayList<>(FIELDS);
 
         for (int i = 0; i < FIELDS; i++) {
             String name = "s" + i;
@@ -175,7 +184,7 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
 
         Ignite node3 = startGrid("node3");
 
-        Ignite node4 = startGrid("node4");
+        startGrid("node4");
 
         node0.cluster().active(true);
 
@@ -263,7 +272,7 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
             // Wait for blocking proposal message to client node.
             U.awaitQuiet(clientProposeMsgBlockedLatch);
 
-            // Ublock proposal message to client.
+            // Unblock proposal message to client.
             clientWait.set(true);
 
             synchronized (clientMux) {
@@ -313,9 +322,7 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
     protected BinaryObject build(Ignite ignite, String prefix, int... fields) {
         BinaryObjectBuilder builder = ignite.binary().builder("Value");
 
-        for (int i = 0; i < fields.length; i++) {
-            int field = fields[i];
-
+        for (int field : fields) {
             assertTrue(field < FIELDS);
 
             builder.setField("i" + field, field);
@@ -353,6 +360,8 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
 
             try {
                 DiscoverySpiCustomMessage custMsg = cm.message(marshaller(), U.resolveClassLoader(ignite().configuration()));
+
+                assertNotNull(custMsg);
 
                 delegate = ((CustomMessageWrapper)custMsg).delegate();
 
