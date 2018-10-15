@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastRequest;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -78,12 +79,15 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
         cctx.mvcc().addFuture(this, futId);
 
         for (UUID peer : siblings) {
+            List<PartitionUpdateCountersMessage> cntrs = cctx.tm()
+                .filterUpdateCountersForBackupNode(tx, cctx.node(peer));
+
+            if (F.isEmpty(cntrs))
+                continue;
+
             MiniFuture miniFut = new MiniFuture(peer);
 
             try {
-                List<PartitionUpdateCountersMessage> cntrs = cctx.tm()
-                    .filterUpdateCountersForBackupNode(tx, cctx.node(peer));
-
                 cctx.io().send(peer, new PartitionCountersNeighborcastRequest(cntrs, futId), SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {

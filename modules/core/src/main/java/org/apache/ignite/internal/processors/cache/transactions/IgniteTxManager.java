@@ -2075,7 +2075,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param node Backup node.
      * @return Partition counters for the given backup node.
      */
-    public List<PartitionUpdateCountersMessage> filterUpdateCountersForBackupNode(
+    @Nullable public List<PartitionUpdateCountersMessage> filterUpdateCountersForBackupNode(
         IgniteInternalTx tx, ClusterNode node) {
         TxCounters txCntrs = tx.txCounters(false);
 
