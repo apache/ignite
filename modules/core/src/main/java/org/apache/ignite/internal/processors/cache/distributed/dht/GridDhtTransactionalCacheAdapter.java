@@ -60,6 +60,9 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxEnlistFuture;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxEnlistRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxEnlistResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistResponse;
@@ -188,7 +191,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         ctx.io().addCacheHandler(ctx.cacheId(), GridNearTxQueryEnlistResponse.class, new CI2<UUID, GridNearTxQueryEnlistResponse>() {
             @Override public void apply(UUID nodeId, GridNearTxQueryEnlistResponse req) {
-                processNearEnlistResponse(nodeId, req);
+                processNearTxQueryEnlistResponse(nodeId, req);
             }
         });
 
@@ -216,7 +219,21 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         ctx.io().addCacheHandler(ctx.cacheId(), GridNearTxQueryResultsEnlistResponse.class,
             new CI2<UUID, GridNearTxQueryResultsEnlistResponse>() {
                 @Override public void apply(UUID nodeId, GridNearTxQueryResultsEnlistResponse req) {
-                    processNearTxEnlistResponse(nodeId, req);
+                    processNearTxQueryResultsEnlistResponse(nodeId, req);
+                }
+            });
+
+        ctx.io().addCacheHandler(ctx.cacheId(), GridNearTxEnlistRequest.class,
+            new CI2<UUID, GridNearTxEnlistRequest>() {
+                @Override public void apply(UUID nodeId, GridNearTxEnlistRequest req) {
+                    processNearTxEnlistRequest(nodeId, req);
+                }
+            });
+
+        ctx.io().addCacheHandler(ctx.cacheId(), GridNearTxEnlistResponse.class,
+            new CI2<UUID, GridNearTxEnlistResponse>() {
+                @Override public void apply(UUID nodeId, GridNearTxEnlistResponse msg) {
+                    processNearTxEnlistResponse(nodeId, msg);
                 }
             });
 
@@ -756,17 +773,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
     /**
      * @param nodeId Node ID.
-     * @param res Response.
-     */
-    private void processNearEnlistResponse(UUID nodeId, final GridNearTxQueryEnlistResponse res) {
-        GridNearTxQueryEnlistFuture fut = (GridNearTxQueryEnlistFuture)ctx.mvcc().versionedFuture(res.version(), res.futureId());
-
-        if (fut != null)
-            fut.onResult(nodeId, res);
-    }
-
-    /**
-     * @param nodeId Node ID.
      * @param req Request.
      */
     private void processNearLockRequest(UUID nodeId, GridNearLockRequest req) {
@@ -801,7 +807,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         IgniteInternalFuture<?> f;
 
         if (req.firstClientRequest()) {
-            for (;;) {
+            for (; ; ) {
                 if (waitForExchangeFuture(nearNode, req))
                     return;
 
@@ -1079,9 +1085,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 if (top != null && needRemap(req.topologyVersion(), top.readyTopologyVersion())) {
                     if (log.isDebugEnabled()) {
                         log.debug("Client topology version mismatch, need remap lock request [" +
-                                "reqTopVer=" + req.topologyVersion() +
-                                ", locTopVer=" + top.readyTopologyVersion() +
-                                ", req=" + req + ']');
+                            "reqTopVer=" + req.topologyVersion() +
+                            ", locTopVer=" + top.readyTopologyVersion() +
+                            ", req=" + req + ']');
                     }
 
                     GridNearLockResponse res = sendClientLockRemapResponse(nearNode,
@@ -1124,7 +1130,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                         if (tx == null || !tx.init()) {
                             String msg = "Failed to acquire lock (transaction has been completed): " +
-                                    req.version();
+                                req.version();
 
                             U.warn(log, msg);
 
@@ -1401,7 +1407,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 int i = 0;
 
-                for (ListIterator<GridCacheEntryEx> it = entries.listIterator(); it.hasNext();) {
+                for (ListIterator<GridCacheEntryEx> it = entries.listIterator(); it.hasNext(); ) {
                     GridCacheEntryEx e = it.next();
 
                     assert e != null;
@@ -1995,6 +2001,71 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     }
 
     /**
+     * @param nodeId Node ID.
+     * @param req Request.
+     */
+    private void processNearTxEnlistRequest(UUID nodeId, final GridNearTxEnlistRequest req) {
+        assert nodeId != null;
+        assert req != null;
+
+        ClusterNode nearNode = ctx.discovery().node(nodeId);
+
+        GridDhtTxLocal tx;
+
+        try {
+            tx = initTxTopologyVersion(nodeId,
+                nearNode,
+                req.version(),
+                req.futureId(),
+                req.miniId(),
+                req.firstClientRequest(),
+                req.topologyVersion(),
+                req.threadId(),
+                req.txTimeout(),
+                req.subjectId(),
+                req.taskNameHash());
+        }
+        catch (IgniteCheckedException | IgniteException ex) {
+            GridNearTxEnlistResponse res = new GridNearTxEnlistResponse(req.cacheId(),
+                req.futureId(),
+                req.miniId(),
+                req.version(),
+                ex);
+
+            try {
+                ctx.io().send(nearNode, res, ctx.ioPolicy());
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to send near enlist response [" +
+                    "txId=" + req.version() +
+                    ", node=" + nodeId +
+                    ", res=" + res + ']', e);
+            }
+
+            return;
+        }
+
+        GridDhtTxEnlistFuture fut = new GridDhtTxEnlistFuture(
+            nodeId,
+            req.version(),
+            req.mvccSnapshot(),
+            req.threadId(),
+            req.futureId(),
+            req.miniId(),
+            tx,
+            req.timeout(),
+            ctx,
+            req.rows(),
+            req.operation(),
+            req.filter(),
+            req.needRes());
+
+        fut.listen(NearTxResultHandler.instance());
+
+        fut.init();
+    }
+
+    /**
      * @param nodeId Near node id.
      * @param nearNode Near node.
      * @param nearLockVer Near lock version.
@@ -2125,7 +2196,30 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param nodeId Node ID.
      * @param res Response.
      */
-    private void processNearTxEnlistResponse(UUID nodeId, final GridNearTxQueryResultsEnlistResponse res) {
+    private void processNearTxEnlistResponse(UUID nodeId, final GridNearTxEnlistResponse res) {
+        GridNearTxEnlistFuture fut = (GridNearTxEnlistFuture)
+            ctx.mvcc().versionedFuture(res.version(), res.futureId());
+
+        if (fut != null)
+            fut.onResult(nodeId, res);
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param res Response.
+     */
+    private void processNearTxQueryEnlistResponse(UUID nodeId, final GridNearTxQueryEnlistResponse res) {
+        GridNearTxQueryEnlistFuture fut = (GridNearTxQueryEnlistFuture)ctx.mvcc().versionedFuture(res.version(), res.futureId());
+
+        if (fut != null)
+            fut.onResult(nodeId, res);
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param res Response.
+     */
+    private void processNearTxQueryResultsEnlistResponse(UUID nodeId, final GridNearTxQueryResultsEnlistResponse res) {
         GridNearTxQueryResultsEnlistFuture fut = (GridNearTxQueryResultsEnlistFuture)
             ctx.mvcc().versionedFuture(res.version(), res.futureId());
 
