@@ -32,10 +32,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInput;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.Reader;
+import java.io.Serializable;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.annotation.Annotation;
@@ -107,6 +110,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Random;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -210,16 +214,19 @@ import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoader;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.GridTuple;
+import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
@@ -479,6 +486,9 @@ public abstract class IgniteUtils {
 
     /** Ignite Work Directory. */
     public static final String IGNITE_WORK_DIR = System.getenv(IgniteSystemProperties.IGNITE_WORK_DIR);
+
+    /** Random is used to get random server node to authentication from client node. */
+    private static final Random RND = new Random(System.currentTimeMillis());
 
     /** Clock timer. */
     private static Thread timer;
@@ -4050,7 +4060,7 @@ public abstract class IgniteUtils {
                 rsrc.close();
             }
             catch (Exception e) {
-                warn(log, "Failed to close resource: " + e.getMessage());
+                warn(log, "Failed to close resource: " + e.getMessage(), e);
             }
     }
 
@@ -10342,6 +10352,43 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Serialize object to byte array.
+     *
+     * @param obj Object.
+     * @return Serialized object.
+     */
+    public static byte[] toBytes(Serializable obj) {
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             ObjectOutputStream oos = new ObjectOutputStream(bos)) {
+
+            oos.writeObject(obj);
+            oos.flush();
+
+            return bos.toByteArray();
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * Deserialize object from byte array.
+     *
+     * @param data Serialized object.
+     * @return Object.
+     */
+    public static <T> T fromBytes(byte[] data) {
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(data);
+             ObjectInputStream ois = new ObjectInputStream(bis)) {
+
+            return (T)ois.readObject();
+        }
+        catch (IOException | ClassNotFoundException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
      * Return count of regular file in the directory (including in sub-directories)
      *
      * @param dir path to directory
@@ -10583,6 +10630,27 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @param ctx Kernel context.
+     * @return Random alive server node.
+     */
+    public static ClusterNode randomServerNode(GridKernalContext ctx) {
+        Collection<ClusterNode> aliveNodes = ctx.discovery().aliveServerNodes();
+
+        int rndIdx = RND.nextInt(aliveNodes.size()) + 1;
+
+        int i = 0;
+        ClusterNode rndNode = null;
+
+        for (Iterator<ClusterNode> it = aliveNodes.iterator(); i < rndIdx && it.hasNext(); i++)
+            rndNode = it.next();
+
+        if (rndNode == null)
+            assert rndNode != null;
+
+        return rndNode;
+    }
+
+    /**
      * Execute operation on data in parallel.
      *
      * @param executorSvc Service for parallel execution.
@@ -10668,6 +10736,28 @@ public abstract class IgniteUtils {
 
             throw new IgniteCheckedException(error);
         }
+    }
+
+    /**
+     * @param fut Future to wait for completion.
+     * @throws ExecutionException If the future
+     */
+    private static void getUninterruptibly(Future fut) throws ExecutionException {
+        boolean interrupted = false;
+
+        while (true) {
+            try {
+                fut.get();
+
+                break;
+            }
+            catch (InterruptedException e) {
+                interrupted = true;
+            }
+        }
+
+        if (interrupted)
+            Thread.currentThread().interrupt();
     }
 
     /**

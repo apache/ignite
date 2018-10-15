@@ -415,14 +415,27 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
 
             try {
                 CacheObject val = null;
+                EntryProcessor entryProc = null;
+                Object[] invokeArgs = null;
 
                 Message val0 = vals != null ? vals.get(i) : null;
 
                 CacheEntryInfoCollection entries =
                     val0 instanceof CacheEntryInfoCollection ? (CacheEntryInfoCollection)val0 : null;
 
-                if (entries == null && !op.isDeleteOrLock())
+                if (entries == null && !op.isDeleteOrLock() && !op.isInvoke())
                     val = (val0 instanceof CacheObject) ? (CacheObject)val0 : null;
+
+                if(entries == null && op.isInvoke()) {
+                    assert val0 instanceof GridInvokeValue;
+
+                    GridInvokeValue invokeVal = (GridInvokeValue)val0;
+
+                    entryProc = invokeVal.entryProcessor();
+                    invokeArgs = invokeVal.invokeArgs();
+                }
+
+                assert entryProc != null || !op.isInvoke();
 
                 GridDhtCacheEntry entry = dht.entryExx(key, topologyVersion());
 
@@ -447,12 +460,15 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                     break;
 
                                 case INSERT:
+                                case TRANSFORM:
                                 case UPSERT:
                                 case UPDATE:
                                     updRes = entry.mvccSet(
                                         this,
                                         ctx.localNodeId(),
                                         val,
+                                        entryProc,
+                                        invokeArgs,
                                         0,
                                         topologyVersion(),
                                         snapshot,
