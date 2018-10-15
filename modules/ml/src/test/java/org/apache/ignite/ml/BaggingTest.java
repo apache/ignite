@@ -13,10 +13,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ */dd
 
 package org.apache.ignite.ml;
 
+import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.composition.BaggingModelTrainer;
 import org.apache.ignite.ml.composition.ModelsComposition;
@@ -52,16 +54,8 @@ public class BaggingTest extends TrainerTest {
 
         double subsampleSize = 0.3;
 
-        new BaggingModelTrainer(new MeanValuePredictionsAggregator(), 10, 5, 100, 0.3) {
-            @Override
-            protected boolean checkState(ModelsComposition mdl) {
-                return true;
-            }
+        new BaggingModelTrainer<Model<Vector, Vector>, >(new MeanValuePredictionsAggregator(), 10, 5, 100, 0.3) {
 
-            @Override
-            protected Model<Vector, Double> doTrainOneModel(Dataset<EmptyContext, BootstrappedDatasetPartition> ds) {
-                return null;
-            }
         };
 
         ModelsComposition model = countTrainer
