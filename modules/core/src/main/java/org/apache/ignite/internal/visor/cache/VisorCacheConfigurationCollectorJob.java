@@ -50,21 +50,18 @@ public class VisorCacheConfigurationCollectorJob
     @Override protected Map<String, VisorCacheConfiguration> run(VisorCacheConfigurationCollectorTaskArg arg) {
         Collection<IgniteCacheProxy<?, ?>> caches = ignite.context().cache().jcaches();
 
-        Pattern pattern = arg.getRegex() != null ? Pattern.compile(arg.getRegex()) : null;
+        Pattern ptrn = arg.getRegex() != null ? Pattern.compile(arg.getRegex()) : null;
 
         boolean all = F.isEmpty(arg.getCacheNames());
+
+        boolean hasPtrn = ptrn != null;
 
         Map<String, VisorCacheConfiguration> res = U.newHashMap(caches.size());
 
         for (IgniteCacheProxy<?, ?> cache : caches) {
             String cacheName = cache.getName();
 
-            boolean matched;
-
-            if(pattern != null)
-                matched = pattern.matcher(cacheName).find();
-            else
-                matched = all || arg.getCacheNames().contains(cacheName);
+            boolean matched = hasPtrn ? ptrn.matcher(cacheName).find() : all || arg.getCacheNames().contains(cacheName);
 
             if (matched) {
                 VisorCacheConfiguration cfg =
