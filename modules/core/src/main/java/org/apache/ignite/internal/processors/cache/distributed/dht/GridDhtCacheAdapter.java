@@ -241,7 +241,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                         if (!info.isNew())
                             res.addInfo(info);
 
-                        entry.touch(msg.topologyVersion());
+                        ctx.evicts().touch(entry, msg.topologyVersion());
 
                         break;
                     }
@@ -677,7 +677,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 }
                 finally {
                     if (entry != null)
-                        entry.touch(topVer);
+                        entry.context().evicts().touch(entry, topVer);
 
                     part.release();
 
@@ -1185,7 +1185,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 }
                 finally {
                     if (entry != null)
-                        entry.touch(AffinityTopologyVersion.NONE);
+                        cache.context().evicts().touch(entry, AffinityTopologyVersion.NONE);
                 }
             }
             catch (IgniteCheckedException e) {

@@ -437,7 +437,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                 true);
                         }
 
-                        entry.touch(topVer);
+                        colocated.context().evicts().touch(entry, topVer);
 
                         // Entry was not in memory or in swap, so we remove it from cache.
                         if (v == null) {

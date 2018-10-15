@@ -1620,7 +1620,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                                     }
                                 }
                                 finally {
-                                    entry.touch(entry.context().affinity().affinityTopologyVersion());
+                                    cache0.context().evicts().touch(entry,
+                                        cache0.context().affinity().affinityTopologyVersion());
                                 }
                             }
                             else

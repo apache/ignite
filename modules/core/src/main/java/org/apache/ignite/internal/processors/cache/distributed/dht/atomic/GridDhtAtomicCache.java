@@ -1614,7 +1614,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             }
                             finally {
                                 if (entry != null)
-                                    entry.touch(topVer);
+                                    ctx.evicts().touch(entry, topVer);
                             }
                         }
                     }
@@ -2986,7 +2986,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         for (int i = 0; i < size; i++) {
             GridCacheMapEntry entry = locked.get(i);
             if (entry != null && (skip == null || !skip.contains(entry.key())))
-                entry.touch(topVer);
+                ctx.evicts().touch(entry, topVer);
         }
     }
 
@@ -3265,7 +3265,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         }
                         finally {
                             if (entry != null)
-                                entry.touch(req.topologyVersion());
+                                ctx.evicts().touch(entry, req.topologyVersion());
                         }
                     }
                 }

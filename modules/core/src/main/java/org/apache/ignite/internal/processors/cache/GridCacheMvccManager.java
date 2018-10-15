@@ -321,7 +321,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             try {
                 entry.removeExplicitNodeLocks(leftNodeId);
 
-                entry.touch(topVer);
+                entry.context().evicts().touch(entry, topVer);
             }
             catch (GridCacheEntryRemovedException ignore) {
                 if (log.isDebugEnabled())
