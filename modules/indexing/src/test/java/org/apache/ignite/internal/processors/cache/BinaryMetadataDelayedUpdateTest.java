@@ -169,6 +169,9 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
         AtomicBoolean clientWait = new AtomicBoolean();
         final Object clientMux = new Object();
 
+        AtomicBoolean srvWait = new AtomicBoolean();
+        final Object srvMux = new Object();
+
         spi1.setBlockPredicate(new IgniteBiPredicate<ClusterNode, DiscoveryCustomMessage>() {
             @Override public boolean apply(ClusterNode snd, DiscoveryCustomMessage msg) {
                 if (msg instanceof MetadataUpdateProposedMessage) {
@@ -187,7 +190,6 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
                                     e.printStackTrace();
                                 }
                         }
-
                     }
 
                     return true;
@@ -203,7 +205,16 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
                 if (msg instanceof MetadataUpdateProposedMessage) {
                     log.info("Block custom message to next server: [locNode=" + snd + ", msg=" + msg + ']');
 
-                    LockSupport.park();
+                    // Message to client
+                    synchronized (srvMux) {
+                        while (!srvWait.get())
+                            try {
+                                srvMux.wait();
+                            }
+                            catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                    }
 
                     return true;
                 }
@@ -249,6 +260,13 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
                 doSleep(3000);
 
                 Latches.proposedClLock.countDown();
+
+                doSleep(3000);
+
+                srvWait.set(true);
+                synchronized (srvMux) {
+                    srvMux.notify();
+                }
             }
         });
 
@@ -265,8 +283,6 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
                 catch (Throwable t) {
                     log.error("err", t);
                 }
-
-                System.out.println();
             }
         });
 

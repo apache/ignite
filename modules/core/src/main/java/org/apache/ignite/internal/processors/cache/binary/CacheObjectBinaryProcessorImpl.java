@@ -461,10 +461,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
             BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0);
 
-            //metadata requested to be added is exactly the same as already presented in the cache
-            if (mergedMeta == oldMeta)
-                return;
-
             if (failIfUnregistered)
                 throw new UnregisteredBinaryTypeException(
                     "Attempted to update binary metadata inside a critical synchronization block (will be " +
