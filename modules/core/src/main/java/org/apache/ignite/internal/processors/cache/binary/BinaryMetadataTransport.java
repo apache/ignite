@@ -282,7 +282,8 @@ final class BinaryMetadataTransport {
 
         /** {@inheritDoc} */
         @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MetadataUpdateProposedMessage msg) {
-            log.info("Received MetadataUpdateProposedListener: locNode=" + ctx.localNodeId() + ", msg=" + msg);
+            if (log.isDebugEnabled())
+                log.debug("Received MetadataUpdateProposedListener " + msg);
 
             int typeId = msg.typeId();
 

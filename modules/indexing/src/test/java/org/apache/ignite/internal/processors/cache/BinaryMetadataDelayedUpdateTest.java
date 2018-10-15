@@ -143,7 +143,7 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
 
         Ignite node4 = startGrid("node4");
 
-        Ignite client1 = startGrid("client1");
+        //Ignite client1 = startGrid("client1");
 
         node0.cluster().active(true);
 
@@ -193,6 +193,13 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
         spi2.setBlockPredicate(new IgniteBiPredicate<ClusterNode, DiscoveryCustomMessage>() {
             @Override public boolean apply(ClusterNode snd, DiscoveryCustomMessage msg) {
                 if (msg instanceof MetadataUpdateProposedMessage) {
+                    MetadataUpdateProposedMessage msg0 = (MetadataUpdateProposedMessage)msg;
+
+                    int pendingVer = U.field(msg0, "pendingVer");
+
+                    if (pendingVer == 0)
+                        return false;
+
                     log.info("Block custom message to next server: [locNode=" + snd + ", msg=" + msg + ']');
 
                     // Message to client
@@ -217,8 +224,8 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture fut0 = GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
-                try (Transaction tx = client1.transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
-                    client1.cache(DEFAULT_CACHE_NAME).put(key, build(client1, "val", 0));
+                try (Transaction tx = client0.transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+                    client0.cache(DEFAULT_CACHE_NAME).put(key, build(client0, "val", 0));
 
                     tx.commit();
                 }
@@ -269,9 +276,6 @@ public class BinaryMetadataDelayedUpdateTest extends GridCommonAbstractTest {
                     client0.cache(DEFAULT_CACHE_NAME).put(key, build(client0, "val", 0));
 
                     tx.commit();
-                }
-                catch (Throwable t) {
-                    log.error("err", t);
                 }
             }
         });
