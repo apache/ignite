@@ -1059,10 +1059,12 @@ public interface IgniteCacheOffheapManager {
          * Return PendingTree for data store.
          *
          * @return PendingTree instance.
-         * @throws IgniteCheckedException
          */
         PendingEntriesTree pendingTree();
 
-        void finalizeUpdateCounter();
+        /**
+         * Callback method called when partition map is created for PME.
+         */
+        void onPartitionMapCreation();
     }
 }

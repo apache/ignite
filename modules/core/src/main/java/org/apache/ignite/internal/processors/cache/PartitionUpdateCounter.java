@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.NoSuchElementException;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
@@ -168,13 +167,8 @@ public class PartitionUpdateCounter {
      * @return Checks the minimum update counter task from queue.
      */
     private Item peek() {
-        try {
-            return queue.first();
-        }
-        // t0d0
-        catch (NoSuchElementException e) {
-            return null;
-        }
+        return queue.isEmpty() ? null : queue.first();
+
     }
 
     /**
@@ -184,10 +178,15 @@ public class PartitionUpdateCounter {
         queue.add(item);
     }
 
+    /**
+     * Flushes pending update counters closing all possible gaps.
+     */
     public synchronized void finalizeUpdateCounter() {
         Item last = queue.pollLast();
+
         if (last != null)
             update(last.start + last.delta);
+
         queue.clear();
     }
 

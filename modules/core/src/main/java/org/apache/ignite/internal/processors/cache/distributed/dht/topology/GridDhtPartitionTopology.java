@@ -350,9 +350,11 @@ public interface GridDhtPartitionTopology {
     public CachePartitionFullCountersMap fullUpdateCounters();
 
     /**
+     * @param skipZeros {@code True} for adding zero counter to map.
+     * @param notifyPart {@code True} indicates that partition will be notified on that call.
      * @return Partition update counters.
      */
-    public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros);
+    public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros, boolean notifyPart);
 
     /**
      * @return Partition cache sizes.

@@ -1371,6 +1371,13 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
+     * Callback method called when partition map is created for PME.
+     */
+    public void onPartitionMapCreation() {
+        store.onPartitionMapCreation();
+    }
+
+    /**
      * Removed entry holder.
      */
     private static class RemovedEntryHolder {

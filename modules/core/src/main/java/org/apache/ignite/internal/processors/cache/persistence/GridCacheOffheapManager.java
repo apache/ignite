@@ -1667,12 +1667,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
         }
 
-        @Override public void finalizeUpdateCounter() {
+        /** {@inheritDoc} */
+        @Override public void onPartitionMapCreation() {
             try {
                 CacheDataStore delegate0 = init0(false);
 
                 if (delegate0 != null)
-                    delegate0.finalizeUpdateCounter();
+                    delegate0.onPartitionMapCreation();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
