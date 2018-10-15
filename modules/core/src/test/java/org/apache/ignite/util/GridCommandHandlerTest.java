@@ -1254,7 +1254,6 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         if (userCacheName != null)
             assertTrue(testOut.toString().contains(userCacheName));
-
     }
 
     /**
