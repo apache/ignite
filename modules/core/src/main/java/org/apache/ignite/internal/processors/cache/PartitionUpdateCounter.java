@@ -181,7 +181,7 @@ public class PartitionUpdateCounter {
     /**
      * Flushes pending update counters closing all possible gaps.
      */
-    public synchronized void finalizeUpdateCounter() {
+    public synchronized void onPartitionMapCreation() {
         Item last = queue.pollLast();
 
         if (last != null)

@@ -1553,7 +1553,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void onPartitionMapCreation() {
-            pCntr.finalizeUpdateCounter();
+            pCntr.onPartitionMapCreation();
         }
 
         /** {@inheritDoc} */
