@@ -120,6 +120,9 @@ public final class IgniteQueryErrorCode {
     /** Transaction is already completed. */
     public final static int TRANSACTION_COMPLETED = 5004;
 
+    /** Transaction serialization error. */
+    public final static int TRANSACTION_SERIALIZATION_ERROR = 5005;
+
     /** */
     private IgniteQueryErrorCode() {
         // No-op.
@@ -178,6 +181,9 @@ public final class IgniteQueryErrorCode {
             case TRANSACTION_TYPE_MISMATCH:
             case TRANSACTION_COMPLETED:
                 return SqlStateCode.TRANSACTION_STATE_EXCEPTION;
+
+            case TRANSACTION_SERIALIZATION_ERROR:
+                return SqlStateCode.SERIALIZATION_FAILURE;
 
             default:
                 return SqlStateCode.INTERNAL_ERROR;

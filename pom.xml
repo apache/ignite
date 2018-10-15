@@ -93,6 +93,7 @@
         <module>modules/rocketmq</module>
         <module>modules/sqlline</module>
         <module>modules/ml</module>
+        <module>modules/tensorflow</module>
     </modules>
 
     <profiles>
@@ -572,13 +573,6 @@
             <modules>
                 <module>modules/web-console</module>
                 <module>modules/web-console/web-agent</module>
-            </modules>
-        </profile>
-
-        <profile>
-            <id>tensorflow</id>
-            <modules>
-                <module>modules/tensorflow</module>
             </modules>
         </profile>
 
