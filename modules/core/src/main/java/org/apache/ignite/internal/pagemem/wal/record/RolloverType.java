@@ -15,28 +15,24 @@
  * limitations under the License.
  */
 
-.datepicker.dropdown-menu {
-    width: 250px;
-    height: 270px;
-    z-index: 2000;
+package org.apache.ignite.internal.pagemem.wal.record;
 
-    button {
-        outline: none;
-        border: 0;
-    }
+/**
+ * Defines WAL logging type with regard to segment rollover.
+ */
+public enum RolloverType {
+    /** Record being logged is not a rollover record. */
+    NONE,
 
-    tbody {
-        height: 180px;
-    }
+    /**
+     * Record being logged is a rollover record and it should get to the current segment whenever possible.
+     * If current segment is full, then the record gets to the next segment. Anyway, logging implementation should
+     * guarantee segment rollover afterwards.
+     */
+    CURRENT_SEGMENT,
 
-    tbody button {
-        padding: 6px;
-        height: 100%;
-    }
-
-    &.datepicker-mode-1, &.datepicker-mode-2 {
-        tbody button {
-            height: 65px;
-        }
-    }
+    /**
+     * Record being logged is a rollover record and it should become the first record in the next segment.
+     */
+    NEXT_SEGMENT;
 }

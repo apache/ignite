@@ -119,6 +119,8 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compare
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.NO_KEY;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.CONCURRENT_UPDATE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
+import static org.apache.ignite.internal.processors.dr.GridDrType.DR_BACKUP;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 
 /**
@@ -1112,7 +1114,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             assert res.resultType() != ResultType.PREV_NOT_NULL || op != CREATE || tx.local();
 
             if (res.resultType() == ResultType.VERSION_MISMATCH)
-                throw new IgniteSQLException("Mvcc version mismatch.", CONCURRENT_UPDATE);
+                throw serializationError();
             else if (res.resultType() == ResultType.FILTERED) {
                 GridCacheUpdateTxResult updRes = new GridCacheUpdateTxResult(invoke);
 
@@ -1264,7 +1266,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             assert res != null;
 
             if (res.resultType() == ResultType.VERSION_MISMATCH)
-                throw new IgniteSQLException("Mvcc version mismatch.", CONCURRENT_UPDATE);
+                throw serializationError();
             else if (res.resultType() == ResultType.PREV_NULL)
                 return new GridCacheUpdateTxResult(false);
             else if (res.resultType() == ResultType.FILTERED) {
@@ -1365,7 +1367,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             assert res != null;
 
             if (res.resultType() == ResultType.VERSION_MISMATCH)
-                throw new IgniteSQLException("Mvcc version mismatch.", CONCURRENT_UPDATE);
+                throw serializationError();
             else if (res.resultType() == ResultType.LOCKED) {
                 unlockEntry();
 
@@ -5083,7 +5085,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 assert res != null;
 
                 if (res.resultType() == ResultType.VERSION_MISMATCH) {
-                    resFut.onDone(new IgniteSQLException("Mvcc version mismatch.", CONCURRENT_UPDATE));
+                    resFut.onDone(serializationError());
 
                     return;
                 }
@@ -5237,7 +5239,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 assert res != null;
 
                 if (res.resultType() == ResultType.VERSION_MISMATCH) {
-                    resFut.onDone(new IgniteSQLException("Mvcc version mismatch.", CONCURRENT_UPDATE));
+                    resFut.onDone(serializationError());
 
                     return;
                 }
@@ -5411,7 +5413,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 assert res != null;
 
                 if (res.resultType() == ResultType.VERSION_MISMATCH) {
-                    resFut.onDone(new IgniteSQLException("Mvcc version mismatch.", CONCURRENT_UPDATE));
+                    resFut.onDone(serializationError());
 
                     return;
                 }
@@ -6700,5 +6702,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
 
         return new GridCacheUpdateTxResult(true, logPtr);
+    }
+
+    /**
+     * @return Common serialization error.
+     */
+    @SuppressWarnings("UnnecessaryReturnStatement")
+    private static IgniteSQLException serializationError() {
+        return new IgniteSQLException("Cannot serialize transaction due to write conflict (transaction is marked for rollback)", TRANSACTION_SERIALIZATION_ERROR);
     }
 }
