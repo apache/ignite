@@ -18,10 +18,7 @@
 package org.apache.ignite.internal.processors.cache.mvcc.msg;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.GridDirectMap;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -32,18 +29,14 @@ public class MvccRecoveryFinishedMessage implements MvccMessage {
 
     /** */
     private UUID nearNodeId;
-    // t0d0 get rid
-    @GridDirectMap(keyType = Long.class, valueType = Boolean.class)
-    private Map<Long, Boolean> resolution;
 
     /** */
     public MvccRecoveryFinishedMessage() {
     }
 
     /** */
-    public MvccRecoveryFinishedMessage(UUID nearNodeId, Map<Long, Boolean> resolution) {
+    public MvccRecoveryFinishedMessage(UUID nearNodeId) {
         this.nearNodeId = nearNodeId;
-        this.resolution = resolution;
     }
 
     /**
@@ -51,13 +44,6 @@ public class MvccRecoveryFinishedMessage implements MvccMessage {
      */
     public UUID nearNodeId() {
         return nearNodeId;
-    }
-
-    /**
-     * @return Resolution defining whether transactions for the left node were committed or rolled back.
-     */
-    public Map<Long, Boolean> recoveryResolution() {
-        return resolution;
     }
 
     /** {@inheritDoc} */
@@ -88,12 +74,6 @@ public class MvccRecoveryFinishedMessage implements MvccMessage {
 
                 writer.incrementState();
 
-            case 1:
-                if (!writer.writeMap("resolution", resolution, MessageCollectionItemType.LONG, MessageCollectionItemType.BOOLEAN))
-                    return false;
-
-                writer.incrementState();
-
         }
 
         return true;
@@ -115,14 +95,6 @@ public class MvccRecoveryFinishedMessage implements MvccMessage {
 
                 reader.incrementState();
 
-            case 1:
-                resolution = reader.readMap("resolution", MessageCollectionItemType.LONG, MessageCollectionItemType.BOOLEAN, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
         }
 
         return reader.afterMessageRead(MvccRecoveryFinishedMessage.class);
@@ -135,7 +107,7 @@ public class MvccRecoveryFinishedMessage implements MvccMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 1;
     }
 
     /** {@inheritDoc} */

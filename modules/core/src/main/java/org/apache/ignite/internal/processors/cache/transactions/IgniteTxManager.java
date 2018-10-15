@@ -2553,7 +2553,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                                 cctx.kernalContext().io().sendToGridTopic(
                                     mvccCrd.nodeId(),
                                     TOPIC_CACHE_COORDINATOR,
-                                    new MvccRecoveryFinishedMessage(evtNodeId, Collections.emptyMap()),
+                                    new MvccRecoveryFinishedMessage(evtNodeId),
                                     SYSTEM_POOL);
                             }
                             catch (IgniteCheckedException e) {

@@ -70,7 +70,6 @@ import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 
 /** */
 public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
-    // t0d0 hair split everything related to committed counter
     /** */
     public enum TxEndResult {
         /** */ COMMIT,

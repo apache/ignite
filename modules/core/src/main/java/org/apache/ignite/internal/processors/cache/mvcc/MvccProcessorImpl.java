@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -1749,7 +1749,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
             recoveryBallotBoxes.forEach((nearNodeId, ballotBox) -> {
                 // Put synthetic vote from another failed node
-                ballotBox.vote(nodeId, Collections.emptyMap());
+                ballotBox.vote(nodeId);
 
                 tryFinishRecoveryVoting(nearNodeId, ballotBox);
             });
@@ -1836,47 +1836,33 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
      */
     private static class RecoveryBallotBox {
         /** */
-        List<UUID> voters;
+        private List<UUID> voters;
         /** */
-        final Map<UUID, Map<Long, Boolean>> ballots = new HashMap<>();
+        private final Set<UUID> ballots = new HashSet<>();
 
         /**
          * @param voters Nodes which can have transaction started by the left node.
          */
-        synchronized void voters(List<UUID> voters) {
+        private synchronized void voters(List<UUID> voters) {
             this.voters = voters;
         }
 
         /**
          * @param nodeId Voting node id.
-         * @param vote Voting node decision.
+         *
          */
-        synchronized void vote(UUID nodeId, Map<Long, Boolean> vote) {
-            // t0d0 merge votes from different nodes? remove duplicates?
-            ballots.put(nodeId, vote);
+        private synchronized void vote(UUID nodeId) {
+            ballots.add(nodeId);
         }
 
         /**
          * @return {@code True} if all nodes expected to vote done it.
          */
-        synchronized boolean isVotingDone() {
+        private synchronized boolean isVotingDone() {
             if (voters == null)
                 return false;
 
-            return ballots.keySet().containsAll(voters);
-        }
-
-        /**
-         * @param txCntr Transaction counter.
-         * @return {@code True} if transaction was committed, {@code False} is it was rolled back.
-         */
-        synchronized boolean committed(Long txCntr) {
-            // t0d0 check and log related invariants
-            return ballots.values().stream()
-                .filter(m -> m.containsKey(txCntr))
-                .map(m -> m.get(txCntr))
-                .findAny()
-                .orElse(false);
+            return ballots.containsAll(voters);
         }
     }
 
@@ -1890,7 +1876,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         RecoveryBallotBox ballotBox = recoveryBallotBoxes.computeIfAbsent(nearNodeId, uuid -> new RecoveryBallotBox());
 
-        ballotBox.vote(nodeId, msg.recoveryResolution());
+        ballotBox.vote(nodeId);
 
         tryFinishRecoveryVoting(nearNodeId, ballotBox);
     }
@@ -1911,8 +1897,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                     .collect(Collectors.toList());
             }
 
-            // t0d0 study committed counter change logic
-//            recoveredTxs.forEach(txCntr -> onTxDone(txCntr, ballotBox.committed(txCntr)));
+            // Committed counter is increased because t0d0
             recoveredTxs.forEach(txCntr -> onTxDone(txCntr, true));
 
             recoveryBallotBoxes.remove(nearNodeId);
