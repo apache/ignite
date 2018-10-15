@@ -429,9 +429,13 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
     /**
      * @param maxMemory Maximum memory available for query local results per node.
+     *
+     * @return {@code this}.
      */
-    public void maxMemory(long maxMemory) {
+    public GridH2QueryRequest maxMemory(long maxMemory) {
         this.maxMem = maxMemory;
+
+        return this;
     }
 
     /** {@inheritDoc} */

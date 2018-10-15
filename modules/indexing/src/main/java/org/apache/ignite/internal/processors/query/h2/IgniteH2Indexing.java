@@ -1821,7 +1821,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final Object[] params,
         final int[] parts,
         final boolean lazy,
-        MvccQueryTracker mvccTracker) {
+        MvccQueryTracker mvccTracker,
+        final long maxMem) {
         assert !qry.mvccEnabled() || !F.isEmpty(qry.cacheIds());
 
         try {
@@ -1839,7 +1840,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 @SuppressWarnings("NullableProblems")
                 @Override public Iterator<List<?>> iterator() {
                     return rdcQryExec.query(schemaName, qry, keepCacheObj, enforceJoinOrder, opTimeout,
-                        cancel, params, parts, lazy, tracker);
+                        cancel, params, parts, lazy, tracker, maxMem);
                 }
             };
         }
@@ -2626,9 +2627,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
         }
 
+        long maxMem = Long.MAX_VALUE;
+
+        if (qry instanceof SqlFieldsQueryEx)
+            maxMem = ((SqlFieldsQueryEx)qry).maxMemory();
+
+
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
             runQueryTwoStep(schemaName, twoStepQry, keepBinary, qry.isEnforceJoinOrder(), startTx, qry.getTimeout(),
-                cancel, qry.getArgs(), partitions, qry.isLazy(), mvccTracker), cancel);
+                cancel, qry.getArgs(), partitions, qry.isLazy(), mvccTracker, maxMem), cancel);
 
         cursor.fieldsMeta(meta);
 

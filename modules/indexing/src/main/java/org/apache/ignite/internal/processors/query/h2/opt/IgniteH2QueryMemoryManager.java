@@ -23,13 +23,18 @@ import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
  * Ignite query memory manager.
  */
 public class IgniteH2QueryMemoryManager {
-    /** Default query mem pool size. */
-    private final long DFLT_QUERY_MEM_POOL_SIZE = 1024 * 1024;
+    /** Max memory used to query execute on node. */
+    private long maxMem;
 
-    /** Mem query pool size. */
-    private long memQryPoolSize = DFLT_QUERY_MEM_POOL_SIZE;
-
+    /** Allocated memory size. */
     private long allocated;
+
+    /**
+     * @param maxMemory Max allocated m
+     */
+    public IgniteH2QueryMemoryManager(long maxMemory) {
+        maxMem = maxMemory;
+    }
 
     /**
      * Check allocated size is less than query memory pool threshold.
@@ -38,7 +43,7 @@ public class IgniteH2QueryMemoryManager {
     public void allocate(long size) {
         allocated += size;
 
-        if (allocated >= memQryPoolSize)
+        if (allocated >= maxMem)
             throw new IgniteOutOfMemoryException("SQL query out of memory");
     }
 

@@ -70,6 +70,7 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
         this.autoCommit = qry.autoCommit;
         this.nestedTxMode = qry.nestedTxMode;
         this.batchedArgs = qry.batchedArgs;
+        this.maxMemory = qry.maxMemory;
     }
 
     /**
@@ -254,8 +255,12 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
 
     /**
      * @param maxMemory Maximum memory available for query local results per node.
+     *
+     * @return {@code this} For chaining.
      */
-    public void maxMemory(long maxMemory) {
+    public SqlFieldsQueryEx maxMemory(long maxMemory) {
         this.maxMemory = maxMemory;
+
+        return this;
     }
 }

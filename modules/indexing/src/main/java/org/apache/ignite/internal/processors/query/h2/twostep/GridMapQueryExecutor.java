@@ -79,6 +79,7 @@ import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
+import org.apache.ignite.internal.processors.query.h2.opt.IgniteH2QueryMemoryManager;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
@@ -665,6 +666,7 @@ public class GridMapQueryExecutor {
                     req.timeout(),
                     params,
                     true,
+                    req.maxMemory(),
                     req.mvccSnapshot(),
                     tx,
                     txReq,
@@ -691,6 +693,7 @@ public class GridMapQueryExecutor {
                                 req.timeout(),
                                 params,
                                 false,
+                                req.maxMemory(),
                                 req.mvccSnapshot(),
                                 tx,
                                 txReq,
@@ -720,6 +723,7 @@ public class GridMapQueryExecutor {
             req.timeout(),
             params,
             lazy,
+            req.maxMemory(),
             req.mvccSnapshot(),
             tx,
             txReq,
@@ -766,6 +770,7 @@ public class GridMapQueryExecutor {
         final int timeout,
         final Object[] params,
         boolean lazy,
+        long maxMemory,
         @Nullable final MvccSnapshot mvccSnapshot,
         @Nullable final GridDhtTxLocalAdapter tx,
         @Nullable final GridH2SelectForUpdateTxDetails txDetails,
@@ -824,7 +829,8 @@ public class GridMapQueryExecutor {
                 .pageSize(pageSize)
                 .topologyVersion(topVer)
                 .reservations(reserved)
-                .mvccSnapshot(mvccSnapshot);
+                .mvccSnapshot(mvccSnapshot)
+                .queryMemoryManager(new IgniteH2QueryMemoryManager(maxMemory));
 
             // qctx is set, we have to release reservations inside of it.
             reserved = null;

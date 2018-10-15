@@ -572,7 +572,8 @@ public class GridReduceQueryExecutor {
         Object[] params,
         final int[] parts,
         boolean lazy,
-        MvccQueryTracker mvccTracker) {
+        MvccQueryTracker mvccTracker,
+        long maxMem) {
         assert !qry.mvccEnabled() || mvccTracker != null;
 
         if (F.isEmpty(params))
@@ -833,7 +834,8 @@ public class GridReduceQueryExecutor {
                     .parameters(params)
                     .flags(flags)
                     .timeout(timeoutMillis)
-                    .schemaName(schemaName);
+                    .schemaName(schemaName)
+                    .maxMemory(maxMem);
 
                 if (curTx != null && curTx.mvccSnapshot() != null)
                     req.mvccSnapshot(curTx.mvccSnapshot());
@@ -926,7 +928,7 @@ public class GridReduceQueryExecutor {
                         GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE)
                             .pageSize(r.pageSize())
                             .distributedJoinMode(OFF)
-                            .queryMemoryManager(new IgniteH2QueryMemoryManager()));
+                            .queryMemoryManager(new IgniteH2QueryMemoryManager(maxMem)));
 
                         try {
                             if (qry.explain())
