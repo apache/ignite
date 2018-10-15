@@ -283,7 +283,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     private volatile IgniteInternalFuture rollbackFut;
 
     /** */
-    private volatile TxCounters txCounters = new TxCounters();
+    private volatile TxCounters txCounters;
 
     /**
      * Empty constructor required for {@link Externalizable}.
