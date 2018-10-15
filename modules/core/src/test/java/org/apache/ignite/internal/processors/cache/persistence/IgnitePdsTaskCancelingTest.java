@@ -219,7 +219,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
 
                 ByteBuffer buf = GridUnsafe.wrapPointer(pageAdr, pageSize);
 
-                pageStore.write(pageId, buf, 0, true, false);
+                pageStore.write(pageId, buf, 0, true);
 
                 threadList.add(new Thread(new Runnable() {
                     @Override public void run() {
@@ -237,7 +237,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
                                 else {
                                     log.info(">>> Write page " + U.hexLong(pageId));
 
-                                    pageStore.write(pageId, buf, 0, true, false);
+                                    pageStore.write(pageId, buf, 0, true);
                                 }
 
                                 Thread.interrupted();

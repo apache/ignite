@@ -523,7 +523,7 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc, boolean pageCompressed)
+    @Override public void write(long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc)
         throws IgniteCheckedException {
         init();
 
@@ -544,7 +544,7 @@ public class FilePageStore implements PageStore {
                     assert (off >= 0 && off <= allocated.get()) || recover :
                         "off=" + U.hexLong(off) + ", allocated=" + U.hexLong(allocated.get()) + ", pageId=" + U.hexLong(pageId);
 
-                    assert pageCompressed || pageBuf.capacity() == pageSize;
+                    // Do not assert for page size because the buffer can be compressed.
                     assert pageBuf.position() == 0;
                     assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
                         + " should be same with " + ByteOrder.nativeOrder();

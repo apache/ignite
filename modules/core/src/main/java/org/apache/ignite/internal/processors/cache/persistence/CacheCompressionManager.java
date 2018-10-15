@@ -5,15 +5,19 @@ import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 
 public class CacheCompressionManager extends GridCacheManagerAdapter {
 
-    public boolean isPageCompressionEnabled() {
+    private boolean isPageCompressionEnabled() {
         return cctx.kernalContext().compress().isPageCompressionEnabled(); // TODO config
     }
 
-    public ByteBuffer compressPage(long pageId, ByteBuffer buf) {
-        return cctx.kernalContext().compress().compressPage(pageId, buf);
+    public ByteBuffer compressPage(long pageId, ByteBuffer page) {
+        if (isPageCompressionEnabled())
+            return cctx.kernalContext().compress().compressPage(pageId, page);
+
+        return page;
     }
 
     public void decompressPage(ByteBuffer page) {
-        cctx.kernalContext().compress().decompressPage(page);
+        if (isPageCompressionEnabled())
+            cctx.kernalContext().compress().decompressPage(page);
     }
 }

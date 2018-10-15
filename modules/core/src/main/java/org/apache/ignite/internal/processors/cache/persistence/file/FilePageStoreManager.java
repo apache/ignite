@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
-import org.apache.ignite.internal.processors.cache.persistence.CacheCompressionManager;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
@@ -426,10 +425,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         try {
             store.read(pageId, pageBuf, keepCrc);
 
-            CacheCompressionManager compress = cctx.cacheContext(cacheId).compress();
-
-            if (compress.isPageCompressionEnabled())
-                compress.decompressPage(pageBuf);
+            cctx.cacheContext(cacheId).compress().decompressPage(pageBuf);
         }
         catch (StorageException e) {
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
@@ -486,20 +482,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         PageStore store = getStore(cacheId, partId);
 
         try {
-            CacheCompressionManager compress = cctx.cacheContext(cacheId).compress();
+            pageBuf = cctx.cacheContext(cacheId).compress().compressPage(pageId, pageBuf);
 
-            boolean compressPage = compress.isPageCompressionEnabled();
-
-            if (compressPage) {
-                ByteBuffer compressedPageBuf = compress.compressPage(pageId, pageBuf);
-
-                if (compressedPageBuf != pageBuf)
-                    pageBuf = compressedPageBuf;
-                else
-                    compressPage = false;
-            }
-
-            store.write(pageId, pageBuf, tag, calculateCrc, compressPage);
+            store.write(pageId, pageBuf, tag, calculateCrc);
         }
         catch (StorageException e) {
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
