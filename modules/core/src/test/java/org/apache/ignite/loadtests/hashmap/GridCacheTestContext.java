@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStruc
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.dr.GridOsCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheNoopJtaManager;
+import org.apache.ignite.internal.processors.cache.persistence.CacheCompressionManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheLocalQueryManager;
@@ -89,6 +90,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             AffinityTopologyVersion.ZERO,
             true,
             true,
+            new CacheCompressionManager(),
             new GridCacheEventManager(),
             new CacheOsStoreManager(null, new CacheConfiguration()),
             new GridCacheEvictionManager(),

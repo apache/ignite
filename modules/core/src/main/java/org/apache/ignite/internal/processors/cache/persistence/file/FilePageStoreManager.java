@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
+import org.apache.ignite.internal.processors.cache.persistence.CacheCompressionManager;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
@@ -480,7 +481,20 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         PageStore store = getStore(cacheId, partId);
 
         try {
-            store.write(pageId, pageBuf, tag, calculateCrc);
+            CacheCompressionManager compress = cctx.cacheContext(cacheId).compress();
+
+            boolean compressPage = compress.isPageCompressionEnabled();
+
+            if (compressPage) {
+                ByteBuffer compressedPageBuf = compress.compressPage(pageId, pageBuf);
+
+                if (compressedPageBuf != pageBuf)
+                    pageBuf = compressedPageBuf;
+                else
+                    compressPage = false;
+            }
+
+            store.write(pageId, pageBuf, tag, calculateCrc, compressPage);
         }
         catch (StorageException e) {
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));

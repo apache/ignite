@@ -1,8 +1,8 @@
 package org.apache.ignite.internal.processors.compress;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 
 public class CompressProcessor extends GridProcessorAdapter {
     /**
@@ -12,15 +12,11 @@ public class CompressProcessor extends GridProcessorAdapter {
         super(ctx);
     }
 
-    public boolean isPageCompressionEnabled() {
-        return false;
+    public ByteBuffer compressPage(long pageId, ByteBuffer page) {
+        return page;
     }
 
-    public long compressPage(PageIO io, long pageAddr, int pageSize) {
-        throw new UnsupportedOperationException();
-    }
-
-    public long uncompressPage(long inAddr, long outAddr) {
-        throw new UnsupportedOperationException();
+    public ByteBuffer uncompressPage(ByteBuffer page, int pageSize) {
+        return page;
     }
 }

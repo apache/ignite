@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTran
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
+import org.apache.ignite.internal.processors.cache.persistence.CacheCompressionManager;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
@@ -176,6 +177,9 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Store manager. */
     private CacheStoreManager storeMgr;
+
+    /** Compression manager. */
+    private CacheCompressionManager compressMgr;
 
     /** Replication manager. */
     private GridCacheDrManager drMgr;
@@ -317,6 +321,7 @@ public class GridCacheContext<K, V> implements Externalizable {
          * ===========================
          */
 
+        CacheCompressionManager compressMgr,
         GridCacheEventManager evtMgr,
         CacheStoreManager storeMgr,
         CacheEvictionManager evictMgr,
@@ -334,6 +339,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert cacheCfg != null;
         assert locStartTopVer != null : cacheCfg.getName();
 
+        assert compressMgr != null;
         assert grp != null;
         assert evtMgr != null;
         assert storeMgr != null;
@@ -360,6 +366,7 @@ public class GridCacheContext<K, V> implements Externalizable {
          * Managers in starting order!
          * ===========================
          */
+        this.compressMgr = add(compressMgr);
         this.evtMgr = add(evtMgr);
         this.storeMgr = add(storeMgr);
         this.evictMgr = add(evictMgr);
@@ -1189,6 +1196,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public AffinityKeyMapper defaultAffMapper() {
         return cacheObjCtx.defaultAffMapper();
+    }
+
+    /**
+     * @return Compression manager.
+     */
+    public CacheCompressionManager compress() {
+        return compressMgr;
     }
 
     /**

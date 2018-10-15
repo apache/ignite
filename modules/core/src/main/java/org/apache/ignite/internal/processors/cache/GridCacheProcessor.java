@@ -62,6 +62,7 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.processors.cache.persistence.CacheCompressionManager;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -1583,6 +1584,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
         boolean nearEnabled = GridCacheUtils.isNearEnabled(cfg);
 
+        CacheCompressionManager compressMgr = new CacheCompressionManager();
         GridCacheAffinityManager affMgr = new GridCacheAffinityManager();
         GridCacheEventManager evtMgr = new GridCacheEventManager();
         CacheEvictionManager evictMgr = (nearEnabled || cfg.isOnheapCacheEnabled()) ? new GridCacheEvictionManager() : new CacheOffheapEvictionManager();
@@ -1610,6 +1612,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
              * Managers in starting order!
              * ===========================
              */
+            compressMgr,
             evtMgr,
             storeMgr,
             evictMgr,
@@ -1745,6 +1748,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                  * Managers in starting order!
                  * ===========================
                  */
+                compressMgr,
                 evtMgr,
                 storeMgr,
                 evictMgr,
