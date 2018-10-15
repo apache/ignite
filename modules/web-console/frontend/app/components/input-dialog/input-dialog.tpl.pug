@@ -53,6 +53,41 @@ include /app/helpers/jade/mixins
                             required: true
                         })
 
+                .row(ng-switch-when='date')
+                    .col-100
+                        .form-field--inline
+                            +form-field__datepicker({
+                                label: '{{ ctrl.options.label }}',
+                                model: 'ctrl.options.value',
+                                name: '"date"',
+                                minview: 0,
+                                format: 'dd/MM/yyyy'
+                            })
+
+                .row(ng-switch-when='time')
+                    .col-100
+                        .form-field--inline
+                            +form-field__timepicker({
+                                label: '{{ ctrl.options.label }}',
+                                model: 'ctrl.options.value',
+                                name: '"time"'
+                            })
+
+                .row(ng-switch-when='date-and-time')
+                    .col-100
+                        .form-field--inline
+                            +form-field__datepicker({
+                                label: '{{ ctrl.options.label }}',
+                                model: 'ctrl.options.value',
+                                name: '"date"',
+                                minview: 0,
+                                format: 'dd/MM/yyyy'
+                            })
+                        .form-field--inline
+                            +form-field__timepicker({
+                                model: 'ctrl.options.value',
+                                name: '"time"'
+                            })
             .modal-footer
                 div
                     button#copy-btn-cancel.btn-ignite.btn-ignite--link-success(ng-click='$hide()') Cancel
