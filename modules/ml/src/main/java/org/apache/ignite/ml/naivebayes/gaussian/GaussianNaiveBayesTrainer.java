@@ -121,8 +121,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
             return new GaussianNaiveBayesModel(means, variances, classProbabilities, labels, sumsHolder);
         }
         catch (Exception e) {
-            throw new
-                RuntimeException(e);
+            throw new RuntimeException(e);
         }
 
     }
