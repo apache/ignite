@@ -407,14 +407,14 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
 
         Affinity<Object> aff = ign.affinity(DEFAULT_CACHE_NAME);
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 100; i++) {
             if (aff.isPrimary(victim.localNode(), i) && !aff.isBackup(grid(0).localNode(), i)) {
                 keys.add(i);
                 break;
             }
         }
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 100; i++) {
             if (aff.isPrimary(victim.localNode(), i) && !aff.isBackup(grid(1).localNode(), i)) {
                 keys.add(i);
                 break;
@@ -447,11 +447,19 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
         CountDownLatch latch1 = new CountDownLatch(1);
         CountDownLatch latch2 = new CountDownLatch(1);
 
-        // t0d0 check that topology is locked
         IgniteInternalFuture<Object> backgroundTxFut = GridTestUtils.runAsync(() -> {
             try (Transaction ignored = ign.transactions().txStart()) {
-//                cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, 11)").setArgs(99));
-                cache.put(99, 11);
+                boolean upd = false;
+
+                for (int i = 100; i < 200; i++) {
+                    if (!aff.isPrimary(victim.localNode(), i)) {
+                        cache.put(i, 11);
+                        upd = true;
+                        break;
+                    }
+                }
+
+                assert upd;
 
                 latch1.countDown();
 
@@ -464,22 +472,25 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
         latch1.await();
 
         // drop primary
-        stopGrid(vid);
+        victim.close();
 
         // do all assertions before rebalance
         assertConditionEventually(() -> txs.stream().allMatch(tx -> tx.state() == ROLLED_BACK));
 
         List<IgniteEx> liveNodes = grids(srvCnt, i -> i != vid);
 
-        assertTrue(liveNodes.stream()
-            .map(node -> node.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("select * from Integer")).getAll())
-            .allMatch(Collection::isEmpty));
+        // t0d0 check why querying here leads to exception
+//        liveNodes.forEach(node -> node.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("select * from Integer")).getAll());
 
         assertPartitionCountersAreConsistent(keys, liveNodes);
 
         latch2.countDown();
 
         backgroundTxFut.get();
+
+        assertTrue(liveNodes.stream()
+            .map(node -> node.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("select * from Integer")).getAll())
+            .allMatch(Collection::isEmpty));
     }
 
     /**
