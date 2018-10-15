@@ -84,32 +84,18 @@ public final class FastCrc {
      * @param crcAlgo CRC algorithm.
      * @param buf Input buffer.
      * @param len Buffer length.
-     * @param reset Reset crc flag.
      *
      * @return Crc checksum.
      */
     private static int calcCrc(CRC32 crcAlgo, ByteBuffer buf, int len) {
-        int pos = buf.position();
+        int initLimit = buf.limit();
 
-        int res;
+        buf.limit(buf.position() + len);
 
-        if (buf.capacity() <= pos + len)
-            crcAlgo.update(buf);
-        else if (buf.hasArray()) {
-            crcAlgo.update(buf.array(), pos, len);
+        crcAlgo.update(buf);
 
-            buf.position(pos + len);
-        }
-        else {
-            byte[] buf0 = new byte[len];
+        buf.limit(initLimit);
 
-            buf.get(buf0, 0, len);
-
-            crcAlgo.update(buf0);
-        }
-
-        res = (int)crcAlgo.getValue() ^ 0xFFFFFFFF;
-
-        return res;
+        return (int)crcAlgo.getValue() ^ 0xFFFFFFFF;
     }
 }
