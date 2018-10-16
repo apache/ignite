@@ -492,6 +492,10 @@
                                 <title>Encryption SPI</title>
                                 <packages>org.apache.ignite.spi.encryption*</packages>
                             </group>
+                            <group>
+                                <title>TensorFlow integration</title>
+                                <packages>org.apache.ignite.tensorflow*</packages>
+                            </group>
                         </groups>
                         <header>
                             <![CDATA[
