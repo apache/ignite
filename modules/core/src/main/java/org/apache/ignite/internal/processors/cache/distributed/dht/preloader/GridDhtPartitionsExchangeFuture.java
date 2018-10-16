@@ -629,19 +629,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     private void initCoordinatorCaches(boolean newCrd) throws IgniteCheckedException {
         if (newCrd) {
-            cctx.exchange().exchangerBlockingSectionBegin();
+            IgniteInternalFuture<?> fut = cctx.affinity().initCoordinatorCaches(this, false);
 
-            try {
-                IgniteInternalFuture<?> fut = cctx.affinity().initCoordinatorCaches(this, false);
+            if (fut != null) {
+                fut.get();
 
-                if (fut != null)
-                    fut.get();
-
-                cctx.exchange().onCoordinatorInitialized();
+                cctx.exchange().exchangerUpdateHeartbeat();
             }
-            finally {
-                cctx.exchange().exchangerBlockingSectionEnd();
-            }
+
+            cctx.exchange().onCoordinatorInitialized();
+
+            cctx.exchange().exchangerUpdateHeartbeat();
         }
     }
 
@@ -750,16 +748,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     exchange = onAffinityChangeRequest(crdNode);
                 }
 
-                if (forceAffReassignment) {
-                    cctx.exchange().exchangerBlockingSectionBegin();
-
-                    try {
-                        cctx.affinity().onCentralizedAffinityChange(this, crdNode);
-                    }
-                    finally {
-                        cctx.exchange().exchangerBlockingSectionEnd();
-                    }
-                }
+                if (forceAffReassignment)
+                    cctx.affinity().onCentralizedAffinityChange(this, crdNode);
 
                 initCoordinatorCaches(newCrd);
             }
@@ -768,16 +758,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     if (!firstDiscoEvt.eventNode().isLocal()) {
                         cctx.exchange().exchangerBlockingSectionBegin();
 
-                        try {
-                            Collection<DynamicCacheDescriptor> receivedCaches = cctx.cache().startReceivedCaches(
-                                firstDiscoEvt.eventNode().id(),
-                                topVer);
+                        Collection<DynamicCacheDescriptor> receivedCaches = cctx.cache().startReceivedCaches(
+                            firstDiscoEvt.eventNode().id(),
+                            topVer);
 
-                            registerCachesFuture = cctx.affinity().initStartedCaches(crdNode, this, receivedCaches);
-                        }
-                        finally {
-                            cctx.exchange().exchangerBlockingSectionEnd();
-                        }
+                        registerCachesFuture = cctx.affinity().initStartedCaches(crdNode, this, receivedCaches);
                     }
                     else
                         registerCachesFuture = initCachesOnLocalJoin();
@@ -940,14 +925,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         IgniteInternalFuture<?> cachesRegistrationFut;
 
-        cctx.exchange().exchangerBlockingSectionBegin();
-
-        try {
-            cachesRegistrationFut = cctx.cache().startCachesOnLocalJoin(initialVersion(), locJoinCtx);
-        }
-        finally {
-            cctx.exchange().exchangerBlockingSectionEnd();
-        }
+        cachesRegistrationFut = cctx.cache().startCachesOnLocalJoin(initialVersion(), locJoinCtx);
 
         ensureClientCachesStarted();
 
@@ -969,17 +947,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 notStartedCacheConfigs.add(cCfg);
         }
 
-        if (!notStartedCacheConfigs.isEmpty()) {
-            cctx.exchange().exchangerBlockingSectionBegin();
-
-            try {
-                cacheProcessor.dynamicStartCaches(notStartedCacheConfigs, false, false, false);
-            }
-            finally {
-                cctx.exchange().exchangerBlockingSectionEnd();
-            }
-
-        }
+        if (!notStartedCacheConfigs.isEmpty())
+            cacheProcessor.dynamicStartCaches(notStartedCacheConfigs, false, false, false);
     }
 
     /**
@@ -995,27 +964,22 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @throws IgniteCheckedException If failed.
      */
     private void initTopologies() throws IgniteCheckedException {
-        cctx.exchange().exchangerBlockingSectionBegin();
+        cctx.database().checkpointReadLock();
 
         try {
-            cctx.database().checkpointReadLock();
+            if (crd != null) {
+                for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+                    if (grp.isLocal())
+                        continue;
 
-            try {
-                if (crd != null) {
-                    for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                        if (grp.isLocal())
-                            continue;
+                    grp.topology().beforeExchange(this, !centralizedAff && !forceAffReassignment, false);
 
-                        grp.topology().beforeExchange(this, !centralizedAff && !forceAffReassignment, false);
-                    }
+                    cctx.exchange().exchangerUpdateHeartbeat();
                 }
-            }
-            finally {
-                cctx.database().checkpointReadUnlock();
             }
         }
         finally {
-            cctx.exchange().exchangerBlockingSectionEnd();
+            cctx.database().checkpointReadUnlock();
         }
     }
 
@@ -1263,6 +1227,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         assert !exchActions.clientOnlyExchange() : exchActions;
 
+        // TODO IGNITE-9737 Check if for-each-cache pattern is present below
         cctx.exchange().exchangerBlockingSectionBegin();
 
         try {

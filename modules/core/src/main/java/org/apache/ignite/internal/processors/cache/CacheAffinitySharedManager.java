@@ -1281,16 +1281,22 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {
                     CacheGroupHolder cache = groupHolder(fut.initialVersion(), desc);
 
-                    if (cache.affinity().lastVersion().equals(AffinityTopologyVersion.NONE))
+                    if (cache.affinity().lastVersion().equals(AffinityTopologyVersion.NONE)) {
                         calculateAndInit(fut.events(), cache.affinity(), fut.initialVersion());
+
+                        cctx.exchange().exchangerUpdateHeartbeat();
+                    }
                 }
             });
         }
         else {
             forAllCacheGroups(false, new IgniteInClosureX<GridAffinityAssignmentCache>() {
                 @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
-                    if (aff.lastVersion().equals(AffinityTopologyVersion.NONE))
+                    if (aff.lastVersion().equals(AffinityTopologyVersion.NONE)) {
                         initAffinity(cachesRegistry.group(aff.groupId()), aff, fut);
+
+                        cctx.exchange().exchangerUpdateHeartbeat();
+                    }
                 }
             });
         }
@@ -1832,6 +1838,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     CacheGroupHolder cache = groupHolder(fut.initialVersion(), desc);
 
                     cache.aff.calculate(fut.initialVersion(), fut.events(), fut.events().discoveryCache());
+
+                    cctx.exchange().exchangerUpdateHeartbeat();
                 }
             });
         }
@@ -1839,6 +1847,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             forAllCacheGroups(false, new IgniteInClosureX<GridAffinityAssignmentCache>() {
                 @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
                     aff.calculate(fut.initialVersion(), fut.events(), fut.events().discoveryCache());
+
+                    cctx.exchange().exchangerUpdateHeartbeat();
                 }
             });
         }
@@ -1935,6 +1945,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                                 aff.calculate(topVer, fut.events(), fut.events().discoveryCache());
 
                                 affFut.onDone(topVer);
+
+                                context().exchange().exchangerUpdateHeartbeat();
                             }
                         });
 
@@ -1957,6 +1969,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 CacheGroupHolder old = grpHolders.put(grpHolder.groupId(), grpHolder);
 
                 assert old == null : old;
+
+                context().exchange().exchangerUpdateHeartbeat();
             }
         });
 
