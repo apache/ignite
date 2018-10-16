@@ -1552,7 +1552,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         }
                     }
                 }
-                catch (NonCriticalCheckpointReadLockException e) {
+                catch (CheckpointReadLockTimeoutException e) {
                     timeout = 0;
                 }
             }
@@ -1569,10 +1569,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * Invokes critical failure processing. Always throws.
      *
-     * @throws NonCriticalCheckpointReadLockException If node was not invalidated as result of handling.
+     * @throws CheckpointReadLockTimeoutException If node was not invalidated as result of handling.
      * @throws IgniteException If node was invalidated as result of handling.
      */
-    private void failCheckpointReadLock() throws NonCriticalCheckpointReadLockException, IgniteException {
+    private void failCheckpointReadLock() throws CheckpointReadLockTimeoutException, IgniteException {
         String msg = "Checkpoint read lock acquisition has been timed out.";
 
         IgniteException e = new IgniteException(msg);
@@ -1580,7 +1580,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e)))
             throw e;
 
-        throw new NonCriticalCheckpointReadLockException(msg);
+        throw new CheckpointReadLockTimeoutException(msg);
     }
 
     /** {@inheritDoc} */
@@ -4853,12 +4853,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** Indicates checkpoint read lock acquisition failure which did not lead to node invalidation. */
-    private static class NonCriticalCheckpointReadLockException extends IgniteCheckedException {
+    private static class CheckpointReadLockTimeoutException extends IgniteCheckedException {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** */
-        private NonCriticalCheckpointReadLockException(String msg) {
+        private CheckpointReadLockTimeoutException(String msg) {
             super(msg);
         }
     }
