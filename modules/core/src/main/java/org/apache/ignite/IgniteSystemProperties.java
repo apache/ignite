@@ -31,7 +31,6 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.GridLogThrottle;
-import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.stream.StreamTransformer;
 import org.jetbrains.annotations.Nullable;
 
@@ -485,7 +484,12 @@ public final class IgniteSystemProperties {
     /** Disable fallback to H2 SQL parser if the internal SQL parser fails to parse the statement. */
     public static final String IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK = "IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK";
 
-    /** Force all SQL queries to be processed lazily regardless of what clients request. */
+    /**
+     *  Force all SQL queries to be processed lazily regardless of what clients request.
+     *
+     * @deprecated Since version 2.7.
+     */
+    @Deprecated
     public static final String IGNITE_SQL_FORCE_LAZY_RESULT_SET = "IGNITE_SQL_FORCE_LAZY_RESULT_SET";
 
     /** Disable SQL system views. */
@@ -992,6 +996,11 @@ public final class IgniteSystemProperties {
      * Number of attempts to reconnect to ZooKeeper.
      */
     public static final String IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT = "IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT";
+
+    /**
+     * Maximum number for cached MVCC transaction updates. This caching is used for continuous query with MVCC caches.
+     */
+    public static final String IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD = "IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD";
 
     /**
      * Try reuse memory on deactivation. Useful in case of huge page memory region size.
