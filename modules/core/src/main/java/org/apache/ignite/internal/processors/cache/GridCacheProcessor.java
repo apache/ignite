@@ -2734,28 +2734,18 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
         cachesInfo.collectJoiningNodeData(dataBag);
-
-        log.error("IGNITE-8717 collectJoiningNodeData() common: " + F.toString(dataBag.commonData()) + " joining: " + F.toString(dataBag.joiningNodeData()));
     }
 
     /** {@inheritDoc} */
-    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        cachesInfo.collectGridNodeData(dataBag);
-
-        log.error("IGNITE-8717 collectGridNodeData() common: " + F.toString(dataBag.commonData()) + " joining: " + F.toString(dataBag.joiningNodeData()));
-    }
+    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) { cachesInfo.collectGridNodeData(dataBag); }
 
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data) {
-        log.error("IGNITE-8717 onJoiningNodeDataReceived() joining: " + F.toString(data));
-
         cachesInfo.onJoiningNodeDataReceived(data);
     }
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        log.error("IGNITE-8717 onGridDataReceived() common: " + F.toString(data.commonData()) + " node specific: " + F.toString(data.nodeSpecificData()));
-
         cachesInfo.onGridDataReceived(data);
 
         try {

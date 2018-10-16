@@ -2919,11 +2919,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             DynamicCacheDescriptor desc = cctx.cache().cacheDescriptor(cacheId);
 
-            // Cache descriptor not found means, that cache was destroyed while node was off or previous version of AI.
+            // Cache descriptor not found means, that cache was destroyed while node was off.
             if (desc == null) {
                 GridCacheConfigurationVersion ver = cctx.cache().cacheVersion(cacheId);
 
-                assert ver == null || ver.lastAction() == DESTROY : F.toString(ver);
+                assert ver != null && ver.lastAction() == DESTROY : F.toString(ver);
             }
             else if (!ignoreGrps.contains(desc.groupId())) {
                 GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
