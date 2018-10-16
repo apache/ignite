@@ -872,7 +872,7 @@ public class CommandHandler {
      */
     private void printCacheInfos(
         Collection<CacheInfo> infos,
-        VisorCacheConfigOutputFormat outputFormat,
+        OutputFormat outputFormat,
         VisorViewCacheCmd cmd
     ) {
         for (CacheInfo info : infos) {
@@ -913,7 +913,7 @@ public class CommandHandler {
      */
     private void printCachesConfig(
         Map<String, VisorCacheConfiguration> caches,
-        VisorCacheConfigOutputFormat outputFormat
+        OutputFormat outputFormat
     ) {
 
         for (Map.Entry<String, VisorCacheConfiguration> entry : caches.entrySet()) {
@@ -1771,7 +1771,7 @@ public class CommandHandler {
 
                 VisorViewCacheCmd cacheCmd = CACHES;
 
-                VisorCacheConfigOutputFormat outputFormat = SINGLE_LINE;
+                OutputFormat outputFormat = SINGLE_LINE;
 
                 while (hasNextCacheArg()) {
                     String tmp = nextArg("").toLowerCase();
@@ -1790,7 +1790,7 @@ public class CommandHandler {
                         case OUTPUT_FORMAT:
                             String tmp2 = nextArg("output format must be defined!").toLowerCase();
 
-                            outputFormat = VisorCacheConfigOutputFormat.fromConsoleName(tmp2);
+                            outputFormat = OutputFormat.fromConsoleName(tmp2);
 
                             break;
 

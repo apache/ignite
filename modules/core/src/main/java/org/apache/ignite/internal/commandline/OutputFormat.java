@@ -14,14 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.visor.cache;
+package org.apache.ignite.internal.commandline;
 
 import org.jetbrains.annotations.NotNull;
 
 /**
  *
  */
-public enum VisorCacheConfigOutputFormat {
+public enum OutputFormat {
     /** Single line. */
     SINGLE_LINE("single-line"),
 
@@ -32,7 +32,7 @@ public enum VisorCacheConfigOutputFormat {
     private final String text;
 
     /** */
-    VisorCacheConfigOutputFormat(String text) {
+    OutputFormat(String text) {
         this.text = text;
     }
 
@@ -50,8 +50,8 @@ public enum VisorCacheConfigOutputFormat {
      * @return Enumerated value.
      * @throws IllegalArgumentException If enumerated value not found.
      */
-    public static VisorCacheConfigOutputFormat fromConsoleName(@NotNull String text) {
-        for (VisorCacheConfigOutputFormat format : values()) {
+    public static OutputFormat fromConsoleName(@NotNull String text) {
+        for (OutputFormat format : values()) {
             if (format.text.equals(text))
                 return format;
         }
