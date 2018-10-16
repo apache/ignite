@@ -69,11 +69,11 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 
 /**
  * Tests scenario for too early metadata update completion in case of multiple concurrent updates for the same schema.
- *
+ * <p>
  * Scenario is the following:
  *
  * <ul>
- *     <li>Start 4 nodes, connect client to node 2 in topology order (starrting from 1).</li>
+ *     <li>Start 4 nodes, connect client to node 2 in topology order (starting from 1).</li>
  *     <li>Start two concurrent transactions from client node producing same schema update.</li>
  *     <li>Delay second update until first update will return to client with stamped propose message and writes new
  *     schema to local metadata cache</li>
