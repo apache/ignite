@@ -31,6 +31,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.channels.WritableByteChannel;
 import java.nio.channels.spi.AbstractInterruptibleChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -2668,17 +2669,17 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /** {@inheritDoc} */
-    @Override public boolean sendFileSupported() {
+    @Override public boolean pipeConnectionSupported() {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public ReadableByteChannel getRemotePipe(ClusterNode src) {
+    @Override public ReadableByteChannel getRemotePipe(ClusterNode src) throws IgniteSpiException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void sendFile(ClusterNode dest, FileChannel ch) {
+    @Override public void sendOnPipe(ClusterNode dest, WritableByteChannel out) throws IgniteSpiException {
 
     }
 
