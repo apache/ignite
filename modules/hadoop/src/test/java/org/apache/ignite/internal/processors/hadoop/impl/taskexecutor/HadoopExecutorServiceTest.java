@@ -75,44 +75,54 @@ public class HadoopExecutorServiceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testShutdown() throws Exception {
-        for (int i = 0; i < 5; i++) {
-            final HadoopExecutorService exec = new HadoopExecutorService(log, "_GRID_NAME_", 10, 5);
+        final AtomicBoolean finish = new AtomicBoolean();
 
-            final LongAdder sum = new LongAdder();
+        IgniteInternalFuture<?> fut = null;
 
-            final AtomicBoolean finish = new AtomicBoolean();
+        try {
+            for (int i = 0; i < 5; i++) {
+                final HadoopExecutorService exec = new HadoopExecutorService(log, "_GRID_NAME_", 10, 5);
 
-            IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    while (!finish.get()) {
-                        exec.submit(new Callable<Void>() {
-                            @Override public Void call() throws Exception {
-                                sum.increment();
+                final LongAdder sum = new LongAdder();
 
-                                return null;
-                            }
-                        });
+                fut = multithreadedAsync(new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        while (!finish.get()) {
+                            exec.submit(new Callable<Void>() {
+                                @Override public Void call() throws Exception {
+                                    sum.increment();
+
+                                    return null;
+                                }
+                            });
+                        }
+
+                        return null;
                     }
+                }, 19);
 
-                    return null;
-                }
-            }, 19);
+                Thread.sleep(200);
 
-            Thread.sleep(200);
+                assertTrue(exec.shutdown(50));
 
-            assertTrue(exec.shutdown(50));
+                long res = sum.sum();
 
-            long res = sum.sum();
+                assertTrue(res > 0);
 
-            assertTrue(res > 0);
+                finish.set(true);
 
+                fut.get();
+
+                assertEquals(res, sum.sum()); // Nothing was executed after shutdown.
+
+                X.println("_ ok");
+            }
+        }
+        finally {
             finish.set(true);
 
-            fut.get();
-
-            assertEquals(res, sum.sum()); // Nothing was executed after shutdown.
-
-            X.println("_ ok");
+            if (fut != null)
+                fut.cancel();
         }
     }
 }
