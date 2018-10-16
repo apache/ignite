@@ -2553,7 +2553,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         // If mvcc coordinator issued snapshot for recovering transaction has failed during recovery,
                         // then there is no need to send messages to new coordinator.
                         // New coordinator knows nothing about recovering transactions and cannot treat them as active.
-                        if (mvccCrd.topologyVersion().topologyVersion() <= discoEvt.topologyVersion()) {
+                        // Recovering transaction was definitely started on topology lesser than topology from event.
+                        if (mvccCrd.topologyVersion().topologyVersion() < discoEvt.topologyVersion()) {
                             try {
                                 cctx.kernalContext().io().sendToGridTopic(
                                     mvccCrd.nodeId(),
