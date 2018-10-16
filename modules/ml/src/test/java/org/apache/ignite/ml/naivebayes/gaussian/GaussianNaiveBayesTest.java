@@ -23,7 +23,6 @@ import java.util.Map;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -56,7 +55,7 @@ public class GaussianNaiveBayesTest {
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
             (k, v) -> v[0]
         );
-        Vector observation = new DenseVector(new double[] {6, 130, 8});
+        Vector observation = VectorUtils.of(6, 130, 8);
 
         Assert.assertEquals(female, model.apply(observation), PRECISION);
     }
