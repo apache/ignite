@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {StatusOptions} from './types';
+import {StatusOptions} from './index';
 import {Status} from './controller';
 import {component} from './component';
 

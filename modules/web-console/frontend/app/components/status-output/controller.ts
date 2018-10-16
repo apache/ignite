@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {StatusOptions, StatusOption} from './types';
+import {StatusOptions, StatusOption} from './index';
 
 interface Changes extends ng.IOnChangesObject {
     value: ng.IChangesObject<string>,
