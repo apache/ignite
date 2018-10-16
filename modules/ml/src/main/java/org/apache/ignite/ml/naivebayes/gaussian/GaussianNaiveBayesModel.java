@@ -38,7 +38,7 @@ public class GaussianNaiveBayesModel implements Model<Vector, Double>, Exportabl
     private final double[] classProbabilities;
     /** Labels. */
     private final double[] labels;
-    /** feature sum, squared sum and cound per label */
+    /** Feature sum, squared sum and cound per label. */
     private final GaussianNaiveBayesSumsHolder sumsHolder;
 
     /**
