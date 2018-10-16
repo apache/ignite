@@ -35,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -451,7 +450,6 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         startNodesInClientMode(true);
 
         doTest(
-            node -> true,
             asMessagePredicate(discoEvt -> discoEvt.type() == EventType.EVT_NODE_JOINED),
             () -> {
                 for (int i = 0; i < baselineServersCount() - 2; i++)
@@ -703,10 +701,10 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
                 TestRecordingCommunicationSpi.spi(node).stopBlock();
 
-                cntDownCntr.incrementAndGet();
-
                 for (int i = 0; i < cntDownCntr.get(); i++)
                     cntFinishedReadOperations.countDown(); // This node and previously stopped nodes as well.
+
+                cntDownCntr.incrementAndGet();
 
                 stopGrid(node.name());
             }
@@ -779,25 +777,8 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void doTest(Predicate<Message> blockMsgPred, RunnableX block) throws Exception {
-        Set<?> baselineConsistentIds = baseline.stream().map(IgniteEx::name).collect(Collectors.toSet());
-
-        doTest(node -> baselineConsistentIds.contains(node.consistentId()), blockMsgPred, block);
-    }
-
-    /**
-     * Checks that {@code block} closure doesn't block read operation.
-     * Does it for client, baseline and regular server node.
-     *
-     * @param blockNodePred Predicate that checks whether to block message that goes on given node.
-     * @param blockMsgPred Predicate that check whether the message corresponds to the {@code block} or not.
-     * @param block Blocking operation.
-     * @throws Exception If failed.
-     */
-    public void doTest(Predicate<ClusterNode> blockNodePred, Predicate<Message> blockMsgPred, RunnableX block)
-        throws Exception {
         BackgroundOperation backgroundOperation = new BlockMessageOnBaselineBackgroundOperation(
             block,
-            blockNodePred,
             blockMsgPred
         );
 
@@ -880,8 +861,8 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
             cntFinishedReadOperations = null;
         }
 
-        System.out.println("|> fin " + readOperation.readOperationsFinishedUnderBlock());
-        System.out.println("|> max " + readOperation.maxReadDuration() + "ms");
+        log.info("Operations finished: " + readOperation.readOperationsFinishedUnderBlock());
+        log.info("Longest operation took " + readOperation.maxReadDuration() + "ms");
 
         // None of read operations should fail.
         assertEquals(
@@ -1019,25 +1000,19 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         private final RunnableX block;
 
         /** */
-        private final Predicate<ClusterNode> blockNode;
-
-        /** */
         private final Predicate<Message> blockMsg;
 
         /**
          * @param block Blocking operation.
-         * @param blockNodePred Predicate that checks whether to block message that goes on given node.
          * @param blockMsgPred Predicate that checks whether to block message or not.
          *
          * @see BlockMessageOnBaselineBackgroundOperation#blockMessage(ClusterNode, Message)
          */
         protected BlockMessageOnBaselineBackgroundOperation(
             RunnableX block,
-            Predicate<ClusterNode> blockNodePred,
             Predicate<Message> blockMsgPred
         ) {
             this.block = block;
-            blockNode = blockNodePred;
             blockMsg = blockMsgPred;
         }
 
@@ -1060,7 +1035,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
          * @return Whether the given message should be blocked or not.
          */
         private boolean blockMessage(ClusterNode node, Message msg) {
-            boolean block = blockNode.test(node) && blockMsg.test(msg);
+            boolean block = blockMsg.test(msg);
 
             if (block)
                 cntFinishedReadOperations.countDown();
