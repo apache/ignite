@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -1084,14 +1083,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     (lastFut.isDone() ? lastFut.topologyVersion() : lastFut.initialVersion())
                     : AffinityTopologyVersion.NONE;
 
-
-            Set<ClusterNode> rmts = U.newHashSet(cctx.discovery().aliveServerNodes().size());
-
-            for(CacheGroupContext grp : grps)
-                rmts.addAll(cctx.discovery().cacheGroupAffinityNodes(grp.groupId(),rmtTopVer));
-
-            // No need to send to local node.
-            rmts.remove(cctx.localNode());
+            Collection<ClusterNode> rmts = cctx.discovery().remoteAliveNodesWithCaches(rmtTopVer);
 
             if (log.isDebugEnabled())
                 log.debug("Refreshing partitions from oldest node: " + cctx.localNodeId());
