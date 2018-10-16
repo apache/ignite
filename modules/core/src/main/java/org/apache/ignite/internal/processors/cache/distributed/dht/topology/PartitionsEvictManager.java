@@ -301,7 +301,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          *
          * @param task Partition eviction task.
          */
-        private void taskScheduled(PartitionEvictionTask task) {
+        private synchronized void taskScheduled(PartitionEvictionTask task) {
             if (shouldStop())
                 return;
 
@@ -418,12 +418,14 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
                     if (part.state() == GridDhtPartitionState.EVICTED && part.markForDestroy())
                         part.destroy();
                 }
-                else // Re-offer partition if clear was unsuccessful due to partition reservation.
-                    evictionQueue.offer(this);
 
                 // Complete eviction future before schedule new to prevent deadlock with
                 // simultaneous eviction stopping and scheduling new eviction.
                 finishFut.onDone();
+
+                // Re-offer partition if clear was unsuccessful due to partition reservation.
+                if (!success)
+                    evictPartitionAsync(groupEvictionCtx.grp, part);
             }
             catch (Throwable ex) {
                 finishFut.onDone(ex);
