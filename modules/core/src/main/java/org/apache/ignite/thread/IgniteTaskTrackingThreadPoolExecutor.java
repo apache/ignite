@@ -33,6 +33,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * In addition to what it allows to track all enqueued tasks completion or failure during execution.
  */
+@Deprecated
 public class IgniteTaskTrackingThreadPoolExecutor extends IgniteThreadPoolExecutor {
     /** */
     @Nullable private final IgniteLogger log;
