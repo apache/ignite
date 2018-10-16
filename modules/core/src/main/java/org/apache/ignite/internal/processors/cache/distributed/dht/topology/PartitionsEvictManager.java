@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -268,6 +270,9 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         /** */
         private final CacheGroupContext grp;
 
+        /** Deduplicate set partition ids. */
+        private final Set<Integer> partIds = new GridConcurrentHashSet<>();
+
         /** Future for currently running partition eviction task. */
         private final Map<Integer, IgniteInternalFuture<?>> partsEvictFutures = new ConcurrentHashMap<>();
 
@@ -297,7 +302,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          * @param part Grid local partition.
          */
         private PartitionEvictionTask createEvictPartitionTask(GridDhtLocalPartition part){
-            if (shouldStop())
+            if (shouldStop() || !partIds.add(part.id()))
                 return null;
 
             totalTasks.incrementAndGet();
@@ -318,6 +323,8 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             GridFutureAdapter<?> fut = task.finishFut;
 
             int partId = task.part.id();
+
+            partIds.remove(partId);
 
             partsEvictFutures.put(partId, fut);
 
