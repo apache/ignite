@@ -332,7 +332,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         @Override protected ObjectPool<H2ConnectionWrapper> initialValue() {
             return new ObjectPool<>(
                 IgniteH2Indexing.this::newConnectionWrapper,
-                2,
+                50,
                 IgniteH2Indexing.this::closePooledConnectionWrapper,
                 IgniteH2Indexing.this::recycleConnection);
         }
