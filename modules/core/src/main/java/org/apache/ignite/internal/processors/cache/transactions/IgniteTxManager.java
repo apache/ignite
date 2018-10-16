@@ -60,6 +60,8 @@ import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVe
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxFinishSync;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
@@ -71,6 +73,9 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearOptimisticTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinishedMessage;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
@@ -2452,6 +2457,29 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public boolean logTxRecords() {
         return logTxRecords;
+    }
+
+    /**
+     * Marks MVCC transaction as {@link TxState#COMMITTED} or {@link TxState#ABORTED}.
+     *
+     * @param tx Transaction.
+     * @param commit Commit flag.
+     * @throws IgniteCheckedException If failed to add version to TxLog.
+     */
+    public void mvccFinish(IgniteTxAdapter tx, boolean commit) throws IgniteCheckedException {
+        if (!cctx.kernalContext().clientNode() && tx.mvccSnapshot != null && !(tx.near() && tx.remote()))
+            cctx.coordinators().updateState(tx.mvccSnapshot, commit ? TxState.COMMITTED : TxState.ABORTED, tx.local());
+    }
+
+    /**
+     * Marks MVCC transaction as {@link TxState#PREPARED}.
+     *
+     * @param tx Transaction.
+     * @throws IgniteCheckedException If failed to add version to TxLog.
+     */
+    public void mvccPrepare(IgniteTxAdapter tx) throws IgniteCheckedException {
+        if (!cctx.kernalContext().clientNode() && tx.mvccSnapshot != null && !(tx.near() && tx.remote()))
+            cctx.coordinators().updateState(tx.mvccSnapshot, TxState.PREPARED);
     }
 
     /**

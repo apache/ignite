@@ -465,6 +465,17 @@ public class MvccUtils {
     }
 
     /**
+     * Compares left version (xid_min) with the given version ignoring operation counter.
+     *
+     * @param left Version.
+     * @param right Version.
+     * @return Comparison result, see {@link Comparable}.
+     */
+    public static int compareIgnoreOpCounter(MvccVersion left, MvccVersion right) {
+        return compare(left.coordinatorVersion(), left.counter(), 0, right.coordinatorVersion(), right.counter(), 0);
+    }
+
+    /**
      * Compares new row version (xid_max) with the given counter and coordinator versions.
      *
      * @param row Row.
