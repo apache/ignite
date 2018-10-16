@@ -2494,7 +2494,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     log.debug("Processing node failed event [locNodeId=" + cctx.localNodeId() +
                         ", failedNodeId=" + evtNodeId + ']');
 
-                GridCompoundFuture<IgniteInternalTx, Void> allTxFinFut = new GridCompoundFuture<>();
+                // Null means that recovery voting is not needed.
+                GridCompoundFuture<IgniteInternalTx, Void> allTxFinFut = discoEvt.eventNode().isClient()
+                    ? new GridCompoundFuture<>() : null;
 
                 for (final IgniteInternalTx tx : activeTransactions()) {
                     if ((tx.near() && !tx.local()) || (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId))) {
@@ -2525,11 +2527,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         }
 
                         // Await only mvcc transactions initiated by failed client node.
-                        if (discoEvt.eventNode().isClient() && tx.eventNodeId().equals(evtNodeId)
+                        if (allTxFinFut != null && tx.eventNodeId().equals(evtNodeId)
                             && tx.mvccSnapshot() != null)
                             allTxFinFut.add(tx.finishFuture());
                     }
                 }
+
+                if (allTxFinFut == null)
+                    return;
 
                 allTxFinFut.markInitialized();
 
