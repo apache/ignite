@@ -1045,6 +1045,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 ctx.localNodeId(),
                 ver,
                 topVer,
+                topVer,
                 cnt,
                 txRead,
                 retval,

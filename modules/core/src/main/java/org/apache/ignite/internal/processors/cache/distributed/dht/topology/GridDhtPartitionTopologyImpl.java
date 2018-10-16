@@ -753,45 +753,47 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 long updateSeq = this.updateSeq.incrementAndGet();
 
-                for (int p = 0; p < partitions; p++) {
-                    GridDhtLocalPartition locPart = localPartition0(p, topVer, false, true);
+                if (!ctx.localNode().isClient()) {
+                    for (int p = 0; p < partitions; p++) {
+                        GridDhtLocalPartition locPart = localPartition0(p, topVer, false, true);
 
-                    if (partitionLocalNode(p, topVer)) {
-                        // Prepare partition to rebalance if it's not happened on full map update phase.
-                        if (locPart == null || locPart.state() == RENTING || locPart.state() == EVICTED)
-                            locPart = rebalancePartition(p, false);
+                        if (partitionLocalNode(p, topVer)) {
+                            // Prepare partition to rebalance if it's not happened on full map update phase.
+                            if (locPart == null || locPart.state() == RENTING || locPart.state() == EVICTED)
+                                locPart = rebalancePartition(p, false);
 
-                        GridDhtPartitionState state = locPart.state();
-
-                        if (state == MOVING) {
-                            if (grp.rebalanceEnabled()) {
-                                Collection<ClusterNode> owners = owners(p);
-
-                                // If an owner node left during exchange, then new exchange should be started with detecting lost partitions.
-                                if (!F.isEmpty(owners)) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Will not own partition (there are owners to rebalance from) " +
-                                            "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", owners = " + owners + ']');
-                                }
-                            }
-                            else
-                                updateSeq = updateLocal(p, locPart.state(), updateSeq, topVer);
-                        }
-                    }
-                    else {
-                        if (locPart != null) {
                             GridDhtPartitionState state = locPart.state();
 
                             if (state == MOVING) {
-                                locPart.rent(false);
+                                if (grp.rebalanceEnabled()) {
+                                    Collection<ClusterNode> owners = owners(p);
 
-                                updateSeq = updateLocal(p, locPart.state(), updateSeq, topVer);
+                                    // If an owner node left during exchange, then new exchange should be started with detecting lost partitions.
+                                    if (!F.isEmpty(owners)) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Will not own partition (there are owners to rebalance from) " +
+                                                "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", owners = " + owners + ']');
+                                    }
+                                }
+                                else
+                                    updateSeq = updateLocal(p, locPart.state(), updateSeq, topVer);
+                            }
+                        }
+                        else {
+                            if (locPart != null) {
+                                GridDhtPartitionState state = locPart.state();
 
-                                changed = true;
+                                if (state == MOVING) {
+                                    locPart.rent(false);
 
-                                if (log.isDebugEnabled()) {
-                                    log.debug("Evicting " + state + " partition (it does not belong to affinity) [" +
-                                        "grp=" + grp.cacheOrGroupName() + ", p=" + locPart.id() + ']');
+                                    updateSeq = updateLocal(p, locPart.state(), updateSeq, topVer);
+
+                                    changed = true;
+
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("Evicting " + state + " partition (it does not belong to affinity) [" +
+                                            "grp=" + grp.cacheOrGroupName() + ", p=" + locPart.id() + ']');
+                                    }
                                 }
                             }
                         }

@@ -3,6 +3,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -72,6 +73,10 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         for (int k = 0; k < 100; k++) {
             atomicCache.put(k, k);
             txCache.put(k, k);
+
+            Lock lock = txCache.lock(k);
+            lock.lock();
+            lock.unlock();
         }
 
         for (int k = 0; k < 100; k++) {
