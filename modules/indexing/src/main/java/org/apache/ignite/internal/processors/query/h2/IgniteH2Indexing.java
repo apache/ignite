@@ -1456,6 +1456,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (timeoutMillis > 0)
             ses.setQueryTimeout(timeoutMillis);
+        else
+            ses.setQueryTimeout(0);
 
         try {
             return stmt.executeQuery();
@@ -1466,10 +1468,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 throw new QueryCancelledException();
 
             throw new IgniteCheckedException("Failed to execute SQL query. " + e.getMessage(), e);
-        }
-        finally {
-            if (timeoutMillis > 0)
-                ses.setQueryTimeout(0);
         }
     }
 
