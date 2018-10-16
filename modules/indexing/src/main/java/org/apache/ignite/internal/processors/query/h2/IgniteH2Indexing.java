@@ -3731,9 +3731,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 while (i < list.size() && list.get(i) < partId)
                     i++;
 
-                if (i < list.size())
+                if (i < list.size()) {
                     if (list.get(i) > partId)
                         list.add(i, partId);
+                }
                 else
                     list.add(partId);
             }
