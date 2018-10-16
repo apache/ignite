@@ -891,16 +891,15 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         IgniteUtils.doInParallel(3,
             Executors.newFixedThreadPool(3),
             Arrays.asList(1, 2, 3),
-            new IgniteInClosureX<Integer>(){
-                @Override public void applyx(Integer info) throws IgniteCheckedException {
-                    try {
-                        barrier.await(1, TimeUnit.SECONDS);
-                    }
-                    catch (Exception e) {
-                        throw new IgniteCheckedException(e);
-                    }
+            i -> {
+                try {
+                    barrier.await(1, TimeUnit.SECONDS);
                 }
-            });
+                catch (Exception e) {
+                    throw new IgniteCheckedException(e);
+                }
+            }
+        );
     }
 
     /**
@@ -913,16 +912,15 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             IgniteUtils.doInParallel(2,
                 Executors.newFixedThreadPool(3),
                 Arrays.asList(1, 2, 3),
-                new IgniteInClosureX<Integer>() {
-                    @Override public void applyx(Integer integer) throws IgniteCheckedException {
-                        try {
-                            barrier.await(400, TimeUnit.MILLISECONDS);
-                        }
-                        catch (Exception e) {
-                            throw new IgniteCheckedException(e);
-                        }
+                i -> {
+                    try {
+                        barrier.await(400, TimeUnit.MILLISECONDS);
                     }
-                });
+                    catch (Exception e) {
+                        throw new IgniteCheckedException(e);
+                    }
+                }
+            );
 
             fail("Should throw timeout exception");
         }
@@ -941,12 +939,11 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             IgniteUtils.doInParallel(3,
                 Executors.newFixedThreadPool(1),
                 Arrays.asList(1, 2, 3),
-                new IgniteInClosureX<Integer>() {
-                    @Override public void applyx(Integer i) throws IgniteCheckedException {
-                        if (i == 1)
-                            throw new IgniteCheckedException(expectedException);
-                    }
-                });
+                i -> {
+                    if (i == 1)
+                        throw new IgniteCheckedException(expectedException);
+                }
+            );
 
             fail("Should throw ParallelExecutionException");
         }

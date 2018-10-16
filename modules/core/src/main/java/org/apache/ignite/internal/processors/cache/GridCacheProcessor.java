@@ -2091,23 +2091,20 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 parallelismLvl,
                 sharedCtx.kernalContext().getSystemExecutorService(),
                 startCacheInfos,
-                new IgniteInClosureX<StartCacheInfo>() {
-                    @Override public void applyx(StartCacheInfo startCacheInfo) throws IgniteCheckedException {
-                        cacheStartFailHandler.handle(
-                            startCacheInfo,
-                            cacheInfo -> {
-                                GridCacheContext cacheCtx = prepareCacheContext(
-                                    cacheInfo.getCacheDescriptor().cacheConfiguration(),
-                                    cacheInfo.getCacheDescriptor(),
-                                    cacheInfo.getReqNearCfg(),
-                                    cacheInfo.getExchangeTopVer(),
-                                    cacheInfo.isDisabledAfterStart()
-                                );
-                                cacheContexts.put(cacheInfo, cacheCtx);
-                            }
-                        );
-                    }
-                }
+                startCacheInfo ->
+                    cacheStartFailHandler.handle(
+                        startCacheInfo,
+                        cacheInfo -> {
+                            GridCacheContext cacheCtx = prepareCacheContext(
+                                cacheInfo.getCacheDescriptor().cacheConfiguration(),
+                                cacheInfo.getCacheDescriptor(),
+                                cacheInfo.getReqNearCfg(),
+                                cacheInfo.getExchangeTopVer(),
+                                cacheInfo.isDisabledAfterStart()
+                            );
+                            cacheContexts.put(cacheInfo, cacheCtx);
+                        }
+                    )
             );
 
             /*
@@ -2139,15 +2136,11 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 parallelismLvl,
                 sharedCtx.kernalContext().getSystemExecutorService(),
                 cacheContexts.entrySet(),
-                new IgniteInClosureX<Map.Entry<StartCacheInfo, GridCacheContext>>() {
-                    @Override public void applyx(
-                        Map.Entry<StartCacheInfo, GridCacheContext> cacheCtxEntry) throws IgniteCheckedException {
-                        cacheStartFailHandler.handle(
-                            cacheCtxEntry.getKey(),
-                            cacheInfo -> onCacheStarted(cacheCtxEntry.getValue())
-                        );
-                    }
-                }
+                cacheCtxEntry ->
+                    cacheStartFailHandler.handle(
+                        cacheCtxEntry.getKey(),
+                        cacheInfo -> onCacheStarted(cacheCtxEntry.getValue())
+                    )
             );
         }
     }

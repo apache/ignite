@@ -2533,7 +2533,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     err = e;
             }
             catch (Throwable e) {
-                err = e;
+                if (!(stop && Thread.currentThread().isInterrupted()))
+                    err = e;
             }
             finally {
                 if (err == null && !stop && !reconnectNeeded)

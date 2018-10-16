@@ -10660,7 +10660,7 @@ public abstract class IgniteUtils {
      * @throws IgniteCheckedException if parallel execution was failed.
      */
     public static <T> void doInParallel(ExecutorService executorSvc, Collection<T> srcDatas,
-        IgniteInClosureX<T> operation) throws IgniteCheckedException, IgniteInterruptedCheckedException {
+        IgniteThrowableConsumer<T> operation) throws IgniteCheckedException, IgniteInterruptedCheckedException {
         doInParallel(srcDatas.size(), executorSvc, srcDatas, operation);
     }
 
@@ -10678,7 +10678,7 @@ public abstract class IgniteUtils {
         int parallelismLvl,
         ExecutorService executorSvc,
         Collection<T> srcDatas,
-        IgniteInClosureX<T> operation
+        IgniteThrowableConsumer<T> operation
     ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
         List<List<T>> batches = IntStream.range(0, parallelismLvl)
             .mapToObj(i -> new ArrayList<T>())
@@ -10693,7 +10693,7 @@ public abstract class IgniteUtils {
             .filter(batch -> !batch.isEmpty())
             .map(batch -> executorSvc.submit(() -> {
                 for (T item : batch)
-                    operation.applyx(item);
+                    operation.accept(item);
 
                 return null;
             }))
