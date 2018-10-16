@@ -67,6 +67,11 @@ public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends GridCommonA
         "where pr.companyId = co._key\n" +
         "order by co._key, pr._key ";
 
+    protected static final String QRY_LONG = "select pe.id, co.id, pr._key\n" +
+        "from \"pe\".Person pe, \"pr\".Product pr, \"co\".Company co, \"pu\".Purchase pu\n" +
+        "where pe._key = pu.personId and pu.productId = pr._key and pr.companyId = co._key \n" +
+        "order by pe.id desc";
+
     /** */
     protected static final int GRID_CNT = 2;
 
