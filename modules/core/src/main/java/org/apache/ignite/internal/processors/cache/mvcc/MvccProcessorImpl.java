@@ -431,15 +431,15 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public byte state(long crdVer, long cntr) throws IgniteCheckedException {
-        return txLog.get(crdVer, cntr);
+    @Override public byte state(MvccVersion ver) throws IgniteCheckedException {
+        return state(ver.coordinatorVersion(), ver.counter());
     }
 
     /** {@inheritDoc} */
-    @Override public byte state(MvccVersion ver) throws IgniteCheckedException {
+    @Override public byte state(long crdVer, long cntr) throws IgniteCheckedException {
         assert txLog != null && mvccEnabled;
 
-        return txLog.get(ver.coordinatorVersion(), ver.counter());
+        return txLog.get(crdVer, cntr);
     }
 
     /** {@inheritDoc} */
