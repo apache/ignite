@@ -18,6 +18,7 @@ package org.apache.ignite.internal.commandline.cache;
 
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.visor.cache.VisorCacheConfigOutputFormat;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
 import org.jetbrains.annotations.Nullable;
 
@@ -64,8 +65,8 @@ public class CacheArguments {
     /** Additional user attributes in result. Set of attribute names whose values will be searched in ClusterNode.attributes(). */
     private Set<String> userAttributes;
 
-    /** Human readable formant enabled lag. */
-    private boolean humanReadableFormat;
+    /** Output format. */
+    private VisorCacheConfigOutputFormat outputFormat;
 
     /**
      * @return Command.
@@ -250,12 +251,12 @@ public class CacheArguments {
     }
 
     /**
-     * @return Human readable format flag.
+     * @return Output format.
      */
-    public boolean humanReadableFormat() { return humanReadableFormat; }
+    public VisorCacheConfigOutputFormat outputFormat() { return outputFormat; }
 
     /**
-     * @param humanReadableFormat New human readable format flag.
+     * @param outputFormat New output format.
      */
-    public void humanReadableFormat(boolean humanReadableFormat) { this.humanReadableFormat = humanReadableFormat; }
+    public void outputFormat(VisorCacheConfigOutputFormat outputFormat) { this.outputFormat = outputFormat; }
 }

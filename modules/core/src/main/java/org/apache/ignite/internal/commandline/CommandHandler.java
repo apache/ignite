@@ -74,6 +74,7 @@ import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskArg;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
 import org.apache.ignite.internal.visor.cache.VisorCacheAffinityConfiguration;
+import org.apache.ignite.internal.visor.cache.VisorCacheConfigOutputFormat;
 import org.apache.ignite.internal.visor.cache.VisorCacheConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheConfigurationCollectorTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheConfigurationCollectorTaskArg;
@@ -108,6 +109,7 @@ import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskV2;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
+import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTask;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskResult;
@@ -130,6 +132,9 @@ import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.C
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.REMOVE;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.SET;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.VERSION;
+import static org.apache.ignite.internal.visor.cache.VisorCacheConfigOutputFormat.MULTI_LINE;
+import static org.apache.ignite.internal.visor.cache.VisorCacheConfigOutputFormat.SINGLE_LINE;
+import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.GROUPS;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
 
@@ -290,7 +295,7 @@ public class CommandHandler {
     private static final String TX_KILL = "kill";
 
     /** */
-    private static final String CACHES_CONFIG_HUMAN_READABLE_FLAG = "--human-readable";
+    private static final String CACHES_CONFIG_OUTPUT_FORMAT = "--output-format";
 
     /** */
     private Iterator<String> argsIt;
@@ -324,13 +329,6 @@ public class CommandHandler {
      */
     private void log(String format, Object... args) {
         System.out.printf(format, args);
-    }
-
-    /**
-     * Output terminate line symbol to console.
-     */
-    private void log() {
-        System.out.println();
     }
 
     /**
@@ -636,11 +634,6 @@ public class CommandHandler {
 
                 break;
 
-            case CONFIG:
-                cachesConfig(client, cacheArgs);
-
-                break;
-
             default:
                 cacheView(client, cacheArgs);
 
@@ -654,15 +647,14 @@ public class CommandHandler {
     private void printCacheHelp() {
         log("--cache subcommand allows to do the following operations:");
 
-        usage("  Show information about caches, groups or sequences that match a regex:", CACHE, " list regexPattern [groups|seq] [nodeId]");
+        usage("  Show information about caches, groups or sequences that match a regex:", CACHE, " list regexPattern [groups|seq] [nodeId]", " [" + CACHES_CONFIG_OUTPUT_FORMAT + " " + MULTI_LINE + "]");
         usage("  Show hot keys that are point of contention for multiple transactions:", CACHE, " contention minQueueSize [nodeId] [maxPrint]");
         usage("  Verify partition counters and hashes between primary and backups on idle cluster:", CACHE, " idle_verify [--dump] [--skipZeros] [cache1,...,cacheN]");
         usage("  Validate custom indexes on idle cluster:", CACHE, " validate_indexes [cache1,...,cacheN] [nodeId] [checkFirst|checkThrough]");
         usage("  Collect partition distribution information:", CACHE, " distribution nodeId|null [cacheName1,...,cacheNameN] [--user-attributes attributeName1[,...,attributeNameN]]");
         usage("  Reset lost partitions:", CACHE, " reset_lost_partitions cacheName1[,...,cacheNameN]");
-        usage("  List caches configuration:", CACHE, " config", " cacheNameRegexPattern [" + CACHES_CONFIG_HUMAN_READABLE_FLAG + "]");
 
-        log("  If [nodeId] is not specified, contention and validate_indexes commands will be broadcasted to all server nodes.");
+        log("  If [nodeId] is not specified, list with no defined [groups|seq], contention and validate_indexes commands will be broadcasted to all server nodes.");
         log("  Another commands where [nodeId] is optional will run on a random server node.");
         log("  checkFirst numeric parameter for validate_indexes specifies number of first K keys to be validated.");
         log("  checkThrough numeric parameter for validate_indexes allows to check each Kth key.");
@@ -771,13 +763,16 @@ public class CommandHandler {
      * @param cacheArgs Cache args.
      */
     private void cacheView(GridClient client, CacheArguments cacheArgs) throws GridClientException {
-        VisorViewCacheTaskArg taskArg = new VisorViewCacheTaskArg(cacheArgs.regex(), cacheArgs.cacheCommand());
+        if (cacheArgs.cacheCommand() == CACHES)
+            cachesConfig(client, cacheArgs);
+        else {
+            VisorViewCacheTaskArg taskArg = new VisorViewCacheTaskArg(cacheArgs.regex(), cacheArgs.cacheCommand());
 
-        VisorViewCacheTaskResult res = executeTaskByNameOnNode(
-            client, VisorViewCacheTask.class.getName(), taskArg, cacheArgs.nodeId());
+            VisorViewCacheTaskResult res = executeTaskByNameOnNode(
+                client, VisorViewCacheTask.class.getName(), taskArg, cacheArgs.nodeId());
 
-        for (CacheInfo info : res.cacheInfos())
-            info.print(cacheArgs.cacheCommand());
+            printCacheInfos(res.cacheInfos(), cacheArgs.outputFormat(), cacheArgs.cacheCommand());
+        }
     }
 
     /**
@@ -859,25 +854,87 @@ public class CommandHandler {
     private void cachesConfig(GridClient client, CacheArguments cacheArgs) throws GridClientException {
         VisorCacheConfigurationCollectorTaskArg taskArg = new VisorCacheConfigurationCollectorTaskArg(cacheArgs.regex());
 
+        UUID nodeId = cacheArgs.nodeId() == null ? BROADCAST_UUID : cacheArgs.nodeId();
+
         Map<String, VisorCacheConfiguration> res =
-            executeTaskByNameOnNode(client, VisorCacheConfigurationCollectorTask.class.getName(), taskArg, BROADCAST_UUID);
+            executeTaskByNameOnNode(client, VisorCacheConfigurationCollectorTask.class.getName(), taskArg, nodeId);
 
-        if (!F.isEmpty(res)) {
-            for (Map.Entry<String, VisorCacheConfiguration> entry : res.entrySet()) {
-                String cacheName = entry.getKey();
+        printCachesConfig(res, cacheArgs.outputFormat());
 
-                Map<String, Object> params = mapToPairs(entry.getValue());
+    }
 
-                if (cacheArgs.humanReadableFormat()) {
+    /**
+     * Prints caches info.
+     *
+     * @param infos Caches info.
+     * @param outputFormat Output format.
+     * @param cmd Command.
+     */
+    private void printCacheInfos(
+        Collection<CacheInfo> infos,
+        VisorCacheConfigOutputFormat outputFormat,
+        VisorViewCacheCmd cmd
+    ) {
+        for (CacheInfo info : infos) {
+            Map<String, Object> map = info.toMap(cmd);
+            switch (outputFormat) {
+                case MULTI_LINE:
+                    log("[%s = '%s']%n", cmd, info.name(cmd));
+
+                    for (Map.Entry<String, Object> innerEntry : map.entrySet())
+                        log("%s: %s%n", innerEntry.getKey(), innerEntry.getValue());
+
+                    nl();
+
+                    break;
+
+                default:
+                    StringBuilder sb = new StringBuilder();
+
+                    sb.append("[");
+
+                    for (Map.Entry<String, Object> e : map.entrySet())
+                        sb.append(e.getKey()).append("=").append(e.getValue()).append(", ");
+
+                    sb.setLength(sb.length() - 2);
+
+                    sb.append("]");
+
+                    log(sb.toString());
+            }
+        }
+    }
+
+    /**
+     * Prints caches config.
+     *
+     * @param caches Caches config.
+     * @param outputFormat Output format.
+     */
+    private void printCachesConfig(
+        Map<String, VisorCacheConfiguration> caches,
+        VisorCacheConfigOutputFormat outputFormat
+    ) {
+
+        for (Map.Entry<String, VisorCacheConfiguration> entry : caches.entrySet()) {
+            String cacheName = entry.getKey();
+
+            Map<String, Object> params = mapToPairs(entry.getValue());
+            switch (outputFormat) {
+                case MULTI_LINE:
                     log("[cache = '%s']%n", cacheName);
 
                     for (Map.Entry<String, Object> innerEntry : params.entrySet())
                         log("%s: %s%n", innerEntry.getKey(), innerEntry.getValue());
 
-                    log();
-                }
-                else
+                    nl();
+
+                    break;
+
+                default:
                     log("%s: %s%n", entry.getKey(), entry.getValue());
+
+                    break;
             }
         }
     }
@@ -1709,34 +1766,31 @@ public class CommandHandler {
 
                 break;
 
-            case CONFIG:
+            case LIST:
                 cacheArgs.regex(nextArg("Regex is expected"));
 
-                if (hasNextCacheArg()) {
-                    String arg = nextArg("");
+                VisorViewCacheCmd cacheCmd = CACHES;
 
-                    if (!arg.equalsIgnoreCase(CACHES_CONFIG_HUMAN_READABLE_FLAG))
-                        throw new IllegalArgumentException(arg);
+                VisorCacheConfigOutputFormat outputFormat = SINGLE_LINE;
 
-                    cacheArgs.humanReadableFormat(true);
-                }
-
-                break;
-
-            default:
-                cacheArgs.regex(nextArg("Regex is expected"));
-
-                if (hasNextCacheArg()) {
-                    String tmp = nextArg("");
+                while (hasNextCacheArg()) {
+                    String tmp = nextArg("").toLowerCase();
 
                     switch (tmp) {
                         case "groups":
-                            cacheArgs.cacheCommand(GROUPS);
+                            cacheCmd = GROUPS;
 
                             break;
 
                         case "seq":
-                            cacheArgs.cacheCommand(SEQ);
+                            cacheCmd = SEQ;
+
+                            break;
+
+                        case CACHES_CONFIG_OUTPUT_FORMAT:
+                            String tmp2 = nextArg("output format must be defined!").toLowerCase();
+
+                            outputFormat = VisorCacheConfigOutputFormat.fromConsoleName(tmp2);
 
                             break;
 
@@ -1745,7 +1799,13 @@ public class CommandHandler {
                     }
                 }
 
+                cacheArgs.cacheCommand(cacheCmd);
+                cacheArgs.outputFormat(outputFormat);
+
                 break;
+
+            default:
+                throw new IllegalArgumentException("Unknown --cache subcommand " + cmd);
         }
 
         if (hasNextCacheArg())

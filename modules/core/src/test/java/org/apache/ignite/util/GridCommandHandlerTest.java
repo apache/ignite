@@ -82,6 +82,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.cache.VisorCacheConfigOutputFormat;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -111,12 +112,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
  * Command line handler test.
  */
 public class GridCommandHandlerTest extends GridCommonAbstractTest {
-    /** Search all regexp. */
-    private static final String SEARCH_ALL_REGEXP = ".*";
-
-    /** Cache name. */
-    private static final String CACHE_NAME = "test-" + DEFAULT_CACHE_NAME;
-
     /** System out. */
     protected PrintStream sysOut;
 
@@ -1186,10 +1181,25 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
+    public void testCacheSequence() throws Exception {
+        testCacheSequence(null);
+    }
+
+    /** */
+    public void testCacheSequenceSingleLine() throws Exception {
+        testCacheSequence(VisorCacheConfigOutputFormat.SINGLE_LINE);
+    }
+
+    /** */
+    public void testCacheSequenceMultiLine() throws Exception {
+        testCacheSequence(VisorCacheConfigOutputFormat.MULTI_LINE);
+    }
+
     /**
      *
      */
-    public void testCacheSequence() throws Exception {
+    private void testCacheSequence(VisorCacheConfigOutputFormat outputFormat) throws Exception {
         Ignite ignite = startGrid();
 
         ignite.cluster().active(true);
@@ -1204,62 +1214,38 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "list", "testSeq.*", "seq"));
+        int exitCode;
+
+        if (outputFormat == null)
+            exitCode = execute("--cache", "list", "testSeq.*", "seq");
+        else
+            exitCode = execute("--cache", "list", "testSeq.*", "seq", "--output-format", outputFormat.text());
+
+        assertEquals(EXIT_CODE_OK, exitCode);
 
         assertTrue(testOut.toString().contains("testSeq"));
         assertTrue(testOut.toString().contains("testSeq2"));
     }
 
-    public void testCacheConfigAllHumanReadable() throws Exception {
-        testCacheConfig(SEARCH_ALL_REGEXP, true, CACHE_NAME);
+    /** */
+    public void testCacheGroups() throws Exception {
+        testCacheGroups(null);
     }
 
-    public void testCacheConfigAll() throws Exception {
-        testCacheConfig(SEARCH_ALL_REGEXP, false, CACHE_NAME);
+    /** */
+    public void testCacheGroupsSingleLine() throws Exception {
+        testCacheGroups(VisorCacheConfigOutputFormat.SINGLE_LINE);
     }
 
-    public void testCacheConfigUserHumanReadable() throws Exception {
-        testCacheConfig(CACHE_NAME, true, CACHE_NAME);
-    }
-
-    public void testCacheConfigUser() throws Exception {
-        testCacheConfig(CACHE_NAME, false, CACHE_NAME);
-    }
-
-    private void testCacheConfig(String regex, boolean humanReadable, String userCacheName) throws Exception {
-        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName());
-
-        if (userCacheName != null)
-            cfg.setCacheConfiguration(new CacheConfiguration().setName(userCacheName));
-
-        Ignite ignite = startGrid(cfg);
-
-        ignite.cluster().active(true);
-
-        injectTestSystemOut();
-
-        final int execCode;
-
-        if (humanReadable)
-            execCode = execute("--cache", "config", regex, "--human-readable");
-        else
-            execCode = execute("--cache", "config", regex);
-
-        assertEquals(EXIT_CODE_OK, execCode);
-
-        assertEquals(humanReadable, testOut.toString().contains("[cache = "));
-
-        if (regex.equals(SEARCH_ALL_REGEXP))
-            assertTrue(testOut.toString().contains("ignite-sys-cache"));
-
-        if (userCacheName != null)
-            assertTrue(testOut.toString().contains(userCacheName));
+    /** */
+    public void testCacheGroupsMultiLine() throws Exception {
+        testCacheGroups(VisorCacheConfigOutputFormat.MULTI_LINE);
     }
 
     /**
      *
      */
-    public void testCacheGroups() throws Exception {
+    private void testCacheGroups(VisorCacheConfigOutputFormat outputFormat) throws Exception {
         Ignite ignite = startGrid();
 
         ignite.cluster().active(true);
@@ -1275,15 +1261,35 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "list", ".*", "groups"));
+        int exitCode;
+
+        if (outputFormat == null)
+            exitCode = execute("--cache", "list", ".*", "groups");
+        else
+            exitCode = execute("--cache", "list", ".*", "groups", "--output-format", outputFormat.text());
+
+        assertEquals(EXIT_CODE_OK, exitCode);
 
         assertTrue(testOut.toString().contains("G100"));
     }
 
-    /**
-     *
-     */
-    public void testCacheAffinity() throws Exception {
+    /** */
+    public void testCacheAffinityNoOutputFormat() throws Exception {
+        testCacheAffinity(null);
+    }
+
+    /** */
+    public void testCacheAffinitySignleLineOutputFormat() throws Exception {
+        testCacheAffinity(VisorCacheConfigOutputFormat.SINGLE_LINE);
+    }
+
+    /** */
+    public void testCacheAffinityMultiLineOutputFormat() throws Exception {
+        testCacheAffinity(VisorCacheConfigOutputFormat.MULTI_LINE);
+    }
+
+    /** */
+    private void testCacheAffinity(VisorCacheConfigOutputFormat outputFormat) throws Exception {
         Ignite ignite = startGrid();
 
         ignite.cluster().active(true);
@@ -1298,12 +1304,27 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "list", ".*"));
+        int exitCode;
 
-        assertTrue(testOut.toString().contains("cacheName=" + DEFAULT_CACHE_NAME));
-        assertTrue(testOut.toString().contains("prim=32"));
-        assertTrue(testOut.toString().contains("mapped=32"));
-        assertTrue(testOut.toString().contains("affCls=RendezvousAffinityFunction"));
+        if (outputFormat == null)
+            exitCode = execute("--cache", "list", ".*");
+        else
+            exitCode = execute("--cache", "list", ".*", "--output-format", outputFormat.text());
+
+        assertEquals(EXIT_CODE_OK, exitCode);
+
+        String outStr = testOut.toString();
+
+        if (outputFormat == null || outputFormat == VisorCacheConfigOutputFormat.SINGLE_LINE) {
+            assertTrue(outStr.contains("name=" + DEFAULT_CACHE_NAME));
+            assertTrue(outStr.contains("partitions=32"));
+            assertTrue(outStr.contains("function=o.a.i.cache.affinity.rendezvous.RendezvousAffinityFunction"));
+        }
+        else if (outputFormat == VisorCacheConfigOutputFormat.MULTI_LINE) {
+            assertTrue(outStr.contains("[cache = '" + DEFAULT_CACHE_NAME + "']"));
+            assertTrue(outStr.contains("Affinity Partitions: 32"));
+            assertTrue(outStr.contains("Affinity Function: o.a.i.cache.affinity.rendezvous.RendezvousAffinityFunction"));
+        }
     }
 
     /**
