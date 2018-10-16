@@ -14,14 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.mvcc;
 
-@import "../../../public/stylesheets/variables";
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryClientReconnectTest;
 
-// Statuses coloring
-.ignite-status__active {
-  color: $ignite-status-active !important;
-}
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
-.ignite-status__inactive {
-  color: $ignite-status-inactive;
+/**
+ * Mvcc CQ client reconnect test.
+ */
+public class CacheMvccContinuousQueryClientReconnectTest  extends IgniteCacheContinuousQueryClientReconnectTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicMode() {
+        return TRANSACTIONAL_SNAPSHOT;
+    }
 }

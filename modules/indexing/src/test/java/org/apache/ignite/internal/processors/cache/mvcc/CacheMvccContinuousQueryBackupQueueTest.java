@@ -14,9 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.mvcc;
 
-import angular from 'angular';
-import './style.scss';
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryBackupQueueTest;
 
-export default angular
-    .module('ignite-console.ignite-status', []);
+/**
+ *
+ */
+public class CacheMvccContinuousQueryBackupQueueTest extends IgniteCacheContinuousQueryBackupQueueTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+    }
+}
