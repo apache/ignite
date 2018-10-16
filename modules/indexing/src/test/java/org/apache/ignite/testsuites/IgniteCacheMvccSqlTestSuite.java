@@ -20,7 +20,21 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.index.MvccEmptyTransactionSelfTest;
 import org.apache.ignite.internal.processors.cache.index.SqlTransactionsCommandsWithMvccEnabledSelfTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccBasicContinuousQueryTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccBulkLoadTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccClientReconnectContinuousQueryTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccContinuousQueryBackupQueueTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccContinuousQueryClientReconnectTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccContinuousQueryClientTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccContinuousQueryImmutableEntryTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccContinuousQueryMultiNodesFilteringTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccContinuousQueryPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccContinuousQueryPartitionedTxOneNodeTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccContinuousQueryReplicatedSelfTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccContinuousQueryReplicatedTxOneNodeTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccContinuousWithTransformerClientSelfTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccContinuousWithTransformerPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccContinuousWithTransformerReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccDmlSimpleTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccIteratorWithConcurrentJdbcTransactionTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccLocalEntriesWithConcurrentJdbcTransactionTest;
@@ -40,8 +54,10 @@ import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccScanQueryWithCo
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSizeTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSizeWithConcurrentJdbcTransactionTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSqlConfigurationValidationTest;
-import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSqlUpdateCountersTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSqlContinuousQueryPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSqlContinuousQueryReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSqlLockTimeoutTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSqlUpdateCountersTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccStreamingInsertTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTxNodeMappingTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccRepeatableReadBulkOpsTest;
@@ -101,6 +117,28 @@ public class IgniteCacheMvccSqlTestSuite extends TestSuite {
 
         suite.addTestSuite(CacheMvccPartitionedSqlCoordinatorFailoverTest.class);
         suite.addTestSuite(CacheMvccReplicatedSqlCoordinatorFailoverTest.class);
+
+        // Continuous queries.
+        suite.addTestSuite(CacheMvccBasicContinuousQueryTest.class);
+        suite.addTestSuite(CacheMvccContinuousQueryPartitionedSelfTest.class);
+        suite.addTestSuite(CacheMvccContinuousQueryReplicatedSelfTest.class);
+        suite.addTestSuite(CacheMvccSqlContinuousQueryPartitionedSelfTest.class);
+        suite.addTestSuite(CacheMvccSqlContinuousQueryReplicatedSelfTest.class);
+
+        suite.addTestSuite(CacheMvccContinuousQueryPartitionedTxOneNodeTest.class);
+        suite.addTestSuite(CacheMvccContinuousQueryReplicatedTxOneNodeTest.class);
+
+        suite.addTestSuite(CacheMvccContinuousQueryClientReconnectTest.class);
+        suite.addTestSuite(CacheMvccContinuousQueryClientTest.class);
+
+        suite.addTestSuite(CacheMvccContinuousQueryMultiNodesFilteringTest.class);
+        suite.addTestSuite(CacheMvccContinuousQueryBackupQueueTest.class);
+        suite.addTestSuite(CacheMvccContinuousQueryImmutableEntryTest.class);
+        suite.addTestSuite(CacheMvccClientReconnectContinuousQueryTest.class);
+
+        suite.addTestSuite(CacheMvccContinuousWithTransformerClientSelfTest.class);
+        suite.addTestSuite(CacheMvccContinuousWithTransformerPartitionedSelfTest.class);
+        suite.addTestSuite(CacheMvccContinuousWithTransformerReplicatedSelfTest.class);
 
         return suite;
     }
