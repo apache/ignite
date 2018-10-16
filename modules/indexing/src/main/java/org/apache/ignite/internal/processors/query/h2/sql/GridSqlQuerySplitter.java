@@ -2405,7 +2405,12 @@ public class GridSqlQuerySplitter {
      */
     @Nullable private static CacheQueryPartitionInfo getCacheQueryPartitionInfo(Column col, GridSqlElement cnstOrPar,
         GridKernalContext ctx) throws IgniteCheckedException {
-        assert col!=null && col.getTable()!=null && GridH2Table.class.isAssignableFrom(col.getTable().getClass());
+        assert col != null;
+
+        assert col.getTable() != null;
+
+        if (!GridH2Table.class.isAssignableFrom(col.getTable().getClass()))
+            return null;
 
         GridH2Table tbl = (GridH2Table)col.getTable();
 
