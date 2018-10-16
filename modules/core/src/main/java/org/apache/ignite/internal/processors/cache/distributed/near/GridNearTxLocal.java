@@ -738,11 +738,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         try {
             validateTxMode(cacheCtx);
 
-            if (mvccSnapshot == null) {
-                MvccUtils.mvccTracker(cacheCtx, this);
-
-                assert mvccSnapshot != null;
-            }
+            MvccUtils.requestSnapshot(cacheCtx, this);
 
             beforePut(cacheCtx, retval, true);
         }
@@ -773,7 +769,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         try {
             Set<?> keys = map != null ? map.keySet() : invokeMap.keySet();
 
-            final Map<KeyCacheObject, Message> enlisted = new HashMap<>(keys.size());
+            final Map<KeyCacheObject, Message> enlisted = new LinkedHashMap<>(keys.size());
 
             for (Object key : keys) {
                 if (isRollbackOnly())
@@ -3916,7 +3912,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         NearTxFinishFuture fut = fast ? new GridNearTxFastFinishFuture(this, commit) :
             new GridNearTxFinishFuture<>(cctx, this, commit);
 
-        if (mvccQueryTracker() != null || mvccSnapshot != null || txState.mvccEnabled(cctx)) {
+        if (mvccQueryTracker() != null || mvccSnapshot != null || txState.mvccEnabled()) {
             if (commit)
                 fut = new GridNearTxFinishAndAckFuture(fut);
             else
