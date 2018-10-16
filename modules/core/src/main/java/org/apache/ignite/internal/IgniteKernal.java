@@ -91,6 +91,7 @@ import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -101,6 +102,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.GridManager;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
@@ -189,6 +191,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersControlMXBeanImpl;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -765,6 +768,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param customExecSvcs Custom named executors.
      * @param errHnd Error handler to use for notification about startup problems.
      * @param workerRegistry Worker registry.
+     * @param hnd Default uncaught exception handler used by thread pools.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings({"CatchGenericClass", "unchecked"})
@@ -787,7 +791,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ExecutorService schemaExecSvc,
         @Nullable final Map<String, ? extends ExecutorService> customExecSvcs,
         GridAbsClosure errHnd,
-        WorkersRegistry workerRegistry
+        WorkersRegistry workerRegistry,
+        Thread.UncaughtExceptionHandler hnd
     )
         throws IgniteCheckedException {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getIgniteInstanceName()));
@@ -909,7 +914,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 customExecSvcs,
                 plugins,
                 MarshallerUtils.classNameFilter(this.getClass().getClassLoader()),
-                workerRegistry
+                workerRegistry,
+                hnd
             );
 
             cfg.getMarshaller().setContext(ctx.marshallerContext());
@@ -984,6 +990,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startManager(new GridFailoverManager(ctx));
             startManager(new GridCollisionManager(ctx));
             startManager(new GridIndexingManager(ctx));
+            startManager(new GridEncryptionManager(ctx));
 
             ackSecurity();
 
@@ -1349,7 +1356,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private void validateCommon(IgniteConfiguration cfg) {
         A.notNull(cfg.getNodeId(), "cfg.getNodeId()");
 
-        A.notNull(cfg.getMBeanServer(), "cfg.getMBeanServer()");
+        if (!U.IGNITE_MBEANS_DISABLED)
+            A.notNull(cfg.getMBeanServer(), "cfg.getMBeanServer()");
+
         A.notNull(cfg.getGridLogger(), "cfg.getGridLogger()");
         A.notNull(cfg.getMarshaller(), "cfg.getMarshaller()");
         A.notNull(cfg.getUserAttributes(), "cfg.getUserAttributes()");
@@ -1861,13 +1870,24 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ClusterNode locNode = localNode();
 
         if (log.isQuiet()) {
+            ackDataRegions(s -> {
+                U.quiet(false, s);
+
+                return null;
+            });
+
             U.quiet(false, "");
+
             U.quiet(false, "Ignite node started OK (id=" + U.id8(locNode.id()) +
                 (F.isEmpty(igniteInstanceName) ? "" : ", instance name=" + igniteInstanceName) + ')');
         }
 
         if (log.isInfoEnabled()) {
-            log.info("");
+            ackDataRegions(s -> {
+                log.info(s);
+
+                return null;
+            });
 
             String ack = "Ignite ver. " + VER_STR + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH_STR;
 
@@ -1902,6 +1922,48 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             U.quietAndInfo(log, ">>> Ignite cluster is not active (limited functionality available). " +
                 "Use control.(sh|bat) script or IgniteCluster interface to activate.");
         }
+    }
+
+    /**
+     * @param clo Message output closure.
+     */
+    public void ackDataRegions(IgniteClosure<String, Void> clo) {
+        DataStorageConfiguration memCfg = ctx.config().getDataStorageConfiguration();
+
+        if (memCfg == null)
+            return;
+
+        clo.apply("Data Regions Configured:");
+        clo.apply(dataRegionConfigurationMessage(memCfg.getDefaultDataRegionConfiguration()));
+
+        DataRegionConfiguration[] dataRegions = memCfg.getDataRegionConfigurations();
+
+        if (dataRegions != null) {
+            for (DataRegionConfiguration dataRegion : dataRegions) {
+                String msg = dataRegionConfigurationMessage(dataRegion);
+
+                if (msg != null)
+                    clo.apply(msg);
+            }
+        }
+    }
+
+    /**
+     * @param regCfg Data region configuration.
+     * @return Data region message.
+     */
+    private String dataRegionConfigurationMessage(DataRegionConfiguration regCfg) {
+        if (regCfg == null)
+            return null;
+
+        SB m = new SB();
+
+        m.a("  ^-- ").a(regCfg.getName()).a(" [");
+        m.a("initSize=").a(U.readableSize(regCfg.getInitialSize(), false));
+        m.a(", maxSize=").a(U.readableSize(regCfg.getMaxSize(), false));
+        m.a(", persistence=" + regCfg.isPersistenceEnabled()).a(']');
+
+        return m.toString();
     }
 
     /**
