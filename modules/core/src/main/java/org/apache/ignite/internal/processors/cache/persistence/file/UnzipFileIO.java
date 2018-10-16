@@ -22,6 +22,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.file.Path;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -51,6 +52,11 @@ public class UnzipFileIO extends AbstractFileIO {
 
         ZipEntry entry = zis.getNextEntry();
         size = entry.getSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Path getFilePath() {
+        return null;
     }
 
     /** {@inheritDoc} */

@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 
 /**
  * File I/O implementation based on {@link FileChannel}.
@@ -33,6 +34,9 @@ public class RandomAccessFileIO extends AbstractFileIO {
      */
     private final FileChannel ch;
 
+    /** */
+    private final Path filePath;
+
     /**
      * Creates I/O implementation for specified {@code file}
      *
@@ -40,7 +44,13 @@ public class RandomAccessFileIO extends AbstractFileIO {
      * @param modes Open modes.
      */
     public RandomAccessFileIO(File file, OpenOption... modes) throws IOException {
-        ch = FileChannel.open(file.toPath(), modes);
+        filePath = file.toPath();
+        ch = FileChannel.open(filePath, modes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Path getFilePath() {
+        return filePath;
     }
 
     /** {@inheritDoc} */

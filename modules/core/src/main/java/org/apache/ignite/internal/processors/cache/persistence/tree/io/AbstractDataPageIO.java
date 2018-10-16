@@ -30,13 +30,14 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Data pages IO.
  */
-public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
+public abstract class AbstractDataPageIO<T extends Storable> extends PageIO implements CompactablePageIO {
 
     /** */
     private static final int SHOW_ITEM = 0b0001;
@@ -1104,6 +1105,24 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
         assert getDirectCount(pageAddr) == directCnt + 1;
 
         return directCnt; // Previous directCnt will be our itemId.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void compactPage(ByteBuffer page, ByteBuffer out) {
+        assert page.isDirect();
+        assert out.isDirect();
+
+        int pageSize = page.remaining();
+        long pageAddr = GridUnsafe.bufferAddress(page);
+
+        int directCnt = getDirectCount(pageAddr);
+        int firstOff = compactDataEntries(pageAddr, directCnt, pageSize);
+        setFirstEntryOffset(pageAddr, firstOff, pageSize);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void restorePage(ByteBuffer page, int pageSize) {
+
     }
 
     /**

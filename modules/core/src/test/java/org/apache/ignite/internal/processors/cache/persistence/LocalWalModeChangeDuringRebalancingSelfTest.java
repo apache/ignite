@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
@@ -568,6 +569,11 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
          */
         TestFileIO(FileIO delegate) {
             this.delegate = delegate;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Path getFilePath() {
+            return delegate.getFilePath();
         }
 
         /** {@inheritDoc} */

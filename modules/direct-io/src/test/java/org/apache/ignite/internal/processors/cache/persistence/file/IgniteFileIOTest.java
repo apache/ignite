@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.file.Path;
 import java.util.concurrent.ThreadLocalRandom;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
@@ -52,6 +53,11 @@ public class IgniteFileIOTest extends TestCase {
          */
         TestFileIO(byte[] data) {
             this.data = data;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Path getFilePath() {
+            return null;
         }
 
         /** {@inheritDoc} */

@@ -24,6 +24,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -112,6 +113,11 @@ public class FilePageStore implements PageStore {
         this.allocated = new AtomicLong();
         this.pageSize = dbCfg.getPageSize();
         this.allocatedTracker = allocatedTracker;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Path getStorageFile() {
+        return fileIO.getFilePath();
     }
 
     /** {@inheritDoc} */

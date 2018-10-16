@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.file.Path;
 
 /**
  * Decorator class for File I/O
@@ -34,6 +35,11 @@ public class FileIODecorator extends AbstractFileIO {
      */
     public FileIODecorator(FileIO delegate) {
         this.delegate = delegate;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Path getFilePath() {
+        return delegate.getFilePath();
     }
 
     /** {@inheritDoc} */

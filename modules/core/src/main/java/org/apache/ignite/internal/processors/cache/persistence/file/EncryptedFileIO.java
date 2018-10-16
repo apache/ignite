@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.file.Path;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -96,6 +97,11 @@ public class EncryptedFileIO implements FileIO {
 
         this.encryptionOverhead = pageSize - CU.encryptedPageSize(pageSize, encSpi);
         this.zeroes =  new byte[encryptionOverhead];
+    }
+
+    /** {@inheritDoc} */
+    @Override public Path getFilePath() {
+        return plainFileIO.getFilePath();
     }
 
     /** {@inheritDoc} */

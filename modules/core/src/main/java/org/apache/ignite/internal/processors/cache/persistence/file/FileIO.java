@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.file.Path;
 
 /**
  * Interface to perform file I/O operations.
@@ -253,4 +254,9 @@ public interface FileIO extends AutoCloseable {
      * @throws IOException If some I/O error occurs.
      */
     @Override public void close() throws IOException;
+
+    /**
+     * @return File path.
+     */
+    public Path getFilePath();
 }

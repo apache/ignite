@@ -26,6 +26,7 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.List;
@@ -171,6 +172,11 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
         }
 
         return flags;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Path getFilePath() {
+        return file.toPath();
     }
 
     /** {@inheritDoc} */
