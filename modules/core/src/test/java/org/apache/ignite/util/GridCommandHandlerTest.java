@@ -58,6 +58,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.commandline.OutputFormat;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -82,7 +83,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.cache.VisorCacheConfigOutputFormat;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -103,6 +103,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
+import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
+import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREMIX;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -1188,18 +1190,18 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
     /** */
     public void testCacheSequenceSingleLine() throws Exception {
-        testCacheSequence(VisorCacheConfigOutputFormat.SINGLE_LINE);
+        testCacheSequence(SINGLE_LINE);
     }
 
     /** */
     public void testCacheSequenceMultiLine() throws Exception {
-        testCacheSequence(VisorCacheConfigOutputFormat.MULTI_LINE);
+        testCacheSequence(MULTI_LINE);
     }
 
     /**
      *
      */
-    private void testCacheSequence(VisorCacheConfigOutputFormat outputFormat) throws Exception {
+    private void testCacheSequence(OutputFormat outputFormat) throws Exception {
         Ignite ignite = startGrid();
 
         ignite.cluster().active(true);
@@ -1234,18 +1236,18 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
     /** */
     public void testCacheGroupsSingleLine() throws Exception {
-        testCacheGroups(VisorCacheConfigOutputFormat.SINGLE_LINE);
+        testCacheGroups(SINGLE_LINE);
     }
 
     /** */
     public void testCacheGroupsMultiLine() throws Exception {
-        testCacheGroups(VisorCacheConfigOutputFormat.MULTI_LINE);
+        testCacheGroups(MULTI_LINE);
     }
 
     /**
      *
      */
-    private void testCacheGroups(VisorCacheConfigOutputFormat outputFormat) throws Exception {
+    private void testCacheGroups(OutputFormat outputFormat) throws Exception {
         Ignite ignite = startGrid();
 
         ignite.cluster().active(true);
@@ -1280,16 +1282,16 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
     /** */
     public void testCacheAffinitySignleLineOutputFormat() throws Exception {
-        testCacheAffinity(VisorCacheConfigOutputFormat.SINGLE_LINE);
+        testCacheAffinity(SINGLE_LINE);
     }
 
     /** */
     public void testCacheAffinityMultiLineOutputFormat() throws Exception {
-        testCacheAffinity(VisorCacheConfigOutputFormat.MULTI_LINE);
+        testCacheAffinity(MULTI_LINE);
     }
 
     /** */
-    private void testCacheAffinity(VisorCacheConfigOutputFormat outputFormat) throws Exception {
+    private void testCacheAffinity(OutputFormat outputFormat) throws Exception {
         Ignite ignite = startGrid();
 
         ignite.cluster().active(true);
@@ -1315,12 +1317,12 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         String outStr = testOut.toString();
 
-        if (outputFormat == null || outputFormat == VisorCacheConfigOutputFormat.SINGLE_LINE) {
+        if (outputFormat == null || outputFormat == SINGLE_LINE) {
             assertTrue(outStr.contains("name=" + DEFAULT_CACHE_NAME));
             assertTrue(outStr.contains("partitions=32"));
             assertTrue(outStr.contains("function=o.a.i.cache.affinity.rendezvous.RendezvousAffinityFunction"));
         }
-        else if (outputFormat == VisorCacheConfigOutputFormat.MULTI_LINE) {
+        else if (outputFormat == MULTI_LINE) {
             assertTrue(outStr.contains("[cache = '" + DEFAULT_CACHE_NAME + "']"));
             assertTrue(outStr.contains("Affinity Partitions: 32"));
             assertTrue(outStr.contains("Affinity Function: o.a.i.cache.affinity.rendezvous.RendezvousAffinityFunction"));

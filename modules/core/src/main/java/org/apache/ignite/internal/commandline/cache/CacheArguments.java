@@ -18,7 +18,7 @@ package org.apache.ignite.internal.commandline.cache;
 
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.internal.visor.cache.VisorCacheConfigOutputFormat;
+import org.apache.ignite.internal.commandline.OutputFormat;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
 import org.jetbrains.annotations.Nullable;
 
@@ -66,7 +66,7 @@ public class CacheArguments {
     private Set<String> userAttributes;
 
     /** Output format. */
-    private VisorCacheConfigOutputFormat outputFormat;
+    private OutputFormat outputFormat;
 
     /**
      * @return Command.
@@ -253,10 +253,10 @@ public class CacheArguments {
     /**
      * @return Output format.
      */
-    public VisorCacheConfigOutputFormat outputFormat() { return outputFormat; }
+    public OutputFormat outputFormat() { return outputFormat; }
 
     /**
      * @param outputFormat New output format.
      */
-    public void outputFormat(VisorCacheConfigOutputFormat outputFormat) { this.outputFormat = outputFormat; }
+    public void outputFormat(OutputFormat outputFormat) { this.outputFormat = outputFormat; }
 }
