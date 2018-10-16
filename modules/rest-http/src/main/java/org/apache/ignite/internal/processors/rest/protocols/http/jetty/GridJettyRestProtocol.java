@@ -217,6 +217,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     @SuppressWarnings("IfMayBeConditional")
     private boolean startJetty() throws IgniteCheckedException {
         try {
+        	
             httpSrv.start();
 
             if (httpSrv.isStarted()) {
@@ -273,7 +274,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             httpCfg.setSecureScheme("https");
             httpCfg.setSecurePort(8443);
             httpCfg.setSendServerVersion(true);
-            httpCfg.setSendDateHeader(true);
+            httpCfg.setSendDateHeader(true);           
 
             String srvPortStr = System.getProperty(IGNITE_JETTY_PORT, "8080");
 
@@ -331,8 +332,10 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         
         //add@byron support custom rest cmd handler
         
-        String warFile = ctx.config().getIgniteHome()+File.separatorChar+"webapp"; 
-		
+        String warFile = "webapp"; 
+		if(ctx.config().getIgniteHome()!=null){
+			warFile = ctx.config().getIgniteHome()+File.separatorChar+"webapp"; 
+		}
 		WebAppContext context = new	WebAppContext(warFile, "/");
 		context.setAttribute("gridKernalContext", ctx);
 		context.setServer(httpSrv);

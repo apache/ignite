@@ -31,7 +31,6 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
-
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -156,10 +155,12 @@ public class FullTextLucene {
     	if(schema==null || schema.isEmpty()){
     		return table;
     	}
-    	//if(ctx.cache().cache(schema)!=null){
-    	//	return schema;
-    	//};
-    	return "SQL_"+schema+"_"+table.toUpperCase();
+    	if(table.length()==0){
+			return schema.toUpperCase();
+		}			
+		
+		String cacheName = "SQL_"+schema.toUpperCase()+"_"+table.toUpperCase();		
+		return cacheName;    	
     }   
   
 
@@ -330,10 +331,10 @@ public class FullTextLucene {
      * @param schema the schema name of the table (case sensitive)
      * @param table the table name (case sensitive)
      * 
-     * @return index_name also equals cachename
+     * @return effoct index
      */
     @QuerySqlFunction(alias="FTL_DROP_INDEX")
-    public static void dropIndex(Connection conn, String schema, String table)
+    public static int dropIndex(Connection conn, String schema, String table)
             throws SQLException {       
 
         //PreparedStatement prep = conn.prepareStatement("DELETE FROM " + SCHEMA
@@ -342,16 +343,16 @@ public class FullTextLucene {
         //prep.setString(2, table);
         
         String prep = String.format("DELETE FROM " + SCHEMA
-                + ".INDEXES WHERE SCHEMA='%s' AND TABLE='%s'",schema,table);
-       
-        
+                + ".INDEXES WHERE SCHEMA='%s' AND TABLE='%s'",schema,table);        
         
         int rowCount = querySql(prep).size();
         if (rowCount == 0) {
-            return;
+            return 0;
         }
 
         reindex(conn,schema, table);
+        
+        return rowCount;
     }
     
     /**
@@ -361,12 +362,12 @@ public class FullTextLucene {
      * @param conn the connection
      */
     @QuerySqlFunction(alias="FTL_REINDEX")
-    public static void reindex(Connection conn,String forschema,String table) throws SQLException {
+    public static int reindex(Connection conn,String forschema,String table) throws SQLException {
     	init(conn);
         removeAllTriggers(conn, TRIGGER_PREFIX,forschema,table);
         removeIndexFiles(conn,forschema,table);
         createTrigger(conn, forschema, table);
-        indexExistingRows(conn, forschema, table);
+        return indexExistingRows(conn, forschema, table);
     }
 
     /**
@@ -376,10 +377,10 @@ public class FullTextLucene {
      * @param conn the connection
      */
     @QuerySqlFunction(alias="FTL_REINDEX_ALL")
-    public static void reindex(Connection conn,String forschema) throws SQLException {
+    public static int reindex(Connection conn,String forschema) throws SQLException {
     	init(conn);
         removeAllTriggers(conn, TRIGGER_PREFIX,forschema,null);
-        
+        int c = 0;
         Statement stat = conn.createStatement();
         ResultSet rs = stat.executeQuery("SELECT * FROM " + SCHEMA + ".INDEXES");
         while (rs.next()) {
@@ -388,8 +389,9 @@ public class FullTextLucene {
             
             removeIndexFiles(conn,forschema,table);
             createTrigger(conn, schema, table);
-            indexExistingRows(conn, schema, table);
+            c+=indexExistingRows(conn, schema, table);            
         }
+        return c;
     }
 
     /**
@@ -580,7 +582,7 @@ public class FullTextLucene {
             throws SQLException {
         String path = getIndexPath(conn,schema,table);
        
-        LuceneConfiguration idxConfig = LuceneConfiguration.getConfiguration(ctx,schema,table); 
+        LuceneConfiguration idxConfig = LuceneConfiguration.getConfiguration(schema,table); 
         
         synchronized (INDEX_ACCESS) {
             LuceneIndexAccess access = INDEX_ACCESS.get(path);
@@ -672,12 +674,13 @@ public class FullTextLucene {
      * @param schema the schema name
      * @param table the table name
      */
-    protected static void indexExistingRows(Connection conn, String schema,
+    protected static int indexExistingRows(Connection conn, String schema,
             String table) throws SQLException {
         FullTextLucene.FullTextTrigger existing = new FullTextLucene.FullTextTrigger();
         existing.init(conn, schema, null, table, false, Trigger.INSERT);
         String sql = "SELECT _key,_val,_ver,* FROM " + StringUtils.quoteIdentifier(schema) +
                 "." + StringUtils.quoteIdentifier(table);
+        int c = 0;
         ResultSet rs = conn.createStatement().executeQuery(sql);
         int columnCount = rs.getMetaData().getColumnCount();
         while (rs.next()) {
@@ -686,6 +689,7 @@ public class FullTextLucene {
                 row[i] = rs.getObject(i + 1);
             }
             existing.insert(row, false);
+            c++;
         }
         
         String path = getIndexPath(conn,schema,table);
@@ -696,6 +700,7 @@ public class FullTextLucene {
         catch(IOException e){
         	 throw convertException(e);
         }
+        return c;
     }
 
     private static void removeIndexFiles(Connection conn,String schema,String table) throws SQLException {

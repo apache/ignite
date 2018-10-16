@@ -78,11 +78,12 @@ public class LuceneIndexAccess {
 		
         IndexWriterConfig conf = new IndexWriterConfig(analyzer);
         conf.setCommitOnClose(false); // we by default don't commit on close   
-        if(config.isPersistenceEnabled()){
+        if(this.writer!=null || config.isPersistenceEnabled()){
         	conf.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);   
         }else{
         	conf.setOpenMode(IndexWriterConfig.OpenMode.CREATE);   
         }
+       
        
         IndexWriter writer = new IndexWriter(indexDir, conf);
         //see http://wiki.apache.org/lucene-java/NearRealtimeSearch

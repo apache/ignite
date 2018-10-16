@@ -303,8 +303,9 @@ public class QueryUtils {
         Collection<QueryIndex> normalIdxs = new LinkedList<>();
 
         for (QueryIndex idx : entity.getIndexes()) {
-            QueryIndex normalIdx = new QueryIndex();
-
+        	//modify@byron
+            //-QueryIndex normalIdx = new QueryIndex();
+            QueryIndex normalIdx = idx.clone();
             normalIdx.setFields(idx.getFields());
             normalIdx.setIndexType(idx.getIndexType());
             normalIdx.setInlineSize(idx.getInlineSize());
@@ -764,7 +765,7 @@ public class QueryUtils {
             }
             //add@byron set extra index info.
             QueryIndexDescriptorImpl qidx = (QueryIndexDescriptorImpl)d.textIndex();
-            qidx.setQueryIndex(idx);
+            qidx.setQueryIndex(idx);          
             //end@
         }
         else if (idxTyp != null)

@@ -1,11 +1,13 @@
 package org.apache.ignite.cache;
 
-import org.apache.lucene.analysis.Analyzer;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+
 
 public class FullTextQueryIndex extends QueryIndex {
-	private Analyzer analyzer;
+	private String analyzer;
 
-	private Analyzer queryAnalyzer;
+	private String queryAnalyzer;
 
 	/**
 	 * Creates an empty index. Should be populated via setters.
@@ -21,8 +23,27 @@ public class FullTextQueryIndex extends QueryIndex {
 	 *            Field name.
 	 */
 	public FullTextQueryIndex(String field) {
-		super(field, QueryIndexType.FULLTEXT);
+		this(field,null,null);
 	}
+	
+
+    /**
+     * Creates text index for a collection of fields. If index is sorted, fields will be sorted in
+     * ascending order.
+     *
+     * @param fields Collection of fields to create an index.
+     * @param type Index type.
+     */
+    public FullTextQueryIndex(Collection<String> fields, String analyzer) {
+    	super(fields, QueryIndexType.FULLTEXT);
+    	this.analyzer = analyzer;
+		this.setQueryAnalyzer(analyzer);
+    }
+    
+    public FullTextQueryIndex(Collection<String> fields) {
+    	super(fields, QueryIndexType.FULLTEXT);    	
+    }
+
 
 	/**
 	 * Creates single-field sorted ascending index.
@@ -30,10 +51,8 @@ public class FullTextQueryIndex extends QueryIndex {
 	 * @param field
 	 *            Field name.
 	 */
-	public FullTextQueryIndex(String field, Analyzer analyzer) {
-		super(field, QueryIndexType.FULLTEXT);
-		this.analyzer = analyzer;
-		this.setQueryAnalyzer(analyzer);
+	public FullTextQueryIndex(String field, String analyzer) {
+		this(field,analyzer,analyzer);
 	}
 	
 	/**
@@ -42,25 +61,30 @@ public class FullTextQueryIndex extends QueryIndex {
 	 * @param field
 	 *            Field name.
 	 */
-	public FullTextQueryIndex(String field, Analyzer analyzer,Analyzer queryAnalyzer) {
-		super(field, QueryIndexType.FULLTEXT);
+	public FullTextQueryIndex(String field, String analyzer,String queryAnalyzer) {
+		String [] fields = field.split("[,\\s]");
+		LinkedHashMap<String,Boolean> fieldsList = new LinkedHashMap<>();
+        for (String f : fields)
+        	fieldsList.put(f, true);
+		this.setFields(fieldsList);
 		this.analyzer = analyzer;
 		this.setQueryAnalyzer(queryAnalyzer);
+		super.setIndexType(QueryIndexType.FULLTEXT);
 	}
 
-	public Analyzer getAnalyzer() {
+	public String getAnalyzer() {
 		return analyzer;
 	}
 
-	public void setAnalyzer(Analyzer analyzer) {
+	public void setAnalyzer(String analyzer) {
 		this.analyzer = analyzer;
 	}
 
-	public Analyzer getQueryAnalyzer() {
+	public String getQueryAnalyzer() {
 		return queryAnalyzer;
 	}
 
-	public void setQueryAnalyzer(Analyzer queryAnalyzer) {
+	public void setQueryAnalyzer(String queryAnalyzer) {
 		this.queryAnalyzer = queryAnalyzer;
 	}
 }

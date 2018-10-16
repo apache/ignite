@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -39,6 +41,7 @@ import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -69,6 +72,12 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
 import org.h2.util.JdbcUtils;
 import org.jetbrains.annotations.Nullable;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.UrlResource;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
@@ -82,7 +91,7 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_N
 public class GridLuceneIndex implements AutoCloseable {
     /** Field name for string representation of value. */
     public static final String VAL_STR_FIELD_NAME = "_gg_val_str__";
-  
+    public static final String DLF_LUCENE_CONFIG = "default";
 
     /** */
     private final String cacheName;
@@ -115,7 +124,25 @@ public class GridLuceneIndex implements AutoCloseable {
         this.ctx = ctx;
         this.cacheName = cacheName;
         this.type = type;
-        this.config = LuceneConfiguration.getConfiguration(ctx,type.schemaName(),type.tableName());        
+        
+        ApplicationContext springCtx = null;
+        
+        try{
+    		springCtx = initContext(this.getClass().getResourceAsStream("/lucene.xml"));    
+    		if(springCtx.containsBean(cacheName)){
+    			this.config = springCtx.getBean(cacheName,LuceneConfiguration.class);
+    		}
+    		else if(springCtx.containsBean(DLF_LUCENE_CONFIG)){
+    			this.config = springCtx.getBean(DLF_LUCENE_CONFIG,LuceneConfiguration.class);
+    		}
+    		else{
+    			this.config = LuceneConfiguration.getConfiguration(type.schemaName(),type.tableName());     
+    		}
+    	}
+    	catch(BeansException|IgniteCheckedException e){   
+    		this.config = LuceneConfiguration.getConfiguration(type.schemaName(),type.tableName());  
+    		ctx.grid().log().error(e.getMessage(),e);
+    	}
         
         
         //if no ctx use lucene to store val.
@@ -125,14 +152,25 @@ public class GridLuceneIndex implements AutoCloseable {
         else{
         	FullTextLucene.ctx = ctx;    
         	this.config.cacheName(cacheName);
-        	this.config.type(type);
-        }        
+        	this.config.type(type);        	
+        	this.config.setPersistenceEnabled(ctx.config().getDataStorageConfiguration().getDefaultDataRegionConfiguration().isPersistenceEnabled());
+        }  
+        //store config
+        LuceneConfiguration.putConfiguration(type.schemaName(),type.tableName(),this.config);
         
         QueryIndex qtextIdx = ((QueryIndexDescriptorImpl)type.textIndex()).getQueryIndex();  
         if(qtextIdx instanceof FullTextQueryIndex){
-        	this.textIdx = (FullTextQueryIndex)qtextIdx;
-        	this.config.setIndexAnalyzer(this.textIdx.getAnalyzer());
-        	this.config.setQueryAnalyzer(this.textIdx.getQueryAnalyzer());
+        	try{        		
+        		this.textIdx = (FullTextQueryIndex)qtextIdx;
+        		if(this.textIdx.getAnalyzer()!=null)
+        			this.config.setIndexAnalyzer(springCtx.getBean(this.textIdx.getAnalyzer(),Analyzer.class));
+        		if(this.textIdx.getQueryAnalyzer()!=null)
+        			this.config.setQueryAnalyzer(springCtx.getBean(this.textIdx.getQueryAnalyzer(),Analyzer.class));
+        	}
+        	catch(BeansException e){
+        		e.printStackTrace();
+        		ctx.grid().log().error(e.getMessage(),e);
+        	}
         }         
 
         try {
@@ -158,6 +196,37 @@ public class GridLuceneIndex implements AutoCloseable {
         }
 
         idxdFields[idxdFields.length - 1] = VAL_STR_FIELD_NAME;
+    }
+    
+    /**
+     * @param stream Input stream containing Spring XML configuration.
+     * @return Context.
+     * @throws IgniteCheckedException In case of error.
+     */
+    private ApplicationContext initContext(InputStream stream) throws IgniteCheckedException {
+        GenericApplicationContext springCtx;
+
+        try {
+            springCtx = new GenericApplicationContext();
+
+            XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(springCtx);
+
+            reader.setValidationMode(XmlBeanDefinitionReader.VALIDATION_XSD);
+
+            reader.loadBeanDefinitions(new InputStreamResource(stream));
+
+            springCtx.refresh();
+        }
+        catch (BeansException e) {
+            if (X.hasCause(e, ClassNotFoundException.class))
+                throw new IgniteCheckedException("Failed to instantiate Spring XML application context " +
+                    "(make sure all classes used in Spring configuration are present at CLASSPATH) ", e);
+            else
+                throw new IgniteCheckedException("Failed to instantiate Spring XML application context" +
+                    ", err=" + e.getMessage() + ']', e);
+        }
+
+        return springCtx;
     }
       
 
@@ -286,8 +355,6 @@ public class GridLuceneIndex implements AutoCloseable {
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(String qry, IndexingQueryFilter filters) throws IgniteCheckedException {
-       
-
         try {
         	indexAccess.flush();
         }

@@ -6,9 +6,9 @@ import java.util.Map;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.lucene.analysis.Analyzer;
-
 import org.h2.util.Utils;
 
 /**
@@ -43,12 +43,10 @@ public class LuceneConfiguration implements PluginConfiguration {
 	
 	
 
-	private LuceneConfiguration(GridKernalContext ctx) {
+	private LuceneConfiguration() {
 
 		this.storeTextFieldValue = Utils.getProperty("h2.storeDocumentTextInIndex", false);
-		this.storeValue = Utils.getProperty("h2.storeValueInIndex", false);
-		
-		this.setPersistenceEnabled(ctx.config().getDataStorageConfiguration().getDefaultDataRegionConfiguration().isPersistenceEnabled());
+		this.storeValue = Utils.getProperty("h2.storeValueInIndex", false);		
 	}
 
 	public boolean isPersistenceEnabled() {
@@ -63,7 +61,7 @@ public class LuceneConfiguration implements PluginConfiguration {
 		return indexAnalyzer;
 	}
 
-	public void setIndexAnalyzer(Analyzer indexAnalyzer) {
+	public void setIndexAnalyzer(Analyzer indexAnalyzer) {		
 		this.indexAnalyzer = indexAnalyzer;
 	}
 
@@ -120,15 +118,25 @@ public class LuceneConfiguration implements PluginConfiguration {
 	}	
 	
 	
-	public static LuceneConfiguration getConfiguration(GridKernalContext ctx,String schema,String type) {
-		String region = QueryUtils.createTableCacheName(schema,type);
+	public static LuceneConfiguration getConfiguration(String schema,String type) {
+		String region = QueryUtils.createTableCacheName(schema.toUpperCase(),type.toUpperCase());
 		LuceneConfiguration _instance = _instanceMap.get(region);
 		if (_instance == null) {
-			_instance = new LuceneConfiguration(ctx);
+			_instance = new LuceneConfiguration();
 			_instance.cacheName(region);
 			_instanceMap.put(region, _instance);
 		}
 		return _instance;
+	}
+	
+	public static boolean putConfiguration(String schema,String type,LuceneConfiguration config) {
+		String region = QueryUtils.createTableCacheName(schema.toUpperCase(),type.toUpperCase());
+		LuceneConfiguration _instance = _instanceMap.get(region);
+		if (_instance == null) {			
+			_instanceMap.put(region, config);
+			return true;
+		}
+		return false;
 	}
 
 	static Map<String, LuceneConfiguration> _instanceMap = new HashMap<>();

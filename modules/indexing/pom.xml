@@ -77,13 +77,13 @@
            <version>${project.version}</version>
         </dependency>
 
-        <!-- <dependency>
+        <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
-        </dependency> -->
+        </dependency>
 
         <dependency>
             <groupId>com.thoughtworks.xstream</groupId>
@@ -103,7 +103,7 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
             <version>${spring.version}</version>
-            <scope>test</scope>
+            
         </dependency>
 
         <dependency>
@@ -115,15 +115,14 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-beans</artifactId>
-            <version>${spring.version}</version>
-            <scope>test</scope>
+            <version>${spring.version}</version>           
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
             <version>${spring.version}</version>
-            <scope>test</scope>
+           
         </dependency>
 
         <dependency>
