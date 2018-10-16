@@ -35,6 +35,8 @@ import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.events.Event;
@@ -83,6 +85,9 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     /** */
     private final TopologyChanger killSingleNode = new TopologyChanger(false, Collections.singletonList(3), Arrays.asList(0, 1, 2, 4),0);
 
+    /** */
+    private boolean isPersistenceEnabled;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -102,6 +107,10 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         cfg.setClientMode(client);
 
         cfg.setCacheConfiguration(cacheConfiguration());
+
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setPersistenceEnabled(isPersistenceEnabled)
+        ));
 
         return cfg;
     }
@@ -133,6 +142,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         delayPartExchange.set(false);
 
         backups = 0;
+
+        isPersistenceEnabled = false;
     }
 
     /**
@@ -483,6 +494,9 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
          */
         private List<Integer> changeTopology() throws Exception {
             startGrids(4);
+
+            if (isPersistenceEnabled)
+                grid(0).cluster().active(true);
 
             Affinity<Object> aff = ignite(0).affinity(CACHE_NAME);
 
