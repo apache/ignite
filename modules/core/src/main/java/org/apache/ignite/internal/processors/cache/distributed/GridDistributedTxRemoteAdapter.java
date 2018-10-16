@@ -850,6 +850,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                 cctx.tm().commitTx(this);
 
+                cctx.tm().mvccFinish(this, true);
+
                 state(COMMITTED);
             }
         }
@@ -946,18 +948,20 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                 state(ROLLED_BACK);
 
-                try {
-                    cctx.mvccCaching().onTxFinished(this, false);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
+                cctx.mvccCaching().onTxFinished(this, false);
+
+                cctx.tm().mvccFinish(this, false);
             }
         }
-        catch (RuntimeException | Error e) {
+        catch (IgniteCheckedException | RuntimeException | Error e) {
             state(UNKNOWN);
 
-            throw e;
+            if (e instanceof IgniteCheckedException)
+                throw new IgniteException(e);
+            else if (e instanceof RuntimeException)
+                throw (RuntimeException) e;
+            else
+                throw (Error) e;
         }
     }
 

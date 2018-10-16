@@ -245,7 +245,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             if (commit && e == null)
                 e = this.tx.commitError();
 
-            Throwable finishErr = e != null ? e : err;
+            Throwable finishErr = mvccFinish(e != null ? e : err);
 
             if (super.onDone(tx, finishErr)) {
                 if (finishErr == null)
@@ -593,6 +593,23 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         }
 
         return res;
+    }
+
+    /**
+     * Finishes MVCC transaction on the local node.
+     */
+    private Throwable mvccFinish(Throwable commitError) {
+        try {
+            cctx.tm().mvccFinish(tx, commit && commitError == null);
+        }
+        catch (IgniteCheckedException ex) {
+            if (commitError == null)
+                tx.commitError(commitError = ex);
+            else
+                commitError.addSuppressed(ex);
+        }
+
+        return commitError;
     }
 
     /** {@inheritDoc} */
