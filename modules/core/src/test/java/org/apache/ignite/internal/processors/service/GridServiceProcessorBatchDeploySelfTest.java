@@ -139,7 +139,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
         IgniteInternalFuture<Object> topChangeFut = runTopChanger(finished);
 
         try {
-            int numServices = 500;
+            int numServices = 200;
             int batchSize = 5;
 
             CountDownLatch latch = new CountDownLatch(numServices);
@@ -169,7 +169,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
                 from = to;
             }
 
-            assertTrue(latch.await(30, TimeUnit.SECONDS));
+            assertTrue(latch.await(120, TimeUnit.SECONDS));
 
             assertDeployedServices(client, cfgs);
         }
@@ -191,7 +191,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
         IgniteInternalFuture<Object> topChangeFut = runTopChanger(finished);
 
         try {
-            int numServices = 500;
+            int numServices = 200;
             int batchSize = 5;
 
             CountDownLatch latch = new CountDownLatch(numServices);
@@ -244,7 +244,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
                 from = to;
             }
 
-            assertTrue(latch.await(30, TimeUnit.SECONDS));
+            assertTrue(latch.await(120, TimeUnit.SECONDS));
 
             cfgs.removeAll(failingCfgs);
 
