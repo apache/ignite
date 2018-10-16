@@ -81,7 +81,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     private final AtomicBoolean delayPartExchange = new AtomicBoolean(false);
 
     /** */
-    private final TopologyChanger killSingleNode = new TopologyChanger(false, Arrays.asList(3), Arrays.asList(0, 1, 2, 4),0);
+    private final TopologyChanger killSingleNode = new TopologyChanger(false, Collections.singletonList(3), Arrays.asList(0, 1, 2, 4),0);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -232,12 +232,30 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    public void testIgnore() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5078");
+
+        checkIgnore(killSingleNode);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testIgnoreKillThreeNodes() throws Exception {
+        // TODO aliveNodes should include node 4, but it fails due to https://issues.apache.org/jira/browse/IGNITE-5078.
+        // TopologyChanger onlyCrdIsAlive = new TopologyChanger(false, Arrays.asList(1, 2, 3), Arrays.asList(0, 4),0);
+        TopologyChanger onlyCrdIsAlive = new TopologyChanger(false, Arrays.asList(1, 2, 3), Collections.singletonList(0),0);
+
+        checkIgnore(onlyCrdIsAlive);
+    }
+
+    /**
      * @param topChanger topology changer.
      * @throws Exception if failed.
      */
-    public void testIgnore(TopologyChanger topChanger) throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5078");
-
+    private void checkIgnore(TopologyChanger topChanger) throws Exception {
         topChanger.changeTopology();
 
         for (Ignite ig : G.allGrids()) {
@@ -395,7 +413,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      * @param nodes List of nodes to find partition.
      * @return List of partitions that aren't primary or backup for specified nodes.
      */
-    protected List<Integer> noPrimaryOrBackupPartition(List<Integer> nodes) {
+    private List<Integer> noPrimaryOrBackupPartition(List<Integer> nodes) {
         Affinity<Object> aff = ignite(4).affinity(CACHE_NAME);
 
         List<Integer> parts = new ArrayList<>();
@@ -432,7 +450,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     }
 
     /** */
-    class TopologyChanger {
+    private class TopologyChanger {
         /** Flag to delay partition exchange */
         private boolean delayExchange;
 
@@ -451,7 +469,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
          * @param aliveNodes List of nodes to be alive.
          * @param stopDelay Delay between stopping nodes.
          */
-        public TopologyChanger(boolean delayExchange, List<Integer> killNodes, List<Integer> aliveNodes,
+        private TopologyChanger(boolean delayExchange, List<Integer> killNodes, List<Integer> aliveNodes,
             long stopDelay) {
             this.delayExchange = delayExchange;
             this.killNodes = killNodes;
@@ -463,7 +481,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
          * @return Lost partition ID.
          * @throws Exception If failed.
          */
-        protected List<Integer> changeTopology() throws Exception {
+        private List<Integer> changeTopology() throws Exception {
             startGrids(4);
 
             Affinity<Object> aff = ignite(0).affinity(CACHE_NAME);
