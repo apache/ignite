@@ -19,6 +19,9 @@ import debounce from 'lodash/debounce';
 import headerTemplate from 'app/primitives/ui-grid-header/index.tpl.pug';
 
 export default class IgniteUiGrid {
+    /** @type {import('ui-grid').IGridOptions} */
+    grid;
+
     /** @type */
     gridApi;
 
@@ -75,6 +78,7 @@ export default class IgniteUiGrid {
         }
 
         this.grid = {
+            appScopeProvider: this.$scope.$parent,
             data: this.items,
             columnDefs: this.columnDefs,
             categories: this.categories,
