@@ -382,9 +382,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         ioFactory = persistenceCfg.getFileIOFactory();
 
+        Long cfgCheckpointReadLockTimeout = ctx.config().getDataStorageConfiguration() != null
+            ? ctx.config().getDataStorageConfiguration().getCheckpointReadLockTimeout()
+            : null;
+
         checkpointReadLockTimeout = IgniteSystemProperties.getLong(IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT,
-            ctx.config().getCheckpointReadLockTimeout() != null
-                ? ctx.config().getCheckpointReadLockTimeout()
+            cfgCheckpointReadLockTimeout != null
+                ? cfgCheckpointReadLockTimeout
                 : (ctx.workersRegistry() != null
                     ? ctx.workersRegistry().getSystemWorkerBlockedTimeout()
                     : ctx.config().getFailureDetectionTimeout()));

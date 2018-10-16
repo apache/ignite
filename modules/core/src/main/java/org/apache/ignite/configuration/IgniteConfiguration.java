@@ -414,9 +414,6 @@ public class IgniteConfiguration {
     /** Timeout for blocked system workers detection. */
     private Long sysWorkerBlockedTimeout;
 
-    /** Timeout for checkpoint read lock acquisition. */
-    private Long checkpointReadLockTimeout;
-
     /** Failure detection timeout for client nodes. */
     private Long clientFailureDetectionTimeout = DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT;
 
@@ -568,7 +565,6 @@ public class IgniteConfiguration {
         cacheKeyCfg = cfg.getCacheKeyConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
         callbackPoolSize = cfg.getAsyncCallbackPoolSize();
-        checkpointReadLockTimeout = cfg.checkpointReadLockTimeout;
         classLdr = cfg.getClassLoader();
         clientFailureDetectionTimeout = cfg.getClientFailureDetectionTimeout();
         clientMode = cfg.isClientMode();
@@ -2010,31 +2006,6 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setSystemWorkerBlockedTimeout(long sysWorkerBlockedTimeout) {
         this.sysWorkerBlockedTimeout = sysWorkerBlockedTimeout;
-
-        return this;
-    }
-
-    /**
-     * Returns timeout for checkpoint read lock acquisition.
-     *
-     * @see #setCheckpointReadLockTimeout(long)
-     * @return Returns timeout for checkpoint read lock acquisition in milliseconds.
-     */
-    public Long getCheckpointReadLockTimeout() {
-        return checkpointReadLockTimeout;
-    }
-
-    /**
-     * Sets timeout for checkpoint read lock acquisition.
-     * <p>
-     * When any thread cannot acquire checkpoint read lock in this time, then critical failure handler is being called.
-     *
-     * @see #setFailureHandler(FailureHandler)
-     * @param checkpointReadLockTimeout Timeout for checkpoint read lock acquisition in milliseconds.
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setCheckpointReadLockTimeout(long checkpointReadLockTimeout) {
-        this.checkpointReadLockTimeout = checkpointReadLockTimeout;
 
         return this;
     }

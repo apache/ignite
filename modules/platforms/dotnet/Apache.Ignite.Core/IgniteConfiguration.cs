@@ -169,9 +169,6 @@ namespace Apache.Ignite.Core
         private TimeSpan? _sysWorkerBlockedTimeout;
 
         /** */
-        private TimeSpan? _checkpointReadLockTimeout;
-
-        /** */
         private int? _publicThreadPoolSize;
 
         /** */
@@ -336,7 +333,6 @@ namespace Apache.Ignite.Core
             writer.WriteLongNullable(_mvccVacuumFreq);
             writer.WriteIntNullable(_mvccVacuumThreadCnt);
             writer.WriteTimeSpanAsLongNullable(_sysWorkerBlockedTimeout);
-            writer.WriteTimeSpanAsLongNullable(_checkpointReadLockTimeout);
 
             if (SqlSchemas == null)
                 writer.WriteInt(-1);
@@ -726,7 +722,6 @@ namespace Apache.Ignite.Core
             _mvccVacuumFreq = r.ReadLongNullable();
             _mvccVacuumThreadCnt = r.ReadIntNullable();
             _sysWorkerBlockedTimeout = r.ReadTimeSpanNullable();
-            _checkpointReadLockTimeout = r.ReadTimeSpanNullable();
 
             int sqlSchemasCnt = r.ReadInt();
 
@@ -1392,16 +1387,6 @@ namespace Apache.Ignite.Core
         {
             get { return _sysWorkerBlockedTimeout ?? FailureDetectionTimeout; }
             set { _sysWorkerBlockedTimeout = value; }
-        }
-
-        /// <summary>
-        /// Gets or sets the timeout for checkpoint read lock acquisition.
-        /// </summary>
-        [DefaultValue(typeof(TimeSpan), "00:00:10")]
-        public TimeSpan CheckpointReadLockTimeout
-        {
-            get { return _checkpointReadLockTimeout ?? FailureDetectionTimeout; }
-            set { _checkpointReadLockTimeout = value; }
         }
 
         /// <summary>

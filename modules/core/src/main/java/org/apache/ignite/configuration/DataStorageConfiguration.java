@@ -279,6 +279,9 @@ public class DataStorageConfiguration implements Serializable {
      */
     private int walCompactionLevel = DFLT_WAL_COMPACTION_LEVEL;
 
+    /** Timeout for checkpoint read lock acquisition. */
+    private Long checkpointReadLockTimeout;
+
     /**
      * Initial size of a data region reserved for system cache.
      *
@@ -981,6 +984,30 @@ public class DataStorageConfiguration implements Serializable {
      */
     public void setWalCompactionLevel(int walCompactionLevel) {
         this.walCompactionLevel = walCompactionLevel;
+    }
+
+    /**
+     * Returns timeout for checkpoint read lock acquisition.
+     *
+     * @see #setCheckpointReadLockTimeout(long)
+     * @return Returns timeout for checkpoint read lock acquisition in milliseconds.
+     */
+    public Long getCheckpointReadLockTimeout() {
+        return checkpointReadLockTimeout;
+    }
+
+    /**
+     * Sets timeout for checkpoint read lock acquisition.
+     * <p>
+     * When any thread cannot acquire checkpoint read lock in this time, then critical failure handler is being called.
+     *
+     * @param checkpointReadLockTimeout Timeout for checkpoint read lock acquisition in milliseconds.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setCheckpointReadLockTimeout(long checkpointReadLockTimeout) {
+        this.checkpointReadLockTimeout = checkpointReadLockTimeout;
+
+        return this;
     }
 
     /** {@inheritDoc} */

@@ -78,10 +78,10 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
         dsCfg.setDefaultDataRegionConfiguration(drCfg);
 
-        cfg.setDataStorageConfiguration(dsCfg);
-
         if (checkpointReadLockTimeout != null)
-            cfg.setCheckpointReadLockTimeout(checkpointReadLockTimeout);
+            dsCfg.setCheckpointReadLockTimeout(checkpointReadLockTimeout);
+
+        cfg.setDataStorageConfiguration(dsCfg);
 
         if (sysWorkerBlockedTimeout != null)
             cfg.setSystemWorkerBlockedTimeout(sysWorkerBlockedTimeout);
@@ -204,7 +204,8 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
             BlockingOperationControlMXBean mBean = getMBean();
 
             assertEquals(sysWorkerBlockedTimeout, ignite.configuration().getSystemWorkerBlockedTimeout());
-            assertEquals(checkpointReadLockTimeout, ignite.configuration().getCheckpointReadLockTimeout());
+            assertEquals(checkpointReadLockTimeout,
+                ignite.configuration().getDataStorageConfiguration().getCheckpointReadLockTimeout());
 
             assertEquals(workerPropVal, reg.getSystemWorkerBlockedTimeout());
             assertEquals(checkpointPropVal, dbMgr.getCheckpointReadLockTimeout());
