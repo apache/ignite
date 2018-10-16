@@ -29,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @deprecated Use {@link ListeningTestLogger} instead.
  */
+@Deprecated
 public class GridStringLogger implements IgniteLogger {
     /** Initial string builder capacity in bytes */
     private static final int INITIAL = 1024 * 33;

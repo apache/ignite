@@ -38,7 +38,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 @SuppressWarnings("ThrowableNotThrown")
 public class ListeningTestLoggerTest extends GridCommonAbstractTest {
     /** */
-    private ListeningTestLogger log = new ListeningTestLogger(false, super.log);
+    private final ListeningTestLogger log = new ListeningTestLogger(false, super.log);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -47,11 +47,6 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
         cfg.setGridLogger(log);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        log.clearListeners();
     }
 
     /**
@@ -317,9 +312,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
      * Checks that matches are counted for each message.
      */
     public void testMatchesPerMessage() {
-        log.clearListeners();
-
-        LogListener lsnr = LogListener.matches("ab").times(4).build();
+        LogListener lsnr = LogListener.matches("aa").times(4).build();
 
         log.registerListener(lsnr);
 
@@ -351,7 +344,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testMultithreaded() throws Exception {
+    public void te1tMultithreaded() throws Exception {
         int iterCnt = 50_000;
         int threadCnt = 6;
         int total = threadCnt * iterCnt;

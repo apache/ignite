@@ -97,14 +97,10 @@ public abstract class LogListener implements Consumer<String> {
                 if (substr.isEmpty())
                     return msg.isEmpty() ? 1 : 0;
 
-                int idx = 0;
                 int cnt = 0;
 
-                while ((idx = msg.indexOf(substr, idx)) != -1) {
+                for (int idx = 0; (idx = msg.indexOf(substr, idx)) != -1; idx++)
                     ++cnt;
-
-                    idx += substr.length();
-                }
 
                 return cnt;
             }));
