@@ -300,7 +300,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         }
 
         private boolean shouldWaitForAffinityReadyFuture(GridCacheMessage cacheMsg) {
-            if (cacheMsg instanceof GridCacheIdMessage) {
+            if (cacheMsg instanceof GridNearSingleGetRequest || cacheMsg instanceof GridNearGetRequest) {
                 GridDhtPartitionsExchangeFuture lastTopFut = cctx.exchange().lastTopologyFuture();
 
                 if (lastTopFut.exchangeId().topologyVersion().equals(cacheMsg.topologyVersion())) {
