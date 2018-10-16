@@ -17,8 +17,8 @@ public class TestManagementVisorOneNodeTask extends VisorOneNodeTask<VisorTaskAr
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorValidNodeJob job(VisorTaskArgument arg) {
-        return new VisorValidNodeJob(arg, debug);
+    @Override protected VisorValidOneNodeJob job(VisorTaskArgument arg) {
+        return new VisorValidOneNodeJob(arg, debug);
     }
 
     /** {@inheritDoc} */
@@ -27,17 +27,17 @@ public class TestManagementVisorOneNodeTask extends VisorOneNodeTask<VisorTaskAr
     }
 
     /**
-     * Job that ping node.
+     * Valid Management one node visor job.
      */
-    private static class VisorValidNodeJob extends VisorJob<VisorTaskArgument, Object> {
+    private static class VisorValidOneNodeJob extends VisorJob<VisorTaskArgument, Object> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param arg Node ID to ping.
+         * @param arg Argument.
          * @param debug Debug flag.
          */
-        protected VisorValidNodeJob(VisorTaskArgument arg, boolean debug) {
+        protected VisorValidOneNodeJob(VisorTaskArgument arg, boolean debug) {
             super(arg, debug);
         }
 

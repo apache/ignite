@@ -27,14 +27,14 @@ public class TestManagementVisorMultiNodeTask extends VisorMultiNodeTask<VisorTa
     }
 
     /**
-     * Job that ping node.
+     * Valid Management multi node visor job.
      */
     private static class VisorValidMultiNodeJob extends VisorJob<VisorTaskArgument, Object> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param arg Node ID to ping.
+         * @param arg Argument.
          * @param debug Debug flag.
          */
         protected VisorValidMultiNodeJob(VisorTaskArgument arg, boolean debug) {
