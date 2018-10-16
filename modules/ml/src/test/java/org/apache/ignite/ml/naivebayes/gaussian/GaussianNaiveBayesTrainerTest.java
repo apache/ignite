@@ -34,13 +34,16 @@ import org.junit.Test;
 public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
-
+    /** */
     private static final double LABEL_1 = 1.;
+    /** */
     private static final double LABEL_2 = 2.;
 
     /** Data. */
     private static final Map<Integer, double[]> data = new HashMap<>();
+    /** */
     private static final Map<Integer, double[]> singleLabeldata_1 = new HashMap<>();
+    /** */
     private static final Map<Integer, double[]> singleLabeldata_2 = new HashMap<>();
 
     static {
@@ -60,11 +63,13 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
 
     private GaussianNaiveBayesTrainer trainer;
 
+    /** Initialization {@code GaussianNaiveBayesTrainer}.*/
     @Before
     public void createTrainer() {
         trainer = new GaussianNaiveBayesTrainer();
     }
 
+    /** */
     @Test
     public void testWithLinearlySeparableData() {
         Map<Integer, double[]> cacheMock = new HashMap<>();
@@ -82,6 +87,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
         TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(10, 100)), PRECISION);
     }
 
+    /** */
     @Test
     public void testReturnsCorrectLabelProbalities() {
 
@@ -95,6 +101,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
         Assert.assertEquals(2. / data.size(), model.getClassProbabilities()[1], PRECISION);
     }
 
+    /** */
     @Test
     public void testReturnsEquivalentProbalitiesWhenSetEquiprobableClasses_() {
         GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer()
@@ -110,6 +117,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
         Assert.assertEquals(.5, model.getClassProbabilities()[1], PRECISION);
     }
 
+    /** */
     @Test
     public void testReturnsPresetProbalitiesWhenSetPriorProbabilities() {
         double[] priorProbabilities = new double[] {.35, .65};
@@ -126,6 +134,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
         Assert.assertEquals(priorProbabilities[1], model.getClassProbabilities()[1], PRECISION);
     }
 
+    /** */
     @Test
     public void testReturnsCorrectMeans() {
 
@@ -138,6 +147,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
         Assert.assertArrayEquals(new double[] {2.0, 2. / 3.}, model.getMeans()[0], PRECISION);
     }
 
+    /** */
     @Test
     public void testReturnsCorrectVariances() {
 
@@ -151,6 +161,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
         Assert.assertArrayEquals(expectedVars, model.getVariances()[0], PRECISION);
     }
 
+    /** */
     @Test
     public void testUpdatigModel() {
         GaussianNaiveBayesModel model = trainer.fit(
