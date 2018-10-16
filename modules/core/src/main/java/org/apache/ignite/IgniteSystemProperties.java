@@ -1019,12 +1019,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_REBALANCE_THROTTLE_OVERRIDE = "IGNITE_REBALANCE_THROTTLE_OVERRIDE";
 
     /**
-     * System property to override {@link CacheConfiguration#rebalanceThrottle} configuration property for all caches.
-     * {@code 0} by default, which means that override is disabled.
-     */
-    public static final String IGNITE_REBALANCE_THROTTLE_OVERRIDE = "IGNITE_REBALANCE_THROTTLE_OVERRIDE";
-
-    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
