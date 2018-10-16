@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -73,12 +74,66 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
             lbExtractor
         );
 
-        try (Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = datasetBuilder.build(
-            (upstream, upstreamSize) -> new EmptyContext(),
-            partDataBuilder
-        )) {
-            GaussianNaiveBayesSumsHolder sumsHolder = computeSums(dataset);
+//        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder2
+//            = new PartitionDataBuilder<>(
+//
+//        ) {
+//            @Override public PartitionDataBuilder andThen(IgniteBiFunction fun) {
+//                return null;
+//            }
+//
+//            @Override public AutoCloseable build(Iterator upstreamData, long upstreamDataSize, Serializable ctx) {
+//
+//
+//            }
+//        };
 
+        try (Dataset<EmptyContext, GaussianNaiveBayesSumsHolder> dataset = datasetBuilder.build(
+            (upstream, upstreamSize) -> new EmptyContext(),
+            (upstream, upstreamSize, ctx) -> {
+
+                GaussianNaiveBayesSumsHolder res = new GaussianNaiveBayesSumsHolder();
+                while (upstream.hasNext()) {
+                    UpstreamEntry<K, V> entity = upstream.next();
+
+                    Vector features = featureExtractor.apply(entity.getKey(), entity.getValue());
+                    Double label = lbExtractor.apply(entity.getKey(), entity.getValue());
+
+                    double[] toMeans;
+                    double[] sqSum;
+
+                    if (!res.featureSumsPerLbl.containsKey(label)) {
+                        toMeans = new double[features.size()];
+                        Arrays.fill(toMeans, 0.);
+                        res.featureSumsPerLbl.put(label, toMeans);
+                    }
+                    if (!res.featureSquaredSumsPerLbl.containsKey(label)) {
+                        sqSum = new double[features.size()];
+                        res.featureSquaredSumsPerLbl.put(label, sqSum);
+                    }
+                    if (!res.featureCountersPerLbl.containsKey(label)) {
+                        res.featureCountersPerLbl.put(label, 0);
+                    }
+                    res.featureCountersPerLbl.put(label, res.featureCountersPerLbl.get(label) + 1);
+
+                    toMeans = res.featureSumsPerLbl.get(label);
+                    sqSum = res.featureSquaredSumsPerLbl.get(label);
+                    for (int j = 0; j < features.size(); j++) {
+                        double x = features.get(j);
+                        toMeans[j] += x;
+                        sqSum[j] += x * x;
+                    }
+                }
+                return res;
+            }
+        )) {
+            GaussianNaiveBayesSumsHolder sumsHolder = dataset.compute(t -> t, (a, b) -> {
+                if (a == null)
+                    return b == null ? new GaussianNaiveBayesSumsHolder() : b;
+                if (b == null)
+                    return a;
+                return a.merge(b);
+            });
             if (mdl != null && mdl.getSumsHolder() != null) {
                 sumsHolder = sumsHolder.merge(mdl.getSumsHolder());
             }
@@ -152,51 +207,4 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
         return this;
     }
 
-    /**
-     * Calculates sums of all values of a particular feature and amount of rows for all labels
-     */
-    private GaussianNaiveBayesSumsHolder computeSums(
-        Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset) {
-        return dataset.compute(
-            data -> {
-                GaussianNaiveBayesSumsHolder res = new GaussianNaiveBayesSumsHolder();
-                for (int i = 0; i < data.rowSize(); i++) {
-                    LabeledVector row = data.getRow(i);
-                    Vector features = row.features();
-                    Double label = (Double)row.label();
-
-                    double[] toMeans;
-                    double[] sqSum;
-
-                    if (!res.featureSumsPerLbl.containsKey(label)) {
-                        toMeans = new double[features.size()];
-                        Arrays.fill(toMeans, 0.);
-                        res.featureSumsPerLbl.put(label, toMeans);
-                    }
-                    if (!res.featureSquaredSumsPerLbl.containsKey(label)) {
-                        sqSum = new double[features.size()];
-                        res.featureSquaredSumsPerLbl.put(label, sqSum);
-                    }
-                    if (!res.featureCountersPerLbl.containsKey(label)) {
-                        res.featureCountersPerLbl.put(label, 0);
-                    }
-                    res.featureCountersPerLbl.put(label, res.featureCountersPerLbl.get(label) + 1);
-
-                    toMeans = res.featureSumsPerLbl.get(label);
-                    sqSum = res.featureSquaredSumsPerLbl.get(label);
-                    for (int j = 0; j < features.size(); j++) {
-                        double x = features.get(j);
-                        toMeans[j] += x;
-                        sqSum[j] += x * x;
-                    }
-                }
-                return res;
-            }, (a, b) -> {
-                if (a == null)
-                    return b == null ? new GaussianNaiveBayesSumsHolder() : b;
-                if (b == null)
-                    return a;
-                return a.merge(b);
-            });
-    }
 }

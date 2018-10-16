@@ -22,7 +22,7 @@ import java.util.Map;
 import org.apache.ignite.ml.math.util.MapUtil;
 
 /** Service class is used to calculate means and vaiances */
-class GaussianNaiveBayesSumsHolder implements Serializable {
+class GaussianNaiveBayesSumsHolder implements Serializable, AutoCloseable {
     /** Serial version uid. */
     private static final long serialVersionUID = 1L;
     /** Sum of all values for all features for each label */
@@ -46,5 +46,10 @@ class GaussianNaiveBayesSumsHolder implements Serializable {
             arr1[i] += arr2[i];
         }
         return arr1;
+    }
+
+    /** */
+    @Override public void close() {
+        // Do nothing, GC will clean up.
     }
 }
