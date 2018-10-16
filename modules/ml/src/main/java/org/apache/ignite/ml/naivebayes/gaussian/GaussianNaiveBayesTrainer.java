@@ -85,6 +85,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
 
             List<Double> sortedLabels = new ArrayList<>(sumsHolder.featureCountersPerLbl.keySet());
             sortedLabels.sort(Double::compareTo);
+            assert !sortedLabels.isEmpty() : "The dataset should contain at least one feature";
 
             int labelCount = sortedLabels.size();
             int featureCount = sumsHolder.featureSumsPerLbl.get(sortedLabels.get(0)).length;
