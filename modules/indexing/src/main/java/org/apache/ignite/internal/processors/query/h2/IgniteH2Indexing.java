@@ -245,6 +245,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         System.setProperty("h2.serializeJavaObject", "false");
         System.setProperty("h2.objectCacheMaxPerElementSize", "0"); // Avoid ValueJavaObject caching.
         System.setProperty("h2.optimizeTwoEquals", "false"); // Makes splitter fail on subqueries in WHERE.
+        System.setProperty("h2.dropRestrict", "false"); // Drop schema with cascade semantics.
     }
 
     /** Default DB options. */
