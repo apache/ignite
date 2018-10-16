@@ -1553,6 +1553,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     }
                 }
                 catch (CheckpointReadLockTimeoutException e) {
+                    log.error(e.getMessage(), e);
+
                     timeout = 0;
                 }
             }
