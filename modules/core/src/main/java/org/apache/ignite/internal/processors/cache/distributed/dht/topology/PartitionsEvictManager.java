@@ -111,23 +111,23 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
      * @param part Partition to evict.
      */
     public void evictPartitionAsync(CacheGroupContext grp, GridDhtLocalPartition part) {
-        // Check node stop.
-        if (sharedEvictionContext.shouldStop())
-            return;
-
         GroupEvictionContext groupEvictionContext = evictionGroupsMap.computeIfAbsent(
             grp.groupId(), (k) -> new GroupEvictionContext(grp));
+
+        // Check node stop.
+        if (groupEvictionContext.shouldStop())
+            return;
 
         int bucket;
 
         synchronized (mux) {
-            PartitionEvictionTask evictionTask = groupEvictionContext.createEvictPartitionTask(part);
-
-            if (evictionTask == null)
+            if (!groupEvictionContext.partIds.add(part.id()))
                 return;
 
-            bucket = evictionQueue.offer(evictionTask);
+            bucket = evictionQueue.offer(new PartitionEvictionTask(part, groupEvictionContext));
         }
+
+        groupEvictionContext.totalTasks.incrementAndGet();
 
         if (log.isDebugEnabled())
             log.debug("Partition has been scheduled for eviction [grp=" + grp.cacheOrGroupName()
@@ -295,19 +295,6 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         /** {@inheritDoc} */
         @Override public boolean shouldStop() {
             return stop || sharedEvictionContext.shouldStop();
-        }
-
-        /**
-         *
-         * @param part Grid local partition.
-         */
-        private PartitionEvictionTask createEvictPartitionTask(GridDhtLocalPartition part){
-            if (shouldStop() || !partIds.add(part.id()))
-                return null;
-
-            totalTasks.incrementAndGet();
-
-            return new PartitionEvictionTask(part, this);
         }
 
         /**
