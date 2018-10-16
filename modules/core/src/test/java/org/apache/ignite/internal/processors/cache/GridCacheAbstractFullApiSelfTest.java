@@ -273,10 +273,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * Checks that any invoke returns result.
      *
      * @throws Exception if something goes bad.
-     *
-     * TODO https://issues.apache.org/jira/browse/IGNITE-4380.
      */
-    public void _testInvokeAllMultithreaded() throws Exception {
+    public void testInvokeAllMultithreaded() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-4380");
+
         final IgniteCache<String, Integer> cache = jcache();
         final int threadCnt = 4;
         final int cnt = 5000;
@@ -5031,7 +5031,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 // If AssertionFailedError is in the chain, assume we need to wait and retry.
                 if (!X.hasCause(t, AssertionFailedError.class))
                     throw t;
-                
+
                 if (i == 9) {
                     for (int j = 0; j < gridCount(); j++)
                         executeOnLocalOrRemoteJvm(j, new PrintIteratorStateTask());
