@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.index;
+package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.List;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
