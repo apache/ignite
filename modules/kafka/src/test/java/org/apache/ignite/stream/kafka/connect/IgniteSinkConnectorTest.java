@@ -137,7 +137,12 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         grid = startGrid("igniteServerNode", cfg);
     }
 
+    /**
+     * @throws Exception if failed.
+     */
     public void testSinkPutsWithoutTransformation() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9872");
+
         Map<String, String> sinkProps = makeSinkProps(Utils.join(TOPICS, ","));
 
         sinkProps.remove(IgniteSinkConstants.SINGLE_TUPLE_EXTRACTOR_CLASS);
@@ -145,6 +150,9 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         testSinkPuts(sinkProps, false);
     }
 
+    /**
+     * @throws Exception if failed.
+     */
     public void testSinkPutsWithTransformation() throws Exception {
         testSinkPuts(makeSinkProps(Utils.join(TOPICS, ",")), true);
     }
@@ -291,7 +299,6 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
      * Test transformer.
      */
     static class TestExtractor implements StreamSingleTupleExtractor<SinkRecord, String, String> {
-
         /** {@inheritDoc} */
         @Override public Map.Entry<String, String> extract(SinkRecord msg) {
             String[] parts = ((String)msg.value()).split("_");
