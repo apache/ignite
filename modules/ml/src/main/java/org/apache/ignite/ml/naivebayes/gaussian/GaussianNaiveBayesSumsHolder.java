@@ -40,6 +40,7 @@ class GaussianNaiveBayesSumsHolder implements Serializable {
         return this;
     }
 
+    /** In-place operation. Sums {@code arr2} to {@code arr1} element to element. */
     private double[] sum(double[] arr1, double[] arr2) {
         for (int i = 0; i < arr1.length; i++) {
             arr1[i] += arr2[i];
