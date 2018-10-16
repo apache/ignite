@@ -1670,7 +1670,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public void onPartitionMapCreation() {
             try {
-                CacheDataStore delegate0 = init0(false);
+                CacheDataStore delegate0 = init0(true);
 
                 if (delegate0 != null)
                     delegate0.onPartitionMapCreation();
