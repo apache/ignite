@@ -1382,10 +1382,9 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets or sets the timeout for blocked system workers detection.
         /// </summary>
-        [DefaultValue(typeof(TimeSpan), "00:00:10")]
         public TimeSpan SystemWorkerBlockedTimeout
         {
-            get { return _sysWorkerBlockedTimeout ?? FailureDetectionTimeout; }
+            get { return _sysWorkerBlockedTimeout; }
             set { _sysWorkerBlockedTimeout = value; }
         }
 
