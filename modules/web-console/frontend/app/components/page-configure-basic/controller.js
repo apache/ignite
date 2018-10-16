@@ -155,11 +155,12 @@ export default class PageConfigureBasicController {
         this.cachesColDefs = [
             {name: 'Name:', cellClass: 'pc-form-grid-col-10'},
             {name: 'Mode:', cellClass: 'pc-form-grid-col-10'},
-            {name: 'Atomicity:', cellClass: 'pc-form-grid-col-10', tip: `
+            {name: 'Atomicity:', cellClass: 'pc-form-grid-col-20', tip: `
                 Atomicity:
                 <ul>
                     <li>ATOMIC - in this mode distributed transactions and distributed locking are not supported</li>
                     <li>TRANSACTIONAL - in this mode specified fully ACID-compliant transactional cache behavior</li>
+                    <li>TRANSACTIONAL_SNAPSHOT - in this mode specified fully ACID-compliant transactional cache behavior for both key-value API and SQL transactions</li>
                 </ul>
             `},
             {name: 'Backups:', cellClass: 'pc-form-grid-col-10', tip: `
