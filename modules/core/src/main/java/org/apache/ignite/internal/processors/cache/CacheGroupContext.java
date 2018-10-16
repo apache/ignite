@@ -39,9 +39,9 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
@@ -83,7 +83,7 @@ public class CacheGroupContext {
     private boolean needsRecovery;
 
     /** */
-    private final AffinityTopologyVersion locStartVer;
+    private volatile AffinityTopologyVersion locStartVer;
 
     /** */
     private final CacheConfiguration<?, ?> ccfg;
@@ -92,7 +92,7 @@ public class CacheGroupContext {
     private final GridCacheSharedContext ctx;
 
     /** */
-    private final boolean affNode;
+    private volatile boolean affNode;
 
     /** */
     private final CacheType cacheType;
@@ -159,6 +159,8 @@ public class CacheGroupContext {
     /** */
     private volatile boolean globalWalEnabled;
 
+    private volatile boolean recoveryMode;
+
     /**
      * @param ctx Context.
      * @param grpId Group ID.
@@ -187,7 +189,8 @@ public class CacheGroupContext {
         ReuseList reuseList,
         AffinityTopologyVersion locStartVer,
         boolean persistenceEnabled,
-        boolean walEnabled
+        boolean walEnabled,
+        boolean recoveryMode
     ) {
         assert ccfg != null;
         assert dataRegion != null || !affNode;
@@ -207,8 +210,7 @@ public class CacheGroupContext {
         this.globalWalEnabled = walEnabled;
         this.persistenceEnabled = persistenceEnabled;
         this.localWalEnabled = true;
-
-        persistGlobalWalState(walEnabled);
+        this.recoveryMode = recoveryMode;
 
         ioPlc = cacheType.ioPolicy();
 
@@ -745,11 +747,44 @@ public class CacheGroupContext {
 
         aff.cancelFutures(err);
 
-        preldr.onKernalStop();
+        if (!recoveryMode)
+            preldr.onKernalStop();
 
         offheapMgr.stop();
 
-        ctx.io().removeCacheGroupHandlers(grpId);
+        if (!recoveryMode)
+            ctx.io().removeCacheGroupHandlers(grpId);
+    }
+
+    public void finishRecovery(AffinityTopologyVersion startVer) throws IgniteCheckedException {
+        recoveryMode = false;
+
+        locStartVer = startVer;
+
+        persistGlobalWalState(globalWalEnabled);
+
+        attachPreloader();
+
+        ctx.affinity().onCacheGroupCreated(this);
+    }
+
+    public boolean isRecoveryMode() {
+        return recoveryMode;
+    }
+
+    private void attachPreloader() throws IgniteCheckedException {
+        if (ccfg.getCacheMode() != LOCAL) {
+            if (!ctx.kernalContext().clientNode()) {
+                ctx.io().addCacheGroupHandler(groupId(), GridDhtAffinityAssignmentRequest.class,
+                    (IgniteBiInClosure<UUID, GridDhtAffinityAssignmentRequest>) this::processAffinityAssignmentRequest);
+            }
+
+            preldr = new GridDhtPreloader(this);
+
+            preldr.start();
+        }
+        else
+            preldr = new GridCachePreloaderAdapter(this);
     }
 
     /**
@@ -896,39 +931,25 @@ public class CacheGroupContext {
             ccfg.getCacheMode() == LOCAL,
             persistenceEnabled());
 
-        if (ccfg.getCacheMode() != LOCAL) {
+        if (ccfg.getCacheMode() != LOCAL)
             top = new GridDhtPartitionTopologyImpl(ctx, this);
 
-            if (!ctx.kernalContext().clientNode()) {
-                ctx.io().addCacheGroupHandler(groupId(), GridDhtAffinityAssignmentRequest.class,
-                    new IgniteBiInClosure<UUID, GridDhtAffinityAssignmentRequest>() {
-                        @Override public void apply(UUID nodeId, GridDhtAffinityAssignmentRequest msg) {
-                            processAffinityAssignmentRequest(nodeId, msg);
-                        }
-                    });
-            }
-
-            preldr = new GridDhtPreloader(this);
-
-            preldr.start();
+        try {
+            offheapMgr = persistenceEnabled
+                ? new GridCacheOffheapManager()
+                : new IgniteCacheOffheapManagerImpl();
         }
-        else
-            preldr = new GridCachePreloaderAdapter(this);
-
-        if (persistenceEnabled()) {
-            try {
-                offheapMgr = new GridCacheOffheapManager();
-            }
-            catch (Exception e) {
-                throw new IgniteCheckedException("Failed to initialize offheap manager", e);
-            }
+        catch (Exception e) {
+            throw new IgniteCheckedException("Failed to initialize offheap manager", e);
         }
-        else
-            offheapMgr = new IgniteCacheOffheapManagerImpl();
 
         offheapMgr.start(ctx, this);
 
-        ctx.affinity().onCacheGroupCreated(this);
+        if (!recoveryMode) {
+            attachPreloader();
+
+            ctx.affinity().onCacheGroupCreated(this);
+        }
     }
 
     /**
@@ -942,8 +963,7 @@ public class CacheGroupContext {
      * @param nodeId Node ID.
      * @param req Request.
      */
-    private void processAffinityAssignmentRequest(final UUID nodeId,
-        final GridDhtAffinityAssignmentRequest req) {
+    private void processAffinityAssignmentRequest(UUID nodeId, GridDhtAffinityAssignmentRequest req) {
         if (log.isDebugEnabled())
             log.debug("Processing affinity assignment request [node=" + nodeId + ", req=" + req + ']');
 
@@ -1042,6 +1062,9 @@ public class CacheGroupContext {
      * WAL enabled flag.
      */
     public boolean walEnabled() {
+        if (recoveryMode)
+            return false;
+
         return localWalEnabled && globalWalEnabled;
     }
 

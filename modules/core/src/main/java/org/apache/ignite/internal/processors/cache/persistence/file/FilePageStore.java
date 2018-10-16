@@ -116,7 +116,7 @@ public class FilePageStore implements PageStore {
 
     /** {@inheritDoc} */
     @Override public boolean exists() {
-        return cfgFile.exists() && cfgFile.length() > headerSize();
+        return cfgFile.exists() && cfgFile.length() >= headerSize();
     }
 
     /**

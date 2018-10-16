@@ -41,7 +41,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
@@ -362,11 +361,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     void onCacheGroupCreated(CacheGroupContext grp) {
         if (!grpHolders.containsKey(grp.groupId())) {
             cctx.io().addCacheGroupHandler(grp.groupId(), GridDhtAffinityAssignmentResponse.class,
-                new IgniteBiInClosure<UUID, GridDhtAffinityAssignmentResponse>() {
-                    @Override public void apply(UUID nodeId, GridDhtAffinityAssignmentResponse res) {
-                        processAffinityAssignmentResponse(nodeId, res);
-                    }
-                });
+                (IgniteBiInClosure<UUID, GridDhtAffinityAssignmentResponse>) this::processAffinityAssignmentResponse);
         }
     }
 
@@ -948,6 +943,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             .distinct()
             .collect(Collectors.toList());
 
+
+
         U.doInParallel(
             cctx.kernalContext().getSystemExecutorService(),
             startedGroups,
@@ -1138,6 +1135,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                         List<ClusterNode> nodes = toNodes(topVer, e.getValue());
 
+/*
                         assert !nodes.equals(assignment.get(part)) : "Assignment did not change " +
                             "[cacheGrp=" + aff.cacheOrGroupName() +
                             ", part=" + part +
@@ -1146,6 +1144,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                             ", exchVer=" + exchFut.initialVersion() +
                             ", msgVer=" + msg.topologyVersion() +
                             ']';
+*/
 
                         assignment.set(part, nodes);
                     }
@@ -1245,6 +1244,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         else {
             affinityCaches = cctx.kernalContext().cache().cacheGroups().stream()
                 .filter(grp -> !grp.isLocal())
+                .filter(grp -> !grp.isRecoveryMode())
                 .map(CacheGroupContext::affinity)
                 .collect(Collectors.toList());
         }

@@ -302,8 +302,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         changed |= io.setGlobalRemoveId(partMetaPageAddr, rmvId);
                         changed |= io.setSize(partMetaPageAddr, size);
 
-                        if (state != null)
-                            changed |= io.setPartitionState(partMetaPageAddr, (byte)state.ordinal());
+                        if (state != null) {
+                            changed |= io.setPartitionState(partMetaPageAddr, (byte) state.ordinal());
+
+                            log.warning("Saved partition state: " + grp + " " + part.id() + " " + state);
+                        }
                         else
                             assert grp.isLocal() : grp.cacheOrGroupName();
 
@@ -1463,6 +1466,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private Metas getOrAllocatePartitionMetas() throws IgniteCheckedException {
             PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
             IgniteWriteAheadLogManager wal = ctx.wal();
+
+            if (log.isInfoEnabled())
+                log.info("Allocate partition metas for " + grp.cacheOrGroupName() + " " + partId);
 
             int grpId = grp.groupId();
             long partMetaId = pageMem.partitionMetaPageId(grpId, partId);

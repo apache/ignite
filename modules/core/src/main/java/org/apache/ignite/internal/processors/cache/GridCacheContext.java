@@ -238,7 +238,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private CountDownLatch startLatch = new CountDownLatch(1);
 
     /** Topology version when cache was started on local node. */
-    private AffinityTopologyVersion locStartTopVer;
+    private volatile AffinityTopologyVersion locStartTopVer;
 
     /** Dynamic cache deployment ID. */
     private IgniteUuid dynamicDeploymentId;
@@ -394,6 +394,10 @@ public class GridCacheContext<K, V> implements Externalizable {
         itHolder = new CacheWeakQueryIteratorsHolder(log);
 
         readFromBackup = cacheCfg.isReadFromBackup();
+    }
+
+    public void finishRecovery(AffinityTopologyVersion topVer) {
+        locStartTopVer = topVer;
 
         locMacs = localNode().attribute(ATTR_MACS);
 

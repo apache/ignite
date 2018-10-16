@@ -63,7 +63,6 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -85,12 +84,12 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
@@ -168,6 +167,7 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -2078,13 +2078,31 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      * change state of proxies to restarting
      * @throws IgniteCheckedException If failed.
      */
-    void prepareCacheStart(
+    public void prepareCacheStart(
         CacheConfiguration startCfg,
         DynamicCacheDescriptor desc,
         @Nullable NearCacheConfiguration reqNearCfg,
         AffinityTopologyVersion exchTopVer,
         boolean disabledAfterStart
     ) throws IgniteCheckedException {
+        if (caches.containsKey(startCfg.getName())) {
+            GridCacheAdapter<?, ?> existingCache = caches.get(startCfg.getName());
+
+            CacheGroupContext groupContext = existingCache.context().group();
+
+            if (groupContext.isRecoveryMode())
+                groupContext.finishRecovery(exchTopVer);
+
+            existingCache.context().finishRecovery(exchTopVer);
+
+            onKernalStart(existingCache);
+
+            if (log.isInfoEnabled())
+                log.info("Recovery finished for cache [" + existingCache.name() + ", grp=" + groupContext.cacheOrGroupName() + "]");
+
+            return;
+        }
+
         assert !caches.containsKey(startCfg.getName()) : startCfg.getName();
 
         CacheConfiguration ccfg = new CacheConfiguration(startCfg);
@@ -2127,7 +2145,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                     desc.cacheType(),
                     affNode,
                     cacheObjCtx,
-                    exchTopVer);
+                    exchTopVer,
+                    false);
             }
         }
         else {
@@ -2135,7 +2154,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 desc.cacheType(),
                 affNode,
                 cacheObjCtx,
-                exchTopVer);
+                exchTopVer,
+                false);
         }
 
         GridCacheContext cacheCtx = createCache(ccfg,
@@ -2162,6 +2182,84 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         grp.onCacheStarted(cacheCtx);
 
         onKernalStart(cache);
+    }
+
+    /**
+     * @param desc Cache descriptor.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void startCacheOnMemoryRecovery(
+        DynamicCacheDescriptor desc
+    ) throws IgniteCheckedException {
+        CacheConfiguration startCfg = desc.cacheConfiguration();
+
+        assert !caches.containsKey(startCfg.getName()) : startCfg.getName();
+
+        CacheConfiguration ccfg = new CacheConfiguration(startCfg);
+
+        CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
+
+        boolean affNode = true;
+
+        if (sharedCtx.pageStore() != null && affNode)
+            sharedCtx.pageStore().initializeForCache(desc.groupDescriptor(), desc.toStoredData());
+
+        String grpName = startCfg.getGroupName();
+
+        CacheGroupContext grp = null;
+
+        if (grpName != null) {
+            for (CacheGroupContext grp0 : cacheGrps.values()) {
+                if (grp0.sharedGroup() && grpName.equals(grp0.name())) {
+                    grp = grp0;
+
+                    break;
+                }
+            }
+
+            if (grp == null) {
+                grp = startCacheGroup(desc.groupDescriptor(),
+                    desc.cacheType(),
+                    affNode,
+                    cacheObjCtx,
+                    AffinityTopologyVersion.ZERO,
+                    true);
+            }
+        } else {
+            grp = startCacheGroup(desc.groupDescriptor(),
+                desc.cacheType(),
+                affNode,
+                cacheObjCtx,
+                AffinityTopologyVersion.ZERO,
+                true);
+        }
+
+        GridCacheContext cacheCtx = createCache(ccfg,
+            grp,
+            null,
+            desc,
+            AffinityTopologyVersion.ZERO,
+            cacheObjCtx,
+            affNode,
+            true,
+            true
+        );
+
+        cacheCtx.dynamicDeploymentId(desc.deploymentId());
+
+        GridCacheAdapter cache = cacheCtx.cache();
+
+        sharedCtx.addCacheContext(cacheCtx);
+
+        caches.put(cacheCtx.name(), cache);
+
+        startCache(cache, desc.schema() != null ? desc.schema() : new QuerySchema());
+
+        grp.onCacheStarted(cacheCtx);
+    }
+
+    public void finalizeRecovery(Collection<DynamicCacheDescriptor> clusterCaches) {
+
     }
 
     /**
@@ -2203,7 +2301,9 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         CacheType cacheType,
         boolean affNode,
         CacheObjectContext cacheObjCtx,
-        AffinityTopologyVersion exchTopVer)
+        AffinityTopologyVersion exchTopVer,
+        boolean recoveryMode
+    )
         throws IgniteCheckedException {
         CacheConfiguration cfg = new CacheConfiguration(desc.config());
 
@@ -2213,7 +2313,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         FreeList freeList = sharedCtx.database().freeList(memPlcName);
         ReuseList reuseList = sharedCtx.database().reuseList(memPlcName);
 
-        boolean persistenceEnabled = sharedCtx.localNode().isClient() ? desc.persistenceEnabled() :
+        boolean persistenceEnabled = recoveryMode || sharedCtx.localNode().isClient() ? desc.persistenceEnabled() :
             dataRegion != null && dataRegion.config().isPersistenceEnabled();
 
         CacheGroupContext grp = new CacheGroupContext(sharedCtx,
@@ -2228,7 +2328,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             reuseList,
             exchTopVer,
             persistenceEnabled,
-            desc.walEnabled()
+            desc.walEnabled(),
+            recoveryMode
         );
 
         for (Object obj : grp.configuredUserObjects())

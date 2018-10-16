@@ -854,32 +854,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointReadLock();
 
         try {
-            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
-                lsnr.beforeResumeWalLogging(this);
-
-            cctx.pageStore().initializeForMetastorage();
-
-            CheckpointStatus status = readCheckpointStatus();
-
-            // Memory should be recovered at startup.
-            assert !status.needRestoreMemory() : status;
-
             if (!cpHistory.isInit())
                 cpHistory.initialize(retreiveHistory());
 
-            // Memory restored at startup, just resume logging from last seen WAL pointer.
-            cctx.wal().resumeLogging();
-
-            metaStorage = new MetaStorage(
-                cctx,
-                dataRegionMap.get(METASTORE_DATA_REGION_NAME),
-                (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME),
-                false
-            );
-
-            // Init metastore only after WAL logging resumed. Can't do it earlier because
-            // MetaStorage first initialization also touches WAL, look at #isWalDeltaRecordNeeded.
-            metaStorage.init(this);
+            cctx.pageStore().initializeForMetastorage();
 
             notifyMetastorageReadyForReadWrite();
 
@@ -1374,24 +1352,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         boolean clusterInTransitionStateToActive = fut.activateCluster();
 
-        boolean restored = false;
-
         long time = System.currentTimeMillis();
-
-        // In case of cluster activation or local join restore, restore whole manager state.
-        if (clusterInTransitionStateToActive || (joinEvt && locNode && isSrvNode)) {
-            restoreState();
-
-            restored = true;
-        }
-        // In case of starting groups, restore partition states only for these groups.
-        else if (fut.exchangeActions() != null && !F.isEmpty(fut.exchangeActions().cacheGroupsToStart())) {
-            Set<Integer> restoreGroups = fut.exchangeActions().cacheGroupsToStart().stream()
-                .map(actionData -> actionData.descriptor().groupId())
-                .collect(Collectors.toSet());
-
-            restorePartitionStates(Collections.emptyMap(), restoreGroups);
-        }
 
         if (cctx.kernalContext().query().moduleEnabled()) {
             ExchangeActions acts = fut.exchangeActions();
@@ -1409,9 +1370,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         if (log.isInfoEnabled())
-            log.info("Logical recovery performed in " + (System.currentTimeMillis() - time) + " ms.");
+            log.info("Index rebuild starting performed in " + (System.currentTimeMillis() - time) + " ms.");
 
-        return restored;
+        return clusterInTransitionStateToActive || (joinEvt && locNode && isSrvNode);
     }
 
     /**
@@ -2036,10 +1997,43 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
         }
 
+        log.info("Starting binary memory restore for: " + cctx.cache().cacheGroupDescriptors().keySet());
+
         WALPointer restoredPtr = restoreBinaryMemory(cctx.cache().cacheGroupDescriptors().keySet());
 
         if (restoredPtr != null)
             U.log(log, "Binary memory state restored at node startup [restoredPtr=" + restoredPtr + ']');
+
+        Collection<DynamicCacheDescriptor> cacheDescriptors = cctx.cache().cacheDescriptors().values();
+
+        checkpointReadLock();
+
+        try {
+            for (DynamicCacheDescriptor desc : cacheDescriptors) {
+                cctx.cache().startCacheOnMemoryRecovery(desc);
+            }
+
+            // Memory restored at startup, just resume logging from last seen WAL pointer.
+            cctx.wal().resumeLogging();
+
+            final MetaStorage storage = new MetaStorage(
+                cctx,
+                dataRegionMap.get(METASTORE_DATA_REGION_NAME),
+                (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME),
+                false
+            );
+
+            // Init metastore only after WAL logging resumed. Can't do it earlier because
+            // MetaStorage first initialization also touches WAL, look at #isWalDeltaRecordNeeded.
+            storage.init(this);
+
+            metaStorage = storage;
+
+            restoreState();
+        }
+        finally {
+            checkpointReadUnlock();
+        }
     }
 
     /**
@@ -2139,6 +2133,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         {
                             int grpId = metaStateRecord.groupId();
 
+                            if (log.isInfoEnabled())
+                                log.warning("Partition state change: " + metaStateRecord.groupId() + " " + metaStateRecord.partitionId() + " " + metaStateRecord.state());
+
                             if (!restoreGrps.contains(grpId))
                                 continue;
 
@@ -2150,6 +2147,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 schedulePartitionDestroy(grpId, partId);
                             else
                                 cancelOrWaitPartitionDestroy(grpId, partId);
+
                         }
 
                         break;
@@ -2360,6 +2358,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         Collection<Integer> ignoreGrps = metastoreOnly ? Collections.emptySet() :
             F.concat(false, initiallyGlobalWalDisabledGrps, initiallyLocalWalDisabledGrps);
 
+        log.warning("Ignoring groups: " + ignoreGrps);
+
         try (WALIterator it = cctx.wal().replay(status.startPtr)) {
             Map<T2<Integer, Integer>, T2<Integer, Long>> partStates = new HashMap<>();
 
@@ -2382,8 +2382,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptor(cacheId);
 
                             // Can empty in case recovery node on blt changed.
-                            if (cacheDesc == null)
+                            if (cacheDesc == null) {
+                                log.warning("Failed to update due to not existing cache: " + cacheId);
+
                                 continue;
+                            }
 
                             if (!ignoreGrps.contains(cacheDesc.groupId())) {
                                 GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
@@ -2491,12 +2494,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
             if (grp.isLocal() || !grp.affinityNode()) {
+                if (log.isInfoEnabled())
+                    log.info("Skipping partition states recovery for " + grp.cacheOrGroupName() + " (group is local or not affinity node)");
                 // Local cache has no partitions and its states.
                 continue;
             }
 
-            if (!grp.dataRegion().config().isPersistenceEnabled())
+            if (!grp.dataRegion().config().isPersistenceEnabled()) {
+                if (log.isInfoEnabled())
+                    log.info("Skipping partition states recovery for " + grp.cacheOrGroupName() + " (no persistence enabled)");
+
                 continue;
+            }
 
             if (onlyForGroups != null && !onlyForGroups.contains(grp.groupId()))
                 continue;
@@ -2511,11 +2520,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (storeMgr.exists(grpId, i)) {
                     storeMgr.ensure(grpId, i);
 
-                    if (storeMgr.pages(grpId, i) <= 1)
-                        continue;
+                    if (storeMgr.pages(grpId, i) <= 1) {
+                        if (log.isInfoEnabled())
+                            log.info("Skipping partition on recovery (pages less than 1) " +
+                                "[grp=" + grp.cacheOrGroupName() + ", p=" + i + "]");
 
-                    if (log.isDebugEnabled())
-                        log.debug("Creating partition on recovery (exists in page store) " +
+                        continue;
+                    }
+
+                    if (log.isInfoEnabled())
+                        log.info("Creating partition on recovery (exists in page store) " +
                             "[grp=" + grp.cacheOrGroupName() + ", p=" + i + "]");
 
                     GridDhtLocalPartition part = grp.topology().forceCreatePartition(i);
@@ -2554,18 +2568,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                         changed = true;
                                     }
 
-                                    if (log.isDebugEnabled())
-                                        log.debug("Restored partition state (from WAL) " +
+                                    if (log.isInfoEnabled())
+                                        log.info("Restored partition state (from WAL) " +
                                             "[grp=" + grp.cacheOrGroupName() + ", p=" + i + ", state=" + part.state() +
                                             "updCntr=" + part.initialUpdateCounter() + "]");
                                 }
                                 else {
-                                    changed = updateState(part, (int) io.getPartitionState(pageAddr));
+                                    int stateId = (int) io.getPartitionState(pageAddr);
 
-                                    if (log.isDebugEnabled())
-                                        log.debug("Restored partition state (from page memory) " +
+                                    changed = updateState(part, stateId);
+
+                                    if (log.isInfoEnabled())
+                                        log.info("Restored partition state (from page memory) " +
                                             "[grp=" + grp.cacheOrGroupName() + ", p=" + i + ", state=" + part.state() +
-                                            "updCntr=" + part.initialUpdateCounter() + "]");
+                                            ", updCntr=" + part.initialUpdateCounter() + ", stateId=" + stateId + "]");
                                 }
                             }
                             finally {
@@ -2581,8 +2597,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     }
                 }
                 else if (restore != null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Creating partition on recovery (exists in WAL) " +
+                    if (log.isInfoEnabled())
+                        log.info("Creating partition on recovery (exists in WAL) " +
                             "[grp=" + grp.cacheOrGroupName() + ", p=" + i + "]");
 
                     GridDhtLocalPartition part = grp.topology().forceCreatePartition(i);
@@ -2599,12 +2615,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             "[grp=" + grp.cacheOrGroupName() + ", p=" + i + ", state=" + part.state() +
                             "updCntr=" + part.initialUpdateCounter() + "]");
                 }
+                else {
+                    if (log.isInfoEnabled())
+                        log.info("Skipping partition on recovery (no page store OR wal state) " +
+                            "[grp=" + grp.cacheOrGroupName() + ", p=" + i + "]");
+                }
 
                 cntParts++;
             }
 
             // After partition states are restored, it is necessary to update internal data structures in topology.
-            grp.topology().afterStateRestored(grp.topology().lastTopologyChangeVersion());
+            //grp.topology().afterStateRestored(grp.topology().lastTopologyChangeVersion());
         }
 
         return cntParts;
@@ -3143,6 +3164,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             try {
                 while (!isCancelled()) {
                     waitCheckpointEvent();
+
+                    if (shutdownNow || isCancelled)
+                        return;
 
                     GridFutureAdapter<Void> enableChangeApplied = GridCacheDatabaseSharedManager.this.enableChangeApplied;
 

@@ -501,6 +501,9 @@ public class GridAffinityAssignmentCache {
      * @param topVer Topology version.
      */
     public void clientEventTopologyChange(DiscoveryEvent evt, AffinityTopologyVersion topVer) {
+        if (ctx.localNodeId().toString().endsWith("1"))
+            U.dumpStack(log, "Initialize affinity " + topVer + " " + cacheOrGroupName());
+
         assert topVer.compareTo(lastVersion()) >= 0 : "[topVer = " + topVer + ", last=" + lastVersion() + ']';
 
         GridAffinityAssignment aff = head.get();

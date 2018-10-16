@@ -55,7 +55,8 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
         long updateCntr,
         long globalRmvId,
         int partSize,
-        long cntrsPageId, byte state,
+        long cntrsPageId,
+        byte state,
         int allocatedIdxCandidate
     ) {
         super(grpId, pageId);
@@ -113,6 +114,8 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
         io.setCountersPageId(pageAddr, cntrsPageId);
         io.setPartitionState(pageAddr, state);
         io.setCandidatePageCount(pageAddr, allocatedIdxCandidate);
+
+        System.err.println("Applied " + groupId() + " " + state);
     }
 
     /**
