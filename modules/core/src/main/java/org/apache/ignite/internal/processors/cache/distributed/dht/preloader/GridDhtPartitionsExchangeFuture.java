@@ -1246,7 +1246,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 exchangeLocE = e;
             }
             finally {
-                cctx.exchange().exchangerBlockingSectionBegin();
+                cctx.exchange().exchangerBlockingSectionEnd();
             }
         }
 
