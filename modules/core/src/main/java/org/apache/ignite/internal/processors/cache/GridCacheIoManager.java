@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -85,6 +86,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAwa
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -306,11 +308,26 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                     ExchangeActions exchangeActions = lastTopFut.exchangeActions();
 
-                    if (exchangeActions != null)
-                        return exchangeActions.cacheStarted(cacheIdMsg.cacheId)
+                    if (exchangeActions != null) {
+                        boolean shouldWait = exchangeActions.cacheStarted(cacheIdMsg.cacheId)
                             || exchangeActions.cacheStopped(cacheIdMsg.cacheId);
 
-                    return false;
+                        if (shouldWait)
+                            return true;
+
+                        LocalJoinCachesContext joinCtx = exchangeActions.localJoinContext();
+
+                        if (joinCtx != null) {
+                            for (T2<DynamicCacheDescriptor, NearCacheConfiguration> t2 : joinCtx.caches()) {
+                                DynamicCacheDescriptor cacheDesc = t2.get1();
+
+                                if (cacheDesc.cacheId() == cacheIdMsg.cacheId)
+                                    return true;
+                            }
+                        }
+
+                        return false;
+                    }
                 }
             }
 
