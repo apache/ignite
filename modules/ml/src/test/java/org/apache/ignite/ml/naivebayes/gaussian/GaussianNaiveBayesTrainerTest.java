@@ -66,7 +66,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     }
 
     @Test
-    public void fit_LinearlySeparableData_retunsCorrectModel() {
+    public void testWithLinearlySeparableData() {
         Map<Integer, double[]> cacheMock = new HashMap<>();
         for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
             cacheMock.put(i, twoLinearlySeparableClasses[i]);
@@ -83,7 +83,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     }
 
     @Test
-    public void fit_returnsCorrectLabelProbalities() {
+    public void testReturnsCorrectLabelProbalities() {
 
         GaussianNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
@@ -96,7 +96,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     }
 
     @Test
-    public void fit_setEquiprobableClasses_returnsEquivalentProbalities() {
+    public void testReturnsEquivalentProbalitiesWhenSetEquiprobableClasses_() {
         GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer()
             .withEquiprobableClasses();
 
@@ -111,7 +111,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     }
 
     @Test
-    public void fit_setPriorProbabilities_returnsPresetProbalities() {
+    public void testReturnsPresetProbalitiesWhenSetPriorProbabilities() {
         double[] priorProbabilities = new double[] {.35, .65};
         GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer()
             .setPriorProbabilities(priorProbabilities);
@@ -127,7 +127,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     }
 
     @Test
-    public void fit_returnsCorrectMeans() {
+    public void testReturnsCorrectMeans() {
 
         GaussianNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(singleLabeldata_1, parts),
@@ -139,7 +139,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     }
 
     @Test
-    public void fit_returnsCorrectVariances() {
+    public void testReturnsCorrectVariances() {
 
         GaussianNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(singleLabeldata_1, parts),
@@ -152,7 +152,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     }
 
     @Test
-    public void updateModel_returnsCorrectProbabilities() {
+    public void testUpdatigModel() {
         GaussianNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(singleLabeldata_1, parts),
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
