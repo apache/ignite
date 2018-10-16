@@ -20,6 +20,7 @@ package org.apache.ignite.ml.dataset.impl.cache;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -31,10 +32,7 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.impl.cache.util.ComputeUtils;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.functions.IgniteTriFunction;
+import org.apache.ignite.ml.math.functions.*;
 
 /**
  * An implementation of dataset based on Ignite Cache, which is used as {@code upstream} and as reliable storage for
@@ -62,7 +60,15 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
     /** Filter for {@code upstream} data. */
     private final IgniteBiPredicate<K, V> filter;
 
-    private IgniteFunction<Stream<UpstreamEntry<K, V>>, Stream<UpstreamEntry<K, V>>> transformer;
+    /**
+     * Transformers of stream of upstream data.
+     */
+    private List<IgniteBiFunction<Stream<UpstreamEntry<K, V>>, ?, Stream<UpstreamEntry<K, V>>>> transformers;
+
+    /**
+     * Supplier of data for transformer of upstream data stream.
+     */
+    private List<IgniteSupplier<?>> transformerDataSuppliers;
 
     /** Ignite Cache with partition {@code context}. */
     private final IgniteCache<Integer, C> datasetCache;
@@ -80,18 +86,25 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
      * @param ignite Ignite instance.
      * @param upstreamCache Ignite Cache with {@code upstream} data.
      * @param filter Filter for {@code upstream} data.
+     * @param transformers Transformers of upstream data.
+     * @param transformerDataSuppliers Data suppliers for transformers.
      * @param datasetCache Ignite Cache with partition {@code context}.
      * @param partDataBuilder Partition {@code data} builder.
      * @param datasetId Dataset ID.
      */
-    public CacheBasedDataset(Ignite ignite, IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter,
-                             IgniteFunction<Stream<UpstreamEntry<K, V>>, Stream<UpstreamEntry<K, V>>> transformer,
+    public CacheBasedDataset(
+        Ignite ignite,
+        IgniteCache<K, V> upstreamCache,
+        IgniteBiPredicate<K, V> filter,
+        List<IgniteBiFunction<Stream<UpstreamEntry<K, V>>, ?, Stream<UpstreamEntry<K, V>>>> transformers,
+        List<IgniteSupplier<?>> transformerDataSuppliers,
         IgniteCache<Integer, C> datasetCache, PartitionDataBuilder<K, V, C, D> partDataBuilder,
         UUID datasetId) {
         this.ignite = ignite;
         this.upstreamCache = upstreamCache;
         this.filter = filter;
-        this.transformer = transformer;
+        this.transformers = transformers;
+        this.transformerDataSuppliers = transformerDataSuppliers;
         this.datasetCache = datasetCache;
         this.partDataBuilder = partDataBuilder;
         this.datasetId = datasetId;
@@ -109,7 +122,8 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
                 Ignition.localIgnite(),
                 upstreamCacheName,
                 filter,
-                transformer,
+                transformers,
+                transformerDataSuppliers,
                 datasetCacheName,
                 datasetId,
                 part,
@@ -139,7 +153,8 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
                 Ignition.localIgnite(),
                 upstreamCacheName,
                 filter,
-                transformer,
+                transformers,
+                transformerDataSuppliers,
                 datasetCacheName,
                 datasetId,
                 part,

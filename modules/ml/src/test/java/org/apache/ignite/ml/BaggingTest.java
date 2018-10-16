@@ -13,7 +13,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */dd
+ */
 
 package org.apache.ignite.ml;
 
@@ -38,32 +38,32 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class BaggingTest extends TrainerTest {
-    @Test
-    public void testBaggingTrainerContextCount() {
-        Map<Integer, Double[]> cacheMock = new HashMap<>();
-
-        for (int i = 0; i < twoLinearlySeparableClasses.length; i++) {
-            double[] row = twoLinearlySeparableClasses[i];
-            Double[] convertedRow = new Double[row.length];
-            for (int j = 0; j < row.length; j++)
-                convertedRow[j] = row[j];
-            cacheMock.put(i, convertedRow);
-        }
-
-        CountTrainer countTrainer = new CountTrainer(counter);
-
-        double subsampleSize = 0.3;
-
-        new BaggingModelTrainer<Model<Vector, Vector>, >(new MeanValuePredictionsAggregator(), 10, 5, 100, 0.3) {
-
-        };
-
-        ModelsComposition model = countTrainer
-            .transform(TrainerTransformers.makeBagged(100, subsampleSize, new MeanValuePredictionsAggregator()))
-            .fit(cacheMock, parts, null, null);
-
-        Double res = model.apply(null);
-    }
+//    @Test
+//    public void testBaggingTrainerContextCount() {
+//        Map<Integer, Double[]> cacheMock = new HashMap<>();
+//
+//        for (int i = 0; i < twoLinearlySeparableClasses.length; i++) {
+//            double[] row = twoLinearlySeparableClasses[i];
+//            Double[] convertedRow = new Double[row.length];
+//            for (int j = 0; j < row.length; j++)
+//                convertedRow[j] = row[j];
+//            cacheMock.put(i, convertedRow);
+//        }
+//
+//        CountTrainer countTrainer = new CountTrainer(counter);
+//
+//        double subsampleSize = 0.3;
+//
+//        new BaggingModelTrainer<Model<Vector, Vector>, >(new MeanValuePredictionsAggregator(), 10, 5, 100, 0.3) {
+//
+//        };
+//
+//        ModelsComposition model = countTrainer
+//            .transform(TrainerTransformers.makeBagged(100, subsampleSize, new MeanValuePredictionsAggregator()))
+//            .fit(cacheMock, parts, null, null);
+//
+//        Double res = model.apply(null);
+//    }
 
     @Test
     public void testNaiveBaggingContextCount() {
