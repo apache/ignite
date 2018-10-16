@@ -91,6 +91,7 @@ import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.CX1;
+import org.apache.ignite.internal.util.typedef.CX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -4075,10 +4076,26 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         // Do not create finish future if there are no remote nodes.
         if (F.isEmpty(dhtMap) && F.isEmpty(nearMap)) {
-            if (prep != null)
-                return (IgniteInternalFuture<IgniteInternalTx>)prep;
+            if (prep != null) {
+                return new GridEmbeddedFuture<>(new CX2<IgniteInternalTx, Exception, IgniteInternalTx>() {
+                    @Override public IgniteInternalTx applyx(IgniteInternalTx o, Exception e) throws IgniteCheckedException {
+                        cctx.tm().mvccFinish(GridNearTxLocal.this, e == null);
 
-            return new GridFinishedFuture<IgniteInternalTx>(this);
+                        return o;
+                    }
+                }, (IgniteInternalFuture<IgniteInternalTx>)prep);
+            }
+
+            try {
+                cctx.tm().mvccFinish(this, true);
+
+                return new GridFinishedFuture<>(this);
+            }
+            catch (IgniteCheckedException e) {
+                commitError(e);
+
+                return new GridFinishedFuture<>(e);
+            }
         }
 
         final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, true);
