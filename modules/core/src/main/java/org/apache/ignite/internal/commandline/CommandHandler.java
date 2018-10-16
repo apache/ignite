@@ -295,7 +295,7 @@ public class CommandHandler {
     private static final String TX_KILL = "kill";
 
     /** */
-    private static final String CACHES_CONFIG_OUTPUT_FORMAT = "--output-format";
+    private static final String OUTPUT_FORMAT = "--output-format";
 
     /** */
     private Iterator<String> argsIt;
@@ -647,7 +647,7 @@ public class CommandHandler {
     private void printCacheHelp() {
         log("--cache subcommand allows to do the following operations:");
 
-        usage("  Show information about caches, groups or sequences that match a regex:", CACHE, " list regexPattern [groups|seq] [nodeId]", " [" + CACHES_CONFIG_OUTPUT_FORMAT + " " + MULTI_LINE + "]");
+        usage("  Show information about caches, groups or sequences that match a regex:", CACHE, " list regexPattern [groups|seq] [nodeId]", " [" + OUTPUT_FORMAT + " " + MULTI_LINE + "]");
         usage("  Show hot keys that are point of contention for multiple transactions:", CACHE, " contention minQueueSize [nodeId] [maxPrint]");
         usage("  Verify partition counters and hashes between primary and backups on idle cluster:", CACHE, " idle_verify [--dump] [--skipZeros] [cache1,...,cacheN]");
         usage("  Validate custom indexes on idle cluster:", CACHE, " validate_indexes [cache1,...,cacheN] [nodeId] [checkFirst|checkThrough]");
@@ -1787,7 +1787,7 @@ public class CommandHandler {
 
                             break;
 
-                        case CACHES_CONFIG_OUTPUT_FORMAT:
+                        case OUTPUT_FORMAT:
                             String tmp2 = nextArg("output format must be defined!").toLowerCase();
 
                             outputFormat = VisorCacheConfigOutputFormat.fromConsoleName(tmp2);
