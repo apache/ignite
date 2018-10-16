@@ -214,7 +214,7 @@ public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbs
                                 clientMux.wait();
                             }
                             catch (InterruptedException e) {
-                                e.printStackTrace();
+                                fail();
                             }
                     }
                 }
@@ -242,7 +242,7 @@ public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbs
                             srvMux.wait();
                         }
                         catch (InterruptedException e) {
-                            e.printStackTrace();
+                            fail();
                         }
                 }
             }

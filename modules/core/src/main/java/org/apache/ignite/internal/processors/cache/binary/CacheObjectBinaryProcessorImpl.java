@@ -607,7 +607,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         if (ctx.clientNode()) {
             if (holder == null || !holder.metadata().hasSchema(schemaId)) {
                 if (log.isDebugEnabled())
-                    log.debug("Waiting for client metadata update:" +
+                    log.debug("Waiting for client metadata update" +
                         " [typeId=" + typeId
                         + ", schemaId=" + schemaId
                         + ", pendingVer=" + (holder == null ? "NA" : holder.pendingVersion())
@@ -623,7 +623,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 holder = metadataLocCache.get(typeId);
 
                 if (log.isDebugEnabled())
-                    log.debug("Finished waiting for client metadata update:" +
+                    log.debug("Finished waiting for client metadata update" +
                         " [typeId=" + typeId
                         + ", schemaId=" + schemaId
                         + ", pendingVer=" + (holder == null ? "NA" : holder.pendingVersion())
@@ -635,7 +635,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 return holder.metadata().wrap(binaryCtx);
             else if (holder != null && (holder.pendingVersion() - holder.acceptedVersion() > 0)) {
                 if (log.isDebugEnabled())
-                    log.debug("Waiting for metadata update:" +
+                    log.debug("Waiting for metadata update" +
                         " [typeId=" + typeId
                         + ", schemaId=" + schemaId
                         + ", pendingVer=" + holder.pendingVersion()
@@ -651,11 +651,11 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                     fut.get();
                 }
                 catch (IgniteCheckedException e) {
-                    log.error("Failed to wait for metadata update: [typeId=" + typeId + ", schemaId=" + schemaId + ']', e);
+                    log.error("Failed to wait for metadata update [typeId=" + typeId + ", schemaId=" + schemaId + ']', e);
                 }
 
                 if (log.isDebugEnabled())
-                    log.debug("Finished waiting for metadata update:" +
+                    log.debug("Finished waiting for metadata update" +
                         " [typeId=" + typeId
                         + ", waitTime=" + NANOSECONDS.convert(System.nanoTime() - t0, MILLISECONDS) + "ms"
                         + ", schemaId=" + schemaId
@@ -666,12 +666,14 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             }
             else if (holder == null || !holder.metadata().hasSchema(schemaId)) {
                 // Last resort waiting.
-                log.warning("Schema is missing while no metadata updates are in progress. " +
-                    "Waiting for schema in subsequent updates for " + waitSchemaTimeout + " ms:" +
-                    " [typeId=" + typeId
-                    + ", missingSchemaId=" + schemaId
-                    + ", pendingVer=" + (holder == null ? "NA" : holder.pendingVersion())
-                    + ", acceptedVer=" + (holder == null ? "NA" : holder.acceptedVersion()) + ']');
+                U.warn(log,
+                    "Schema is missing while no metadata updates are in progress " +
+                        "(will wait for schema update within timeout defined by IGNITE_BINARY_META_UPDATE_TIMEOUT system property)" +
+                        " [typeId=" + typeId
+                        + ", missingSchemaId=" + schemaId
+                        + ", pendingVer=" + (holder == null ? "NA" : holder.pendingVersion())
+                        + ", acceptedVer=" + (holder == null ? "NA" : holder.acceptedVersion())
+                        + ", binMetaUpdateTimeout=" + waitSchemaTimeout +']');
 
                 long t0 = System.nanoTime();
 
@@ -681,7 +683,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                     fut.get(waitSchemaTimeout);
                 }
                 catch (IgniteFutureTimeoutCheckedException e) {
-                    log.error("Timed out while waiting for schema update: [typeId=" + typeId + ", schemaId=" +
+                    log.error("Timed out while waiting for schema update [typeId=" + typeId + ", schemaId=" +
                         schemaId + ']');
                 }
                 catch (IgniteCheckedException ignored) {
@@ -691,7 +693,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 holder = metadataLocCache.get(typeId);
 
                 if (log.isDebugEnabled() && holder != null && holder.metadata().hasSchema(schemaId))
-                    log.debug("Found the schema after wait:" +
+                    log.debug("Found the schema after wait" +
                         " [typeId=" + typeId
                         + ", waitTime=" + NANOSECONDS.convert(System.nanoTime() - t0, MILLISECONDS) + "ms"
                         + ", schemaId=" + schemaId

@@ -413,7 +413,7 @@ final class BinaryMetadataTransport {
                         }
                         else {
                             if (log.isDebugEnabled())
-                                log.debug("Updated metadata on server node: [holder=" + newHolder +
+                                log.debug("Updated metadata on server node [holder=" + newHolder +
                                     ", changedSchemas=" + changedSchemas + ']');
 
                             metaLocCache.put(typeId, newHolder);
@@ -495,7 +495,7 @@ final class BinaryMetadataTransport {
                 if (oldAcceptedVer >= newAcceptedVer) {
                     if (log.isDebugEnabled())
                         log.debug("Marking ack as duplicate [holder=" + holder +
-                            ", newAcceptedVer: " + newAcceptedVer + ']');
+                            ", newAcceptedVer=" + newAcceptedVer + ']');
 
                     //this is duplicate ack
                     msg.duplicated(true);
@@ -675,7 +675,7 @@ final class BinaryMetadataTransport {
                     binMetaBytes = U.marshal(ctx, metaHolder);
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to marshal binary metadata for [typeId: " + typeId + "]", e);
+                    U.error(log, "Failed to marshal binary metadata for [typeId=" + typeId + ']', e);
 
                     resp.markErrorOnRequest();
                 }
