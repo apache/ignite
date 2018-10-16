@@ -104,7 +104,7 @@ public class GaussianNaiveBayesModel implements Model<Vector, Double>, Exportabl
         return sumsHolder;
     }
 
-    /** Gauus distribution */
+    /** Gauss distribution */
     private double gauss(double x, double mean, double variance) {
         return Math.exp(-1. * Math.pow(x - mean, 2) / (2. * variance)) / Math.sqrt(2. * Math.PI * variance);
     }
