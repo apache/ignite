@@ -36,12 +36,12 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectsReleaseFuture;
@@ -255,19 +255,16 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             }
         };
 
-        cctx.gridEvents().addLocalEventListener(
-            new GridLocalEventListener() {
-                @Override public void onEvent(Event evt) {
-                    assert evt instanceof DiscoveryEvent;
+        cctx.gridEvents().addDiscoveryEventListener(
+            new DiscoveryEventListener() {
+                @Override public void onEvent(DiscoveryEvent evt, DiscoCache discoCache) {
                     assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
 
-                    DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
-
-                    UUID nodeId = discoEvt.eventNode().id();
+                    UUID nodeId = evt.eventNode().id();
 
                     // Wait some time in case there are some unprocessed messages from failed node.
                     cctx.time().addTimeoutObject(
-                        new NodeFailureTimeoutObject(discoEvt));
+                        new NodeFailureTimeoutObject(evt.eventNode(), discoCache.mvccCoordinator()));
 
                     if (txFinishSync != null)
                         txFinishSync.onNodeLeft(nodeId);
@@ -2462,15 +2459,19 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     private final class NodeFailureTimeoutObject extends GridTimeoutObjectAdapter {
         /** */
-        private final DiscoveryEvent discoEvt;
+        private final ClusterNode node;
+        /** */
+        private final MvccCoordinator mvccCrd;
 
         /**
-         * @param discoEvt Triggering event.
+         * @param node Failed node.
+         * @param mvccCrd Mvcc coordinator at time of node failure.
          */
-        private NodeFailureTimeoutObject(DiscoveryEvent discoEvt) {
+        private NodeFailureTimeoutObject(ClusterNode node, MvccCoordinator mvccCrd) {
             super(IgniteUuid.fromUuid(cctx.localNodeId()), TX_SALVAGE_TIMEOUT);
 
-            this.discoEvt = discoEvt;
+            this.node = node;
+            this.mvccCrd = mvccCrd;
         }
 
         /**
@@ -2487,7 +2488,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 return;
             }
 
-            UUID evtNodeId = discoEvt.eventNode().id();
+            UUID evtNodeId = node.id();
 
             try {
                 if (log.isDebugEnabled())
@@ -2495,7 +2496,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         ", failedNodeId=" + evtNodeId + ']');
 
                 // Null means that recovery voting is not needed.
-                GridCompoundFuture<IgniteInternalTx, Void> allTxFinFut = discoEvt.eventNode().isClient()
+                GridCompoundFuture<IgniteInternalTx, Void> allTxFinFut = node.isClient()
                     ? new GridCompoundFuture<>() : null;
 
                 for (final IgniteInternalTx tx : activeTransactions()) {
@@ -2536,40 +2537,33 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (allTxFinFut == null)
                     return;
 
+                assert mvccCrd != null;
+
                 allTxFinFut.markInitialized();
 
                 // Send vote to mvcc coordinator when all recovering transactions have finished.
                 allTxFinFut.listen(fut -> {
+                    // If mvcc coordinator issued snapshot for recovering transaction has failed during recovery,
+                    // then there is no need to send messages to new coordinator.
                     try {
-                        fut.get();
+                        cctx.kernalContext().io().sendToGridTopic(
+                            mvccCrd.nodeId(),
+                            TOPIC_CACHE_COORDINATOR,
+                            new MvccRecoveryFinishedMessage(evtNodeId),
+                            SYSTEM_POOL);
+                    }
+                    catch (ClusterTopologyCheckedException e) {
+                        if (log.isInfoEnabled())
+                            log.info("Mvcc coordinator issued snapshots for recovering transactions " +
+                                "has left the cluster (will ignore) [locNodeId=" + cctx.localNodeId() +
+                                    ", failedNodeId=" + evtNodeId +
+                                    ", mvccCrdNodeId=" + mvccCrd.nodeId() + ']');
                     }
                     catch (IgniteCheckedException e) {
-                        log.error("Failed during waiting all transactions initiated by failed node finished " +
-                            "[locNodeId=" + cctx.localNodeId() + ", failedNodeId=" + evtNodeId + ']', e);
-                    }
-                    finally {
-                        MvccCoordinator mvccCrd = cctx.coordinators().currentCoordinator();
-
-                        // If mvcc coordinator issued snapshot for recovering transaction has failed during recovery,
-                        // then there is no need to send messages to new coordinator.
-                        // New coordinator knows nothing about recovering transactions and cannot treat them as active.
-                        // Recovering transaction was definitely started on topology lesser than topology from event.
-                        if (mvccCrd.topologyVersion().topologyVersion() < discoEvt.topologyVersion()) {
-                            try {
-                                cctx.kernalContext().io().sendToGridTopic(
-                                    mvccCrd.nodeId(),
-                                    TOPIC_CACHE_COORDINATOR,
-                                    new MvccRecoveryFinishedMessage(evtNodeId),
-                                    SYSTEM_POOL);
-                            }
-                            catch (IgniteCheckedException e) {
-                                log.warning("Failed to notify mvcc coordinator that all recovering transactions were " +
-                                    "finished. Old mvcc coordinator migh have been failed, " +
-                                    "notification is not needed in this case [locNodeId=" + cctx.localNodeId() +
-                                    ", failedNodeId=" + evtNodeId +
-                                    ", mvccCrdNodeId=" + mvccCrd.nodeId() + ']', e);
-                            }
-                        }
+                        log.warning("Failed to notify mvcc coordinator that all recovering transactions were " +
+                            "finished [locNodeId=" + cctx.localNodeId() +
+                            ", failedNodeId=" + evtNodeId +
+                            ", mvccCrdNodeId=" + mvccCrd.nodeId() + ']', e);
                     }
                 });
             }
