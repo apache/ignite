@@ -344,6 +344,13 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
         super.beforeTest();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        igniteSecondary = null;
+    }
+
     /**
      * Start grid with IGFS.
      *
