@@ -141,6 +141,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
         delayPartExchange.set(false);
 
+        partLossPlc = PartitionLossPolicy.IGNORE;
+
         backups = 0;
 
         isPersistenceEnabled = false;
