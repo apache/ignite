@@ -115,7 +115,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
             boolean useNewCombiner = (useNewBits & 2) == 0;
             boolean useNewReducer = (useNewBits & 4) == 0;
 
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < 12; i++) {
                 int bits = 1 << i;
 
                 System.out.println("############################ Simulator kind = " + simulatorKind
