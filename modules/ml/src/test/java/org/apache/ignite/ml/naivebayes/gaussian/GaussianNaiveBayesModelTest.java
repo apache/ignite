@@ -18,7 +18,7 @@
 package org.apache.ignite.ml.naivebayes.gaussian;
 
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -41,8 +41,8 @@ public class GaussianNaiveBayesModelTest {
             {9.7225E-2, 5.5833E2, 1.6667},
         };
         double[] probabilities = new double[] {.5, .5};
-        GaussianNaiveBayesModel mdl = new GaussianNaiveBayesModel(means, variances, probabilities, new double[]{first,second}, null);
-        Vector observation = new DenseVector(new double[] {6, 130, 8});
+        GaussianNaiveBayesModel mdl = new GaussianNaiveBayesModel(means, variances, probabilities, new double[] {first, second}, null);
+        Vector observation = VectorUtils.of(6, 130, 8);
 
         Assert.assertEquals(second, mdl.apply(observation), 0.0001);
     }
