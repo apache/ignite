@@ -27,6 +27,7 @@ import org.junit.Test;
  */
 public class GaussianNaiveBayesModelTest {
 
+    /** */
     @Test
     public void testPredictWithTwoClasses() {
         double first = 1;
