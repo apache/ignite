@@ -15,8 +15,17 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-import './style.scss';
+import {componentFactory, StatusLevel} from 'app/components/status-output';
 
-export default angular
-    .module('ignite-console.ignite-status', []);
+export default componentFactory([
+    {
+        level: StatusLevel.GREEN,
+        value: true,
+        label: 'Active'
+    },
+    {
+        level: StatusLevel.RED,
+        value: false,
+        label: 'Not Active'
+    }
+]);
