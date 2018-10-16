@@ -18,10 +18,17 @@
 package org.apache.ignite.mxbean;
 
 /**
- * MBean that controls long blocking operations handling.
+ * MBean that controls critical failure handling.
  */
-@MXBeanDescription("MBean that controls long blocking operations handling.")
-public interface BlockingOperationControlMXBean {
+@MXBeanDescription("MBean that controls critical failure handling.")
+public interface FailureHandlingMxBean {
+    /** */
+    @MXBeanDescription("Whether workers check each other's health.")
+    public boolean getHealthMonitoringEnabled();
+
+    /** */
+    public void setHealthMonitoringEnabled(boolean val);
+
     /** */
     @MXBeanDescription("Maximum inactivity period for system worker. Critical failure handler fires if exceeded. " +
         "Nonpositive value denotes infinite timeout.")

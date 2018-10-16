@@ -19,7 +19,6 @@ package org.apache.ignite.failure;
 
 import java.lang.management.ManagementFactory;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.ObjectName;
@@ -30,9 +29,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.worker.BlockingOperationControlMXBeanImpl;
+import org.apache.ignite.internal.worker.FailureHandlingMxBeanImpl;
 import org.apache.ignite.internal.worker.WorkersRegistry;
-import org.apache.ignite.mxbean.BlockingOperationControlMXBean;
+import org.apache.ignite.mxbean.FailureHandlingMxBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT;
@@ -119,7 +118,7 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
 
         IgniteCacheDatabaseSharedManager dbMgr = ignite.context().cache().context().database();
 
-        BlockingOperationControlMXBean mBean = getMBean();
+        FailureHandlingMxBean mBean = getMBean();
 
         assertEquals(sysWorkerBlockedTimeout.longValue(), reg.getSystemWorkerBlockedTimeout());
         assertEquals(checkpointReadLockTimeout.longValue(), dbMgr.getCheckpointReadLockTimeout());
@@ -143,7 +142,7 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
 
         IgniteCacheDatabaseSharedManager dbMgr = ignite.context().cache().context().database();
 
-        BlockingOperationControlMXBean mBean = getMBean();
+        FailureHandlingMxBean mBean = getMBean();
 
         assertEquals(sysWorkerBlockedTimeout.longValue(), reg.getSystemWorkerBlockedTimeout());
         assertEquals(sysWorkerBlockedTimeout.longValue(), dbMgr.getCheckpointReadLockTimeout());
@@ -167,7 +166,7 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
 
         IgniteCacheDatabaseSharedManager dbMgr = ignite.context().cache().context().database();
 
-        BlockingOperationControlMXBean mBean = getMBean();
+        FailureHandlingMxBean mBean = getMBean();
 
         assertEquals(0L, reg.getSystemWorkerBlockedTimeout());
         assertEquals(-85L, dbMgr.getCheckpointReadLockTimeout());
@@ -201,7 +200,7 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
 
             IgniteCacheDatabaseSharedManager dbMgr = ignite.context().cache().context().database();
 
-            BlockingOperationControlMXBean mBean = getMBean();
+            FailureHandlingMxBean mBean = getMBean();
 
             assertEquals(sysWorkerBlockedTimeout, ignite.configuration().getSystemWorkerBlockedTimeout());
             assertEquals(checkpointReadLockTimeout,
@@ -234,24 +233,30 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
 
         ignite.cluster().active(true);
 
-        BlockingOperationControlMXBean mBean = getMBean();
+        FailureHandlingMxBean mBean = getMBean();
 
         mBean.setSystemWorkerBlockedTimeout(80_000L);
         assertEquals(80_000L, ignite.context().workersRegistry().getSystemWorkerBlockedTimeout());
 
         mBean.setCheckpointReadLockTimeout(90_000L);
         assertEquals(90_000L, ignite.context().cache().context().database().getCheckpointReadLockTimeout());
+
+        assertTrue(mBean.getHealthMonitoringEnabled());
+        mBean.setHealthMonitoringEnabled(false);
+        assertFalse(ignite.context().workersRegistry().livenessCheckEnabled());
+        ignite.context().workersRegistry().livenessCheckEnabled(true);
+        assertTrue(mBean.getHealthMonitoringEnabled());
     }
 
     /** */
-    private BlockingOperationControlMXBean getMBean() throws Exception {
+    private FailureHandlingMxBean getMBean() throws Exception {
         ObjectName name = U.makeMBeanName(getTestIgniteInstanceName(0), "Kernal",
-            BlockingOperationControlMXBeanImpl.class.getSimpleName());
+            FailureHandlingMxBeanImpl.class.getSimpleName());
 
         MBeanServer srv = ManagementFactory.getPlatformMBeanServer();
 
         assertTrue(srv.isRegistered(name));
 
-        return MBeanServerInvocationHandler.newProxyInstance(srv, name, BlockingOperationControlMXBean.class, true);
+        return MBeanServerInvocationHandler.newProxyInstance(srv, name, FailureHandlingMxBean.class, true);
     }
 }

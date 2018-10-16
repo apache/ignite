@@ -18,13 +18,11 @@
 package org.apache.ignite.internal.worker;
 
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.mxbean.BlockingOperationControlMXBean;
+import org.apache.ignite.mxbean.FailureHandlingMxBean;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * MBean that controls long blocking operations handling.
- */
-public class BlockingOperationControlMXBeanImpl implements BlockingOperationControlMXBean {
+/** {@inheritDoc} */
+public class FailureHandlingMxBeanImpl implements FailureHandlingMxBean {
     /** System worker registry. */
     private final WorkersRegistry workerRegistry;
 
@@ -35,11 +33,21 @@ public class BlockingOperationControlMXBeanImpl implements BlockingOperationCont
      * @param workersRegistry Workers registry.
      * @param dbMgr Database manager.
      */
-    public BlockingOperationControlMXBeanImpl(
+    public FailureHandlingMxBeanImpl(
         @NotNull WorkersRegistry workersRegistry,
         @NotNull IgniteCacheDatabaseSharedManager dbMgr) {
         this.workerRegistry = workersRegistry;
         this.dbMgr = dbMgr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean getHealthMonitoringEnabled() {
+        return workerRegistry.livenessCheckEnabled();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setHealthMonitoringEnabled(boolean val) {
+        workerRegistry.livenessCheckEnabled(val);
     }
 
     /** {@inheritDoc} */

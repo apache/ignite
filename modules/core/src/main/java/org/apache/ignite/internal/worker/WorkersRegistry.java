@@ -130,12 +130,12 @@ public class WorkersRegistry implements GridWorkerListener {
     }
 
     /** */
-    boolean livenessCheckEnabled() {
+    public boolean livenessCheckEnabled() {
         return livenessCheckEnabled;
     }
 
     /** */
-    void livenessCheckEnabled(boolean val) {
+    public void livenessCheckEnabled(boolean val) {
         livenessCheckEnabled = val;
     }
 
