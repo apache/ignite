@@ -24,7 +24,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 
 /**
@@ -32,6 +31,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
  *
  * In addition to what it allows to track all enqueued tasks completion or failure during execution.
  */
+@Deprecated
 public class IgniteTaskTrackingThreadPoolExecutor extends IgniteThreadPoolExecutor {
     /** */
     private final LongAdder pendingTaskCnt = new LongAdder();
