@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -31,7 +32,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -118,20 +118,20 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         GroupEvictionContext groupEvictionContext = evictionGroupsMap.computeIfAbsent(
             grp.groupId(), (k) -> new GroupEvictionContext(grp));
 
-        PartitionEvictionTask evictionTask = groupEvictionContext.createEvictPartitionTask(part);
+        int bucket;
 
-        if (evictionTask == null)
-            return;
+        synchronized (mux) {
+            PartitionEvictionTask evictionTask = groupEvictionContext.createEvictPartitionTask(part);
+
+            if (evictionTask == null)
+                return;
+
+            bucket = evictionQueue.offer(evictionTask);
+        }
 
         if (log.isDebugEnabled())
             log.debug("Partition has been scheduled for eviction [grp=" + grp.cacheOrGroupName()
                 + ", p=" + part.id() + ", state=" + part.state() + "]");
-
-        int bucket;
-
-        synchronized (mux) {
-            bucket = evictionQueue.offer(evictionTask);
-        }
 
         scheduleNextPartitionEviction(bucket);
     }
@@ -271,7 +271,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         private final CacheGroupContext grp;
 
         /** Deduplicate set partition ids. */
-        private final Set<Integer> partIds = new GridConcurrentHashSet<>();
+        private final Set<Integer> partIds = new HashSet<>();
 
         /** Future for currently running partition eviction task. */
         private final Map<Integer, IgniteInternalFuture<?>> partsEvictFutures = new ConcurrentHashMap<>();
@@ -314,7 +314,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          *
          * @param task Partition eviction task.
          */
-        private synchronized void taskScheduled(PartitionEvictionTask task) {
+        private void taskScheduled(PartitionEvictionTask task) {
             if (shouldStop())
                 return;
 
