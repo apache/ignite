@@ -32,6 +32,7 @@ import java.net.Socket;
 import java.util.Collections;
 
 /**
+ * Test client connects to two nodes cluster during time more than the {@link org.apache.ignite.configuration.IgniteConfiguration#clientFailureDetectionTimeout}.
  */
 public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
@@ -70,14 +71,13 @@ public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-
-        cleanPersistenceDir();
     }
 
     /**
-     *
+     * Test method.
+     * @throws Exception If failed.
      */
-    public void test() throws Exception {
+    public void testClientConnectToCluster() throws Exception {
         IgniteEx client = startGrid("client");
 
         assertTrue(client.localNode().isClient());
