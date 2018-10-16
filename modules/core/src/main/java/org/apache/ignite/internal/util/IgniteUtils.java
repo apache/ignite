@@ -10458,7 +10458,7 @@ public abstract class IgniteUtils {
                 maxCpBufSize = cpBufSize;
         }
 
-        long adjustedWalArchiveSize = maxCpBufSize * 3;
+        long adjustedWalArchiveSize = maxCpBufSize * 4;
 
         if (adjustedWalArchiveSize > dsCfg.getMaxWalArchiveSize()) {
             if (log != null)
