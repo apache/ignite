@@ -633,7 +633,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    protected static abstract class ResourceInjectionEntryProcessorBase<K, V>
+    protected abstract static class ResourceInjectionEntryProcessorBase<K, V>
         implements EntryProcessor<K, V, Integer>, Serializable {
         /** */
         protected transient ResourceInfoSet infoSet;

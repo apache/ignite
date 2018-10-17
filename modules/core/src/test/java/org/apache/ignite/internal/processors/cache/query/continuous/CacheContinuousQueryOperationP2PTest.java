@@ -330,7 +330,7 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
     /**
      *
      */
-    private static abstract class TestLocalListener implements CacheEntryUpdatedListener<Integer, Integer>,
+    private abstract static class TestLocalListener implements CacheEntryUpdatedListener<Integer, Integer>,
         CacheEntryCreatedListener<Integer, Integer> {
         /** {@inheritDoc} */
         @Override public void onCreated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts)

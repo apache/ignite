@@ -264,7 +264,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     }
 
     /** */
-    private final static EntryProcessor<Integer, Integer, Object> ENTRY_PROC =
+    private static final EntryProcessor<Integer, Integer, Object> ENTRY_PROC =
         new EntryProcessor<Integer, Integer, Object>() {
         @Override public Object process(MutableEntry<Integer, Integer> entry, Object... arguments)
         throws EntryProcessorException {
@@ -273,7 +273,7 @@ public class SqlTransactionsCommandsWithMvccEnabledSelfTest extends AbstractSche
     };
 
     /** */
-    private final static CacheEntryProcessor<Integer, Integer, Object> CACHE_ENTRY_PROC =
+    private static final CacheEntryProcessor<Integer, Integer, Object> CACHE_ENTRY_PROC =
         new CacheEntryProcessor<Integer, Integer, Object>() {
             @Override public Object process(MutableEntry<Integer, Integer> entry, Object... arguments)
                 throws EntryProcessorException {

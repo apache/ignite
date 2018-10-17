@@ -73,13 +73,13 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @return Transaction concurrency.
      */
-    abstract protected TransactionConcurrency concurrency();
+    protected abstract TransactionConcurrency concurrency();
 
     /**
      *
      * @return Transaction isolation.
      */
-    abstract protected TransactionIsolation isolation();
+    protected abstract TransactionIsolation isolation();
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {

@@ -171,7 +171,7 @@ public class IgfsSecondaryFileSystemInjectionSelfTest extends GridCommonAbstract
     /**
      *
      */
-    private static abstract class TestBaseSecondaryFsMock implements IgfsSecondaryFileSystem {
+    private abstract static class TestBaseSecondaryFsMock implements IgfsSecondaryFileSystem {
 
         /** {@inheritDoc} */
         @Override public boolean exists(IgfsPath path) {

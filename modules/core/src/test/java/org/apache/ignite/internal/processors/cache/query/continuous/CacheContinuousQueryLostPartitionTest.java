@@ -48,7 +48,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
  */
 public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTest {
     /** */
-    static public TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    public static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Cache name. */
     public static final String CACHE_NAME = "test_cache";

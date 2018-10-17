@@ -649,7 +649,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      *         left a topology during the ping process.
      * @throws IgniteCheckedException If an error occurs.
      */
-    private @Nullable IgniteBiTuple<UUID, Boolean> pingNode(InetSocketAddress addr, @Nullable UUID nodeId,
+    @Nullable private IgniteBiTuple<UUID, Boolean> pingNode(InetSocketAddress addr, @Nullable UUID nodeId,
         @Nullable UUID clientNodeId) throws IgniteCheckedException {
         assert addr != null;
 

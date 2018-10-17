@@ -584,7 +584,7 @@ public class GridCacheSharedContext<K, V> {
      *
      * @param cacheId Cache id.
      */
-    public @Nullable CacheObjectContext cacheObjectContext(int cacheId) throws IgniteCheckedException {
+    @Nullable public CacheObjectContext cacheObjectContext(int cacheId) throws IgniteCheckedException {
         GridCacheContext<K, V> ctx = ctxMap.get(cacheId);
 
         if (ctx != null)

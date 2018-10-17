@@ -1736,7 +1736,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     /**
      *
      */
-    private static abstract class CacheTaskAdapter<K, V, R> implements IgniteCallable<R> {
+    private abstract static class CacheTaskAdapter<K, V, R> implements IgniteCallable<R> {
         /** Ignite. */
         @IgniteInstanceResource
         protected Ignite ignite;
