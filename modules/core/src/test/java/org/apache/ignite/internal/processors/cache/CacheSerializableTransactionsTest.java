@@ -58,6 +58,8 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
@@ -111,6 +113,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /** */
     private boolean client;
 
+    /** No-Op failure handler. */
+    private boolean noOpFailureHnd;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -137,6 +142,16 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(SRVS, CLIENTS);
 
         client = false;
+
+        noOpFailureHnd = false;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        if (noOpFailureHnd)
+            return new NoOpFailureHandler();
+
+        return super.getFailureHandler(igniteInstanceName);
     }
 
     /** {@inheritDoc} */
@@ -5098,6 +5113,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      * @return Restart thread future.
      */
     private IgniteInternalFuture<?> restartFuture(final AtomicBoolean stop, final IgniteInternalFuture<?> fut) {
+        noOpFailureHnd = true;
+
         return GridTestUtils.runAsync(new Callable<Object>() {
             private boolean stop() {
                 if (stop != null)
