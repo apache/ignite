@@ -44,7 +44,16 @@ namespace ignite
             void Prepare();
 
             /**
-             * Establish connection to node.
+             * Establish connection to node using provided handles.
+             *
+             * @param conn Connection.
+             * @param statement Statement to allocate.
+             * @param connectStr Connection string.
+             */
+            void Connect(SQLHDBC& conn, SQLHSTMT& statement, const std::string& connectStr);
+
+            /**
+             * Establish connection to node using default handles.
              *
              * @param connectStr Connection string.
              */
@@ -70,7 +79,7 @@ namespace ignite
 
             /**
              * Start additional with the specified name and config.
-             * 
+             *
              * @param cfg Config path.
              * @param name Instance name.
              */

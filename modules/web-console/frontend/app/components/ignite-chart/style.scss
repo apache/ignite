@@ -41,9 +41,25 @@ ignite-chart {
       line-height: 36px;
     }
 
+    ignite-chart-series-selector {
+      margin: 0 2px;
+    }
+
     > div {
+      &:first-child {
+        width: calc(100% - 120px);
+        white-space: nowrap;
+      }
+
       display: flex;
       align-items: center;
+      flex-wrap: nowrap;
+      flex-grow: 0;
+
+      .chart-text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
     }
   }
 
