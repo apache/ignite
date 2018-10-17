@@ -875,11 +875,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         true);
                 }
 
-            ctx.discovery().sendCustomEvent(msg);
-        }
-        catch (IgniteCheckedException e) {
-            startFuts.remove(routineId);
-            locInfos.remove(routineId);
+                ctx.discovery().sendCustomEvent(msg);
+            }
+            catch (IgniteCheckedException e) {
+                startFuts.remove(routineId);
+                locInfos.remove(routineId);
 
                 unregisterHandler(routineId, hnd, true);
 

@@ -755,11 +755,11 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
 
                     return null;
                 }
-            }, IgniteCheckedException.class, "Mvcc version mismatch.");
+            }, IgniteCheckedException.class, "Cannot serialize transaction due to write conflict");
 
             assertTrue(X.hasCause(ex, SQLException.class));
 
-            assertTrue(X.getCause(ex).getMessage().contains("Mvcc version mismatch."));
+            assertTrue(X.getCause(ex).getMessage().contains("Cannot serialize transaction due to write conflict"));
         }
         else
             readFut.get();
