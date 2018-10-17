@@ -479,9 +479,6 @@ public class CacheMvccTxRecoveryTest extends CacheMvccAbstractTest {
 
         List<IgniteEx> liveNodes = grids(srvCnt, i -> i != vid);
 
-        // t0d0 check why querying here leads to exception
-//        liveNodes.forEach(node -> node.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("select * from Integer")).getAll());
-
         assertPartitionCountersAreConsistent(keys, liveNodes);
 
         latch2.countDown();
