@@ -88,8 +88,11 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
      * @param delegate Delegate object.
      * @param opCtx Optional operation context which will be passed to gateway.
      */
-    public GridCacheProxyImpl(GridCacheContext<K, V> ctx, IgniteInternalCache<K, V> delegate,
-        @Nullable CacheOperationContext opCtx) {
+    public GridCacheProxyImpl(
+        GridCacheContext<K, V> ctx,
+        IgniteInternalCache<K, V> delegate,
+        @Nullable CacheOperationContext opCtx
+    ) {
         assert ctx != null;
         assert delegate != null;
 

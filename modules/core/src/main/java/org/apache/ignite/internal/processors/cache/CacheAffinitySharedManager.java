@@ -410,7 +410,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         ClientCacheChangeDummyDiscoveryMessage msg,
         boolean crd,
         AffinityTopologyVersion topVer,
-        DiscoCache discoCache) {
+        DiscoCache discoCache
+    ) {
         Map<String, DynamicCacheChangeRequest> startReqs = msg.startRequests();
 
         if (startReqs == null)
@@ -436,11 +437,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 DynamicCacheChangeRequest startReq = startReqs.get(desc.cacheName());
 
-                cctx.cache().prepareCacheStart(desc.cacheConfiguration(),
+                cctx.cache().prepareCacheStart(
+                    desc.cacheConfiguration(),
                     desc,
                     startReq.nearCacheConfiguration(),
                     topVer,
-                    startReq.disabledAfterStart());
+                    startReq.disabledAfterStart()
+                );
 
                 startedInfos.put(desc.cacheId(), startReq.nearCacheConfiguration() != null);
 
@@ -557,6 +560,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         cctx.cache().initCacheProxies(topVer, null);
 
+        startReqs.keySet().forEach(req -> cctx.cache().completeProxyInitialize(req));
+
         cctx.cache().completeClientCacheChangeFuture(msg.requestId(), null);
 
         return startedInfos;
@@ -571,7 +576,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     private Set<Integer> processCacheCloseRequests(
         ClientCacheChangeDummyDiscoveryMessage msg,
         boolean crd,
-        AffinityTopologyVersion topVer) {
+        AffinityTopologyVersion topVer
+    ) {
         Set<String> cachesToClose = msg.cachesToClose();
 
         if (cachesToClose == null)
@@ -862,7 +868,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 assert cctx.cacheContext(cacheDesc.cacheId()) == null
                     : "Starting cache has not null context: " + cacheDesc.cacheName();
 
-                IgniteCacheProxyImpl cacheProxy = (IgniteCacheProxyImpl) cctx.cache().jcacheProxy(req.cacheName());
+                IgniteCacheProxyImpl cacheProxy = cctx.cache().jcacheProxy(req.cacheName(), false);
 
                 // If it has proxy then try to start it
                 if (cacheProxy != null) {
@@ -880,11 +886,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             try {
                 if (startCache) {
-                    cctx.cache().prepareCacheStart(req.startCacheConfiguration(),
+                    cctx.cache().prepareCacheStart(
+                        req.startCacheConfiguration(),
                         cacheDesc,
                         nearCfg,
                         evts.topologyVersion(),
-                        req.disabledAfterStart());
+                        req.disabledAfterStart()
+                    );
 
                     if (fut.cacheAddedOnExchange(cacheDesc.cacheId(), cacheDesc.receivedFrom())) {
                         if (fut.events().discoveryCache().cacheGroupAffinityNodes(cacheDesc.groupId()).isEmpty())
