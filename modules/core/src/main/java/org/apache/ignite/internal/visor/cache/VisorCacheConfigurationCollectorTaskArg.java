@@ -77,6 +77,7 @@ public class VisorCacheConfigurationCollectorTaskArg extends VisorDataTransferOb
         return regex;
     }
 
+    /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
         return V2;
     }

@@ -73,8 +73,10 @@ public class VisorViewCacheTaskArg extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer,
-        ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(
+        byte protoVer,
+        ObjectInput in
+    ) throws IOException, ClassNotFoundException {
         regex = U.readString(in);
         cmd = VisorViewCacheCmd.fromOrdinal(in.readByte());
     }

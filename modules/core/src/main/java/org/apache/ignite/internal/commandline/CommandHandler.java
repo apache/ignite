@@ -1744,12 +1744,12 @@ public class CommandHandler {
                     if (CMD_USER_ATTRIBUTES.equals(nextArg)) {
                         nextArg = nextArg("User attributes are expected to be separated by commas");
 
-                        Set<String> userAttributes = new HashSet();
+                        Set<String> userAttrs = new HashSet();
 
                         for (String userAttribute : nextArg.split(","))
-                            userAttributes.add(userAttribute.trim());
+                            userAttrs.add(userAttribute.trim());
 
-                        cacheArgs.setUserAttributes(userAttributes);
+                        cacheArgs.setUserAttributes(userAttrs);
 
                         nextArg = (hasNextCacheArg()) ? nextArg("") : null;
 
@@ -2014,7 +2014,7 @@ public class CommandHandler {
         VisorCacheRebalanceConfiguration rebalanceCfg = cfg.getRebalanceConfiguration();
         VisorCacheEvictionConfiguration evictCfg = cfg.getEvictionConfiguration();
         VisorCacheStoreConfiguration storeCfg = cfg.getStoreConfiguration();
-        VisorQueryConfiguration queryCfg = cfg.getQueryConfiguration();
+        VisorQueryConfiguration qryCfg = cfg.getQueryConfiguration();
 
         params.put("Name", cfg.getName());
         params.put("Group", cfg.getGroupName());
@@ -2090,11 +2090,11 @@ public class CommandHandler {
         params.put("Writer Factory Class Name", cfg.getWriterFactory());
         params.put("Expiry Policy Factory Class Name", cfg.getExpiryPolicyFactory());
 
-        params.put("Query Execution Time Threshold", queryCfg.getLongQueryWarningTimeout());
-        params.put("Query Escaped Names", queryCfg.isSqlEscapeAll());
-        params.put("Query SQL Schema", queryCfg.getSqlSchema());
-        params.put("Query SQL functions", queryCfg.getSqlFunctionClasses());
-        params.put("Query Indexed Types", queryCfg.getIndexedTypes());
+        params.put("Query Execution Time Threshold", qryCfg.getLongQueryWarningTimeout());
+        params.put("Query Escaped Names", qryCfg.isSqlEscapeAll());
+        params.put("Query SQL Schema", qryCfg.getSqlSchema());
+        params.put("Query SQL functions", qryCfg.getSqlFunctionClasses());
+        params.put("Query Indexed Types", qryCfg.getIndexedTypes());
         params.put("Maximum payload size for offheap indexes", cfg.getSqlIndexMaxInlineSize());
         params.put("Query Metrics History Size", cfg.getQueryDetailMetricsSize());
 
