@@ -34,9 +34,9 @@ import org.apache.ignite.ml.preprocessing.standardscaling.StandardScalerTrainer;
 /**
  * Example that shows how to use StandardScaler preprocessor to scale the given data.
  *
- * Machine learning preprocessors are built as a chain. Most often a first preprocessor is a feature extractor as shown
- * in this example. The second preprocessor here is a StandardScaler preprocessor which is built on top of the feature
- * extractor and represents a chain of itself and the underlying feature extractor.
+ * Machine learning preprocessors are built as a chain. Most often the first preprocessor is a feature extractor as
+ * shown in this example. The second preprocessor here is a {@code StandardScaler} preprocessor which is built on top of
+ * the feature extractor and represents a chain of itself and the underlying feature extractor.
  */
 public class StandardScalerExample {
     /** Run example. */
