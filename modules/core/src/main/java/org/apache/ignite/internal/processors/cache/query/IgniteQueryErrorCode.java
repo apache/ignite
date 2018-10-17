@@ -121,7 +121,7 @@ public final class IgniteQueryErrorCode {
     public static final int TRANSACTION_COMPLETED = 5004;
 
     /** Transaction serialization error. */
-    public final static int TRANSACTION_SERIALIZATION_ERROR = 5005;
+    public static final int TRANSACTION_SERIALIZATION_ERROR = 5005;
 
     /** */
     private IgniteQueryErrorCode() {
