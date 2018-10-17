@@ -1019,6 +1019,17 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_REBALANCE_THROTTLE_OVERRIDE = "IGNITE_REBALANCE_THROTTLE_OVERRIDE";
 
     /**
+     * Maximum inactivity period for system worker in milliseconds. When this value is exceeded, worker is considered
+     * blocked with consequent critical failure handler invocation.
+     */
+    public static final String IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT = "IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT";
+
+    /**
+     * Timeout for checkpoint read lock acquisition in milliseconds.
+     */
+    public static final String IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT = "IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

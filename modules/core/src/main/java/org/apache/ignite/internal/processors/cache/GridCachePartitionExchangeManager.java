@@ -2337,6 +2337,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
+     * Invokes {@link GridWorker#updateHeartbeat()} for exchange worker.
+     */
+    public void exchangerUpdateHeartbeat() {
+        exchWorker.updateHeartbeat();
+    }
+
+    /**
      * Invokes {@link GridWorker#blockingSectionBegin()} for exchange worker.
      * Should be called from exchange worker thread.
      */
