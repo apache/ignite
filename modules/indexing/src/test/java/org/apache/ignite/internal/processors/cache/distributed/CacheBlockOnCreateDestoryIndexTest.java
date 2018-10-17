@@ -49,21 +49,25 @@ public class CacheBlockOnCreateDestoryIndexTest extends GridCommonAbstractTest {
     /** */
     private final List<? extends CacheBlockOnReadAbstractTest> tests = Arrays.asList(
         new CacheBlockOnSingleGetTest() {
+            /** {@inheritDoc} */
             @Nullable @Override protected <A extends Annotation> A currentTestAnnotation(Class<A> annotationCls) {
                 return CacheBlockOnCreateDestoryIndexTest.this.currentTestAnnotation(annotationCls);
             }
         },
         new CacheBlockOnGetAllTest() {
+            /** {@inheritDoc} */
             @Nullable @Override protected <A extends Annotation> A currentTestAnnotation(Class<A> annotationCls) {
                 return CacheBlockOnCreateDestoryIndexTest.this.currentTestAnnotation(annotationCls);
             }
         },
         new CacheBlockOnScanTest() {
+            /** {@inheritDoc} */
             @Nullable @Override protected <A extends Annotation> A currentTestAnnotation(Class<A> annotationCls) {
                 return CacheBlockOnCreateDestoryIndexTest.this.currentTestAnnotation(annotationCls);
             }
         },
         new CacheBlockOnSqlQueryTest() {
+            /** {@inheritDoc} */
             @Nullable @Override protected <A extends Annotation> A currentTestAnnotation(Class<A> annotationCls) {
                 return CacheBlockOnCreateDestoryIndexTest.this.currentTestAnnotation(annotationCls);
             }

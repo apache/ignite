@@ -679,13 +679,15 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws NoSuchMethodError If method wasn't found for some reason.
      */
     @NotNull protected Method currentTestMethod() {
-        if (currTestMtd == null)
+        if (currTestMtd == null) {
             try {
                 currTestMtd = getClass().getMethod(getName());
             }
             catch (NoSuchMethodException e) {
                 throw new NoSuchMethodError("Current test method is not found: " + getName());
             }
+        }
+
         return currTestMtd;
     }
 

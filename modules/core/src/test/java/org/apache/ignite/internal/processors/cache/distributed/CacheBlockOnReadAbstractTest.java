@@ -287,12 +287,10 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
         cleanPersistenceDir();
 
-
         // Checking prerequisites.
         assertTrue("Positive timeout is required for the test.", timeout() > 0);
 
         assertTrue("No baseline servers were requested.", baselineServersCount() > 0);
-
 
         int idx = 0;
 
@@ -303,11 +301,9 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         // Activate cluster.
         baseline.get(0).cluster().active(true);
 
-
         // Start server nodes in activated cluster.
         for (int i = 0; i < serversCount(); i++)
             srvs.add(startGrid(idx++));
-
 
         // Start client nodes.
         startNodesInClientMode(true);
