@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -91,7 +92,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** List of baseline nodes started at the beginning of the test. */
-    protected final List<IgniteEx> baseline = new ArrayList<>();
+    protected final List<IgniteEx> baseline = new CopyOnWriteArrayList<>();
 
     /** List of server nodes started at the beginning of the test. */
     protected final List<IgniteEx> srvs = new CopyOnWriteArrayList<>();
@@ -413,36 +414,10 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
             () -> baseline.get(0).destroyCache(cacheNames.remove(0))
         );
     }
-
     /**
      * @throws Exception If failed.
      */
-    @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
-    public void testStartClientAtomicPartitioned() throws Exception {
-        testStartClientTransactionalReplicated();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Params(atomicityMode = ATOMIC, cacheMode = REPLICATED)
-    public void testStartClientAtomicReplicated() throws Exception {
-        testStartClientTransactionalReplicated();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
-    public void testStartClientTransactionalPartitioned() throws Exception {
-        testStartClientTransactionalReplicated();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Params(atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
-    public void testStartClientTransactionalReplicated() throws Exception {
+    public void _testStartClient() throws Exception {
         startNodesInClientMode(true);
 
         doTest(
@@ -475,7 +450,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         startNodesInClientMode(true);
 
         for (int i = 0; i < 3; i++)
-            clients.add((IgniteEx)startGrid(UUID.randomUUID().toString()));
+            clients.add(startGrid(UUID.randomUUID().toString()));
 
         customIpFinder = null;
 
@@ -652,9 +627,11 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
             () -> {
                 startNodesInClientMode(false);
 
-                startGrid(UUID.randomUUID().toString());
+                IgniteEx ignite = startGrid(UUID.randomUUID().toString());
 
                 baseline.get(0).cluster().setBaselineTopology(baseline.get(0).context().discovery().topologyVersion());
+
+                baseline.add(ignite);
             }
         );
     }
@@ -697,10 +674,10 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
                 TestRecordingCommunicationSpi.spi(node).stopBlock();
 
+                cntDownCntr.incrementAndGet();
+
                 for (int i = 0; i < cntDownCntr.get(); i++)
                     cntFinishedReadOperations.countDown(); // This node and previously stopped nodes as well.
-
-                cntDownCntr.incrementAndGet();
 
                 stopGrid(node.name());
             }
@@ -839,8 +816,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         // Reinit internal cache state with given ignite instance.
         readOperation.initCache(ignite, false);
 
-        // Ignore coordinator.
-        cntFinishedReadOperations = new CountDownLatch(baselineServersCount() - 1);
+        cntFinishedReadOperations = new CountDownLatch(baseline.size() - 1);
 
         // Read while potentially blocking operation is executing.
         try (AutoCloseable block = backgroundOperation.start()) {
@@ -998,6 +974,9 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         /** */
         private final Predicate<Message> blockMsg;
 
+        /** */
+        private final Set<?> baselineConsistentIds = baseline.stream().map(IgniteEx::name).collect(Collectors.toSet());
+
         /**
          * @param block Blocking operation.
          * @param blockMsgPred Predicate that checks whether to block message or not.
@@ -1031,7 +1010,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
          * @return Whether the given message should be blocked or not.
          */
         private boolean blockMessage(ClusterNode node, Message msg) {
-            boolean block = blockMsg.test(msg);
+            boolean block = baselineConsistentIds.contains(node.consistentId()) && blockMsg.test(msg);
 
             if (block)
                 cntFinishedReadOperations.countDown();
