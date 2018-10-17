@@ -41,6 +41,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -77,6 +78,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
+import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -547,7 +549,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     "serializer to a new WAL segment [curFile=" + currentHnd + ", newVer=" + serializer.version() +
                     ", oldVer=" + currentHnd.serializer.version() + ']');
 
-            rollOver(currentHnd);
+            rollOver(currentHnd, null);
         }
 
         if (mode == WALMode.BACKGROUND) {
@@ -679,7 +681,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         final FileWriteHandle handle = currentHandle();
 
         try {
-            rollOver(handle);
+            rollOver(handle, null);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Unable to perform segment rollover: " + e.getMessage(), e);
@@ -689,8 +691,12 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("TooBroadScope")
-    @Override public WALPointer log(WALRecord record) throws IgniteCheckedException, StorageException {
+    @Override public WALPointer log(WALRecord record) throws IgniteCheckedException {
+        return log(record, RolloverType.NONE);
+    }
+
+    /** {@inheritDoc} */
+    @Override public WALPointer log(WALRecord record, RolloverType rolloverType) throws IgniteCheckedException {
         if (serializer == null || mode == WALMode.NONE)
             return null;
 
@@ -706,13 +712,31 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         record.size(serializer.size(record));
 
         while (true) {
-            if (record.rollOver()){
+            WALPointer ptr;
+
+            if (rolloverType == RolloverType.NONE)
+                ptr = currWrHandle.addRecord(record);
+            else {
                 assert cctx.database().checkpointLockIsHeldByThread();
 
-                currWrHandle = rollOver(currWrHandle);
-            }
+                if (rolloverType == RolloverType.NEXT_SEGMENT) {
+                    WALPointer pos = record.position();
 
-            WALPointer ptr = currWrHandle.addRecord(record);
+                    do {
+                        // This will change record.position() unless concurrent rollover happened.
+                        currWrHandle = rollOver(currWrHandle, record);
+                    }
+                    while (Objects.equals(pos, record.position()));
+
+                    ptr = record.position();
+                }
+                else if (rolloverType == RolloverType.CURRENT_SEGMENT) {
+                    if ((ptr = currWrHandle.addRecord(record)) != null)
+                        currWrHandle = rollOver(currWrHandle, null);
+                }
+                else
+                    throw new IgniteCheckedException("Unknown rollover type: " + rolloverType);
+            }
 
             if (ptr != null) {
                 metrics.onWalRecordLogged();
@@ -725,7 +749,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 return ptr;
             }
             else
-                currWrHandle = rollOver(currWrHandle);
+                currWrHandle = rollOver(currWrHandle, null);
 
             checkNode();
 
@@ -1115,9 +1139,10 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
     /**
      * @param cur Handle that failed to fit the given entry.
+     * @param rec Optional record to be added to the beginning of the segment.
      * @return Handle that will fit the entry.
      */
-    private FileWriteHandle rollOver(FileWriteHandle cur) throws IgniteCheckedException {
+    private FileWriteHandle rollOver(FileWriteHandle cur, @Nullable WALRecord rec) throws IgniteCheckedException {
         FileWriteHandle hnd = currentHandle();
 
         if (hnd != cur)
@@ -1128,6 +1153,12 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 metrics.onWallRollOver();
 
             FileWriteHandle next = initNextWriteHandle(cur.getSegmentId());
+
+            if (rec != null) {
+                WALPointer ptr = next.addRecord(rec);
+
+                assert ptr != null;
+            }
 
             if (next.getSegmentId() - lashCheckpointFileIdx() >= maxSegCountWithoutCheckpoint)
                 cctx.database().forceCheckpoint("too big size of WAL without checkpoint");
@@ -1428,7 +1459,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      * Monitor of current object is used for notify on:
      * <ul>
      * <li>exception occurred ({@link FileArchiver#cleanException}!=null)</li>
-     * <li>stopping thread ({@link FileArchiver#stopped}==true)</li>
+     * <li>stopping thread ({@link FileArchiver#isCancelled}==true)</li>
      * <li>current file index changed ({@link FileArchiver#curAbsWalIdx})</li>
      * <li>last archived file index was changed ({@link FileArchiver#lastAbsArchivedIdx})</li>
      * <li>some WAL index was removed from {@link FileArchiver#locked} map</li>
@@ -1446,9 +1477,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         /** Last archived file index (absolute, 0-based). Guarded by <code>this</code>. */
         private volatile long lastAbsArchivedIdx = -1;
-
-        /** current thread stopping advice */
-        private volatile boolean stopped;
 
         /** */
         private NavigableMap<Long, Integer> reserved = new TreeMap<>();
@@ -1484,7 +1512,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
          */
         private void shutdown() throws IgniteInterruptedCheckedException {
             synchronized (this) {
-                stopped = true;
+                isCancelled = true;
 
                 notifyAll();
             }
@@ -1566,7 +1594,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
             try {
                 synchronized (this) {
-                    while (curAbsWalIdx == -1 && !stopped) {
+                    while (curAbsWalIdx == -1 && !isCancelled()) {
                         blockingSectionBegin();
 
                         try {
@@ -1582,14 +1610,14 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     // once it was archived.
                 }
 
-                while (!Thread.currentThread().isInterrupted() && !stopped) {
+                while (!Thread.currentThread().isInterrupted() && !isCancelled()) {
                     long toArchive;
 
                     synchronized (this) {
                         assert lastAbsArchivedIdx <= curAbsWalIdx : "lastArchived=" + lastAbsArchivedIdx +
                             ", current=" + curAbsWalIdx;
 
-                        while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !stopped) {
+                        while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !isCancelled()) {
                             blockingSectionBegin();
 
                             try {
@@ -1603,7 +1631,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                         toArchive = lastAbsArchivedIdx + 1;
                     }
 
-                    if (stopped)
+                    if (isCancelled())
                         break;
 
                     SegmentArchiveResult res;
@@ -1618,7 +1646,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     }
 
                     synchronized (this) {
-                        while (locked.containsKey(toArchive) && !stopped) {
+                        while (locked.containsKey(toArchive) && !isCancelled()) {
                             blockingSectionBegin();
 
                             try {
@@ -1645,14 +1673,14 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             catch (InterruptedException t) {
                 Thread.currentThread().interrupt();
 
-                if (!stopped)
+                if (!isCancelled())
                     err = t;
             }
             catch (Throwable t) {
                 err = t;
             }
             finally {
-                if (err == null && !stopped)
+                if (err == null && !isCancelled())
                     err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly");
 
                 if (err instanceof OutOfMemoryError)
@@ -1827,7 +1855,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
          *
          */
         private boolean checkStop() {
-            return stopped;
+            return isCancelled();
         }
 
         /**
@@ -2330,19 +2358,22 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     private abstract static class FileHandle {
         /** I/O interface for read/write operations with file */
         protected SegmentIO fileIO;
+        /** Segment idx corresponded to fileIo*/
+        final long segmentIdx;
 
         /**
          * @param fileIO I/O interface for read/write operations of FileHandle.
          */
-        private FileHandle(SegmentIO fileIO) {
+        private FileHandle(@NotNull SegmentIO fileIO) {
             this.fileIO = fileIO;
+            this.segmentIdx = fileIO.getSegmentId();
         }
 
         /**
          * @return Current segment id.
          */
         public long getSegmentId(){
-            return fileIO.getSegmentId();
+            return segmentIdx;
         }
     }
 

@@ -71,7 +71,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
         super.afterTest();
 
         if (pageMem != null)
-            pageMem.stop();
+            pageMem.stop(true);
 
         pageMem = null;
     }
@@ -479,11 +479,6 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public byte newMvccTxState() {
             return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isKeyAbsentBefore() {
-            return false;
         }
     }
 

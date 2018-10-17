@@ -19,6 +19,7 @@ package org.apache.ignite.internal.pagemem.wal;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
@@ -52,13 +53,29 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     /**
      * Appends the given log entry to the write-ahead log.
      *
-     * @param entry entry to log.
+     * @param entry Entry to log.
      * @return WALPointer that may be passed to {@link #flush(WALPointer, boolean)} method to make sure the record is
      *      written to the log.
      * @throws IgniteCheckedException If failed to construct log entry.
      * @throws StorageException If IO error occurred while writing log entry.
      */
     public WALPointer log(WALRecord entry) throws IgniteCheckedException, StorageException;
+
+    /**
+     * Appends the given log entry to the write-ahead log. If entry logging leads to rollover, caller can specify
+     * whether to write the entry to the current segment or to th next one.
+     *
+     * @param entry Entry to log.
+     * @param rolloverType Rollover type.
+     * @return WALPointer that may be passed to {@link #flush(WALPointer, boolean)} method to make sure the record is
+     *      written to the log.
+     * @throws IgniteCheckedException If failed to construct log entry.
+     * @throws StorageException If IO error occurred while writing log entry.
+     *
+     * @see RolloverType
+     */
+    public WALPointer log(WALRecord entry, RolloverType rolloverType)
+        throws IgniteCheckedException, StorageException;
 
     /**
      * Makes sure that all log entries written to the log up until the specified pointer are actually written

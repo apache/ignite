@@ -22,6 +22,13 @@ import junit.framework.TestSuite;
 import org.apache.ignite.failure.IoomFailureHandlerTest;
 import org.apache.ignite.failure.SystemWorkersTerminationTest;
 import org.apache.ignite.internal.ClusterBaselineNodesMetricsSelfTest;
+import org.apache.ignite.internal.encryption.EncryptedCacheBigEntryTest;
+import org.apache.ignite.internal.encryption.EncryptedCacheCreateTest;
+import org.apache.ignite.internal.encryption.EncryptedCacheDestroyTest;
+import org.apache.ignite.internal.encryption.EncryptedCacheGroupCreateTest;
+import org.apache.ignite.internal.encryption.EncryptedCacheNodeJoinTest;
+import org.apache.ignite.internal.encryption.EncryptedCachePreconfiguredRestartTest;
+import org.apache.ignite.internal.encryption.EncryptedCacheRestartTest;
 import org.apache.ignite.internal.GridNodeMetricsLogPdsSelfTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOnActivationTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOutsideBaselineTest;
@@ -61,6 +68,14 @@ public class IgniteBasicWithPersistenceTestSuite extends TestSuite {
         suite.addTestSuite(GridInternalTaskUnusedWalSegmentsTest.class);
 
         suite.addTestSuite(GridNodeMetricsLogPdsSelfTest.class);
+
+        suite.addTestSuite(EncryptedCacheBigEntryTest.class);
+        suite.addTestSuite(EncryptedCacheCreateTest.class);
+        suite.addTestSuite(EncryptedCacheDestroyTest.class);
+        suite.addTestSuite(EncryptedCacheGroupCreateTest.class);
+        suite.addTestSuite(EncryptedCacheNodeJoinTest.class);
+        suite.addTestSuite(EncryptedCacheRestartTest.class);
+        suite.addTestSuite(EncryptedCachePreconfiguredRestartTest.class);
 
         return suite;
     }
