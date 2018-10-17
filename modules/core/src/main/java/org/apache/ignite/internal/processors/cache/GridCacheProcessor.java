@@ -2026,6 +2026,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 t.get2(),
                 exchTopVer,
                 false);
+
+            context().exchange().exchangerUpdateHeartbeat();
         }
 
         if (log.isInfoEnabled())
@@ -2064,6 +2066,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                     null,
                     exchTopVer,
                     false);
+
+                context().exchange().exchangerUpdateHeartbeat();
             }
         }
 
@@ -5045,6 +5049,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
             // Make sure to remove future before completion.
             pendingFuts.remove(id, this);
+
+            context().exchange().exchangerUpdateHeartbeat();
 
             return super.onDone(res, err);
         }
