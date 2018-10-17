@@ -28,7 +28,7 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -243,6 +243,35 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         Map<Integer, T2<Long, Long>> map = (Map<Integer, T2<Long, Long>>)res;
 
         return CachePartitionPartialCountersMap.fromCountersMap(map, partsCnt);
+    }
+
+    /**
+     * @param grpId Cache group ID.
+     * @param partsCnt Total cache partitions.
+     * @return Partition update counters.
+     */
+    @SuppressWarnings("unchecked")
+    public CachePartitionPartialCountersMap partitionUpdateCountersUnsorted(int grpId, int partsCnt) {
+        Object res = partCntrs == null ? null : partCntrs.get(grpId);
+
+        if (res == null)
+            return CachePartitionPartialCountersMap.EMPTY;
+
+        if (res instanceof CachePartitionPartialCountersMap)
+            return (CachePartitionPartialCountersMap)res;
+
+        assert res instanceof Map : res;
+
+        Map<Integer, T2<Long, Long>> map = (Map<Integer, T2<Long, Long>>)res;
+
+        CachePartitionPartialCountersMap partCounersMap = new CachePartitionPartialCountersMap(partsCnt);
+
+        for (Map.Entry<Integer, T2<Long, Long>> e : map.entrySet())
+            partCounersMap.add(e.getKey(), e.getValue().get1(), e.getValue().get2());
+
+        partCounersMap.trim();
+
+        return partCounersMap;
     }
 
     /**

@@ -45,7 +45,7 @@ public class DecisionTreeRegressionTrainerTest {
 
     /** Use index [= 1 if true]. */
     @Parameterized.Parameter(1)
-    public int useIndex;
+    public int useIdx;
 
     /** Test parameters. */
     @Parameterized.Parameters(name = "Data divided on {0} partitions. Use index = {1}.")
@@ -73,7 +73,7 @@ public class DecisionTreeRegressionTrainerTest {
         }
 
         DecisionTreeRegressionTrainer trainer = new DecisionTreeRegressionTrainer(1, 0)
-            .withUsingIdx(useIndex == 1);
+            .withUsingIdx(useIdx == 1);
 
         DecisionTreeNode tree = trainer.fit(
             data,
