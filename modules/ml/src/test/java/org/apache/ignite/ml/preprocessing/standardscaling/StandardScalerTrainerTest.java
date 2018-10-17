@@ -53,7 +53,7 @@ public class StandardScalerTrainerTest extends TrainerTest {
 
     /** */
     @Before
-    public void createTrainver() {
+    public void createTrainer() {
         standardizationTrainer = new StandardScalerTrainer<>();
     }
 
