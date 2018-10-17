@@ -1927,7 +1927,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param cacheGrpName Cache group name.
      * @return Metastore key prefix.
      */
-    String getCacheGroupMetastoreKeyPrefix(String cacheGrpName){
+    private String getCacheGroupMetastoreKeyPrefix(String cacheGrpName){
         return getCacheGroupMetastoreKeyPrefixSb(cacheGrpName).toString();
     }
 

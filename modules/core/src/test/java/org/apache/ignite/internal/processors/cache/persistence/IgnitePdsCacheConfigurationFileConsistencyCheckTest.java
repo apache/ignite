@@ -17,12 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -34,16 +30,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_TMP_FILENAME;
 
 /**
  * Tests that ignite can start when caches' configurations with same name in different groups stored.
@@ -119,45 +111,6 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
         assertEquals("expected that group of " + cacheName(3) + " is " + EVEN_GROUP_NAME, EVEN_GROUP_NAME,
             desc.groupDescriptor().groupName());
 
-    }
-
-    /**
-     * Check that cache_data.dat.tmp files are deleted after node restarts.
-     *
-     * @throws Exception If failed.
-     */
-    public void testTmpCacheConfigurationsDelete() throws Exception {
-        IgniteEx ig0 = (IgniteEx)startGrids(NODES);
-
-        ig0.cluster().active(true);
-
-        startCaches(ig0);
-
-        DynamicCacheDescriptor desc = ig0.context().cache().cacheDescriptor(cacheName(3));
-
-        storeTmpCacheData(desc);
-
-        stopAllGrids();
-
-        startGrids(NODES);
-
-        awaitPartitionMapExchange();
-
-        for (int i = 0; i < NODES; i++) {
-            IgniteEx ig = grid(i);
-
-            GridCacheSharedContext sharedCtx = ig.context().cache().context();
-
-            String prefix =
-                ((GridCacheDatabaseSharedManager) sharedCtx.database()).getCacheGroupMetastoreKeyPrefix(ODD_GROUP_NAME);
-
-            Map<String, ? extends Serializable> map =
-                sharedCtx.database().metaStorage().readForPredicate(k -> k != null && k.startsWith(prefix));
-
-            assertNotNull(map);
-
-            assertEquals(map.toString(), 0, map.size());
-        }
     }
 
     /**
