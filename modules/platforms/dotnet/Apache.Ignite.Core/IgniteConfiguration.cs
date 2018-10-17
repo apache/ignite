@@ -1382,7 +1382,7 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets or sets the timeout for blocked system workers detection.
         /// </summary>
-        public TimeSpan SystemWorkerBlockedTimeout
+        public TimeSpan? SystemWorkerBlockedTimeout
         {
             get { return _sysWorkerBlockedTimeout; }
             set { _sysWorkerBlockedTimeout = value; }

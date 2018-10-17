@@ -493,7 +493,7 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Gets or sets the timeout for checkpoint read lock acquisition.
         /// </summary>
-        public TimeSpan CheckpointReadLockTimeout { get; set; }
+        public TimeSpan? CheckpointReadLockTimeout { get; set; }
 
         /// <summary>
         /// Gets or sets the data region configurations.
