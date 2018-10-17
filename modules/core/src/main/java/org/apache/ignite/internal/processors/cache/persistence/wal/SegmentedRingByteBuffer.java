@@ -456,14 +456,14 @@ public class SegmentedRingByteBuffer {
         /**
          * Releases segment.
          */
-        abstract public void release();
+        public abstract void release();
 
         /**
          * Returns byte buffer.
          *
          * @return Byte buffer.
          */
-        abstract public ByteBuffer buffer();
+        public abstract ByteBuffer buffer();
 
         /**
          * Returns position.
