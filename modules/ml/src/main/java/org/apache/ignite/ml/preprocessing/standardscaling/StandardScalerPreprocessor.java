@@ -79,12 +79,12 @@ public class StandardScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, 
         return res;
     }
 
-    /***/
+    /** */
     public double[] getMeans() {
         return means;
     }
 
-    /***/
+    /** */
     public double[] getSigmas() {
         return sigmas;
     }
