@@ -25,35 +25,48 @@ You can find Apache Ignite documentation here:
 
     http://apacheignite.readme.io/docs
 
-fulltext search sql
-======================
+Fulltext search with sql
+==========================
+start CacheClientBinaryQueryExample.java
+then can execute these sql: 
 
-CREATE ALIAS IF NOT EXISTS FTL_INIT FOR "org.apache.ignite.cache.FullTextLucene.init";
-SELECT FTL_INIT();
+<pre>
+CREATE ALIAS IF NOT EXISTS FTL_INIT FOR "org.apache.ignite.cache.FullTextLucene.init"; 
 
-SELECT * FROM FTL_SEARCH('CacheClientBinaryQueryExampleEmployees','EMPLOYEE','TX', 0, 0);
+SELECT FTL_INIT(); 
 
-SELECT e.name,e.street FROM FTL_SEARCH('CacheClientBinaryQueryExampleEmployees','EMPLOYEE','TX', 0, 0) f ,"CacheClientBinaryQueryExampleEmployees".EMPLOYEE e where f._key=e._key
+SELECT * FROM FTL_SEARCH('CacheClientBinaryQueryExampleEmployees','EMPLOYEE','TX', 0, 0); 
+
+SELECT e.name,e.street FROM FTL_SEARCH('CacheClientBinaryQueryExampleEmployees','EMPLOYEE','TX', 0, 0) f ,"CacheClientBinaryQueryExampleEmployees".EMPLOYEE e where f._key=e._key 
 
 
-above sql equals below which row contain table EMPLOYEE filed:
+above sql equals below which row contain table EMPLOYEE fields: 
 
 SELECT e.name,e.street FROM FTL_SEARCH_DATA('CacheClientBinaryQueryExampleEmployees','EMPLOYEE','TX', 0, 0) e;
+
+</pre>
 
 TextQuery with filter
 =========================
 
  see examples/org.apache.ignite.examples.datagrid.CacheQueryExample.java
-    https://github.com/junphine/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/datagrid/CacheQueryExample.java
- 
+    https://github.com/junphine/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/datagrid/CacheQueryExample.java 
+
+<pre>
  IgniteBiPredicate<AffinityKey, Person> filter = new IgniteBiPredicate<AffinityKey, Person>() {
-            @Override public boolean apply(AffinityKey key, Person person) {
+ 
+            @Override public boolean apply(AffinityKey key, Person person) {            
                 return person.salary > 1000;
-            }
-        };    
+            }            
+        };  
+          
  new TextQuery<Long, Person>(Person.class, "Master",filter)
  
- =====================
+</pre> 
+
+ 
+user define function
+===================== 
  Support user define function use CREATE ALIAS  like H2.
  CREATE ALIAS <FUNC_NAME> FOR "<package.Class.staticMethod>"
  
