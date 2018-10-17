@@ -133,6 +133,7 @@ public class HadoopHelperImpl implements HadoopHelper {
 
     /** {@inheritDoc} */
     @Override public void close() {
+        // Force drop KernalContext link, because HadoopHelper leaks in some tests.
         ctx = null;
     }
 }

@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.hadoop.impl;
 
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCount2;
-import org.apache.ignite.internal.util.GridDebug;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Test of error resiliency after an error in a map-reduce job execution.
@@ -39,15 +37,6 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
         doTestRecoveryAfterAnError(0, HadoopErrorSimulator.Kind.Runtime);
     }
 
-//    public static int cnt = 0;
-//
-//    @Override protected void afterTest() throws Exception {
-//        super.afterTest();
-//        U.sleep(50);
-//
-//        GridDebug.dumpHeap(String.format("heap%d.hprof", cnt++ % 10), true);
-//    }
-//
     /**
      * Tests recovery.
      *
