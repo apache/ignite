@@ -287,7 +287,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
             startVacuumWorkers();
 
-            log.info("Mvcc processor started.");
+            if (log.isInfoEnabled())
+                log.info("Mvcc processor started.");
         }
     }
 
@@ -380,8 +381,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
             crdVer = crd.coordinatorVersion();
 
-            log.info("Initialize local node as mvcc coordinator [node=" + ctx.localNodeId() +
-                ", crdVer=" + crdVer + ']');
+            if (log.isInfoEnabled())
+                log.info("Initialize local node as mvcc coordinator [node=" + ctx.localNodeId() +
+                    ", crdVer=" + crdVer + ']');
 
             prevCrdQueries.init(activeQueries, F.view(discoCache.allNodes(), this::supportsMvcc), ctx.discovery());
 
@@ -429,15 +431,15 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public byte state(long crdVer, long cntr) throws IgniteCheckedException {
-        return txLog.get(crdVer, cntr);
+    @Override public byte state(MvccVersion ver) throws IgniteCheckedException {
+        return state(ver.coordinatorVersion(), ver.counter());
     }
 
     /** {@inheritDoc} */
-    @Override public byte state(MvccVersion ver) throws IgniteCheckedException {
+    @Override public byte state(long crdVer, long cntr) throws IgniteCheckedException {
         assert txLog != null && mvccEnabled;
 
-        return txLog.get(ver.coordinatorVersion(), ver.counter());
+        return txLog.get(crdVer, cntr);
     }
 
     /** {@inheritDoc} */
@@ -1954,7 +1956,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
      */
     private static class VacuumScheduler extends GridWorker {
         /** */
-        private final static long VACUUM_TIMEOUT = 60_000;
+        private static final long VACUUM_TIMEOUT = 60_000;
 
         /** */
         private final long interval;
@@ -2078,8 +2080,10 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
             VacuumMetrics metrics = new VacuumMetrics();
 
-            if (part == null || part.state() != OWNING || !part.reserve())
+            if (!canRunVacuum(part, null) || !part.reserve())
                 return metrics;
+
+            int curCacheId = CU.UNDEFINED_CACHE_ID;
 
             try {
                 GridCursor<? extends CacheDataRow> cursor = part.dataStore().cursor(KEY_ONLY);
@@ -2093,8 +2097,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 MvccSnapshot snapshot = task.snapshot();
 
                 GridCacheContext cctx = null;
-
-                int curCacheId = CU.UNDEFINED_CACHE_ID;
 
                 boolean shared = part.group().sharedGroup();
 
@@ -2150,9 +2152,61 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
                 return metrics;
             }
+            catch (Exception e) {
+                if (canRunVacuum(part, curCacheId))
+                    throw e; // Unexpected error.
+
+                U.warn(log, "Error occurred during the vacuum. Skip vacuuming for the current partition. " +
+                    "[cacheId=" + curCacheId + ", part=" + part + ", err=" + e.getMessage() + ']', e);
+
+                return new VacuumMetrics();
+            }
             finally {
                 part.release();
             }
+        }
+
+        /**
+         * @param part Partition.
+         * @param cacheId Cache id.
+         * @return {@code True} if we can vacuum given partition.
+         */
+        private boolean canRunVacuum(GridDhtLocalPartition part, Integer cacheId) {
+            if (part == null || part.state() != OWNING)
+                return false;
+
+            CacheGroupContext grp = part.group();
+
+            assert grp != null;
+
+            List<GridCacheContext> caches = grp.caches();
+
+            if (F.isEmpty(caches))
+                return false;
+
+            if (grp.shared().kernalContext().isStopping())
+                return false;
+
+            if (cacheId == null && grp.sharedGroup())
+                return true; // Cache context is unknown, but we can try to run vacuum.
+
+            GridCacheContext ctx0;
+
+            if (grp.sharedGroup()) {
+                assert cacheId != null && cacheId != CU.UNDEFINED_CACHE_ID;
+
+                if (!grp.cacheIds().contains(cacheId))
+                    return false;
+
+                ctx0 = grp.shared().cacheContext(cacheId);
+            }
+            else
+                ctx0 = caches.get(0);
+
+            if (ctx0 == null)
+                return false;
+
+            return !grp.shared().closed(ctx0);
         }
 
         /** */

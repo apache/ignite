@@ -42,7 +42,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class IgniteCacheContinuousQueryReconnectTest extends GridCommonAbstractTest implements Serializable {
     /** */
-    final private static AtomicInteger cnt = new AtomicInteger();
+    private static final AtomicInteger cnt = new AtomicInteger();
 
     /** */
     private volatile boolean isClient = false;
