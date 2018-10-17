@@ -14,13 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.mvcc;
 
-import './style.scss';
-import template from './template.pug';
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.internal.processors.cache.query.continuous.ClientReconnectContinuousQueryTest;
 
-export default {
-    template,
-    bindings: {
-        status: '<'
+/**
+ *
+ */
+public class CacheMvccClientReconnectContinuousQueryTest extends ClientReconnectContinuousQueryTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
     }
-};
+}

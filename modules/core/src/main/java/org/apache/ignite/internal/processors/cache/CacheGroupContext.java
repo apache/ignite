@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.stat.StatType;
 import org.apache.ignite.internal.stat.StatisticsHolder;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -888,6 +889,13 @@ public class CacheGroupContext {
                 }
             });
         }
+    }
+
+    /**
+     * @return {@code True} if there is at least one cache with registered CQ exists in this group.
+     */
+    public boolean hasContinuousQueryCaches() {
+        return !F.isEmpty(contQryCaches);
     }
 
     /**
