@@ -2472,7 +2472,6 @@ public class GridSqlQuerySplitter {
 
         int colId = leftCol.getColumnId();
 
-        // Return of column is neither key, nor affinity.
         if ((affKeyCol == null || colId != affKeyCol.column.getColumnId()) && !desc.isKeyColumn(colId))
             return null;
 
