@@ -2069,43 +2069,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param tx Transaction.
-     * @param node Backup node.
-     * @return Partition counters for the given backup node.
-     */
-    @Nullable public List<PartitionUpdateCountersMessage> filterUpdateCountersForBackupNode(
-        IgniteInternalTx tx, ClusterNode node) {
-        TxCounters txCntrs = tx.txCounters(false);
-
-        if (txCntrs == null || F.isEmpty(txCntrs.updateCounters()))
-            return null;
-
-        Collection<PartitionUpdateCountersMessage> updCntrs = txCntrs.updateCounters();
-
-        List<PartitionUpdateCountersMessage> res = new ArrayList<>(updCntrs.size());
-
-        AffinityTopologyVersion top = tx.topologyVersionSnapshot();
-
-        for (PartitionUpdateCountersMessage partCntrs : updCntrs) {
-            GridCacheAffinityManager affinity = cctx.cacheContext(partCntrs.cacheId()).affinity();
-
-            PartitionUpdateCountersMessage resCntrs = new PartitionUpdateCountersMessage(partCntrs.cacheId(), partCntrs.size());
-
-            for (int i = 0; i < partCntrs.size(); i++) {
-                int part = partCntrs.partition(i);
-
-                if (affinity.backupByPartition(node, part, top))
-                    resCntrs.add(part, partCntrs.initialCounter(i), partCntrs.updatesCount(i));
-            }
-
-            if (resCntrs.size() > 0)
-                res.add(resCntrs);
-        }
-
-        return res;
-    }
-
-    /**
      * Commits transaction in case when node started transaction failed, but all related
      * transactions were prepared (invalidates transaction if it is not fully prepared).
      *

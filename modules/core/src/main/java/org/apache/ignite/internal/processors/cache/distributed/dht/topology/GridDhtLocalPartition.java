@@ -1371,10 +1371,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Callback method called when partition map is created for PME.
+     * Flushes pending update counters closing all possible gaps.
      */
-    public void onPartitionMapCreation() {
-        store.onPartitionMapCreation();
+    public void finalizeUpdateCountres() {
+        store.finalizeUpdateCountres();
     }
 
     /**

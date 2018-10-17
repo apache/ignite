@@ -79,7 +79,7 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
         cctx.mvcc().addFuture(this, futId);
 
         for (UUID peer : siblings) {
-            List<PartitionUpdateCountersMessage> cntrs = cctx.tm()
+            List<PartitionUpdateCountersMessage> cntrs = cctx.tm().txHandler()
                 .filterUpdateCountersForBackupNode(tx, cctx.node(peer));
 
             if (F.isEmpty(cntrs))

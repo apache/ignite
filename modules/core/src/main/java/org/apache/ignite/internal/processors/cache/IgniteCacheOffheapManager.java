@@ -1071,8 +1071,8 @@ public interface IgniteCacheOffheapManager {
         PendingEntriesTree pendingTree();
 
         /**
-         * Callback method called when partition map is created for PME.
+         * Flushes pending update counters closing all possible gaps.
          */
-        void onPartitionMapCreation();
+        void finalizeUpdateCountres();
     }
 }

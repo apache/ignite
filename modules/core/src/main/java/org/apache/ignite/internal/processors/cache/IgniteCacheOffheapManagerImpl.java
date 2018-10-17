@@ -1556,8 +1556,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void onPartitionMapCreation() {
-            pCntr.onPartitionMapCreation();
+        @Override public void finalizeUpdateCountres() {
+            pCntr.finalizeUpdateCountres();
         }
 
         /** {@inheritDoc} */
