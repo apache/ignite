@@ -1241,11 +1241,12 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getMvccVacuumFrequency());
         w.writeBoolean(true);
         w.writeInt(cfg.getMvccVacuumThreadCount());
-        w.writeBoolean(true);
-        w.writeLong(cfg.getSystemWorkerBlockedTimeout() != null
-            ? cfg.getSystemWorkerBlockedTimeout()
-            : cfg.getFailureDetectionTimeout());
-        w.writeBoolean(true);
+        if (cfg.getSystemWorkerBlockedTimeout() != null) {
+            w.writeBoolean(true);
+            w.writeLong(cfg.getSystemWorkerBlockedTimeout());
+        } else {
+            w.writeBoolean(false);
+        }
 
         if (cfg.getSqlSchemas() == null)
             w.writeInt(-1);
