@@ -207,6 +207,7 @@ import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.io.GridFilenameUtils;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoader;
@@ -10719,6 +10720,27 @@ public abstract class IgniteUtils {
 
         if (interrupted)
             Thread.currentThread().interrupt();
+    }
+
+    /**
+     *
+     * @param r Runnable.
+     * @param fut Grid future apater.
+     * @return Runnable with wrapped future.
+     */
+    public static Runnable wrapIgniteFuture(Runnable r, GridFutureAdapter<?> fut) {
+        return () -> {
+            try {
+                r.run();
+
+                fut.onDone();
+            }
+            catch (Throwable e) {
+                fut.onDone(e);
+
+                throw e;
+            }
+        };
     }
 
     /**

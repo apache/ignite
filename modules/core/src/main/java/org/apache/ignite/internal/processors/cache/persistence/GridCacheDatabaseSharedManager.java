@@ -140,6 +140,7 @@ import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.CountDownFuture;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -159,7 +160,7 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 import org.apache.ignite.thread.IgniteThread;
-import org.apache.ignite.thread.IgniteTaskTrackingThreadPoolExecutor;
+import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
@@ -290,7 +291,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private boolean stopping;
 
     /** Checkpoint runner thread pool. If null tasks are to be run in single thread */
-    @Nullable private IgniteTaskTrackingThreadPoolExecutor asyncRunner;
+    @Nullable private IgniteThreadPoolExecutor asyncRunner;
 
     /** Thread local with buffers for the checkpoint threads. Each buffer represent one page for durable memory. */
     private ThreadLocal<ByteBuffer> threadBuf;
@@ -727,15 +728,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private void initDataBase() {
         if (persistenceCfg.getCheckpointThreads() > 1)
-            asyncRunner = new IgniteTaskTrackingThreadPoolExecutor(
+            asyncRunner = new IgniteThreadPoolExecutor(
                 CHECKPOINT_RUNNER_THREAD_PREFIX,
                 cctx.igniteInstanceName(),
                 persistenceCfg.getCheckpointThreads(),
                 persistenceCfg.getCheckpointThreads(),
-                30_000, // A value is ignored if corePoolSize equals to maxPoolSize
-                new LinkedBlockingQueue<Runnable>(),
-                GridIoPolicy.UNDEFINED,
-                cctx.kernalContext().uncaughtExceptionHandler()
+                30_000,
+                new LinkedBlockingQueue<Runnable>()
             );
     }
 
@@ -3585,8 +3584,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 final PartitionAllocationMap map = new PartitionAllocationMap();
 
-                if (asyncRunner != null)
-                    asyncRunner.reset();
+                GridCompoundFuture asyncLsnrFut = asyncRunner == null ? null : new GridCompoundFuture();
 
                 DbCheckpointListener.Context ctx0 = new DbCheckpointListener.Context() {
                     @Override public boolean nextSnapshot() {
@@ -3607,10 +3605,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     @Override public Executor executor() {
                         return asyncRunner == null ? null : cmd -> {
                             try {
-                                asyncRunner.execute(cmd);
+                                GridFutureAdapter<?> res = new GridFutureAdapter<>();
+
+                                asyncRunner.execute(U.wrapIgniteFuture(cmd, res));
+
+                                asyncLsnrFut.add(res);
                             }
                             catch (RejectedExecutionException e) {
-                                assert false: "A task should never be rejected by async runner";
+                                assert false : "A task should never be rejected by async runner";
                             }
                         };
                     }
@@ -3620,17 +3622,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 for (DbCheckpointListener lsnr : lsnrs)
                     lsnr.onCheckpointBegin(ctx0);
 
-                if (asyncRunner != null) {
-                    asyncRunner.markInitialized();
+                if (asyncLsnrFut != null) {
+                    asyncLsnrFut.markInitialized();
 
-                    asyncRunner.awaitDone();
+                    asyncLsnrFut.get();
                 }
 
                 if (curr.nextSnapshot)
                     snapFut = snapshotMgr.onMarkCheckPointBegin(curr.snapshotOperation, map);
 
-                if (asyncRunner != null)
-                    asyncRunner.reset();
+                GridCompoundFuture grpHandleFut = asyncRunner == null ? null : new GridCompoundFuture();
 
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                     if (grp.isLocal() || !grp.walEnabled())
@@ -3662,17 +3663,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         r.run();
                     else
                         try {
-                            asyncRunner.execute(r);
+                            GridFutureAdapter<?> res = new GridFutureAdapter<>();
+
+                            asyncRunner.execute(U.wrapIgniteFuture(r, res));
+
+                            grpHandleFut.add(res);
                         }
                         catch (RejectedExecutionException e) {
-                            assert false: "Task should never be rejected by async runner";
+                            assert false : "Task should never be rejected by async runner";
                         }
                 }
 
-                if (asyncRunner != null) {
-                    asyncRunner.markInitialized();
+                if (grpHandleFut != null) {
+                    grpHandleFut.markInitialized();
 
-                    asyncRunner.awaitDone();
+                    grpHandleFut.get();
                 }
 
                 cpPagesTuple = beginAllCheckpoints();
