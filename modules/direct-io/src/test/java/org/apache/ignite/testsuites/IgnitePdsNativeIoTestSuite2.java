@@ -42,8 +42,6 @@ public class IgnitePdsNativeIoTestSuite2 extends TestSuite {
 
         suite.addTestSuite(IgniteNativeIoWalFlushFsyncSelfTest.class);
 
-        suite.addTestSuite(FsyncWalRolloverDoesNotBlockTest.class);
-
         return suite;
     }
 }

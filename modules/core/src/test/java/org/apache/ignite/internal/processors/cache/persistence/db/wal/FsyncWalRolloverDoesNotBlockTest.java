@@ -40,11 +40,6 @@ public class FsyncWalRolloverDoesNotBlockTest extends GridCommonAbstractTest {
         private RolloverRecord() {
             super(null);
         }
-
-        /** {@inheritDoc} */
-        @Override public boolean rollOver() {
-            return true;
-        }
     }
 
     /** {@inheritDoc} */
