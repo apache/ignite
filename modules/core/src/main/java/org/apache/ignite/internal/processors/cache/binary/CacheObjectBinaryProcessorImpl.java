@@ -138,8 +138,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** How long to wait for schema if no updates in progress. */
     private long waitSchemaTimeout = IgniteSystemProperties.getLong(IGNITE_WAIT_SCHEMA_UPDATE, 30_000);
 
-    /** */
-    private boolean testFeaturesEnabled = IgniteSystemProperties.getBoolean(IGNITE_TEST_FEATURES_ENABLED, false);
+    /** For tests. */
+    public static boolean useTestBinaryCtx = false;
 
     /** */
     @GridToStringExclude
@@ -226,7 +226,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
             BinaryMarshaller bMarsh0 = (BinaryMarshaller)marsh;
 
-            binaryCtx = testFeaturesEnabled ?
+            binaryCtx = useTestBinaryCtx ?
                 new TestBinaryContext(metaHnd, ctx.config(), ctx.log(BinaryContext.class)) :
                 new BinaryContext(metaHnd, ctx.config(), ctx.log(BinaryContext.class));
 

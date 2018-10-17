@@ -419,14 +419,14 @@ public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbs
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        System.setProperty(IgniteSystemProperties.IGNITE_TEST_FEATURES_ENABLED, "true");
+        CacheObjectBinaryProcessorImpl.useTestBinaryCtx = true;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        System.clearProperty(IgniteSystemProperties.IGNITE_TEST_FEATURES_ENABLED);
+        CacheObjectBinaryProcessorImpl.useTestBinaryCtx = false;
 
         stopAllGrids();
     }
