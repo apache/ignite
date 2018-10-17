@@ -332,7 +332,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     }
 
     /** */
-    private final static class ListenerConfiguration extends MutableCacheEntryListenerConfiguration {
+    private static final class ListenerConfiguration extends MutableCacheEntryListenerConfiguration {
         /** Operation. */
         enum Op {
             /** Insert. */
@@ -384,7 +384,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     }
 
     /** */
-    private final static class EntryEventFilterFactory implements Factory<CacheEntryEventFilter> {
+    private static final class EntryEventFilterFactory implements Factory<CacheEntryEventFilter> {
         /** */
         @IgniteInstanceResource
         private Ignite ignite;
@@ -413,7 +413,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     }
 
     /** */
-    private final static class NodeFilter implements IgnitePredicate<ClusterNode> {
+    private static final class NodeFilter implements IgnitePredicate<ClusterNode> {
         /** */
         private final int idx;
 
@@ -429,7 +429,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     }
 
     /** */
-    private final static class NodeFilterByRegexp implements IgnitePredicate<ClusterNode> {
+    private static final class NodeFilterByRegexp implements IgnitePredicate<ClusterNode> {
         /** */
         private final Pattern pattern;
 
