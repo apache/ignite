@@ -43,7 +43,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  * Wrapper that provides getting current security context for the {@link GridSecurityProcessor#authorize(String,
  * SecurityPermission, SecurityContext)} method.
  */
-public class InitiatorContextSecurityProcessor extends GridSecurityProcessorWrapper {
+public class SecurityContextResolverSecurityProcessor extends GridSecurityProcessorWrapper {
     /** Local node's security context. */
     private SecurityContext locSecCtx;
 
@@ -57,7 +57,7 @@ public class InitiatorContextSecurityProcessor extends GridSecurityProcessorWrap
      * @param ctx Grid kernal context.
      * @param original Original grid security processor.
      */
-    public InitiatorContextSecurityProcessor(GridKernalContext ctx, GridSecurityProcessor original) {
+    public SecurityContextResolverSecurityProcessor(GridKernalContext ctx, GridSecurityProcessor original) {
         super(ctx, original);
 
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
@@ -113,6 +113,11 @@ public class InitiatorContextSecurityProcessor extends GridSecurityProcessorWrap
 
             if (res == null)
                 res = localSecurityContext();
+        }
+        else {
+            /*If the SecurityContext was passed and there is a current remote initiator
+            then we have got an invalid case.*/
+            assert currentRemoteInitiatorId() == null;
         }
 
         assert res != null;

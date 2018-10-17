@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
  * Contains classes and interfaces for security tests.
  */
 package org.apache.ignite.internal.processor.security;

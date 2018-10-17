@@ -21,7 +21,10 @@ import java.util.Set;
 import junit.framework.TestSuite;
 import org.jetbrains.annotations.Nullable;
 
-public class InitiatorContextSecurityProcessorTestSuite extends TestSuite {
+/**
+ * Security test suite.
+ */
+public class SecurityContextResolverSecurityProcessorTestSuite extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
@@ -40,6 +43,8 @@ public class InitiatorContextSecurityProcessorTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ComputeTaskTest.class));
         suite.addTest(new TestSuite(ExecuteServiceTaskTest.class));
+        suite.addTest(new TestSuite(ScanQueryTest.class));
+        suite.addTest(new TestSuite(EntryProcessorTest.class));
 
         return suite;
     }

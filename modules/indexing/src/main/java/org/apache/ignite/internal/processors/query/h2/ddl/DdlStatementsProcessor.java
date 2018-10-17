@@ -328,6 +328,7 @@ public class DdlStatementsProcessor {
                 }
             }
             else if (stmt0 instanceof GridSqlCreateTable) {
+                //todo MY_TODO написать тест, возмжно это уже лишнее
                 ctx.security().authorize(null, SecurityPermission.CACHE_CREATE, SecurityContextHolder.get());
 
                 GridSqlCreateTable cmd = (GridSqlCreateTable)stmt0;
@@ -361,6 +362,7 @@ public class DdlStatementsProcessor {
                 }
             }
             else if (stmt0 instanceof GridSqlDropTable) {
+                //todo MY_TODO написать тест, возмжно это уже лишнее
                 ctx.security().authorize(null, SecurityPermission.CACHE_DESTROY, SecurityContextHolder.get());
 
                 GridSqlDropTable cmd = (GridSqlDropTable)stmt0;

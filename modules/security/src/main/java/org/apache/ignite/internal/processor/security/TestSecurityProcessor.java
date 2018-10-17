@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processor.security;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -26,7 +27,6 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -38,15 +38,18 @@ import org.apache.ignite.plugin.security.SecuritySubject;
  * Security processor for tests.
  */
 public class TestSecurityProcessor extends GridProcessorAdapter implements GridSecurityProcessor {
-
+    /** Consumer for {@link #authorize(String, SecurityPermission, SecurityContext)} method. */
     private TriConsumer<String, SecurityPermission, SecurityContext> authorize;
 
+    /**
+     * @param ctx Grid kernal context.
+     */
     public TestSecurityProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 
     /**
-     * Setup consumer for {link {@link #authorize(String, SecurityPermission, SecurityContext)}} method.
+     * Setup consumer for {@link #authorize(String, SecurityPermission, SecurityContext)} method.
      * @param authorize Authorize.
      */
     public void authorizeConsumer(TriConsumer<String, SecurityPermission, SecurityContext> authorize){
@@ -84,7 +87,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
     /** {@inheritDoc} */
     @Override public Collection<SecuritySubject> authenticatedSubjects() {
-        return null;
+        return Collections.emptyList();
     }
 
     /** {@inheritDoc} */
@@ -106,7 +109,6 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
     /** {@inheritDoc} */
     @Override public boolean enabled() {
-        //todo нужно посмотреть как в ГГ происходит обработка
         return true;
     }
 

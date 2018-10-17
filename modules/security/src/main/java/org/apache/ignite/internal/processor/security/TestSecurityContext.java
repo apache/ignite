@@ -28,9 +28,12 @@ import org.apache.ignite.plugin.security.SecuritySubject;
  * Security context for tests.
  */
 public class TestSecurityContext implements SecurityContext, Serializable {
-
+    /** Subject. */
     private final SecuritySubject subject;
 
+    /**
+     * @param subject Subject.
+     */
     public TestSecurityContext(SecuritySubject subject) {
         this.subject = subject;
     }
@@ -47,8 +50,6 @@ public class TestSecurityContext implements SecurityContext, Serializable {
 
     /** {@inheritDoc} */
     @Override public boolean cacheOperationAllowed(String cacheName, SecurityPermission perm) {
-//        Collection<SecurityPermission> col = subject.permissions().cachePermissions().get(cacheName);
-//        return F.isEmpty(col) || col.stream().anyMatch((sp)-> sp == perm);
         return true;
     }
 
@@ -62,6 +63,7 @@ public class TestSecurityContext implements SecurityContext, Serializable {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
         return "TestSecurityContext{" +
             "subject=" + subject +

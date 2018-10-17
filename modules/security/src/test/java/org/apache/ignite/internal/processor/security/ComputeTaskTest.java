@@ -29,10 +29,10 @@ import static org.junit.Assert.assertThat;
 /**
  * Security tests for a compute task.
  */
-public class ComputeTaskTest extends AbstractInintiatorContextSecurityProcessorTest {
+public class ComputeTaskTest extends AbstractContextResolverSecurityProcessorTest {
     /** Values. */
     private AtomicInteger values = new AtomicInteger(0);
-
+    //todo MY_TODO нужно тестировать все вызовы, т.е. все методы сервиса.
     /** */
     public void testCompute() {
         successCompute(succsessClnt, failClnt);

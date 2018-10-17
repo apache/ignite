@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -37,9 +38,15 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
-public class AbstractInintiatorContextSecurityProcessorTest extends GridCommonAbstractTest {
-    /** Cache name. */
+/**
+ *
+ */
+public class AbstractContextResolverSecurityProcessorTest extends GridCommonAbstractTest {
+    /** Cache name for tests. */
     protected static final String CACHE_NAME = "TEST_CACHE";
+
+    /** Cache name for tests. */
+    protected static final String SEC_CACHE_NAME = "SECOND_TEST_CACHE";
 
     /** Security error message. */
     protected static final String SEC_ERR_MSG = "Test security exception.";
@@ -88,7 +95,7 @@ public class AbstractInintiatorContextSecurityProcessorTest extends GridCommonAb
                             failUUIDs.contains(secCtx.subject().id())) {
 
                             log.info("Failed authorize. [name=" + name + ", perm=" + perm
-                            + ", secCtx=" + secCtx + "]");
+                                + ", secCtx=" + secCtx + "]");
 
                             throw new SecurityException(SEC_ERR_MSG);
                         }
@@ -122,7 +129,14 @@ public class AbstractInintiatorContextSecurityProcessorTest extends GridCommonAb
             )
             .setAuthenticationEnabled(true)
             .setCacheConfiguration(
-                new CacheConfiguration<>().setName(CACHE_NAME)
+                new CacheConfiguration<>()
+                    .setName(CACHE_NAME)
+                    .setCacheMode(CacheMode.PARTITIONED)
+                    .setReadFromBackup(false),
+                new CacheConfiguration<>()
+                    .setName(SEC_CACHE_NAME)
+                    .setCacheMode(CacheMode.PARTITIONED)
+                    .setReadFromBackup(false)
             );
     }
 
@@ -135,7 +149,7 @@ public class AbstractInintiatorContextSecurityProcessorTest extends GridCommonAb
         if (ignite.context().security() instanceof GridSecurityProcessorWrapper) {
             GridSecurityProcessorWrapper wrp = (GridSecurityProcessorWrapper)ignite.context().security();
 
-            return (TestSecurityProcessor) wrp.original();
+            return (TestSecurityProcessor)wrp.original();
         }
 
         return (TestSecurityProcessor)ignite.context().security();

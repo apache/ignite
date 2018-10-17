@@ -579,7 +579,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             thCtx.set(null);
 
         if (map.get(TC_SKIP_AUTH) == null)
-            ctx.security().authorize(taskClsName, SecurityPermission.TASK_EXECUTE, null);
+            ctx.security().authorize(taskClsName, SecurityPermission.TASK_EXECUTE);
 
         Long timeout = (Long)map.get(TC_TIMEOUT);
 

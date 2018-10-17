@@ -3676,7 +3676,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         // Null security context means authorize this node.
         if (req.cacheType() == null || req.cacheType() == CacheType.USER) {
             if (req.stop())
-                ctx.security().authorize(null, SecurityPermission.CACHE_DESTROY, null);
+                ctx.security().authorize(null, SecurityPermission.CACHE_DESTROY);
             else
                 authorizeCacheCreate(req.startCacheConfiguration(), null);
         }

@@ -234,7 +234,7 @@ public class ComputeTaskInternalFuture<R> extends GridFutureAdapter<R> {
 
     /** {@inheritDoc} */
     @Override public boolean cancel() throws IgniteCheckedException {
-        ctx.security().authorize(ses.getTaskName(), SecurityPermission.TASK_CANCEL, null);
+        ctx.security().authorize(ses.getTaskName(), SecurityPermission.TASK_CANCEL);
 
         if (onCancelled()) {
             ctx.task().onCancelled(ses.getId());

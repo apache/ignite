@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
  * Contains security tests.
  */
 package org.apache.ignite.internal.processor.security;

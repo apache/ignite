@@ -70,6 +70,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccMessage;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
+import org.apache.ignite.internal.processors.security.CurrentRemoteInitiatorIdentifier;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
@@ -140,8 +141,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** Current IO policy. */
     private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
 
-    /** Current near node. */
-    private static final ThreadLocal<UUID> CUR_RMT_INITIATOR = new ThreadLocal<>();
+    /** Current remote initiator node. */
+    private static final CurrentRemoteInitiatorIdentifier CUR_RMT_INITIATOR = new CurrentRemoteInitiatorIdentifier();
 
     /** Listeners by topic. */
     private final ConcurrentMap<Object, GridMessageListener> lsnrMap = new ConcurrentHashMap<>();
@@ -1568,9 +1569,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (change)
             CUR_PLC.set(plc);
 
-        assert CUR_RMT_INITIATOR.get() == null;
-
-        CUR_RMT_INITIATOR.set(nodeId);
+        CUR_RMT_INITIATOR.set(ctx, nodeId);
 
         try {
             lsnr.onMessage(nodeId, msg, plc);
@@ -1579,7 +1578,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             if (change)
                 CUR_PLC.set(oldPlc);
 
-            CUR_RMT_INITIATOR.remove();
+            CUR_RMT_INITIATOR.remove(ctx, nodeId);
         }
     }
 

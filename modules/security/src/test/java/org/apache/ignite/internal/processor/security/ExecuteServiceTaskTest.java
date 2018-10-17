@@ -30,7 +30,7 @@ import static org.junit.Assert.assertThat;
 /**
  * Security tests for an execute server task.
  */
-public class ExecuteServiceTaskTest extends AbstractInintiatorContextSecurityProcessorTest {
+public class ExecuteServiceTaskTest extends AbstractContextResolverSecurityProcessorTest {
     /** */
     public void testExecute() throws Exception {
         successExecute(succsessClnt, failClnt);
@@ -96,5 +96,4 @@ public class ExecuteServiceTaskTest extends AbstractInintiatorContextSecurityPro
 
         assertThat(remote.cache(CACHE_NAME).get("fail_key"), nullValue());
     }
-
 }
