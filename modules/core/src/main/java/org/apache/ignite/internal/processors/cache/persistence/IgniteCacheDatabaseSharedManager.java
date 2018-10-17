@@ -91,7 +91,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     private static final long MAX_PAGE_MEMORY_INIT_SIZE_32_BIT = 2L * 1024 * 1024 * 1024;
 
     /** {@code True} to reuse memory on deactive. */
-    private final boolean reuseMemory = IgniteSystemProperties.getBoolean(IGNITE_REUSE_MEMORY_ON_DEACTIVATE);
+    protected final boolean reuseMemory = IgniteSystemProperties.getBoolean(IGNITE_REUSE_MEMORY_ON_DEACTIVATE);
 
     /** */
     protected volatile Map<String, DataRegion> dataRegionMap;
@@ -1008,7 +1008,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @return {@code True} if policy supports memory reuse.
      */
-    private boolean supportsMemoryReuse(DataRegionConfiguration plcCfg) {
+    public boolean supportsMemoryReuse(DataRegionConfiguration plcCfg) {
         return reuseMemory && plcCfg.getSwapPath() == null;
     }
 

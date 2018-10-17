@@ -130,11 +130,11 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         aggCacheLoader.start();
 
-        U.sleep(5000);
+        U.sleep(3000);
 
         forceCheckpoint();
 
-        U.sleep(5000);
+        U.sleep(3000);
 
         aggCacheLoader.stop();
 
@@ -171,7 +171,11 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         aggCacheLoader.start();
 
-        U.sleep(5000);
+        U.sleep(3000);
+
+        forceCheckpoint();
+
+        U.sleep(3000);
 
         aggCacheLoader.stop();
 
@@ -214,11 +218,11 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         aggCacheLoader.start();
 
-        U.sleep(5000);
+        U.sleep(3000);
 
         forceCheckpoint();
 
-        U.sleep(5000);
+        U.sleep(3000);
 
         aggCacheLoader.stop();
 
@@ -243,11 +247,11 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         aggCacheLoader.start();
 
-        U.sleep(5000);
+        U.sleep(3000);
 
         forceCheckpoint();
 
-        U.sleep(5000);
+        U.sleep(3000);
 
         aggCacheLoader.stop();
 
@@ -265,6 +269,10 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
             aggCacheLoader.consistencyCheck(grid(idx));
     }
 
+    @Override
+    protected long getTestTimeout() {
+        return 600 * 1000;
+    }
 
     private class AggregateCacheLoader {
         IgniteEx ignite;

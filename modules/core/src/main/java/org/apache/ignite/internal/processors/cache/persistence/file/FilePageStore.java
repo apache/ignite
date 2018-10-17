@@ -541,7 +541,8 @@ public class FilePageStore implements PageStore {
                     long off = pageOffset(pageId);
 
                     assert (off >= 0 && off <= allocated.get()) || recover :
-                        "off=" + U.hexLong(off) + ", allocated=" + U.hexLong(allocated.get()) + ", pageId=" + U.hexLong(pageId);
+                        "off=" + U.hexLong(off) + ", allocated=" + U.hexLong(allocated.get()) +
+                            ", pageId=" + U.hexLong(pageId) + ", file=" + cfgFile.getPath();
 
                     assert pageBuf.capacity() == pageSize;
                     assert pageBuf.position() == 0;

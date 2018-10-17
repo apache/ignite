@@ -1541,8 +1541,9 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         CacheObjectContext cacheObjCtx,
         boolean affNode,
         boolean updatesAllowed,
-        boolean disabledAfterStart)
-        throws IgniteCheckedException {
+        boolean disabledAfterStart,
+        boolean recoveryMode
+    ) throws IgniteCheckedException {
         assert cfg != null;
 
         if (cfg.getCacheStoreFactory() instanceof GridCacheLoaderWriterStoreFactory) {
@@ -1610,6 +1611,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             locStartTopVer,
             affNode,
             updatesAllowed,
+            recoveryMode,
             /*
              * Managers in starting order!
              * ===========================
@@ -1745,6 +1747,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 locStartTopVer,
                 affNode,
                 true,
+                recoveryMode,
                 /*
                  * Managers in starting order!
                  * ===========================
@@ -2098,7 +2101,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             onKernalStart(existingCache);
 
             if (log.isInfoEnabled())
-                log.info("Recovery finished for cache [" + existingCache.name() + ", grp=" + groupContext.cacheOrGroupName() + "]");
+                log.info("Finished recovery for cache " +
+                    "[cache=" + existingCache.name() + ", grp=" + groupContext.cacheOrGroupName() + ", startVer=" + exchTopVer + "]");
 
             return;
         }
@@ -2166,7 +2170,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             cacheObjCtx,
             affNode,
             true,
-            disabledAfterStart
+            disabledAfterStart,
+            false
         );
 
         cacheCtx.dynamicDeploymentId(desc.deploymentId());
@@ -2241,6 +2246,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             AffinityTopologyVersion.ZERO,
             cacheObjCtx,
             affNode,
+            true,
             true,
             true
         );

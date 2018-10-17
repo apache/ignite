@@ -1528,6 +1528,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         catch (IOException e) {
             throw new IgniteCheckedException("Failed to cleanup wal archive directory: " + walArchiveDir, e);
         }
+
+        segmentAware.setLastArchivedAbsoluteIndex(-1);
     }
 
     /**

@@ -271,7 +271,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     private boolean readFromBackup = CacheConfiguration.DFLT_READ_FROM_BACKUP;
 
     /** Local node's MAC address. */
-    private String locMacs;
+    private volatile String locMacs;
+
+    private volatile boolean recoveryMode;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -311,6 +313,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         AffinityTopologyVersion locStartTopVer,
         boolean affNode,
         boolean updatesAllowed,
+        boolean recoveryMode,
 
         /*
          * Managers in starting order!
@@ -394,14 +397,30 @@ public class GridCacheContext<K, V> implements Externalizable {
         itHolder = new CacheWeakQueryIteratorsHolder(log);
 
         readFromBackup = cacheCfg.isReadFromBackup();
+
+        this.recoveryMode = recoveryMode;
+
+        if (!recoveryMode) {
+            locMacs = localNode().attribute(ATTR_MACS);
+
+            assert locMacs != null;
+        }
     }
 
     public void finishRecovery(AffinityTopologyVersion topVer) {
+        assert recoveryMode : this;
+
+        recoveryMode = false;
+
         locStartTopVer = topVer;
 
         locMacs = localNode().attribute(ATTR_MACS);
 
         assert locMacs != null;
+    }
+
+    public boolean isRecoveryMode() {
+        return recoveryMode;
     }
 
     /**
@@ -2227,7 +2246,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (!readFromBackup)
             return affNodes.get(0);
 
-        assert locMacs != null;
+        assert locMacs != null :
+            "name=" + name() + ", recoveryMode=" + recoveryMode;
 
         int r = ThreadLocalRandom.current().nextInt(affNodes.size());
 
