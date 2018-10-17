@@ -29,11 +29,12 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -73,7 +74,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
 
         CountDownLatch latch = new CountDownLatch(1);
 
-        discoSpi.nodeAddFinishLatch = latch;
+        discoSpi.latch = latch;
 
         startClient = true;
 
@@ -106,6 +107,70 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
             assertEquals(Integer.valueOf(k), atomicCache.get(k));
             assertEquals(Integer.valueOf(k), txCache.get(k));
         }
+
+        assertEquals(new AffinityTopologyVersion(5, 0), grid(0).context().discovery().topologyVersionEx());
+        assertEquals(new AffinityTopologyVersion(5, 0), grid(1).context().discovery().topologyVersionEx());
+        assertEquals(new AffinityTopologyVersion(4, 3), grid(2).context().discovery().topologyVersionEx());
+        assertEquals(new AffinityTopologyVersion(4, 3), grid(3).context().discovery().topologyVersionEx());
+
+        latch.countDown();
+    }
+
+    public void testNoAffinityChangeOnClientLeft() throws Exception {
+        Ignite ig = startGrids(4);
+
+        ig.cluster().active(true);
+
+        IgniteCache<Integer, Integer> atomicCache = ig.createCache(new CacheConfiguration<Integer, Integer>()
+            .setName("atomic").setAtomicityMode(CacheAtomicityMode.ATOMIC));
+
+        IgniteCache<Integer, Integer> txCache = ig.createCache(new CacheConfiguration<Integer, Integer>()
+            .setName("tx").setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+        startClient = true;
+
+        startGrid(4);
+
+        TestDiscoverySpi discoSpi = (TestDiscoverySpi)grid(2).context().discovery().getInjectedDiscoverySpi();
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        discoSpi.latch = latch;
+
+        GridTestUtils.runAsync(() -> {
+            try {
+                stopGrid(4);
+            }
+            catch (Exception ex) {
+                throw new IgniteException(ex);
+            }
+        });
+
+        U.sleep(5_000);
+
+        assertEquals(new AffinityTopologyVersion(6, 0), grid(0).context().discovery().topologyVersionEx());
+        assertEquals(new AffinityTopologyVersion(6, 0), grid(1).context().discovery().topologyVersionEx());
+        assertEquals(new AffinityTopologyVersion(5, 0), grid(2).context().discovery().topologyVersionEx());
+        assertEquals(new AffinityTopologyVersion(5, 0), grid(3).context().discovery().topologyVersionEx());
+
+        for (int k = 0; k < 100; k++) {
+            atomicCache.put(k, k);
+            txCache.put(k, k);
+
+            Lock lock = txCache.lock(k);
+            lock.lock();
+            lock.unlock();
+        }
+
+        for (int k = 0; k < 100; k++) {
+            assertEquals(Integer.valueOf(k), atomicCache.get(k));
+            assertEquals(Integer.valueOf(k), txCache.get(k));
+        }
+
+        assertEquals(new AffinityTopologyVersion(6, 0), grid(0).context().discovery().topologyVersionEx());
+        assertEquals(new AffinityTopologyVersion(6, 0), grid(1).context().discovery().topologyVersionEx());
+        assertEquals(new AffinityTopologyVersion(5, 0), grid(2).context().discovery().topologyVersionEx());
+        assertEquals(new AffinityTopologyVersion(5, 0), grid(3).context().discovery().topologyVersionEx());
 
         latch.countDown();
     }
@@ -156,11 +221,11 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
     }
 
     public static class TestDiscoverySpi extends TcpDiscoverySpi {
-        private volatile CountDownLatch nodeAddFinishLatch;
+        private volatile CountDownLatch latch;
 
         @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
-            if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                CountDownLatch latch0 = nodeAddFinishLatch;
+            if (msg instanceof TcpDiscoveryNodeAddFinishedMessage || msg instanceof TcpDiscoveryNodeLeftMessage || msg instanceof TcpDiscoveryNodeFailedMessage) {
+                CountDownLatch latch0 = latch;
 
                 if (latch0 != null)
                     try {
