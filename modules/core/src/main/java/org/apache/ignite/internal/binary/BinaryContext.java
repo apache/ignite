@@ -823,6 +823,7 @@ public class BinaryContext {
                 desc.isEnum(),
                 cls.isEnum() ? enumMap(cls) : null
             );
+
             if (onlyLocReg)
                 metaHnd.addMetaLocally(typeId, binaryMetadata.wrap(this), false);
             else

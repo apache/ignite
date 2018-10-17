@@ -945,11 +945,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (!F.isEmpty(qryEntities)) {
                 boolean binaryEnabled = ctx.cacheObjects().isBinaryEnabled(ccfg);
 
-                for (QueryEntity qryEntity : qryEntities) {
-                    Class<?> keyCls = U.box(U.classForName(qryEntity.findKeyType(), null, true));
-                    Class<?> valCls = U.box(U.classForName(qryEntity.findValueType(), null, true));
+                if (binaryEnabled) {
+                    for (QueryEntity qryEntity : qryEntities) {
+                        Class<?> keyCls = U.box(U.classForName(qryEntity.findKeyType(), null, true));
+                        Class<?> valCls = U.box(U.classForName(qryEntity.findValueType(), null, true));
 
-                    if (binaryEnabled) {
                         if (keyCls != null)
                             registerDescriptorLocallyIfNeeded(keyCls);
 
