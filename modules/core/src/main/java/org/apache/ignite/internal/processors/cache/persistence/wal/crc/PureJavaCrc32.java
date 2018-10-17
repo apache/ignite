@@ -68,7 +68,7 @@ public class PureJavaCrc32 {
     /**
      * @param b B.
      */
-    final public void update(int b) {
+    public final void update(int b) {
         crc = (crc >>> 8) ^ T[(((crc ^ b) << 24) >>> 24)];
     }
 
