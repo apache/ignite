@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -66,7 +65,6 @@ import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineNode;
@@ -74,20 +72,11 @@ import org.apache.ignite.internal.visor.baseline.VisorBaselineOperation;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskArg;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
-import org.apache.ignite.internal.visor.cache.VisorCacheAffinityConfiguration;
-import org.apache.ignite.internal.visor.cache.VisorCacheConfiguration;
-import org.apache.ignite.internal.visor.cache.VisorCacheConfigurationCollectorTask;
-import org.apache.ignite.internal.visor.cache.VisorCacheConfigurationCollectorTaskArg;
-import org.apache.ignite.internal.visor.cache.VisorCacheEvictionConfiguration;
-import org.apache.ignite.internal.visor.cache.VisorCacheNearConfiguration;
-import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceConfiguration;
-import org.apache.ignite.internal.visor.cache.VisorCacheStoreConfiguration;
 import org.apache.ignite.internal.visor.misc.VisorClusterNode;
 import org.apache.ignite.internal.visor.misc.VisorWalTask;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskArg;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskOperation;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskResult;
-import org.apache.ignite.internal.visor.query.VisorQueryConfiguration;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
@@ -109,7 +98,6 @@ import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskV2;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
-import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTask;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskResult;
@@ -127,14 +115,11 @@ import static org.apache.ignite.internal.commandline.Command.DEACTIVATE;
 import static org.apache.ignite.internal.commandline.Command.STATE;
 import static org.apache.ignite.internal.commandline.Command.TX;
 import static org.apache.ignite.internal.commandline.Command.WAL;
-import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
-import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.ADD;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.COLLECT;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.REMOVE;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.SET;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.VERSION;
-import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.GROUPS;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
 
@@ -295,9 +280,6 @@ public class CommandHandler {
     private static final String TX_KILL = "kill";
 
     /** */
-    private static final String OUTPUT_FORMAT = "--output-format";
-
-    /** */
     private Iterator<String> argsIt;
 
     /** */
@@ -319,16 +301,6 @@ public class CommandHandler {
      */
     private void log(String s) {
         System.out.println(s);
-    }
-
-    /**
-     * Format and output specified string to console.
-     *
-     * @param format A format string as described in Format string syntax.
-     * @param args Arguments referenced by the format specifiers in the format string.
-     */
-    private void log(String format, Object... args) {
-        System.out.printf(format, args);
     }
 
     /**
@@ -647,14 +619,14 @@ public class CommandHandler {
     private void printCacheHelp() {
         log("--cache subcommand allows to do the following operations:");
 
-        usage("  Show information about caches, groups or sequences that match a regex:", CACHE, " list regexPattern [groups|seq] [nodeId]", " [" + OUTPUT_FORMAT + " " + MULTI_LINE + "]");
+        usage("  Show information about caches, groups or sequences that match a regex:", CACHE, " list regexPattern [groups|seq] [nodeId]");
         usage("  Show hot keys that are point of contention for multiple transactions:", CACHE, " contention minQueueSize [nodeId] [maxPrint]");
         usage("  Verify partition counters and hashes between primary and backups on idle cluster:", CACHE, " idle_verify [--dump] [--skipZeros] [cache1,...,cacheN]");
         usage("  Validate custom indexes on idle cluster:", CACHE, " validate_indexes [cache1,...,cacheN] [nodeId] [checkFirst|checkThrough]");
         usage("  Collect partition distribution information:", CACHE, " distribution nodeId|null [cacheName1,...,cacheNameN] [--user-attributes attributeName1[,...,attributeNameN]]");
         usage("  Reset lost partitions:", CACHE, " reset_lost_partitions cacheName1[,...,cacheNameN]");
 
-        log("  If [nodeId] is not specified, list with no defined [groups|seq], contention and validate_indexes commands will be broadcasted to all server nodes.");
+        log("  If [nodeId] is not specified, contention and validate_indexes commands will be broadcasted to all server nodes.");
         log("  Another commands where [nodeId] is optional will run on a random server node.");
         log("  checkFirst numeric parameter for validate_indexes specifies number of first K keys to be validated.");
         log("  checkThrough numeric parameter for validate_indexes allows to check each Kth key.");
@@ -763,16 +735,13 @@ public class CommandHandler {
      * @param cacheArgs Cache args.
      */
     private void cacheView(GridClient client, CacheArguments cacheArgs) throws GridClientException {
-        if (cacheArgs.cacheCommand() == CACHES)
-            cachesConfig(client, cacheArgs);
-        else {
-            VisorViewCacheTaskArg taskArg = new VisorViewCacheTaskArg(cacheArgs.regex(), cacheArgs.cacheCommand());
+        VisorViewCacheTaskArg taskArg = new VisorViewCacheTaskArg(cacheArgs.regex(), cacheArgs.cacheCommand());
 
-            VisorViewCacheTaskResult res = executeTaskByNameOnNode(
-                client, VisorViewCacheTask.class.getName(), taskArg, cacheArgs.nodeId());
+        VisorViewCacheTaskResult res = executeTaskByNameOnNode(
+            client, VisorViewCacheTask.class.getName(), taskArg, cacheArgs.nodeId());
 
-            printCacheInfos(res.cacheInfos(), cacheArgs.outputFormat(), cacheArgs.cacheCommand());
-        }
+        for (CacheInfo info : res.cacheInfos())
+            info.print(cacheArgs.cacheCommand());
     }
 
     /**
@@ -845,98 +814,6 @@ public class CommandHandler {
         CacheDistributionTaskResult res = executeTaskByNameOnNode(client, CacheDistributionTask.class.getName(), taskArg, nodeId);
 
         res.print(System.out);
-    }
-
-    /**
-     * @param client Client.
-     * @param cacheArgs Cache args.
-     */
-    private void cachesConfig(GridClient client, CacheArguments cacheArgs) throws GridClientException {
-        VisorCacheConfigurationCollectorTaskArg taskArg = new VisorCacheConfigurationCollectorTaskArg(cacheArgs.regex());
-
-        UUID nodeId = cacheArgs.nodeId() == null ? BROADCAST_UUID : cacheArgs.nodeId();
-
-        Map<String, VisorCacheConfiguration> res =
-            executeTaskByNameOnNode(client, VisorCacheConfigurationCollectorTask.class.getName(), taskArg, nodeId);
-
-        printCachesConfig(res, cacheArgs.outputFormat());
-
-    }
-
-    /**
-     * Prints caches info.
-     *
-     * @param infos Caches info.
-     * @param outputFormat Output format.
-     * @param cmd Command.
-     */
-    private void printCacheInfos(
-        Collection<CacheInfo> infos,
-        OutputFormat outputFormat,
-        VisorViewCacheCmd cmd
-    ) {
-        for (CacheInfo info : infos) {
-            Map<String, Object> map = info.toMap(cmd);
-            switch (outputFormat) {
-                case MULTI_LINE:
-                    log("[%s = '%s']%n", cmd, info.name(cmd));
-
-                    for (Map.Entry<String, Object> innerEntry : map.entrySet())
-                        log("%s: %s%n", innerEntry.getKey(), innerEntry.getValue());
-
-                    nl();
-
-                    break;
-
-                default:
-                    SB sb = new SB();
-
-                    sb.a("[");
-
-                    for (Map.Entry<String, Object> e : map.entrySet())
-                        sb.a(e.getKey()).a("=").a(e.getValue()).a(", ");
-
-                    sb.setLength(sb.length() - 2);
-
-                    sb.a("]");
-
-                    log(sb.toString());
-            }
-        }
-    }
-
-    /**
-     * Prints caches config.
-     *
-     * @param caches Caches config.
-     * @param outputFormat Output format.
-     */
-    private void printCachesConfig(
-        Map<String, VisorCacheConfiguration> caches,
-        OutputFormat outputFormat
-    ) {
-
-        for (Map.Entry<String, VisorCacheConfiguration> entry : caches.entrySet()) {
-            String cacheName = entry.getKey();
-
-            Map<String, Object> params = mapToPairs(entry.getValue());
-            switch (outputFormat) {
-                case MULTI_LINE:
-                    log("[cache = '%s']%n", cacheName);
-
-                    for (Map.Entry<String, Object> innerEntry : params.entrySet())
-                        log("%s: %s%n", innerEntry.getKey(), innerEntry.getValue());
-
-                    nl();
-
-                    break;
-
-                default:
-                    log("%s: %s%n", entry.getKey(), entry.getValue());
-
-                    break;
-            }
-        }
     }
 
     /**
@@ -1741,21 +1618,21 @@ public class CommandHandler {
                 while (hasNextCacheArg()) {
                     String nextArg = nextArg("");
 
-                    if (CMD_USER_ATTRIBUTES.equals(nextArg)) {
+                    if (CMD_USER_ATTRIBUTES.equals(nextArg)){
                         nextArg = nextArg("User attributes are expected to be separated by commas");
 
-                        Set<String> userAttrs = new HashSet();
+                        Set<String> userAttributes = new HashSet();
 
-                        for (String userAttribute : nextArg.split(","))
-                            userAttrs.add(userAttribute.trim());
+                        for (String userAttribute:nextArg.split(","))
+                            userAttributes.add(userAttribute.trim());
 
-                        cacheArgs.setUserAttributes(userAttrs);
+                        cacheArgs.setUserAttributes(userAttributes);
 
                         nextArg = (hasNextCacheArg()) ? nextArg("") : null;
 
                     }
 
-                    if (nextArg != null)
+                    if (nextArg!=null)
                         parseCacheNames(nextArg, cacheArgs);
                 }
 
@@ -1766,31 +1643,20 @@ public class CommandHandler {
 
                 break;
 
-            case LIST:
+            default:
                 cacheArgs.regex(nextArg("Regex is expected"));
 
-                VisorViewCacheCmd cacheCmd = CACHES;
-
-                OutputFormat outputFormat = SINGLE_LINE;
-
-                while (hasNextCacheArg()) {
-                    String tmp = nextArg("").toLowerCase();
+                if (hasNextCacheArg()) {
+                    String tmp = nextArg("");
 
                     switch (tmp) {
                         case "groups":
-                            cacheCmd = GROUPS;
+                            cacheArgs.cacheCommand(GROUPS);
 
                             break;
 
                         case "seq":
-                            cacheCmd = SEQ;
-
-                            break;
-
-                        case OUTPUT_FORMAT:
-                            String tmp2 = nextArg("output format must be defined!").toLowerCase();
-
-                            outputFormat = OutputFormat.fromConsoleName(tmp2);
+                            cacheArgs.cacheCommand(SEQ);
 
                             break;
 
@@ -1799,13 +1665,7 @@ public class CommandHandler {
                     }
                 }
 
-                cacheArgs.cacheCommand(cacheCmd);
-                cacheArgs.outputFormat(outputFormat);
-
                 break;
-
-            default:
-                throw new IllegalArgumentException("Unknown --cache subcommand " + cmd);
         }
 
         if (hasNextCacheArg())
@@ -2001,107 +1861,6 @@ public class CommandHandler {
     }
 
     /**
-     * Maps VisorCacheConfiguration to key-value pairs.
-     *
-     * @param cfg Visor cache configuration.
-     * @return map of key-value pairs.
-     */
-    private Map<String, Object> mapToPairs(VisorCacheConfiguration cfg) {
-        Map<String, Object> params = new LinkedHashMap<>();
-
-        VisorCacheAffinityConfiguration affinityCfg = cfg.getAffinityConfiguration();
-        VisorCacheNearConfiguration nearCfg = cfg.getNearConfiguration();
-        VisorCacheRebalanceConfiguration rebalanceCfg = cfg.getRebalanceConfiguration();
-        VisorCacheEvictionConfiguration evictCfg = cfg.getEvictionConfiguration();
-        VisorCacheStoreConfiguration storeCfg = cfg.getStoreConfiguration();
-        VisorQueryConfiguration qryCfg = cfg.getQueryConfiguration();
-
-        params.put("Name", cfg.getName());
-        params.put("Group", cfg.getGroupName());
-        params.put("Dynamic Deployment ID", cfg.getDynamicDeploymentId());
-        params.put("System", cfg.isSystem());
-
-        params.put("Mode", cfg.getMode());
-        params.put("Atomicity Mode", cfg.getAtomicityMode());
-        params.put("Statistic Enabled", cfg.isStatisticsEnabled());
-        params.put("Management Enabled", cfg.isManagementEnabled());
-
-        params.put("On-heap cache enabled", cfg.isOnheapCacheEnabled());
-        params.put("Partition Loss Policy", cfg.getPartitionLossPolicy());
-        params.put("Query Parallelism", cfg.getQueryParallelism());
-        params.put("Copy On Read", cfg.isCopyOnRead());
-        params.put("Listener Configurations", cfg.getListenerConfigurations());
-        params.put("Load Previous Value", cfg.isLoadPreviousValue());
-        params.put("Memory Policy Name", cfg.getMemoryPolicyName());
-        params.put("Node Filter", cfg.getNodeFilter());
-        params.put("Read From Backup", cfg.isReadFromBackup());
-        params.put("Topology Validator", cfg.getTopologyValidator());
-
-        params.put("Time To Live Eager Flag", cfg.isEagerTtl());
-
-        params.put("Write Synchronization Mode", cfg.getWriteSynchronizationMode());
-        params.put("Invalidate", cfg.isInvalidate());
-
-        params.put("Affinity Function", affinityCfg.getFunction());
-        params.put("Affinity Backups", affinityCfg.getPartitionedBackups());
-        params.put("Affinity Partitions", affinityCfg.getPartitions());
-        params.put("Affinity Exclude Neighbors", affinityCfg.isExcludeNeighbors());
-        params.put("Affinity Mapper", affinityCfg.getMapper());
-
-        params.put("Rebalance Mode", rebalanceCfg.getMode());
-        params.put("Rebalance Batch Size", rebalanceCfg.getBatchSize());
-        params.put("Rebalance Timeout", rebalanceCfg.getTimeout());
-        params.put("Rebalance Delay", rebalanceCfg.getPartitionedDelay());
-        params.put("Time Between Rebalance Messages", rebalanceCfg.getThrottle());
-        params.put("Rebalance Batches Count", rebalanceCfg.getBatchesPrefetchCnt());
-        params.put("Rebalance Cache Order", rebalanceCfg.getRebalanceOrder());
-
-        params.put("Eviction Policy Enabled", (evictCfg.getPolicy() != null));
-        params.put("Eviction Policy Factory", evictCfg.getPolicy());
-        params.put("Eviction Policy Max Size", evictCfg.getPolicyMaxSize());
-        params.put("Eviction Filter", evictCfg.getFilter());
-
-        params.put("Near Cache Enabled", nearCfg.isNearEnabled());
-        params.put("Near Start Size", nearCfg.getNearStartSize());
-        params.put("Near Eviction Policy Factory", nearCfg.getNearEvictPolicy());
-        params.put("Near Eviction Policy Max Size", nearCfg.getNearEvictMaxSize());
-
-        params.put("Default Lock Timeout", cfg.getDefaultLockTimeout());
-        params.put("Query Entities", cfg.getQueryEntities());
-        params.put("Cache Interceptor", cfg.getInterceptor());
-
-        params.put("Store Enabled", storeCfg.isEnabled());
-        params.put("Store Class", storeCfg.getStore());
-        params.put("Store Factory Class", storeCfg.getStoreFactory());
-        params.put("Store Keep Binary", storeCfg.isStoreKeepBinary());
-        params.put("Store Read Through", storeCfg.isReadThrough());
-        params.put("Store Write Through", storeCfg.isWriteThrough());
-        params.put("Store Write Coalescing", storeCfg.getWriteBehindCoalescing());
-
-        params.put("Write-Behind Enabled", storeCfg.isWriteBehindEnabled());
-        params.put("Write-Behind Flush Size", storeCfg.getFlushSize());
-        params.put("Write-Behind Frequency", storeCfg.getFlushFrequency());
-        params.put("Write-Behind Flush Threads Count", storeCfg.getFlushThreadCount());
-        params.put("Write-Behind Batch Size", storeCfg.getBatchSize());
-
-        params.put("Concurrent Asynchronous Operations Number", cfg.getMaxConcurrentAsyncOperations());
-
-        params.put("Loader Factory Class Name", cfg.getLoaderFactory());
-        params.put("Writer Factory Class Name", cfg.getWriterFactory());
-        params.put("Expiry Policy Factory Class Name", cfg.getExpiryPolicyFactory());
-
-        params.put("Query Execution Time Threshold", qryCfg.getLongQueryWarningTimeout());
-        params.put("Query Escaped Names", qryCfg.isSqlEscapeAll());
-        params.put("Query SQL Schema", qryCfg.getSqlSchema());
-        params.put("Query SQL functions", qryCfg.getSqlFunctionClasses());
-        params.put("Query Indexed Types", qryCfg.getIndexedTypes());
-        params.put("Maximum payload size for offheap indexes", cfg.getSqlIndexMaxInlineSize());
-        params.put("Query Metrics History Size", cfg.getQueryDetailMetricsSize());
-
-        return params;
-    }
-
-    /**
      * Parse and execute command.
      *
      * @param rawArgs Arguments to parse and execute.
@@ -2221,7 +1980,7 @@ public class CommandHandler {
                 }
             }
 
-            return EXIT_CODE_OK;
+            return 0;
         }
         catch (IllegalArgumentException e) {
             return error(EXIT_CODE_INVALID_ARGUMENTS, "Check arguments.", e);

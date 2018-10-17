@@ -17,6 +17,9 @@
 
 package org.apache.ignite.util;
 
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
@@ -39,9 +42,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
@@ -58,7 +58,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.commandline.OutputFormat;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -103,8 +102,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
-import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
-import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREMIX;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -1183,25 +1180,10 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
-    public void testCacheSequence() throws Exception {
-        testCacheSequence(null);
-    }
-
-    /** */
-    public void testCacheSequenceSingleLine() throws Exception {
-        testCacheSequence(SINGLE_LINE);
-    }
-
-    /** */
-    public void testCacheSequenceMultiLine() throws Exception {
-        testCacheSequence(MULTI_LINE);
-    }
-
     /**
      *
      */
-    private void testCacheSequence(OutputFormat outputFormat) throws Exception {
+    public void testCacheSequence() throws Exception {
         Ignite ignite = startGrid();
 
         ignite.cluster().active(true);
@@ -1216,38 +1198,16 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        int exitCode;
-
-        if (outputFormat == null)
-            exitCode = execute("--cache", "list", "testSeq.*", "seq");
-        else
-            exitCode = execute("--cache", "list", "testSeq.*", "seq", "--output-format", outputFormat.text());
-
-        assertEquals(EXIT_CODE_OK, exitCode);
+        assertEquals(EXIT_CODE_OK, execute("--cache", "list", "testSeq.*", "seq"));
 
         assertTrue(testOut.toString().contains("testSeq"));
         assertTrue(testOut.toString().contains("testSeq2"));
     }
 
-    /** */
-    public void testCacheGroups() throws Exception {
-        testCacheGroups(null);
-    }
-
-    /** */
-    public void testCacheGroupsSingleLine() throws Exception {
-        testCacheGroups(SINGLE_LINE);
-    }
-
-    /** */
-    public void testCacheGroupsMultiLine() throws Exception {
-        testCacheGroups(MULTI_LINE);
-    }
-
     /**
      *
      */
-    private void testCacheGroups(OutputFormat outputFormat) throws Exception {
+    public void testCacheGroups() throws Exception {
         Ignite ignite = startGrid();
 
         ignite.cluster().active(true);
@@ -1263,35 +1223,15 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        int exitCode;
-
-        if (outputFormat == null)
-            exitCode = execute("--cache", "list", ".*", "groups");
-        else
-            exitCode = execute("--cache", "list", ".*", "groups", "--output-format", outputFormat.text());
-
-        assertEquals(EXIT_CODE_OK, exitCode);
+        assertEquals(EXIT_CODE_OK, execute("--cache", "list", ".*", "groups"));
 
         assertTrue(testOut.toString().contains("G100"));
     }
 
-    /** */
-    public void testCacheAffinityNoOutputFormat() throws Exception {
-        testCacheAffinity(null);
-    }
-
-    /** */
-    public void testCacheAffinitySignleLineOutputFormat() throws Exception {
-        testCacheAffinity(SINGLE_LINE);
-    }
-
-    /** */
-    public void testCacheAffinityMultiLineOutputFormat() throws Exception {
-        testCacheAffinity(MULTI_LINE);
-    }
-
-    /** */
-    private void testCacheAffinity(OutputFormat outputFormat) throws Exception {
+    /**
+     *
+     */
+    public void testCacheAffinity() throws Exception {
         Ignite ignite = startGrid();
 
         ignite.cluster().active(true);
@@ -1306,27 +1246,12 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        int exitCode;
+        assertEquals(EXIT_CODE_OK, execute("--cache", "list", ".*"));
 
-        if (outputFormat == null)
-            exitCode = execute("--cache", "list", ".*");
-        else
-            exitCode = execute("--cache", "list", ".*", "--output-format", outputFormat.text());
-
-        assertEquals(EXIT_CODE_OK, exitCode);
-
-        String outStr = testOut.toString();
-
-        if (outputFormat == null || outputFormat == SINGLE_LINE) {
-            assertTrue(outStr.contains("name=" + DEFAULT_CACHE_NAME));
-            assertTrue(outStr.contains("partitions=32"));
-            assertTrue(outStr.contains("function=o.a.i.cache.affinity.rendezvous.RendezvousAffinityFunction"));
-        }
-        else if (outputFormat == MULTI_LINE) {
-            assertTrue(outStr.contains("[cache = '" + DEFAULT_CACHE_NAME + "']"));
-            assertTrue(outStr.contains("Affinity Partitions: 32"));
-            assertTrue(outStr.contains("Affinity Function: o.a.i.cache.affinity.rendezvous.RendezvousAffinityFunction"));
-        }
+        assertTrue(testOut.toString().contains("cacheName=" + DEFAULT_CACHE_NAME));
+        assertTrue(testOut.toString().contains("prim=32"));
+        assertTrue(testOut.toString().contains("mapped=32"));
+        assertTrue(testOut.toString().contains("affCls=RendezvousAffinityFunction"));
     }
 
     /**
@@ -1369,7 +1294,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertTrue(lastRowIndex > 0);
 
         // Last row is empty, but the previous line contains data
-        lastRowIndex = log.lastIndexOf('\n', lastRowIndex - 1);
+        lastRowIndex = log.lastIndexOf('\n', lastRowIndex-1);
 
         assertTrue(lastRowIndex > 0);
 
