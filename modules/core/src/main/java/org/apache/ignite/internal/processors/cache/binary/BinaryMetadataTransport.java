@@ -317,8 +317,8 @@ final class BinaryMetadataTransport {
 
                     BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(locMeta, msg.metadata(), changedSchemas);
 
-                    if (log.isInfoEnabled())
-                        log.info("Versions are stamped on coordinator" +
+                    if (log.isDebugEnabled())
+                        log.debug("Versions are stamped on coordinator" +
                                 " [typeId=" + typeId +
                                 ", changedSchemas=" + changedSchemas +
                                 ", pendingVer=" + pendingVer +
