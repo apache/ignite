@@ -247,10 +247,11 @@ public class ComputeUtils {
             List<?> data = transformerDataSuppliers.stream().map(Supplier::get).collect(Collectors.toList());
 
             C ctx;
+            long cnt = computeCount(locUpstreamCache, qry, transformers, data);
+
             try (QueryCursor<UpstreamEntry<K, V>> cursor = locUpstreamCache.query(qry,
                 e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
 
-                long cnt = transformStream(Utils.asStream(cursor.iterator()), transformers, data).count();
 
                 Stream<UpstreamEntry<K, V>> transformedStream = transformStream(Utils.asStream(cursor.iterator()), transformers, data);
 
