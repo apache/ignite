@@ -36,6 +36,7 @@ import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2TableEngine;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -74,6 +75,7 @@ import org.h2.util.New;
 import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
 import org.h2.util.Utils;
+import org.h2.value.DataType;
 
 import java.io.File;
 import java.nio.file.Paths;
@@ -743,19 +745,31 @@ public class FullTextLucene {
      *            an array.
      * @return the empty result set
      */
-    protected static SimpleResultSet createResultSet(boolean data,Map<String, Class<?>> fields) {
+    protected static SimpleResultSet createResultSet(boolean data,GridQueryTypeDescriptor type) {
+    	Map<String, Class<?>> fields = null;
+    	
         SimpleResultSet result = new SimpleResultSet();
-        result.addColumn(FIELD_KEY, Types.OTHER, 0, 0);
+        int keyType = Types.OTHER;
+        int valType = Types.OTHER;
+        if(type!=null){
+    		fields = type.fields();
+    		keyType = DataType.convertTypeToSQLType(DataType.getTypeFromClass(type.keyClass()));
+    	    valType = DataType.convertTypeToSQLType(DataType.getTypeFromClass(type.valueClass()));
+    	}        
+        result.addColumn(FIELD_KEY, keyType, 0, 0);
         result.addColumn(QueryUtils.VER_FIELD_NAME, Types.VARCHAR, 0, 0);
-        result.addColumn(QueryUtils.VAL_FIELD_NAME, Types.OTHER, 0, 0);        
+        result.addColumn(QueryUtils.VAL_FIELD_NAME, valType, 0, 0);        
         result.addColumn(FIELD_TABLE, Types.VARCHAR, 0, 0);
         result.addColumn(FIELD_SCORE, Types.FLOAT, 0, 0);
-        if (data) {
-            result.addColumn(FIELD_COLUMNS, Types.ARRAY, 0, 0);
-            
+        if (data && type!=null) {
+        	for(Map.Entry<String,Class<?>> ent: fields.entrySet()){
+        		int colType = DataType.getTypeFromClass(ent.getValue());
+        		result.addColumn(ent.getKey(), DataType.convertTypeToSQLType(colType), 0, 0);
+        	}            
         }         
         return result;
-    }
+    }    
+  
     
 
     /**
@@ -832,7 +846,7 @@ public class FullTextLucene {
     	
     	LuceneIndexAccess access = getIndexAccess(conn,forschema,table);
     	
-        SimpleResultSet result = createResultSet(data,access.type()==null? null: access.type().fields());
+        SimpleResultSet result = createResultSet(data,access.type());
         
         if (conn.getMetaData().getURL().startsWith("jdbc:columnlist:")) {
             // this is just to query the result set columns
@@ -891,14 +905,23 @@ public class FullTextLucene {
                 Object k = unmarshall(doc.getBinaryValue(FIELD_KEY).bytes, ldr,cache.context().cacheObjectContext());
                 Object ver = doc.get(QueryUtils.VER_FIELD_NAME);
                 
-                if (data && cache!=null) {
+                if (data && cache!=null && access.type()!=null) {
                 	
                 	Object v = cache.get(k,false,false);
-                	
-                    result.addRow(
-                            k,ver,v,tableName,score,
-                            access.fields.toArray()
-                            );
+                	Object[] row = new Object[5+access.type().fields().size()];
+                	row[0] = k;
+                	row[1] = ver;
+                	row[2] = v;
+                	row[3] = tableName;
+                	row[4] = score;
+                	int c= 5;
+                	if(v!=null && v instanceof BinaryObject){
+                		BinaryObject bobj = (BinaryObject) v;
+	                	for(String f : access.type().fields().keySet()){
+	                		row[c++] = bobj.field(f);
+	                	}
+                	}                	
+                    result.addRow(row);
                 } else {
                     result.addRow(k,ver,null,tableName,score);
                 }

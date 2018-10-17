@@ -36,6 +36,10 @@ SELECT * FROM FTL_SEARCH('CacheClientBinaryQueryExampleEmployees','EMPLOYEE','TX
 SELECT e.name,e.street FROM FTL_SEARCH('CacheClientBinaryQueryExampleEmployees','EMPLOYEE','TX', 0, 0) f ,"CacheClientBinaryQueryExampleEmployees".EMPLOYEE e where f._key=e._key
 
 
+above sql equals below which row contain table EMPLOYEE filed:
+
+SELECT e.name,e.street FROM FTL_SEARCH_DATA('CacheClientBinaryQueryExampleEmployees','EMPLOYEE','TX', 0, 0) e;
+
 TextQuery with filter
 =========================
 

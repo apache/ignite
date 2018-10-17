@@ -312,7 +312,7 @@ public class GridLuceneIndex implements AutoCloseable {
             }
             //end@
 
-            doc.add(new StoredField(QueryUtils.VER_FIELD_NAME, ver.toString().getBytes()));
+            doc.add(new StoredField(QueryUtils.VER_FIELD_NAME, ver.toString()));
 
             doc.add(new LongPoint(FullTextLucene.EXPIRATION_TIME_FIELD_NAME, expires));
 
