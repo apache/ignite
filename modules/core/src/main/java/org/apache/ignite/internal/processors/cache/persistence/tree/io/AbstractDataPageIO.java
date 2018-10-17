@@ -1109,20 +1109,43 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
 
     /** {@inheritDoc} */
     @Override public void compactPage(ByteBuffer page, ByteBuffer out) {
-        assert page.isDirect();
         assert out.isDirect();
 
-        int pageSize = page.remaining();
-        long pageAddr = GridUnsafe.bufferAddress(page);
+        // TODO May we compactDataEntries in-place and then copy compacted data to out??
 
-        int directCnt = getDirectCount(pageAddr);
-        int firstOff = compactDataEntries(pageAddr, directCnt, pageSize);
+        int pageSize = page.remaining();
+
+        page.mark();
+        out.put(page).flip();
+        page.reset();
+
+        long pageAddr = GridUnsafe.bufferAddress(out);
+
+        int firstOff = compactDataEntries(pageAddr, getDirectCount(pageAddr), pageSize);
         setFirstEntryOffset(pageAddr, firstOff, pageSize);
+
+        int freeSpace = getRealFreeSpace(pageAddr);
+
+        // Move all the data entries from page end to the page header to close the gap.
+        moveBytes(pageAddr, firstOff, pageSize - firstOff, -freeSpace, pageSize);
+        out.limit(pageSize - freeSpace); // Here we have only meaningful data of this page.
     }
 
     /** {@inheritDoc} */
     @Override public void restorePage(ByteBuffer page, int pageSize) {
+        assert page.isDirect();
+        assert page.position() == 0;
+        assert page.limit() <= pageSize;
 
+        long pageAddr = GridUnsafe.bufferAddress(page);
+
+        int freeSpace = getRealFreeSpace(pageAddr);
+        int firstOff = getFirstEntryOffset(pageAddr);
+        int cnt = pageSize - firstOff;
+        int off = page.limit() - cnt;
+
+        moveBytes(pageAddr, off, cnt, freeSpace, pageSize);
+        page.limit(pageSize);
     }
 
     /**

@@ -107,7 +107,7 @@ public class CompressPorcessorImpl extends CompressProcessor {
             return page; // Were not able to release file blocks.
 
         PageIO.setCompressionType(compressed, ZSTD_3_COMPRESSED_PAGE);
-        PageIO.setCompressedSize(compressed, (short)compactedSize);
+        PageIO.setCompressedSize(compressed, (short)compressedSize);
 
         return compressed;
     }
