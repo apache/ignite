@@ -85,6 +85,7 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccSnapshot
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccTreeClosure;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
+import org.apache.ignite.internal.transactions.IgniteTxMvccVersionCheckedException;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -2440,8 +2441,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             // Need an extra lookup because the row may be already cleaned by another thread.
             CacheDataRow row0 = dataTree.findOne(row, CacheDataRowAdapter.RowData.LINK_ONLY);
 
-            if (row0 != null)
-                rowStore.updateDataRow(row0.link(), mvccUpdateTxStateHint, null);
+            try {
+                if (row0 != null)
+                    rowStore.updateDataRow(row0.link(), mvccUpdateTxStateHint, null);
+            }
+            catch (IgniteTxMvccVersionCheckedException e) {
+                // We expect the active tx state can be observed by read tx only in the cases when tx has been aborted
+                // asynchronously and node hasn't received finish message yet but coordinator has already removed it from
+                // the active txs map. Rows written by this tx are invisible to anyone and will be removed by the vacuum.
+                U.warn(log, "Unexpected tx state on vacuum tx state update.", e);
+            }
         }
 
         /** {@inheritDoc} */
@@ -2982,7 +2991,17 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 assert mvccVersionIsValid(rowCrdVer, rowCntr, rowOpCntr);
 
-                return isVisible(cctx, snapshot, rowCrdVer, rowCntr, rowOpCntr, rowIo.getLink(pageAddr, idx));
+                try {
+                    return isVisible(cctx, snapshot, rowCrdVer, rowCntr, rowOpCntr, rowIo.getLink(pageAddr, idx));
+                }
+                catch (IgniteTxMvccVersionCheckedException e) {
+                    // We expect the active tx state can be observed by read tx only in the cases when tx has been aborted
+                    // asynchronously and node hasn't received finish message yet but coordinator has already removed it from
+                    // the active txs map. Rows written by this tx are invisible to anyone and will be removed by the vacuum.
+                    U.warn(log, "Unexpected tx state on a query execution.", e);
+
+                    return false;
+                }
             }
         }
 

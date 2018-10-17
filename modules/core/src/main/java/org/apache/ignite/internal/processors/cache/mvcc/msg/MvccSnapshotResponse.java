@@ -315,6 +315,24 @@ public class MvccSnapshotResponse implements MvccMessage, MvccSnapshot, MvccLong
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MvccSnapshotResponse.class, this);
+        StringBuilder sb = new StringBuilder("MvccSnapshotResponse{")
+            .append("crdVer=").append(crdVer)
+            .append(", cntr=").append(cntr)
+            .append(", opCntr=").append(opCntr)
+            .append(", cleanupVer=").append(cleanupVer)
+            .append(", activeTxs=[");
+
+        for (int i = 0; i < txsCnt; i++) {
+            if (i != 0)
+                sb.append(", ");
+
+            sb.append(txs[i]);
+        }
+
+        sb.append(']')
+            .append(", futId=").append(futId)
+            .append('}');
+
+        return sb.toString();
     }
 }
