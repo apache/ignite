@@ -87,6 +87,7 @@ import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -544,7 +545,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 for (int partId = -1; partId < partitions; partId++)
                     memEx.invalidate(grpDesc.groupId(), partId);
 
-                memEx.clearAsync(((grpId, pageId) -> grpId == grpDesc.groupId()), true);
+                memEx.invalidate(grpDesc.groupId(), PageIdAllocator.INDEX_PARTITION);
+
+                //memEx.clearAsync(((grpId, pageId) -> grpId == grpDesc.groupId()), true);
             }
         }
 
