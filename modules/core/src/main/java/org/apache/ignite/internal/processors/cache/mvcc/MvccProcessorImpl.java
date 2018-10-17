@@ -1956,7 +1956,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
      */
     private static class VacuumScheduler extends GridWorker {
         /** */
-        private final static long VACUUM_TIMEOUT = 60_000;
+        private static final long VACUUM_TIMEOUT = 60_000;
 
         /** */
         private final long interval;
