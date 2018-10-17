@@ -527,16 +527,24 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             DataRegion region = regionName == null ? dfltDataRegion : dataRegionMap.get(regionName);
 
-            if (region == null)
+            if (region == null) {
+                log.warning("Skip invalidate for " + grpDesc);
+
                 continue;
+            }
+
+            if (log.isInfoEnabled())
+                log.info("Page memory " + region + " for " + grpDesc + " has invalidated.");
 
             int partitions = grpDesc.config().getAffinity().partitions();
 
             if (region.pageMemory() instanceof PageMemoryEx) {
                 PageMemoryEx memEx = (PageMemoryEx)region.pageMemory();
 
-                for (int partId = 0; partId < partitions; partId++)
+                for (int partId = -1; partId < partitions; partId++)
                     memEx.invalidate(grpDesc.groupId(), partId);
+
+                memEx.clearAsync(((grpId, pageId) -> grpId == grpDesc.groupId()), true);
             }
         }
 

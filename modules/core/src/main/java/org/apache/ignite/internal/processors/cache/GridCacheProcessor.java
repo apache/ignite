@@ -2309,8 +2309,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         CacheObjectContext cacheObjCtx,
         AffinityTopologyVersion exchTopVer,
         boolean recoveryMode
-    )
-        throws IgniteCheckedException {
+    ) throws IgniteCheckedException {
         CacheConfiguration cfg = new CacheConfiguration(desc.config());
 
         String memPlcName = cfg.getDataRegionName();
