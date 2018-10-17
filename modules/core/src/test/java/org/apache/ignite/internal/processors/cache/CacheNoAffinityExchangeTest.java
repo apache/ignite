@@ -35,6 +35,12 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
+    }
+
     public void testNoAffinityChangeOnClientJoin() throws Exception {
         Ignite ig = startGrids(4);
 
