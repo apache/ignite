@@ -111,9 +111,9 @@ import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
@@ -158,8 +158,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
-import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteTaskTrackingThreadPoolExecutor;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
@@ -171,6 +171,7 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
+import static org.apache.ignite.internal.stat.GridIoStatManager.NO_OP_STATISTIC_HOLDER;
 
 /**
  *
@@ -2028,7 +2029,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                                 PageMemoryEx pageMem = grpId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(grpId);
 
-                                long page = pageMem.acquirePage(grpId, pageId, true);
+                                long page = pageMem.acquirePage(grpId, pageId, NO_OP_STATISTIC_HOLDER, true);
 
                                 try {
                                     long pageAddr = pageMem.writeLock(grpId, pageId, page);
@@ -2111,7 +2112,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                                 // Here we do not require tag check because we may be applying memory changes after
                                 // several repetitive restarts and the same pages may have changed several times.
-                                long page = pageMem.acquirePage(grpId, pageId, true);
+                                long page = pageMem.acquirePage(grpId, pageId, NO_OP_STATISTIC_HOLDER, true);
 
                                 try {
                                     long pageAddr = pageMem.writeLock(grpId, pageId, page);
@@ -2347,7 +2348,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         PageMemoryEx pageMem = getPageMemoryForCacheGroup(rec0.groupId());
 
-                        long page = pageMem.acquirePage(rec0.groupId(), rec0.pageId(), true);
+                        long page = pageMem.acquirePage(rec0.groupId(), rec0.pageId(), NO_OP_STATISTIC_HOLDER, true);
 
                         try {
                             long addr = pageMem.writeLock(rec0.groupId(), rec0.pageId(), page, true);

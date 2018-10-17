@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.stat.GridIoStatManager;
+import org.apache.ignite.internal.stat.StatisticsHolder;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
@@ -164,9 +165,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /** Shared context. */
     private final GridCacheSharedContext<?, ?> ctx;
 
-    /** IO statistic manager. */
-    private final GridIoStatManager ioStatMgr;
-
     /**
      * @param log Logger.
      * @param directMemoryProvider Memory allocator to use.
@@ -202,8 +200,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         totalPages = (int)(dataRegionCfg.getMaxSize() / sysPageSize);
 
         rwLock = new OffheapReadWriteLock(lockConcLvl);
-
-        ioStatMgr = ctx != null ? ctx.kernalContext().ioStats() : new GridIoStatManager();
     }
 
     /** {@inheritDoc} */
@@ -449,13 +445,18 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public long acquirePage(int cacheId, long pageId) {
+        return acquirePage(cacheId, pageId, GridIoStatManager.NO_OP_STATISTIC_HOLDER);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long acquirePage(int cacheId, long pageId, StatisticsHolder statHolder) {
         int pageIdx = PageIdUtils.pageIndex(pageId);
 
         Segment seg = segment(pageIdx);
 
         long absPtr = seg.acquirePage(pageIdx);
 
-        ioStatMgr.trackLogicalRead(absPtr + PAGE_OVERHEAD);
+        statHolder.trackLogicalRead(absPtr + PAGE_OVERHEAD);
 
         return absPtr;
     }

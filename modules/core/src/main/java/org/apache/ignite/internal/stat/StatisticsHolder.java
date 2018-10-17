@@ -18,16 +18,36 @@
 
 package org.apache.ignite.internal.stat;
 
-/**
- * Type of statistics.
- */
-public enum StatType {
-    /** */
-    INDEX,
-    /** */
-    CACHE,
-    /** */
-    TABLE,
-    /** */
-    SQL
+import java.util.Map;
+
+public interface StatisticsHolder {
+
+    /**
+     * Track logical read of given page.
+     *
+     * @param pageAddr Address of page.
+     */
+    public void trackLogicalRead(long pageAddr);
+
+    /**
+     * Track physical and logical read of given page.
+     *
+     * @param pageAddr start address of page.
+     */
+    public void trackPhysicalAndLogicalRead(long pageAddr);
+
+    /**
+     * @return Logical reads statistics per page IO types.
+     */
+    public Map<PageType, Long> logicalReadsMap();
+
+    /**
+     * @return Physical reads statistics per page IO types.
+     */
+    public Map<PageType, Long> physicalReadsMap();
+
+    /**
+     * Reset statistics. All counters will be reset to 0.
+     */
+    public void resetStatistics();
 }

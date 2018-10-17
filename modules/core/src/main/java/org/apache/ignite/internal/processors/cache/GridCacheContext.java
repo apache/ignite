@@ -91,9 +91,6 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.stat.GridIoStatManager;
-import org.apache.ignite.internal.stat.StatOperationType;
-import org.apache.ignite.internal.stat.StatType;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -276,9 +273,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Local node's MAC address. */
     private String locMacs;
 
-    /** Cache IO statistics to be gathered. */
-    private StatOperationType cacheStatOpType;
-
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -404,24 +398,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         locMacs = localNode().attribute(ATTR_MACS);
 
         assert locMacs != null;
-
-        cacheStatOpType = new StatOperationType(StatType.CACHE, cacheName);
-    }
-
-    /**
-     * Start gathering IO statistics for cache and cache group. Should be invoked in pair with finishGatheringIOStatistics
-     * method to avoid gather incorrect statistics.
-     */
-    public void startGatheringIOStatistics() {
-        GridIoStatManager.addCurrentOperationType(cacheStatOpType);
-    }
-
-    /**
-     * Finish gathering IO statistics for cache and cache group. Should used in pair with startGatheringIOStatistics and
-     * invoked after it to avoid gather incorrect statistics.
-     */
-    public void finishGatheringIOStatistics() {
-        GridIoStatManager.removeCurrentOperationType(cacheStatOpType);
     }
 
     /**

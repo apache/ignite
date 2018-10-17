@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingP
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.stat.GridIoStatManager;
+import org.apache.ignite.internal.stat.StatisticsHolder;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -271,9 +272,6 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** Memory metrics to track dirty pages count and page replace rate. */
     private DataRegionMetricsImpl memMetrics;
 
-    /** IO statistic manager. */
-    private final GridIoStatManager ioStatMgr;
-
     /**
      * @param directMemoryProvider Memory allocator to use.
      * @param sizes segments sizes, last is checkpoint pool size.
@@ -329,8 +327,6 @@ public class PageMemoryImpl implements PageMemoryEx {
         rwLock = new OffheapReadWriteLock(128);
 
         this.memMetrics = memMetrics;
-
-        this.ioStatMgr = ctx.kernalContext().ioStats();
     }
 
     /** {@inheritDoc} */
@@ -640,11 +636,18 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public long acquirePage(int grpId, long pageId) throws IgniteCheckedException {
-        return acquirePage(grpId, pageId, false);
+        return acquirePage(grpId, pageId, GridIoStatManager.NO_OP_STATISTIC_HOLDER, false);
     }
 
     /** {@inheritDoc} */
-    @Override public long acquirePage(int grpId, long pageId, boolean restore) throws IgniteCheckedException {
+    @Override public long acquirePage(int grpId, long pageId,
+        StatisticsHolder statHolder) throws IgniteCheckedException {
+        return acquirePage(grpId, pageId, statHolder, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long acquirePage(int grpId, long pageId, StatisticsHolder statHolder,
+        boolean restore) throws IgniteCheckedException {
         FullPageId fullId = new FullPageId(pageId, grpId);
 
         int partId = PageIdUtils.partId(pageId);
@@ -668,7 +671,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 seg.acquirePage(absPtr);
 
-                ioStatMgr.trackLogicalRead(absPtr + PAGE_OVERHEAD);
+                statHolder.trackLogicalRead(absPtr + PAGE_OVERHEAD);
 
                 return absPtr;
             }
@@ -774,7 +777,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             seg.acquirePage(absPtr);
 
             if(!readPageFromStore)
-                ioStatMgr.trackLogicalRead(absPtr + PAGE_OVERHEAD);
+                statHolder.trackLogicalRead(absPtr + PAGE_OVERHEAD);
 
             return absPtr;
         }
@@ -804,7 +807,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 try {
                     storeMgr.read(grpId, pageId, buf);
 
-                    ioStatMgr.trackPhysicalAndLogicalRead(pageAddr);
+                    statHolder.trackPhysicalAndLogicalRead(pageAddr);
 
                     actualPageId = PageIO.getPageId(buf);
 
@@ -818,7 +821,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     tryToRestorePage(fullId, buf);
 
-                    ioStatMgr.trackPhysicalAndLogicalRead(pageAddr);
+                    statHolder.trackPhysicalAndLogicalRead(pageAddr);
 
                     memMetrics.onPageRead();
                 }

@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.tree.SearchRow;
+import org.apache.ignite.internal.stat.StatisticsHolder;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -169,7 +170,9 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
                     PageHandler<Object, BPlusTree.Result> delegate = (PageHandler<Object, BPlusTree.Result>) hnd;
 
                     return new PageHandler<BPlusTree.Get, BPlusTree.Result>() {
-                        @Override public BPlusTree.Result run(int cacheId, long pageId, long page, long pageAddr, PageIO io, Boolean walPlc, BPlusTree.Get arg, int lvl) throws IgniteCheckedException {
+                        @Override public BPlusTree.Result run(int cacheId, long pageId, long page, long pageAddr,
+                            PageIO io, Boolean walPlc, BPlusTree.Get arg, int lvl,
+                            StatisticsHolder statHolder) throws IgniteCheckedException {
                             log.info("Invoked " + " " + cacheId + " " + arg.toString() + " for BTree (" + corruptionEnabled + ") -> " + arg.row() + " / " + arg.row().getClass());
 
                             if (corruptionEnabled && (arg.row() instanceof SearchRow)) {
@@ -188,7 +191,7 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
                                 }
                             }
 
-                            return delegate.run(cacheId, pageId, page, pageAddr, io, walPlc, arg, lvl);
+                            return delegate.run(cacheId, pageId, page, pageAddr, io, walPlc, arg, lvl, statHolder);
                         }
 
                         @Override public boolean releaseAfterWrite(int cacheId, long pageId, long page, long pageAddr, BPlusTree.Get g, int lvl) {

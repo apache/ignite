@@ -18,6 +18,7 @@
 
 package org.apache.ignite.internal.stat;
 
+import com.google.common.collect.Sets;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -31,6 +32,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
@@ -46,6 +48,10 @@ public class IoStatCacheTest extends GridCommonAbstractTest {
 
     /** */
     private final static String TRANSACTIONAL_CACHE_NAME = "TRANSACTIONAL_CACHE";
+
+    /** */
+    private final static Set<String> ALL_CACHE_NAMES = Sets.newHashSet(GridCacheUtils.UTILITY_CACHE_NAME,
+        ATOMIC_CACHE_NAME, MVCC_CACHE_NAME, TRANSACTIONAL_CACHE_NAME);
 
     /** */
     private static final int RECORD_COUNT = 200;
@@ -97,6 +103,8 @@ public class IoStatCacheTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
+
+        cleanPersistenceDir();
 
         ignite = (IgniteEx)startGrid();
 
@@ -161,13 +169,13 @@ public class IoStatCacheTest extends GridCommonAbstractTest {
 
         GridIoStatManager ioStatMgr = ignite.context().ioStats();
 
-        Set<String> statisticCacheNames = ioStatMgr.subTypesLogicalReads(StatType.CACHE);
+        Set<String> statisticCacheNames = ioStatMgr.subTypes(StatType.CACHE);
 
-        Assert.assertEquals(3, statisticCacheNames.size());
+        Assert.assertEquals(ALL_CACHE_NAMES, statisticCacheNames);
 
         Map<AggregatePageType, AtomicLong> aggregateGlobal = ioStatMgr.aggregate(ioStatMgr.logicalReadsLocalNode());
 
-        statisticCacheNames.forEach((cacheName) -> {
+        Stream.of(ATOMIC_CACHE_NAME, TRANSACTIONAL_CACHE_NAME, MVCC_CACHE_NAME).forEach((cacheName) -> {
             Map<PageType, Long> cacheStat = ioStatMgr.logicalReads(StatType.CACHE, cacheName);
 
             Map<AggregatePageType, AtomicLong> cacheStatAggregate = ioStatMgr.aggregate(cacheStat);
@@ -191,9 +199,9 @@ public class IoStatCacheTest extends GridCommonAbstractTest {
 
         GridIoStatManager ioStatMgr = ignite.context().ioStats();
 
-        Set<String> statisticCacheNames = ioStatMgr.subTypesLogicalReads(StatType.CACHE);
+        Set<String> statisticCacheNames = ioStatMgr.subTypes(StatType.CACHE);
 
-        Assert.assertEquals(1, statisticCacheNames.size());
+        Assert.assertEquals(ALL_CACHE_NAMES, statisticCacheNames);
 
         Assert.assertTrue(statisticCacheNames.contains(cacheName));
 

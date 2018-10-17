@@ -19,115 +19,53 @@
 package org.apache.ignite.internal.stat;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.LongAdder;
-import java.util.stream.Stream;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import java.util.function.Function;
 
-/**
- * IO statistics manager.
- */
 public class GridIoStatManager {
-    /** Context to gathering specific IO statistics. */
-    private static final ThreadLocal<List<StatOperationType>> currentOperationType = ThreadLocal.withInitial(ArrayList::new);
+    /** No OP statistic handler. */
+    public final static StatisticsHolder NO_OP_STATISTIC_HOLDER = new StatisticsHolderNoOp();
 
-    /** Complex map to track physical reads of memory pages */
-    private final Map<StatType, Map<PageType, Map<String, LongAdder>>> TRACK_PHYSICAL_READS = new EnumMap<>(StatType.class);
-
-    /** Complex map to track physical writes of memory pages */
-    private final Map<StatType, Map<PageType, Map<String, LongAdder>>> TRACK_PHYSICAL_WRITES = new EnumMap<>(StatType.class);
-
-    /** Complex map to track logical reads of memory pages */
-    private final Map<StatType, Map<PageType, Map<String, LongAdder>>> TRACK_LOGICAL_READS = new EnumMap<>(StatType.class);
+    /** All statistic holders */
+    private final Map<StatType, Map<String, StatisticsHolder>> statisticsHolders = new EnumMap<>(StatType.class);
 
     {
-        for (StatType statType : StatType.values()) {
-            Map<PageType, Map<String, LongAdder>> logReadMap = new EnumMap<>(PageType.class);
-
-            Map<PageType, Map<String, LongAdder>> physReadMap = new EnumMap<>(PageType.class);
-
-            Map<PageType, Map<String, LongAdder>> physWriteMap = new EnumMap<>(PageType.class);
-
-            for (PageType pageType : PageType.values()) {
-                if (statType == StatType.LOCAL_NODE) {
-                    logReadMap.put(pageType, new HashMap<>(2));
-
-                    physReadMap.put(pageType, new HashMap<>(2));
-
-                    physWriteMap.put(pageType, new HashMap<>(2));
-
-                    //Predefined values for local node statistics.
-                    {
-                        logReadMap.get(pageType).put(KEY_FOR_LOCAL_NODE_STAT, new LongAdder());
-
-                        physReadMap.get(pageType).put(KEY_FOR_LOCAL_NODE_STAT, new LongAdder());
-
-                        physWriteMap.get(pageType).put(KEY_FOR_LOCAL_NODE_STAT, new LongAdder());
-                    }
-                }
-                else {
-                    logReadMap.put(pageType, new ConcurrentHashMap<>());
-
-                    physReadMap.put(pageType, new ConcurrentHashMap<>());
-                }
-            }
-
-            TRACK_LOGICAL_READS.put(statType, logReadMap);
-
-            TRACK_PHYSICAL_READS.put(statType, physReadMap);
-
-            TRACK_PHYSICAL_WRITES.put(statType, physWriteMap);
+        for (StatType types : StatType.values()) {
+            statisticsHolders.put(types, new ConcurrentHashMap<>());
         }
     }
-
-    /** Key for local node statistics. */
-    public static String KEY_FOR_LOCAL_NODE_STAT = StatType.LOCAL_NODE.name();
 
     /** Time of since statistics start gathering. */
     private volatile LocalDateTime statsSince = LocalDateTime.now();
 
     /**
-     * Add operation type statistics context for current thread.
+     * Create and register statistics holder.
      *
-     * @param statType Statistic operation type.
+     * @param type Type of statistics.
+     * @param name Name of element of statistics.
+     * @return created statistics holder.
      */
-    public static void addCurrentOperationType(StatOperationType statType) {
-            currentOperationType.get().add(statType);
-    }
+    public StatisticsHolder createAndRegisterStatHolder(StatType type, String name) {
+        StatisticsHolder statHolder = new StatisticsHolderFineGrained(type, name);
 
-    /**
-     * Remove operation type statistics context for current thread.
-     *
-     * @param statType Statistic operation type.
-     */
-    public static void removeCurrentOperationType(StatOperationType statType) {
-            currentOperationType.get().remove(statType);
+        StatisticsHolder old = statisticsHolders.get(type).put(name, statHolder);
+        assert old == null : old;
+
+        return statHolder;
     }
 
     /**
      * Reset statistics
      */
     public void resetStats() {
-        Stream.of(TRACK_LOGICAL_READS, TRACK_PHYSICAL_READS, TRACK_PHYSICAL_WRITES).forEach(stat -> {
-            for (Map.Entry<StatType, Map<PageType, Map<String, LongAdder>>> entry : stat.entrySet()) {
-                if (entry.getKey() == StatType.LOCAL_NODE) {
-                        for (Map<String, LongAdder> value : entry.getValue().values())
-                            value.get(KEY_FOR_LOCAL_NODE_STAT).reset();
-                    }
-                    else {
-                        for (Map<String, LongAdder> value : entry.getValue().values())
-                            value.clear();
-                    }
-                }
-            }
+        statisticsHolders.forEach((t, s) ->
+            s.forEach((k, sh) -> sh.resetStatistics())
         );
 
         statsSince = LocalDateTime.now();
@@ -141,106 +79,26 @@ public class GridIoStatManager {
     }
 
     /**
-     * Track physical and logical read of given page.
+     * Extract all tracked subtypes.
      *
-     * @param pageAddr start address of page.
+     * @param statType Type of statistics which subtypes need to extract.
+     * @return Set of present subtypes for given statType
      */
-    public void trackPhysicalAndLogicalRead(long pageAddr) {
-        trackByPageAddress(pageAddr, TRACK_PHYSICAL_READS);
+    public Set<String> subTypes(StatType statType) {
+        assert statType != null;
 
-        trackByPageAddress(pageAddr, TRACK_LOGICAL_READS);
+        return Collections.unmodifiableSet(statisticsHolders.get(statType).keySet());
     }
 
     /**
-     * Track physical write of page.
-     *
-     * @param pageIoType type of writed page.
-     */
-    public void trackPhysicalWrite(int pageIoType) {
-        trackByPageIoType(pageIoType, TRACK_PHYSICAL_WRITES);
-    }
-
-    /**
-     * Track logical read of given page.
-     *
-     * @param pageAddr Address of page.
-     */
-    public void trackLogicalRead(long pageAddr) {
-        trackByPageAddress(pageAddr, TRACK_LOGICAL_READS);
-    }
-
-    /**
-     * Track of access to given page at given Map.
-     *
-     * @param pageAddr Address of page.
-     * @param mapToTrack Map to track access to the given page.
-     */
-    private void trackByPageAddress(long pageAddr, Map<StatType, Map<PageType, Map<String, LongAdder>>> mapToTrack) {
-        int pageIoType = PageIO.getType(pageAddr);
-
-        trackByPageIoType(pageIoType, mapToTrack);
-    }
-
-    /**
-     * Track of access to given page at given Map.
-     *
-     * @param pageIoType Page IO type.
-     * @param mapToTrack Map to track access to page.
-     */
-    private void trackByPageIoType(int pageIoType, Map<StatType, Map<PageType, Map<String, LongAdder>>> mapToTrack) {
-        if (pageIoType > 0) { // To skip not set type.
-            PageType pageType = PageType.derivePageType(pageIoType);
-
-            mapToTrack.get(StatType.LOCAL_NODE).get(pageType).get(KEY_FOR_LOCAL_NODE_STAT).increment();
-
-            // We shouldn't track anything except local node statistics for physical writes operations.
-            if (mapToTrack == TRACK_PHYSICAL_WRITES)
-                return;
-
-            List<StatOperationType> statOpTypes = currentOperationType.get();
-
-            if (!statOpTypes.isEmpty())
-                for (StatOperationType opType : statOpTypes)
-                    mapToTrack.get(opType.type()).get(pageType)
-                        .computeIfAbsent(opType.subType(), k -> new LongAdder())
-                        .increment();
-        }
-    }
-
-    /**
-     * @param stat Statistics which need to aggregate.
-     * @return Aggregated statistics for given statistics
-     */
-    public Map<AggregatePageType, AtomicLong> aggregate(Map<PageType, Long> stat) {
-        Map<AggregatePageType, AtomicLong> res = new HashMap<>();
-
-        for (AggregatePageType type : AggregatePageType.values())
-            res.put(type, new AtomicLong());
-
-        stat.forEach((k, v) -> res.get(AggregatePageType.aggregate(k)).addAndGet(v));
-
-        return res;
-    }
-
-    /**
+     * @param statType Type of statistics which need to take.
+     * @param subType Subtype of statistics which need to take.
      * @return Tracked physical reads by types since last reset statistics.
      */
-    public Map<PageType, Long> physicalReadsLocalNode() {
-        return extractStat(TRACK_PHYSICAL_READS, StatType.LOCAL_NODE, KEY_FOR_LOCAL_NODE_STAT);
-    }
+    public Map<PageType, Long> physicalReads(StatType statType, String subType) {
+        StatisticsHolder statHolder = statisticsHolders.get(statType).get(subType);
 
-    /**
-     * @return Tracked physical writes by types since last reset statistics.
-     */
-    public Map<PageType, Long> physicalWritesLocalNode() {
-        return extractStat(TRACK_PHYSICAL_WRITES, StatType.LOCAL_NODE, KEY_FOR_LOCAL_NODE_STAT);
-    }
-
-    /**
-     * @return Tracked local node logical reads by types since last reset statistics.
-     */
-    public Map<PageType, Long> logicalReadsLocalNode() {
-        return extractStat(TRACK_LOGICAL_READS, StatType.LOCAL_NODE, KEY_FOR_LOCAL_NODE_STAT);
+        return (statHolder != null) ? statHolder.physicalReadsMap() : Collections.emptyMap();
     }
 
     /**
@@ -249,77 +107,58 @@ public class GridIoStatManager {
      * @return Tracked logical reads by types since last reset statistics.
      */
     public Map<PageType, Long> logicalReads(StatType statType, String subType) {
-        return extractStat(TRACK_LOGICAL_READS, statType, subType);
+        StatisticsHolder statHolder = statisticsHolders.get(statType).get(subType);
+
+        return (statHolder != null) ? statHolder.logicalReadsMap() : Collections.emptyMap();
     }
 
     /**
-     * @param statType Type of statistics which need to take.
-     * @param subType Subtype of statistics which need to take.
-     * @return Tracked phisycal reads by types since last reset statistics.
+     * @param stat Statistics which need to aggregate.
+     * @return Aggregated statistics for given statistics
      */
-    public Map<PageType, Long> physicalReads(StatType statType, String subType) {
-        return extractStat(TRACK_PHYSICAL_READS, statType, subType);
-    }
+    public Map<AggregatePageType, AtomicLong> aggregate(Map<PageType, ? extends Number> stat) {
+        Map<AggregatePageType, AtomicLong> res = new HashMap<>();
 
-    /**
-     * Extract all tracked logical reads subtypes.
-     *
-     * @param statType Type of statistics which subtypes need to extract.
-     * @return Set of present subtypes for given statType.
-     */
-    public Set<String> subTypesLogicalReads(StatType statType) {
-        return extractSubTypes(TRACK_LOGICAL_READS, statType);
-    }
+        for (AggregatePageType type : AggregatePageType.values())
+            res.put(type, new AtomicLong());
 
-    /**
-     * Extract all tracked physical reads subtypes.
-     *
-     * @param statType Type of statistics which subtypes need to extract.
-     * @return Set of present subtypes for given statType.
-     */
-    public Set<String> subTypesPhysicalReads(StatType statType) {
-        return extractSubTypes(TRACK_PHYSICAL_READS, statType);
-    }
-
-    /**
-     * Extract all present subtypes.
-     *
-     * @param statMap Map with full statistics.
-     * @param statType Type of statistics which subtypes need to extract.
-     * @return Set of present subtypes for given statType
-     */
-    @SuppressWarnings({"unchecked"})
-    private Set<String> extractSubTypes(Map<StatType, Map<PageType, Map<String, LongAdder>>> statMap,
-        StatType statType) {
-        assert statType != null;
-
-        Set<String> res = new HashSet<>();
-
-        for (Map<String, LongAdder> value : statMap.get(statType).values())
-            res.addAll(value.keySet());
+        stat.forEach((k, v) -> res.get(AggregatePageType.aggregate(k)).addAndGet(v.longValue()));
 
         return res;
     }
 
     /**
-     * Extract statistics.
-     *
-     * @param statMap Map with full statistics.
-     * @param statType Type of statistics which need to be extracted.
-     * @param subtype Subtype of statistics which need to be extracted.
-     * @return Extracted statistics.
+     * @return Tracked local node logical reads by types since last reset statistics.
      */
-    private Map<PageType, Long> extractStat(Map<StatType, Map<PageType, Map<String, LongAdder>>> statMap,
-        StatType statType, String subtype) {
-        Map<PageType, Long> stat = new HashMap<>();
+    public Map<PageType, ? extends Number> logicalReadsLocalNode() {
+        return readsLocalNode(StatisticsHolder::logicalReadsMap);
+    }
 
-        for (Map.Entry<PageType, Map<String, LongAdder>> entry : statMap.get(statType).entrySet()) {
-            LongAdder cntr = entry.getValue().get(subtype);
+    /**
+     * @return Tracked local node physical reads by types since last reset statistics.
+     */
+    public Map<PageType, ? extends Number> physicalReadsLocalNode() {
+        return readsLocalNode(StatisticsHolder::physicalReadsMap);
+    }
 
-            if (cntr != null)
-                stat.put(entry.getKey(), cntr.longValue());
-        }
+    /**
+     * @param deriveStatFunc Function to derive statistics.
+     * @return Tracked local node reads by types since last reset statistics.
+     */
+    private Map<PageType, ? extends Number> readsLocalNode(
+        Function<StatisticsHolder, Map<PageType, Long>> deriveStatFunc) {
+        Map<PageType, AtomicLong> res = new EnumMap<>(PageType.class);
 
-        return stat;
+        statisticsHolders.forEach((t, h) -> h.values().forEach(v -> {
+            for (Map.Entry<PageType, Long> entry : deriveStatFunc.apply(v).entrySet()) {
+                PageType key = entry.getKey();
+
+                Long val = entry.getValue();
+
+                res.computeIfAbsent(key, (k) -> new AtomicLong()).addAndGet(val);
+            }
+        }));
+
+        return res;
     }
 }

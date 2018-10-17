@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.stat.GridIoStatManager;
 import org.apache.ignite.internal.stat.StatOperationType;
 import org.apache.ignite.internal.stat.StatType;
+import org.apache.ignite.internal.stat.StatisticsHolder;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -158,6 +159,10 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             AtomicInteger maxCalculatedInlineSize = new AtomicInteger();
 
+            GridIoStatManager ioStatMngr = cctx.kernalContext().ioStats();
+
+            StatisticsHolder statHldr = ioStatMngr.createAndRegisterStatHolder(StatType.INDEX, idxName);
+
             for (int i = 0; i < segments.length; i++) {
                 db.checkpointReadLock();
 
@@ -186,7 +191,8 @@ public class H2TreeIndex extends GridH2IndexBase {
                         cctx.mvccEnabled(),
                         rowCache,
                         cctx.kernalContext().failure(),
-                        log) {
+                        log,
+                        statHldr) {
                         @Override public int compareValues(Value v1, Value v2) {
                             return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
                         }
@@ -254,8 +260,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         assert upper == null || upper instanceof GridH2SearchRow : upper;
 
         try {
-            GridIoStatManager.addCurrentOperationType(statOpType);
-
             int seg = threadLocalSegment();
 
             H2Tree tree = treeForRead(seg);
@@ -274,16 +278,11 @@ public class H2TreeIndex extends GridH2IndexBase {
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
         }
-        finally {
-            GridIoStatManager.removeCurrentOperationType(statOpType);
-        }
     }
 
     /** {@inheritDoc} */
     @Override public GridH2Row put(GridH2Row row) {
         try {
-            GridIoStatManager.addCurrentOperationType(statOpType);
-
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 
             int seg = segmentForRow(row);
@@ -299,16 +298,12 @@ public class H2TreeIndex extends GridH2IndexBase {
         }
         finally {
             InlineIndexHelper.clearCurrentInlineIndexes();
-
-            GridIoStatManager.removeCurrentOperationType(statOpType);
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean putx(GridH2Row row) {
         try {
-            GridIoStatManager.addCurrentOperationType(statOpType);
-
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 
             int seg = segmentForRow(row);
@@ -324,8 +319,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         }
         finally {
             InlineIndexHelper.clearCurrentInlineIndexes();
-
-            GridIoStatManager.removeCurrentOperationType(statOpType);
         }
     }
 
@@ -334,8 +327,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         assert row instanceof GridH2SearchRow : row;
 
         try {
-            GridIoStatManager.addCurrentOperationType(statOpType);
-
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 
             int seg = segmentForRow(row);
@@ -351,8 +342,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         }
         finally {
             InlineIndexHelper.clearCurrentInlineIndexes();
-
-            GridIoStatManager.removeCurrentOperationType(statOpType);
         }
     }
 
@@ -361,8 +350,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         assert row instanceof GridH2SearchRow : row;
 
         try {
-            GridIoStatManager.addCurrentOperationType(statOpType);
-
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 
             int seg = segmentForRow(row);
@@ -378,8 +365,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         }
         finally {
             InlineIndexHelper.clearCurrentInlineIndexes();
-
-            GridIoStatManager.removeCurrentOperationType(statOpType);
         }
     }
 
@@ -397,8 +382,6 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public long getRowCount(Session ses) {
         try {
-            GridIoStatManager.addCurrentOperationType(statOpType);
-
             int seg = threadLocalSegment();
 
             H2Tree tree = treeForRead(seg);
@@ -409,9 +392,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
-        }
-        finally {
-            GridIoStatManager.removeCurrentOperationType(statOpType);
         }
     }
 
@@ -428,8 +408,6 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public Cursor findFirstOrLast(Session session, boolean b) {
         try {
-            GridIoStatManager.addCurrentOperationType(statOpType);
-
             H2Tree tree = treeForRead(threadLocalSegment());
             GridH2QueryContext qctx = GridH2QueryContext.get();
 
@@ -437,9 +415,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
-        }
-        finally {
-            GridIoStatManager.removeCurrentOperationType(statOpType);
         }
     }
 
@@ -478,8 +453,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         @Nullable SearchRow last,
         BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2Row> filter) {
         try {
-            GridIoStatManager.addCurrentOperationType(statOpType);
-
             GridCursor<GridH2Row> range = ((BPlusTree)t).find(first, last, filter, null);
 
             if (range == null)
@@ -489,9 +462,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
-        }
-        finally {
-            GridIoStatManager.removeCurrentOperationType(statOpType);
         }
     }
 
