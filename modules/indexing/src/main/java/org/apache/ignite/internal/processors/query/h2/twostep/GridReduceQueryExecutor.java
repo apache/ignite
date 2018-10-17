@@ -1011,7 +1011,7 @@ public class GridReduceQueryExecutor {
                     throw err;
 
                 if( wasCancelled(err) || X.hasCause(err, QueryCancelledException.class))
-                    throw new QueryCancelledException(r.retryCause());
+                    throw new QueryCancelledException(err.getMessage());
 
                 throw err;
             }

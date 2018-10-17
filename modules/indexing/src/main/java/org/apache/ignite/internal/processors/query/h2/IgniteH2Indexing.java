@@ -1449,8 +1449,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private ResultSet executeSqlQuery(final Connection conn, final PreparedStatement stmt,
         int timeoutMillis, @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
-        final MapQueryLazyWorker lazyWorker = MapQueryLazyWorker.currentWorker();
-
         if (cancel != null) {
             try {
                 cancel.set(new GridQueryCancel.Cancellable() {
