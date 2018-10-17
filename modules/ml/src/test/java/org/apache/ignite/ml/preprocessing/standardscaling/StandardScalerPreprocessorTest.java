@@ -28,7 +28,7 @@ import static org.junit.Assert.assertArrayEquals;
  */
 public class StandardScalerPreprocessorTest {
 
-    /** Test {@code apply()} method*/
+    /** Test {@code apply()} method. */
     @Test
     public void testApply() {
         double[][] inputData = new double[][] {
