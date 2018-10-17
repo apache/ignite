@@ -8681,6 +8681,17 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * When {@code long} value given is positive returns that value, otherwise returns provided default value.
+     *
+     * @param i Input value.
+     * @param dflt Default value.
+     * @return {@code i} if {@code i > 0} and {@code dflt} otherwise.
+     */
+    public static long ensurePositive(long i, long dflt) {
+        return i <= 0 ? dflt : i;
+    }
+
+    /**
      * Gets wrapper class for a primitive type.
      *
      * @param cls Class. If {@code null}, method is no-op.
