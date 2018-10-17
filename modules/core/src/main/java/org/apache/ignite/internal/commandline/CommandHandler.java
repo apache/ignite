@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineNode;
@@ -888,16 +889,16 @@ public class CommandHandler {
                     break;
 
                 default:
-                    StringBuilder sb = new StringBuilder();
+                    SB sb = new SB();
 
-                    sb.append("[");
+                    sb.a("[");
 
                     for (Map.Entry<String, Object> e : map.entrySet())
-                        sb.append(e.getKey()).append("=").append(e.getValue()).append(", ");
+                        sb.a(e.getKey()).a("=").a(e.getValue()).a(", ");
 
                     sb.setLength(sb.length() - 2);
 
-                    sb.append("]");
+                    sb.a("]");
 
                     log(sb.toString());
             }
