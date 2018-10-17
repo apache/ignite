@@ -365,8 +365,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             skipVals,
             needVer,
             false,
-            mvccSnapshot,
-            null);
+            null,
+            mvccSnapshot
+        );
 
         if(mvccTracker != null){
             final MvccQueryTracker mvccTracker0 = mvccTracker;
@@ -452,7 +453,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean needVer,
         boolean keepCacheObj,
         boolean recovery,
-        @Nullable MvccSnapshot mvccSnapshot.
+        @Nullable MvccSnapshot mvccSnapshot,
         @Nullable String txLbl
     ) {
         GridPartitionedSingleGetFuture fut = new GridPartitionedSingleGetFuture(ctx,
