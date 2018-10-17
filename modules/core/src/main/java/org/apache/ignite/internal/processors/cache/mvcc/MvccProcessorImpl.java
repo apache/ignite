@@ -429,7 +429,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         }
 
         for (Long txCntr : forRmv)
-            // Committed counter is increased because t0d0
+            // Committed counter is increased because it is not known if transaction was committed or not and we must
+            // bump committed counter for committed transaction as it is used in (read-only) query snapshot.
             onTxDone(txCntr, true);
     }
 
@@ -1899,7 +1900,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                     .collect(Collectors.toList());
             }
 
-            // Committed counter is increased because t0d0
+            // Committed counter is increased because it is not known if transaction was committed or not and we must
+            // bump committed counter for committed transaction as it is used in (read-only) query snapshot.
             recoveredTxs.forEach(txCntr -> onTxDone(txCntr, true));
 
             recoveryBallotBoxes.remove(nearNodeId);
