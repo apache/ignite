@@ -2470,6 +2470,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** */
     public boolean affinityChanged(AffinityTopologyVersion from, AffinityTopologyVersion to) {
+        if (lastAffinityChangedTopologyVersion(to).compareTo(from) >= 0)
+            return false;
+
         Collection<GridDhtPartitionsExchangeFuture> history = exchFuts.values();
 
         boolean fromFound = false;
