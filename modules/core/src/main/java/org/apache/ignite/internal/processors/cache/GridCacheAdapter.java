@@ -6322,7 +6322,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Delayed callable class.
      */
-    public static abstract class TopologyVersionAwareJob extends ComputeJobAdapter {
+    public abstract static class TopologyVersionAwareJob extends ComputeJobAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 

@@ -49,7 +49,7 @@ public interface DbCheckpointListener {
         /**
          * @return Context executor.
          */
-        public @Nullable Executor executor();
+        @Nullable public Executor executor();
     }
 
     /**
