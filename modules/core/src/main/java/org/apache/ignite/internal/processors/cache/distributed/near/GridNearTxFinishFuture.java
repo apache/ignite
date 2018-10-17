@@ -357,29 +357,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                 }
 
                 if (super.onDone(tx0, err)) {
-                    if (error() instanceof IgniteTxHeuristicCheckedException && !nodeStop) {
-                        AffinityTopologyVersion topVer = tx.topologyVersion();
-
-                        for (IgniteTxEntry e : tx.writeMap().values()) {
-                            GridCacheContext cacheCtx = e.context();
-
-                            try {
-                                if (e.op() != NOOP && !cacheCtx.affinity().keyLocalNode(e.key(), topVer)) {
-                                    GridCacheEntryEx entry = cacheCtx.cache().peekEx(e.key());
-
-                                    if (entry != null)
-                                        entry.invalidate(tx.xidVersion());
-                                }
-                            }
-                            catch (Throwable t) {
-                                U.error(log, "Failed to invalidate entry.", t);
-
-                                if (t instanceof Error)
-                                    throw (Error)t;
-                            }
-                        }
-                    }
-
                     // Don't forget to clean up.
                     cctx.mvcc().removeFuture(futId);
 

@@ -170,26 +170,14 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     public void rollbackOnError(Throwable e) {
         assert e != null;
 
-        log.error("<<<DBG>>: rollbackOnError", e);
-
         if (ERR_UPD.compareAndSet(this, null, e)) {
             tx.setRollbackOnly();
 
-            boolean b1 = X.hasCause(e, NodeStoppingException.class);
-            boolean b2 = cctx.kernalContext().failure().nodeStopping();
-
-            log.info("<<<DBG>>: b1=" + b1 + ", b2=" + b2);
-
-            if (b1 || b2) {
-                log.info("<<<DBG>>: onComplete");
-
+            if (X.hasCause(e, NodeStoppingException.class) || cctx.kernalContext().failure().nodeStopping())
                 onComplete();
-            }
             else {
                 // Rolling back a remote transaction may result in partial commit.
-                // Will be here only if no-op failure handler is set.
-                log.info("<<<DBG>>: finish");
-
+                // This is only acceptable in tests with no-op failure handler.
                 finish(false);
             }
         }
