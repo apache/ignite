@@ -14,7 +14,7 @@ public class CompressPorcessorImpl extends CompressProcessor {
     /** */
     private final ThreadLocal<ByteBuffer> tmp = new ThreadLocal<ByteBuffer>() {
         @Override protected ByteBuffer initialValue() {
-            return ByteBuffer.allocateDirect(64 * 1024);
+            return ByteBuffer.allocateDirect(32 * 1024);
         }
 
         @Override public ByteBuffer get() {
@@ -147,5 +147,8 @@ public class CompressPorcessorImpl extends CompressProcessor {
         CompactablePageIO io = PageIO.getPageIO(page);
 
         io.restorePage(page, pageSize);
+
+        PageIO.setCompressionType(page, (byte)0);
+        PageIO.setCompressedSize(page, (short)0);
     }
 }
