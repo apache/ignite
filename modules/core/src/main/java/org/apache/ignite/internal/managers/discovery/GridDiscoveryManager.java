@@ -134,6 +134,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.DiscoverySpiMutableCustomMessageSupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
+import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.thread.IgniteThread;
@@ -1569,24 +1570,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * @param regCfg Data region configuration.
-     * @return Data region message.
-     */
-    private String dataRegionConfigurationMessage(DataRegionConfiguration regCfg) {
-        if (regCfg == null)
-            return null;
-
-        SB m = new SB();
-
-        m.a("  ^-- ").a(regCfg.getName()).a(" [");
-        m.a("initSize=").a(U.readableSize(regCfg.getInitialSize(), false));
-        m.a(", maxSize=").a(U.readableSize(regCfg.getMaxSize(), false));
-        m.a(", persistenceEnabled=" + regCfg.isPersistenceEnabled()).a(']');
-
-        return m.toString();
-    }
-
-    /**
      * @param clo Wrapper of logger.
      * @param topVer Topology version.
      * @param discoCache Discovery cache.
@@ -1601,10 +1584,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private void topologySnapshotMessage(IgniteClosure<String, Void> clo, long topVer, DiscoCache discoCache,
         int evtType, ClusterNode evtNode, int srvNodesNum, int clientNodesNum, int totalCpus, double heap,
         double offheap) {
+        DiscoveryDataClusterState state = discoCache.state();
+
         String summary = PREFIX + " [" +
             (discoOrdered ? "ver=" + topVer + ", " : "") +
-            "servers=" + srvNodesNum +
+            "locNode=" + U.id8(discoCache.localNode().id()) +
+            ", servers=" + srvNodesNum +
             ", clients=" + clientNodesNum +
+            ", state=" + (state.active() ? "ACTIVE" : "INACTIVE") +
             ", CPUs=" + totalCpus +
             ", offheap=" + offheap + "GB" +
             ", heap=" + heap + "GB]";
@@ -1616,11 +1603,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         if ((evtType == EventType.EVT_NODE_FAILED || evtType == EventType.EVT_NODE_LEFT) &&
                 currCrd != null && currCrd.order() > evtNode.order())
             clo.apply("Coordinator changed [prev=" + evtNode + ", cur=" + currCrd + "]");
-
-        DiscoveryDataClusterState state = discoCache.state();
-
-        clo.apply("  ^-- Node [id=" + discoCache.localNode().id().toString().toUpperCase() + ", clusterState="
-            + (state.active() ? "ACTIVE" : "INACTIVE") + ']');
 
         BaselineTopology blt = state.baselineTopology();
 
@@ -1649,25 +1631,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
                 else
                     clo.apply("  ^-- " + bltOffline + " nodes left for auto-activation" + offlineConsistentIds);
-            }
-        }
-
-        DataStorageConfiguration memCfg = ctx.config().getDataStorageConfiguration();
-
-        if (memCfg == null)
-            return;
-
-        clo.apply("Data Regions Configured:");
-        clo.apply(dataRegionConfigurationMessage(memCfg.getDefaultDataRegionConfiguration()));
-
-        DataRegionConfiguration[] dataRegions = memCfg.getDataRegionConfigurations();
-
-        if (dataRegions != null) {
-            for (int i = 0; i < dataRegions.length; ++i) {
-                String msg = dataRegionConfigurationMessage(dataRegions[i]);
-
-                if (msg != null)
-                    clo.apply(msg);
             }
         }
     }
@@ -2674,7 +2637,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /**
      *
      */
-    private class DiscoveryMessageNotifierWorker extends GridWorker {
+    private class DiscoveryMessageNotifierWorker extends GridWorker implements IgniteDiscoveryThread {
         /** Queue. */
         private final BlockingQueue<T2<GridFutureAdapter, Runnable>> queue = new LinkedBlockingQueue<>();
 

@@ -16,49 +16,14 @@
 # limitations under the License.
 #
 
-# Check JAVA_HOME.
-if [ "$JAVA_HOME" = "" ]; then
-    JAVA=`type -p java`
-    RETCODE=$?
+SOURCE=$(dirname "$0")
 
-    if [ $RETCODE -ne 0 ]; then
-        echo $0", ERROR:"
-        echo "JAVA_HOME environment variable is not found."
-        echo "Please point JAVA_HOME variable to location of JDK 1.7 or JDK 1.8."
-        echo "You can also download latest JDK at http://java.com/download"
-
-        exit 1
-    fi
-
-    JAVA_HOME=
-else
-    JAVA=${JAVA_HOME}/bin/java
-fi
+source "${SOURCE}"/include/functions.sh
 
 #
-# Check JDK.
+# Discover path to Java executable and check it's version.
 #
-if [ ! -e "$JAVA" ]; then
-    echo $0", ERROR:"
-    echo "JAVA is not found in JAVA_HOME=$JAVA_HOME."
-    echo "Please point JAVA_HOME variable to installation of JDK 1.7 or JDK 1.8."
-    echo "You can also download latest JDK at http://java.com/download"
-
-    exit 1
-fi
-
-JAVA_VER=`"$JAVA" -version 2>&1 | egrep "1\.[78]\."`
-
-if [ "$JAVA_VER" == "" ]; then
-    echo $0", ERROR:"
-    echo "The version of JAVA installed in JAVA_HOME=$JAVA_HOME is incorrect."
-    echo "Please point JAVA_HOME variable to installation of JDK 1.7 or JDK 1.8."
-    echo "You can also download latest JDK at http://java.com/download"
-
-    exit 1
-fi
-
-SOURCE="${BASH_SOURCE[0]}"
+checkJava
 
 #
 # Set IGNITE_HOME.
@@ -87,12 +52,46 @@ cd $DIR
 #
 if [ -z "$JVM_OPTS" ] ; then
     if [[ `"$JAVA" -version 2>&1 | egrep "1\.[7]\."` ]]; then
-        JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxPermSize=256m"
+        JVM_OPTS="-Xms1g -Xmx1g -server -XX:MaxPermSize=256m"
     else
-        JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxMetaspaceSize=256m"
+        JVM_OPTS="-Xms1g -Xmx1g -server -XX:MaxMetaspaceSize=256m"
     fi
 fi
 
 JVM_OPTS="${JVM_OPTS} -Djava.net.useSystemProxies=true"
+
+#
+# Final JVM_OPTS for Java 9+ compatibility
+#
+javaMajorVersion "${JAVA_HOME}/bin/java"
+
+if [ $version -eq 8 ] ; then
+    JVM_OPTS="\
+        -XX:+AggressiveOpts \
+         ${JVM_OPTS}"
+
+elif [ $version -gt 8 ] && [ $version -lt 11 ]; then
+    JVM_OPTS="\
+        -XX:+AggressiveOpts \
+        --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
+        --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
+        --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
+        --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
+        --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
+        --illegal-access=permit \
+        --add-modules=java.transaction \
+        --add-modules=java.xml.bind \
+        ${JVM_OPTS}"
+
+elif [ $version -eq 11 ] ; then
+    JVM_OPTS="\
+        --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
+        --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
+        --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
+        --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
+        --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
+        --illegal-access=permit \
+        ${JVM_OPTS}"
+fi
 
 "$JAVA" ${JVM_OPTS} -cp "*" org.apache.ignite.console.agent.AgentLauncher "$@"
