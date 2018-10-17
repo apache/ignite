@@ -161,7 +161,7 @@ public class IoStatBasicIndexTest extends GridCommonAbstractTest {
     private void checkStat() {
         GridIoStatManager ioStat = grid().context().ioStats();
 
-        Set<String> statIndexes = ioStat.subTypesLogicalReads(StatType.INDEX);
+        Set<String> statIndexes = ioStat.subTypes(StatType.INDEX);
 
         Assert.assertEquals(indexes.size() + 1, statIndexes.size());
 

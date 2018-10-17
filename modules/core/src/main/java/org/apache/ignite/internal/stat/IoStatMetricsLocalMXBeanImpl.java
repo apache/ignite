@@ -27,8 +27,6 @@ import java.util.function.BiFunction;
 import org.apache.ignite.mxbean.IoStatMetricsMXBean;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.internal.stat.GridIoStatManager.KEY_FOR_LOCAL_NODE_STAT;
-
 /**
  * JMX bean to expose local node IO statistics.
  */
@@ -59,11 +57,6 @@ public class IoStatMetricsLocalMXBeanImpl implements IoStatMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Long> getPhysicalWrites() {
-        return convertStat(statMgr.physicalWritesLocalNode());
-    }
-
-    /** {@inheritDoc} */
     @Override public Map<String, Long> getLogicalReads() {
         return convertStat(statMgr.logicalReadsLocalNode());
     }
@@ -76,13 +69,6 @@ public class IoStatMetricsLocalMXBeanImpl implements IoStatMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Long> getAggregatedPhysicalWrites() {
-        Map<AggregatePageType, AtomicLong> aggregatedStat = statMgr.aggregate(statMgr.physicalWritesLocalNode());
-
-        return convertAggregatedStat(aggregatedStat);
-    }
-
-    /** {@inheritDoc} */
     @Override public Map<String, Long> getAggregatedLogicalReads() {
         Map<AggregatePageType, AtomicLong> aggregatedStat = statMgr.aggregate(statMgr.logicalReadsLocalNode());
 
@@ -90,13 +76,13 @@ public class IoStatMetricsLocalMXBeanImpl implements IoStatMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public Set<String> getLogicalReadsStatIndexesNames() {
-        return statMgr.subTypesLogicalReads(StatType.INDEX);
+    @Override public Set<String> getStatIndexesNames() {
+        return statMgr.subTypes(StatType.INDEX);
     }
 
     /** {@inheritDoc} */
-    @Override public Set<String> getPhysicalReadsStatIndexesNames() {
-        return statMgr.subTypesPhysicalReads(StatType.INDEX);
+    @Override public Set<String> getStatCachesNames() {
+        return statMgr.subTypes(StatType.CACHE);
     }
 
     /** {@inheritDoc} */
@@ -134,14 +120,7 @@ public class IoStatMetricsLocalMXBeanImpl implements IoStatMetricsMXBean {
         BiFunction<StatType, String, Map<PageType, Long>> statFunction) {
         StatType type = StatType.valueOf(statTypeName);
 
-        String subType;
-
-        if (type == StatType.LOCAL_NODE)
-            subType = KEY_FOR_LOCAL_NODE_STAT;
-        else
-            subType = subTypeFilter;
-
-        Map<PageType, Long> stat = statFunction.apply(type, subType);
+        Map<PageType, Long> stat = statFunction.apply(type, subTypeFilter);
 
         if (aggregate)
             return convertAggregatedStat(statMgr.aggregate(stat));
@@ -155,12 +134,12 @@ public class IoStatMetricsLocalMXBeanImpl implements IoStatMetricsMXBean {
      * @param stat Statistics which need to convert.
      * @return Converted statistics from internal.
      */
-    @NotNull private Map<String, Long> convertStat(Map<PageType, Long> stat) {
+    @NotNull private Map<String, Long> convertStat(Map<PageType, ? extends Number> stat) {
         Map<String, Long> res = new HashMap<>(stat.size());
 
         stat.forEach((k, v) -> {
-            if (v != 0)
-                res.put(k.name(), v);
+            if (v.longValue() != 0)
+                res.put(k.name(), v.longValue());
         });
 
         return res;

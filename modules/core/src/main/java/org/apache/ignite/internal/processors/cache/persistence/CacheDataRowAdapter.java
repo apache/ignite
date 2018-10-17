@@ -143,7 +143,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
             int grpId = grp != null ? grp.groupId() : 0;
 
-            final long page = pageMem.acquirePage(grpId, pageId);
+            final long page = pageMem.acquirePage(grpId, pageId, grp.statisticsHolder());
 
             try {
                 long pageAddr = pageMem.readLock(grpId, pageId, page); // Non-empty data page must not be recycled.

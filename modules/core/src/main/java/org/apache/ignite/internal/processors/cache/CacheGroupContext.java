@@ -39,15 +39,17 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.stat.StatType;
+import org.apache.ignite.internal.stat.StatisticsHolder;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -159,6 +161,9 @@ public class CacheGroupContext {
     /** */
     private volatile boolean globalWalEnabled;
 
+    /** Statistics holder to track IO operations. */
+    private final StatisticsHolder statisticsHolder;
+
     /**
      * @param ctx Context.
      * @param grpId Group ID.
@@ -223,6 +228,8 @@ public class CacheGroupContext {
         caches = new ArrayList<>();
 
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
+
+        statisticsHolder = ctx.kernalContext().ioStats().createAndRegisterStatHolder(StatType.CACHE, ccfg.getName());
     }
 
     /**
@@ -1099,5 +1106,12 @@ public class CacheGroupContext {
      */
     private void persistLocalWalState(boolean enabled) {
         shared().database().walEnabled(grpId, enabled, true);
+    }
+
+    /**
+     * @return Statistics holder to track cache IO operations.
+     */
+    public StatisticsHolder statisticsHolder() {
+        return statisticsHolder;
     }
 }

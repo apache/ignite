@@ -24,6 +24,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.stat.StatisticsHolder;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.jetbrains.annotations.Nullable;
 
@@ -84,7 +85,8 @@ public interface PageMemoryEx extends PageMemory {
      * @throws StorageException If page reading failed from storage.
      * @return Page.
      */
-    public long acquirePage(int grpId, long pageId, boolean restore) throws IgniteCheckedException;
+    public long acquirePage(int grpId, long pageId, StatisticsHolder statHldr,
+        boolean restore) throws IgniteCheckedException;
 
     /**
      * Heuristic method which allows a thread to check if it safe to start memory struture modifications

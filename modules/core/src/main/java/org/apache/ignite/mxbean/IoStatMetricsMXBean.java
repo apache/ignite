@@ -98,12 +98,6 @@ public interface IoStatMetricsMXBean {
     public Map<String, Long> getPhysicalReads();
 
     /**
-     * @return Number of physical writes splitted by type.
-     */
-    @MXBeanDescription("Physical writes statistics.")
-    public Map<String, Long> getPhysicalWrites();
-
-    /**
      * @return Number of logical reads splitted by type.
      */
     @MXBeanDescription("Logical reads IO statistics.")
@@ -116,28 +110,22 @@ public interface IoStatMetricsMXBean {
     public Map<String, Long> getAggregatedPhysicalReads();
 
     /**
-     * @return Number of physical writes splitted by aggregated types.
-     */
-    @MXBeanDescription("Aggregated physical writes IO statistics.")
-    public Map<String, Long> getAggregatedPhysicalWrites();
-
-    /**
      * @return Number of logical reads splitted by aggregated types.
      */
     @MXBeanDescription("Aggregated logical reads IO statistics.")
     public Map<String, Long> getAggregatedLogicalReads();
 
     /**
-     * @return Names of indexes which have logical reads IO statistics.
+     * @return Names of indexes which have IO statistics.
      */
-    @MXBeanDescription("Name of indexes which have logical reads IO statistics.")
-    public Set<String> getLogicalReadsStatIndexesNames();
+    @MXBeanDescription("Name of indexes which have IO statistics.")
+    public Set<String> getStatIndexesNames();
 
     /**
-     * @return Names of indexes which have physical reads IO statistics.
+     * @return Names of caches which have IO statistics.
      */
-    @MXBeanDescription("Name of indexes which have physical reads IO statistics.")
-    public Set<String> getPhysicalReadsStatIndexesNames();
+    @MXBeanDescription("Name of caches which have IO statistics.")
+    public Set<String> getStatCachesNames();
 
     /**
      * @param idxName Name of index.
