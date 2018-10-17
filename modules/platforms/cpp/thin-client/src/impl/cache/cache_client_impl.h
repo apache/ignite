@@ -203,6 +203,17 @@ namespace ignite
                     void LocalPeek(const WritableKey& key, Readable& value);
 
                     /**
+                     * Associates the specified value with the specified key in this cache, returning an existing value
+                     * if one existed.
+                     *
+                     * @param key Key with which the specified value is to be associated.
+                     * @param valIn Value to be associated with the specified key.
+                     * @param valOut The value associated with the key at the start of the operation or null if none
+                     *     was associated.
+                     */
+                    void GetAndPut(const WritableKey& key, const Writable& valIn, Readable& valOut);
+
+                    /**
                      * Update cache partitions info.
                      */
                     void RefreshAffinityMapping();

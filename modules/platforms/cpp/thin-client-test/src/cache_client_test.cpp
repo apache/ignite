@@ -1221,6 +1221,8 @@ BOOST_AUTO_TEST_CASE(CacheClientGetAndPutComplexValue)
     valIn2.objField.f2 = "Lorem";
 
     ignite::ComplexType valOut;
+
+    cache.Put(key, valIn1);
     cache.GetAndPut(key, valIn2, valOut);
 
     BOOST_CHECK_EQUAL(valIn1.i32Field, valOut.i32Field);
