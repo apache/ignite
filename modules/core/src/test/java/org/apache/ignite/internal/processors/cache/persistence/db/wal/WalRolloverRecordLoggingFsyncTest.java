@@ -24,7 +24,6 @@ import org.jetbrains.annotations.NotNull;
  *
  */
 public class WalRolloverRecordLoggingFsyncTest extends WalRolloverRecordLoggingTest {
-
     /** {@inheritDoc} */
     @NotNull @Override public WALMode walMode() {
         return WALMode.FSYNC;

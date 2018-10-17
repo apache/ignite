@@ -24,7 +24,6 @@ import org.jetbrains.annotations.NotNull;
  *
  */
 public class WalRolloverRecordLoggingLogOnlyTest extends WalRolloverRecordLoggingTest {
-
     /** {@inheritDoc} */
     @NotNull @Override public WALMode walMode() {
         return WALMode.LOG_ONLY;

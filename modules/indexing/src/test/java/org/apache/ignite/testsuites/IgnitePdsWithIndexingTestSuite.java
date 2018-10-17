@@ -38,15 +38,6 @@ public class IgnitePdsWithIndexingTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Db Memory Leaks With Indexing Test Suite");
 
-        suite.addTestSuite(IgniteDbSingleNodeWithIndexingWalRestoreTest.class);
-        suite.addTestSuite(IgniteDbSingleNodeWithIndexingPutGetTest.class);
-        suite.addTestSuite(IgniteDbMultiNodeWithIndexingPutGetTest.class);
-        suite.addTestSuite(IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest.class);
-        suite.addTestSuite(IgnitePdsSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest.class);
-        suite.addTestSuite(IgnitePersistentStoreSchemaLoadTest.class);
-        suite.addTestSuite(IgnitePersistentStoreQueryWithMultipleClassesPerCacheTest.class);
-        suite.addTestSuite(IgniteTwoRegionsRebuildIndexTest.class);
-
         return suite;
     }
 }
