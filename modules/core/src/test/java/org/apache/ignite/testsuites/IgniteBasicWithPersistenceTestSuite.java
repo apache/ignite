@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.failure.FailureHandlingConfigurationTest;
 import org.apache.ignite.failure.IoomFailureHandlerTest;
 import org.apache.ignite.failure.SystemWorkersTerminationTest;
 import org.apache.ignite.internal.ClusterBaselineNodesMetricsSelfTest;
@@ -59,6 +60,7 @@ public class IgniteBasicWithPersistenceTestSuite extends TestSuite {
         suite.addTestSuite(ServiceDeploymentOutsideBaselineTest.class);
         suite.addTestSuite(GridMarshallerMappingConsistencyTest.class);
         suite.addTestSuite(SystemWorkersTerminationTest.class);
+        suite.addTestSuite(FailureHandlingConfigurationTest.class);
 
         suite.addTestSuite(GridCommandHandlerTest.class);
         suite.addTestSuite(GridCommandHandlerSslTest.class);
