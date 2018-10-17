@@ -43,15 +43,15 @@ public class StandardScalerTrainer<K, V> implements PreprocessingTrainer<K, V, V
         double[] mean = new double[n];
         double[] sigma = new double[n];
 
-        // Var = (SumSq − (Sum * Sum) / N) / N
         for (int i = 0; i < n; i++) {
             mean[i] = sumHelper.sum[i] / count;
-            double variace = (sumHelper.squaredSum[i] - sumHelper.sum[i] * sumHelper.sum[i] / count) / count;
+            double variace = (sumHelper.squaredSum[i] - Math.pow(sumHelper.sum[i], 2) / count) / count;
             sigma[i] = Math.sqrt(variace);
         }
         return new StandardScalerPreprocessor<>(mean, sigma, basePreprocessor);
     }
 
+    /** Computes sum, squared sum and row count. */
     private SumHelper computeSum(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> basePreprocessor) {
         try (Dataset<EmptyContext, SumHelper> dataset = datasetBuilder.build(
@@ -100,17 +100,29 @@ public class StandardScalerTrainer<K, V> implements PreprocessingTrainer<K, V, V
         }
     }
 
+    /** A Service class which used for sums holing. */
     private static class SumHelper implements AutoCloseable {
+        /** Sum values of every feature. */
         double[] sum;
+        /** Sum of squared values of every feature. */
         double[] squaredSum;
+        /** Rows count */
         long count;
 
+        /**
+         * Creates {@code SumHelper}.
+         *
+         * @param sum Sum values of every feature.
+         * @param squaredSum Sum of squared values of every feature.
+         * @param count Rows count.
+         */
         public SumHelper(double[] sum, double[] squaredSum, long count) {
             this.sum = sum;
             this.squaredSum = squaredSum;
             this.count = count;
         }
 
+        /** Merges to current. */
         SumHelper merge(SumHelper that) {
             for (int i = 0; i < sum.length; i++) {
                 sum[i] += that.sum[i];

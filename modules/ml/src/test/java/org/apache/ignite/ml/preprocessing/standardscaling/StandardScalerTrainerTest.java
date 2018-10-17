@@ -33,11 +33,14 @@ import static org.junit.Assert.assertArrayEquals;
  * Tests for {@link StandardScalerTrainer}.
  */
 public class StandardScalerTrainerTest extends TrainerTest {
-    /** Tests {@code fit()} method. */
 
+    /** Data. */
     private DatasetBuilder<Integer, Vector> datasetBuilder;
+
+    /** Trainer to be tested. */
     private StandardScalerTrainer<Integer, Vector> standardizationTrainer;
 
+    /** */
     @Before
     public void prepareDataset() {
         Map<Integer, Vector> data = new HashMap<>();
@@ -48,13 +51,15 @@ public class StandardScalerTrainerTest extends TrainerTest {
         datasetBuilder = new LocalDatasetBuilder<>(data, parts);
     }
 
+    /** */
     @Before
     public void createTrainver() {
         standardizationTrainer = new StandardScalerTrainer<>();
     }
 
+    /** Test {@code fit()} method. */
     @Test
-    public void fit_countsCorrectMeans() {
+    public void testCountsCorrectMeans() {
         double[] expectedMeans = new double[] {0.5, 1.75, 4.5, 0.875};
 
         StandardScalerPreprocessor<Integer, Vector> preprocessor = standardizationTrainer.fit(
@@ -65,8 +70,9 @@ public class StandardScalerTrainerTest extends TrainerTest {
         assertArrayEquals(expectedMeans, preprocessor.getMeans(), 1e-8);
     }
 
+    /** Test {@code fit()} method. */
     @Test
-    public void fit_countsCorrectStandardDeviations() {
+    public void testCountsCorrectStandardDeviations() {
         double[] expectedSigmas = new double[] {0.5, 1.47901995, 14.51723114, 0.93374247};
 
         StandardScalerPreprocessor<Integer, Vector> preprocessor = standardizationTrainer.fit(
