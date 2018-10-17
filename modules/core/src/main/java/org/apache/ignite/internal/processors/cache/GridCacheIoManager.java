@@ -224,6 +224,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 AffinityTopologyVersion rmtAffVer = cacheMsg.topologyVersion();
                 AffinityTopologyVersion lastAffChangedVer = cacheMsg.lastAffinityChangedTopologyVersion();
 
+                cctx.exchange().lastAffinityChangedTopologyVersion(rmtAffVer, lastAffChangedVer);
+
                 if (locAffVer.compareTo(lastAffChangedVer) < 0) {
                     IgniteLogger log = cacheMsg.messageLogger(cctx);
 
