@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -97,7 +98,12 @@ public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbs
         cfg.setIncludeEventTypes(EventType.EVTS_DISCOVERY);
 
         BlockTcpDiscoverySpi spi = new BlockTcpDiscoverySpi();
-        spi.skipAddressesRandomization = true;
+
+        Field rndAddrsField = U.findField(BlockTcpDiscoverySpi.class, "skipAddrsRandomization");
+
+        assertNotNull(rndAddrsField);
+
+        rndAddrsField.set(spi, true);
 
         cfg.setDiscoverySpi(spi.setIpFinder(ipFinder));
 
