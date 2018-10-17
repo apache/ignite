@@ -287,7 +287,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
             startVacuumWorkers();
 
-            log.info("Mvcc processor started.");
+            if (log.isInfoEnabled())
+                log.info("Mvcc processor started.");
         }
     }
 
@@ -380,8 +381,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
             crdVer = crd.coordinatorVersion();
 
-            log.info("Initialize local node as mvcc coordinator [node=" + ctx.localNodeId() +
-                ", crdVer=" + crdVer + ']');
+            if (log.isInfoEnabled())
+                log.info("Initialize local node as mvcc coordinator [node=" + ctx.localNodeId() +
+                    ", crdVer=" + crdVer + ']');
 
             prevCrdQueries.init(activeQueries, F.view(discoCache.allNodes(), this::supportsMvcc), ctx.discovery());
 
@@ -429,15 +431,15 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public byte state(long crdVer, long cntr) throws IgniteCheckedException {
-        return txLog.get(crdVer, cntr);
+    @Override public byte state(MvccVersion ver) throws IgniteCheckedException {
+        return state(ver.coordinatorVersion(), ver.counter());
     }
 
     /** {@inheritDoc} */
-    @Override public byte state(MvccVersion ver) throws IgniteCheckedException {
+    @Override public byte state(long crdVer, long cntr) throws IgniteCheckedException {
         assert txLog != null && mvccEnabled;
 
-        return txLog.get(ver.coordinatorVersion(), ver.counter());
+        return txLog.get(crdVer, cntr);
     }
 
     /** {@inheritDoc} */
@@ -1954,7 +1956,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
      */
     private static class VacuumScheduler extends GridWorker {
         /** */
-        private final static long VACUUM_TIMEOUT = 60_000;
+        private static final long VACUUM_TIMEOUT = 60_000;
 
         /** */
         private final long interval;
