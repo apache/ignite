@@ -1652,6 +1652,30 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    public void testFastInsertUpdateConcurrent() throws Exception {
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        Ignite ignite = startGridsMultiThreaded(4);
+
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < 1000; i++) {
+            int key = i;
+            CompletableFuture.allOf(
+                CompletableFuture.runAsync(() -> {
+                    cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, ?)").setArgs(key, key));
+                }),
+                CompletableFuture.runAsync(() -> {
+                    cache.query(new SqlFieldsQuery("update Integer set _val = ? where _key = ?").setArgs(key, key));
+                })
+            ).join();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testIterator() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);

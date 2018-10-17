@@ -246,6 +246,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         System.setProperty("h2.serializeJavaObject", "false");
         System.setProperty("h2.objectCacheMaxPerElementSize", "0"); // Avoid ValueJavaObject caching.
         System.setProperty("h2.optimizeTwoEquals", "false"); // Makes splitter fail on subqueries in WHERE.
+        System.setProperty("h2.dropRestrict", "false"); // Drop schema with cascade semantics.
     }
 
     /** Default DB options. */
@@ -1457,6 +1458,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (timeoutMillis > 0)
             ses.setQueryTimeout(timeoutMillis);
+        else
+            ses.setQueryTimeout(0);
 
         try {
             return stmt.executeQuery();
@@ -1467,10 +1470,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 throw new QueryCancelledException();
 
             throw new IgniteCheckedException("Failed to execute SQL query. " + e.getMessage(), e);
-        }
-        finally {
-            if (timeoutMillis > 0)
-                ses.setQueryTimeout(0);
         }
     }
 
