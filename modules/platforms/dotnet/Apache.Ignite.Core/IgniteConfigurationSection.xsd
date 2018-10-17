@@ -1863,6 +1863,13 @@
                                 <xs:documentation>Inactivity time after which to run WAL segment auto archiving.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="checkpointReadLockTimeout" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    Timeout for checkpoint read lock acquisition.
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="sslContextFactory" minOccurs="0">
@@ -2147,6 +2154,13 @@
                 <xs:annotation>
                     <xs:documentation>
                         Failure detection timeout used by discovery and communication subsystems.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="systemWorkerBlockedTimeout" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>
+                        Timeout for blocked system workers detection.
                     </xs:documentation>
                 </xs:annotation>
             </xs:attribute>

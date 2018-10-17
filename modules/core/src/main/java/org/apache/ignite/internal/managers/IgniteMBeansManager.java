@@ -36,10 +36,12 @@ import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMXBeanImpl;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.worker.FailureHandlingMxBeanImpl;
 import org.apache.ignite.internal.worker.WorkersControlMXBeanImpl;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.mxbean.DataStorageMXBean;
+import org.apache.ignite.mxbean.FailureHandlingMxBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.mxbean.StripedExecutorMXBean;
 import org.apache.ignite.mxbean.ThreadPoolMXBean;
@@ -176,6 +178,12 @@ public class IgniteMBeansManager {
             registerMBean("Kernal", workerCtrlMXBean.getClass().getSimpleName(),
                 workerCtrlMXBean, WorkersControlMXBean.class);
         }
+
+        FailureHandlingMxBean blockOpCtrlMXBean = new FailureHandlingMxBeanImpl(workersRegistry,
+            ctx.cache().context().database());
+
+        registerMBean("Kernal", blockOpCtrlMXBean.getClass().getSimpleName(), blockOpCtrlMXBean,
+            FailureHandlingMxBean.class);
 
         if (ctx.query().moduleEnabled())
             ctx.query().getIndexing().registerMxBeans(this);
