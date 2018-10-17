@@ -163,6 +163,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static java.nio.file.StandardOpenOption.READ;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
@@ -372,6 +373,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Pointer to a memory recovery record that should be included into the next checkpoint record. */
     private volatile WALPointer memoryRecoveryRecordPtr;
 
+
+    /** Timeout for checkpoint read lock acquisition in milliseconds. */
+    private volatile long checkpointReadLockTimeout;
+
     /**
      * @param ctx Kernal context.
      */
@@ -397,6 +402,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         metastorageLifecycleLsnrs = ctx.internalSubscriptionProcessor().getMetastorageSubscribers();
 
         ioFactory = persistenceCfg.getFileIOFactory();
+
+        Long cfgCheckpointReadLockTimeout = ctx.config().getDataStorageConfiguration() != null
+            ? ctx.config().getDataStorageConfiguration().getCheckpointReadLockTimeout()
+            : null;
+
+        checkpointReadLockTimeout = IgniteSystemProperties.getLong(IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT,
+            cfgCheckpointReadLockTimeout != null
+                ? cfgCheckpointReadLockTimeout
+                : (ctx.workersRegistry() != null
+                    ? ctx.workersRegistry().getSystemWorkerBlockedTimeout()
+                    : ctx.config().getFailureDetectionTimeout()));
     }
 
     /** */
@@ -1577,52 +1593,63 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (checkpointLock.writeLock().isHeldByCurrentThread())
             return;
 
-        long timeout = cctx.gridConfig().getFailureDetectionTimeout();
+        long timeout = checkpointReadLockTimeout;
 
         long start = U.currentTimeMillis();
-        long passed;
 
         boolean interrupted = false;
 
         try {
             for (; ; ) {
-                if ((passed = U.currentTimeMillis() - start) >= timeout)
-                    failCheckpointReadLock();
-
                 try {
-                    if (!checkpointLock.readLock().tryLock(timeout - passed, TimeUnit.MILLISECONDS))
-                        failCheckpointReadLock();
-                }
-                catch (InterruptedException e) {
-                    interrupted = true;
-
-                    continue;
-                }
-
-                if (stopping) {
-                    checkpointLock.readLock().unlock();
-
-                    throw new IgniteException(new NodeStoppingException("Failed to perform cache update: node is stopping."));
-                }
-
-                if (checkpointLock.getReadHoldCount() > 1 || safeToUpdatePageMemories())
-                    break;
-                else {
-                    checkpointLock.readLock().unlock();
-
-                    if (U.currentTimeMillis() - start >= timeout)
+                    if (timeout > 0 && (U.currentTimeMillis() - start) >= timeout)
                         failCheckpointReadLock();
 
                     try {
-                        checkpointer.wakeupForCheckpoint(0, "too many dirty pages").cpBeginFut
+                        if (timeout > 0) {
+                            if (!checkpointLock.readLock().tryLock(timeout - (U.currentTimeMillis() - start),
+                                TimeUnit.MILLISECONDS))
+                                failCheckpointReadLock();
+                        }
+                        else
+                            checkpointLock.readLock().lock();
+                    }
+                    catch (InterruptedException e) {
+                        interrupted = true;
+
+                        continue;
+                    }
+
+                    if (stopping) {
+                        checkpointLock.readLock().unlock();
+
+                        throw new IgniteException(new NodeStoppingException("Failed to perform cache update: node is stopping."));
+                    }
+
+                    if (checkpointLock.getReadHoldCount() > 1 || safeToUpdatePageMemories())
+                        break;
+                    else {
+                        checkpointLock.readLock().unlock();
+
+                        if (timeout > 0 && U.currentTimeMillis() - start >= timeout)
+                            failCheckpointReadLock();
+
+                        try {
+                            checkpointer.wakeupForCheckpoint(0, "too many dirty pages").cpBeginFut
                                 .getUninterruptibly();
+                        }
+                        catch (IgniteFutureTimeoutCheckedException e) {
+                            failCheckpointReadLock();
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw new IgniteException("Failed to wait for checkpoint begin.", e);
+                        }
                     }
-                    catch (IgniteFutureTimeoutCheckedException e) {
-                        failCheckpointReadLock();
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException("Failed to wait for checkpoint begin.", e);
-                    }
+                }
+                catch (CheckpointReadLockTimeoutException e) {
+                    log.error(e.getMessage(), e);
+
+                    timeout = 0;
                 }
             }
         }
@@ -1635,13 +1662,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             CHECKPOINT_LOCK_HOLD_COUNT.set(CHECKPOINT_LOCK_HOLD_COUNT.get() + 1);
     }
 
-    /** */
-    private void failCheckpointReadLock() throws IgniteException {
-        IgniteException e = new IgniteException("Checkpoint read lock acquisition has been timed out.");
+    /**
+     * Invokes critical failure processing. Always throws.
+     *
+     * @throws CheckpointReadLockTimeoutException If node was not invalidated as result of handling.
+     * @throws IgniteException If node was invalidated as result of handling.
+     */
+    private void failCheckpointReadLock() throws CheckpointReadLockTimeoutException, IgniteException {
+        String msg = "Checkpoint read lock acquisition has been timed out.";
 
-        cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
+        IgniteException e = new IgniteException(msg);
 
-        throw e;
+        if (cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e)))
+            throw e;
+
+        throw new CheckpointReadLockTimeoutException(msg);
     }
 
     /** {@inheritDoc} */
@@ -2875,6 +2910,24 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         if (cp != null)
             cp.cancelOrWaitPartitionDestroy(grpId, partId);
+    }
+
+    /**
+     * Timeout for checkpoint read lock acquisition.
+     *
+     * @return Timeout for checkpoint read lock acquisition in milliseconds.
+     */
+    @Override public long checkpointReadLockTimeout() {
+        return checkpointReadLockTimeout;
+    }
+
+    /**
+     * Sets timeout for checkpoint read lock acquisition.
+     *
+     * @param val New timeout in milliseconds, non-positive value denotes infinite timeout.
+     */
+    @Override public void checkpointReadLockTimeout(long val) {
+        checkpointReadLockTimeout = val;
     }
 
     /**
@@ -5033,6 +5086,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         public RestoreLogicalState(long lastArchivedSegment, Predicate<Integer> cacheGroupsPredicate) {
             super(lastArchivedSegment, cacheGroupsPredicate, false);
+        }
+    }
+
+    /** Indicates checkpoint read lock acquisition failure which did not lead to node invalidation. */
+    private static class CheckpointReadLockTimeoutException extends IgniteCheckedException {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private CheckpointReadLockTimeoutException(String msg) {
+            super(msg);
         }
     }
 }
