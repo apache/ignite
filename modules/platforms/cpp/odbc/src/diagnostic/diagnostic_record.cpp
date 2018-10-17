@@ -79,8 +79,14 @@ namespace
     /** SQL state 24000 constant. */
     const std::string STATE_24000 = "24000";
 
+    /** SQL state 25000 constant. */
+    const std::string STATE_25000 = "25000";
+
     /** SQL state 3F000 constant. */
     const std::string STATE_3F000 = "3F000";
+
+    /** SQL state 40001 constant. */
+    const std::string STATE_40001 = "40001";
 
     /** SQL state 42000 constant. */
     const std::string STATE_42000 = "42000";
@@ -305,8 +311,14 @@ namespace ignite
                     case SqlState::S24000_INVALID_CURSOR_STATE:
                         return STATE_24000;
 
+                    case SqlState::S25000_INVALID_TRANSACTION_STATE:
+                        return STATE_25000;
+
                     case SqlState::S3F000_INVALID_SCHEMA_NAME:
                         return STATE_3F000;
+
+                    case SqlState::S40001_SERIALIZATION_FAILURE:
+                        return STATE_40001;
 
                     case SqlState::S42000_SYNTAX_ERROR_OR_ACCESS_VIOLATION:
                         return STATE_42000;

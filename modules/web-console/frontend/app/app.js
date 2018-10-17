@@ -148,7 +148,7 @@ import progressLine from './components/progress-line';
 import formField from './components/form-field';
 import igniteChart from './components/ignite-chart';
 import igniteChartSelector from './components/ignite-chart-series-selector';
-import igniteStatus from './components/ignite-status';
+import statusOutput from './components/status-output';
 
 import pageProfile from './components/page-profile';
 import pagePasswordChanged from './components/page-password-changed';
@@ -258,7 +258,7 @@ export default angular.module('ignite-console', [
     passwordVisibility.name,
     igniteChart.name,
     igniteChartSelector.name,
-    igniteStatus.name,
+    statusOutput.name,
     progressLine.name,
     formField.name
 ])
