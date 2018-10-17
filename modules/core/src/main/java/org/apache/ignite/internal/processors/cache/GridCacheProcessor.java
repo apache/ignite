@@ -1921,6 +1921,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         prepareStartCaches(startCacheInfos);
 
+        context().exchange().exchangerUpdateHeartbeat();
+
         if (log.isInfoEnabled())
             log.info("Starting caches on local join performed in " + (System.currentTimeMillis() - time) + " ms.");
 
@@ -5528,6 +5530,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
             // Make sure to remove future before completion.
             pendingFuts.remove(id, this);
+
+            context().exchange().exchangerUpdateHeartbeat();
 
             return super.onDone(res, err);
         }
