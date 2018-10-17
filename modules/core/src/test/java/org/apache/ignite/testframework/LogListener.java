@@ -31,7 +31,36 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Log messages listener.
+ * The basic listener for custom log contents checking in {@link ListeningTestLogger}.<br><br>
+ *
+ * Supports {@link #matches(String) substring}, {@link #matches(Pattern) regular expression} or
+ * {@link #matches(Predicate) predicate} listeners and the following optional modifiers:
+ * <ul>
+ *  <li>{@link Builder#times times()} sets the exact number of occurrences</li>
+ *  <li>{@link Builder#atLeast atLeast()} sets the minimum number of occurrences</li>
+ *  <li>{@link Builder#atMost atMost()} sets the maximum number of occurrences</li>
+ * </ul>
+ * {@link Builder#atLeast atLeast()} and {@link Builder#atMost atMost()} can be used together.<br><br>
+ *
+ * If the expected number of occurrences is not specified for the listener,
+ * then at least one occurence is expected by default. In other words:<pre>
+ *
+ * {@code LogListener.matches(msg).build();}
+ *
+ * is equivalent to
+ *
+ * {@code LogListener.matches(msg).atLeast(1).build();}
+ * </pre>
+ *
+ * If only the expected maximum number of occurrences is specified, then
+ * the minimum number of entries for successful validation is zero. In other words:<pre>
+ *
+ * {@code LogListener.matches(msg).atMost(10).build();}
+ *
+ * is equivalent to
+ *
+ * {@code LogListener.matches(msg).atLeast(0).atMost(10).build();}
+ * </pre>
  */
 public abstract class LogListener implements Consumer<String> {
     /**
@@ -213,7 +242,7 @@ public abstract class LogListener implements Consumer<String> {
         public LogListener build() {
             addLast(null);
 
-            return lsnr;
+            return lsnr.lsnrs.size() == 1 ? lsnr.lsnrs.get(0) : lsnr;
         }
 
         /**

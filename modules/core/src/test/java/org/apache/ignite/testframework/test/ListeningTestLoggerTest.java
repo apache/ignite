@@ -344,7 +344,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void te1tMultithreaded() throws Exception {
+    public void testMultithreaded() throws Exception {
         int iterCnt = 50_000;
         int threadCnt = 6;
         int total = threadCnt * iterCnt;
