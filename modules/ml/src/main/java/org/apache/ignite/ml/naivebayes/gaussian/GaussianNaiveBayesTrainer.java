@@ -22,14 +22,10 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.structures.LabeledVectorSet;
-import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
@@ -67,26 +63,6 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
         assert datasetBuilder != null;
-
-        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder
-            = new LabeledDatasetPartitionDataBuilderOnHeap<>(
-            featureExtractor,
-            lbExtractor
-        );
-
-//        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder2
-//            = new PartitionDataBuilder<>(
-//
-//        ) {
-//            @Override public PartitionDataBuilder andThen(IgniteBiFunction fun) {
-//                return null;
-//            }
-//
-//            @Override public AutoCloseable build(Iterator upstreamData, long upstreamDataSize, Serializable ctx) {
-//
-//
-//            }
-//        };
 
         try (Dataset<EmptyContext, GaussianNaiveBayesSumsHolder> dataset = datasetBuilder.build(
             (upstream, upstreamSize) -> new EmptyContext(),
