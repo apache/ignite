@@ -54,7 +54,7 @@ public class IgnitePdsWithIndexingCoreTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Persistent Store With Indexing Test Suite");
 
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 100; i++) {
             suite.addTestSuite(WalRolloverRecordLoggingFsyncTest.class);
             suite.addTestSuite(WalRolloverRecordLoggingLogOnlyTest.class);
         }
