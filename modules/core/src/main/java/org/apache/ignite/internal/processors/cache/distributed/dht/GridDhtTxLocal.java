@@ -474,7 +474,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             logTxFinishErrorSafe(log, commit, e);
 
             // Treat heuristic exception as critical.
-            if (commit && X.hasCause(e, IgniteTxHeuristicCheckedException.class))
+            if (X.hasCause(e, IgniteTxHeuristicCheckedException.class))
                 cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             err = e;
