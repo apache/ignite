@@ -662,6 +662,8 @@ public class PlatformConfigurationUtils {
             cfg.setMvccVacuumFrequency(in.readLong());
         if (in.readBoolean())
             cfg.setMvccVacuumThreadCount(in.readInt());
+        if (in.readBoolean())
+            cfg.setSystemWorkerBlockedTimeout(in.readLong());
 
         int sqlSchemasCnt = in.readInt();
 
@@ -1239,6 +1241,12 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getMvccVacuumFrequency());
         w.writeBoolean(true);
         w.writeInt(cfg.getMvccVacuumThreadCount());
+        if (cfg.getSystemWorkerBlockedTimeout() != null) {
+            w.writeBoolean(true);
+            w.writeLong(cfg.getSystemWorkerBlockedTimeout());
+        } else {
+            w.writeBoolean(false);
+        }
 
         if (cfg.getSqlSchemas() == null)
             w.writeInt(-1);
@@ -1894,6 +1902,10 @@ public class PlatformConfigurationUtils {
                 .setConcurrencyLevel(in.readInt())
                 .setWalAutoArchiveAfterInactivity(in.readLong());
 
+        if (in.readBoolean()) {
+            res.setCheckpointReadLockTimeout(in.readLong());
+        }
+
         int cnt = in.readInt();
 
         if (cnt > 0) {
@@ -2021,6 +2033,13 @@ public class PlatformConfigurationUtils {
             w.writeInt(cfg.getPageSize());
             w.writeInt(cfg.getConcurrencyLevel());
             w.writeLong(cfg.getWalAutoArchiveAfterInactivity());
+
+            if (cfg.getCheckpointReadLockTimeout() != null) {
+                w.writeBoolean(true);
+                w.writeLong(cfg.getCheckpointReadLockTimeout());
+            } else {
+                w.writeBoolean(false);
+            }
 
             if (cfg.getDataRegionConfigurations() != null) {
                 w.writeInt(cfg.getDataRegionConfigurations().length);
