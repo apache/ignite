@@ -86,6 +86,7 @@ include /app/helpers/jade/mixins
                         .form-field--inline
                             +form-field__timepicker({
                                 model: 'ctrl.options.value',
+                                format: '{{ ctrl.options.format }}',
                                 name: '"time"'
                             })
             .modal-footer
