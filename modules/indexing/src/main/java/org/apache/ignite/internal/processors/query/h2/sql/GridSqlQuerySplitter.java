@@ -2398,14 +2398,16 @@ public class GridSqlQuerySplitter {
     /**
      * Extracts the partition if possible
      * @param col H2 column
-     * @param cnstOrPar Constant or parameter element
+     * @param constantOrParam Constant or parameter element
      * @param ctx Kernal Context.
      * @return partition info, or {@code null} if none identified
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable private static CacheQueryPartitionInfo getCacheQueryPartitionInfo(Column col, GridSqlElement cnstOrPar,
-        GridKernalContext ctx) throws IgniteCheckedException {
-        assert col!=null && col.getTable()!=null && GridH2Table.class.isAssignableFrom(col.getTable().getClass());
+    @Nullable private static CacheQueryPartitionInfo getCacheQueryPartitionInfo(Column col,
+        GridSqlElement constantOrParam, GridKernalContext ctx) throws IgniteCheckedException {
+        assert col != null;
+        assert col.getTable() != null;
+        assert GridH2Table.class.isAssignableFrom(col.getTable().getClass());
 
         GridH2Table tbl = (GridH2Table)col.getTable();
 
@@ -2418,13 +2420,13 @@ public class GridSqlQuerySplitter {
         if ((affKeyCol == null || colId != affKeyCol.column.getColumnId()) && !desc.isKeyColumn(colId))
             return null;
 
-        if (GridSqlConst.class.isAssignableFrom(cnstOrPar.getClass())) {
+        if (GridSqlConst.class.isAssignableFrom(constantOrParam.getClass())) {
             return new CacheQueryPartitionInfo(ctx.affinity().partition(tbl.cacheName(),
-                GridSqlConst.class.cast(cnstOrPar).value().getObject()), null, null, -1, -1);
+                GridSqlConst.class.cast(constantOrParam).value().getObject()), null, null, -1, -1);
         }
-        else if (GridSqlParameter.class.isAssignableFrom(cnstOrPar.getClass())) {
+        else if (GridSqlParameter.class.isAssignableFrom(constantOrParam.getClass())) {
             return new CacheQueryPartitionInfo(-1, tbl.cacheName(), tbl.getName(),
-                col.getType(), GridSqlParameter.class.cast(cnstOrPar).index());
+                col.getType(), GridSqlParameter.class.cast(constantOrParam).index());
         }
         return null;
     }
