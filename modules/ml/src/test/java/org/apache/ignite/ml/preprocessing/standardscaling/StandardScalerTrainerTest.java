@@ -59,7 +59,7 @@ public class StandardScalerTrainerTest extends TrainerTest {
 
     /** Test {@code fit()} method. */
     @Test
-    public void testCountsCorrectMeans() {
+    public void testCalculatesCorrectMeans() {
         double[] expectedMeans = new double[] {0.5, 1.75, 4.5, 0.875};
 
         StandardScalerPreprocessor<Integer, Vector> preprocessor = standardizationTrainer.fit(
@@ -72,7 +72,7 @@ public class StandardScalerTrainerTest extends TrainerTest {
 
     /** Test {@code fit()} method. */
     @Test
-    public void testCountsCorrectStandardDeviations() {
+    public void testCalculatesCorrectStandardDeviations() {
         double[] expectedSigmas = new double[] {0.5, 1.47901995, 14.51723114, 0.93374247};
 
         StandardScalerPreprocessor<Integer, Vector> preprocessor = standardizationTrainer.fit(
