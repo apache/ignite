@@ -28,7 +28,6 @@ import org.springframework.util.StringUtils;
  * Cron Expression
  */
 public class CronExpression {
-
     /** Cron. */
     private final String cron;
 
@@ -67,5 +66,4 @@ public class CronExpression {
     public String getCron() {
         return cron;
     }
-
 }

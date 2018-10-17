@@ -65,11 +65,11 @@ public class IgniteScheduleProcessor extends IgniteScheduleProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> SchedulerFuture<R> schedule(Callable<R> c, String pattern) {
+    @Override public <R> SchedulerFuture<R> schedule(Callable<R> c, String ptrn) {
         assert c != null;
-        assert pattern != null;
+        assert ptrn != null;
 
-        ScheduleFutureImpl<R> fut = new ScheduleFutureImpl<>(sched, ctx, pattern);
+        ScheduleFutureImpl<R> fut = new ScheduleFutureImpl<>(sched, ctx, ptrn);
 
         fut.schedule(c);
 
@@ -108,14 +108,17 @@ public class IgniteScheduleProcessor extends IgniteScheduleProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() {
-        sched = new SpringScheduler();
+        if (sched == null)
+            sched = new SpringScheduler();
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
-        sched.stop();
+        if (sched != null) {
+            sched.stop();
 
-        sched = null;
+            sched = null;
+        }
     }
 
     /** {@inheritDoc} */
