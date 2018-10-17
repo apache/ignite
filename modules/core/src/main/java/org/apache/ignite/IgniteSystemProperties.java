@@ -1008,6 +1008,17 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_REUSE_MEMORY_ON_DEACTIVATE = "IGNITE_REUSE_MEMORY_ON_DEACTIVATE";
 
     /**
+     * Maximum inactivity period for system worker in milliseconds. When this value is exceeded, worker is considered
+     * blocked with consequent critical failure handler invocation.
+     */
+    public static final String IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT = "IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT";
+
+    /**
+     * Timeout for checkpoint read lock acquisition in milliseconds.
+     */
+    public static final String IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT = "IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT";
+
+    /**
      * Timeout for waiting schema update if schema was not found for last accepted version.
      */
     public static final String IGNITE_WAIT_SCHEMA_UPDATE = "IGNITE_WAIT_SCHEMA_UPDATE";

@@ -763,6 +763,20 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @return {@code 0} for non-persistent storage.
+     */
+    public long checkpointReadLockTimeout() {
+        return 0;
+    }
+
+    /**
+     * No-op for non-persistent storage.
+     */
+    public void checkpointReadLockTimeout(long val) {
+        // No-op.
+    }
+
+    /**
      * No-op for non-persistent storage.
      */
     public void cleanupCheckpointDirectory() throws IgniteCheckedException {
