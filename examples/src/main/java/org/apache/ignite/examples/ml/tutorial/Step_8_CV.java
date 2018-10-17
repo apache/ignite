@@ -36,7 +36,6 @@ import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
-import org.apache.ignite.thread.IgniteThread;
 
 /**
  * To choose the best hyperparameters the cross-validation will be used in this example.
@@ -64,142 +63,135 @@ import org.apache.ignite.thread.IgniteThread;
  */
 public class Step_8_CV {
     /** Run example. */
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 8 (cross-validation) example started.");
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                Step_8_CV.class.getSimpleName(), () -> {
-                try {
-                    IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
+            try {
+                IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
 
-                    // Defines first preprocessor that extracts features from an upstream data.
-                    // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare".
-                    IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
-                        = (k, v) -> new Object[]{v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
+                // Defines first preprocessor that extracts features from an upstream data.
+                // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare".
+                IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
+                    = (k, v) -> new Object[]{v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
 
-                    IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
+                IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
 
-                    TrainTestSplit<Integer, Object[]> split = new TrainTestDatasetSplitter<Integer, Object[]>()
-                        .split(0.75);
+                TrainTestSplit<Integer, Object[]> split = new TrainTestDatasetSplitter<Integer, Object[]>()
+                    .split(0.75);
 
-                    IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
-                        .withEncoderType(EncoderType.STRING_ENCODER)
-                        .withEncodedFeature(1)
-                        .withEncodedFeature(6) // <--- Changed index here.
-                        .fit(ignite,
-                            dataCache,
-                            featureExtractor
+                IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
+                    .withEncoderType(EncoderType.STRING_ENCODER)
+                    .withEncodedFeature(1)
+                    .withEncodedFeature(6) // <--- Changed index here.
+                    .fit(ignite,
+                        dataCache,
+                        featureExtractor
+                );
+
+                IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
+                    .fit(ignite,
+                        dataCache,
+                        strEncoderPreprocessor
                     );
 
-                    IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
-                        .fit(ignite,
-                            dataCache,
-                            strEncoderPreprocessor
-                        );
-
-                    IgniteBiFunction<Integer, Object[], Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
-                        .fit(
-                            ignite,
-                            dataCache,
-                            imputingPreprocessor
-                        );
-
-                    // Tune hyperparams with K-fold Cross-Validation on the split training set.
-                    int[] pSet = new int[]{1, 2};
-                    int[] maxDeepSet = new int[]{1, 2, 3, 4, 5, 10, 20};
-                    int bestP = 1;
-                    int bestMaxDeep = 1;
-                    double avg = Double.MIN_VALUE;
-
-                    for(int p: pSet){
-                        for(int maxDeep: maxDeepSet){
-                            IgniteBiFunction<Integer, Object[], Vector> normalizationPreprocessor
-                                = new NormalizationTrainer<Integer, Object[]>()
-                                .withP(p)
-                                .fit(
-                                    ignite,
-                                    dataCache,
-                                    minMaxScalerPreprocessor
-                                );
-
-                            DecisionTreeClassificationTrainer trainer
-                                = new DecisionTreeClassificationTrainer(maxDeep, 0);
-
-                            CrossValidation<DecisionTreeNode, Double, Integer, Object[]> scoreCalculator
-                                = new CrossValidation<>();
-
-                            double[] scores = scoreCalculator.score(
-                                trainer,
-                                new Accuracy<>(),
-                                ignite,
-                                dataCache,
-                                split.getTrainFilter(),
-                                normalizationPreprocessor,
-                                lbExtractor,
-                                3
-                            );
-
-                            System.out.println("Scores are: " + Arrays.toString(scores));
-
-                            final double currAvg = Arrays.stream(scores).average().orElse(Double.MIN_VALUE);
-
-                            if(currAvg > avg) {
-                                avg = currAvg;
-                                bestP = p;
-                                bestMaxDeep = maxDeep;
-                            }
-
-                            System.out.println("Avg is: " + currAvg + " with p: " + p + " with maxDeep: " + maxDeep);
-                        }
-                    }
-
-                    System.out.println("Train with p: " + bestP + " and maxDeep: " + bestMaxDeep);
-
-                    IgniteBiFunction<Integer, Object[], Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
-                        .withP(bestP)
-                        .fit(
-                            ignite,
-                            dataCache,
-                            minMaxScalerPreprocessor
-                        );
-
-                    DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(bestMaxDeep, 0);
-
-                    // Train decision tree model.
-                    DecisionTreeNode bestMdl = trainer.fit(
+                IgniteBiFunction<Integer, Object[], Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
+                    .fit(
                         ignite,
                         dataCache,
-                        split.getTrainFilter(),
-                        normalizationPreprocessor,
-                        lbExtractor
+                        imputingPreprocessor
                     );
 
-                    System.out.println("\n>>> Trained model: " + bestMdl);
+                // Tune hyperparams with K-fold Cross-Validation on the split training set.
+                int[] pSet = new int[]{1, 2};
+                int[] maxDeepSet = new int[]{1, 2, 3, 4, 5, 10, 20};
+                int bestP = 1;
+                int bestMaxDeep = 1;
+                double avg = Double.MIN_VALUE;
 
-                    double accuracy = Evaluator.evaluate(
+                for(int p: pSet){
+                    for(int maxDeep: maxDeepSet){
+                        IgniteBiFunction<Integer, Object[], Vector> normalizationPreprocessor
+                            = new NormalizationTrainer<Integer, Object[]>()
+                            .withP(p)
+                            .fit(
+                                ignite,
+                                dataCache,
+                                minMaxScalerPreprocessor
+                            );
+
+                        DecisionTreeClassificationTrainer trainer
+                            = new DecisionTreeClassificationTrainer(maxDeep, 0);
+
+                        CrossValidation<DecisionTreeNode, Double, Integer, Object[]> scoreCalculator
+                            = new CrossValidation<>();
+
+                        double[] scores = scoreCalculator.score(
+                            trainer,
+                            new Accuracy<>(),
+                            ignite,
+                            dataCache,
+                            split.getTrainFilter(),
+                            normalizationPreprocessor,
+                            lbExtractor,
+                            3
+                        );
+
+                        System.out.println("Scores are: " + Arrays.toString(scores));
+
+                        final double currAvg = Arrays.stream(scores).average().orElse(Double.MIN_VALUE);
+
+                        if(currAvg > avg) {
+                            avg = currAvg;
+                            bestP = p;
+                            bestMaxDeep = maxDeep;
+                        }
+
+                        System.out.println("Avg is: " + currAvg + " with p: " + p + " with maxDeep: " + maxDeep);
+                    }
+                }
+
+                System.out.println("Train with p: " + bestP + " and maxDeep: " + bestMaxDeep);
+
+                IgniteBiFunction<Integer, Object[], Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
+                    .withP(bestP)
+                    .fit(
+                        ignite,
                         dataCache,
-                        split.getTestFilter(),
-                        bestMdl,
-                        normalizationPreprocessor,
-                        lbExtractor,
-                        new Accuracy<>()
+                        minMaxScalerPreprocessor
                     );
 
-                    System.out.println("\n>>> Accuracy " + accuracy);
-                    System.out.println("\n>>> Test Error " + (1 - accuracy));
+                DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(bestMaxDeep, 0);
 
-                    System.out.println(">>> Tutorial step 8 (cross-validation) example completed.");
-                }
-                catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
-            });
+                // Train decision tree model.
+                DecisionTreeNode bestMdl = trainer.fit(
+                    ignite,
+                    dataCache,
+                    split.getTrainFilter(),
+                    normalizationPreprocessor,
+                    lbExtractor
+                );
 
-            igniteThread.start();
+                System.out.println("\n>>> Trained model: " + bestMdl);
 
-            igniteThread.join();
+                double accuracy = Evaluator.evaluate(
+                    dataCache,
+                    split.getTestFilter(),
+                    bestMdl,
+                    normalizationPreprocessor,
+                    lbExtractor,
+                    new Accuracy<>()
+                );
+
+                System.out.println("\n>>> Accuracy " + accuracy);
+                System.out.println("\n>>> Test Error " + (1 - accuracy));
+
+                System.out.println(">>> Tutorial step 8 (cross-validation) example completed.");
+            }
+            catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

@@ -62,7 +62,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Grid count. */
-    private final static int GRID_CNT = 3;
+    private static final int GRID_CNT = 3;
 
     /** Count. */
     private static final int CNT = 500;

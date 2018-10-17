@@ -160,6 +160,8 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
      * @throws Exception If failed.
      */
     void doTestSelectForUpdateDistributed(String cacheName, boolean outsideTx) throws Exception {
+        awaitPartitionMapExchange();
+
         Ignite node = grid(0);
 
         IgniteCache<Integer, ?> cache = node.cache(cacheName);

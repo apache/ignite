@@ -1120,6 +1120,8 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
      * @throws Exception If failed.
      */
     public void testQueryInsertUpdateMultithread() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
+
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
@@ -1196,13 +1198,16 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
             }
         }, 1));
 
-        fut.markInitialized();
-
         try {
+            fut.markInitialized();
+
             fut.get(TX_TIMEOUT);
         }
         catch (IgniteCheckedException e) {
             onException(ex, e);
+        }
+        finally {
+            phaser.forceTermination();
         }
 
         Exception ex0 = ex.get();
@@ -1248,7 +1253,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
                     try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         tx.timeout(TX_TIMEOUT);
 
-                        barrier.await();
+                        barrier.await(TX_TIMEOUT, TimeUnit.MILLISECONDS);
 
                         IgniteCache<Object, Object> cache0 = node.cache(DEFAULT_CACHE_NAME);
 
@@ -1262,7 +1267,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
                             }
                         }
 
-                        barrier.await();
+                        barrier.await(TX_TIMEOUT, TimeUnit.MILLISECONDS);
 
                         qry = new SqlFieldsQuery("UPDATE Integer SET _val = (_key * 10)");
 
@@ -1282,7 +1287,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
         IgniteSQLException ex0 = X.cause(ex.get(), IgniteSQLException.class);
 
         assertNotNull("Exception has not been thrown.", ex0);
-        assertEquals("Mvcc version mismatch.", ex0.getMessage());
+        assertTrue(ex0.getMessage().startsWith("Cannot serialize transaction due to write conflict"));
     }
 
     /**
@@ -1647,6 +1652,30 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    public void testFastInsertUpdateConcurrent() throws Exception {
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        Ignite ignite = startGridsMultiThreaded(4);
+
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < 1000; i++) {
+            int key = i;
+            CompletableFuture.allOf(
+                CompletableFuture.runAsync(() -> {
+                    cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, ?)").setArgs(key, key));
+                }),
+                CompletableFuture.runAsync(() -> {
+                    cache.query(new SqlFieldsQuery("update Integer set _val = ? where _key = ?").setArgs(key, key));
+                })
+            ).join();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testIterator() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -1820,7 +1849,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
         do {
             p = phaser.arriveAndAwaitAdvance();
         }
-        while (p < phase);
+        while (p < phase && p >= 0 /* check termination */ );
     }
 
     /**

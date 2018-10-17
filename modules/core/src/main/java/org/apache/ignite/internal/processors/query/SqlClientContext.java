@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Container for connection properties passed by various drivers (JDBC drivers, possibly ODBC) having notion of an
+ * Container for connection properties passed by various drivers (JDBC, ODBC drivers) having notion of an
  * <b>SQL connection</b> - Ignite basically does not have one.<p>
  * Also contains anything that a driver may need to share between threads processing queries of logically same client -
  * see JDBC thin driver
