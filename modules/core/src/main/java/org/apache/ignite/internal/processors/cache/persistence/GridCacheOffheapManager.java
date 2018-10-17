@@ -201,6 +201,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         if (execSvc == null) {
             reuseList.saveMetadata();
 
+            for (CacheDataStore store : partDataStores.values()) {
+                log.warning("Will save " + grp + " " + store.partId() + " " + store.updateCounter());
+            }
+
             for (CacheDataStore store : partDataStores.values())
                 saveStoreMetadata(store, ctx, false, needSnapshot);
         }
@@ -213,6 +217,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     throw new IgniteException(e);
                 }
             });
+
+            for (CacheDataStore store : partDataStores.values()) {
+                log.warning("Will save " + grp + " " + store.partId() + " " + store.updateCounter());
+            }
 
             for (CacheDataStore store : partDataStores.values())
                 execSvc.execute(() -> {
@@ -305,7 +313,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         if (state != null) {
                             changed |= io.setPartitionState(partMetaPageAddr, (byte) state.ordinal());
 
-                            log.warning("Saved partition state: " + grp + " " + part.id() + " " + state);
+                            log.warning("Saved partition state: " + grp.cacheOrGroupName() + " " + part.id() + " " + state);
                         }
                         else
                             assert grp.isLocal() : grp.cacheOrGroupName();
@@ -391,8 +399,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     pageMem.releasePage(grpId, partMetaId, partMetaPage);
                 }
             }
-            else if (needSnapshot)
-                tryAddEmptyPartitionToSnapshot(store, ctx);
+            else {
+                if (needSnapshot)
+                    tryAddEmptyPartitionToSnapshot(store, ctx);
+
+                log.warning("Not saved partition state: " + grp.cacheOrGroupName() + " " + store.partId() + " " + getPartition(store));
+            }
         }
         else if (needSnapshot)
             tryAddEmptyPartitionToSnapshot(store, ctx);

@@ -859,6 +859,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             cctx.pageStore().initializeForMetastorage();
 
+            // Memory restored at startup, just resume logging from last seen WAL pointer.
+            cctx.wal().resumeLogging();
+
             notifyMetastorageReadyForReadWrite();
 
             for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
@@ -2013,9 +2016,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 cctx.cache().startCacheOnMemoryRecovery(desc);
             }
 
-            // Memory restored at startup, just resume logging from last seen WAL pointer.
-            cctx.wal().resumeLogging();
-
             final MetaStorage storage = new MetaStorage(
                 cctx,
                 dataRegionMap.get(METASTORE_DATA_REGION_NAME),
@@ -2030,6 +2030,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             metaStorage = storage;
 
             restoreState();
+
+            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+                if (grp.cacheOrGroupName().contains("sys"))
+                    continue;
+
+                for (GridDhtLocalPartition part : grp.topology().localPartitions()) {
+                    log.info(grp.cacheOrGroupName() + " " + part.id() + " " + part.state() + " " + part.updateCounter() + " " + part.initialUpdateCounter());
+                }
+            }
         }
         finally {
             checkpointReadUnlock();
@@ -2084,7 +2093,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         int applied = 0;
 
-        try (WALIterator it = cctx.wal().replay(status.endPtr)) {
+        try (WALIterator it = cctx.wal().replay(status.endPtr == CheckpointStatus.NULL_PTR ? null : status.endPtr)) {
             while (it.hasNextX()) {
                 WALRecord rec = restoreBinaryState.next(it);
 

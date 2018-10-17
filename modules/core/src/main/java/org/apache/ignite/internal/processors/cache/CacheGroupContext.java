@@ -126,6 +126,7 @@ public class CacheGroupContext {
 
     /** */
     private GridCachePreloader preldr;
+
     /** */
     private final DataRegion dataRegion;
 
@@ -718,7 +719,8 @@ public class CacheGroupContext {
     public void onKernalStop() {
         aff.cancelFutures(new IgniteCheckedException("Failed to wait for topology update, node is stopping."));
 
-        preldr.onKernalStop();
+        if (!recoveryMode)
+            preldr.onKernalStop();
 
         offheapMgr.onKernalStop();
     }

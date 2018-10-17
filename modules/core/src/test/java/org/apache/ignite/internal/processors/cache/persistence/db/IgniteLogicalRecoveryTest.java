@@ -10,6 +10,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import com.google.common.collect.Lists;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -23,6 +24,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -56,7 +59,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         );
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
-            .setWalMode(WALMode.FSYNC)
+            .setWalMode(WALMode.LOG_ONLY)
             .setCheckpointFrequency(1024 * 1024 * 1024) // Disable automatic checkpoints.
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
@@ -127,15 +130,28 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         aggCacheLoader.start();
 
-        U.sleep(2500);
+        U.sleep(5000);
 
         forceCheckpoint();
 
-        U.sleep(2500);
+        U.sleep(5000);
 
         aggCacheLoader.stop();
 
         stopGrid(2, true);
+
+        for (int idx = 0; idx < 2; idx++) {
+            log.warning("Grid [" + idx + "]");
+            IgniteEx grid = grid(idx);
+            for (CacheGroupContext grp : grid.context().cache().cacheGroups()) {
+                if (grp.cacheOrGroupName().contains("sys"))
+                    continue;
+
+                for (GridDhtLocalPartition part : grp.topology().localPartitions()) {
+                    log.info(grp.cacheOrGroupName() + " " + part.id() + " " + part.state() + " " + part.updateCounter() + " " + part.initialUpdateCounter());
+                }
+            }
+        }
 
         startGrid(2);
 
@@ -172,17 +188,83 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         aggCacheLoader.consistencyCheck(grid(2));
     }
 
-    public void testRecoveryOnActivate() {
+    public void testRecoveryOnDynamicallyStartedCaches() throws Exception {
+        IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
 
+        crd.cluster().active(true);
+
+        IgniteEx node = grid(2);
+
+        List<CacheConfiguration> dynamicCaches = Lists.newArrayList(
+            cacheConfiguration(DYNAMIC_CACHE_PREFIX + 0, CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL),
+            cacheConfiguration(DYNAMIC_CACHE_PREFIX + 1, CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL),
+            cacheConfiguration(DYNAMIC_CACHE_PREFIX + 2, CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC),
+            cacheConfiguration(DYNAMIC_CACHE_PREFIX + 3, CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC)
+        );
+
+        node.getOrCreateCaches(dynamicCaches);
+
+        List<String> cachesNamesForLoader = allCaches();
+
+        cachesNamesForLoader.addAll(
+            dynamicCaches.stream().map(CacheConfiguration::getName).collect(Collectors.toList())
+        );
+
+        AggregateCacheLoader aggCacheLoader = new AggregateCacheLoader(node, cachesNamesForLoader);
+
+        aggCacheLoader.start();
+
+        U.sleep(5000);
+
+        forceCheckpoint();
+
+        U.sleep(5000);
+
+        aggCacheLoader.stop();
+
+        stopGrid(2, true);
+
+        startGrid(2);
+
+        awaitPartitionMapExchange();
+
+        for (int idx = 0; idx < 3; idx++)
+            aggCacheLoader.consistencyCheck(grid(idx));
     }
 
-    public void testRecoveryOnJoinToDifferentBlt() {
+    public void testRecoveryOnJoinToDifferentBlt() throws Exception {
+        IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
 
+        crd.cluster().active(true);
+
+        IgniteEx node = grid(2);
+
+        AggregateCacheLoader aggCacheLoader = new AggregateCacheLoader(node, allCaches());
+
+        aggCacheLoader.start();
+
+        U.sleep(5000);
+
+        forceCheckpoint();
+
+        U.sleep(5000);
+
+        aggCacheLoader.stop();
+
+        stopGrid(2, true);
+
+        resetBaselineTopology();
+
+        startGrid(2);
+
+        resetBaselineTopology();
+
+        awaitPartitionMapExchange();
+
+        for (int idx = 0; idx < 3; idx++)
+            aggCacheLoader.consistencyCheck(grid(idx));
     }
 
-    public void testRecoveryOnDynamicallyStartedCaches() {
-
-    }
 
     private class AggregateCacheLoader {
         IgniteEx ignite;
