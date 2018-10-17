@@ -66,7 +66,7 @@ public class KMeansClusterizationExample {
             KMeansModel mdl = trainer.fit(
                 ignite,
                 dataCache,
-                (k, v) -> v.viewPart(1, v.size() - 1),
+                (k, v) -> v.copyOfRange(1, v.size()),
                 (k, v) -> v.get(0)
             );
 
@@ -75,33 +75,22 @@ public class KMeansClusterizationExample {
             Tracer.showAscii(mdl.getCenters()[1]);
             System.out.println(">>>");
 
-            System.out.println(">>> -----------------------------------");
-            System.out.println(">>> | Predicted cluster\t| Real Label\t|");
-            System.out.println(">>> -----------------------------------");
-
-            int amountOfErrors = 0;
-            int totalAmount = 0;
+            System.out.println(">>> --------------------------------------------");
+            System.out.println(">>> | Predicted cluster\t| Erased class label\t|");
+            System.out.println(">>> --------------------------------------------");
 
             try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
                 for (Cache.Entry<Integer, Vector> observation : observations) {
                     Vector val = observation.getValue();
-                    Vector inputs = val.viewPart(1, val.size() - 1);
+                    Vector inputs = val.copyOfRange(1, val.size());
                     double groundTruth = val.get(0);
 
                     double prediction = mdl.apply(inputs);
-
-                    totalAmount++;
-                    if (groundTruth != prediction)
-                        amountOfErrors++;
 
                     System.out.printf(">>> | %.4f\t\t\t| %.4f\t\t|\n", prediction, groundTruth);
                 }
 
                 System.out.println(">>> ---------------------------------");
-
-                System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
-                System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double)totalAmount));
-
                 System.out.println(">>> KMeans clustering algorithm over cached dataset usage example completed.");
             }
         }
