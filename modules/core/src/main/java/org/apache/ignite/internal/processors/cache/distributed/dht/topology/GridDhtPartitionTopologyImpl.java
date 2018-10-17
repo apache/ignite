@@ -946,8 +946,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     }
                 }
                 else if (loc != null && state == RENTING && !showRenting) {
+                    boolean belongsNow = topVer.equals(this.readyTopVer) ? belongs : partitionLocalNode(p, this.readyTopVer);
+
                     throw new GridDhtInvalidPartitionException(p, "Adding entry to partition that is concurrently " +
-                        "evicted [grp=" + grp.cacheOrGroupName() + ", part=" + p + ", shouldBeMoving="
+                        "evicted [grp=" + grp.cacheOrGroupName() + ", part=" + p + ", belongsNow=" + belongsNow
                         + ", belongs=" + belongs + ", topVer=" + topVer + ", curTopVer=" + this.readyTopVer + "]");
                 }
 
@@ -2047,6 +2049,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             if (entry.getValue() == OWNING)
                                 recentlyLost.add(entry.getKey());
                         }
+                    }
+
+                    if (!recentlyLost.isEmpty()) {
+                        U.warn(log, "Detected lost partitions [grp=" + grp.cacheOrGroupName()
+                            + ", parts=" + S.compact(recentlyLost)
+                            + ", plc=" + plc + "]");
                     }
 
                     // Update partition state on all nodes.

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
@@ -98,75 +100,95 @@ public class BinarySchemaRegistry {
      * @param schemaId Schema ID.
      * @param schema Schema.
      */
-    public void addSchema(int schemaId, BinarySchema schema) {
-        synchronized (this) {
-            if (inline) {
-                // Check if this is already known schema.
-                if (schemaId == schemaId1 || schemaId == schemaId2 || schemaId == schemaId3 || schemaId == schemaId4)
-                    return;
+    public synchronized void addSchema(int schemaId, BinarySchema schema) {
+        if (inline) {
+            // Check if this is already known schema.
+            if (schemaId == schemaId1 || schemaId == schemaId2 || schemaId == schemaId3 || schemaId == schemaId4)
+                return;
 
-                // Try positioning new schema in inline mode.
-                if (schemaId1 == EMPTY) {
-                    schemaId1 = schemaId;
+            // Try positioning new schema in inline mode.
+            if (schemaId1 == EMPTY) {
+                schemaId1 = schemaId;
 
-                    schema1 = schema;
+                schema1 = schema;
 
-                    inline = true; // Forcing HB edge just in case.
+                inline = true; // Forcing HB edge just in case.
 
-                    return;
-                }
-
-                if (schemaId2 == EMPTY) {
-                    schemaId2 = schemaId;
-
-                    schema2 = schema;
-
-                    inline = true; // Forcing HB edge just in case.
-
-                    return;
-                }
-
-                if (schemaId3 == EMPTY) {
-                    schemaId3 = schemaId;
-
-                    schema3 = schema;
-
-                    inline = true; // Forcing HB edge just in case.
-
-                    return;
-                }
-
-                if (schemaId4 == EMPTY) {
-                    schemaId4 = schemaId;
-
-                    schema4 = schema;
-
-                    inline = true; // Forcing HB edge just in case.
-
-                    return;
-                }
-
-                // No luck, switching to hash map mode.
-                HashMap<Integer, BinarySchema> newSchemas = new HashMap<>();
-
-                newSchemas.put(schemaId1, schema1);
-                newSchemas.put(schemaId2, schema2);
-                newSchemas.put(schemaId3, schema3);
-                newSchemas.put(schemaId4, schema4);
-
-                newSchemas.put(schemaId, schema);
-
-                schemas = newSchemas;
-
-                inline = false;
+                return;
             }
-            else {
-                HashMap<Integer, BinarySchema> newSchemas = new HashMap<>(schemas);
 
-                newSchemas.put(schemaId, schema);
+            if (schemaId2 == EMPTY) {
+                schemaId2 = schemaId;
 
-                schemas = newSchemas;
+                schema2 = schema;
+
+                inline = true; // Forcing HB edge just in case.
+
+                return;
             }
+
+            if (schemaId3 == EMPTY) {
+                schemaId3 = schemaId;
+
+                schema3 = schema;
+
+                inline = true; // Forcing HB edge just in case.
+
+                return;
+            }
+
+            if (schemaId4 == EMPTY) {
+                schemaId4 = schemaId;
+
+                schema4 = schema;
+
+                inline = true; // Forcing HB edge just in case.
+
+                return;
+            }
+
+            // No luck, switching to hash map mode.
+            HashMap<Integer, BinarySchema> newSchemas = new HashMap<>();
+
+            newSchemas.put(schemaId1, schema1);
+            newSchemas.put(schemaId2, schema2);
+            newSchemas.put(schemaId3, schema3);
+            newSchemas.put(schemaId4, schema4);
+
+            newSchemas.put(schemaId, schema);
+
+            schemas = newSchemas;
+
+            inline = false;
         }
+        else {
+            HashMap<Integer, BinarySchema> newSchemas = new HashMap<>(schemas);
+
+            newSchemas.put(schemaId, schema);
+
+            schemas = newSchemas;
+        }
+    }
+
+    /**
+     * @return List of known schemas.
+     */
+    public synchronized List<BinarySchema> schemas() {
+        List<BinarySchema> res = new ArrayList<>();
+
+        if (inline) {
+            if (schemaId1 != EMPTY)
+                res.add(schema1);
+            if (schemaId2 != EMPTY)
+                res.add(schema2);
+            if (schemaId3 != EMPTY)
+                res.add(schema3);
+            if (schemaId4 != EMPTY)
+                res.add(schema4);
+        }
+        else
+            res.addAll(schemas.values());
+
+        return res;
     }
 }
