@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 
 /**
@@ -26,12 +26,12 @@ import java.util.function.Consumer;
  */
 public abstract class SegmentObservable {
     /** Observers for handle changes of archived index. */
-    private final List<Consumer<Long>> observers = new ArrayList<>();
+    private final Queue<Consumer<Long>> observers = new ConcurrentLinkedQueue<>();
 
     /**
      * @param observer Observer for notification about segment's changes.
      */
-    synchronized void addObserver(Consumer<Long> observer) {
+    void addObserver(Consumer<Long> observer) {
         observers.add(observer);
     }
 
@@ -40,7 +40,7 @@ public abstract class SegmentObservable {
      *
      * @param segmentId Segment which was been changed.
      */
-    synchronized void notifyObservers(long segmentId) {
+    void notifyObservers(long segmentId) {
         observers.forEach(observer -> observer.accept(segmentId));
     }
 }

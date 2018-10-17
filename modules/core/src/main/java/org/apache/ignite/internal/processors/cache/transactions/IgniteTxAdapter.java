@@ -63,8 +63,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -77,7 +77,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEnt
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
-import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridSetWrapper;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
@@ -1158,55 +1157,16 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     seal();
 
                 if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
-                    if (mvccSnapshot != null) {
-                        byte txState;
-
-                        switch (state) {
-                            case PREPARED:
-                                txState = TxState.PREPARED;
-                                break;
-                            case ROLLED_BACK:
-                                txState = TxState.ABORTED;
-                                break;
-                            case COMMITTED:
-                                txState = TxState.COMMITTED;
-                                break;
-                            default:
-                                throw new IllegalStateException("Illegal state: " + state);
-                        }
-
+                    if (state == PREPARED) {
                         try {
-                            if (!cctx.localNode().isClient()) {
-                                if (dht() && remote())
-                                    cctx.coordinators().updateState(mvccSnapshot, txState, false);
-                                else if (local()) {
-                                    IgniteInternalFuture<?> rollbackFut = rollbackFuture();
-
-                                    boolean syncUpdate = txState == TxState.PREPARED || txState == TxState.COMMITTED ||
-                                        rollbackFut == null || rollbackFut.isDone();
-
-                                    if (syncUpdate)
-                                        cctx.coordinators().updateState(mvccSnapshot, txState);
-                                    else {
-                                        // If tx was aborted, we need to wait tx log is updated on all backups.
-                                        rollbackFut.listen(new IgniteInClosure<IgniteInternalFuture>() {
-                                            @Override public void apply(IgniteInternalFuture fut) {
-                                                try {
-                                                    cctx.coordinators().updateState(mvccSnapshot, txState);
-                                                }
-                                                catch (IgniteCheckedException e) {
-                                                    U.error(log, "Failed to log TxState: " + txState, e);
-                                                }
-                                            }
-                                        });
-                                    }
-                                }
-                            }
+                            cctx.tm().mvccPrepare(this);
                         }
                         catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to log TxState: " + txState, e);
+                            String msg = "Failed to update TxState: " + TxState.PREPARED;
 
-                            throw new IgniteException("Failed to log TxState: " + txState, e);
+                            U.error(log, msg, e);
+
+                            throw new IgniteException(msg, e);
                         }
                     }
 
@@ -1856,32 +1816,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         return F.t(op, ctx);
-    }
-
-    /**
-     * Notify Dr on tx finished.
-     *
-     * @param commit {@code True} if commited, {@code False} otherwise.
-     */
-    protected void notifyDrManager(boolean commit) {
-        if (system() || internal())
-            return;
-
-        IgniteTxState txState = txState();
-
-        if (mvccSnapshot == null || txState.cacheIds().isEmpty())
-            return;
-
-        GridIntIterator iter = txState.cacheIds().iterator();
-
-        while (iter.hasNext()) {
-            int cacheId = iter.next();
-
-            GridCacheContext ctx0 = cctx.cacheContext(cacheId);
-
-            if (ctx0.isDrEnabled())
-                ctx0.dr().onTxFinished(mvccSnapshot, commit, topologyVersionSnapshot());
-        }
     }
 
     /**

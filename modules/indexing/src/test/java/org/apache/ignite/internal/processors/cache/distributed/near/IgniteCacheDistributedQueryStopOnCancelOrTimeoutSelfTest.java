@@ -259,7 +259,6 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
     private void testQueryCancel(int keyCnt, int valSize, String sql, int timeoutUnits, TimeUnit timeUnit,
         boolean timeout, String cause) throws Exception {
         try (Ignite client = startGrid("client")) {
-
             IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
             assertEquals(0, cache.localSize());
@@ -298,7 +297,7 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
             }
 
             try (QueryCursor<List<?>> ignored = cursor) {
-                cursor.iterator();
+                cursor.getAll();
 
                 if (!F.isEmpty(cause))
                     fail("No exception caught");

@@ -50,22 +50,22 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
             this.sockets = new Map();
         }
 
-        get(token) {
-            let sockets = this.sockets.get(token);
+        get(account) {
+            let sockets = this.sockets.get(account._id.toString());
 
             if (_.isEmpty(sockets))
-                this.sockets.set(token, sockets = []);
+                this.sockets.set(account._id.toString(), sockets = []);
 
             return sockets;
         }
 
         /**
          * @param {AgentSocket} sock
-         * @param {String} token
+         * @param {String} account
          * @return {Array.<AgentSocket>}
          */
-        add(token, sock) {
-            const sockets = this.get(token);
+        add(account, sock) {
+            const sockets = this.get(account);
 
             sockets.push(sock);
         }
@@ -75,9 +75,9 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
          * @return {AgentSocket}
          */
         find(browserSocket) {
-            const token = browserSocket.request.user.token;
+            const {_id} = browserSocket.request.user;
 
-            const sockets = this.sockets.get(token);
+            const sockets = this.sockets.get(_id);
 
             return _.find(sockets, (sock) => _.includes(sock.demo.browserSockets, browserSocket));
         }
@@ -87,7 +87,8 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
         constructor(top) {
             const clusterName = top.clusterName;
 
-            this.id = _.isEmpty(clusterName) ? `Cluster ${uuid().substring(0, 8).toUpperCase()}` : clusterName;
+            this.id = _.isEmpty(top.clusterId) ? uuid() : top.clusterId;
+            this.name = _.isEmpty(clusterName) ? `Cluster ${this.id.substring(0, 8).toUpperCase()}` : clusterName;
             this.nids = top.nids;
             this.addresses = top.addresses;
             this.clients = top.clients;
@@ -227,19 +228,26 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
          * Link agent with browsers by account.
          *
          * @param {Socket} sock
+         * @param {Array.<mongo.Account>} accounts
          * @param {Array.<String>} tokens
          * @param {boolean} demoEnabled
          *
          * @private
          */
-        onConnect(sock, tokens, demoEnabled) {
-            const agentSocket = new AgentSocket(sock, tokens, demoEnabled);
+        onConnect(sock, accounts, tokens, demoEnabled) {
+            const agentSocket = new AgentSocket(sock, accounts, tokens, demoEnabled);
+
+            _.forEach(accounts, (account) => {
+                this._agentSockets.add(account, agentSocket);
+
+                this._browsersHnd.agentStats(account);
+            });
 
             sock.on('disconnect', () => {
-                _.forEach(tokens, (token) => {
-                    _.pull(this._agentSockets.get(token), agentSocket);
+                _.forEach(accounts, (account) => {
+                    _.pull(this._agentSockets.get(account), agentSocket);
 
-                    this._browsersHnd.agentStats(token);
+                    this._browsersHnd.agentStats(account);
                 });
             });
 
@@ -257,8 +265,8 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
                 if (agentSocket.cluster !== cluster) {
                     agentSocket.cluster = cluster;
 
-                    _.forEach(tokens, (token) => {
-                        this._browsersHnd.agentStats(token);
+                    _.forEach(accounts, (account) => {
+                        this._browsersHnd.agentStats(account);
                     });
                 }
                 else {
@@ -267,8 +275,8 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
                     if (changed) {
                         cluster.update(top);
 
-                        _.forEach(tokens, (token) => {
-                            this._browsersHnd.clusterChanged(token, cluster);
+                        _.forEach(accounts, (account) => {
+                            this._browsersHnd.clusterChanged(account, cluster);
                         });
                     }
                 }
@@ -281,16 +289,17 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
 
                 agentSocket.cluster = null;
 
-                _.forEach(tokens, (token) => {
-                    this._browsersHnd.agentStats(token);
+                _.forEach(accounts, (account) => {
+                    this._browsersHnd.agentStats(account);
                 });
             });
 
-            _.forEach(tokens, (token) => {
-                this._agentSockets.add(token, agentSocket);
+            return agentSocket;
+        }
 
-                this._browsersHnd.agentStats(token);
-            });
+        getAccounts(tokens) {
+            return mongo.Account.find({token: {$in: tokens}}, '_id token').lean().exec()
+                .then((accounts) => ({accounts, activeTokens: _.uniq(_.map(accounts, 'token'))}));
         }
 
         /**
@@ -300,17 +309,27 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
         attach(srv, browsersHnd) {
             this._browsersHnd = browsersHnd;
 
-            if (this.io)
-                throw 'Agent server already started!';
-
             this._collectSupportedAgents()
                 .then((supportedAgents) => {
                     this.currentAgent = _.get(supportedAgents, 'current');
 
+                    if (this.io)
+                        throw 'Agent server already started!';
+
                     this.io = socketio(srv, {path: '/agents'});
 
                     this.io.on('connection', (sock) => {
+                        const sockId = sock.id;
+
+                        console.log('Connected agent with socketId: ', sockId);
+
+                        sock.on('disconnect', (reason) => {
+                            console.log(`Agent disconnected with [socketId=${sockId}, reason=${reason}]`);
+                        });
+
                         sock.on('agent:auth', ({ver, bt, tokens, disableDemo} = {}, cb) => {
+                            console.log(`Received authentication request [socketId=${sockId}, tokens=${tokens}, ver=${ver}].`);
+
                             if (_.isEmpty(tokens))
                                 return cb('Tokens not set. Please reload agent archive or check settings');
 
@@ -321,32 +340,33 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
                                     return cb('You are using an older version of the agent. Please reload agent');
                             }
 
-                            return mongo.Account.find({token: {$in: tokens}}, '_id token').lean().exec()
-                                .then((accounts) => {
-                                    const activeTokens = _.uniq(_.map(accounts, 'token'));
-
+                            return this.getAccounts(tokens)
+                                .then(({accounts, activeTokens}) => {
                                     if (_.isEmpty(activeTokens))
                                         return cb(`Failed to authenticate with token(s): ${tokens.join(',')}. Please reload agent archive or check settings`);
 
                                     cb(null, activeTokens);
 
-                                    return this.onConnect(sock, activeTokens, disableDemo);
+                                    return this.onConnect(sock, accounts, activeTokens, disableDemo);
                                 })
                                 // TODO IGNITE-1379 send error to web master.
                                 .catch(() => cb(`Invalid token(s): ${tokens.join(',')}. Please reload agent archive or check settings`));
                         });
                     });
+                })
+                .catch(() => {
+                    console.log('Failed to collect supported agents');
                 });
         }
 
-        agent(token, demo, clusterId) {
+        agent(account, demo, clusterId) {
             if (!this.io)
                 return Promise.reject(new Error('Agent server not started yet!'));
 
-            const socks = this._agentSockets.get(token);
+            const socks = this._agentSockets.get(account);
 
             if (_.isEmpty(socks))
-                return Promise.reject(new Error('Failed to find connected agent for this token'));
+                return Promise.reject(new Error('Failed to find connected agent for this account'));
 
             if (demo || _.isNil(clusterId))
                 return Promise.resolve(_.head(socks));
@@ -359,11 +379,11 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
             return Promise.resolve(sock);
         }
 
-        agents(token) {
+        agents(account) {
             if (!this.io)
                 return Promise.reject(new Error('Agent server not started yet!'));
 
-            const socks = this._agentSockets.get(token);
+            const socks = this._agentSockets.get(account);
 
             if (_.isEmpty(socks))
                 return Promise.reject(new Error('Failed to find connected agent for this token'));
@@ -371,61 +391,18 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
             return Promise.resolve(socks);
         }
 
-        tryStopDemo(browserSocket) {
-            const agentSock = this._agentSockets.find(browserSocket);
-        }
-
-        /**
-         * @param {ObjectId} token
-         * @param {Socket} browserSock
-         * @returns {int} Connected agent count.
-         */
-        onBrowserConnect(token, browserSock) {
-            this.emitAgentsCount(token);
-
-            // If connect from browser with enabled demo.
-            const demo = browserSock.request._query.IgniteDemoMode === 'true';
-
-            // Agents where possible to run demo.
-            const agentSockets = _.filter(this._agentSockets[token], 'demo.enabled');
-
-            if (demo && _.size(agentSockets)) {
-                const agentSocket = _.find(agentSockets, (agent) => _.includes(agent.demo.tokens, token));
-
-                if (agentSocket)
-                    agentSocket.attachToDemoCluster(browserSock);
-                else
-                    _.head(agentSockets).runDemoCluster(token, [browserSock]);
-            }
-        }
-
-        /**
-         * @param {Socket} browserSock.
-         */
-        onBrowserDisconnect(browserSock) {
-            const token = browserSock.client.request.user.token;
-
-            this._browserSockets.pull(token, browserSock);
-
-            // If connect from browser with enabled demo.
-            if (browserSock.request._query.IgniteDemoMode === 'true')
-                this._agentSockets.find(token, (agent) => _.includes(agent.demo.browserSockets, browserSock));
-
-            // TODO If latest browser with demo need stop demo cluster on agent.
-        }
-
         /**
          * Try stop agent for token if not used by others.
          *
-         * @param {String} token
+         * @param {mongo.Account} account
          */
-        onTokenReset(token) {
+        onTokenReset(account) {
             if (_.isNil(this.io))
                 return;
 
-            const sockets = this._agentSockets[token];
+            const agentSockets = this._agentSockets.get(account);
 
-            _.forEach(sockets, (socket) => socket._sendToAgent('agent:reset:token', token));
+            _.forEach(agentSockets, (sock) => sock.resetToken(account.token));
         }
     }
 
