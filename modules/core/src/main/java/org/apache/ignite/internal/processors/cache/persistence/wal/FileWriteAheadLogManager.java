@@ -1509,6 +1509,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public void cleanupWalDirectories() throws IgniteCheckedException {
+        if(segmentAware != null)
+            segmentAware.setLastArchivedAbsoluteIndex(-1);
+
         try {
             try (DirectoryStream<Path> files = Files.newDirectoryStream(walWorkDir.toPath())) {
                 for (Path path : files)
