@@ -1059,10 +1059,8 @@ public class BinaryUtils {
                 if (mergedSchemas.add(newSchema)) {
                     changed = true;
 
-                    if (changedSchemas != null) {
-                        for (BinarySchema schema : newMeta.schemas())
-                            changedSchemas.add(schema.schemaId());
-                    }
+                    if (changedSchemas != null)
+                        changedSchemas.add(newSchema.schemaId());
                 }
             }
 
