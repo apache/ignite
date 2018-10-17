@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -136,7 +137,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     protected final MvccSnapshot mvccSnapshot;
 
     /** New DHT nodes. */
-    protected Set<UUID> newDhtNodes = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    protected Set<UUID> newDhtNodes = new HashSet<>();
 
     /** Near node ID. */
     protected final UUID nearNodeId;
@@ -427,6 +428,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
                     tx.markQueryEnlisted(mvccSnapshot);
 
+                    boolean needOldVal = cctx.shared().mvccCaching().continuousQueryListeners(cctx, tx, key) != null;
+
                     GridCacheUpdateTxResult res;
 
                     while (true) {
@@ -441,6 +444,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                                         topVer,
                                         mvccSnapshot,
                                         isMoving(key.partition()),
+                                        needOldVal,
                                         filter,
                                         needResult());
 
@@ -462,6 +466,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                                         op.cacheOperation(),
                                         isMoving(key.partition()),
                                         op.noCreate(),
+                                        needOldVal,
                                         filter,
                                         needResult());
 
@@ -630,6 +635,10 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
         if (!updRes.success())
             return;
+
+        if (!updRes.filtered())
+            cctx.shared().mvccCaching().addEnlisted(entry.key(), updRes.newValue(), 0, 0, lockVer,
+                updRes.oldValue(), tx.local(), tx.topologyVersion(), mvccSnapshot, cctx.cacheId(), tx, null, -1);
 
         if (op != EnlistOperation.LOCK)
             addToBatch(entry.key(), val, updRes.mvccHistory(), entry.context().cacheId());
@@ -918,9 +927,10 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             for (int i = 0; i < parts.length; i++) {
                 GridDhtLocalPartition p = top.localPartition(parts[i]);
 
-                if (p == null || p.state() != GridDhtPartitionState.OWNING)
+                if (p == null || p.state() != GridDhtPartitionState.OWNING) {
                     throw new ClusterTopologyCheckedException("Cannot run update query. " +
-                        "Node must own all the necessary partitions."); // TODO IGNITE-7185 Send retry instead.
+                        "Node must own all the necessary partitions.");
+                }
             }
         }
         finally {

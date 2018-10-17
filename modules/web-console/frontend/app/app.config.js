@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-import _ from 'lodash';
 import angular from 'angular';
+
 import negate from 'lodash/negate';
 import isNil from 'lodash/isNil';
 import isEmpty from 'lodash/isEmpty';
@@ -133,4 +133,3 @@ igniteConsoleCfg.directive('uiGridSelection', function() {
         }
     };
 });
-
