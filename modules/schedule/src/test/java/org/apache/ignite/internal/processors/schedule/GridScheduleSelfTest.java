@@ -128,7 +128,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
         SchedulerFuture<?> fut = null;
 
-        long freq = 2; // 2 seconds frequency.
+        long freq = 60; // 2 seconds frequency.
         long delay = 2; // 2 seconds delay.
 
         try {

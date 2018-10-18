@@ -85,8 +85,8 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
     /** Task calls counter. */
     private int callCnt;
 
-    /** De-schedule flag. */
-    private final AtomicBoolean descheduled = new AtomicBoolean(true);
+    /** schedule flag. */
+    private final AtomicBoolean scheduled = new AtomicBoolean(false);
 
     /** Listeners. */
     private Collection<IgniteInClosure<? super IgniteFuture<R>>> lsnrs = new ArrayList<>(1);
@@ -315,7 +315,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
         try {
             id = sched.schedule(cron, run);
 
-            descheduled.set(false);
+            scheduled.set(true);
         }
         catch (IgniteException e) {
             onEnd(resLatch, null, e, true);
@@ -326,7 +326,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
      * De-schedules scheduled task.
      */
     void deschedule() {
-        if (descheduled.compareAndSet(false, true)) {
+        if (scheduled.compareAndSet(true, false)) {
             sched.deschedule(id);
 
             ((IgniteScheduleProcessor)ctx.schedule()).onDescheduled(this);
