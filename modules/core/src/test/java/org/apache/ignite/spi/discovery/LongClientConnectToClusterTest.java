@@ -43,7 +43,7 @@ import java.util.Map;
  */
 public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
     /** Client metrics update count. */
-    private static int clientMetricsUpdateCnt;
+    private static volatile int clientMetricsUpdateCnt;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
