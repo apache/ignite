@@ -110,7 +110,7 @@ public class PersistentLinkedList<T extends MemoryBlock.Kind, E extends Serializ
 
         MemoryBlock<T> mr = getMemoryBlock(baseAddress);
 
-        int size = (int) mr.size();
+        int size = (int) mr.size() - Long.BYTES;
         byte[] ba = new byte[size];
         for (int i = 0; i < size; i++)
             ba[i] = mr.getByte(i);
@@ -127,7 +127,7 @@ public class PersistentLinkedList<T extends MemoryBlock.Kind, E extends Serializ
     public boolean contains(Object item) {
         long curr = head;
 
-        while (curr != 0 && getItem(curr).hashCode() != item.hashCode())
+        while (curr != 0 && !getItem(curr).equals(item))
             curr = getNextLink(curr);
 
         if (curr == 0)
@@ -175,7 +175,7 @@ public class PersistentLinkedList<T extends MemoryBlock.Kind, E extends Serializ
         long curr = head;
 
         int i = 0;
-        while (curr != 0 && getItem(curr).hashCode() != item.hashCode()) {
+        while (curr != 0 && !getItem(curr).equals(item)) {
             curr = getNextLink(curr);
             i++;
         }
@@ -269,7 +269,7 @@ public class PersistentLinkedList<T extends MemoryBlock.Kind, E extends Serializ
      */
     protected void setNextLink(long baseAddress, long next) {
         MemoryBlock<T> mr = getMemoryBlock(baseAddress);
-        mr.setLong(mr.size(), next);
+        mr.setLong(mr.size() - Long.BYTES, next);
     }
 
     /**
@@ -280,7 +280,7 @@ public class PersistentLinkedList<T extends MemoryBlock.Kind, E extends Serializ
      */
     protected long getNextLink(long baseAddress) {
         MemoryBlock<T> mr = getMemoryBlock(baseAddress);
-        return mr.getLong(mr.size());
+        return mr.getLong(mr.size() - Long.BYTES);
     }
 
 

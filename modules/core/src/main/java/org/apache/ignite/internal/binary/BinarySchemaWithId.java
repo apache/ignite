@@ -21,4 +21,20 @@ public class BinarySchemaWithId implements Serializable {
     public BinarySchema getSchema() {
         return schema;
     }
+
+    @Override
+    public boolean equals(Object o) {
+
+        if (o == this) {
+            return true;
+        }
+
+        if (!(o instanceof BinarySchemaWithId)) {
+            return false;
+        }
+
+        BinarySchemaWithId bswi = (BinarySchemaWithId) o;
+        return this.schemaId == bswi.schemaId && this.schema.equals(bswi.schema);
+    }
+
 }
