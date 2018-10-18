@@ -2857,13 +2857,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             if (!exchFut.changedAffinity()) {
                                 GridDhtPartitionsExchangeFuture lastFut = lastFinishedFut.get();
 
-                                if (!lastFut.changedAffinity()) {
-                                    AffinityTopologyVersion lastAffVer = cctx.exchange().lastAffinityChangedTopologyVersion(lastFut.initialVersion());
+                                if (lastFut != null) {
+                                    if (!lastFut.changedAffinity()) {
+                                        AffinityTopologyVersion lastAffVer = cctx.exchange().lastAffinityChangedTopologyVersion(lastFut.initialVersion());
 
-                                    cctx.exchange().lastAffinityChangedTopologyVersion(exchFut.initialVersion(), lastAffVer);
+                                        cctx.exchange().lastAffinityChangedTopologyVersion(exchFut.initialVersion(), lastAffVer);
+                                    }
+                                    else
+                                        cctx.exchange().lastAffinityChangedTopologyVersion(exchFut.initialVersion(), lastFut.initialVersion());
                                 }
-                                else
-                                    cctx.exchange().lastAffinityChangedTopologyVersion(exchFut.initialVersion(), lastFut.initialVersion());
                             }
 
                             exchFut.init(newCrd);
