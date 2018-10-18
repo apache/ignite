@@ -2392,8 +2392,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         Collection<Integer> ignoreGrps = metastoreOnly ? Collections.emptySet() :
             F.concat(false, initiallyGlobalWalDisabledGrps, initiallyLocalWalDisabledGrps);
 
-        log.warning("Ignoring groups: " + ignoreGrps);
-
         try (WALIterator it = cctx.wal().replay(status.startPtr)) {
             Map<T2<Integer, Integer>, T2<Integer, Long>> partStates = new HashMap<>();
 
@@ -2417,8 +2415,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                             // Can empty in case recovery node on blt changed.
                             if (cacheDesc == null) {
-                                log.warning("Failed to update due to not existing cache: " + cacheId);
-
                                 continue;
                             }
 
@@ -2447,6 +2443,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         break;
 
                     case METASTORE_DATA_RECORD:
+                        if (!metastoreOnly)
+                            continue;
+
                         MetastoreDataRecord metastoreDataRecord = (MetastoreDataRecord)rec;
 
                         metaStorage.applyUpdate(metastoreDataRecord.key(), metastoreDataRecord.value());

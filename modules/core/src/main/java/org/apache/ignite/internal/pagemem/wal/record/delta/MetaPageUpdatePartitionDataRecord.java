@@ -114,8 +114,6 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
         io.setCountersPageId(pageAddr, cntrsPageId);
         io.setPartitionState(pageAddr, state);
         io.setCandidatePageCount(pageAddr, allocatedIdxCandidate);
-
-        System.err.println("Applied " + groupId() + " " + state);
     }
 
     /**

@@ -1515,7 +1515,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
         cache.onKernalStop();
 
-        if (ctx.events().isRecordable(EventType.EVT_CACHE_STOPPED))
+        if (!ctx.isRecoveryMode() && ctx.events().isRecordable(EventType.EVT_CACHE_STOPPED))
             ctx.events().addEvent(EventType.EVT_CACHE_STOPPED);
     }
 

@@ -394,8 +394,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             else {
                 if (needSnapshot)
                     tryAddEmptyPartitionToSnapshot(store, ctx);
-
-                log.warning("Not saved partition state: " + grp.cacheOrGroupName() + " " + store.partId() + " " + getPartition(store));
             }
         }
         else if (needSnapshot)
