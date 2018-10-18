@@ -54,7 +54,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     private final AtomicLong loadOrder = new AtomicLong(0);
 
     /** Entry start version. */
-    public GridCacheVersion START_VER;
+    private GridCacheVersion startVer;
 
     /** Last version. */
     private volatile GridCacheVersion last;
@@ -87,7 +87,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     @Override public void start0() throws IgniteCheckedException {
         last = new GridCacheVersion(0, order.get(), 0, dataCenterId);
 
-        START_VER = new GridCacheVersion(0, 0, 0, dataCenterId);
+        startVer = new GridCacheVersion(0, 0, 0, dataCenterId);
 
         cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_METRICS_UPDATED);
     }
@@ -107,7 +107,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
 
         last = new GridCacheVersion(0, order.get(), 0, dataCenterId);
 
-        START_VER = new GridCacheVersion(0, 0, 0, dataCenterId);
+        startVer = new GridCacheVersion(0, 0, 0, dataCenterId);
     }
 
     /**
@@ -304,5 +304,26 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
      */
     public GridCacheVersion last() {
         return last;
+    }
+
+    /**
+     * Gets start version.
+     *
+     * @return Start version.
+     */
+    public GridCacheVersion startVersion() {
+        assert startVer != null;
+
+        return startVer;
+    }
+
+    /**
+     * Check if given version is start version.
+     *
+     * @param ver Version.
+     * @return {@code True} if given version is start version.
+     */
+    public boolean isStartVersion(GridCacheVersion ver) {
+        return startVer.equals(ver);
     }
 }
