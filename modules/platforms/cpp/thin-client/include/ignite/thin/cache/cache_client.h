@@ -410,6 +410,37 @@ namespace ignite
                 }
 
                 /**
+                 * Atomically removes the entry for a key only if currently mapped to some value.
+                 *
+                 * @param key Key with which the specified value is to be associated.
+                 * @param valOut The value associated with the key at the start of the operation or null if none was
+                 *     associated.
+                 */
+                void GetAndRemove(const KeyType& key, ValueType& valOut)
+                {
+                    impl::thin::WritableKeyImpl<KeyType> wrKey(key);
+                    impl::thin::ReadableImpl<ValueType> rdValOut(valOut);
+
+                    proxy.GetAndRemove(wrKey, rdValOut);
+                }
+
+                /**
+                 * Atomically removes the entry for a key only if currently mapped to some value.
+                 *
+                 * @param key Key with which the specified value is to be associated.
+                 * @return The value associated with the key at the start of the operation or null if none was
+                 *     associated.
+                 */
+                ValueType GetAndRemove(const KeyType& key)
+                {
+                    ValueType valOut;
+
+                    GetAndRemove(key, valOut);
+
+                    return valOut;
+                }
+
+                /**
                  * Refresh affinity mapping.
                  *
                  * Retrieves affinity mapping information from remote server. This information uses to send data

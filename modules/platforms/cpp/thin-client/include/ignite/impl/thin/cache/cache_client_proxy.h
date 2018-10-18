@@ -219,6 +219,15 @@ namespace ignite
                     void GetAndPut(const WritableKey& key, const Writable& valIn, Readable& valOut);
 
                     /**
+                     * Atomically removes the entry for a key only if currently mapped to some value.
+                     *
+                     * @param key Key with which the specified value is to be associated.
+                     * @param valOut The value associated with the key at the start of the operation or null if none
+                     *     was associated.
+                     */
+                    void GetAndRemove(const WritableKey& key, Readable& valOut);
+
+                    /**
                      * Get from CacheClient.
                      * Use for testing purposes only.
                      */
