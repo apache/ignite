@@ -441,6 +441,42 @@ namespace ignite
                 }
 
                 /**
+                 * Atomically replaces the value for a given key if and only if there is a value currently mapped by
+                 * the key.
+                 *
+                 * @param key Key with which the specified value is to be associated.
+                 * @param valIn Value to be associated with the specified key.
+                 * @param valOut The value associated with the key at the start of the operation or null if none was
+                 *     associated.
+                 */
+                void GetAndReplace(const KeyType& key, const ValueType& valIn, ValueType& valOut)
+                {
+                    impl::thin::WritableKeyImpl<KeyType> wrKey(key);
+                    impl::thin::WritableImpl<ValueType> wrValIn(valIn);
+                    impl::thin::ReadableImpl<ValueType> rdValOut(valOut);
+
+                    proxy.GetAndReplace(wrKey, wrValIn, rdValOut);
+                }
+
+                /**
+                 * Atomically replaces the value for a given key if and only if there is a value currently mapped by
+                 * the key.
+                 *
+                 * @param key Key with which the specified value is to be associated.
+                 * @param valIn Value to be associated with the specified key.
+                 * @return The value associated with the key at the start of the operation or null if none was
+                 *     associated.
+                 */
+                ValueType GetAndReplace(const KeyType& key, const ValueType& valIn)
+                {
+                    ValueType valOut;
+
+                    GetAndReplace(key, valIn, valOut);
+
+                    return valOut;
+                }
+
+                /**
                  * Refresh affinity mapping.
                  *
                  * Retrieves affinity mapping information from remote server. This information uses to send data

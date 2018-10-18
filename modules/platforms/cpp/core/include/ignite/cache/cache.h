@@ -531,15 +531,15 @@ namespace ignite
             }
 
             /**
-             * Atomically replaces the value for a given key if and only if there is
-             * a value currently mapped by the key.
+             * Atomically replaces the value for a given key if and only if there is a value currently mapped by
+             * the key.
              *
              * This method should only be used on the valid instance.
              *
              * @param key Key with which the specified value is to be associated.
              * @param val Value to be associated with the specified key.
-             * @return The previous value associated with the specified key, or
-             *     null if there was no mapping for the key.
+             * @return The previous value associated with the specified key, or null if there was no mapping for
+             *     the key.
              */
             V GetAndReplace(const K& key, const V& val)
             {
@@ -553,16 +553,16 @@ namespace ignite
             }
 
             /**
-             * Atomically replaces the value for a given key if and only if there is
-             * a value currently mapped by the key.
+             * Atomically replaces the value for a given key if and only if there is a value currently mapped by
+             * the key.
              *
              * This method should only be used on the valid instance.
              *
              * @param key Key with which the specified value is to be associated.
              * @param val Value to be associated with the specified key.
              * @param err Error.
-             * @return The previous value associated with the specified key, or
-             *     null if there was no mapping for the key.
+             * @return The previous value associated with the specified key, or null if there was no mapping for
+             *     the key.
              */
             V GetAndReplace(const K& key, const V& val, IgniteError& err)
             {

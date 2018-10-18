@@ -1361,8 +1361,14 @@ BOOST_AUTO_TEST_CASE(CacheClientGetAndReplaceBasicKeyValue)
     std::string valIn1 = "Lorem ipsum";
     std::string valIn2 = "Test";
 
+    std::string valOut;
+    cache.GetAndReplace(key, valIn1, valOut);
+
+    BOOST_CHECK(valOut.empty());
+    BOOST_CHECK(!cache.ContainsKey(key));
+
     cache.Put(key, valIn1);
-    std::string valOut = cache.GetAndReplace(key, valIn2);
+    valOut = cache.GetAndReplace(key, valIn2);
 
     BOOST_CHECK_EQUAL(valOut, valIn1);
 
@@ -1395,7 +1401,9 @@ BOOST_AUTO_TEST_CASE(CacheClientGetAndReplaceComplexValue)
     valIn2.objField.f1 = 654;
     valIn2.objField.f2 = "Lorem";
 
-    ignite::ComplexType valOut;
+    ignite::ComplexType valOut = cache.GetAndReplace(key, valIn1);
+
+    BOOST_CHECK(!cache.ContainsKey(key));
 
     cache.Put(key, valIn1);
     cache.GetAndReplace(key, valIn2, valOut);
@@ -1433,8 +1441,14 @@ BOOST_AUTO_TEST_CASE(CacheClientGetAndReplaceComplexKey)
     int32_t valIn1 = 123;
     int32_t valIn2 = 321;
 
+    int32_t valOut;
+    cache.GetAndReplace(key, valIn1, valOut);
+
+    BOOST_CHECK_EQUAL(valOut, 0);
+    BOOST_CHECK(!cache.ContainsKey(key));
+
     cache.Put(key, valIn1);
-    int32_t valOut = cache.GetAndReplace(key, valIn2);
+    valOut = cache.GetAndReplace(key, valIn2);
 
     BOOST_CHECK_EQUAL(valOut, valIn1);
 

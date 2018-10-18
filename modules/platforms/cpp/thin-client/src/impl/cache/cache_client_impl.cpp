@@ -221,6 +221,14 @@ namespace ignite
                     SyncCacheKeyMessage(key, req, rsp);
                 }
 
+                void CacheClientImpl::GetAndReplace(const WritableKey& key, const Writable& valIn, Readable& valOut)
+                {
+                    CacheKeyValueRequest<RequestType::CACHE_GET_AND_REPLACE> req(id, binary, key, valIn);
+                    CacheValueResponse rsp(valOut);
+
+                    SyncCacheKeyMessage(key, req, rsp);
+                }
+
                 void CacheClientImpl::RefreshAffinityMapping()
                 {
                     router.Get()->RefreshAffinityMapping(id, binary);

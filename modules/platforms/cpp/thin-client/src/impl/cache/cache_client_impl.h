@@ -223,6 +223,17 @@ namespace ignite
                     void GetAndRemove(const WritableKey& key, Readable& valOut);
 
                     /**
+                     * Atomically replaces the value for a given key if and only if there is a value currently mapped by
+                     * the key.
+                     *
+                     * @param key Key with which the specified value is to be associated.
+                     * @param valIn Value to be associated with the specified key.
+                     * @param valOut The value associated with the key at the start of the operation or null if none was
+                     *     associated.
+                     */
+                    void GetAndReplace(const WritableKey& key, const Writable& valIn, Readable& valOut);
+
+                    /**
                      * Update cache partitions info.
                      */
                     void RefreshAffinityMapping();
