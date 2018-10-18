@@ -33,8 +33,6 @@ import org.apache.ignite.ml.math.exceptions.knn.FileParsingException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 
-import static org.apache.ignite.examples.ml.util.MLSandboxDatasets.*;
-
 
 /**
  * Common utility code used in some ML examples to set up test cache.
@@ -86,6 +84,13 @@ public class SandboxMLCache {
         return cache;
     }
 
+    /**
+     * Fills cache with data and returns it.
+     *
+     * @param dataset The chosen dataset.
+     * @return Filled Ignite Cache.
+     * @throws FileNotFoundException If file not found.
+     */
     public IgniteCache<Integer, Vector> fillCacheWith(MLSandboxDatasets dataset) throws FileNotFoundException {
 
         IgniteCache<Integer, Vector> cache = getCache();

@@ -30,8 +30,21 @@ public enum MLSandboxDatasets {
     /** The 1st and 2nd classes from the Iris dataset. */
     TWO_CLASSED_IRIS("examples/src/main/resources/datasets/two_classed_iris.csv", false, "\t"),
 
-    /** The dataset is about different computers' properties. */
-    CLEARED_MACHINES("examples/src/main/resources/datasets/cleared_machines.csv", false, ";");
+    /** The dataset is about different computers' properties based on https://archive.ics.uci.edu/ml/datasets/Computer+Hardware. */
+    CLEARED_MACHINES("examples/src/main/resources/datasets/cleared_machines.csv", false, ";"),
+
+    /**
+     * The health data is related to death rate based on; doctor availability, hospital availability,
+     * annual per capita income, and population density people per square mile.
+     */
+    MORTALITY_DATA("examples/src/main/resources/datasets/mortalitydata.csv", false, ";"),
+
+    /**
+     * The preprocessed Glass dataset from the Machine Learning Repository https://archive.ics.uci.edu/ml/datasets/Glass+Identification
+     * There are 3 classes with labels: 1 {building_windows_float_processed}, 3 {vehicle_windows_float_processed}, 7 {headlamps}.
+     * Feature names: 'Na-Sodium', 'Mg-Magnesium', 'Al-Aluminum', 'Ba-Barium', 'Fe-Iron'.
+     */
+    GLASS_IDENTIFICATION("examples/src/main/resources/datasets/glass_identification.csv", false, ";");
 
     /** Filename. */
     private final String filename;
