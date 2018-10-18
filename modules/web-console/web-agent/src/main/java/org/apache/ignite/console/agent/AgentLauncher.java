@@ -46,7 +46,7 @@ import javax.net.ssl.TrustManager;
 import org.apache.ignite.console.agent.handlers.ClusterListener;
 import org.apache.ignite.console.agent.handlers.DatabaseListener;
 import org.apache.ignite.console.agent.handlers.RestListener;
-import org.apache.ignite.console.agent.rest.RestExecutor;
+import org.apache.ignite.console.agent.rest.RestExecutorPool;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.json.JSONArray;
@@ -335,8 +335,8 @@ public class AgentLauncher {
 
         final Socket client = IO.socket(uri, opts);
 
-        try (RestExecutor restExecutor = new RestExecutor();
-             ClusterListener clusterLsnr = new ClusterListener(cfg, client, restExecutor)) {
+        try (RestExecutorPool restPool = new RestExecutorPool(cfg);
+             ClusterListener clusterLsnr = new ClusterListener(cfg, client, restPool)) {
             Emitter.Listener onConnect = connectRes -> {
                 log.info("Connection established.");
 
@@ -416,7 +416,7 @@ public class AgentLauncher {
             };
 
             DatabaseListener dbHnd = new DatabaseListener(cfg);
-            RestListener restHnd = new RestListener(cfg, restExecutor);
+            RestListener restHnd = new RestListener(cfg, restPool);
 
             final CountDownLatch latch = new CountDownLatch(1);
 

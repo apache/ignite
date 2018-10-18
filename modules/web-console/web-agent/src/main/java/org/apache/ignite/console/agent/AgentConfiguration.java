@@ -372,6 +372,18 @@ public class AgentConfiguration {
 
         if (disableDemo == null)
             disableDemo(cfg.disableDemo());
+
+        if (clientCert == null)
+            clientCertificate(cfg.clientCertificate());
+
+        if (clientPass == null)
+            clientPassword(cfg.clientPassword());
+
+        if (trustStore == null)
+            trustStore(cfg.trustStore());
+
+        if (trustStorePass == null)
+            trustStorePassword(cfg.trustStorePassword());
     }
 
     /** {@inheritDoc} */

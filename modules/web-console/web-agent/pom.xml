@@ -55,13 +55,13 @@
         <dependency>
             <groupId>com.beust</groupId>
             <artifactId>jcommander</artifactId>
-            <version>1.48</version>
+            <version>1.58</version>
         </dependency>
 
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
-            <version>3.7.0</version>
+            <version>3.11.0</version>
         </dependency>
 
         <dependency>

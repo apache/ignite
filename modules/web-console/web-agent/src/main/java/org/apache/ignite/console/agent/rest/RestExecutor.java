@@ -17,14 +17,22 @@
 
 package org.apache.ignite.console.agent.rest;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.ConnectException;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
+
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -33,13 +41,16 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
 import okhttp3.Dispatcher;
 import okhttp3.FormBody;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -65,17 +76,36 @@ public class RestExecutor implements AutoCloseable {
     private static final ObjectMapper MAPPER = new GridJettyObjectMapper();
 
     /** */
+    private static final char[] EMPTY_PWD = new char[0];
+
+    /** */
     private final OkHttpClient httpClient;
 
     /** Index of alive node URI. */
-    private Map<List<String>, Integer> startIdxs = U.newHashMap(2);
+    private final Map<List<String>, Integer> startIdxs = U.newHashMap(2);
 
     /**
-     * Default constructor.
+     * @param pathToJks Path to java key store file.
+     * @param pwd Key store password.
+     * @return Key store.
+     * @throws GeneralSecurityException If failed to load key store.
+     * @throws IOException If failed to load java key store file content.
      */
-    public RestExecutor() {
+    private static KeyStore keyStore(String pathToJks, char[] pwd) throws GeneralSecurityException, IOException {
+        KeyStore keyStore = KeyStore.getInstance("JKS");
+        keyStore.load(new FileInputStream(pathToJks), pwd);
+
+        return keyStore;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param cfg Agent configuration.
+     */
+    public RestExecutor(AgentConfiguration cfg) {
         Dispatcher dispatcher = new Dispatcher();
-        
+
         dispatcher.setMaxRequests(Integer.MAX_VALUE);
         dispatcher.setMaxRequestsPerHost(Integer.MAX_VALUE);
 
@@ -94,8 +124,51 @@ public class RestExecutor implements AutoCloseable {
                 builder.sslSocketFactory(ctx.getSocketFactory(), trustManager());
 
                 builder.hostnameVerifier((hostname, session) -> true);
-            } catch (Exception ignored) {
-                LT.warn(log, "Failed to initialize the Trust Manager for \"-Dtrust.all\" option to skip certificate validation.");
+            }
+            catch (Exception ignored) {
+                LT.warn(log, "Failed to initialize socket factory for \"-Dtrust.all\" option to skip certificate validation.");
+            }
+        }
+        else {
+            try {
+                String clnJks = cfg.clientCertificate();
+                String trustJks = cfg.trustStore();
+
+                if (clnJks != null && trustJks != null) {
+                    char[] clnPwd = cfg.clientPassword() != null ? cfg.clientPassword().toCharArray() : EMPTY_PWD;
+
+                    KeyStore clnKeyStore = keyStore(clnJks, clnPwd);
+
+                    KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+                    kmf.init(clnKeyStore, clnPwd);
+
+                    char[] trustPwd = cfg.trustStorePassword() != null ? cfg.trustStorePassword().toCharArray() : EMPTY_PWD;
+                    KeyStore trustKeyStore = keyStore(trustJks, trustPwd);
+
+                    TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
+                    tmf.init(trustKeyStore);
+
+                    TrustManager[] trustMgrs = tmf.getTrustManagers();
+
+                    X509TrustManager trustMgr = (X509TrustManager)Arrays.stream(trustMgrs)
+                        .filter(tm -> tm instanceof X509TrustManager)
+                        .findFirst()
+                        .orElseGet(null);
+
+                    if (trustMgr == null)
+                        throw new IllegalStateException("X509TrustManager manager not found");
+
+                    SSLContext ctx = SSLContext.getInstance("TLS");
+
+                    ctx.init(kmf.getKeyManagers(), trustMgrs, null);
+
+                    builder.sslSocketFactory(ctx.getSocketFactory(), trustMgr);
+
+                    builder.hostnameVerifier((hostname, session) -> true);
+                }
+            }
+            catch (Exception e) {
+                log.error("Failed to initialize socket factory to establish mutual SSL connection with server", e);
             }
         }
 

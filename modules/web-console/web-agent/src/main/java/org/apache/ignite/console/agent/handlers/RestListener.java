@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.apache.ignite.console.agent.AgentConfiguration;
-import org.apache.ignite.console.agent.rest.RestExecutor;
+import org.apache.ignite.console.agent.rest.RestExecutorPool;
 import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.console.demo.AgentClusterDemo;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -34,15 +34,15 @@ public class RestListener extends AbstractListener {
     private final AgentConfiguration cfg;
 
     /** */
-    private final RestExecutor restExecutor;
+    private final RestExecutorPool restPool;
 
     /**
      * @param cfg Config.
-     * @param restExecutor Executor.
+     * @param restPool REST executors pool.
      */
-    public RestListener(AgentConfiguration cfg, RestExecutor restExecutor) {
+    public RestListener(AgentConfiguration cfg, RestExecutorPool restPool) {
         this.cfg = cfg;
-        this.restExecutor = restExecutor;
+        this.restPool = restPool;
     }
 
     /** {@inheritDoc} */
@@ -79,10 +79,10 @@ public class RestListener extends AbstractListener {
                         return RestResult.fail(404, "Failed to send request because of embedded node for demo mode is not started yet.");
                 }
 
-                return restExecutor.sendRequest(AgentClusterDemo.getDemoUrl(), params, headers);
+                return restPool.sendRequest("demo-rest-listener", AgentClusterDemo.getDemoUrl(), params, headers);
             }
 
-            return restExecutor.sendRequest(this.cfg.nodeURIs(), params, headers);
+            return restPool.sendRequest("rest-listener", this.cfg.nodeURIs(), params, headers);
         }
         catch (Exception e) {
             U.error(log, "Failed to execute REST command with parameters: " + params, e);

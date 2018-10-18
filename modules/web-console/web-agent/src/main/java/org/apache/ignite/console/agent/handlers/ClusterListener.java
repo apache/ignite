@@ -36,7 +36,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.ignite.console.agent.AgentConfiguration;
-import org.apache.ignite.console.agent.rest.RestExecutor;
+import org.apache.ignite.console.agent.rest.RestExecutorPool;
 import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
@@ -116,28 +116,28 @@ public class ClusterListener implements AutoCloseable {
     };
 
     /** */
-    private AgentConfiguration cfg;
-
-    /** */
-    private Socket client;
-
-    /** */
-    private RestExecutor restExecutor;
-
-    /** */
     private static final ScheduledExecutorService pool = Executors.newScheduledThreadPool(1);
+
+    /** */
+    private final AgentConfiguration cfg;
+
+    /** */
+    private final Socket client;
+
+    /** */
+    private final RestExecutorPool restPool;
 
     /** */
     private ScheduledFuture<?> refreshTask;
 
     /**
      * @param client Client.
-     * @param restExecutor Client.
+     * @param restPool REST executors pool.
      */
-    public ClusterListener(AgentConfiguration cfg, Socket client, RestExecutor restExecutor) {
+    public ClusterListener(AgentConfiguration cfg, Socket client, RestExecutorPool restPool) {
         this.cfg = cfg;
         this.client = client;
-        this.restExecutor = restExecutor;
+        this.restPool = restPool;
     }
 
     /**
@@ -393,7 +393,7 @@ public class ClusterListener implements AutoCloseable {
                 params.put("password", cfg.nodePassword());
             }
 
-            RestResult res = restExecutor.sendRequest(cfg.nodeURIs(), params, null);
+            RestResult res = restPool.sendRequest("web-agent", cfg.nodeURIs(), params, null);
 
             switch (res.getStatus()) {
                 case STATUS_SUCCESS:
