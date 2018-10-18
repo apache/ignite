@@ -111,7 +111,9 @@ import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker.MVCC_TRACKER_ID_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
@@ -2042,18 +2044,10 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 VacuumTask task = cleanupQueue.take();
 
                 try {
-                    if (task.part().state() != OWNING) {
-                        task.part().group().preloader().rebalanceFuture()
-                            .listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
-                                @Override public void apply(IgniteInternalFuture<Boolean> future) {
-                                    cleanupQueue.add(task);
-                                }
-                            });
-
-                        continue;
-                    }
-
-                    task.onDone(processPartition(task));
+                    if (task.part().state() == RENTING || task.part().state() == MOVING)
+                        task.part().group().preloader().rebalanceFuture().listen(f -> cleanupQueue.add(task));
+                    else
+                        task.onDone(processPartition(task));
                 }
                 catch (IgniteInterruptedCheckedException e) {
                     throw e; // Cancelled.

@@ -88,6 +88,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlReque
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2SelectForUpdateTxDetails;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -293,6 +294,9 @@ public class GridReduceQueryExecutor {
                 e = new CacheException("Failed to execute map query on remote node [nodeId=" + nodeId +
                     ", errMsg=" + msg + ']', new QueryCancelledException());
             }
+            else if (failCode == GridQueryFailResponse.CANCELLED_BY_TX_TIMEOUT)
+                e = new CacheException("Failed to execute map query on remote node [nodeId=" + nodeId + ']',
+                    new IgniteTxTimeoutCheckedException(msg));
             else {
                 e = new CacheException("Failed to execute map query on remote node [nodeId=" + nodeId +
                     ", errMsg=" + msg + ']');

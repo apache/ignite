@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -35,6 +35,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -62,7 +63,7 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
 
         disableScheduledVacuum = getName().equals("testSelectForUpdateAfterAbortedTx");
 
-        startGrids(3);
+        IgniteEx grid = startGrid(0);
 
         CacheConfiguration seg = new CacheConfiguration("segmented*");
 
@@ -71,18 +72,14 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
         if (seg.getCacheMode() == PARTITIONED)
             seg.setQueryParallelism(4);
 
-        grid(0).addCacheConfiguration(seg);
+        grid.addCacheConfiguration(seg);
 
-        Thread.sleep(1000L);
-
-        try (Connection c = connect(grid(0))) {
+        try (Connection c = connect(grid)) {
             execute(c, "create table person (id int primary key, firstName varchar, lastName varchar) " +
                 "with \"atomicity=transactional_snapshot,cache_name=Person\"");
 
             execute(c, "create table person_seg (id int primary key, firstName varchar, lastName varchar) " +
                 "with \"atomicity=transactional_snapshot,cache_name=PersonSeg,template=segmented\"");
-
-            readyTopologyFuture(new AffinityTopologyVersion(3,3)).get(TX_TIMEOUT);
 
             try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.PESSIMISTIC,
                 TransactionIsolation.REPEATABLE_READ)) {
@@ -97,6 +94,8 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
                 tx.commit();
             }
         }
+
+        startGridsMultiThreaded(1, 2);
     }
 
     /**
@@ -315,12 +314,12 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
                     fut.get();
                 }
                 catch (Exception e) {
-                    CacheException e0 = X.cause(e, CacheException.class);
+                    IgniteTxTimeoutCheckedException e0 = X.cause(e, IgniteTxTimeoutCheckedException.class);
 
-                    assert e0 != null;
+                    assert e0 != null : e;
 
                     assert e0.getMessage() != null &&
-                        e0.getMessage().contains("Failed to acquire lock within provided timeout");
+                        e0.getMessage().contains("Failed to acquire lock within provided timeout") : e0;
                 }
             }
         }
@@ -362,16 +361,5 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
                 return node.cache("Person").query(new SqlFieldsQuery(qry).setLocal(loc)).getAll();
             }
         }, IgniteSQLException.class, exMsg);
-    }
-
-    /** */
-    private IgniteInternalFuture<AffinityTopologyVersion> readyTopologyFuture(AffinityTopologyVersion top) throws IgniteCheckedException {
-        GridCompoundIdentityFuture<AffinityTopologyVersion> res = new GridCompoundIdentityFuture<>();
-
-        G.allGrids().forEach(g -> res.add(((IgniteEx)g).context().cache().context().exchange().affinityReadyFuture(top)));
-
-        res.markInitialized();
-
-        return res;
     }
 }
