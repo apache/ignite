@@ -148,15 +148,6 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testStartFabricDefault() throws Exception {
-        try (Ignite ignite = Ignition.start("config/fabric/default-config.xml")) {
-            log.info("Started: " + ignite.name());
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testStartDefault() throws Exception {
         try (Ignite ignite = Ignition.start("config/default-config.xml")) {
             log.info("Started: " + ignite.name());
