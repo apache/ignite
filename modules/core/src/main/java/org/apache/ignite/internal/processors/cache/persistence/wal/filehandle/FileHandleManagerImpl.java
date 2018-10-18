@@ -15,16 +15,7 @@
  * limitations under the License.
  */
 
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
- */
-
-package org.apache.ignite.internal.processors.cache.persistence.wal;
+package org.apache.ignite.internal.processors.cache.persistence.wal.filehandle;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -45,6 +36,8 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -59,10 +52,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.Segmen
 import static org.apache.ignite.internal.util.IgniteUtils.sleep;
 
 /**
- * TODO: Add class description.
- *
- * @author @java.author
- * @version @java.version
+ * Manager for {@link FileWriteHandleImpl}.
  */
 public class FileHandleManagerImpl implements FileHandleManager {
     /** Dfault wal segment sync timeout. */
@@ -70,45 +60,54 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
     /** WAL writer worker. */
     private WALWriter walWriter;
-
     /** Wal segment sync worker. */
     private WalSegmentSyncer walSegmentSyncWorker;
-
     /** Context. */
     protected final GridCacheSharedContext cctx;
-
     /** Logger. */
-    protected final IgniteLogger log;
-
+    private final IgniteLogger log;
     /** */
     private final WALMode mode;
-
     /** Persistence metrics tracker. */
     private final DataStorageMetricsImpl metrics;
-
     /** Use mapped byte buffer. */
     private final boolean mmap;
-
-    /** */
+    /** Last WAL pointer. */
     private final ThreadLocal<WALPointer> lastWALPtr;
-
     /** */
-    protected final RecordSerializer serializer;
-
-    private final Supplier<FileWriteHandle> currentHandle;
-
+    private final RecordSerializer serializer;
+    /** Current handle supplier. */
+    private final Supplier<FileWriteHandle> currentHandleSupplier;
+    /** WAL buffer size. */
     private final int walBufferSize;
-
     /** WAL segment size in bytes. . This is maximum value, actual segments may be shorter. */
     private final long maxWalSegmentSize;
-
     /** Fsync delay. */
     private final long fsyncDelay;
 
-    public FileHandleManagerImpl(GridCacheSharedContext cctx, DataStorageMetricsImpl metrics, boolean mmap,
-        ThreadLocal<WALPointer> lastWALPtr, RecordSerializer serializer, Supplier<FileWriteHandle> currentHandle,
+    /**
+     * @param cctx Context.
+     * @param metrics Data storage metrics.
+     * @param mmap Mmap.
+     * @param lastWALPtr Last WAL pointer.
+     * @param serializer Serializer.
+     * @param currentHandleSupplier Current handle supplier.
+     * @param mode WAL mode.
+     * @param walBufferSize WAL buffer size.
+     * @param maxWalSegmentSize Max WAL segment size.
+     * @param fsyncDelay Fsync delay.
+     */
+    public FileHandleManagerImpl(
+        GridCacheSharedContext cctx,
+        DataStorageMetricsImpl metrics,
+        boolean mmap,
+        ThreadLocal<WALPointer> lastWALPtr,
+        RecordSerializer serializer,
+        Supplier<FileWriteHandle> currentHandleSupplier,
         WALMode mode,
-        int walBufferSize, long maxWalSegmentSize, long fsyncDelay) {
+        int walBufferSize,
+        long maxWalSegmentSize,
+        long fsyncDelay) {
         this.cctx = cctx;
         this.log = cctx.logger(FileHandleManagerImpl.class);
         this.mode = mode;
@@ -116,13 +115,19 @@ public class FileHandleManagerImpl implements FileHandleManager {
         this.mmap = mmap;
         this.lastWALPtr = lastWALPtr;
         this.serializer = serializer;
-        this.currentHandle = currentHandle;
+        this.currentHandleSupplier = currentHandleSupplier;
         this.walBufferSize = walBufferSize;
         this.maxWalSegmentSize = maxWalSegmentSize;
         this.fsyncDelay = fsyncDelay;
     }
 
-    @Override public FileWriteHandle build(SegmentIO fileIO, long position, boolean resume, RecordSerializer serializer) throws IOException {
+    /** {@inheritDoc} */
+    @Override public FileWriteHandle initHandle(
+        SegmentIO fileIO,
+        long position,
+        boolean resume,
+        RecordSerializer serializer
+    ) throws IOException {
         SegmentedRingByteBuffer rbuf;
 
         if (mmap) {
@@ -133,18 +138,29 @@ public class FileHandleManagerImpl implements FileHandleManager {
         else
             rbuf = new SegmentedRingByteBuffer(walBufferSize, maxWalSegmentSize, DIRECT, metrics);
 
-            rbuf.init(position);
+        rbuf.init(position);
 
         return new FileWriteHandleImpl(
             fileIO,
             mmap, position,
             resume, rbuf,
             serializer,
-            mode, fsyncDelay, metrics, maxWalSegmentSize, cctx.logger(FileWriteHandleImpl.class), cctx, walWriter);
+            mode,
+            fsyncDelay,
+            metrics,
+            maxWalSegmentSize,
+            cctx,
+            walWriter
+        );
     }
 
-
-    @Override public FileWriteHandle next(SegmentIO fileIO, long position, boolean resume, RecordSerializer serializer) throws IOException {
+    /** {@inheritDoc} */
+    @Override public FileWriteHandle nextHandle(
+        SegmentIO fileIO,
+        long position,
+        boolean resume,
+        RecordSerializer serializer
+    ) throws IOException {
         SegmentedRingByteBuffer rbuf;
 
         if (mmap) {
@@ -156,14 +172,20 @@ public class FileHandleManagerImpl implements FileHandleManager {
             rbuf = currentHandle().buf.reset();
 
         FileWriteHandleImpl handle = null;
-        try {
 
+        try {
             handle = new FileWriteHandleImpl(
                 fileIO,
                 mmap, position,
                 resume, rbuf,
                 serializer,
-                mode, fsyncDelay, metrics, maxWalSegmentSize, cctx.logger(FileWriteHandleImpl.class), cctx, walWriter);
+                mode,
+                fsyncDelay,
+                metrics,
+                maxWalSegmentSize,
+                cctx,
+                walWriter
+            );
             return handle;
         }
         catch (ClosedByInterruptException e) {
@@ -174,11 +196,15 @@ public class FileHandleManagerImpl implements FileHandleManager {
         return handle;
     }
 
+    /**
+     * @return Current handle.
+     */
     private FileWriteHandleImpl currentHandle() {
-        return (FileWriteHandleImpl)currentHandle.get();
+        return (FileWriteHandleImpl)currentHandleSupplier.get();
     }
 
-    @Override public void start(){
+    /** {@inheritDoc} */
+    @Override public void start() {
         if (mode != WALMode.NONE && mode != WALMode.FSYNC) {
             walSegmentSyncWorker = new WalSegmentSyncer(cctx.igniteInstanceName(),
                 cctx.kernalContext().log(WalSegmentSyncer.class));
@@ -190,7 +216,6 @@ public class FileHandleManagerImpl implements FileHandleManager {
             U.quietAndWarn(log, "Started write-ahead log manager in NONE mode, persisted data may be lost in " +
                 "a case of unexpected node failure. Make sure to deactivate the cluster before shutdown.");
 
-
         if (!cctx.kernalContext().clientNode()) {
             if (walSegmentSyncWorker != null)
                 new IgniteThread(walSegmentSyncWorker).start();
@@ -198,6 +223,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
     }
 
+    /** {@inheritDoc} */
     @Override public void stop() throws IgniteCheckedException {
         FileWriteHandleImpl currHnd = currentHandle();
 
@@ -216,7 +242,8 @@ public class FileHandleManagerImpl implements FileHandleManager {
             walWriter.shutdown();
     }
 
-    @Override public void resumeLogging(){
+    /** {@inheritDoc} */
+    @Override public void resumeLogging() {
         walWriter = new WALWriter(log);
 
         if (!mmap)
@@ -522,9 +549,9 @@ public class FileHandleManagerImpl implements FileHandleManager {
                     if (logBackoff < 60 * 60_000)
                         logBackoff *= 2;
 
-//                    U.warn(log, "Still waiting for a concurrent write to complete [written=" + hdl.written +
-//                        ", pos=" + pos + ", lastFsyncPos=" + hdl.lastFsyncPos + ", stop=" + hdl.stop.get() +
-//                        ", actualPos=" + hdl.safePosition() + ']');
+                    U.warn(log, "Still waiting for a concurrent write to complete [written=" + hdl.written +
+                        ", pos=" + pos + ", lastFsyncPos=" + hdl.lastFsyncPos + ", stop=" + hdl.stop.get() +
+                        ", actualPos=" + hdl.safePosition() + ']');
 
                     lastLogged = now;
                 }

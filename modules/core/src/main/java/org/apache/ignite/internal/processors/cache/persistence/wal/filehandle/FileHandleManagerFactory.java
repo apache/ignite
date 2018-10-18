@@ -15,16 +15,7 @@
  * limitations under the License.
  */
 
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
- */
-
-package org.apache.ignite.internal.processors.cache.persistence.wal;
+package org.apache.ignite.internal.processors.cache.persistence.wal.filehandle;
 
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteSystemProperties;
@@ -36,31 +27,46 @@ import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetric
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 
 /**
- * TODO: Add class description.
- *
- * @author @java.author
- * @version @java.version
+ * Factory of {@link FileHandleManager}.
  */
-public class FileHandleFactory {
-
+public class FileHandleManagerFactory {
+    /**   */
     private final boolean walFsyncWithDedicatedWorker =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER, false);
 
+    /** Data storage configuration */
     private final DataStorageConfiguration dsConf;
 
-    public FileHandleFactory(DataStorageConfiguration conf) {
+    /**
+     * @param conf Data storage configuration.
+     */
+    public FileHandleManagerFactory(DataStorageConfiguration conf) {
         dsConf = conf;
     }
 
-    public FileHandleManager build(GridCacheSharedContext cctx, DataStorageMetricsImpl metrics, boolean mmap,
-        ThreadLocal<WALPointer> lastWALPtr, RecordSerializer serializer, Supplier<FileWriteHandle> currentHandle) {
+    /**
+     * @param cctx Cache context.
+     * @param metrics Data storage metrics.
+     * @param mmap Using mmap.
+     * @param lastWALPtr Last WAL pointer.
+     * @param serializer Serializer.
+     * @param currentHandleSupplier Supplier of current handle.
+     * @return One of implementation of {@link FileHandleManager}.
+     */
+    public FileHandleManager build(
+        GridCacheSharedContext cctx,
+        DataStorageMetricsImpl metrics,
+        boolean mmap,
+        ThreadLocal<WALPointer> lastWALPtr,
+        RecordSerializer serializer,
+        Supplier<FileWriteHandle> currentHandleSupplier) {
         if (dsConf.getWalMode() == WALMode.FSYNC && !walFsyncWithDedicatedWorker)
             return new FsyncFileHandleManagerImpl(
                 cctx,
                 metrics,
                 lastWALPtr,
                 serializer,
-                currentHandle,
+                currentHandleSupplier,
                 dsConf.getWalMode(),
                 dsConf.getWalSegmentSize(),
                 dsConf.getWalFsyncDelayNanos(),
@@ -73,7 +79,7 @@ public class FileHandleFactory {
                 mmap,
                 lastWALPtr,
                 serializer,
-                currentHandle,
+                currentHandleSupplier,
                 dsConf.getWalMode(),
                 dsConf.getWalBufferSize(),
                 dsConf.getWalSegmentSize(),

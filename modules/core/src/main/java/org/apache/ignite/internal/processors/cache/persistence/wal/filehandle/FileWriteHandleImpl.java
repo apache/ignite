@@ -15,16 +15,7 @@
  * limitations under the License.
  */
 
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
- */
-
-package org.apache.ignite.internal.processors.cache.persistence.wal;
+package org.apache.ignite.internal.processors.cache.persistence.wal.filehandle;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -52,6 +43,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
@@ -69,8 +63,8 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
 /**
  * File handle for one log segment.
  */
-@SuppressWarnings("SignalWithoutCorrespondingAwait") class FileWriteHandleImpl extends FileHandle implements FileWriteHandle {
-
+@SuppressWarnings("SignalWithoutCorrespondingAwait")
+class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle {
     /** {@link MappedByteBuffer#force0(java.io.FileDescriptor, long, long)}. */
     private static final Method force0 = findNonPublicMethod(
         MappedByteBuffer.class, "force0",
@@ -101,21 +95,19 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
     /** Use mapped byte buffer. */
     private final boolean mmap;
 
-
     /** Created on resume logging. */
     private volatile boolean resume;
 
     /**
-     * Position in current file after the end of last written record (incremented after file channel write
-     * operation)
+     * Position in current file after the end of last written record (incremented after file channel write operation)
      */
     volatile long written;
 
     /** */
-    private volatile long lastFsyncPos;
+    protected volatile long lastFsyncPos;
 
     /** Stop guard to provide warranty that only one thread will be successful in calling {@link #close(boolean)} */
-    private final AtomicBoolean stop = new AtomicBoolean(false);
+    protected final AtomicBoolean stop = new AtomicBoolean(false);
 
     /** */
     private final Lock lock = new ReentrantLock();
@@ -158,17 +150,16 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
 
     /**
      * @param fileIO I/O file interface to use
-     * @param mmap
-     * @param pos Position.
+     * @param mmap Mmap.
+     * @param pos Initial position.
      * @param resume Created on resume logging flag.
      * @param serializer Serializer.
-     * @param mode
-     * @param fsyncDelay
-     * @param metrics
-     * @param maxWalSegmentSize
-     * @param log
-     * @param cctx
-     * @param writer
+     * @param mode WAL mode.
+     * @param fsyncDelay Fsync delay.
+     * @param metrics Data storage metrics.
+     * @param maxWalSegmentSize Max WAL segment size.
+     * @param cctx Context.
+     * @param writer WAL writer.
      * @throws IOException If failed.
      */
     FileWriteHandleImpl(
@@ -178,7 +169,8 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
         SegmentedRingByteBuffer rbuf,
         RecordSerializer serializer,
         WALMode mode, long fsyncDelay,
-        DataStorageMetricsImpl metrics, long maxWalSegmentSize, IgniteLogger log,
+        DataStorageMetricsImpl metrics,
+        long maxWalSegmentSize,
         GridCacheSharedContext cctx,
         FileHandleManagerImpl.WALWriter writer) throws IOException {
         super(fileIO);
@@ -187,7 +179,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
         this.fsyncDelay = fsyncDelay;
         this.metrics = metrics;
         this.maxWalSegmentSize = maxWalSegmentSize;
-        this.log = log;
+        this.log = cctx.logger(FileWriteHandleImpl.class);
         this.cctx = cctx;
         walWriter = writer;
 
@@ -203,14 +195,15 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
         this.resume = resume;
 
         this.buf = rbuf;
-//        this.buf = buf;
     }
 
-    @Override public int serializerVersion(){
+    /** {@inheritDoc} */
+    @Override public int serializerVersion() {
         return serializer.version();
     }
 
-    @Override public void finishResume(){
+    /** {@inheritDoc} */
+    @Override public void finishResumeLogging() {
         resume = false;
     }
 
@@ -236,8 +229,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
         seg.release();
     }
 
-
-
     /**
      * @param rec Record to be added to write queue.
      * @return Pointer or null if roll over to next segment is required or already started by other thread.
@@ -247,7 +238,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
     @Override @Nullable public WALPointer addRecord(WALRecord rec) throws StorageException, IgniteCheckedException {
         assert rec.size() > 0 : rec;
 
-        for (;;) {
+        for (; ; ) {
             checkNode();
 
             SegmentedRingByteBuffer.WriteSegment seg;
@@ -319,6 +310,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
         flush(ptr);
     }
 
+    /** {@inheritDoc} */
     @Override public void flushAll() throws IgniteCheckedException {
         flush(null);
     }
@@ -477,6 +469,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void closeBuffer() {
         buf.close();
     }
@@ -585,9 +578,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
         }
     }
 
-    /**
-     *
-     */
+    /** {@inheritDoc} */
     @Override public void awaitNext() {
         lock.lock();
 
@@ -603,7 +594,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
     /**
      * @return Safely reads current position of the file channel as String. Will return "null" if channel is null.
      */
-    @Override public String safePosition() {
+    public String safePosition() {
         FileIO io = fileIO;
 
         if (io == null)

@@ -87,6 +87,10 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolde
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
+import org.apache.ignite.internal.processors.cache.persistence.wal.filehandle.AbstractFileHandle;
+import org.apache.ignite.internal.processors.cache.persistence.wal.filehandle.FileHandleManagerFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.filehandle.FileHandleManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.filehandle.FileWriteHandle;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.LockedSegmentFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentFileInputFactory;
@@ -348,7 +352,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Segment factory with ability locked segment during reading. */
     private SegmentFileInputFactory lockedSegmentFileInputFactory;
 
-    private FileHandleFactory fileHandleFactory;
+    private FileHandleManagerFactory fileHandleManagerFactory;
 
     /**
      * @param ctx Kernal context.
@@ -377,7 +381,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         evt = ctx.event();
         failureProcessor = ctx.failure();
-        fileHandleFactory = new FileHandleFactory(dsCfg);
+        fileHandleManagerFactory = new FileHandleManagerFactory(dsCfg);
     }
 
     /**
@@ -464,7 +468,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             walDisableContext = cctx.walState().walDisableContext();
 
-            fileHandleManager = fileHandleFactory.build(
+            fileHandleManager = fileHandleManagerFactory.build(
                 cctx, metrics, mmap, lastWALPtr, serializer, this::currentHandle
             );
 
@@ -639,7 +643,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             rollOver(currHnd, null);
         }
 
-        currHnd.finishResume();
+        currHnd.finishResumeLogging();
 
         if (mode == WALMode.BACKGROUND) {
             backgroundFlushSchedule = cctx.time().schedule(new Runnable() {
@@ -1215,7 +1219,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     log.info("Resuming logging to WAL segment [file=" + curFile.getAbsolutePath() +
                         ", offset=" + off + ", ver=" + serVer + ']');
 
-                FileWriteHandle hnd = fileHandleManager.build(fileIO, off + len, true, ser);
+                FileWriteHandle hnd = fileHandleManager.initHandle(fileIO, off + len, true, ser);
 
                 if (archiver0 != null)
                     segmentAware.curAbsWalIdx(absIdx);
@@ -1275,7 +1279,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         lsnr.apply(fileIO);
 
 
-                    hnd = fileHandleManager.next(fileIO, 0, false, serializer);
+                    hnd = fileHandleManager.nextHandle(fileIO, 0, false, serializer);
 
                     if (interrupted)
                         Thread.currentThread().interrupt();
@@ -2324,7 +2328,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      *
      */
-    public static class ReadFileHandle extends FileHandle implements AbstractWalRecordsIterator.AbstractReadFileHandle {
+    public static class ReadFileHandle extends AbstractFileHandle implements AbstractWalRecordsIterator.AbstractReadFileHandle {
         /** Entry serializer. */
         RecordSerializer ser;
 
@@ -2335,7 +2339,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private final SegmentAware segmentAware;
 
         /**
-         * @param fileIO I/O interface for read/write operations of FileHandle.
+         * @param fileIO I/O interface for read/write operations of AbstractFileHandle.
          * @param ser Entry serializer.
          * @param in File input.
          * @param aware Segment aware.

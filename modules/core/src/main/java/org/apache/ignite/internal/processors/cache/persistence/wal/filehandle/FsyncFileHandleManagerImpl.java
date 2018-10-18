@@ -15,16 +15,7 @@
  * limitations under the License.
  */
 
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
- */
-
-package org.apache.ignite.internal.processors.cache.persistence.wal;
+package org.apache.ignite.internal.processors.cache.persistence.wal.filehandle;
 
 import java.io.IOException;
 import java.util.function.Supplier;
@@ -35,14 +26,12 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 
 /**
- * TODO: Add class description.
- *
- * @author @java.author
- * @version @java.version
+ * Implementation of {@link FileWriteHandle} for FSYNC mode.
  */
 public class FsyncFileHandleManagerImpl implements FileHandleManager {
 
@@ -75,6 +64,17 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
     /** Thread local byte buffer size, see {@link #tlb} */
     private final int tlbSize;
 
+    /**
+     * @param cctx Context.
+     * @param metrics Data storage metrics.
+     * @param ptr Last WAL pointer.
+     * @param serializer Serializer.
+     * @param handle Current handle supplier.
+     * @param mode WAL mode.
+     * @param maxWalSegmentSize Max WAL segment size.
+     * @param fsyncDelay Fsync delay.
+     * @param tlbSize Thread local byte buffer size.
+     */
     public FsyncFileHandleManagerImpl(GridCacheSharedContext cctx,
         DataStorageMetricsImpl metrics, ThreadLocal<WALPointer> ptr, RecordSerializer serializer,
         Supplier<FileWriteHandle> handle, WALMode mode,
@@ -91,15 +91,17 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
         this.tlbSize = tlbSize;
     }
 
-    @Override public FileWriteHandle build(SegmentIO fileIO, long position, boolean resume,
+    /** {@inheritDoc} */
+    @Override public FileWriteHandle initHandle(SegmentIO fileIO, long position, boolean resume,
         RecordSerializer serializer) throws IOException {
-        return new FsyncFileWriteHandle(            fileIO,
+        return new FsyncFileWriteHandle(fileIO,
             position,
             maxWalSegmentSize,
             serializer, mode, tlbSize, cctx, metrics, fsyncDelay);
     }
 
-    @Override public FileWriteHandle next(SegmentIO fileIO, long position, boolean resume,
+    /** {@inheritDoc} */
+    @Override public FileWriteHandle nextHandle(SegmentIO fileIO, long position, boolean resume,
         RecordSerializer serializer) throws IOException {
         return new FsyncFileWriteHandle(
             fileIO,
@@ -108,30 +110,37 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
             serializer, mode, tlbSize, cctx, metrics, fsyncDelay);
     }
 
+    /**
+     * @return Current handle.
+     */
     private FsyncFileWriteHandle currentHandle() {
         return (FsyncFileWriteHandle)currentHandle.get();
     }
 
+    /** {@inheritDoc} */
     @Override public void start() {
         //NOOP
     }
 
+    /** {@inheritDoc} */
     @Override public void stop() throws IgniteCheckedException {
         FsyncFileWriteHandle currHnd = currentHandle();
 
         if (mode == WALMode.BACKGROUND) {
             if (currHnd != null)
-                currHnd.flushAllStop();
+                currHnd.flushAllOnStop();
         }
 
         if (currHnd != null)
             currHnd.close(false);
     }
 
+    /** {@inheritDoc} */
     @Override public void resumeLogging() {
         //NOOP
     }
 
+    /** {@inheritDoc} */
     @Override public void flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
         if (serializer == null || mode == WALMode.NONE)
             return;

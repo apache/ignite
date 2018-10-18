@@ -15,16 +15,7 @@
  * limitations under the License.
  */
 
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
- */
-
-package org.apache.ignite.internal.processors.cache.persistence.wal;
+package org.apache.ignite.internal.processors.cache.persistence.wal.filehandle;
 
 import java.io.IOException;
 import org.apache.ignite.IgniteCheckedException;
@@ -34,24 +25,62 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 
 /**
- * TODO: Add interface description.
- *
- * @author @java.author
- * @version @java.version
+ * Manager of {@link FileWriteHandle}.
  */
 public interface FileHandleManager {
-
-    FileWriteHandle build(SegmentIO fileIO, long position, boolean resume,
+    /**
+     * Initialize {@link FileWriteHandle}.
+     *
+     * @param fileIO FileIO.
+     * @param position Init position.
+     * @param resume {@code true} if it is calling during resume of WAL.
+     * @param serializer Serializer for file handle.
+     * @return Created file handle.
+     * @throws IOException if creation was not success.
+     */
+    FileWriteHandle initHandle(SegmentIO fileIO,
+        long position,
+        boolean resume,
         RecordSerializer serializer) throws IOException;
 
-    FileWriteHandle next(SegmentIO fileIO, long position, boolean resume,
+    /**
+     * Create next file handle.
+     *
+     * @param fileIO FileIO.
+     * @param position Init position.
+     * @param resume {@code true} if it is calling during resume of WAL.
+     * @param serializer Serializer for file handle.
+     * @return Created file handle.
+     * @throws IOException if creation was not success.
+     */
+    FileWriteHandle nextHandle(
+        SegmentIO fileIO,
+        long position,
+        boolean resume,
         RecordSerializer serializer) throws IOException;
 
+    /**
+     * Start manager.
+     */
     void start();
 
+    /**
+     * Stop manager.
+     *
+     * @throws IgniteCheckedException if fail.
+     */
     void stop() throws IgniteCheckedException;
 
+    /**
+     * Resume logging.
+     */
     void resumeLogging();
 
+    /**
+     * @param ptr Pointer until need to flush.
+     * @param explicitFsync {@code true} if fsync required.
+     * @throws IgniteCheckedException if fail.
+     * @throws StorageException if storage was fail.
+     */
     void flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException;
 }

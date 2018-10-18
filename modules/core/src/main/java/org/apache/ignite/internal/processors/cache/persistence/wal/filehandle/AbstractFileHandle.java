@@ -15,16 +15,7 @@
  * limitations under the License.
  */
 
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
- */
-
-package org.apache.ignite.internal.processors.cache.persistence.wal;
+package org.apache.ignite.internal.processors.cache.persistence.wal.filehandle;
 
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.jetbrains.annotations.NotNull;
@@ -32,17 +23,17 @@ import org.jetbrains.annotations.NotNull;
 /**
  *
  */
-abstract class FileHandle {
+public abstract class AbstractFileHandle {
     /** I/O interface for read/write operations with file */
-    SegmentIO fileIO;
+    protected SegmentIO fileIO;
 
     /** Segment idx corresponded to fileIo*/
-    final long segmentIdx;
+    private final long segmentIdx;
 
     /**
-     * @param fileIO I/O interface for read/write operations of FileHandle.
+     * @param fileIO I/O interface for read/write operations of AbstractFileHandle.
      */
-    public FileHandle(@NotNull SegmentIO fileIO) {
+    public AbstractFileHandle(@NotNull SegmentIO fileIO) {
         this.fileIO = fileIO;
         segmentIdx = fileIO.getSegmentId();
     }
