@@ -588,7 +588,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Locked file info or {@code null} if file cannot be locked or doesn't exist.
      * @throws IgniteCheckedException If the file with such id does not exist, or on another failure.
      */
-    public @Nullable IgfsEntryInfo lock(IgniteUuid fileId, boolean del) throws IgniteCheckedException {
+    @Nullable public IgfsEntryInfo lock(IgniteUuid fileId, boolean del) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 validTxState(false);
@@ -2896,7 +2896,7 @@ public class IgfsMetaManager extends IgfsManager {
         Map<String, String> dirProps,
         final boolean create,
         final int blockSize,
-        final @Nullable IgniteUuid affKey,
+        @Nullable final IgniteUuid affKey,
         final boolean evictExclude,
         @Nullable Map<String, String> fileProps) throws IgniteCheckedException {
         validTxState(false);
@@ -2992,7 +2992,7 @@ public class IgfsMetaManager extends IgfsManager {
         Map<String, String> dirProps,
         final boolean overwrite,
         final int blockSize,
-        final @Nullable IgniteUuid affKey,
+        @Nullable final IgniteUuid affKey,
         final boolean evictExclude,
         @Nullable Map<String, String> fileProps,
         @Nullable IgfsSecondaryFileSystemCreateContext secondaryCtx) throws IgniteCheckedException {
