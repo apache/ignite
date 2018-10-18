@@ -2903,11 +2903,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             ver = newVer;
             flags &= ~IS_EVICT_DISABLED;
 
-            if (cctx.mvccEnabled())
-                cctx.offheap().mvccRemoveAll(this);
-            else
-                removeValue();
-
             onInvalidate();
 
             return obsoleteVersionExtras() != null;
