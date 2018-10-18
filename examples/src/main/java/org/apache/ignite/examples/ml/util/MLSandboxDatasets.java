@@ -44,7 +44,13 @@ public enum MLSandboxDatasets {
      * There are 3 classes with labels: 1 {building_windows_float_processed}, 3 {vehicle_windows_float_processed}, 7 {headlamps}.
      * Feature names: 'Na-Sodium', 'Mg-Magnesium', 'Al-Aluminum', 'Ba-Barium', 'Fe-Iron'.
      */
-    GLASS_IDENTIFICATION("examples/src/main/resources/datasets/glass_identification.csv", false, ";");
+    GLASS_IDENTIFICATION("examples/src/main/resources/datasets/glass_identification.csv", false, ";"),
+
+    /** The Wine recognition data. Could be found <a href="https://archive.ics.uci.edu/ml/machine-learning-databases/wine/">here</a>. */
+    WINE_RECOGNITION("examples/src/main/resources/datasets/wine.txt", false, ","),
+
+    /** The Boston house-prices dataset. Could be found <a href="https://archive.ics.uci.edu/ml/machine-learning-databases/housing/">here</a>. */
+    BOSTON_HOUSE_PRICES("examples/src/main/resources/datasets/boston_housing_dataset.txt", false, ",");
 
     /** Filename. */
     private final String filename;
