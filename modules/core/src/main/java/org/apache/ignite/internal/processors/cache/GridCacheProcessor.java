@@ -2427,7 +2427,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      * @param destroy Cache data destroy flag. Setting to <code>true</code> will remove all cache data.
      * @return Stopped cache context.
      */
-    private GridCacheContext<?, ?> prepareCacheStop(String cacheName, boolean destroy) {
+    public GridCacheContext<?, ?> prepareCacheStop(String cacheName, boolean destroy) {
         assert sharedCtx.database().checkpointLockIsHeldByThread();
 
         GridCacheAdapter<?, ?> cache = caches.remove(cacheName);
@@ -2666,7 +2666,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     /**
      * @param grpId Group ID.
      */
-    private void stopCacheGroup(int grpId) {
+    public void stopCacheGroup(int grpId) {
         CacheGroupContext grp = cacheGrps.remove(grpId);
 
         if (grp != null)

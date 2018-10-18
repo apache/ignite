@@ -27,33 +27,33 @@ public interface DatabaseLifecycleListener {
      * @param mgr Database shared manager.
      *
      */
-    void onInitDataRegions(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException;
+    default void onInitDataRegions(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {};
 
     /**
      * @param mgr Database shared manager.
      * @throws IgniteCheckedException If failed.
      */
-    public void beforeBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException;
+    default void beforeBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {};
 
     /**
      * @param mgr Database shared manager.
      * @throws IgniteCheckedException If failed.
      */
-    public void beforeResumeWalLogging(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException;
+    default void beforeResumeWalLogging(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {};
 
     /**
      * @param mgr Database shared manager.
      *
      */
-    void afterMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException;
+    default void afterMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {};
 
     /**
      * @param mgr Database shared manager.
      */
-    void afterInitialise(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException;
+    default void afterInitialise(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {};
 
     /**
      * @param mgr Database shared manager.
      */
-    void beforeStop(IgniteCacheDatabaseSharedManager mgr);
+    default void beforeStop(IgniteCacheDatabaseSharedManager mgr) {};
 }

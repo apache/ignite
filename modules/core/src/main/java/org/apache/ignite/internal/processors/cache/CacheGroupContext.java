@@ -116,16 +116,16 @@ public class CacheGroupContext {
     private final IgniteLogger log;
 
     /** */
-    private GridAffinityAssignmentCache aff;
+    private volatile GridAffinityAssignmentCache aff;
 
     /** */
-    private GridDhtPartitionTopologyImpl top;
+    private volatile GridDhtPartitionTopologyImpl top;
 
     /** */
-    private IgniteCacheOffheapManager offheapMgr;
+    private volatile IgniteCacheOffheapManager offheapMgr;
 
     /** */
-    private GridCachePreloader preldr;
+    private volatile GridCachePreloader preldr;
 
     /** */
     private final DataRegion dataRegion;
@@ -813,7 +813,7 @@ public class CacheGroupContext {
     /**
      * @return {@code True} if group contains caches.
      */
-    boolean hasCaches() {
+    public boolean hasCaches() {
         List<GridCacheContext> caches = this.caches;
 
         return !caches.isEmpty();

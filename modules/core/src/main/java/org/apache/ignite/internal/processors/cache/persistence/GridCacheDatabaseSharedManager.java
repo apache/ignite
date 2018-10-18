@@ -422,7 +422,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         addDataRegion(
             memCfg,
-            createDataRegionConfiguration(memCfg),
+            createDataRegionConfigurationForMetastorage(memCfg),
             false
         );
 
@@ -435,13 +435,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param storageCfg Data storage configuration.
      * @return Data region configuration.
      */
-    private DataRegionConfiguration createDataRegionConfiguration(DataStorageConfiguration storageCfg) {
+    private DataRegionConfiguration createDataRegionConfigurationForMetastorage(DataStorageConfiguration storageCfg) {
         DataRegionConfiguration cfg = new DataRegionConfiguration();
 
         cfg.setName(METASTORE_DATA_REGION_NAME);
         cfg.setInitialSize(storageCfg.getSystemRegionInitialSize());
         cfg.setMaxSize(storageCfg.getSystemRegionMaxSize());
         cfg.setPersistenceEnabled(true);
+
         return cfg;
     }
 
@@ -658,7 +659,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try {
             DataStorageConfiguration memCfg = cctx.kernalContext().config().getDataStorageConfiguration();
 
-            DataRegionConfiguration plcCfg = createDataRegionConfiguration(memCfg);
+            DataRegionConfiguration plcCfg = createDataRegionConfigurationForMetastorage(memCfg);
 
             File allocPath = buildAllocPath(plcCfg);
 
@@ -2051,22 +2052,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointReadLock();
 
         try {
-            for (DynamicCacheDescriptor desc : cacheDescriptors) {
+            for (DynamicCacheDescriptor desc : cacheDescriptors)
                 cctx.cache().startCacheOnMemoryRecovery(desc);
-            }
 
             restoreState();
-/*
-
-            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                if (grp.cacheOrGroupName().contains("sys"))
-                    continue;
-
-                for (GridDhtLocalPartition part : grp.topology().localPartitions()) {
-                    log.info(grp.cacheOrGroupName() + " " + part.id() + " " + part.state() + " " + part.updateCounter() + " " + part.initialUpdateCounter());
-                }
-            }
-*/
         }
         finally {
             checkpointReadUnlock();
@@ -3198,12 +3187,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 while (!isCancelled()) {
                     waitCheckpointEvent();
 
+/*
                     if (isStopping() || shutdownNow) {
                         if (log.isInfoEnabled())
                             log.warning("Skipping last checkpoint because node is stopping.");
 
                         return;
                     }
+*/
 
                     GridFutureAdapter<Void> enableChangeApplied = GridCacheDatabaseSharedManager.this.enableChangeApplied;
 

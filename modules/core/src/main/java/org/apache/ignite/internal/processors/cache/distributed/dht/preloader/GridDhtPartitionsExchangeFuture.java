@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -868,6 +869,32 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         ensureClientCachesStarted();
 
+        for (GridCacheAdapter cacheAdapter : cctx.cache().internalCaches()) {
+            GridCacheContext cacheContext = cacheAdapter.context();
+            CacheGroupContext groupContext = cacheContext.group();
+
+            if (groupContext.isLocal())
+                continue;
+
+            boolean affinityNode = CU.affinityNode(cctx.discovery().localNode(), groupContext.config().getNodeFilter());
+
+            if (cacheContext.isRecoveryMode()) {
+                assert !affinityNode : "Cache " + cacheAdapter.context() + " is still in recovery mode after start";
+
+                cctx.database().checkpointReadLock();
+
+                try {
+                    cctx.cache().prepareCacheStop(cacheContext.name(), true);
+                }
+                finally {
+                    cctx.database().checkpointReadUnlock();
+                }
+
+                if (!groupContext.hasCaches())
+                    cctx.cache().stopCacheGroup(groupContext.groupId());
+            }
+        }
+
         return cachesRegistrationFut;
     }
 
@@ -1001,6 +1028,32 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     assert registerCachesFuture == null : "No caches registration should be scheduled before new caches have started.";
 
                     registerCachesFuture = cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
+
+                    for (GridCacheAdapter cacheAdapter : cctx.cache().internalCaches()) {
+                        GridCacheContext cacheContext = cacheAdapter.context();
+                        CacheGroupContext groupContext = cacheContext.group();
+
+                        if (groupContext.isLocal())
+                            continue;
+
+                        boolean affinityNode = CU.affinityNode(cctx.discovery().localNode(), groupContext.config().getNodeFilter());
+
+                        if (cacheContext.isRecoveryMode()) {
+                            assert !affinityNode : "Cache " + cacheAdapter.context() + " is still in recovery mode after start";
+
+                            cctx.database().checkpointReadLock();
+
+                            try {
+                                cctx.cache().prepareCacheStop(cacheContext.name(), true);
+                            }
+                            finally {
+                                cctx.database().checkpointReadUnlock();
+                            }
+
+                            if (!groupContext.hasCaches())
+                                cctx.cache().stopCacheGroup(groupContext.groupId());
+                        }
+                    }
 
                     if (log.isInfoEnabled()) {
                         log.info("Successfully activated caches [nodeId=" + cctx.localNodeId() +
@@ -1224,6 +1277,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
             if (grp.isLocal())
                 continue;
+
+            if (grp.isRecoveryMode()) {
+                log.warning("Group " + grp.cacheOrGroupName() + " is still in recovery mode!");
+            }
 
             grp.preloader().onTopologyChanged(this);
         }
