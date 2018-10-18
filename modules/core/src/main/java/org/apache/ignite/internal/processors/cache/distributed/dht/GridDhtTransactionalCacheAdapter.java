@@ -968,7 +968,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             tx.nearNodeId(),
             tx.nearXidVersion(),
             tx.topologyVersion(),
-            tx.topologyVersion(),
             keys.size(),
             isRead,
             retval,
@@ -1082,7 +1081,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
 
             try {
-                if (top != null && needRemap(req.topologyVersion(), top.readyTopologyVersion(), req.lastAffinityChangedTopologyVersion(), req.keys())) {
+                if (top != null && needRemap(req.topologyVersion(), top.readyTopologyVersion(), req.keys())) {
                     if (log.isDebugEnabled()) {
                         log.debug("Client topology version mismatch, need remap lock request [" +
                             "reqTopVer=" + req.topologyVersion() +
@@ -1148,7 +1147,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         nearNode.id(),
                         req.version(),
                         req.topologyVersion(),
-                        req.lastAffinityChangedTopologyVersion(),
                         cnt,
                         req.txRead(),
                         req.needReturnValue(),

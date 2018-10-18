@@ -718,7 +718,7 @@ public class GridAffinityAssignmentCache {
         if (!(cache.topologyVersion().compareTo(lastAffChangeTopVer) >= 0 &&
             cache.topologyVersion().compareTo(topVer) <= 0)) {
 
-            Map.Entry<AffinityTopologyVersion, HistoryAffinityAssignment> e = affCache.floorEntry(lastAffChangeTopVer);
+            Map.Entry<AffinityTopologyVersion, HistoryAffinityAssignment> e = affCache.ceilingEntry(lastAffChangeTopVer);
 
             if (e != null)
                 cache = e.getValue();
@@ -735,7 +735,7 @@ public class GridAffinityAssignmentCache {
         }
 
         assert cache.topologyVersion().compareTo(lastAffChangeTopVer) >= 0 &&
-            cache.topologyVersion().compareTo(topVer) <= 0 : "Invalid cached affinity: " + cache;
+            cache.topologyVersion().compareTo(topVer) <= 0 : "Invalid cached affinity: [cache=" + cache + ", topVer=" + topVer + ", lastAffChangedTopVer=" + lastAffChangeTopVer + "]";
 
         return cache;
     }

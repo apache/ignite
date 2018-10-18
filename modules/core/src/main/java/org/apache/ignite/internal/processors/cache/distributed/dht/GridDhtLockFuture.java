@@ -112,9 +112,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     /** Topology version. */
     private AffinityTopologyVersion topVer;
 
-    /** */
-    private AffinityTopologyVersion lastAffTopVer;
-
     /** Thread. */
     private long threadId;
 
@@ -211,7 +208,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         UUID nearNodeId,
         GridCacheVersion nearLockVer,
         @NotNull AffinityTopologyVersion topVer,
-        AffinityTopologyVersion lastAffTopVer,
         int cnt,
         boolean read,
         boolean needReturnVal,
@@ -234,7 +230,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         this.nearNodeId = nearNodeId;
         this.nearLockVer = nearLockVer;
         this.topVer = topVer;
-        this.lastAffTopVer = lastAffTopVer;
         this.read = read;
         this.needReturnVal = needReturnVal;
         this.timeout = timeout;
@@ -867,7 +862,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                         try {
                             cctx.dhtMap(
                                 nearNodeId,
-                                lastAffTopVer,
+                                topVer,
                                 entry,
                                 tx == null ? lockVer : null,
                                 log,
