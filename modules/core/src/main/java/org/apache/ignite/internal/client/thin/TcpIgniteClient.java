@@ -233,7 +233,7 @@ public class TcpIgniteClient implements IgniteClient {
         private final BinaryMetadataHandler cache = BinaryCachingMetadataHandler.create();
 
         /** {@inheritDoc} */
-        @Override public void addMeta(int typeId, BinaryType meta) throws BinaryObjectException {
+        @Override public void addMeta(int typeId, BinaryType meta, boolean failIfUnregistered) throws BinaryObjectException {
             if (cache.metadata(typeId) == null) {
                 try {
                     ch.request(
@@ -246,7 +246,7 @@ public class TcpIgniteClient implements IgniteClient {
                 }
             }
 
-            cache.addMeta(typeId, meta); // merge
+            cache.addMeta(typeId, meta, failIfUnregistered); // merge
         }
 
         /** {@inheritDoc} */
@@ -259,7 +259,7 @@ public class TcpIgniteClient implements IgniteClient {
                 if (meta0 != null) {
                     meta = new BinaryTypeImpl(marsh.context(), meta0);
 
-                    cache.addMeta(typeId, meta);
+                    cache.addMeta(typeId, meta, false);
                 }
             }
 
