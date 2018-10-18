@@ -129,7 +129,7 @@ class VectorImplementationsFixtures {
     }
 
     /** */
-    private static abstract class VectorSizesFixture implements Iterable<Vector> {
+    private abstract static class VectorSizesFixture implements Iterable<Vector> {
         /** */
         private final Supplier<VectorSizesIterator> iter;
 

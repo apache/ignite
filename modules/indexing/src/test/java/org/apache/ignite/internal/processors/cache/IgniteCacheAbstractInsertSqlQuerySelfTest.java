@@ -322,7 +322,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
     /**
      *
      */
-    protected final static class Key implements Serializable {
+    protected static final class Key implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -356,7 +356,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
     /**
      *
      */
-    protected final static class Key2 implements Serializable {
+    protected static final class Key2 implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
