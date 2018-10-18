@@ -518,6 +518,13 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         return dynamicDeploymentId;
     }
 
+    /** */
+    public String toStringWithoutClassName(){
+        String str = toString().substring(getClass().getSimpleName().length()+1);
+
+        return str;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);

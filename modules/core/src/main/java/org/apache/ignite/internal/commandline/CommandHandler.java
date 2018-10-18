@@ -129,6 +129,7 @@ import static org.apache.ignite.internal.commandline.Command.TX;
 import static org.apache.ignite.internal.commandline.Command.WAL;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
+import static org.apache.ignite.internal.commandline.cache.CacheCommand.LIST;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.ADD;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.COLLECT;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.REMOVE;
@@ -296,6 +297,9 @@ public class CommandHandler {
 
     /** */
     private static final String OUTPUT_FORMAT = "--output-format";
+
+    /** */
+    private static final String FULL_CONFIG = "--full-config";
 
     /** */
     private Iterator<String> argsIt;
@@ -645,19 +649,20 @@ public class CommandHandler {
      *
      */
     private void printCacheHelp() {
-        log("--cache subcommand allows to do the following operations:");
+        log("'--cache subcommand' allows performing the following operations:");
 
-        usage("  Show information about caches, groups or sequences that match a regex:", CACHE, " list regexPattern [groups|seq] [nodeId]", " [" + OUTPUT_FORMAT + " " + MULTI_LINE + "]");
+        usage("  Show information about caches, groups or sequences that match a regex:", CACHE, " " + LIST.text() + " regexPattern [groups|seq] [nodeId]", " [" + FULL_CONFIG + "]", " [" + OUTPUT_FORMAT + " " + MULTI_LINE + "]");
         usage("  Show hot keys that are point of contention for multiple transactions:", CACHE, " contention minQueueSize [nodeId] [maxPrint]");
         usage("  Verify partition counters and hashes between primary and backups on idle cluster:", CACHE, " idle_verify [--dump] [--skipZeros] [cache1,...,cacheN]");
         usage("  Validate custom indexes on idle cluster:", CACHE, " validate_indexes [cache1,...,cacheN] [nodeId] [checkFirst|checkThrough]");
         usage("  Collect partition distribution information:", CACHE, " distribution nodeId|null [cacheName1,...,cacheNameN] [--user-attributes attributeName1[,...,attributeNameN]]");
         usage("  Reset lost partitions:", CACHE, " reset_lost_partitions cacheName1[,...,cacheNameN]");
 
-        log("  If [nodeId] is not specified, list with no defined [groups|seq], contention and validate_indexes commands will be broadcasted to all server nodes.");
+        log("  If [nodeId] is not specified, " + LIST.text() + " without defined [groups|seq], contention and validate_indexes commands will be broadcasted to all server nodes.");
         log("  Another commands where [nodeId] is optional will run on a random server node.");
         log("  checkFirst numeric parameter for validate_indexes specifies number of first K keys to be validated.");
         log("  checkThrough numeric parameter for validate_indexes allows to check each Kth key.");
+        log("  [" + OUTPUT_FORMAT + "] in " + CACHE.text() + " " + LIST.text() + " have significance only with [" + FULL_CONFIG + "] option and without defined [groups|seq]");
         nl();
     }
 
@@ -763,16 +768,16 @@ public class CommandHandler {
      * @param cacheArgs Cache args.
      */
     private void cacheView(GridClient client, CacheArguments cacheArgs) throws GridClientException {
-        if (cacheArgs.cacheCommand() == CACHES)
-            cachesConfig(client, cacheArgs);
-        else {
-            VisorViewCacheTaskArg taskArg = new VisorViewCacheTaskArg(cacheArgs.regex(), cacheArgs.cacheCommand());
+        VisorViewCacheTaskArg taskArg = new VisorViewCacheTaskArg(cacheArgs.regex(), cacheArgs.cacheCommand());
 
-            VisorViewCacheTaskResult res = executeTaskByNameOnNode(
-                client, VisorViewCacheTask.class.getName(), taskArg, cacheArgs.nodeId());
+        VisorViewCacheTaskResult res = executeTaskByNameOnNode(
+            client, VisorViewCacheTask.class.getName(), taskArg, cacheArgs.nodeId());
 
-            printCacheInfos(res.cacheInfos(), cacheArgs.outputFormat(), cacheArgs.cacheCommand());
-        }
+        if (cacheArgs.fullConfig() && cacheArgs.cacheCommand() == CACHES)
+            cachesConfig(client, cacheArgs, res);
+        else
+            printCacheInfos(res.cacheInfos(), cacheArgs.cacheCommand());
+
     }
 
     /**
@@ -850,8 +855,10 @@ public class CommandHandler {
     /**
      * @param client Client.
      * @param cacheArgs Cache args.
+     * @param viewRes Cache view task result.
      */
-    private void cachesConfig(GridClient client, CacheArguments cacheArgs) throws GridClientException {
+    private void cachesConfig(GridClient client, CacheArguments cacheArgs,
+        VisorViewCacheTaskResult viewRes) throws GridClientException {
         VisorCacheConfigurationCollectorTaskArg taskArg = new VisorCacheConfigurationCollectorTaskArg(cacheArgs.regex());
 
         UUID nodeId = cacheArgs.nodeId() == null ? BROADCAST_UUID : cacheArgs.nodeId();
@@ -859,7 +866,10 @@ public class CommandHandler {
         Map<String, VisorCacheConfiguration> res =
             executeTaskByNameOnNode(client, VisorCacheConfigurationCollectorTask.class.getName(), taskArg, nodeId);
 
-        printCachesConfig(res, cacheArgs.outputFormat());
+        Map<String, Integer> cacheToMapped =
+            viewRes.cacheInfos().stream().collect(Collectors.toMap(x -> x.getCacheName(), x -> x.getMapped()));
+
+        printCachesConfig(res, cacheArgs.outputFormat(), cacheToMapped);
 
     }
 
@@ -867,41 +877,22 @@ public class CommandHandler {
      * Prints caches info.
      *
      * @param infos Caches info.
-     * @param outputFormat Output format.
      * @param cmd Command.
      */
-    private void printCacheInfos(
-        Collection<CacheInfo> infos,
-        OutputFormat outputFormat,
-        VisorViewCacheCmd cmd
-    ) {
+    private void printCacheInfos(Collection<CacheInfo> infos, VisorViewCacheCmd cmd) {
         for (CacheInfo info : infos) {
             Map<String, Object> map = info.toMap(cmd);
-            switch (outputFormat) {
-                case MULTI_LINE:
-                    log("[%s = '%s']%n", cmd, info.name(cmd));
 
-                    for (Map.Entry<String, Object> innerEntry : map.entrySet())
-                        log("%s: %s%n", innerEntry.getKey(), innerEntry.getValue());
+            SB sb = new SB("[");
 
-                    nl();
+            for (Map.Entry<String, Object> e : map.entrySet())
+                sb.a(e.getKey()).a("=").a(e.getValue()).a(", ");
 
-                    break;
+            sb.setLength(sb.length() - 2);
 
-                default:
-                    SB sb = new SB();
+            sb.a("]");
 
-                    sb.a("[");
-
-                    for (Map.Entry<String, Object> e : map.entrySet())
-                        sb.a(e.getKey()).a("=").a(e.getValue()).a(", ");
-
-                    sb.setLength(sb.length() - 2);
-
-                    sb.a("]");
-
-                    log(sb.toString());
-            }
+            log(sb.toString());
         }
     }
 
@@ -910,18 +901,23 @@ public class CommandHandler {
      *
      * @param caches Caches config.
      * @param outputFormat Output format.
+     * @param cacheToMapped Map cache name to mapped.
      */
     private void printCachesConfig(
         Map<String, VisorCacheConfiguration> caches,
-        OutputFormat outputFormat
+        OutputFormat outputFormat,
+        Map<String, Integer> cacheToMapped
     ) {
 
         for (Map.Entry<String, VisorCacheConfiguration> entry : caches.entrySet()) {
             String cacheName = entry.getKey();
 
-            Map<String, Object> params = mapToPairs(entry.getValue());
             switch (outputFormat) {
                 case MULTI_LINE:
+                    Map<String, Object> params = mapToPairs(entry.getValue());
+
+                    params.put("Mapped", cacheToMapped.get(cacheName));
+
                     log("[cache = '%s']%n", cacheName);
 
                     for (Map.Entry<String, Object> innerEntry : params.entrySet())
@@ -932,7 +928,7 @@ public class CommandHandler {
                     break;
 
                 default:
-                    log("%s: %s%n", entry.getKey(), entry.getValue());
+                    log("%s: %s %s=%s%n", entry.getKey(), entry.getValue().toStringWithoutClassName(), "mapped", cacheToMapped.get(cacheName));
 
                     break;
             }
@@ -1791,6 +1787,11 @@ public class CommandHandler {
                             String tmp2 = nextArg("output format must be defined!").toLowerCase();
 
                             outputFormat = OutputFormat.fromConsoleName(tmp2);
+
+                            break;
+
+                        case FULL_CONFIG:
+                            cacheArgs.fullConfig(true);
 
                             break;
 

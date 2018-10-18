@@ -19,6 +19,7 @@ package org.apache.ignite.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -82,6 +83,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
@@ -233,6 +235,10 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     protected int execute(ArrayList<String> args) {
         // Add force to avoid interactive confirmation
         args.add(CMD_AUTO_CONFIRMATION);
+
+        SB sb = new SB();
+
+        args.forEach(arg -> sb.a(arg).a(" "));
 
         return new CommandHandler().execute(args);
     }
@@ -1183,25 +1189,10 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
-    public void testCacheSequence() throws Exception {
-        testCacheSequence(null);
-    }
-
-    /** */
-    public void testCacheSequenceSingleLine() throws Exception {
-        testCacheSequence(SINGLE_LINE);
-    }
-
-    /** */
-    public void testCacheSequenceMultiLine() throws Exception {
-        testCacheSequence(MULTI_LINE);
-    }
-
     /**
      *
      */
-    private void testCacheSequence(OutputFormat outputFormat) throws Exception {
+    public void testCacheSequence() throws Exception {
         Ignite ignite = startGrid();
 
         ignite.cluster().active(true);
@@ -1216,38 +1207,16 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        int exitCode;
-
-        if (outputFormat == null)
-            exitCode = execute("--cache", "list", "testSeq.*", "seq");
-        else
-            exitCode = execute("--cache", "list", "testSeq.*", "seq", "--output-format", outputFormat.text());
-
-        assertEquals(EXIT_CODE_OK, exitCode);
+        assertEquals(EXIT_CODE_OK, execute("--cache", "list", "testSeq.*", "seq"));
 
         assertTrue(testOut.toString().contains("testSeq"));
         assertTrue(testOut.toString().contains("testSeq2"));
     }
 
-    /** */
-    public void testCacheGroups() throws Exception {
-        testCacheGroups(null);
-    }
-
-    /** */
-    public void testCacheGroupsSingleLine() throws Exception {
-        testCacheGroups(SINGLE_LINE);
-    }
-
-    /** */
-    public void testCacheGroupsMultiLine() throws Exception {
-        testCacheGroups(MULTI_LINE);
-    }
-
     /**
      *
      */
-    private void testCacheGroups(OutputFormat outputFormat) throws Exception {
+    public void testCacheGroups() throws Exception {
         Ignite ignite = startGrid();
 
         ignite.cluster().active(true);
@@ -1263,35 +1232,54 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        int exitCode;
-
-        if (outputFormat == null)
-            exitCode = execute("--cache", "list", ".*", "groups");
-        else
-            exitCode = execute("--cache", "list", ".*", "groups", "--output-format", outputFormat.text());
-
-        assertEquals(EXIT_CODE_OK, exitCode);
+        assertEquals(EXIT_CODE_OK, execute("--cache", "list", ".*", "groups"));
 
         assertTrue(testOut.toString().contains("G100"));
     }
 
-    /** */
-    public void testCacheAffinityNoOutputFormat() throws Exception {
-        testCacheAffinity(null);
+    /**
+     *
+     */
+    public void testCacheAffinity() throws Exception {
+        Ignite ignite = startGrid();
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Object, Object> cache1 = ignite.createCache(new CacheConfiguration<>()
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME));
+
+        for (int i = 0; i < 100; i++)
+            cache1.put(i, i);
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "list", ".*"));
+
+        assertTrue(testOut.toString().contains("cacheName=" + DEFAULT_CACHE_NAME));
+        assertTrue(testOut.toString().contains("prim=32"));
+        assertTrue(testOut.toString().contains("mapped=32"));
+        assertTrue(testOut.toString().contains("affCls=RendezvousAffinityFunction"));
     }
 
     /** */
-    public void testCacheAffinitySignleLineOutputFormat() throws Exception {
-        testCacheAffinity(SINGLE_LINE);
+    public void testCacheFullConfigNoOutputFormat() throws Exception {
+        testCacheFullConfig(null);
     }
 
     /** */
-    public void testCacheAffinityMultiLineOutputFormat() throws Exception {
-        testCacheAffinity(MULTI_LINE);
+    public void testCacheFullConfigSignleLineOutputFormat() throws Exception {
+        testCacheFullConfig(SINGLE_LINE);
     }
 
     /** */
-    private void testCacheAffinity(OutputFormat outputFormat) throws Exception {
+    public void testCacheFullConfigMultiLineOutputFormat() throws Exception {
+        testCacheFullConfig(MULTI_LINE);
+    }
+
+    /** */
+    private void testCacheFullConfig(OutputFormat outputFormat) throws Exception {
         Ignite ignite = startGrid();
 
         ignite.cluster().active(true);
@@ -1309,9 +1297,9 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         int exitCode;
 
         if (outputFormat == null)
-            exitCode = execute("--cache", "list", ".*");
+            exitCode = execute("--cache", "list", ".*", "--full-config");
         else
-            exitCode = execute("--cache", "list", ".*", "--output-format", outputFormat.text());
+            exitCode = execute("--cache", "list", ".*", "--full-config", "--output-format", outputFormat.text());
 
         assertEquals(EXIT_CODE_OK, exitCode);
 

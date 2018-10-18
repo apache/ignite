@@ -68,6 +68,19 @@ public class CacheArguments {
     /** Output format. */
     private OutputFormat outputFormat;
 
+    /** Full config flag. */
+    private boolean fullConfig;
+
+    /**
+     * @return Full config flag.
+     */
+    public boolean fullConfig(){ return fullConfig; }
+
+    /**
+     * @param fullConfig New full config flag.
+     */
+    public void fullConfig(boolean fullConfig) { this.fullConfig = fullConfig; }
+
     /**
      * @return Command.
      */
