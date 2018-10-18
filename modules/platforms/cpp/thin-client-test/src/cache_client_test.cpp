@@ -1268,4 +1268,83 @@ BOOST_AUTO_TEST_CASE(CacheClientGetAndPutComplexKey)
     BOOST_CHECK_EQUAL(valOut, valIn2);
 }
 
+BOOST_AUTO_TEST_CASE(CacheClientGetAndRemoveBasicKeyValue)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, std::string> cache = client.GetCache<int32_t, std::string>("local");
+
+    int32_t key = 42;
+    std::string valIn = "Lorem ipsum";
+
+    cache.Put(key, valIn);
+    std::string valOut = cache.GetAndRemove(key);
+
+    BOOST_CHECK_EQUAL(valOut, valIn);
+
+    BOOST_CHECK(!cache.ContainsKey(key));
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientGetAndRemoveComplexValue)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, ignite::ComplexType> cache = client.GetCache<int32_t, ignite::ComplexType>("local");
+
+    int32_t key = 42;
+
+    ignite::ComplexType valIn;
+    valIn.i32Field = 123;
+    valIn.strField = "Test value";
+    valIn.objField.f1 = 42;
+    valIn.objField.f2 = "Inner value";
+
+    ignite::ComplexType valOut;
+
+    cache.Put(key, valIn);
+    cache.GetAndRemove(key, valOut);
+
+    BOOST_CHECK_EQUAL(valIn.i32Field, valOut.i32Field);
+    BOOST_CHECK_EQUAL(valIn.strField, valOut.strField);
+    BOOST_CHECK_EQUAL(valIn.objField.f1, valOut.objField.f1);
+    BOOST_CHECK_EQUAL(valIn.objField.f2, valOut.objField.f2);
+
+    BOOST_CHECK(!cache.ContainsKey(key));
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientGetAndRemoveComplexKey)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<ignite::ComplexType, int32_t> cache = client.GetCache<ignite::ComplexType, int32_t>("local");
+
+    ignite::ComplexType key;
+
+    key.i32Field = 123;
+    key.strField = "Test value";
+    key.objField.f1 = 42;
+    key.objField.f2 = "Inner value";
+
+    int32_t valIn = 123;
+
+    cache.Put(key, valIn);
+    int32_t valOut = cache.GetAndRemove(key);
+
+    BOOST_CHECK_EQUAL(valOut, valIn);
+
+    BOOST_CHECK(!cache.ContainsKey(key));
+}
+
 BOOST_AUTO_TEST_SUITE_END()
