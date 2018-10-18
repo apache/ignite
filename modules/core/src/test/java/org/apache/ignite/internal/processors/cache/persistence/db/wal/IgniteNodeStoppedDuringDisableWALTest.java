@@ -91,6 +91,8 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
     }
 
     /**
+     * Test checks that after WAL is globally disabled and node is stopped, persistent store is cleaned properly after node restart.
+     *
      * @throws Exception If failed.
      */
     public void test() throws Exception {
