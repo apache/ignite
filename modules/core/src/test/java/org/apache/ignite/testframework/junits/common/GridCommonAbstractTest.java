@@ -1996,17 +1996,26 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
             final Collection<GridCacheFuture<?>> futs = ig.context().cache().context().mvcc().activeFutures();
 
-            for (GridCacheFuture<?> fut : futs)
-                log.info("Waiting for future: " + fut);
+            boolean hasFutures = false;
 
-            assertTrue("Expecting no active futures: node=" + ig.localNode().id(), futs.isEmpty());
+            for (GridCacheFuture<?> fut : futs) {
+                if (!fut.isDone()) {
+                    log.error("Expecting no active future [node=" + ig.localNode().id() + ", fut=" + fut + ']');
+
+                    hasFutures = true;
+                }
+            }
+
+            if (hasFutures)
+                fail("Some mvcc futures are not finished");
 
             Collection<IgniteInternalTx> txs = ig.context().cache().context().tm().activeTransactions();
 
             for (IgniteInternalTx tx : txs)
-                log.info("Waiting for tx: " + tx);
+                log.error("Expecting no active transaction [node=" + ig.localNode().id() + ", tx=" + tx + ']');
 
-            assertTrue("Expecting no active transactions: node=" + ig.localNode().id(), txs.isEmpty());
+            if (!txs.isEmpty())
+                fail("Some transaction are not finished");
         }
     }
 }
