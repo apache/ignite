@@ -63,12 +63,16 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridInClosure3;
@@ -89,6 +93,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
@@ -1475,8 +1480,35 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      * @param e Exception.
      */
     protected void handleTxException(Exception e) {
-        if (log.isTraceEnabled())
-            log.trace("Exception during tx execution: " + X.getFullStackTrace(e));
+        if (log.isDebugEnabled())
+            log.debug("Exception during tx execution: " + X.getFullStackTrace(e));
+
+        if (X.hasCause(e, IgniteFutureCancelledCheckedException.class))
+            return;
+
+        if (X.hasCause(e, ClusterTopologyException.class))
+            return;
+
+        if (X.hasCause(e, ClusterTopologyCheckedException.class))
+            return;
+
+        if (X.hasCause(e, IgniteTxRollbackCheckedException.class))
+            return;
+
+        if (X.hasCause(e, TransactionException.class))
+            return;
+
+        if (X.hasCause(e, IgniteSQLException.class) && X.cause(e, IgniteSQLException.class).getMessage() != null) {
+            IgniteSQLException ex = X.cause(e, IgniteSQLException.class);
+
+            if (ex.getMessage().contains("Transaction is already completed."))
+                return;
+
+            if (ex.getMessage().contains("Cannot serialize transaction due to write conflict"))
+                return;
+        }
+
+        fail("Unexpected tx exception. " + X.getFullStackTrace(e));
     }
 
     /**

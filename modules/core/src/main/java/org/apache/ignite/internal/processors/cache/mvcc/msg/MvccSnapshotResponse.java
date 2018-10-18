@@ -24,6 +24,7 @@ import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccLongList;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -49,6 +50,7 @@ public class MvccSnapshotResponse implements MvccMessage, MvccSnapshot, MvccLong
 
     /** */
     @GridDirectTransient
+    @GridToStringExclude
     private int txsCnt;
 
     /** */
@@ -315,24 +317,6 @@ public class MvccSnapshotResponse implements MvccMessage, MvccSnapshot, MvccLong
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        StringBuilder sb = new StringBuilder("MvccSnapshotResponse{")
-            .append("crdVer=").append(crdVer)
-            .append(", cntr=").append(cntr)
-            .append(", opCntr=").append(opCntr)
-            .append(", cleanupVer=").append(cleanupVer)
-            .append(", activeTxs=[");
-
-        for (int i = 0; i < txsCnt; i++) {
-            if (i != 0)
-                sb.append(", ");
-
-            sb.append(txs[i]);
-        }
-
-        sb.append(']')
-            .append(", futId=").append(futId)
-            .append('}');
-
-        return sb.toString();
+        return S.toString(MvccSnapshotResponse.class, this, "txs", txs);
     }
 }

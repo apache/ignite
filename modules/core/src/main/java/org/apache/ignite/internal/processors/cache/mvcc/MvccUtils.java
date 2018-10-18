@@ -645,8 +645,10 @@ public class MvccUtils {
      * @return Checked transaction.
      */
     public static GridNearTxLocal checkActive(GridNearTxLocal tx) {
-        if (tx != null && tx.state() != TransactionState.ACTIVE)
-            throw new IgniteSQLException("Transaction is already completed.", TRANSACTION_COMPLETED);
+        if (tx != null && tx.state() != TransactionState.ACTIVE) {
+            throw new IgniteSQLException("Transaction is already completed. [txState=" + tx.state() + ']',
+                TRANSACTION_COMPLETED);
+        }
 
         return tx;
     }

@@ -65,8 +65,8 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
      * @throws Exception If failed.
      */
     public void testPutAllGetAll_ClientServer_Backups1_Restart_Scan() throws Exception {
-        // TODO add tests with RESTART_RND_SRV
-        putAllGetAll(RestartMode.RESTART_RND_SRV, 4, 2, 2, 64, /*new InitIndexing(Integer.class, Integer.class)*/ null, SQL, DML);
+        // TODO add tests with RESTART_RND_SRV https://issues.apache.org/jira/browse/IGNITE-9928
+        putAllGetAll(RestartMode.RESTART_RND_SRV, 4, 2, 2, 64, /*new InitIndexing(Integer.class, Integer.class)*/ null, SCAN, PUT);
     }
 
     /**
