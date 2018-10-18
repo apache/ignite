@@ -285,7 +285,25 @@ public class GridLuceneIndex implements AutoCloseable {
             Object fieldVal = type.value(idxdFields[i], key, val);
 
             if (fieldVal != null) {
-                doc.add(new TextField(idxdFields[i], fieldVal.toString(), storeText));
+            	if(fieldVal.getClass().isArray()){
+            		if(fieldVal instanceof String[]){
+                		String[] terms = (String[])fieldVal;
+                		for(int j=0;j<terms.length;j++){
+                			if(terms[j]!=null)
+                				doc.add(new TextField(idxdFields[i], terms[j], storeText));    
+                		}
+                	}
+                	else if(fieldVal instanceof Object[]){
+                		Object[] terms = (Object[])fieldVal;
+                		for(int j=0;j<terms.length;j++){
+                			if(terms[j]!=null)
+                				doc.add(new TextField(idxdFields[i], terms[j].toString(), storeText));    
+                		}
+                	}
+            	}
+            	else{
+            		doc.add(new TextField(idxdFields[i], fieldVal.toString(), storeText));
+            	}
 
                 stringsFound = true;
             }

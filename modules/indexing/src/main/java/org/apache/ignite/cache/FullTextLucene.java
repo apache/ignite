@@ -1132,13 +1132,15 @@ public class FullTextLucene {
                 	if(row[index] instanceof String[]){
                 		String[] terms = (String[])row[index];
                 		for(int j=0;j<terms.length;j++){
-                			doc.add(new TextField(columnName, terms[j], storeText));    
+                			if(terms[j]!=null)
+                				doc.add(new TextField(columnName, terms[j], storeText));    
                 		}
                 	}
                 	else if(row[index] instanceof Object[]){
                 		Object[] terms = (Object[])row[index];
                 		for(int j=0;j<terms.length;j++){
-                			doc.add(new TextField(columnName, terms[j].toString(), storeText));    
+                			if(terms[j]!=null)
+                				doc.add(new TextField(columnName, terms[j].toString(), storeText));    
                 		}
                 	}
                 }

@@ -203,7 +203,11 @@ public class GridH2RowDescriptor {
 
             obj = co.value(idx.objectContext(), false);
         }
-
+        //add@byron
+        if(obj.getClass().isArray()){
+        	type = Value.ARRAY;
+        }
+        //end@
         switch (type) {
             case Value.BOOLEAN:
                 return ValueBoolean.get((Boolean)obj);

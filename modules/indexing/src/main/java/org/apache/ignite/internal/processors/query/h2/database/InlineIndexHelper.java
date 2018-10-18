@@ -22,12 +22,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
 import org.h2.value.CompareMode;
 import org.h2.value.Value;
+import org.h2.value.ValueArray;
 import org.h2.value.ValueBoolean;
 import org.h2.value.ValueByte;
 import org.h2.value.ValueBytes;
@@ -877,7 +879,7 @@ public class InlineIndexHelper {
             PageUtils.putByte(pageAddr, off, (byte)Value.NULL);
             return 1;
         }
-
+        
         if (val.getType() != type)
             throw new UnsupportedOperationException("value type doesn't match");
 
