@@ -1030,45 +1030,34 @@ public class IgniteTxHandler {
         }
         catch (Throwable e) {
             try {
-                U.error(log, "Failed completing transaction [commit=" + req.commit() + ", tx=" + tx + ']', e);
-            }
-            catch (Throwable e0) {
-                ClusterNode node0 = ctx.discovery().node(nodeId);
+                if (tx != null) {
+                    tx.commitError(e);
 
-                U.error(log, "Failed completing transaction [commit=" + req.commit() + ", tx=" +
-                        CU.txString(tx) + ']', e);
+                    tx.systemInvalidate(true);
 
-                U.error(log, "Failed to log message due to an error: ", e0);
+                    try {
+                        IgniteInternalFuture<IgniteInternalTx> res = tx.rollbackDhtLocalAsync();
 
-                if (node0 != null && (!node0.isClient() || node0.isLocal())) {
-                    ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+                        // Only for error logging.
+                        res.listen(CU.errorLogger(log));
 
-                    throw e;
+                        return res;
+                    }
+                    catch (Throwable e1) {
+                        e.addSuppressed(e1);
+                    }
+
+                    tx.logTxFinishErrorSafe(log, req.commit(), e);
                 }
+
+                if (e instanceof Error)
+                    throw (Error)e;
+
+                return new GridFinishedFuture<>(e);
             }
-
-            if (tx != null) {
-                tx.commitError(e);
-
-                tx.systemInvalidate(true);
-
-                try {
-                    IgniteInternalFuture<IgniteInternalTx> res = tx.rollbackDhtLocalAsync();
-
-                    // Only for error logging.
-                    res.listen(CU.errorLogger(log));
-
-                    return res;
-                }
-                catch (Throwable e1) {
-                    e.addSuppressed(e1);
-                }
+            finally {
+                ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
             }
-
-            if (e instanceof Error)
-                throw (Error)e;
-
-            return new GridFinishedFuture<>(e);
         }
     }
 
@@ -1093,20 +1082,26 @@ public class IgniteTxHandler {
                 return tx.rollbackAsyncLocal();
         }
         catch (Throwable e) {
-            U.error(log, "Failed completing transaction [commit=" + commit + ", tx=" + tx + ']', e);
+            try {
+                if (tx != null) {
+                    try {
+                        return tx.rollbackNearTxLocalAsync();
+                    }
+                    catch (Throwable e1) {
+                        e.addSuppressed(e1);
+                    }
 
-            if (e instanceof Error)
-                throw e;
-
-            if (tx != null)
-                try {
-                    return tx.rollbackNearTxLocalAsync();
+                    tx.logTxFinishErrorSafe(log, commit, e);
                 }
-                catch (Throwable e1) {
-                    e.addSuppressed(e1);
-                }
 
-            return new GridFinishedFuture<>(e);
+                if (e instanceof Error)
+                    throw e;
+
+                return new GridFinishedFuture<>(e);
+            }
+            finally {
+                ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+            }
         }
     }
 
@@ -1192,10 +1187,6 @@ public class IgniteTxHandler {
             else if (e instanceof IgniteTxOptimisticCheckedException) {
                 if (log.isDebugEnabled())
                     log.debug("Optimistic failure for remote transaction (will rollback): " + req);
-            }
-            else if (e instanceof IgniteTxHeuristicCheckedException) {
-                U.warn(log, "Failed to commit transaction (all transaction entries were invalidated): " +
-                    CU.txString(dhtTx));
             }
             else
                 U.error(log, "Failed to process prepare request: " + req, e);
@@ -1421,9 +1412,10 @@ public class IgniteTxHandler {
                 tx.rollbackRemoteTx();
             }
         }
+        catch (IgniteTxHeuristicCheckedException e) {
+            // Already uncommitted.
+        }
         catch (Throwable e) {
-            U.error(log, "Failed completing transaction [commit=" + req.commit() + ", tx=" + tx + ']', e);
-
             // Mark transaction for invalidate.
             tx.invalidate(true);
             tx.systemInvalidate(true);
@@ -1441,6 +1433,8 @@ public class IgniteTxHandler {
     }
 
     /**
+     * Finish for one-phase distributed tx.
+     *
      * @param tx Transaction.
      * @param req Request.
      */
@@ -1464,22 +1458,27 @@ public class IgniteTxHandler {
             throw e;
         }
         catch (Throwable e) {
-            U.error(log, "Failed committing transaction [tx=" + tx + ']', e);
-
-            // Mark transaction for invalidate.
-            tx.invalidate(true);
-            tx.systemInvalidate(true);
-
             try {
-                tx.rollbackRemoteTx();
-            }
-            catch (Throwable e1) {
-                e.addSuppressed(e1);
-                U.error(log, "Failed to automatically rollback transaction: " + tx, e1);
-            }
+                // Mark transaction for invalidate.
+                tx.invalidate(true);
 
-            if (e instanceof Error)
-                throw (Error)e;
+                tx.systemInvalidate(true);
+
+                try {
+                    tx.rollbackRemoteTx();
+                }
+                catch (Throwable e1) {
+                    e.addSuppressed(e1);
+                }
+
+                tx.logTxFinishErrorSafe(log, true, e);
+
+                if (e instanceof Error)
+                    throw (Error)e;
+            }
+            finally {
+                ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+            }
         }
     }
 
