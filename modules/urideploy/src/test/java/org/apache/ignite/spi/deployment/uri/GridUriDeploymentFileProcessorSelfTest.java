@@ -20,7 +20,6 @@ package org.apache.ignite.spi.deployment.uri;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
