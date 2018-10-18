@@ -2428,6 +2428,9 @@ public class GridSqlQuerySplitter {
         else
             return null;
 
+        if (!(leftCol.column().getTable() instanceof GridH2Table))
+            return null;
+
         GridSqlConst rightConst;
         GridSqlParameter rightParam;
 
