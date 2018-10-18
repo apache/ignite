@@ -33,6 +33,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.TestCacheNodeExcludingFilter;
@@ -59,6 +61,11 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Base class for Mvcc coordinator failover test.
  */
 public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends CacheMvccAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
+    }
+
     /**
      * @param concurrency Transaction concurrency.
      * @param isolation Transaction isolation.

@@ -142,7 +142,10 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(SRVS, CLIENTS);
 
         client = false;
+    }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
         noOpFailureHnd = false;
     }
 

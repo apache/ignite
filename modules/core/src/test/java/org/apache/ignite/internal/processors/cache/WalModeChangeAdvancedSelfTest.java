@@ -26,6 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -38,6 +40,9 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 @SuppressWarnings("unchecked")
 public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSelfTest {
+    /** No-Op failure handler. */
+    private boolean noOpFailureHnd;
+
     /**
      * Constructor.
      */
@@ -48,6 +53,19 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        noOpFailureHnd = false;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        if (noOpFailureHnd)
+            return new NoOpFailureHandler();
+
+        return super.getFailureHandler(igniteInstanceName);
     }
 
     /** {@inheritDoc} */
@@ -301,6 +319,8 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      * @throws Exception If failed.
      */
     public void testClientReconnect() throws Exception {
+        noOpFailureHnd = true;
+
         final Ignite srv = startGrid(config(SRV_1, false, false));
         Ignite cli = startGrid(config(CLI, true, false));
 
