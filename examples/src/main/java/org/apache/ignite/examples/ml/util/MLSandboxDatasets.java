@@ -22,13 +22,16 @@ package org.apache.ignite.examples.ml.util;
  */
 public enum MLSandboxDatasets {
     /** The full Iris dataset from Machine Learning Repository. */
-    IRIS("examples/src/main/resources/datasets/iris.csv", false, "\t"),
+    IRIS("examples/src/main/resources/datasets/iris.txt", false, "\t"),
 
     /** The Titanic dataset from Kaggle competition. */
     TITANIC("examples/src/main/resources/datasets/titanic.csv", true, ";"),
 
     /** The 1st and 2nd classes from the Iris dataset. */
-    TWO_CLASSED_IRIS("examples/src/main/resources/datasets/two_classed_iris.csv", false, "\t");
+    TWO_CLASSED_IRIS("examples/src/main/resources/datasets/two_classed_iris.csv", false, "\t"),
+
+    /** The dataset is about different computers' properties. */
+    CLEARED_MACHINES("examples/src/main/resources/datasets/cleared_machines.csv", false, ";");
 
     /** Filename. */
     private final String filename;
@@ -44,7 +47,7 @@ public enum MLSandboxDatasets {
      * @param hasHeader The csv file has header.
      * @param separator The special sign to separate the line on words.
      */
-    private MLSandboxDatasets(final String filename, boolean hasHeader, String separator) {
+    MLSandboxDatasets(final String filename, boolean hasHeader, String separator) {
         this.filename = filename;
         this.hasHeader = hasHeader;
         this.separator = separator;

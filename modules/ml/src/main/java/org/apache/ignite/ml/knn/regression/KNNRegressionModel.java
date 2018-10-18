@@ -77,6 +77,8 @@ public class KNNRegressionModel extends KNNClassificationModel {
             sum += neighbor.label() * distance;
             div += distance;
         }
+        if (div == 0.0) // when all neighbours are equal to the given point
+            return simpleRegression(neighbors);
         return sum / div;
     }
 

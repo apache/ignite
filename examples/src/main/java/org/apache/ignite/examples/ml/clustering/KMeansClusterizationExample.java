@@ -18,7 +18,6 @@
 package org.apache.ignite.examples.ml.clustering;
 
 import java.io.FileNotFoundException;
-import java.util.Arrays;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -31,8 +30,6 @@ import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 
 /**
  * Run KMeans clustering algorithm ({@link KMeansTrainer}) over distributed dataset.
@@ -50,7 +47,7 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
  */
 public class KMeansClusterizationExample {
     /** Run example. */
-    public static void main(String[] args) throws InterruptedException, FileNotFoundException {
+    public static void main(String[] args) throws FileNotFoundException {
         System.out.println();
         System.out.println(">>> KMeans clustering algorithm over cached dataset usage example started.");
         // Start ignite grid.

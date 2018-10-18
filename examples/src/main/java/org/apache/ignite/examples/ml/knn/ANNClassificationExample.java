@@ -51,7 +51,7 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
  */
 public class ANNClassificationExample {
     /** Run example. */
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> ANN multi-class classification algorithm over cached dataset usage example started.");
         // Start ignite grid.
