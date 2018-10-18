@@ -493,6 +493,62 @@ namespace ignite
                 }
 
                 /**
+                 * Stores given key-value pair in cache only if cache had no previous mapping for it.
+                 *
+                 * If cache previously contained value for the given key, then this value is returned.
+                 *
+                 * In case of PARTITIONED or REPLICATED caches, the value will be loaded from the primary node, which in
+                 * its turn may load the value from the swap storage, and consecutively, if it's not in swap, from
+                 * the underlying persistent storage.
+                 *
+                 *  If the returned value is not needed, method putxIfAbsent() should be used instead of this one to
+                 * avoid the overhead associated with returning of the previous value.
+                 *
+                 * If write-through is enabled, the stored value will be persisted to store.
+                 *
+                 * @param key Key to store in cache.
+                 * @param valIn Value to be associated with the given key.
+                 * @param valOut Previously contained value regardless of whether put happened or not (null if there was
+                 *     no previous value).
+                 */
+                void GetAndPutIfAbsent(const KeyType& key, const ValueType& valIn, ValueType& valOut)
+                {
+                    impl::thin::WritableKeyImpl<KeyType> wrKey(key);
+                    impl::thin::WritableImpl<ValueType> wrValIn(valIn);
+                    impl::thin::ReadableImpl<ValueType> rdValOut(valOut);
+
+                    proxy.GetAndPutIfAbsent(wrKey, wrValIn, rdValOut);
+                }
+
+                /**
+                 * Stores given key-value pair in cache only if cache had no previous mapping for it.
+                 *
+                 * If cache previously contained value for the given key, then this value is returned.
+                 *
+                 * In case of PARTITIONED or REPLICATED caches, the value will be loaded from the primary node, which in
+                 * its turn may load the value from the swap storage, and consecutively, if it's not in swap, from
+                 * the underlying persistent storage.
+                 *
+                 *  If the returned value is not needed, method putxIfAbsent() should be used instead of this one to
+                 * avoid the overhead associated with returning of the previous value.
+                 *
+                 * If write-through is enabled, the stored value will be persisted to store.
+                 *
+                 * @param key Key to store in cache.
+                 * @param valIn Value to be associated with the given key.
+                 * @return Previously contained value regardless of whether put happened or not (null if there was no
+                 *     previous value).
+                 */
+                ValueType GetAndPutIfAbsent(const KeyType& key, const ValueType& valIn)
+                {
+                    ValueType valOut;
+
+                    GetAndPutIfAbsent(key, valIn, valOut);
+
+                    return valOut;
+                }
+
+                /**
                  * Refresh affinity mapping.
                  *
                  * Retrieves affinity mapping information from remote server. This information uses to send data

@@ -145,6 +145,12 @@ namespace ignite
                 {
                     return GetCacheImpl(impl).PutIfAbsent(key, val);
                 }
+
+                void CacheClientProxy::GetAndPutIfAbsent(const WritableKey& key, const Writable& valIn,
+                    Readable& valOut)
+                {
+                    GetCacheImpl(impl).GetAndPutIfAbsent(key, valIn, valOut);
+                }
             }
         }
     }
