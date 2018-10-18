@@ -28,6 +28,8 @@ export default class PCFormFieldSizeController {
     onScaleChange;
     /** @type {ng.IFormController} */
     innerForm;
+    /** @type {boolean?} */
+    autofocus;
 
     static $inject = ['$element', '$attrs'];
 
