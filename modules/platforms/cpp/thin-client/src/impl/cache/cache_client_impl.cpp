@@ -229,6 +229,16 @@ namespace ignite
                     SyncCacheKeyMessage(key, req, rsp);
                 }
 
+                bool CacheClientImpl::PutIfAbsent(const WritableKey& key, const Writable& val)
+                {
+                    CacheKeyValueRequest<RequestType::CACHE_PUT_IF_ABSENT> req(id, binary, key, val);
+                    BoolResponse rsp;
+
+                    SyncCacheKeyMessage(key, req, rsp);
+
+                    return rsp.GetValue();
+                }
+
                 void CacheClientImpl::RefreshAffinityMapping()
                 {
                     router.Get()->RefreshAffinityMapping(id, binary);

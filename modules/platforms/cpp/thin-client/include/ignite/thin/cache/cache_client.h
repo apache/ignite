@@ -477,6 +477,22 @@ namespace ignite
                 }
 
                 /**
+                 * Atomically associates the specified key with the given value if it is not already associated with
+                 * a value.
+                 *
+                 * @param key Key with which the specified value is to be associated.
+                 * @param val Value to be associated with the specified key.
+                 * @return True if a value was set.
+                 */
+                bool PutIfAbsent(const KeyType& key, const ValueType& val)
+                {
+                    impl::thin::WritableKeyImpl<KeyType> wrKey(key);
+                    impl::thin::WritableImpl<ValueType> wrValIn(val);
+
+                    return proxy.PutIfAbsent(wrKey, wrValIn);
+                }
+
+                /**
                  * Refresh affinity mapping.
                  *
                  * Retrieves affinity mapping information from remote server. This information uses to send data

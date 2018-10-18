@@ -617,8 +617,8 @@ namespace ignite
             }
 
             /**
-             * Atomically associates the specified key with the given value if it is not
-             * already associated with a value.
+             * Atomically associates the specified key with the given value if it is not already associated with
+             * a value.
              *
              * This method should only be used on the valid instance.
              *
@@ -638,8 +638,8 @@ namespace ignite
             }
 
             /**
-             * Atomically associates the specified key with the given value if it is not
-             * already associated with a value.
+             * Atomically associates the specified key with the given value if it is not already associated with
+             * a value.
              *
              * This method should only be used on the valid instance.
              *

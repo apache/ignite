@@ -234,6 +234,16 @@ namespace ignite
                     void GetAndReplace(const WritableKey& key, const Writable& valIn, Readable& valOut);
 
                     /**
+                     * Atomically associates the specified key with the given value if it is not already associated with
+                     * a value.
+                     *
+                     * @param key Key with which the specified value is to be associated.
+                     * @param val Value to be associated with the specified key.
+                     * @return True if a value was set.
+                     */
+                    bool PutIfAbsent(const WritableKey& key, const Writable& val);
+
+                    /**
                      * Update cache partitions info.
                      */
                     void RefreshAffinityMapping();
