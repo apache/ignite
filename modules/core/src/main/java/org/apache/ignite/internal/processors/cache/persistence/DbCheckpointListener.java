@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.jetbrains.annotations.Nullable;
