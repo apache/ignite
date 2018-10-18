@@ -180,10 +180,14 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
             startGrid(0);
         }
         catch (IgniteCheckedException ex) {
+            if (X.hasCause(ex, StorageException.class)) {
+                // Test successful.
+
+                return;
+            }
+
             throw ex;
         }
-
-        waitFailure(StorageException.class);
     }
 
     /**
