@@ -1594,7 +1594,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     private void sendMessageStartResult(final ClusterNode node,
         final UUID routineId,
         byte[] cntrsMapBytes,
-        final @Nullable Exception err)
+        @Nullable final Exception err)
     {
         byte[] errBytes = null;
 
