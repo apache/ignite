@@ -96,6 +96,26 @@ public class AgentConfiguration {
     private Boolean disableDemo;
 
     /** */
+    @Parameter(names = {"-cs", "--client-certificate"},
+        description = "Path to client certificate")
+    private String clientCert;
+
+    /** */
+    @Parameter(names = {"-cp", "--client-password"},
+        description = "Optional password for client certificate")
+    private String clientPass;
+
+    /** */
+    @Parameter(names = {"-ts", "--trust-store"},
+        description = "Path to trust store")
+    private String trustStore;
+
+    /** */
+    @Parameter(names = {"-tp", "--trust-store-password"},
+        description = "Password for trust store")
+    private String trustStorePass;
+
+    /** */
     @Parameter(names = {"-h", "--help"}, help = true, description = "Print this help message")
     private Boolean help;
 
@@ -216,6 +236,62 @@ public class AgentConfiguration {
      */
     public void disableDemo(Boolean disableDemo) {
         this.disableDemo = disableDemo;
+    }
+
+    /**
+     * @return Path to client certificate.
+     */
+    public String clientCertificate() {
+        return clientCert;
+    }
+
+    /**
+     * @param clientCert Path to client certificate.
+     */
+    public void clientCertificate(String clientCert) {
+        this.clientCert = clientCert;
+    }
+
+    /**
+     * @return Client password.
+     */
+    public String clientPassword() {
+        return clientPass;
+    }
+
+    /**
+     * @param clientPass Client password.
+     */
+    public void clientPassword(String clientPass) {
+        this.clientPass = clientPass;
+    }
+
+    /**
+     * @return Path to trust store.
+     */
+    public String trustStore() {
+        return trustStore;
+    }
+
+    /**
+     * @param trustStore Path to trust store.
+     */
+    public void trustStore(String trustStore) {
+        this.trustStore = trustStore;
+    }
+
+    /**
+     * @return Trust store password.
+     */
+    public String trustStorePassword() {
+        return trustStorePass;
+    }
+
+    /**
+     * @param trustStorePass Trust store password.
+     */
+    public void trustStorePassword(String trustStorePass) {
+        this.trustStorePass = trustStorePass;
     }
 
     /**
