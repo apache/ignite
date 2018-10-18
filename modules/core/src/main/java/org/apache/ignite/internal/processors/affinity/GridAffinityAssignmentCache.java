@@ -715,8 +715,13 @@ public class GridAffinityAssignmentCache {
 
         AffinityAssignment cache = head.get();
 
-        if (!cache.topologyVersion().equals(topVer)) {
-            cache = affCache.get(lastAffChangeTopVer);
+        if (!(cache.topologyVersion().compareTo(lastAffChangeTopVer) >= 0 &&
+            cache.topologyVersion().compareTo(topVer) <= 0)) {
+
+            Map.Entry<AffinityTopologyVersion, HistoryAffinityAssignment> e = affCache.floorEntry(lastAffChangeTopVer);
+
+            if (e != null)
+                cache = e.getValue();
 
             if (cache == null) {
                 throw new IllegalStateException("Getting affinity for topology version earlier than affinity is " +

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,10 +28,14 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
@@ -42,13 +47,19 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
 
     private volatile boolean startClient;
 
+    private final TcpDiscoveryIpFinder CLIENT_IP_FINDER = new TcpDiscoveryVmIpFinder()
+        .setAddresses(Collections.singleton("127.0.0.1:47500"));
+
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (startClient)
+        cfg.setDiscoverySpi(new TestDiscoverySpi());
+
+        if (startClient) {
             cfg.setClientMode(true);
 
-        cfg.setDiscoverySpi(new TestDiscoverySpi());
+            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(CLIENT_IP_FINDER);
+        }
 
         return cfg;
     }
@@ -70,6 +81,10 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Integer> txCache = ig.createCache(new CacheConfiguration<Integer, Integer>()
                 .setName("tx").setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
+        assertTrue(GridTestUtils.waitForCondition(() ->
+                new AffinityTopologyVersion(4, 3).equals(grid(3).context().discovery().topologyVersionEx()),
+            5_000));
+
         TestDiscoverySpi discoSpi = (TestDiscoverySpi) grid(2).context().discovery().getInjectedDiscoverySpi();
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -78,21 +93,14 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
 
         startClient = true;
 
-        GridTestUtils.runAsync(() -> {
-            try {
-                startGrid(4);
-            }
-            catch (Exception ex) {
-                throw new IgniteException(ex);
-            }
-        });
+        startGrid(4);
 
-        U.sleep(5_000);
-
-        assertEquals(new AffinityTopologyVersion(5, 0), grid(0).context().discovery().topologyVersionEx());
-        assertEquals(new AffinityTopologyVersion(5, 0), grid(1).context().discovery().topologyVersionEx());
-        assertEquals(new AffinityTopologyVersion(4, 3), grid(2).context().discovery().topologyVersionEx());
-        assertEquals(new AffinityTopologyVersion(4, 3), grid(3).context().discovery().topologyVersionEx());
+        assertTrue(GridTestUtils.waitForCondition(() ->
+                new AffinityTopologyVersion(5, 0).equals(grid(0).context().discovery().topologyVersionEx()) &&
+                    new AffinityTopologyVersion(5, 0).equals(grid(1).context().discovery().topologyVersionEx()) &&
+                    new AffinityTopologyVersion(4, 3).equals(grid(2).context().discovery().topologyVersionEx()) &&
+                    new AffinityTopologyVersion(4, 3).equals(grid(3).context().discovery().topologyVersionEx()),
+            10_000));
 
         for (int k = 0; k < 100; k++) {
             atomicCache.put(k, k);
@@ -127,6 +135,10 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Integer> txCache = ig.createCache(new CacheConfiguration<Integer, Integer>()
             .setName("tx").setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
+        assertTrue(GridTestUtils.waitForCondition(() ->
+            new AffinityTopologyVersion(4, 3).equals(grid(3).context().discovery().topologyVersionEx()),
+            5_000));
+
         startClient = true;
 
         startGrid(4);
@@ -137,21 +149,14 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
 
         discoSpi.latch = latch;
 
-        GridTestUtils.runAsync(() -> {
-            try {
-                stopGrid(4);
-            }
-            catch (Exception ex) {
-                throw new IgniteException(ex);
-            }
-        });
+        stopGrid(4);
 
-        U.sleep(5_000);
-
-        assertEquals(new AffinityTopologyVersion(6, 0), grid(0).context().discovery().topologyVersionEx());
-        assertEquals(new AffinityTopologyVersion(6, 0), grid(1).context().discovery().topologyVersionEx());
-        assertEquals(new AffinityTopologyVersion(5, 0), grid(2).context().discovery().topologyVersionEx());
-        assertEquals(new AffinityTopologyVersion(5, 0), grid(3).context().discovery().topologyVersionEx());
+        assertTrue(GridTestUtils.waitForCondition(() ->
+                new AffinityTopologyVersion(6, 0).equals(grid(0).context().discovery().topologyVersionEx()) &&
+                    new AffinityTopologyVersion(6, 0).equals(grid(1).context().discovery().topologyVersionEx()) &&
+                    new AffinityTopologyVersion(5, 0).equals(grid(2).context().discovery().topologyVersionEx()) &&
+                    new AffinityTopologyVersion(5, 0).equals(grid(3).context().discovery().topologyVersionEx()),
+            10_000));
 
         for (int k = 0; k < 100; k++) {
             atomicCache.put(k, k);
@@ -173,51 +178,6 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         assertEquals(new AffinityTopologyVersion(5, 0), grid(3).context().discovery().topologyVersionEx());
 
         latch.countDown();
-    }
-
-    public void testClientsRestart() throws Exception {
-        Ignite ig = startGrids(4);
-
-        ig.cluster().active(true);
-
-        IgniteCache<Integer, Integer> atomicCache = ig.createCache(new CacheConfiguration<Integer, Integer>()
-            .setName("atomic").setAtomicityMode(CacheAtomicityMode.ATOMIC));
-
-        IgniteCache<Integer, Integer> txCache = ig.createCache(new CacheConfiguration<Integer, Integer>()
-            .setName("tx").setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
-
-        startClient = true;
-
-        final AtomicBoolean stop = new AtomicBoolean();
-
-        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
-            try {
-                for (int i = 0; i < 10; i++)
-                    startGrid(4 + i);
-                for (int i = 9; i >= 0; i--)
-                    stopGrid(4 + i);
-            }
-            catch (Exception ex) {
-                throw new IgniteException(ex);
-            }
-
-            stop.set(true);
-        });
-
-        Random rnd = new Random();
-
-        int ops = 0;
-
-        while (!stop.get()) {
-            int key = rnd.nextInt();
-
-            atomicCache.put(key, key);
-            txCache.put(key, key);
-
-            ops++;
-        }
-
-        fut.get();
     }
 
     public static class TestDiscoverySpi extends TcpDiscoverySpi {

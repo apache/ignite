@@ -164,6 +164,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             final GridCacheMessage cacheMsg = (GridCacheMessage)msg;
 
+            AffinityTopologyVersion rmtAffVer = cacheMsg.topologyVersion();
+            AffinityTopologyVersion lastAffChangedVer = cacheMsg.lastAffinityChangedTopologyVersion();
+
+            cctx.exchange().lastAffinityChangedTopologyVersion(rmtAffVer, lastAffChangedVer);
+
             IgniteInternalFuture<?> fut = null;
 
             if (cacheMsg.partitionExchangeMessage()) {
@@ -221,10 +226,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             }
             else {
                 AffinityTopologyVersion locAffVer = cctx.exchange().readyAffinityVersion();
-                AffinityTopologyVersion rmtAffVer = cacheMsg.topologyVersion();
-                AffinityTopologyVersion lastAffChangedVer = cacheMsg.lastAffinityChangedTopologyVersion();
-
-                cctx.exchange().lastAffinityChangedTopologyVersion(rmtAffVer, lastAffChangedVer);
 
                 if (locAffVer.compareTo(lastAffChangedVer) < 0) {
                     IgniteLogger log = cacheMsg.messageLogger(cctx);
@@ -1225,6 +1226,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         if (!onSend(msg, node.id()))
             return;
 
+        msg.lastAffinityChangedTopologyVersion(cctx.exchange().lastAffinityChangedTopologyVersion(msg.topologyVersion()));
+
         int cnt = 0;
 
         while (cnt <= retryCnt) {
@@ -1280,6 +1283,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         if (!onSend(msg, null))
             return;
+
+        msg.lastAffinityChangedTopologyVersion(cctx.exchange().lastAffinityChangedTopologyVersion(msg.topologyVersion()));
 
         try {
             cctx.gridIO().sendToGridTopic(node, TOPIC_CACHE, msg, plc);
