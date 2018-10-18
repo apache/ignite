@@ -35,7 +35,7 @@ import java.io.InputStream;
  */
 public class HadoopHelperImpl implements HadoopHelper {
     /** Kernal context. */
-    private final GridKernalContext ctx;
+    private GridKernalContext ctx;
 
     /** Common class loader. */
     private volatile HadoopClassLoader ldr;
@@ -129,5 +129,11 @@ public class HadoopHelperImpl implements HadoopHelper {
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to resolve Ignite work directory.", e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        // Force drop KernalContext link, because HadoopHelper leaks in some tests.
+        ctx = null;
     }
 }

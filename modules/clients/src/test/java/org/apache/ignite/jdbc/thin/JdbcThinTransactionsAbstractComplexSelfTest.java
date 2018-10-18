@@ -50,7 +50,7 @@ import org.apache.ignite.testframework.GridTestUtils;
  */
 public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcThinAbstractSelfTest {
     /** Client node index. */
-    final static int CLI_IDX = 1;
+    static final int CLI_IDX = 1;
 
     /**
      * Closure to perform ordinary delete after repeatable read.
@@ -755,11 +755,11 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
 
                     return null;
                 }
-            }, IgniteCheckedException.class, "Mvcc version mismatch.");
+            }, IgniteCheckedException.class, "Cannot serialize transaction due to write conflict");
 
             assertTrue(X.hasCause(ex, SQLException.class));
 
-            assertTrue(X.getCause(ex).getMessage().contains("Mvcc version mismatch."));
+            assertTrue(X.getCause(ex).getMessage().contains("Cannot serialize transaction due to write conflict"));
         }
         else
             readFut.get();
@@ -1016,7 +1016,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      * Person class.
      */
-    private final static class Person {
+    private static final class Person {
         /** */
         @QuerySqlField
         public int id;

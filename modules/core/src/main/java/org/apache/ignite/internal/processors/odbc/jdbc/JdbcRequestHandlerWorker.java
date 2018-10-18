@@ -50,7 +50,7 @@ class JdbcRequestHandlerWorker extends GridWorker {
     private final GridKernalContext ctx;
 
     /** Response */
-    private final static ClientListenerResponse ERR_RESPONSE = new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
+    private static final ClientListenerResponse ERR_RESPONSE = new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
         "Connection closed.");
 
     /**
