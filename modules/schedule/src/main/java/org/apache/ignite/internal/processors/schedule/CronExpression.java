@@ -36,7 +36,7 @@ public class CronExpression {
         try {
             A.notNullOrEmpty(cron, "cron");
 
-            this.cron = appendDayOfWeekIfNeeded(cron.trim());
+            this.cron = appendSecondIfOmitted(cron.trim());
 
             new CronSequenceGenerator(this.cron);
         }
@@ -47,13 +47,14 @@ public class CronExpression {
 
     /**
      * @param cron pattern
-     * @return if day of week is omitted in the pattern adds "?" to satisfy {@link CronSequenceGenerator} requirements
+     * @return if seconds are omiited in the pattern adds "0" to satisfy {@link CronSequenceGenerator} requirements
+     *  and keep previous behaviour
      */
-    private static String appendDayOfWeekIfNeeded(String cron) {
+    private static String appendSecondIfOmitted(String cron) {
         String[] fields = StringUtils.tokenizeToStringArray(cron, " ");
 
         if (fields != null && fields.length == 5)
-            return cron + " ?"; // add unspecified Day-of-Week
+            return "0 " + cron;
         else
             return cron;
     }

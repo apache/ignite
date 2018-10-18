@@ -128,7 +128,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
         SchedulerFuture<?> fut = null;
 
-        long freq = 60; // 2 seconds frequency.
+        long freq = 60; // 1 minute frequency.
         long delay = 2; // 2 seconds delay.
 
         try {
@@ -258,7 +258,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
                     return ++cnt;
                 }
-            }, "{1, " + cnt + "} * * * * * ?"); //with Day of week
+            }, "{1, " + cnt + "} * * * * * *");
 
             final AtomicInteger notifyCnt = new AtomicInteger();
 
@@ -321,7 +321,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
                     return execCnt.incrementAndGet();
                 }
-            }, "{1, *} * * * * *");
+            }, "{1, *} * * * * * *");
 
             final AtomicInteger notifyCnt = new AtomicInteger();
 
@@ -489,7 +489,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
         try {
             // Number of executions in pattern must be greater than zero or equal to "*".
-            grid(0).scheduler().scheduleLocal(run, "{*, 0} * * * * * ?").get();
+            grid(0).scheduler().scheduleLocal(run, "{*, 0} * * * * *").get();
 
             fail("IgniteException must have been thrown");
         }
@@ -559,7 +559,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        SchedulerFuture<Integer> fut = grid(0).scheduler().scheduleLocal(run, "{1, 5} * * * * *");
+        SchedulerFuture<Integer> fut = grid(0).scheduler().scheduleLocal(run, "{1, 5} * * * * * *");
 
         fut.get();
 
