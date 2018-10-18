@@ -26,12 +26,17 @@ import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -76,6 +81,8 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
 
             execute(c, "create table person_seg (id int primary key, firstName varchar, lastName varchar) " +
                 "with \"atomicity=transactional_snapshot,cache_name=PersonSeg,template=segmented\"");
+
+            readyTopologyFuture(new AffinityTopologyVersion(3,3)).get(TX_TIMEOUT);
 
             try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.PESSIMISTIC,
                 TransactionIsolation.REPEATABLE_READ)) {
@@ -355,5 +362,16 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
                 return node.cache("Person").query(new SqlFieldsQuery(qry).setLocal(loc)).getAll();
             }
         }, IgniteSQLException.class, exMsg);
+    }
+
+    /** */
+    private IgniteInternalFuture<AffinityTopologyVersion> readyTopologyFuture(AffinityTopologyVersion top) throws IgniteCheckedException {
+        GridCompoundIdentityFuture<AffinityTopologyVersion> res = new GridCompoundIdentityFuture<>();
+
+        G.allGrids().forEach(g -> res.add(((IgniteEx)g).context().cache().context().exchange().affinityReadyFuture(top)));
+
+        res.markInitialized();
+
+        return res;
     }
 }
