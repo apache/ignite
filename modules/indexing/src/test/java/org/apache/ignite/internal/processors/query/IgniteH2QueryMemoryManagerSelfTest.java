@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query;
 import java.util.List;
 import java.util.UUID;
 import javax.cache.CacheException;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -33,7 +32,7 @@ public class IgniteH2QueryMemoryManagerSelfTest extends GridCommonAbstractTest {
     private static final int ROW_CNT = 1000;
 
     /** 1M constant. */
-    private static final int MAX_MEM_1M = 1024* 1024;
+    private static final int MAX_MEM_1M = 1024 * 1024;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -63,28 +62,31 @@ public class IgniteH2QueryMemoryManagerSelfTest extends GridCommonAbstractTest {
      * Test local query execution.
      */
     public void test() {
-//        // Query with single huge local result.
+        List<List<?>> res = sql("select * from T order by T.id", MAX_MEM_1M);
+
+//        sql("select * from T as T0, T as T1 order by T0.id", MAX_MEM_1M);
+
 //        GridTestUtils.assertThrows(log, () -> {
-//            sql("select * from T as T0, T as T1");
+//            sql("select * from T as T0, T as T1 order by T0.id", MAX_MEM_1M);
 //
 //            return null;
 //        }, CacheException.class, "IgniteOutOfMemoryException: SQL query out of memory");
-
-        // Check that two small queries works.
-        sql("select * from T as T0, T as T1 where T0.id < 2", MAX_MEM_1M);
-        sql("select * from T as T0, T as T1 where T0.id >= 2 AND T0.id < 4", MAX_MEM_1M);
-
-        // Check query that is mapped to two map queries.
-        GridTestUtils.assertThrows(log, () -> {
-            sql("select * from T as T0, T as T1 where T0.id < 2 " +
-                "UNION " +
-                "select * from T as T0, T as T1 where T0.id >= 2 AND T0.id < 4", MAX_MEM_1M);
-
-            return null;
-        }, CacheException.class, "IgniteOutOfMemoryException: SQL query out of memory");
-
-        // Query with small local result.
-        List<List<?>> res = sql("select * from T", MAX_MEM_1M);
+//
+//        // Check that two small queries works.
+//        sql("select * from T as T0, T as T1 where T0.id < 2 order by T0.id", MAX_MEM_1M);
+//        sql("select * from T as T0, T as T1 where T0.id >= 2 AND T0.id < 4 order by T0.id", MAX_MEM_1M);
+//
+//        // Check query that is mapped to two map queries.
+//        GridTestUtils.assertThrows(log, () -> {
+//            sql("select * from T as T0, T as T1 where T0.id < 2 order by T0.id" +
+//                "UNION " +
+//                "select * from T as T0, T as T1 where T0.id >= 2 AND T0.id < 4 order by T0.id", MAX_MEM_1M);
+//
+//            return null;
+//        }, CacheException.class, "IgniteOutOfMemoryException: SQL query out of memory");
+//
+//        // Query with small local result.
+//        List<List<?>> res = sql("select * from T order by T.id", MAX_MEM_1M);
     }
 
     /**

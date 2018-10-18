@@ -256,8 +256,12 @@ public class GridH2Table extends TableBase {
         // In accordance with base method semantics, we'll return true if we were already exclusively locked.
         Boolean res = sessions.get(ses);
 
-        if (res != null)
+        if (res != null) {
+            System.out.println(Thread.currentThread().getName() + System.identityHashCode(this) + " +++ LOCK noop" + ses + " " + getName());
             return res;
+        }
+
+        System.out.println(Thread.currentThread().getName() + System.identityHashCode(this) + " +++ LOCK " + ses + " " + getName());
 
         // Acquire the lock.
         lock(exclusive);
@@ -335,10 +339,14 @@ public class GridH2Table extends TableBase {
                 // timeout exception.GridNioSslSelfTest
                 // If query is not in the query pool, then we simply wait for lock acquisition.
                 if (isSqlNotInLazy()) {
+                    System.out.println(Thread.currentThread().getName() + System.identityHashCode(lock) + " +++ lock qry not lazy ");
+
                     if (hasWaitedWriter || !l.tryLock(200, TimeUnit.MILLISECONDS)) {
+                        System.out.println(Thread.currentThread().getName() + " +++ lock FAIL");
                         throw new GridH2RetryException("Long wait on Table lock: [tableName=" + getName()
                             + ", hasWaitedWriter=" + hasWaitedWriter + ']');
                     }
+                    System.out.println(Thread.currentThread().getName() + System.identityHashCode(lock) + " +++ lock OK");
                 }
                 else
                     l.lockInterruptibly();
@@ -359,7 +367,10 @@ public class GridH2Table extends TableBase {
     private void unlock(boolean exclusive) {
         Lock l = exclusive ? lock.writeLock() : lock.readLock();
 
+        System.out.println(Thread.currentThread().getName() + System.identityHashCode(lock) + " +++ unlock " + exclusive);
+
         l.unlock();
+        System.out.println(Thread.currentThread().getName() + System.identityHashCode(lock) + " +++ unlock OK" + exclusive);
     }
 
     /**
@@ -382,6 +393,8 @@ public class GridH2Table extends TableBase {
 
         lazyTransferCnt.incrementAndGet();
 
+
+        System.out.println(Thread.currentThread().getName() + System.identityHashCode(this) + " +++ onLazyTransferStarted " + ses);
         lock.readLock().unlock();
     }
 
@@ -492,15 +505,27 @@ public class GridH2Table extends TableBase {
     @Override public void unlock(Session ses) {
         Boolean exclusive = sessions.remove(ses);
 
-        if (exclusive == null)
+        if (exclusive == null) {
+            System.out.println(Thread.currentThread().getName() + System.identityHashCode(this) + " +++ UNLOCK noop " + ses + " " + getName());
+
             return;
+        }
+
+        System.out.println(Thread.currentThread().getName() + System.identityHashCode(this) + " +++ UNLOCK " + ses + " " + getName());
 
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
         if (qctx != null)
             qctx.lockedTables().remove(this);
 
-        unlock(exclusive);
+        try {
+            unlock(exclusive);
+            System.out.println(Thread.currentThread().getName() + " +++ UNLOCK OK " + ses + " " + getName());
+        }
+        catch (Throwable e) {
+            System.out.println(Thread.currentThread().getName() + " +++ UNLOCK ERR " + ses + " " + getName());
+            e.printStackTrace();
+        }
     }
 
     /**
