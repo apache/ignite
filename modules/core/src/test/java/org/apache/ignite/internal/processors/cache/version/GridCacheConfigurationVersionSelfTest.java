@@ -57,16 +57,14 @@ public class GridCacheConfigurationVersionSelfTest extends GridCacheConfiguratio
     ) throws Exception {
         ignite.getOrCreateCache(CACHE_NAME);
 
-        ver++;
+        awaitCacheVersion(firstNodeId, lastNodeId, CACHE_NAME, ++ver, 5000L);
 
         for (int i = firstNodeId; i < lastNodeId; i++)
             checkCacheVersion(grid(i), CACHE_NAME, ver, START);
 
         ignite.cache(CACHE_NAME).destroy();
 
-        Thread.sleep(1000L);
-
-        ver++;
+        awaitCacheVersion(firstNodeId, lastNodeId, CACHE_NAME, ++ver, 5000L);
 
         for (int i = firstNodeId; i < lastNodeId; i++)
             checkCacheVersion(grid(i), CACHE_NAME, ver, DESTROY);

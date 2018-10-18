@@ -62,7 +62,7 @@ public class GridCacheConfigurationVersionSqlSelfTest extends GridCacheConfigura
 
         cache.query(new SqlFieldsQuery(CREATE_TABLE_SQL).setSchema(SCHEMA_NAME)).getAll();
 
-        checkCacheVersion(ignite,SQL_CACHE_NAME,1,START);
+        checkCacheVersion(ignite, SQL_CACHE_NAME, 1, START);
 
         stopAllGrids();
 
@@ -70,7 +70,7 @@ public class GridCacheConfigurationVersionSqlSelfTest extends GridCacheConfigura
 
         ignite.cluster().active(true);
 
-        checkCacheVersion(ignite,SQL_CACHE_NAME,1,START);
+        checkCacheVersion(ignite, SQL_CACHE_NAME, 1, START);
     }
 
     /** {@inheritDoc} */
@@ -86,23 +86,21 @@ public class GridCacheConfigurationVersionSqlSelfTest extends GridCacheConfigura
 
         cache.query(new SqlFieldsQuery(CREATE_TABLE_SQL).setSchema(SCHEMA_NAME)).getAll();
 
-        ver++;
+        awaitCacheVersion(firstNodeId, lastNodeId, SQL_CACHE_NAME, ++ver, 5000L);
 
         for (int i = firstNodeId; i < lastNodeId; i++)
             checkCacheVersion(grid(i), SQL_CACHE_NAME, ver, START);
 
         cache.query(new SqlFieldsQuery(ALTER_TABLE_SQL).setSchema(SCHEMA_NAME)).getAll();
 
-        ver++;
+        awaitCacheVersion(firstNodeId, lastNodeId, SQL_CACHE_NAME, ++ver, 5000L);
 
         for (int i = firstNodeId; i < lastNodeId; i++)
             checkCacheVersion(grid(i), SQL_CACHE_NAME, ver, META_CHANGED);
 
         cache.query(new SqlFieldsQuery(DROP_TABLE_SQL).setSchema(SCHEMA_NAME)).getAll();
 
-        Thread.sleep(1000L);
-
-        ver++;
+        awaitCacheVersion(firstNodeId, lastNodeId, SQL_CACHE_NAME, ++ver, 5000L);
 
         for (int i = firstNodeId; i < lastNodeId; i++)
             checkCacheVersion(grid(i), SQL_CACHE_NAME, ver, DESTROY);

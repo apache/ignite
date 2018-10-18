@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.cache.version;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -66,7 +67,7 @@ public abstract class GridCacheConfigurationVersionAbstractSelfTest extends Grid
         cleanPersistenceDir();
     }
 
-     /** */
+    /** */
     public void testSingleNode() throws Exception {
         testSameVersionOnNodes(1, 0, 0, false, null);
     }
@@ -172,8 +173,12 @@ public abstract class GridCacheConfigurationVersionAbstractSelfTest extends Grid
     }
 
     /** */
-    protected abstract int performActionsOnCache(int firstNodeId, int lastNodeId, int version,
-        IgniteEx ignite) throws Exception;
+    protected abstract int performActionsOnCache(
+        int firstNodeId,
+        int lastNodeId,
+        int ver,
+        IgniteEx ignite
+    ) throws Exception;
 
     /** */
     protected void performActionOnStartTestAfterClusterActivate(IgniteEx ignite) throws Exception {
@@ -200,5 +205,40 @@ public abstract class GridCacheConfigurationVersionAbstractSelfTest extends Grid
             assertEquals(verId, desc.version().id());
             assertEquals(act, desc.version().lastAction());
         }
+    }
+
+    /** */
+    protected void awaitCacheVersion(
+        int firstNodeId,
+        int lastNodeId,
+        String cacheName,
+        int verId,
+        long timeout
+    ) throws TimeoutException {
+        long leftTime = timeout;
+        while (leftTime > 0) {
+            long sleepTime = Math.min(50L, leftTime);
+
+            doSleep(sleepTime);
+
+            boolean verReached = true;
+
+            for (int i = firstNodeId; i < lastNodeId; i++) {
+                GridCacheConfigurationVersion ver = grid(i).context().cache().cacheVersion(cacheName);
+
+                if (ver.id() != verId) {
+                    verReached = false;
+
+                    break;
+                }
+            }
+
+            if (verReached)
+                return;
+
+            leftTime -= sleepTime;
+        }
+
+        throw new TimeoutException("Version wasn't reached! cacheName: " + cacheName + " version: " + verId);
     }
 }
