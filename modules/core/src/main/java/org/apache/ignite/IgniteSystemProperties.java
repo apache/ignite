@@ -954,6 +954,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_REBALANCE_THROTTLE_OVERRIDE = "IGNITE_REBALANCE_THROTTLE_OVERRIDE";
 
     /**
+     * Timeout for waiting schema update if schema was not found for last accepted version.
+     */
+    public static final String IGNITE_WAIT_SCHEMA_UPDATE = "IGNITE_WAIT_SCHEMA_UPDATE";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
