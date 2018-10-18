@@ -177,6 +177,18 @@ public enum GridRestCommand {
     CLUSTER_CURRENT_STATE("currentstate"),
 
     /** */
+    BASELINE_CURRENT_STATE("baseline"),
+
+    /** */
+    BASELINE_SET("baselineset"),
+
+    /** */
+    BASELINE_ADD("baselineadd"),
+
+    /** */
+    BASELINE_REMOVE("baselineremove"),
+
+    /** */
     AUTHENTICATE("authenticate"),
 
     /** */

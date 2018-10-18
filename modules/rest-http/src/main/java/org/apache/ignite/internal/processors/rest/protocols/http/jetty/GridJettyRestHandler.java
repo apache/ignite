@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.request.DataStructuresRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestBaselineRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestChangeStateRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestLogRequest;
@@ -750,6 +751,20 @@ public class GridJettyRestHandler extends AbstractHandler {
                     restReq0.active(true);
                 else
                     restReq0.active(false);
+
+                restReq = restReq0;
+
+                break;
+            }
+
+            case BASELINE_CURRENT_STATE:
+            case BASELINE_SET:
+            case BASELINE_ADD:
+            case BASELINE_REMOVE: {
+                GridRestBaselineRequest restReq0 = new GridRestBaselineRequest();
+
+                restReq0.topologyVersion(longValue("topVer", params, null));
+                restReq0.consistentIds(values(null, "consistentId", params));
 
                 restReq = restReq0;
 

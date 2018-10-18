@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskR
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.auth.AuthenticationCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.cluster.GridBaselineCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cluster.GridChangeStateCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.datastructures.DataStructuresCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.log.GridLogCommandHandler;
@@ -528,6 +529,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             addHandler(new GridChangeStateCommandHandler(ctx));
             addHandler(new AuthenticationCommandHandler(ctx));
             addHandler(new UserActionCommandHandler(ctx));
+            addHandler(new GridBaselineCommandHandler(ctx));
 
             // Start protocols.
             startTcpProtocol();
@@ -892,6 +894,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case CLUSTER_INACTIVE:
             case CLUSTER_ACTIVATE:
             case CLUSTER_DEACTIVATE:
+            case BASELINE_SET:
+            case BASELINE_ADD:
+            case BASELINE_REMOVE:
                 perm = SecurityPermission.ADMIN_OPS;
 
                 break;
@@ -909,6 +914,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case NAME:
             case LOG:
             case CLUSTER_CURRENT_STATE:
+            case BASELINE_CURRENT_STATE:
             case AUTHENTICATE:
             case ADD_USER:
             case REMOVE_USER:
