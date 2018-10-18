@@ -23,6 +23,10 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.jetbrains.annotations.NotNull;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+
 /**
  *
  */
@@ -87,5 +91,41 @@ public class CacheBlockOnSqlQueryTest extends CacheBlockOnReadAbstractTest {
             this.id = id;
             this.val = val;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Override public void testStartServerAtomicPartitioned() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9916");
+    }
+
+    /** {@inheritDoc} */
+    @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Override public void testStartServerTransactionalPartitioned() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9916");
+    }
+
+    /** {@inheritDoc} */
+    @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Override public void testStopServerAtomicPartitioned() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9916");
+    }
+
+    /** {@inheritDoc} */
+    @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Override public void testStopServerTransactionalPartitioned() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9916");
+    }
+
+    /** {@inheritDoc} */
+    @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Override public void testStopBaselineAtomicPartitioned() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9916");
+    }
+
+    /** {@inheritDoc} */
+    @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Override public void testStopBaselineTransactionalPartitioned() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9916");
     }
 }
