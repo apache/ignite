@@ -51,10 +51,10 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
  */
 public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscoverySpiSelfTest {
     /** */
-    private final static int FAILURE_AWAIT_TIME = 7_000;
+    private static final int FAILURE_AWAIT_TIME = 7_000;
 
     /** */
-    private final static long FAILURE_THRESHOLD = 10_000;
+    private static final long FAILURE_THRESHOLD = 10_000;
 
     /** Failure detection timeout for nodes configuration. */
     private static long failureThreshold = FAILURE_THRESHOLD;

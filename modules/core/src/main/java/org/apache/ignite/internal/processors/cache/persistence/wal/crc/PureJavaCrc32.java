@@ -29,7 +29,9 @@ import java.nio.ByteBuffer;
  * succession.
  *
  * The current version is ~10x to 1.8x as fast as Sun's native java.util.zip.CRC32 in Java 1.6
+ * @deprecated Use {@link FastCrc} instead.
  */
+@Deprecated
 public class PureJavaCrc32 {
     /**
      * the current CRC value
@@ -68,7 +70,7 @@ public class PureJavaCrc32 {
     /**
      * @param b B.
      */
-    final public void update(int b) {
+    public final void update(int b) {
         crc = (crc >>> 8) ^ T[(((crc ^ b) << 24) >>> 24)];
     }
 

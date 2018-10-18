@@ -4264,7 +4264,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                             assert topVer != null && topVer.topologyVersion() > 0 : tx;
 
-                            ctx.affinity().affinityReadyFuture(topVer.topologyVersion() + 1).get();
+                            AffinityTopologyVersion awaitVer = new AffinityTopologyVersion(
+                                topVer.topologyVersion() + 1, 0);
+
+                            ctx.shared().exchange().affinityReadyFuture(awaitVer).get();
 
                             continue;
                         }
@@ -5031,8 +5034,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                                 assert topVer != null && topVer.topologyVersion() > 0 : tx;
 
+                                AffinityTopologyVersion awaitVer = new AffinityTopologyVersion(topVer.topologyVersion() + 1, 0);
+
                                 IgniteInternalFuture<?> topFut =
-                                    ctx.affinity().affinityReadyFuture(topVer.topologyVersion() + 1);
+                                    ctx.shared().exchange().affinityReadyFuture(awaitVer);
 
                                 topFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
                                     @Override public void apply(IgniteInternalFuture<?> topFut) {
@@ -6317,7 +6322,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Delayed callable class.
      */
-    public static abstract class TopologyVersionAwareJob extends ComputeJobAdapter {
+    public abstract static class TopologyVersionAwareJob extends ComputeJobAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
