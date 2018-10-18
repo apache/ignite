@@ -207,6 +207,7 @@ import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.io.GridFilenameUtils;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoader;
@@ -8672,6 +8673,17 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * When {@code long} value given is positive returns that value, otherwise returns provided default value.
+     *
+     * @param i Input value.
+     * @param dflt Default value.
+     * @return {@code i} if {@code i > 0} and {@code dflt} otherwise.
+     */
+    public static long ensurePositive(long i, long dflt) {
+        return i <= 0 ? dflt : i;
+    }
+
+    /**
      * Gets wrapper class for a primitive type.
      *
      * @param cls Class. If {@code null}, method is no-op.
@@ -10711,6 +10723,27 @@ public abstract class IgniteUtils {
 
         if (interrupted)
             Thread.currentThread().interrupt();
+    }
+
+    /**
+     *
+     * @param r Runnable.
+     * @param fut Grid future apater.
+     * @return Runnable with wrapped future.
+     */
+    public static Runnable wrapIgniteFuture(Runnable r, GridFutureAdapter<?> fut) {
+        return () -> {
+            try {
+                r.run();
+
+                fut.onDone();
+            }
+            catch (Throwable e) {
+                fut.onDone(e);
+
+                throw e;
+            }
+        };
     }
 
     /**

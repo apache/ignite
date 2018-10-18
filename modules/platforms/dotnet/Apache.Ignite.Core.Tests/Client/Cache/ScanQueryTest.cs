@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 var single = clientCache.Query(new ScanQuery<int, Person>(new PersonKeyFilter(3))).Single();
                 Assert.AreEqual(3, single.Key);
 
-#if !NETCOREAPP2_0   // Serializing delegates is not supported on this platform.
+#if !NETCOREAPP2_0 && !NETCOREAPP2_1   // Serializing delegates is not supported on this platform.
                 // Multiple results.
                 var res = clientCache.Query(new ScanQuery<int, Person>(new PersonFilter(x => x.Name.Length == 1)))
                     .ToList();
@@ -157,7 +157,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
 
-#if !NETCOREAPP2_0   // Serializing delegates and exceptions is not supported on this platform.
+#if !NETCOREAPP2_0 && !NETCOREAPP2_1   // Serializing delegates and exceptions is not supported on this platform.
         /// <summary>
         /// Tests the exception in filter.
         /// </summary>
