@@ -591,26 +591,7 @@ public class GridReduceQueryExecutor {
         ReduceQueryRun lastRun = null;
 
         for (int attempt = 0;; attempt++) {
-            if (attempt > 0 && retryTimeout > 0 && (U.currentTimeMillis() - startTime > retryTimeout)) {
-                UUID retryNodeId = lastRun.retryNodeId();
-                String retryCause = lastRun.retryCause();
-
-                assert !F.isEmpty(retryCause);
-
-                throw new CacheException("Failed to map SQL query to topology on data node [dataNodeId=" + retryNodeId +
-                    ", msg=" + retryCause + ']');
-            }
-
-            if (attempt != 0) {
-                try {
-                    Thread.sleep(attempt * 10); // Wait for exchange.
-                }
-                catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-
-                    throw new CacheException("Query was interrupted.", e);
-                }
-            }
+            checkRetryTimeout(attempt, lastRun, retryTimeout, startTime);
 
             long qryReqId = qryIdGen.incrementAndGet();
 
@@ -881,78 +862,14 @@ public class GridReduceQueryExecutor {
                 if (send(nodes, req, spec, false)) {
                     awaitAllReplies(r, nodes, cancel);
 
-                    if (r.hasErrorOrRetry()) {
-                        CacheException err = r.exception();
+                    retry = checkNeedRetry(r);
 
-                        if (err != null) {
-                            if (err.getCause() instanceof IgniteClientDisconnectedException)
-                                throw err;
-
-                            if (wasCancelled(err))
-                                throw new QueryCancelledException(); // Throw correct exception.
-
-                            throw err;
-                        }
-                        else {
-                            retry = true;
-
-                            // On-the-fly topology change must not be possible in FOR UPDATE case.
-                            assert sfuFut == null;
-
-                            // If remote node asks us to retry then we have outdated full partition map.
-                            h2.awaitForReadyTopologyVersion(r.retryTopologyVersion());
-                        }
-                    }
+                    assert !retry || sfuFut == null : "On-the-fly topology change must not be possible in FOR UPDATE.";
                 }
                 else // Send failed.
                     retry = true;
 
-                Iterator<List<?>> resIter = null;
-
-                if (!retry) {
-                    if (skipMergeTbl) {
-                        resIter = new GridMergeIndexIterator(this,
-                            finalNodes,
-                            r,
-                            qryReqId,
-                            qry.distributedJoins(),
-                            mvccTracker);
-
-                        release = false;
-                    }
-                    else {
-                        cancel.checkCancelled();
-
-                        UUID locNodeId = ctx.localNodeId();
-
-                        H2Utils.setupConnection(r.connection(), false, enforceJoinOrder);
-
-                        GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE)
-                            .pageSize(r.pageSize()).distributedJoinMode(OFF));
-
-                        try {
-                            if (qry.explain())
-                                return explainPlan(r.connection(), qry, params);
-
-                            GridCacheSqlQuery rdc = qry.reduceQuery();
-
-                            ResultSet res = h2.executeSqlQueryWithTimer(r.connection(),
-                                rdc.query(),
-                                F.asList(rdc.parameters(params)),
-                                false, // The statement will cache some extra thread local objects.
-                                timeoutMillis,
-                                cancel);
-
-                            resIter = new H2FieldsIterator(res, mvccTracker, false);
-
-                            mvccTracker = null; // To prevent callback inside finally block;
-                        }
-                        finally {
-                            GridH2QueryContext.clearThreadLocal();
-                        }
-                    }
-                }
-                else {
+                if (retry) {
                     assert r != null;
                     lastRun=r;
 
@@ -965,6 +882,52 @@ public class GridReduceQueryExecutor {
                     continue;
                 }
 
+                Iterator<List<?>> resIter = null;
+
+                if (skipMergeTbl) {
+                    resIter = new GridMergeIndexIterator(this,
+                        finalNodes,
+                        r,
+                        qryReqId,
+                        qry.distributedJoins(),
+                        mvccTracker);
+
+                    release = false;
+                }
+                else {
+                    cancel.checkCancelled();
+
+                    UUID locNodeId = ctx.localNodeId();
+
+                    H2Utils.setupConnection(r.connection(), false, enforceJoinOrder, lazy);
+
+                    GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE)
+                        .pageSize(r.pageSize()).distributedJoinMode(OFF));
+
+                    try {
+                        if (qry.explain())
+                            return explainPlan(r.connection(), qry, params);
+
+                        GridCacheSqlQuery rdc = qry.reduceQuery();
+
+                        release = !lazy;
+
+                        ResultSet res = h2.executeSqlQueryWithTimer(r.connection(),
+                            rdc.query(),
+                            F.asList(rdc.parameters(params)),
+                            false, // The statement will cache some extra thread local objects.
+                            timeoutMillis,
+                            cancel);
+
+                        resIter = new H2FieldsIterator(res, mvccTracker, false);
+
+                        mvccTracker = null; // To prevent callback inside finally block;
+                    }
+                    finally {
+                        GridH2QueryContext.clearThreadLocal();
+                    }
+                }
+
                 if (sfuFut != null)
                     sfuFut.get();
 
@@ -975,34 +938,7 @@ public class GridReduceQueryExecutor {
 
                 U.closeQuiet(r.connection());
 
-                CacheException resEx = null;
-
-                if (e instanceof CacheException) {
-                    if (wasCancelled((CacheException)e))
-                        resEx = new  CacheException("Failed to run reduce query locally.",
-                            new QueryCancelledException());
-                    else
-                        resEx = (CacheException)e;
-                }
-
-                if (resEx != null) {
-                    if (sfuFut != null)
-                        sfuFut.onDone(resEx);
-
-                    throw resEx;
-                }
-
-                Throwable cause = e;
-
-                if (e instanceof IgniteCheckedException) {
-                    Throwable disconnectedErr =
-                        ((IgniteCheckedException)e).getCause(IgniteClientDisconnectedException.class);
-
-                    if (disconnectedErr != null)
-                        cause = disconnectedErr;
-                }
-
-                resEx = new CacheException("Failed to run reduce query locally.", cause);
+                CacheException resEx = convertToCacheException(e);
 
                 if (sfuFut != null)
                     sfuFut.onDone(resEx);
@@ -1018,6 +954,95 @@ public class GridReduceQueryExecutor {
                             fakeTable(null, i).innerTable(null); // Drop all merge tables.
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * @param e Exception happened on qyery reduce execution.
+     * @return converted exception.
+     */
+    private CacheException convertToCacheException(Exception e) {
+        CacheException resEx = null;
+
+        if (e instanceof CacheException) {
+            if (wasCancelled((CacheException)e))
+                resEx = new CacheException("Failed to run reduce query locally.", new QueryCancelledException());
+            else
+                resEx = (CacheException)e;
+        }
+
+        if (resEx != null)
+            return resEx;
+
+        Throwable cause = e;
+
+        if (e instanceof IgniteCheckedException) {
+            Throwable disconnectedErr =
+                ((IgniteCheckedException)e).getCause(IgniteClientDisconnectedException.class);
+
+            if (disconnectedErr != null)
+                cause = disconnectedErr;
+        }
+
+        return new CacheException("Failed to run reduce query locally.", cause);
+    }
+
+    /**
+     * @param r Reduce run.
+     * @return {@code true} in case retry is needed, otherwise returns {@code false}.
+     * @throws IgniteCheckedException In case query is failed.
+     */
+    private boolean checkNeedRetry(ReduceQueryRun r)
+        throws IgniteCheckedException {
+        if (r.hasErrorOrRetry()) {
+            CacheException err = r.exception();
+
+            if (err != null) {
+                if (err.getCause() instanceof IgniteClientDisconnectedException)
+                    throw err;
+
+                if (wasCancelled(err))
+                    throw new QueryCancelledException(); // Throw correct exception.
+
+                throw err;
+            }
+            else {
+                // If remote node asks us to retry then we have outdated full partition map.
+                h2.awaitForReadyTopologyVersion(r.retryTopologyVersion());
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param attempt Attempt count.
+     * @param lastRun Last run (null for the first attempt).
+     * @param retryTimeout Retry timeout.
+     * @param startTime query start time.
+     */
+    private void checkRetryTimeout(int attempt, ReduceQueryRun lastRun, long retryTimeout, long startTime) {
+        if (attempt > 0 && retryTimeout > 0 && (U.currentTimeMillis() - startTime > retryTimeout)) {
+            UUID retryNodeId = lastRun.retryNodeId();
+            String retryCause = lastRun.retryCause();
+
+            assert !F.isEmpty(retryCause);
+
+            throw new CacheException("Failed to map SQL query to topology on data node [dataNodeId=" + retryNodeId +
+                ", msg=" + retryCause + ']');
+        }
+
+        if (attempt != 0) {
+            try {
+                Thread.sleep(attempt * 10); // Wait for exchange.
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+
+                throw new CacheException("Query was interrupted.", e);
             }
         }
     }
@@ -1222,9 +1247,6 @@ public class GridReduceQueryExecutor {
                 }
             }
         }
-
-        r.setStateOnException(ctx.localNodeId(),
-            new CacheException("Query is canceled.", new QueryCancelledException()));
 
         if (!runs.remove(qryReqId, r))
             U.warn(log, "Query run was already removed: " + qryReqId);
@@ -1867,6 +1889,13 @@ public class GridReduceQueryExecutor {
                     upd.queryInfo().cancel();
             }
         }
+    }
+
+    /**
+     * @return Kernal context.
+     */
+    public GridKernalContext context() {
+        return ctx;
     }
 
     /** */

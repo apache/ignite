@@ -22,7 +22,9 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.h2.index.Cursor;
@@ -116,6 +118,9 @@ class GridMergeIndexIterator implements Iterator<List<?>>, AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
+        run.setStateOnException(rdcExec.context().localNodeId(),
+            new CacheException("Query is canceled.", new QueryCancelledException()));
+
         releaseIfNeeded();
     }
 
