@@ -765,8 +765,8 @@ namespace ignite
             }
 
             /**
-             * Stores given key-value pair in cache only if only if the previous value is equal to the
-             * old value passed as argument.
+             * Stores given key-value pair in cache only if the previous value is equal to the old value passed
+             * as argument.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
              *
              * This method should only be used on the valid instance.
@@ -788,8 +788,8 @@ namespace ignite
             }
 
             /**
-             * Stores given key-value pair in cache only if only if the previous value is equal to the
-             * old value passed as argument.
+             * Stores given key-value pair in cache only if the previous value is equal to the old value passed
+             * as argument.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
              *
              * This method should only be used on the valid instance.
