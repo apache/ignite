@@ -35,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -974,9 +973,6 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         /** */
         private final Predicate<Message> blockMsg;
 
-        /** */
-        private final Set<?> baselineConsistentIds = baseline.stream().map(IgniteEx::name).collect(Collectors.toSet());
-
         /**
          * @param block Blocking operation.
          * @param blockMsgPred Predicate that checks whether to block message or not.
@@ -1010,7 +1006,8 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
          * @return Whether the given message should be blocked or not.
          */
         private boolean blockMessage(ClusterNode node, Message msg) {
-            boolean block = baselineConsistentIds.contains(node.consistentId()) && blockMsg.test(msg);
+            boolean block = blockMsg.test(msg)
+                && baseline.stream().map(IgniteEx::name).anyMatch(node.consistentId()::equals);
 
             if (block)
                 cntFinishedReadOperations.countDown();
