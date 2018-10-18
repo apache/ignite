@@ -806,11 +806,15 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
 
         startServers(2);
 
-        // Waiting for minor topology changing because of late affinity assignment.
-        awaitPartitionMapExchange();
-
         Ignite srv0 = ignite(0);
         Ignite srv1 = ignite(1);
+
+        IgniteCache<Object, Object> cache = srv0.cache(TEST_CACHE);
+
+        // Waiting for minor topology changing because of late affinity assignment.
+        awaitForAffinityTopology(2, 1);
+
+        List<Integer> keys = primaryKeys(cache, putAll ? 3 : 1);
 
         ccfg = null;
 
@@ -824,8 +828,6 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
 
         IgniteCache<Object, Object> cache2 = updateNearEnabled ?
             client2.createNearCache(TEST_CACHE, new NearCacheConfiguration<>()) : client2.cache(TEST_CACHE);
-
-        List<Integer> keys = primaryKeys(srv0.cache(TEST_CACHE), putAll ? 3 : 1);
 
         if (putAll) {
             Map<Integer, Integer> map = new HashMap<>();

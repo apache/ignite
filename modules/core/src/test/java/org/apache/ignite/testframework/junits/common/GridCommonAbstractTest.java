@@ -798,6 +798,29 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * @param topVer Topology version.
+     * @param minorTopVer Minor topology version
+     * @throws IgniteCheckedException If failed to wait.
+     */
+    protected void awaitForAffinityTopology(int topVer, int minorTopVer) throws IgniteCheckedException {
+        awaitForAffinityTopology(new AffinityTopologyVersion(topVer, minorTopVer));
+    }
+
+    /**
+     * @param ver Affinity topology version.
+     * @throws IgniteCheckedException If failed to wait.
+     */
+    protected void awaitForAffinityTopology(AffinityTopologyVersion ver) throws IgniteCheckedException {
+        for (Ignite ignite : G.allGrids()) {
+            IgniteInternalFuture<?> fut = ((IgniteEx)ignite).context().cache().context().exchange()
+                .affinityReadyFuture(ver);
+
+            if (fut != null)
+                fut.get(getTestTimeout());
+        }
+    }
+
+    /**
      * @param top Topology.
      * @param topVer Version to wait for.
      * @throws Exception If failed.
