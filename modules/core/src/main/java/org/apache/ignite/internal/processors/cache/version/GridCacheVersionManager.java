@@ -41,9 +41,6 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     /** */
     public static final GridCacheVersion EVICT_VER = new GridCacheVersion(Integer.MAX_VALUE, 0, 0, 0);
 
-    /** */
-    public static final GridCacheVersion START_VER = new GridCacheVersion(0, 0, 0, 0);
-
     /** Timestamp used as base time for cache topology version (January 1, 2014). */
     public static final long TOP_VER_BASE_TIME = 1388520000000L;
 
@@ -55,6 +52,9 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
 
     /** Current order for store operations. */
     private final AtomicLong loadOrder = new AtomicLong(0);
+
+    /** Entry start version. */
+    public GridCacheVersion START_VER;
 
     /** Last version. */
     private volatile GridCacheVersion last;
@@ -87,6 +87,8 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     @Override public void start0() throws IgniteCheckedException {
         last = new GridCacheVersion(0, order.get(), 0, dataCenterId);
 
+        START_VER = new GridCacheVersion(0, 0, 0, dataCenterId);
+
         cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_METRICS_UPDATED);
     }
 
@@ -104,6 +106,8 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
         this.dataCenterId = dataCenterId;
 
         last = new GridCacheVersion(0, order.get(), 0, dataCenterId);
+
+        START_VER = new GridCacheVersion(0, 0, 0, dataCenterId);
     }
 
     /**

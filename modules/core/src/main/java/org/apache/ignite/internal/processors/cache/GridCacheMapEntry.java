@@ -222,7 +222,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         this.cctx = cctx;
         this.listenerLock = cctx.continuousQueries().getListenerReadLock();
 
-        ver = GridCacheVersionManager.START_VER;
+        ver = cctx.shared().versions().START_VER;
     }
 
     /**
@@ -332,7 +332,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @return {@code True} if start version.
      */
     public boolean isStartVersion() {
-        return ver == GridCacheVersionManager.START_VER;
+        return cctx.shared().versions().START_VER.equals(ver);
     }
 
     /** {@inheritDoc} */
@@ -3292,7 +3292,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     GridCacheVersion currentVer = row != null ? row.version() : GridCacheMapEntry.this.ver;
 
-                    boolean isStartVer = currentVer == GridCacheVersionManager.START_VER;
+                    boolean isStartVer = cctx.shared().versions().START_VER.equals(currentVer);
 
                     if (cctx.group().persistenceEnabled()) {
                         if (!isStartVer) {
