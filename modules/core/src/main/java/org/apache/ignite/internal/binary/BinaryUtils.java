@@ -1640,7 +1640,7 @@ public class BinaryUtils {
             }
 
             // forces registering of class by type id, at least locally
-            ctx.descriptorForClass(cls, true);
+            ctx.descriptorForClass(cls, true, false);
         }
 
         return cls;
@@ -1670,7 +1670,7 @@ public class BinaryUtils {
             }
 
             // forces registering of class by type id, at least locally
-            ctx.descriptorForClass(cls, true);
+            ctx.descriptorForClass(cls, true, false);
         }
 
         return cls;
