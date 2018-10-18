@@ -23,11 +23,11 @@ import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -57,8 +57,8 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     /** Remote Listener id. */
     private UUID rmtLsnrId;
 
-    /** Flag for stopped state. */
-    public final AtomicBoolean stopped = new AtomicBoolean(false);
+    /** Flag for isRunning state. */
+    private volatile boolean isRunning;
 
     /** Max number of events taken from the buffer at once. */
     private int evtBatchSize = DFLT_EVT_BATCH_SIZE;
@@ -67,7 +67,7 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     private int evtBufTimeout = DFLT_EVT_BUFFER_TIMEOUT;
 
     /** Local listener. */
-    private TaskLocalListener locLsnr = new TaskLocalListener();
+    private final TaskLocalListener locLsnr = new TaskLocalListener();
 
     /** Ignite instance. */
     @IgniteInstanceResource
@@ -103,32 +103,44 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
         this.evtBufTimeout = evtBufTimeout;
     }
 
-    /** Gets Local Task Listener */
-    public TaskLocalListener getLocLsnr() { return this.locLsnr; }
+    /**
+     * @return Local Task Listener
+     */
+    TaskLocalListener getLocLsnr() {
+        return locLsnr;
+    }
 
     /**
      * Default IgniteSource constructor.
      *
      * @param cacheName Cache name.
      */
-    public IgniteSource(String cacheName) { this.cacheName = cacheName; }
+    public IgniteSource(String cacheName) {
+        this.cacheName = cacheName;
+    }
 
     /**
      * Starts Ignite source.
+     *
      * @param filter User defined filter.
      * @param cacheEvts Converts comma-delimited cache events strings to Ignite internal representation.
-     *
-     * @throws IgniteException If failed.
      */
     @SuppressWarnings("unchecked")
-    public void start(IgnitePredicate<CacheEvent> filter, int... cacheEvts) throws Exception {
+    public void start(IgnitePredicate<CacheEvent> filter, int... cacheEvts) {
         A.notNull(cacheName, "Cache name");
 
         TaskRemoteFilter rmtLsnr = new TaskRemoteFilter(cacheName, filter);
 
         try {
-            rmtLsnrId = ignite.events(ignite.cluster().forCacheNodes(cacheName))
-                 .remoteListen(locLsnr, rmtLsnr, cacheEvts);
+            synchronized (this) {
+                if (isRunning)
+                    return;
+
+                isRunning = true;
+
+                rmtLsnrId = ignite.events(ignite.cluster().forCacheNodes(cacheName))
+                    .remoteListen(locLsnr, rmtLsnr, cacheEvts);
+            }
         }
         catch (IgniteException e) {
             log.error("Failed to register event listener!", e);
@@ -145,41 +157,47 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     @Override public void run(SourceContext<CacheEvent> ctx) {
         List<CacheEvent> evts = new ArrayList<>(evtBatchSize);
 
-        if (stopped.get())
-            return;
-
-        try{
-            while (!stopped.get()) {
+        try {
+            while (isRunning) {
                 if (evtBuf.drainTo(evts, evtBatchSize) > 0) {
                     synchronized (ctx.getCheckpointLock()) {
                         for (CacheEvent evt : evts)
                             ctx.collect(evt);
 
-                        evts = new ArrayList<>(evtBatchSize);
+                        evts.clear();
                     }
                 }
             }
-        } catch (Exception e){
+        }
+        catch (Exception e) {
+            if (X.hasCause(e, InterruptedException.class))
+                return; // Executing thread can be interrupted see cancel() javadoc.
+
             log.error("Error while processing cache event of " + cacheName, e);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-        stopped.getAndSet(true);
+        synchronized (this) {
+            if (!isRunning)
+                return;
 
-        if (rmtLsnrId != null && ignite != null) {
-            ignite.events(ignite.cluster().forCacheNodes(cacheName))
-                .stopRemoteListen(rmtLsnrId);
+            isRunning = false;
 
-            rmtLsnrId = null;
+            if (rmtLsnrId != null && ignite != null) {
+                ignite.events(ignite.cluster().forCacheNodes(cacheName))
+                    .stopRemoteListen(rmtLsnrId);
+
+                rmtLsnrId = null;
+            }
         }
     }
 
     /**
      * Local listener buffering cache events to be further sent to Flink.
      */
-    public class TaskLocalListener implements IgniteBiPredicate<UUID, CacheEvent> {
+    private class TaskLocalListener implements IgniteBiPredicate<UUID, CacheEvent> {
         /** {@inheritDoc} */
         @Override public boolean apply(UUID id, CacheEvent evt) {
             try {
@@ -188,6 +206,8 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
             }
             catch (InterruptedException e) {
                 log.error("Failed to buffer event using local task listener {}", evt.name());
+
+                Thread.currentThread().interrupt(); // Restore interrupt flag.
             }
 
             return true;
