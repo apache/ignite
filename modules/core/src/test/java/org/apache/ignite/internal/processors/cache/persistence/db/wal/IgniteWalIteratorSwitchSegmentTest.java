@@ -45,9 +45,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FsyncModeFileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
@@ -91,7 +89,6 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
     /** FileWriteAheadLogManagers for check. */
     private Class[] checkWalManagers = new Class[] {
         FileWriteAheadLogManager.class,
-        FsyncModeFileWriteAheadLogManager.class
     };
 
     /** {@inheritDoc} */
@@ -470,11 +467,6 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
             walMgr = new FileWriteAheadLogManager(kctx);
 
             GridTestUtils.setFieldValue(walMgr, "serializerVer", serVer);
-        }
-        else if (walMgrClass.equals(FsyncModeFileWriteAheadLogManager.class)) {
-            walMgr = new FsyncModeFileWriteAheadLogManager(kctx);
-
-            GridTestUtils.setFieldValue(walMgr, "serializerVersion", serVer);
         }
 
         GridCacheSharedContext<?, ?> ctx = new GridCacheSharedContext<>(

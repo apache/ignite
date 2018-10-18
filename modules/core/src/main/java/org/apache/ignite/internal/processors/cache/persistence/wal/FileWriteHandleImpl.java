@@ -69,7 +69,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
 /**
  * File handle for one log segment.
  */
-@SuppressWarnings("SignalWithoutCorrespondingAwait") class FileWriteHandleImpl extends FileHandle {
+@SuppressWarnings("SignalWithoutCorrespondingAwait") class FileWriteHandleImpl extends FileHandle implements FileWriteHandle {
 
     /** {@link MappedByteBuffer#force0(java.io.FileDescriptor, long, long)}. */
     private static final Method force0 = findNonPublicMethod(
@@ -154,7 +154,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
     protected final GridCacheSharedContext cctx;
 
     /** WAL writer worker. */
-    private final FileHandleManager.WALWriter walWriter;
+    private final FileHandleManagerImpl.WALWriter walWriter;
 
     /**
      * @param fileIO I/O file interface to use
@@ -180,7 +180,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
         WALMode mode, long fsyncDelay,
         DataStorageMetricsImpl metrics, long maxWalSegmentSize, IgniteLogger log,
         GridCacheSharedContext cctx,
-        FileHandleManager.WALWriter writer) throws IOException {
+        FileHandleManagerImpl.WALWriter writer) throws IOException {
         super(fileIO);
         this.mmap = mmap;
         this.mode = mode;
@@ -206,11 +206,11 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
 //        this.buf = buf;
     }
 
-    public int serializerVersion(){
+    @Override public int serializerVersion(){
         return serializer.version();
     }
 
-    public void finishResume(){
+    @Override public void finishResume(){
         resume = false;
     }
 
@@ -226,7 +226,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
     /**
      * Write serializer version to current handle.
      */
-    public void writeHeader() {
+    @Override public void writeHeader() {
         SegmentedRingByteBuffer.WriteSegment seg = buf.offer(HEADER_RECORD_SIZE);
 
         assert seg != null && seg.position() > 0;
@@ -244,7 +244,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
      * @throws StorageException If failed.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public WALPointer addRecord(WALRecord rec) throws StorageException, IgniteCheckedException {
+    @Override @Nullable public WALPointer addRecord(WALRecord rec) throws StorageException, IgniteCheckedException {
         assert rec.size() > 0 : rec;
 
         for (;;) {
@@ -319,6 +319,10 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
         flush(ptr);
     }
 
+    @Override public void flushAll() throws IgniteCheckedException {
+        flush(null);
+    }
+
     /**
      * @param ptr Pointer.
      */
@@ -354,7 +358,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
      * @param ptr WAL pointer to check.
      * @return {@code False} if this pointer has been already sync'ed.
      */
-    public boolean needFsync(FileWALPointer ptr) {
+    @Override public boolean needFsync(FileWALPointer ptr) {
         // If index has changed, it means that the log was rolled over and already sync'ed.
         // If requested position is smaller than last sync'ed, it also means all is good.
         // If position is equal, then our record is the last not synced.
@@ -364,7 +368,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
     /**
      * @return Pointer to the end of the last written record (probably not fsync-ed).
      */
-    public FileWALPointer position() {
+    @Override public FileWALPointer position() {
         lock.lock();
 
         try {
@@ -379,7 +383,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
      * @param ptr Pointer to sync.
      * @throws StorageException If failed.
      */
-    public void fsync(FileWALPointer ptr) throws StorageException, IgniteCheckedException {
+    @Override public void fsync(FileWALPointer ptr) throws StorageException, IgniteCheckedException {
         lock.lock();
 
         try {
@@ -473,7 +477,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
         }
     }
 
-    public void closeBuffer() {
+    @Override public void closeBuffer() {
         buf.close();
     }
 
@@ -482,7 +486,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
      * @throws IgniteCheckedException If failed.
      * @throws StorageException If failed.
      */
-    public boolean close(boolean rollOver) throws IgniteCheckedException, StorageException {
+    @Override public boolean close(boolean rollOver) throws IgniteCheckedException, StorageException {
         if (stop.compareAndSet(false, true)) {
             lock.lock();
 
@@ -564,7 +568,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
     /**
      * Signals next segment available to wake up other worker threads waiting for WAL to write
      */
-    public void signalNextAvailable() {
+    @Override public void signalNextAvailable() {
         lock.lock();
 
         try {
@@ -584,7 +588,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
     /**
      *
      */
-    public void awaitNext() {
+    @Override public void awaitNext() {
         lock.lock();
 
         try {
@@ -599,7 +603,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
     /**
      * @return Safely reads current position of the file channel as String. Will return "null" if channel is null.
      */
-    public String safePosition() {
+    @Override public String safePosition() {
         FileIO io = fileIO;
 
         if (io == null)

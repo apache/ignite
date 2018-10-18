@@ -28,7 +28,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
@@ -126,12 +125,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCH
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
-import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer.BufferMode.DIRECT;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory.LATEST_SERIALIZER_VERSION;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readSegmentHeader;
@@ -287,8 +284,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private volatile SegmentAware segmentAware;
 
     /** Updater for {@link #currHnd}, used for verify there are no concurrent update for current log segment handle */
-    private static final AtomicReferenceFieldUpdater<FileWriteAheadLogManager, FileWriteHandleImpl> CURR_HND_UPD =
-        AtomicReferenceFieldUpdater.newUpdater(FileWriteAheadLogManager.class, FileWriteHandleImpl.class, "currHnd");
+    private static final AtomicReferenceFieldUpdater<FileWriteAheadLogManager, FileWriteHandle> CURR_HND_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(FileWriteAheadLogManager.class, FileWriteHandle.class, "currHnd");
 
     /**
      * File archiver moves segments from work directory to archive. Locked segments may be kept not moved until release.
@@ -306,7 +303,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private final ThreadLocal<WALPointer> lastWALPtr = new ThreadLocal<>();
 
     /** Current log segment handle */
-    private volatile FileWriteHandleImpl currHnd;
+    private volatile FileWriteHandle currHnd;
 
     private FileHandleManager fileHandleManager;
 
@@ -351,6 +348,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Segment factory with ability locked segment during reading. */
     private SegmentFileInputFactory lockedSegmentFileInputFactory;
 
+    private FileHandleFactory fileHandleFactory;
+
     /**
      * @param ctx Kernal context.
      */
@@ -378,6 +377,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         evt = ctx.event();
         failureProcessor = ctx.failure();
+        fileHandleFactory = new FileHandleFactory(dsCfg);
     }
 
     /**
@@ -464,17 +464,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             walDisableContext = cctx.walState().walDisableContext();
 
-            fileHandleManager = new FileHandleManager(
-                cctx,
-                mode,
-                metrics,
-                mmap,
-                lastWALPtr,
-                serializer,
-                this::currentHandle,
-                dsCfg.getWalBufferSize(),
-                dsCfg.getWalSegmentSize(),
-                dsCfg.getWalFsyncDelayNanos()
+            fileHandleManager = fileHandleFactory.build(
+                cctx, metrics, mmap, lastWALPtr, serializer, this::currentHandle
             );
 
             fileHandleManager.start();
@@ -579,7 +570,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 decompressor.shutdown();
         }
         catch (Exception e) {
-            U.error(log, "Failed to gracefully close WAL segment: " + this.currHnd.fileIO, e);
+            U.error(log, "Failed to gracefully close WAL segment: " + this.currHnd, e);
         }
     }
 
@@ -722,7 +713,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (!lastRecordLoggedMs.compareAndSet(lastRecMs, 0))
             return; // record write occurred concurrently
 
-        final FileWriteHandleImpl handle = currentHandle();
+        final FileWriteHandle handle = currentHandle();
 
         try {
             closeBufAndRollover(handle, null, RolloverType.NONE);
@@ -744,7 +735,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (serializer == null || mode == WALMode.NONE)
             return null;
 
-        FileWriteHandleImpl currWrHandle = currentHandle();
+        FileWriteHandle currWrHandle = currentHandle();
 
         WALDisableContext isDisable = walDisableContext;
 
@@ -803,8 +794,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** */
-    private FileWriteHandleImpl closeBufAndRollover(
-        FileWriteHandleImpl currWriteHandle,
+    private FileWriteHandle closeBufAndRollover(
+        FileWriteHandle currWriteHandle,
         WALRecord rec,
         RolloverType rolloverType
     ) throws IgniteCheckedException {
@@ -812,7 +803,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         currWriteHandle.closeBuffer();
 
-        FileWriteHandleImpl res = rollOver(currWriteHandle, rolloverType == RolloverType.NEXT_SEGMENT ? rec : null);
+        FileWriteHandle res = rollOver(currWriteHandle, rolloverType == RolloverType.NEXT_SEGMENT ? rec : null);
 
         if (log != null && log.isInfoEnabled())
             log.info("Rollover segment [" + idx + " to " + res.getSegmentId() + "], recordType=" + rec.type());
@@ -822,35 +813,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public void flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
-        if (serializer == null || mode == WALMode.NONE)
-            return;
-
-        FileWriteHandleImpl cur = currentHandle();
-
-        // WAL manager was not started (client node).
-        if (cur == null)
-            return;
-
-        FileWALPointer filePtr = (FileWALPointer)(ptr == null ? lastWALPtr.get() : ptr);
-
-        if (mode == LOG_ONLY)
-            cur.flushOrWait(filePtr);
-
-        if (!explicitFsync && mode != WALMode.FSYNC)
-            return; // No need to sync in LOG_ONLY or BACKGROUND unless explicit fsync is required.
-
-        // No need to sync if was rolled over.
-        if (filePtr != null && !cur.needFsync(filePtr))
-            return;
-
-        cur.fsync(filePtr);
+        fileHandleManager.flush(ptr, explicitFsync);
     }
 
     /** {@inheritDoc} */
     @Override public WALIterator replay(WALPointer start) throws IgniteCheckedException, StorageException {
         assert start == null || start instanceof FileWALPointer : "Invalid start pointer: " + start;
 
-        FileWriteHandleImpl hnd = currentHandle();
+        FileWriteHandle hnd = currentHandle();
 
         FileWALPointer end = null;
 
@@ -920,7 +890,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (absIdx <= lastArchivedIndex())
             return false;
 
-        FileWriteHandleImpl cur = currHnd;
+        FileWriteHandle cur = currHnd;
 
         return cur != null && cur.getSegmentId() >= absIdx;
     }
@@ -1144,7 +1114,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      * @return Current log segment handle.
      */
-    private FileWriteHandleImpl currentHandle() {
+    private FileWriteHandle currentHandle() {
         return currHnd;
     }
 
@@ -1153,8 +1123,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @param rec Optional record to be added right after header.
      * @return Handle that will fit the entry.
      */
-    private FileWriteHandleImpl rollOver(FileWriteHandleImpl cur, @Nullable WALRecord rec) throws IgniteCheckedException {
-        FileWriteHandleImpl hnd = currentHandle();
+    private FileWriteHandle rollOver(FileWriteHandle cur, @Nullable WALRecord rec) throws IgniteCheckedException {
+        FileWriteHandle hnd = currentHandle();
 
         if (hnd != cur)
             return hnd;
@@ -1163,7 +1133,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (metrics.metricsEnabled())
                 metrics.onWallRollOver();
 
-            FileWriteHandleImpl next = initNextWriteHandle(cur);
+            FileWriteHandle next = initNextWriteHandle(cur);
 
             next.writeHeader();
 
@@ -1206,7 +1176,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @return Initialized file write handle.
      * @throws StorageException If failed to initialize WAL write handle.
      */
-    private FileWriteHandleImpl restoreWriteHandle(FileWALPointer lastReadPtr) throws StorageException {
+    private FileWriteHandle restoreWriteHandle(FileWALPointer lastReadPtr) throws StorageException {
         long absIdx = lastReadPtr == null ? 0 : lastReadPtr.index();
 
         @Nullable FileArchiver archiver0 = archiver;
@@ -1245,7 +1215,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     log.info("Resuming logging to WAL segment [file=" + curFile.getAbsolutePath() +
                         ", offset=" + off + ", ver=" + serVer + ']');
 
-                FileWriteHandleImpl hnd = fileHandleManager.next(fileIO, off + len, true, ser);
+                FileWriteHandle hnd = fileHandleManager.build(fileIO, off + len, true, ser);
 
                 if (archiver0 != null)
                     segmentAware.curAbsWalIdx(absIdx);
@@ -1281,7 +1251,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @return Initialized file handle.
      * @throws IgniteCheckedException If exception occurred.
      */
-    private FileWriteHandleImpl initNextWriteHandle(FileWriteHandleImpl cur) throws IgniteCheckedException {
+    private FileWriteHandle initNextWriteHandle(FileWriteHandle cur) throws IgniteCheckedException {
         IgniteCheckedException error = null;
 
         try {
@@ -1292,7 +1262,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             SegmentIO fileIO = null;
 
-            FileWriteHandleImpl hnd;
+            FileWriteHandle hnd;
 
             boolean interrupted = false;
 
@@ -2702,10 +2672,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * Flushes current file handle for {@link WALMode#BACKGROUND} WALMode. Called periodically from scheduler.
      */
     private void doFlush() {
-        FileWriteHandleImpl hnd = currentHandle();
+        FileWriteHandle hnd = currentHandle();
 
         try {
-            hnd.flush(null);
+            hnd.flushAll();
         }
         catch (Exception e) {
             U.warn(log, "Failed to flush WAL record queue", e);

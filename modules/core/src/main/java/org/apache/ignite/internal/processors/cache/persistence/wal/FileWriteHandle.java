@@ -26,12 +26,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
-import java.io.IOException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
-import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * TODO: Add interface description.
@@ -39,19 +38,33 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.Re
  * @author @java.author
  * @version @java.version
  */
-public interface FileHandleManager {
+public interface FileWriteHandle {
 
-    FileWriteHandle build(SegmentIO fileIO, long position, boolean resume,
-        RecordSerializer serializer) throws IOException;
+    int serializerVersion();
 
-    FileWriteHandle next(SegmentIO fileIO, long position, boolean resume,
-        RecordSerializer serializer) throws IOException;
+    void finishResume();
 
-    void start();
+    void writeHeader() throws IgniteCheckedException;
 
-    void stop() throws IgniteCheckedException;
+    @Nullable WALPointer addRecord(WALRecord rec) throws StorageException, IgniteCheckedException;
 
-    void resumeLogging();
+    void flushAll() throws IgniteCheckedException;
 
-    void flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException;
+    boolean needFsync(FileWALPointer ptr);
+
+    FileWALPointer position();
+
+    void fsync(FileWALPointer ptr) throws StorageException, IgniteCheckedException;
+
+    void closeBuffer();
+
+    boolean close(boolean rollOver) throws IgniteCheckedException, StorageException;
+
+    void signalNextAvailable();
+
+    void awaitNext();
+
+    String safePosition();
+
+    public long getSegmentId();
 }
