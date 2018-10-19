@@ -19,7 +19,6 @@ package org.apache.ignite.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -1264,22 +1263,22 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testCacheFullConfigNoOutputFormat() throws Exception {
-        testCacheFullConfig(null);
+    public void testCacheConfigNoOutputFormat() throws Exception {
+        testCacheConfig(null);
     }
 
     /** */
-    public void testCacheFullConfigSignleLineOutputFormat() throws Exception {
-        testCacheFullConfig(SINGLE_LINE);
+    public void testCacheConfigSingleLineOutputFormat() throws Exception {
+        testCacheConfig(SINGLE_LINE);
     }
 
     /** */
-    public void testCacheFullConfigMultiLineOutputFormat() throws Exception {
-        testCacheFullConfig(MULTI_LINE);
+    public void testCacheConfigMultiLineOutputFormat() throws Exception {
+        testCacheConfig(MULTI_LINE);
     }
 
     /** */
-    private void testCacheFullConfig(OutputFormat outputFormat) throws Exception {
+    private void testCacheConfig(OutputFormat outputFormat) throws Exception {
         Ignite ignite = startGrid();
 
         ignite.cluster().active(true);
@@ -1297,9 +1296,9 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         int exitCode;
 
         if (outputFormat == null)
-            exitCode = execute("--cache", "list", ".*", "--full-config");
+            exitCode = execute("--cache", "list", ".*", "--config");
         else
-            exitCode = execute("--cache", "list", ".*", "--full-config", "--output-format", outputFormat.text());
+            exitCode = execute("--cache", "list", ".*", "--config", "--output-format", outputFormat.text());
 
         assertEquals(EXIT_CODE_OK, exitCode);
 

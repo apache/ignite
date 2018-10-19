@@ -489,8 +489,8 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return {@code true} if data can be read from backup node or {@code false} if data always
-     *      should be read from primary node and never from backup.
+     * @return {@code true} if data can be read from backup node or {@code false} if data always should be read from
+     * primary node and never from backup.
      */
     public boolean isReadFromBackup() {
         return readFromBackup;
@@ -516,13 +516,6 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
      */
     public IgniteUuid getDynamicDeploymentId() {
         return dynamicDeploymentId;
-    }
-
-    /** */
-    public String toStringWithoutClassName(){
-        String str = toString().substring(getClass().getSimpleName().length()+1);
-
-        return str;
     }
 
     /** {@inheritDoc} */
@@ -570,7 +563,8 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(byte protoVer,
+        ObjectInput in) throws IOException, ClassNotFoundException {
         name = U.readString(in);
         grpName = U.readString(in);
         mode = CacheMode.fromOrdinal(in.readByte());

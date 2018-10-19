@@ -299,7 +299,7 @@ public class CommandHandler {
     private static final String OUTPUT_FORMAT = "--output-format";
 
     /** */
-    private static final String FULL_CONFIG = "--full-config";
+    private static final String CONFIG = "--config";
 
     /** */
     private Iterator<String> argsIt;
@@ -651,7 +651,7 @@ public class CommandHandler {
     private void printCacheHelp() {
         log("'--cache subcommand' allows performing the following operations:");
 
-        usage("  Show information about caches, groups or sequences that match a regex:", CACHE, " " + LIST.text() + " regexPattern [groups|seq] [nodeId]", " [" + FULL_CONFIG + "]", " [" + OUTPUT_FORMAT + " " + MULTI_LINE + "]");
+        usage("  Show information about caches, groups or sequences that match a regex:", CACHE, " " + LIST.text() + " regexPattern [groups|seq] [nodeId]", " [" + CONFIG + "]", " [" + OUTPUT_FORMAT + " " + MULTI_LINE + "]");
         usage("  Show hot keys that are point of contention for multiple transactions:", CACHE, " contention minQueueSize [nodeId] [maxPrint]");
         usage("  Verify partition counters and hashes between primary and backups on idle cluster:", CACHE, " idle_verify [--dump] [--skipZeros] [cache1,...,cacheN]");
         usage("  Validate custom indexes on idle cluster:", CACHE, " validate_indexes [cache1,...,cacheN] [nodeId] [checkFirst|checkThrough]");
@@ -662,7 +662,7 @@ public class CommandHandler {
         log("  Another commands where [nodeId] is optional will run on a random server node.");
         log("  checkFirst numeric parameter for validate_indexes specifies number of first K keys to be validated.");
         log("  checkThrough numeric parameter for validate_indexes allows to check each Kth key.");
-        log("  [" + OUTPUT_FORMAT + "] in " + CACHE.text() + " " + LIST.text() + " have significance only with [" + FULL_CONFIG + "] option and without defined [groups|seq]");
+        log("  [" + OUTPUT_FORMAT + "] in " + CACHE.text() + " " + LIST.text() + " have significance only with [" + CONFIG + "] option and without defined [groups|seq]");
         nl();
     }
 
@@ -928,11 +928,21 @@ public class CommandHandler {
                     break;
 
                 default:
-                    log("%s: %s %s=%s%n", entry.getKey(), entry.getValue().toStringWithoutClassName(), "mapped", cacheToMapped.get(cacheName));
+                    log("%s: %s %s=%s%n", entry.getKey(), toString(entry.getValue()), "mapped", cacheToMapped.get(cacheName));
 
                     break;
             }
         }
+    }
+
+    /**
+     * Invokes toString() method and cuts class name from result string.
+     *
+     * @param cfg Visor cache configuration for invocation.
+     * @return String representation without class name in begin of string.
+     */
+    private String toString(VisorCacheConfiguration cfg){
+        return cfg.toString().substring(cfg.getClass().getSimpleName().length()+1);
     }
 
     /**
@@ -1790,7 +1800,7 @@ public class CommandHandler {
 
                             break;
 
-                        case FULL_CONFIG:
+                        case CONFIG:
                             cacheArgs.fullConfig(true);
 
                             break;
