@@ -928,7 +928,9 @@ public class CommandHandler {
                     break;
 
                 default:
-                    log("%s: %s %s=%s%n", entry.getKey(), toString(entry.getValue()), "mapped", cacheToMapped.get(cacheName));
+                    int mapped = cacheToMapped.get(cacheName);
+
+                    log("%s: %s %s=%s%n", entry.getKey(), toString(entry.getValue()), "mapped", mapped);
 
                     break;
             }
@@ -941,8 +943,8 @@ public class CommandHandler {
      * @param cfg Visor cache configuration for invocation.
      * @return String representation without class name in begin of string.
      */
-    private String toString(VisorCacheConfiguration cfg){
-        return cfg.toString().substring(cfg.getClass().getSimpleName().length()+1);
+    private String toString(VisorCacheConfiguration cfg) {
+        return cfg.toString().substring(cfg.getClass().getSimpleName().length() + 1);
     }
 
     /**
