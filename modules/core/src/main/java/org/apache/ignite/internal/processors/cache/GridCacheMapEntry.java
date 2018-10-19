@@ -2382,8 +2382,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             ver = newVer;
             flags &= ~IS_EVICT_DISABLED;
 
-            removeValue();
-
             onInvalidate();
 
             return obsoleteVersionExtras() != null;
@@ -3608,7 +3606,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
-     * Stores value in offheap.
+     * Stores value in off-heap.
      *
      * @param val Value.
      * @param expireTime Expire time.
