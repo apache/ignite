@@ -203,6 +203,17 @@ namespace ignite
                     void LocalPeek(const WritableKey& key, Readable& value);
 
                     /**
+                     * Stores given key-value pair in cache only if the previous value is equal to the old value passed
+                     * as argument.
+                     *
+                     * @param key Key to store in cache.
+                     * @param oldVal Old value to match.
+                     * @param newVal Value to be associated with the given key.
+                     * @return True if replace happened, false otherwise.
+                     */
+                    bool Replace(const WritableKey& key, const Writable& oldVal, const Writable& newVal);
+
+                    /**
                      * Associates the specified value with the specified key in this cache, returning an existing value
                      * if one existed.
                      *

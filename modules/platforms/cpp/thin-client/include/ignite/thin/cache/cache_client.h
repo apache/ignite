@@ -374,6 +374,24 @@ namespace ignite
                 }
 
                 /**
+                 * Stores given key-value pair in cache only if the previous value is equal to the old value passed
+                 * as argument.
+                 *
+                 * @param key Key to store in cache.
+                 * @param oldVal Old value to match.
+                 * @param newVal Value to be associated with the given key.
+                 * @return True if replace happened, false otherwise.
+                 */
+                bool Replace(const KeyType& key, const ValueType& oldVal, const ValueType& newVal)
+                {
+                    impl::thin::WritableKeyImpl<KeyType> wrKey(key);
+                    impl::thin::WritableImpl<ValueType> wrOldVal(oldVal);
+                    impl::thin::WritableImpl<ValueType> wrNewVal(newVal);
+
+                    return proxy.Replace(wrKey, wrOldVal, wrNewVal);
+                }
+
+                /**
                  * Associates the specified value with the specified key in this cache, returning an existing value if
                  * one existed.
                  *

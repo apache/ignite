@@ -77,7 +77,7 @@ namespace ignite
 
                 void CacheClientImpl::Put(const WritableKey& key, const Writable& value)
                 {
-                    CacheKeyValueRequest<RequestType::CACHE_PUT> req(id, binary, key, value);
+                    Cache2ValueRequest<RequestType::CACHE_PUT> req(id, binary, key, value);
                     Response rsp;
 
                     SyncCacheKeyMessage(key, req, rsp);
@@ -109,7 +109,7 @@ namespace ignite
 
                 bool CacheClientImpl::Replace(const WritableKey& key, const Writable& value)
                 {
-                    CacheKeyValueRequest<RequestType::CACHE_REPLACE> req(id, binary, key, value);
+                    Cache2ValueRequest<RequestType::CACHE_REPLACE> req(id, binary, key, value);
                     BoolResponse rsp;
 
                     SyncCacheKeyMessage(key, req, rsp);
@@ -205,9 +205,19 @@ namespace ignite
                     SyncCacheKeyMessage(key, req, rsp);
                 }
 
+                bool CacheClientImpl::Replace(const WritableKey& key, const Writable& oldVal, const Writable& newVal)
+                {
+                    Cache3ValueRequest<RequestType::CACHE_REPLACE_IF_EQUALS> req(id, binary, key, oldVal, newVal);
+                    BoolResponse rsp;
+
+                    SyncCacheKeyMessage(key, req, rsp);
+
+                    return rsp.GetValue();
+                }
+
                 void CacheClientImpl::GetAndPut(const WritableKey& key, const Writable& valIn, Readable& valOut)
                 {
-                    CacheKeyValueRequest<RequestType::CACHE_GET_AND_PUT> req(id, binary, key, valIn);
+                    Cache2ValueRequest<RequestType::CACHE_GET_AND_PUT> req(id, binary, key, valIn);
                     CacheValueResponse rsp(valOut);
 
                     SyncCacheKeyMessage(key, req, rsp);
@@ -223,7 +233,7 @@ namespace ignite
 
                 void CacheClientImpl::GetAndReplace(const WritableKey& key, const Writable& valIn, Readable& valOut)
                 {
-                    CacheKeyValueRequest<RequestType::CACHE_GET_AND_REPLACE> req(id, binary, key, valIn);
+                    Cache2ValueRequest<RequestType::CACHE_GET_AND_REPLACE> req(id, binary, key, valIn);
                     CacheValueResponse rsp(valOut);
 
                     SyncCacheKeyMessage(key, req, rsp);
@@ -231,7 +241,7 @@ namespace ignite
 
                 bool CacheClientImpl::PutIfAbsent(const WritableKey& key, const Writable& val)
                 {
-                    CacheKeyValueRequest<RequestType::CACHE_PUT_IF_ABSENT> req(id, binary, key, val);
+                    Cache2ValueRequest<RequestType::CACHE_PUT_IF_ABSENT> req(id, binary, key, val);
                     BoolResponse rsp;
 
                     SyncCacheKeyMessage(key, req, rsp);
@@ -241,7 +251,7 @@ namespace ignite
 
                 void CacheClientImpl::GetAndPutIfAbsent(const WritableKey& key, const Writable& valIn, Readable& valOut)
                 {
-                    CacheKeyValueRequest<RequestType::CACHE_GET_AND_PUT_IF_ABSENT> req(id, binary, key, valIn);
+                    Cache2ValueRequest<RequestType::CACHE_GET_AND_PUT_IF_ABSENT> req(id, binary, key, valIn);
                     CacheValueResponse rsp(valOut);
 
                     SyncCacheKeyMessage(key, req, rsp);

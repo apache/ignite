@@ -1323,7 +1323,7 @@ BOOST_AUTO_TEST_CASE(CacheClientReplaceIfEqualsComplexValue)
 
     cache.Put(key, valIn1);
 
-    BOOST_CHECK(!cache.Replace(key, valIn2, valIn2));
+    BOOST_REQUIRE(!cache.Replace(key, valIn2, valIn2));
 
     ignite::ComplexType valOut = cache.Get(key);
 
