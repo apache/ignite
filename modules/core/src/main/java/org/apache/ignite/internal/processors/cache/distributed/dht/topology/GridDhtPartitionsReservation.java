@@ -94,14 +94,16 @@ public class GridDhtPartitionsReservation implements GridReservable {
         for (GridReservable part : parts) {
             arr[i] = (GridDhtLocalPartition)part;
 
-            if (sorted) { // Make sure it will be a sorted array.
-                int id = arr[i].id();
+            // Make sure it will be a sorted array.
+            int id = arr[i].id();
 
-                if (id <= prevPart)
-                    sorted = false;
+            if (id <= prevPart) {
+                sorted = false;
 
-                prevPart = id;
+                break;
             }
+
+            prevPart = id;
 
             i++;
         }
@@ -179,7 +181,7 @@ public class GridDhtPartitionsReservation implements GridReservable {
      */
     private static void tryEvict(GridDhtLocalPartition[] parts) {
         if (parts == null)  // Can be not initialized yet.
-            return ;
+            return;
 
         for (GridDhtLocalPartition part : parts)
             tryEvict(part);

@@ -136,6 +136,7 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -1263,13 +1264,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-     * @param partId Partition id.
+     * @param part Partition id.
      * @return Future.
      */
-    private IgniteInternalFuture<?> executePreloadTask(int partId) throws IgniteCheckedException {
+    private IgniteInternalFuture<?> executePreloadTask(int part) throws IgniteCheckedException {
         ClusterGroup grp = ctx.grid().cluster().forDataNodes(ctx.name());
 
-        return ctx.closures().affinityRun(Collections.singleton(name()), partId, new PartitionPreloadJob(), grp.nodes(), null);
+        return ctx.closures().affinityRun(Collections.singleton(name()), part,
+            new PartitionPreloadJob(ctx.name(), part), grp.nodes(), null);
     }
 
     /**
@@ -4973,13 +4975,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void preloadPartition(int partId) throws IgniteCheckedException {
-        executePreloadTask(partId).get();
+    @Override public void preloadPartition(int part) throws IgniteCheckedException {
+        if (ctx.affinityNode())
+            ctx.offheap().preloadPartition(part);
+        else
+            executePreloadTask(part).get();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> preloadPartitionAsync(int partId) throws IgniteCheckedException {
-        return executePreloadTask(partId);
+    @Override public IgniteInternalFuture<?> preloadPartitionAsync(int part) throws IgniteCheckedException {
+        return executePreloadTask(part);
     }
 
     /**
@@ -6716,18 +6721,42 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * Clear task.
      */
     @GridInternal
-    private static class PartitionPreloadJob implements Runnable {
+    private static class PartitionPreloadJob implements IgniteRunnable {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** */
         @IgniteInstanceResource
         private IgniteEx ignite;
 
+        /** */
         @LoggerResource
         private IgniteLogger log;
 
+        /** */
+        private final String name;
+
+        /** */
+        private final int part;
+
+        /**
+         * @param name Name.
+         * @param part Partition.
+         */
+        public PartitionPreloadJob(String name, int part) {
+            this.name = name;
+            this.part = part;
+        }
+
         @Override public void run() {
-            log.info("ZZZZZZZZZZZZZZZZZZ");
+            IgniteInternalCache cache = ((IgniteEx)ignite).context().cache().cache(name);
+
+            try {
+                cache.preloadPartition(part);
+            }
+            catch (IgniteCheckedException e) {
+                // TODO report exception.
+            }
         }
     }
 

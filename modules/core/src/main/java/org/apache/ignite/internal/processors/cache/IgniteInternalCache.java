@@ -1821,14 +1821,14 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * Preload cache partition.
-     * @param partId Partition id.
+     * @param part Partition.
      */
-    public void preloadPartition(int partId) throws IgniteCheckedException;
+    public void preloadPartition(int part) throws IgniteCheckedException;
 
     /**
      * Preload cache partition.
-     * @param partId Partition id.
+     * @param part Partition.
      * @return Future to be completed whenever preloading completes.
      */
-    public IgniteInternalFuture<?> preloadPartitionAsync(int partId) throws IgniteCheckedException;
+    public IgniteInternalFuture<?> preloadPartitionAsync(int part) throws IgniteCheckedException;
 }

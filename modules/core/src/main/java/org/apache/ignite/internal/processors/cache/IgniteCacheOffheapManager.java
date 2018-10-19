@@ -590,9 +590,10 @@ public interface IgniteCacheOffheapManager {
     public long totalPartitionEntriesCount(int part);
 
     /**
-     * @param partIds Partition ids.
+     * @param part Partition.
+     * @throws IgniteCheckedException If failed.
      */
-    void preloadPartitions(int... partIds);
+    public void preloadPartition(int part) throws IgniteCheckedException;
 
     /**
      *
@@ -1075,5 +1076,10 @@ public interface IgniteCacheOffheapManager {
          * @throws IgniteCheckedException
          */
         PendingEntriesTree pendingTree();
+
+        /**
+         * Preload store.
+         */
+        public void preload() throws IgniteCheckedException;
     }
 }

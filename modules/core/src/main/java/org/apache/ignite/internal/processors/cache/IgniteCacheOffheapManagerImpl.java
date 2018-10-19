@@ -337,7 +337,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public void preloadPartitions(int... partIds) {
+    @Override public void preloadPartition(int p) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -2904,6 +2904,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public PendingEntriesTree pendingTree() {
             return pendingEntries;
+        }
+
+        @Override public void preload() throws IgniteCheckedException {
+            // No-op.
         }
 
         /**

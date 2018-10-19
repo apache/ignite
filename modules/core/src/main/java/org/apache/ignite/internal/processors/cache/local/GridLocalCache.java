@@ -234,15 +234,16 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void preloadPartition(int partId) throws IgniteCheckedException {
-        ctx.offheap().preloadPartitions(partId);
+    @Override public void preloadPartition(int part) throws IgniteCheckedException {
+        ctx.offheap().preloadPartition(part);
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> preloadPartitionAsync(int partId) throws IgniteCheckedException {
+    /** {@inheritDoc}
+     * @param part*/
+    @Override public IgniteInternalFuture<?> preloadPartitionAsync(int part) throws IgniteCheckedException {
         return ctx.closures().callLocalSafe(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                preloadPartition(partId);
+                preloadPartition(part);
 
                 return null;
             }
