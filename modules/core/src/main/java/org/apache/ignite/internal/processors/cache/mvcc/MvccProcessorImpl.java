@@ -86,8 +86,8 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridCursor;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -175,9 +175,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
      * Vacuum mutex. Prevents concurrent vacuum while start/stop operations
      */
     private final Object mux = new Object();
-
-    /** For tests only. */
-    private volatile Throwable vacuumError;
 
     /** */
     private final GridAtomicLong futIdCntr = new GridAtomicLong(0);
@@ -1100,8 +1097,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             crdVer == 0 && ctx.localNodeId().equals(crd0.nodeId()))
             return new GridFinishedFuture<>(new VacuumMetrics());
 
-        final GridCompoundIdentityFuture<VacuumMetrics> res =
-            new GridCompoundIdentityFuture<>(new VacuumMetricsReducer());
+        final GridFutureAdapter<VacuumMetrics> res = new GridFutureAdapter<>();
 
         MvccSnapshot snapshot;
 
@@ -1138,28 +1134,10 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /**
-     * For tests only.
-     *
-     * @return Vacuum error.
-     */
-    Throwable vacuumError() {
-        return vacuumError;
-    }
-
-    /**
-     * For tests only.
-     *
-     * @param e Vacuum error.
-     */
-    void vacuumError(Throwable e) {
-        this.vacuumError = e;
-    }
-
-    /**
      * @param res Result.
      * @param snapshot Snapshot.
      */
-    private void continueRunVacuum(GridCompoundIdentityFuture<VacuumMetrics> res, MvccSnapshot snapshot) {
+    private void continueRunVacuum(GridFutureAdapter<VacuumMetrics> res, MvccSnapshot snapshot) {
         ackTxCommit(snapshot)
             .listen(new IgniteInClosure<IgniteInternalFuture>() {
                 @Override public void apply(IgniteInternalFuture fut) {
@@ -1184,23 +1162,35 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                                     return;
                                 }
 
+                                GridCompoundIdentityFuture<VacuumMetrics> res0 =
+                                    new GridCompoundIdentityFuture<>(new VacuumMetricsReducer());
+
                                 for (CacheGroupContext grp : ctx.cache().cacheGroups()) {
                                     if (grp.mvccEnabled()) {
-                                        for (GridDhtLocalPartition part : grp.topology().localPartitions()) {
-                                            VacuumTask task = new VacuumTask(snapshot, part);
+                                        grp.topology().readLock();
 
-                                            cleanupQueue.offer(task);
+                                        try {
+                                            for (GridDhtLocalPartition part : grp.topology().localPartitions()) {
+                                                VacuumTask task = new VacuumTask(snapshot, part);
 
-                                            res.add(task);
+                                                cleanupQueue.offer(task);
+
+                                                res0.add(task);
+                                            }
+                                        }
+                                        finally {
+                                            grp.topology().readUnlock();
                                         }
                                     }
                                 }
-                            }
 
-                            res.listen(new CI1<IgniteInternalFuture<VacuumMetrics>>() {
-                                @Override public void apply(IgniteInternalFuture<VacuumMetrics> fut) {
+                                res0.markInitialized();
+
+                                res0.listen(future -> {
+                                    VacuumMetrics metrics = null; Throwable ex = null;
+
                                     try {
-                                        VacuumMetrics metrics = fut.get();
+                                        metrics = future.get();
 
                                         if (U.assertionsEnabled()) {
                                             MvccCoordinator crd = currentCoordinator();
@@ -1224,14 +1214,17 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                                     catch (NodeStoppingException ignored) {
                                         if (log.isDebugEnabled())
                                             log.debug("Cannot complete vacuum (node is stopping).");
+
+                                        metrics = new VacuumMetrics();
                                     }
                                     catch (Throwable e) {
-                                        U.error(log, "Vacuum error.", e);
+                                        ex = new GridClosureException(e);
                                     }
-                                }
-                            });
 
-                            res.markInitialized();
+                                    res.onDone(metrics, ex);
+                                });
+                            }
+
                         }
                         catch (Throwable e) {
                             completeWithException(res, e);
@@ -2000,13 +1993,13 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                     }
                 }
                 catch (IgniteInterruptedCheckedException e) {
-                    throw e;
+                    throw e; // Cancelled.
                 }
                 catch (Throwable e) {
-                    prc.vacuumError(e);
-
                     if (e instanceof Error)
                         throw (Error) e;
+
+                    U.error(log, "Vacuum error.", e);
                 }
 
                 long delay = nextScheduledTime - U.currentTimeMillis();
@@ -2062,6 +2055,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                     }
                 }
                 catch (IgniteInterruptedCheckedException e) {
+                    task.onDone(e);
+
                     throw e; // Cancelled.
                 }
                 catch (Throwable e) {
@@ -2158,58 +2153,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
                 return metrics;
             }
-            catch (Exception e) {
-                if (canRunVacuum(part, curCacheId))
-                    throw e; // Unexpected error.
-
-                U.warn(log, "Error occurred during the vacuum. Skip vacuuming for the current partition. " +
-                    "[cacheId=" + curCacheId + ", part=" + part + ", err=" + e.getMessage() + ']', e);
-
-                return new VacuumMetrics();
-            }
             finally {
                 part.release();
             }
-        }
-
-        /**
-         * @param part Partition.
-         * @param cacheId Cache id.
-         * @return {@code True} if we can vacuum given partition.
-         */
-        private boolean canRunVacuum(GridDhtLocalPartition part, Integer cacheId) {
-            CacheGroupContext grp = part.group();
-
-            assert grp != null;
-
-            List<GridCacheContext> caches = grp.caches();
-
-            if (F.isEmpty(caches))
-                return false;
-
-            if (grp.shared().kernalContext().isStopping())
-                return false;
-
-            if (cacheId == null && grp.sharedGroup())
-                return true; // Cache context is unknown, but we can try to run vacuum.
-
-            GridCacheContext ctx0;
-
-            if (grp.sharedGroup()) {
-                assert cacheId != null && cacheId != CU.UNDEFINED_CACHE_ID;
-
-                if (!grp.cacheIds().contains(cacheId))
-                    return false;
-
-                ctx0 = grp.shared().cacheContext(cacheId);
-            }
-            else
-                ctx0 = caches.get(0);
-
-            if (ctx0 == null)
-                return false;
-
-            return !grp.shared().closed(ctx0);
         }
 
         /** */
