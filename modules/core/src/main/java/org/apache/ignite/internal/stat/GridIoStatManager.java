@@ -87,7 +87,7 @@ public class GridIoStatManager {
                 throw new IgniteException("Gathering IO statistics for " + type + "doesn't support");
         }
 
-        StatisticsHolder old = statisticsHolders.get(type).put(statisticsHolderKey, statHolder);
+        StatisticsHolder old = statisticsHolders.get(type).putIfAbsent(statisticsHolderKey, statHolder);
 
         assert old == null : old;
 
