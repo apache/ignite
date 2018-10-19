@@ -135,15 +135,15 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
      * @throws Exception If failed.
      */
     public void testRemoteQueryExecutionCancel0() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_1, 1, TimeUnit.MILLISECONDS, false,
-            CANCELLED_BY_CLIENT);
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_1, 25, TimeUnit.MICROSECONDS, false,
+            "reason=The query was cancelled before initialization.");
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testRemoteQueryExecutionCancel1() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_1, 10, TimeUnit.MILLISECONDS, false,
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_1, 15, TimeUnit.MILLISECONDS, false,
             CANCELLED_BY_CLIENT);
     }
 
@@ -151,7 +151,7 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
      * @throws Exception If failed.
      */
     public void testRemoteQueryExecutionCancel2() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_1, 1, TimeUnit.SECONDS, false,
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_1, 25, TimeUnit.MILLISECONDS, false,
             CANCELLED_BY_CLIENT);
     }
 
@@ -310,6 +310,11 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
                 assertTrue("Must throw correct exception", ex.getCause() instanceof QueryCancelledException);
 
                 assertTrue("Cause message " + ex.getCause().getMessage(), ex.getCause().getMessage().contains(cause));
+
+                cursor.close();
+            }
+            catch (Throwable t){
+                fail(t.getClass()+" "+t.getMessage());
             }
             finally {
                 // Give some time to clean up.

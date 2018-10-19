@@ -291,7 +291,7 @@ public class GridReduceQueryExecutor {
 
             if (failCode == GridQueryFailResponse.CANCELLED_BY_ORIGINATOR) {
                 e = new CacheException("Failed to execute map query on remote node [nodeId=" + nodeId +
-                    ", errMsg=" + msg + ']', new QueryCancelledException());
+                    ", reason=" + msg + ']', new QueryCancelledException());
             }
             else {
                 e = new CacheException("Failed to execute map query on remote node [nodeId=" + nodeId +
@@ -950,8 +950,16 @@ public class GridReduceQueryExecutor {
 
                 if (e instanceof CacheException) {
                     if (wasCancelled((CacheException)e))
-                        resEx = new  CacheException("Failed to run reduce query locally.",
-                            new QueryCancelledException());
+                        resEx = new  CacheException(
+                            "Failed to run reduce query locally.",
+                            new QueryCancelledException(
+                                String.format("The query was cancelled [query=%s, localNodeId=%s, reason=%s]",
+                                    qry.originalSql(),
+                                    ctx.localNodeId(),
+                                    e.getMessage()
+                                )
+                            )
+                        );
                     else
                         resEx = (CacheException)e;
                 }
@@ -965,7 +973,14 @@ public class GridReduceQueryExecutor {
 
                 Throwable cause = e;
 
-                if (e instanceof IgniteCheckedException) {
+                if (e instanceof QueryCancelledException) {
+                    cause = new QueryCancelledException(String.format("The query was cancelled [query=%s, localNodeId=%s, reason=%s]",
+                        qry.originalSql(),
+                        ctx.localNodeId(),
+                        e.getMessage()
+                    ));
+                }
+                else if (e instanceof IgniteCheckedException) {
                     Throwable disconnectedErr =
                         ((IgniteCheckedException)e).getCause(IgniteClientDisconnectedException.class);
 
@@ -1111,7 +1126,7 @@ public class GridReduceQueryExecutor {
         for (ClusterNode n : nodes) {
             if (!n.version().greaterThanEqual(2, 3, 0)) {
                 log.warning("Server-side DML optimization is skipped because map node does not support it. " +
-                    "Falling back to normal DML [node=" + n.id() + ", v=" + n.version() + "].");
+                    "Falling back to normal DML. [node=" + n.id() + ", v=" + n.version() + "].");
 
                 return null;
             }
@@ -1201,7 +1216,7 @@ public class GridReduceQueryExecutor {
             DistributedUpdateRun r = updRuns.get(reqId);
 
             if (r == null) {
-                U.warn(log, "Unexpected dml response (will ignore) [localNodeId=" + ctx.localNodeId() + ", nodeId=" +
+                U.warn(log, "Unexpected dml response (will ignore). [localNodeId=" + ctx.localNodeId() + ", nodeId=" +
                     node.id() + ", msg=" + msg.toString() + ']');
 
                 return;
@@ -1210,7 +1225,7 @@ public class GridReduceQueryExecutor {
             r.handleResponse(node.id(), msg);
         }
         catch (Exception e) {
-            U.error(log, "Error in dml response processing [localNodeId=" + ctx.localNodeId() + ", nodeId=" +
+            U.error(log, "Error in dml response processing. [localNodeId=" + ctx.localNodeId() + ", nodeId=" +
                 node.id() + ", msg=" + msg.toString() + ']', e);
         }
     }
@@ -1269,8 +1284,16 @@ public class GridReduceQueryExecutor {
             }
         }
 
-        r.setStateOnException(ctx.localNodeId(),
-            new CacheException("Query is canceled.", new QueryCancelledException()));
+        r.setStateOnException(
+            ctx.localNodeId(),
+            new CacheException(new QueryCancelledException(
+                String.format("The query was cancelled while executing [query=%s, localNodeId=%s, reason=%s]",
+                    r.queryInfo().query(),
+                    ctx.localNodeId(),
+                    "Cancelled by client"
+                ))
+            )
+        );
 
         if (!runs.remove(qryReqId, r))
             U.warn(log, "Query run was already removed: " + qryReqId);

@@ -792,6 +792,8 @@ public class GridMapQueryExecutor {
 
         List<GridReservable> reserved = new ArrayList<>();
 
+        GridCacheSqlQuery lastQry = null;
+
         try {
             // We want to reserve only in not SELECT FOR UPDATE case -
             // otherwise, their state is protected by locked topology.
@@ -862,6 +864,8 @@ public class GridMapQueryExecutor {
             boolean evt = mainCctx != null && mainCctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED);
 
             for (GridCacheSqlQuery qry : qrys) {
+                lastQry = qry;
+
                 ResultSet rs = null;
 
                 boolean removeMapping = false;
@@ -941,7 +945,14 @@ public class GridMapQueryExecutor {
                 if (qryResults.cancelled()) {
                     qryResults.result(qryIdx).close();
 
-                    throw new QueryCancelledException();
+                    throw new QueryCancelledException(
+                        String.format("The query was cancelled while executing [query=%s, localNodeId=%s, reason=%s, timeout=%s ms]",
+                            qry.query(),
+                            node.id(),
+                            timeout > 0 ? "Query with timeout was cancelled" : "Cancelled by client",
+                            timeout
+                        )
+                    );
                 }
 
                 if (inTx) {
@@ -1011,7 +1022,15 @@ public class GridMapQueryExecutor {
                 JdbcSQLException sqlEx = X.cause(e, JdbcSQLException.class);
 
                 if (sqlEx != null && sqlEx.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
-                    sendError(node, reqId, new QueryCancelledException());
+                    sendError(node, reqId, new QueryCancelledException(
+                        String.format(
+                            "The query was cancelled while executing [query=%s, nodeId=%s, reason=%s, timeout=%s ms]",
+                            (lastQry != null) ? lastQry.query() : "no query",
+                            node.id(),
+                            timeout > 0 ? "Statement with timeout was cancelled" : "Cancelled by client",
+                            timeout
+                        )
+                    ));
                 else {
                     GridH2RetryException retryErr = X.cause(e, GridH2RetryException.class);
 
@@ -1248,7 +1267,14 @@ public class GridMapQueryExecutor {
             return;
         }
         else if (nodeRess.cancelled(req.queryRequestId())) {
-            sendError(node, req.queryRequestId(), new QueryCancelledException());
+            sendError(node, req.queryRequestId(), new QueryCancelledException(
+                String.format("The query was cancelled while executing [queryId=%d, nodeId=%s, requestId=%s, reason=%s]",
+                    req.query(),
+                    node.id(),
+                    req.queryRequestId(),
+                    "Cancellation in node result"
+                )
+            ));
 
             return;
         }
@@ -1258,7 +1284,14 @@ public class GridMapQueryExecutor {
         if (qryResults == null)
             sendError(node, req.queryRequestId(), new CacheException("No query result found for request: " + req));
         else if (qryResults.cancelled())
-            sendError(node, req.queryRequestId(), new QueryCancelledException());
+            sendError(node, req.queryRequestId(), new QueryCancelledException(
+                String.format("The query was cancelled while executing [queryId=%d, nodeId=%s, requestId=%s, reason=%s]",
+                    req.query(),
+                    node.id(),
+                    req.queryRequestId(),
+                    "Cancellation in query result"
+                )
+            ));
         else {
             MapQueryLazyWorker lazyWorker = qryResults.lazyWorker();
 
@@ -1272,7 +1305,14 @@ public class GridMapQueryExecutor {
                             JdbcSQLException sqlEx = X.cause(e, JdbcSQLException.class);
 
                             if (sqlEx != null && sqlEx.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
-                                sendError(node, qryResults.queryRequestId(), new QueryCancelledException());
+                                sendError(node, qryResults.queryRequestId(), new QueryCancelledException(
+                                    String.format("The query was cancelled while executing [queryId=%d, nodeId=%s, requestId=%s, reason=%s]",
+                                        req.query(),
+                                        node.id(),
+                                        req.queryRequestId(),
+                                        "Cancellation during lazy execution"
+                                    )
+                                ));
                             else
                                 throw e;
                         }
