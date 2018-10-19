@@ -55,7 +55,11 @@ requirement_sections = [
 requirements = defaultdict(list)
 
 for section in requirement_sections:
-    with open('requirements/{}.txt'.format(section), 'r') as requirements_file:
+    with open(
+        'requirements/{}.txt'.format(section),
+        'r',
+        encoding='utf-8',
+    ) as requirements_file:
         for line in requirements_file.readlines():
             line = line.strip('\n')
             if is_a_requirement(line):
