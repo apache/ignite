@@ -586,6 +586,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         start0();
 
+        fileHandleManager.onActivate();
+
         if (!cctx.kernalContext().clientNode()) {
             if (isArchiverEnabled()) {
                 assert archiver != null;

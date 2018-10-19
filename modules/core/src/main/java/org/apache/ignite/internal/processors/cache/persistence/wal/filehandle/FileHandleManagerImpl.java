@@ -216,11 +216,14 @@ public class FileHandleManagerImpl implements FileHandleManager {
             U.quietAndWarn(log, "Started write-ahead log manager in NONE mode, persisted data may be lost in " +
                 "a case of unexpected node failure. Make sure to deactivate the cluster before shutdown.");
 
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onActivate() {
         if (!cctx.kernalContext().clientNode()) {
             if (walSegmentSyncWorker != null)
                 new IgniteThread(walSegmentSyncWorker).start();
         }
-
     }
 
     /** {@inheritDoc} */
