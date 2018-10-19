@@ -34,7 +34,6 @@ import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
-import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Example of using distributed {@link MultilayerPerceptron}.
@@ -70,76 +69,65 @@ public class MLPTrainerExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            // Create IgniteThread, we must work with SparseDistributedMatrix inside IgniteThread
-            // because we create ignite cache internally.
-            IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                MLPTrainerExample.class.getSimpleName(), () -> {
+            // Create cache with training data.
+            CacheConfiguration<Integer, LabeledPoint> trainingSetCfg = new CacheConfiguration<>();
+            trainingSetCfg.setName("TRAINING_SET");
+            trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
 
-                // Create cache with training data.
-                CacheConfiguration<Integer, LabeledPoint> trainingSetCfg = new CacheConfiguration<>();
-                trainingSetCfg.setName("TRAINING_SET");
-                trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
+            IgniteCache<Integer, LabeledPoint> trainingSet = ignite.createCache(trainingSetCfg);
 
-                IgniteCache<Integer, LabeledPoint> trainingSet = ignite.createCache(trainingSetCfg);
+            // Fill cache with training data.
+            trainingSet.put(0, new LabeledPoint(0, 0, 0));
+            trainingSet.put(1, new LabeledPoint(0, 1, 1));
+            trainingSet.put(2, new LabeledPoint(1, 0, 1));
+            trainingSet.put(3, new LabeledPoint(1, 1, 0));
 
-                // Fill cache with training data.
-                trainingSet.put(0, new LabeledPoint(0, 0, 0));
-                trainingSet.put(1, new LabeledPoint(0, 1, 1));
-                trainingSet.put(2, new LabeledPoint(1, 0, 1));
-                trainingSet.put(3, new LabeledPoint(1, 1, 0));
+            // Define a layered architecture.
+            MLPArchitecture arch = new MLPArchitecture(2).
+                withAddedLayer(10, true, Activators.RELU).
+                withAddedLayer(1, false, Activators.SIGMOID);
 
-                // Define a layered architecture.
-                MLPArchitecture arch = new MLPArchitecture(2).
-                    withAddedLayer(10, true, Activators.RELU).
-                    withAddedLayer(1, false, Activators.SIGMOID);
+            // Define a neural network trainer.
+            MLPTrainer<SimpleGDParameterUpdate> trainer = new MLPTrainer<>(
+                arch,
+                LossFunctions.MSE,
+                new UpdatesStrategy<>(
+                    new SimpleGDUpdateCalculator(0.1),
+                    SimpleGDParameterUpdate::sumLocal,
+                    SimpleGDParameterUpdate::avg
+                ),
+                3000,
+                4,
+                50,
+                123L
+            );
 
-                // Define a neural network trainer.
-                MLPTrainer<SimpleGDParameterUpdate> trainer = new MLPTrainer<>(
-                    arch,
-                    LossFunctions.MSE,
-                    new UpdatesStrategy<>(
-                        new SimpleGDUpdateCalculator(0.1),
-                        SimpleGDParameterUpdate::sumLocal,
-                        SimpleGDParameterUpdate::avg
-                    ),
-                    3000,
-                    4,
-                    50,
-                    123L
-                );
+            // Train neural network and get multilayer perceptron model.
+            MultilayerPerceptron mlp = trainer.fit(
+                ignite,
+                trainingSet,
+                (k, v) -> VectorUtils.of(v.x, v.y),
+                (k, v) -> new double[] {v.lb}
+            );
 
-                // Train neural network and get multilayer perceptron model.
-                MultilayerPerceptron mlp = trainer.fit(
-                    ignite,
-                    trainingSet,
-                    (k, v) -> VectorUtils.of(v.x, v.y),
-                    (k, v) -> new double[] {v.lb}
-                );
+            int totalCnt = 4;
+            int failCnt = 0;
 
-                int totalCnt = 4;
-                int failCnt = 0;
+            // Calculate score.
+            for (int i = 0; i < 4; i++) {
+                LabeledPoint pnt = trainingSet.get(i);
+                Matrix predicted = mlp.apply(new DenseMatrix(new double[][] {{pnt.x, pnt.y}}));
 
-                // Calculate score.
-                for (int i = 0; i < 4; i++) {
-                    LabeledPoint pnt = trainingSet.get(i);
-                    Matrix predicted = mlp.apply(new DenseMatrix(new double[][] {{pnt.x, pnt.y}}));
+                double predictedVal = predicted.get(0, 0);
+                double lbl = pnt.lb;
+                System.out.printf(">>> key: %d\t\t predicted: %.4f\t\tlabel: %.4f\n", i, predictedVal, lbl);
+                failCnt += Math.abs(predictedVal - lbl) < 0.5 ? 0 : 1;
+            }
 
-                    double predictedVal = predicted.get(0, 0);
-                    double lbl = pnt.lb;
-                    System.out.printf(">>> key: %d\t\t predicted: %.4f\t\tlabel: %.4f\n", i, predictedVal, lbl);
-                    failCnt += Math.abs(predictedVal - lbl) < 0.5 ? 0 : 1;
-                }
+            double failRatio = (double)failCnt / totalCnt;
 
-                double failRatio = (double)failCnt / totalCnt;
-
-                System.out.println("\n>>> Fail percentage: " + (failRatio * 100) + "%.");
-
-                System.out.println("\n>>> Distributed multilayer perceptron example completed.");
-            });
-
-            igniteThread.start();
-
-            igniteThread.join();
+            System.out.println("\n>>> Fail percentage: " + (failRatio * 100) + "%.");
+            System.out.println("\n>>> Distributed multilayer perceptron example completed.");
         }
     }
 

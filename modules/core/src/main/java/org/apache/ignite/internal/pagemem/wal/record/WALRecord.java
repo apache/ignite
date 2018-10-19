@@ -193,7 +193,13 @@ public abstract class WALRecord {
         MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD,
 
         /** */
-        MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD;
+        MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD,
+
+        /** Encrypted WAL-record. */
+        ENCRYPTED_RECORD,
+
+        /** Ecnrypted data record */
+        ENCRYPTED_DATA_RECORD;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();
@@ -282,13 +288,6 @@ public abstract class WALRecord {
         assert size >= 0: size;
 
         this.size = size;
-    }
-
-    /**
-     * @return Need wal rollOver.
-     */
-    public boolean rollOver(){
-        return false;
     }
 
     /**
