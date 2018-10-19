@@ -240,7 +240,7 @@ public class IgniteDiagnosticMessage implements Message {
     /**
      *
      */
-    public static abstract class DiagnosticBaseClosure implements IgniteBiInClosure<StringBuilder, GridKernalContext> {
+    public abstract static class DiagnosticBaseClosure implements IgniteBiInClosure<StringBuilder, GridKernalContext> {
         /**
          * @return Key to group similar messages.
          */
@@ -259,7 +259,7 @@ public class IgniteDiagnosticMessage implements Message {
     /**
      *
      */
-    public final static class TxEntriesInfoClosure extends DiagnosticBaseClosure {
+    public static final class TxEntriesInfoClosure extends DiagnosticBaseClosure {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -343,7 +343,7 @@ public class IgniteDiagnosticMessage implements Message {
     /**
      *
      */
-    public final static class ExchangeInfoClosure extends DiagnosticBaseClosure {
+    public static final class ExchangeInfoClosure extends DiagnosticBaseClosure {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -383,7 +383,7 @@ public class IgniteDiagnosticMessage implements Message {
     /**
      *
      */
-    public final static class TxInfoClosure extends DiagnosticBaseClosure {
+    public static final class TxInfoClosure extends DiagnosticBaseClosure {
         /** */
         private static final long serialVersionUID = 0L;
 

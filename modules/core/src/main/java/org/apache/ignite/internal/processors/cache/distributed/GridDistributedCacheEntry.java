@@ -727,7 +727,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     }
 
     /** {@inheritDoc} */
-    @Override final protected void checkThreadChain(GridCacheMvccCandidate owner) {
+    @Override protected final void checkThreadChain(GridCacheMvccCandidate owner) {
         assert !lockedByCurrentThread();
 
         assert owner != null;

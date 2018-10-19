@@ -297,7 +297,7 @@ class TimestampObject(StandardObject):
                     '_pack_': 1,
                     '_fields_': [
                         ('type_code', ctypes.c_byte),
-                        ('epoch', ctypes.c_long),
+                        ('epoch', ctypes.c_longlong),
                         ('fraction', ctypes.c_int),
                     ],
                 }
@@ -353,7 +353,7 @@ class DateObject(StandardObject):
                     '_pack_': 1,
                     '_fields_': [
                         ('type_code', ctypes.c_byte),
-                        ('epoch', ctypes.c_long),
+                        ('epoch', ctypes.c_longlong),
                     ],
                 }
             )
@@ -405,7 +405,7 @@ class TimeObject(StandardObject):
                     '_pack_': 1,
                     '_fields_': [
                         ('type_code', ctypes.c_byte),
-                        ('value', ctypes.c_long),
+                        ('value', ctypes.c_longlong),
                     ],
                 }
             )
