@@ -375,7 +375,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 false,
                 false,
                 tx.mvccSnapshot(),
-                tx.filterUpdateCountersForBackupNode(n));
+                cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
 
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
@@ -488,7 +488,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 false,
                 false,
                 mvccSnapshot,
-                commit ? null : tx.filterUpdateCountersForBackupNode(n));
+                commit ? null : cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
 
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
 

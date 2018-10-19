@@ -2657,7 +2657,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros) {
+    @Override public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros,
+        boolean finalizeCntrsBeforeCollecting) {
         lock.readLock().lock();
 
         try {
@@ -2677,6 +2678,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 if (part == null)
                     continue;
+
+                if (finalizeCntrsBeforeCollecting)
+                    part.finalizeUpdateCountres();
 
                 long updCntr = part.updateCounter();
                 long initCntr = part.initialUpdateCounter();
