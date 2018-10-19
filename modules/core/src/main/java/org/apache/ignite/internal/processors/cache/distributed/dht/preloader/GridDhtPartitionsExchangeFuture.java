@@ -337,9 +337,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Future for wait all exchange listeners comepleted. */
     private final GridFutureAdapter<?> afterLsnrCompleteFut = new GridFutureAdapter<>();
 
-    /** */
-    private volatile AffinityTopologyVersion lastAffChangeTopVer;
-
     /**
      * @param cctx Cache context.
      * @param busyLock Busy lock.
