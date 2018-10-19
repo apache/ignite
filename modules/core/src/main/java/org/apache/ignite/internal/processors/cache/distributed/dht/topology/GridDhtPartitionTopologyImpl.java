@@ -317,8 +317,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         assert topReadyFut0 != null;
 
-        if (topReadyFut0 instanceof GridDhtPartitionsExchangeFuture && !((GridDhtPartitionsExchangeFuture)topReadyFut0).changedAffinity())
-            return ctx.exchange().lastFinishedFuture();
+        if (!topReadyFut0.changedAffinity()) {
+            GridDhtTopologyFuture lastFut = ctx.exchange().lastFinishedFuture();
+
+            if (lastFut != null)
+                return lastFut;
+        }
 
         return topReadyFut0;
     }
