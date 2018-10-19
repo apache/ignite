@@ -251,9 +251,7 @@ public abstract class PagesList extends DataStructure {
         }
     }
 
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
+    /** {@inheritDoc} */
     public void saveMetadata() throws IgniteCheckedException {
         assert metaPageId != 0;
 

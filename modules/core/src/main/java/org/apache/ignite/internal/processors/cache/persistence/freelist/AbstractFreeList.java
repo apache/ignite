@@ -28,6 +28,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmen
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
+import org.apache.ignite.internal.processors.cache.persistence.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
@@ -44,7 +45,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  */
-public abstract class AbstractFreeList<T extends Storable> extends PagesList implements FreeList<T>, ReuseList {
+public abstract class AbstractFreeList<T extends Storable> extends PagesList implements CacheFreeList<T> {
     /** */
     private static final int BUCKETS = 256; // Must be power of 2.
 
@@ -371,11 +372,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         init(metaPageId, initNew);
     }
 
-    /**
-     * Calculates free space tracked by this FreeListImpl instance.
-     *
-     * @return Free space available for use, in bytes.
-     */
+    /** {@inheritDoc} */
     public long freeSpace() {
         long freeSpace = 0;
 

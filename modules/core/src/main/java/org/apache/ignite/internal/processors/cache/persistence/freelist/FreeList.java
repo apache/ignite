@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 
 /**
+ *
  */
 public interface FreeList<T extends Storable> {
     /**
@@ -55,6 +56,18 @@ public interface FreeList<T extends Storable> {
      * @throws IgniteCheckedException If failed.
      */
     public void removeDataRowByLink(long link) throws IgniteCheckedException;
+
+    /**
+     * @return Number of empty data pages in free list.
+     */
+    public int emptyDataPages();
+
+    /**
+     * Calculates free space tracked by this free list.
+     *
+     * @return Free space available for use, in bytes.
+     */
+    public long freeSpace();
 
     /**
      * @param log Logger.
