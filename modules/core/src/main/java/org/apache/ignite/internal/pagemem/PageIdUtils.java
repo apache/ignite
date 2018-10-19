@@ -235,15 +235,4 @@ public final class PageIdUtils {
 
         return pageId(partId, flag, pageIdx);
     }
-
-    /**
-     * @param pageId Page ID.
-     * @param pageIdx Page index.
-     */
-    public static long changePageIndex(long pageId, int pageIdx) {
-        byte flag = flag(pageId);
-        int partId = partId(pageId);
-
-        return pageId(partId, flag, pageIdx);
-    }
 }
