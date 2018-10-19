@@ -172,6 +172,7 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
+import static org.apache.ignite.internal.util.IgniteUtils.checkpointBufferSize;
 
 /**
  *
@@ -183,15 +184,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** MemoryPolicyConfiguration name reserved for meta store. */
     public static final String METASTORE_DATA_REGION_NAME = "metastoreMemPlc";
-
-    /** */
-    private static final long GB = 1024L * 1024 * 1024;
-
-    /** Minimum checkpointing page buffer size (may be adjusted by Ignite). */
-    public static final Long DFLT_MIN_CHECKPOINTING_PAGE_BUFFER_SIZE = GB / 4;
-
-    /** Default minimum checkpointing page buffer size (may be adjusted by Ignite). */
-    public static final Long DFLT_MAX_CHECKPOINTING_PAGE_BUFFER_SIZE = 2 * GB;
 
     /** Skip sync. */
     private final boolean skipSync = IgniteSystemProperties.getBoolean(IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC);
@@ -678,30 +670,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             throw new IgniteCheckedException(e);
         }
-    }
-
-    /**
-     * Get checkpoint buffer size for the given configuration.
-     *
-     * @param regCfg Configuration.
-     * @return Checkpoint buffer size.
-     */
-    public static long checkpointBufferSize(DataRegionConfiguration regCfg) {
-        if (!regCfg.isPersistenceEnabled())
-            return 0L;
-
-        long res = regCfg.getCheckpointPageBufferSize();
-
-        if (res == 0L) {
-            if (regCfg.getMaxSize() < GB)
-                res = Math.min(DFLT_MIN_CHECKPOINTING_PAGE_BUFFER_SIZE, regCfg.getMaxSize());
-            else if (regCfg.getMaxSize() < 8 * GB)
-                res = regCfg.getMaxSize() / 4;
-            else
-                res = DFLT_MAX_CHECKPOINTING_PAGE_BUFFER_SIZE;
-        }
-
-        return res;
     }
 
     /** {@inheritDoc} */
