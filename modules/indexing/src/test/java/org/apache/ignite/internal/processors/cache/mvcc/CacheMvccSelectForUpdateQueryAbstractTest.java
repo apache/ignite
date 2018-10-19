@@ -26,18 +26,13 @@ import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
-import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -314,12 +309,12 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
                     fut.get();
                 }
                 catch (Exception e) {
-                    IgniteTxTimeoutCheckedException e0 = X.cause(e, IgniteTxTimeoutCheckedException.class);
+                    CacheException e0 = X.cause(e, CacheException.class);
 
-                    assert e0 != null : e;
+                    assert e0 != null;
 
                     assert e0.getMessage() != null &&
-                        e0.getMessage().contains("Failed to acquire lock within provided timeout") : e0;
+                        e0.getMessage().contains("Failed to acquire lock within provided timeout");
                 }
             }
         }

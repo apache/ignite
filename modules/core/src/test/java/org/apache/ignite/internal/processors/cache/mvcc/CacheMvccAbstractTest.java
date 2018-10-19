@@ -1605,10 +1605,6 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
                 assert GridTestUtils.getFieldValue(crd, "txLog") != null;
 
-                Throwable vacuumError = crd.vacuumError();
-
-                assertNull(X.getFullStackTrace(vacuumError), vacuumError);
-
                 fut.add(crd.runVacuum());
             }
         }
