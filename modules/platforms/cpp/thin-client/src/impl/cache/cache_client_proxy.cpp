@@ -101,6 +101,11 @@ namespace ignite
                     return GetCacheImpl(impl).Remove(key);
                 }
 
+                bool CacheClientProxy::Remove(const WritableKey& key, const Writable& val)
+                {
+                    return GetCacheImpl(impl).Remove(key, val);
+                }
+
                 void CacheClientProxy::RemoveAll(const Writable & keys)
                 {
                     return GetCacheImpl(impl).RemoveAll(keys);

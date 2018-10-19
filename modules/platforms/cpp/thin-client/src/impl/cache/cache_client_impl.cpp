@@ -152,7 +152,17 @@ namespace ignite
                     CacheValueRequest<RequestType::CACHE_REMOVE_KEY> req(id, binary, key);
                     BoolResponse rsp;
 
-                    SyncMessage(req, rsp);
+                    SyncCacheKeyMessage(key, req, rsp);
+
+                    return rsp.GetValue();
+                }
+
+                bool CacheClientImpl::Remove(const WritableKey& key, const Writable& val)
+                {
+                    Cache2ValueRequest<RequestType::CACHE_REMOVE_IF_EQUALS> req(id, binary, key, val);
+                    BoolResponse rsp;
+
+                    SyncCacheKeyMessage(key, req, rsp);
 
                     return rsp.GetValue();
                 }
@@ -178,7 +188,7 @@ namespace ignite
                     CacheValueRequest<RequestType::CACHE_CLEAR_KEY> req(id, binary, key);
                     Response rsp;
 
-                    SyncMessage(req, rsp);
+                    SyncCacheKeyMessage(key, req, rsp);
                 }
 
                 void CacheClientImpl::Clear()

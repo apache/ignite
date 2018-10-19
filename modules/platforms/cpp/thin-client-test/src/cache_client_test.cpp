@@ -1336,7 +1336,7 @@ BOOST_AUTO_TEST_CASE(CacheClientRemoveIfEqualsComplexValue)
 
     cache.Put(key, valIn1);
 
-    BOOST_CHECK(!cache.Remove(key, valIn2));
+    BOOST_REQUIRE(!cache.Remove(key, valIn2));
 
     BOOST_CHECK(cache.ContainsKey(key));
 

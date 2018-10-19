@@ -216,6 +216,24 @@ namespace ignite
                 }
 
                 /**
+                 * Stores given key-value pair in cache only if the previous value is equal to the old value passed
+                 * as argument.
+                 *
+                 * @param key Key to store in cache.
+                 * @param oldVal Old value to match.
+                 * @param newVal Value to be associated with the given key.
+                 * @return True if replace happened, false otherwise.
+                 */
+                bool Replace(const KeyType& key, const ValueType& oldVal, const ValueType& newVal)
+                {
+                    impl::thin::WritableKeyImpl<KeyType> wrKey(key);
+                    impl::thin::WritableImpl<ValueType> wrOldVal(oldVal);
+                    impl::thin::WritableImpl<ValueType> wrNewVal(newVal);
+
+                    return proxy.Replace(wrKey, wrOldVal, wrNewVal);
+                }
+
+                /**
                  * Check if the cache contains a value for the specified key.
                  *
                  * @param key Key whose presence in this cache is to be tested.
@@ -286,6 +304,22 @@ namespace ignite
                     impl::thin::WritableKeyImpl<KeyType> wrKey(key);
 
                     return proxy.Remove(wrKey);
+                }
+
+                /**
+                 * Removes given key mapping from cache if one exists and value is equal to the passed in value.
+                 * If write-through is enabled, the value will be removed from store.
+                 *
+                 * @param key Key whose mapping is to be removed from cache.
+                 * @param val Value to match against currently cached value.
+                 * @return True if entry was removed, false otherwise.
+                 */
+                bool Remove(const KeyType& key, const ValueType& val)
+                {
+                    impl::thin::WritableKeyImpl<KeyType> wrKey(key);
+                    impl::thin::WritableImpl<ValueType> wrVal(val);
+
+                    return proxy.Remove(wrKey, wrVal);
                 }
 
                 /**
@@ -371,24 +405,6 @@ namespace ignite
                     impl::thin::WritableSetImpl<K, InIter> wrSeq(begin, end);
 
                     proxy.ClearAll(wrSeq);
-                }
-
-                /**
-                 * Stores given key-value pair in cache only if the previous value is equal to the old value passed
-                 * as argument.
-                 *
-                 * @param key Key to store in cache.
-                 * @param oldVal Old value to match.
-                 * @param newVal Value to be associated with the given key.
-                 * @return True if replace happened, false otherwise.
-                 */
-                bool Replace(const KeyType& key, const ValueType& oldVal, const ValueType& newVal)
-                {
-                    impl::thin::WritableKeyImpl<KeyType> wrKey(key);
-                    impl::thin::WritableImpl<ValueType> wrOldVal(oldVal);
-                    impl::thin::WritableImpl<ValueType> wrNewVal(newVal);
-
-                    return proxy.Replace(wrKey, wrOldVal, wrNewVal);
                 }
 
                 /**

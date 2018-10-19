@@ -156,6 +156,16 @@ namespace ignite
                     bool Remove(const WritableKey& key);
 
                     /**
+                     * Removes given key mapping from cache if one exists and value is equal to the passed in value.
+                     * If write-through is enabled, the value will be removed from store.
+                     *
+                     * @param key Key whose mapping is to be removed from cache.
+                     * @param val Value to match against currently cached value.
+                     * @return True if entry was removed, false otherwise.
+                     */
+                    bool Remove(const WritableKey& key, const Writable& val);
+
+                    /**
                      * Removes given key mappings from cache.
                      * If write-through is enabled, the value will be removed from store.
                      *
