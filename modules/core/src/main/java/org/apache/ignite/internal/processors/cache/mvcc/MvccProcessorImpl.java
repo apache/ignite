@@ -2043,11 +2043,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 try {
                     switch (task.part().state()) {
                         case EVICTED:
+                        case RENTING:
                             task.onDone(new VacuumMetrics());
 
                             break;
                         case MOVING:
-                        case RENTING:
                             task.part().group().preloader().rebalanceFuture().listen(f -> cleanupQueue.add(task));
 
                             break;
@@ -2283,47 +2283,54 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             Object rest, GridCacheContext cctx, VacuumMetrics metrics) throws IgniteCheckedException {
             assert key != null && cctx != null && (!F.isEmpty(cleanupRows) || rest != null);
 
-            long cleanupStartNanoTime = System.nanoTime();
-
-            GridCacheEntryEx entry = cctx.cache().entryEx(key);
-
-            while (true) {
-                entry.lockEntry();
-
-                if (!entry.obsolete())
-                    break;
-
-                entry.unlockEntry();
-
-                entry = cctx.cache().entryEx(key);
-            }
-
-            cctx.shared().database().checkpointReadLock();
-
-            int cleaned = 0;
+            cctx.gate().enter();
 
             try {
-                if (cleanupRows != null)
-                    cleaned = part.dataStore().cleanup(cctx, cleanupRows);
+                long cleanupStartNanoTime = System.nanoTime();
 
-                if (rest != null) {
-                    if (rest.getClass() == ArrayList.class) {
-                        for (MvccDataRow row : ((List<MvccDataRow>)rest)) {
-                            part.dataStore().updateTxState(cctx, row);
+                GridCacheEntryEx entry = cctx.cache().entryEx(key);
+
+                while (true) {
+                    entry.lockEntry();
+
+                    if (!entry.obsolete())
+                        break;
+
+                    entry.unlockEntry();
+
+                    entry = cctx.cache().entryEx(key);
+                }
+
+                cctx.shared().database().checkpointReadLock();
+
+                int cleaned = 0;
+
+                try {
+                    if (cleanupRows != null)
+                        cleaned = part.dataStore().cleanup(cctx, cleanupRows);
+
+                    if (rest != null) {
+                        if (rest.getClass() == ArrayList.class) {
+                            for (MvccDataRow row : ((List<MvccDataRow>)rest)) {
+                                part.dataStore().updateTxState(cctx, row);
+                            }
                         }
+                        else
+                            part.dataStore().updateTxState(cctx, (MvccDataRow)rest);
                     }
-                    else
-                        part.dataStore().updateTxState(cctx, (MvccDataRow)rest);
+                }
+                finally {
+                    cctx.shared().database().checkpointReadUnlock();
+
+                    entry.unlockEntry();
+                    cctx.evicts().touch(entry, AffinityTopologyVersion.NONE);
+
+                    metrics.addCleanupNanoTime(System.nanoTime() - cleanupStartNanoTime);
+                    metrics.addCleanupRowsCnt(cleaned);
                 }
             }
             finally {
-                cctx.shared().database().checkpointReadUnlock();
-
-                entry.unlockEntry();
-                cctx.evicts().touch(entry, AffinityTopologyVersion.NONE);
-
-                metrics.addCleanupNanoTime(System.nanoTime() - cleanupStartNanoTime);
-                metrics.addCleanupRowsCnt(cleaned);
+                cctx.gate().leave();
             }
         }
     }
