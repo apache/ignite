@@ -92,16 +92,28 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
     }
 
+    /** */
     public void testPreloadPartition() throws Exception {
         Ignite crd = startGridsMultiThreaded(GRIDS_CNT);
 
         Ignite client = startGrid(CLIENT_GRID_NAME);
 
-        try (IgniteDataStreamer<Integer, byte[]> streamer = crd.dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (int i = 0; i < ENTRY_CNT; i++)
-                streamer.addData(i, new byte[1024 * 2 / 3]);
+        int cnt = 0;
+
+        int preloadPart = 0;
+
+        try (IgniteDataStreamer<Integer, Integer> streamer = crd.dataStreamer(DEFAULT_CACHE_NAME)) {
+            int k = 0;
+
+            while (cnt < ENTRY_CNT) {
+                if (client.affinity(DEFAULT_CACHE_NAME).partition(k) == preloadPart) {
+                    streamer.addData(k, k);
+
+                    cnt++;
+                }
+            }
         }
 
-        client.cache(DEFAULT_CACHE_NAME).preloadPartition(0);
+        client.cache(DEFAULT_CACHE_NAME).preloadPartition(preloadPart);
     }
 }
