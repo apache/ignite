@@ -37,14 +37,24 @@ public interface StatisticsHolder {
     public void trackPhysicalAndLogicalRead(long pageAddr);
 
     /**
-     * @return Logical reads statistics per page IO types.
+     * @return Number of logical reads.
      */
-    public Map<PageType, Long> logicalReadsMap();
+    public long logicalReads();
 
     /**
-     * @return Physical reads statistics per page IO types.
+     * @return Number of physical reads.
      */
-    public Map<PageType, Long> physicalReadsMap();
+    public long physicalReads();
+
+    /**
+     * @return Logical reads statistics per page types.
+     */
+    public Map<String, Long> logicalReadsMap();
+
+    /**
+     * @return Physical reads statistics per page types.
+     */
+    public Map<String, Long> physicalReadsMap();
 
     /**
      * Reset statistics. All counters will be reset to 0.

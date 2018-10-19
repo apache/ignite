@@ -19,13 +19,10 @@
 package org.apache.ignite.internal.stat;
 
 import com.google.common.collect.Sets;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -41,20 +38,20 @@ import org.junit.Assert;
  */
 public class IoStatCacheTest extends GridCommonAbstractTest {
     /** */
-    private final static String ATOMIC_CACHE_NAME = "ATOMIC_CACHE";
+    protected final static String ATOMIC_CACHE_NAME = "ATOMIC_CACHE";
 
     /** */
-    private final static String MVCC_CACHE_NAME = "MVCC_CACHE";
+    protected final static String MVCC_CACHE_NAME = "MVCC_CACHE";
 
     /** */
-    private final static String TRANSACTIONAL_CACHE_NAME = "TRANSACTIONAL_CACHE";
+    protected final static String TRANSACTIONAL_CACHE_NAME = "TRANSACTIONAL_CACHE";
 
     /** */
-    private final static Set<String> ALL_CACHE_NAMES = Sets.newHashSet(GridCacheUtils.UTILITY_CACHE_NAME,
+    protected final static Set<String> ALL_CACHE_NAMES = Sets.newHashSet(GridCacheUtils.UTILITY_CACHE_NAME,
         ATOMIC_CACHE_NAME, MVCC_CACHE_NAME, TRANSACTIONAL_CACHE_NAME);
 
     /** */
-    private static final int RECORD_COUNT = 200;
+    protected static final int RECORD_COUNT = 100;
 
     /** */
     private static IgniteEx ignite;
@@ -82,8 +79,7 @@ public class IoStatCacheTest extends GridCommonAbstractTest {
 
         final CacheConfiguration transactionalCacheCfg = new CacheConfiguration()
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setName(TRANSACTIONAL_CACHE_NAME)
-            .setAffinity(new RendezvousAffinityFunction(false, 1));
+            .setName(TRANSACTIONAL_CACHE_NAME);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
@@ -110,14 +106,6 @@ public class IoStatCacheTest extends GridCommonAbstractTest {
 
         if (persist())
             ignite.active(true);
-
-        //Need to initialize partition memory page.
-        String WARM_UP_KEY = "WARM_UP";
-
-        ignite.cache(TRANSACTIONAL_CACHE_NAME).put(WARM_UP_KEY, WARM_UP_KEY);
-
-        ignite.cache(TRANSACTIONAL_CACHE_NAME).remove(WARM_UP_KEY);
-
     }
 
     /** {@inheritDoc} */
@@ -140,109 +128,98 @@ public class IoStatCacheTest extends GridCommonAbstractTest {
      * Test statistics for TRANSACTIONAL cache.
      */
     public void testTransactonalCache() {
-        cacheTest(TRANSACTIONAL_CACHE_NAME, RECORD_COUNT, RECORD_COUNT * 2);
+        cacheTest(TRANSACTIONAL_CACHE_NAME, RECORD_COUNT, RECORD_COUNT * 3, RECORD_COUNT * 2);
     }
 
     /**
      * Test statistics for MVCC cache.
      */
     public void testMvccCache() {
-        cacheTest(MVCC_CACHE_NAME, RECORD_COUNT, RECORD_COUNT * 2);
+        cacheTest(MVCC_CACHE_NAME, RECORD_COUNT, RECORD_COUNT * 6, RECORD_COUNT * 3);
     }
 
     /**
      * Test statistics for ATOMIC cache.
      */
     public void testAtomicCache() {
-        cacheTest(ATOMIC_CACHE_NAME, RECORD_COUNT, RECORD_COUNT);
+        cacheTest(ATOMIC_CACHE_NAME, RECORD_COUNT, RECORD_COUNT * 2, RECORD_COUNT);
     }
 
     /**
      * Test statistics for three caches in the same time.
      */
     public void testForThreeCaches() {
-        prepareData(ATOMIC_CACHE_NAME, RECORD_COUNT);
-
-        prepareData(TRANSACTIONAL_CACHE_NAME, RECORD_COUNT);
-
-        prepareData(MVCC_CACHE_NAME, RECORD_COUNT);
+        prepareData(RECORD_COUNT, ATOMIC_CACHE_NAME, TRANSACTIONAL_CACHE_NAME, MVCC_CACHE_NAME);
 
         GridIoStatManager ioStatMgr = ignite.context().ioStats();
 
-        Set<String> statisticCacheNames = ioStatMgr.subTypes(StatType.CACHE);
+        Set<String> statisticCacheNames = ioStatMgr.deriveStatNames(StatType.CACHE);
 
         Assert.assertEquals(ALL_CACHE_NAMES, statisticCacheNames);
 
-        Map<AggregatePageType, AtomicLong> aggregateGlobal = ioStatMgr.aggregate(ioStatMgr.logicalReadsLocalNode());
-
         Stream.of(ATOMIC_CACHE_NAME, TRANSACTIONAL_CACHE_NAME, MVCC_CACHE_NAME).forEach((cacheName) -> {
-            Map<PageType, Long> cacheStat = ioStatMgr.logicalReads(StatType.CACHE, cacheName);
+            long logicalReads = ioStatMgr.logicalReads(StatType.CACHE, cacheName);
 
-            Map<AggregatePageType, AtomicLong> cacheStatAggregate = ioStatMgr.aggregate(cacheStat);
+            Assert.assertTrue(logicalReads > RECORD_COUNT);
 
-            checkAggregatedStatIsNotEmpty(cacheStatAggregate);
-
-            for (Map.Entry<AggregatePageType, AtomicLong> globalEntry : aggregateGlobal.entrySet()) {
-                Assert.assertTrue(globalEntry.getValue().get() > cacheStatAggregate.get(globalEntry.getKey()).get());
-            }
         });
-
     }
 
     /**
      * @param cacheName Name of cache.
-     * @param rowCnt Number of row nee to put into cache.
-     * @param idxScanCnt How many index scan expected.
+     * @param rowCnt Number of row need to put into cache.
+     * @param dataPageReads How many data page reads operation expected.
+     * @param idxPageReadsCnt How many index page reads scan expected.
      */
-    private void cacheTest(String cacheName, int rowCnt, int idxScanCnt) {
-        prepareData(cacheName, rowCnt);
+    protected void cacheTest(String cacheName, int rowCnt, int dataPageReads, int idxPageReadsCnt) {
+        prepareData(rowCnt, cacheName);
 
         GridIoStatManager ioStatMgr = ignite.context().ioStats();
 
-        Set<String> statisticCacheNames = ioStatMgr.subTypes(StatType.CACHE);
+        Set<String> statisticCacheNames = ioStatMgr.deriveStatNames(StatType.CACHE);
 
         Assert.assertEquals(ALL_CACHE_NAMES, statisticCacheNames);
 
         Assert.assertTrue(statisticCacheNames.contains(cacheName));
 
-        Map<PageType, Long> cacheStat = ioStatMgr.logicalReads(StatType.CACHE, cacheName);
+        long logicalReadsCache = ioStatMgr.logicalReads(StatType.CACHE, cacheName);
 
-        Map<AggregatePageType, AtomicLong> cacheStatAggregate = ioStatMgr.aggregate(cacheStat);
+        Assert.assertEquals(dataPageReads, logicalReadsCache);
 
-        Map<AggregatePageType, AtomicLong> aggregateGlobal = ioStatMgr.aggregate(ioStatMgr.logicalReadsLocalNode());
+        long logicalReadsIdx = ioStatMgr.logicalReads(StatType.INDEX, cacheName, "PK");
 
-        checkAggregatedStatIsNotEmpty(cacheStatAggregate);
+        Assert.assertEquals(idxPageReadsCnt, logicalReadsIdx);
 
-        Assert.assertEquals(idxScanCnt, cacheStatAggregate.get(AggregatePageType.INDEX).intValue());
-
-        Assert.assertEquals(aggregateGlobal.get(AggregatePageType.INDEX).get(), cacheStatAggregate.get(AggregatePageType.INDEX).get());
-
-        Assert.assertEquals(aggregateGlobal.get(AggregatePageType.DATA).get(), cacheStatAggregate.get(AggregatePageType.DATA).get());
     }
 
     /**
-     * @param aggregatedStat Aggregated IO statistics.
-     */
-    private void checkAggregatedStatIsNotEmpty(Map<AggregatePageType, AtomicLong> aggregatedStat) {
-        Stream.of(AggregatePageType.INDEX, AggregatePageType.DATA).forEach(type -> {
-                long val = aggregatedStat.get(type).get();
-
-                Assert.assertTrue("Statistics shouldn't be empty for " + type, val > 0);
-            }
-        );
-    }
-
-    /**
-     * Fill cache.
+     * Warm up and fill cache.
      *
-     * @param cacheName Name of cache to populate.
+     * @param cacheNames Names of caches to populate.
      * @param cnt Number of entries to put.
      */
-    private void prepareData(String cacheName, int cnt) {
-        IgniteCache cache = ignite.cache(cacheName);
+    private void prepareData(int cnt, String... cacheNames) {
+        //Need to initialize partition and data memory pages
+        for (String cacheName : cacheNames) {
 
-        for (int i = 0; i < cnt; i++)
-            cache.put("KEY-" + i, "VAL-" + i);
+            IgniteCache cache = ignite.cache(cacheName);
+
+            for (int i = 0; i < cnt; i++) {
+                cache.put(i, i);
+
+                cache.put(i, i); //Second invocation required to warm up MVCC cache to fill old versions chains.
+            }
+        }
+
+        ignite.context().ioStats().resetStats();
+
+        for (String cacheName : cacheNames) {
+
+            IgniteCache cache = ignite.cache(cacheName);
+
+            for (int i = 0; i < cnt; i++)
+                cache.put(i, i);
+        }
     }
 
 }

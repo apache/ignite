@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.IgniteCache;
@@ -35,7 +34,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.stat.GridIoStatManager;
-import org.apache.ignite.internal.stat.PageType;
 import org.apache.ignite.internal.stat.StatType;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -50,6 +48,9 @@ import org.junit.Assert;
 public class IoStatBasicIndexTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    private static final int NUMBER_OF_PK_INDEXES = 3;
 
     /** */
     private Collection<QueryIndex> indexes;
@@ -161,16 +162,23 @@ public class IoStatBasicIndexTest extends GridCommonAbstractTest {
     private void checkStat() {
         GridIoStatManager ioStat = grid().context().ioStats();
 
-        Set<String> statIndexes = ioStat.subTypes(StatType.INDEX);
+        Set<String> statIndexes = ioStat.deriveStatNames(StatType.INDEX);
 
-        Assert.assertEquals(indexes.size() + 1, statIndexes.size());
+        Assert.assertEquals(statIndexes.toString(), indexes.size() + NUMBER_OF_PK_INDEXES, statIndexes.size());
+
+        String dfltCacheIdxStart = DEFAULT_CACHE_NAME + ".";
 
         for (String index : statIndexes) {
-            Map<PageType, Long> logReadsStat = ioStat.logicalReads(StatType.INDEX, index);
+            if (!index.startsWith(dfltCacheIdxStart))
+                break;
 
-            Assert.assertFalse(logReadsStat.isEmpty());
+            String idxName = index.substring(dfltCacheIdxStart.length());
 
-            logReadsStat.forEach((key, value) -> Assert.assertTrue(value > 0));
+            Long logicalReads = ioStat.logicalReads(StatType.INDEX, DEFAULT_CACHE_NAME, idxName);
+
+            Assert.assertNotNull(idxName, logicalReads);
+
+            Assert.assertTrue(logicalReads > 0);
         }
 
         ioStat.resetStats();

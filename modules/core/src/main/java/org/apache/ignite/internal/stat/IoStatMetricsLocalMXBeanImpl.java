@@ -19,13 +19,11 @@
 package org.apache.ignite.internal.stat;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiFunction;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.mxbean.IoStatMetricsMXBean;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * JMX bean to expose local node IO statistics.
@@ -52,110 +50,92 @@ public class IoStatMetricsLocalMXBeanImpl implements IoStatMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Long> getPhysicalReads() {
-        return convertStat(statMgr.physicalReadsLocalNode());
+    @Override public String getCacheStatisticsFormatted(String cacheName) {
+        return formattedStats(StatType.CACHE, cacheName, null);
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Long> getLogicalReads() {
-        return convertStat(statMgr.logicalReadsLocalNode());
+    @Override public Long getCachePhysicalReadsStatistics(String cacheName) {
+        return statMgr.physicalReads(StatType.CACHE, cacheName);
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Long> getAggregatedPhysicalReads() {
-        Map<AggregatePageType, AtomicLong> aggregatedStat = statMgr.aggregate(statMgr.physicalReadsLocalNode());
-
-        return convertAggregatedStat(aggregatedStat);
+    @Override public Long getCacheLogicalReadsStatistics(String cacheName) {
+        return statMgr.logicalReads(StatType.CACHE, cacheName);
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Long> getAggregatedLogicalReads() {
-        Map<AggregatePageType, AtomicLong> aggregatedStat = statMgr.aggregate(statMgr.logicalReadsLocalNode());
+    @Override public String getIndexStatisticsFormatted(String cacheName, String idxName) {
+        return formattedStats(StatType.INDEX, cacheName, idxName);
+    }
 
-        return convertAggregatedStat(aggregatedStat);
+    /**
+     * Gets string presentation of IO statistics for given parameters.
+     *
+     * @param statType Type of statistics.
+     * @param name Name of statistics
+     * @param subName SubName of statistics.
+     * @return String presentation of IO statistics for given parameters.
+     */
+    private String formattedStats(StatType statType, String name, String subName) {
+        Map<String, Long> logicalReads = statMgr.logicalReadsByTypes(statType, name, subName);
+
+        Map<String, Long> physicalReads = statMgr.physicalReadsByTypes(statType, name, subName);
+
+        String stats = Stream.concat(logicalReads.entrySet().stream(), physicalReads.entrySet().stream())
+            .map(e -> e.getKey() + "=" + e.getValue())
+            .collect(Collectors.joining(", ", "[", "]"));
+
+        String statinfo = statType.name() + " " + (subName != null ? name + "." + subName : name);
+
+        return statinfo + " " + stats;
     }
 
     /** {@inheritDoc} */
-    @Override public Set<String> getStatIndexesNames() {
-        return statMgr.subTypes(StatType.INDEX);
+    @Override public Long getIndexPhysicalReadsStatistics(String cacheName, String idxName) {
+        return statMgr.physicalReads(StatType.INDEX, cacheName, idxName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Long getIndexLogicalReadsStatistics(String cacheName, String idxName) {
+        return statMgr.logicalReads(StatType.INDEX, cacheName, idxName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Long getIndexLeafLogicalReadsStatistics(String cacheName, String idxName) {
+        Map<String, Long> logicalReads = statMgr.logicalReadsByTypes(StatType.INDEX, cacheName, idxName);
+
+        return logicalReads.get(StatisticsHolderIndex.LOGICAL_READS_LEAF);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Long getIndexLeafPhysicalReadsStatistics(String cacheName, String idxName) {
+        Map<String, Long> logicalReads = statMgr.logicalReadsByTypes(StatType.INDEX, cacheName, idxName);
+
+        return logicalReads.get(StatisticsHolderIndex.PHYSICAL_READS_LEAF);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Long getIndexInnerLogicalReadsStatistics(String cacheName, String idxName) {
+        Map<String, Long> logicalReads = statMgr.logicalReadsByTypes(StatType.INDEX, cacheName, idxName);
+
+        return logicalReads.get(StatisticsHolderIndex.LOGICAL_READS_INNER);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Long getIndexInnerPhysicalReadsStatistics(String cacheName, String idxName) {
+        Map<String, Long> logicalReads = statMgr.logicalReadsByTypes(StatType.INDEX, cacheName, idxName);
+
+        return logicalReads.get(StatisticsHolderIndex.PHYSICAL_READS_INNER);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<String> getStatIndexesNames(String cacheName) {
+        return statMgr.deriveStatSubNames(StatType.INDEX, cacheName);
     }
 
     /** {@inheritDoc} */
     @Override public Set<String> getStatCachesNames() {
-        return statMgr.subTypes(StatType.CACHE);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<String, Long> getPhysicalReadsIndex(String idxName) {
-        return convertStat(statMgr.physicalReads(StatType.INDEX, idxName));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<String, Long> getLogicalReadsIndex(String idxName) {
-        return convertStat(statMgr.logicalReads(StatType.INDEX, idxName));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<String, Long> getLogicalReadStatistics(String statTypeName, String subTypeFilter,
-        boolean aggregate) {
-        return getStatistics(statTypeName, subTypeFilter, aggregate, statMgr::logicalReads);
-
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<String, Long> getPhysicalReadStatistics(String statTypeName, String subTypeFilter,
-        boolean aggregate) {
-        return getStatistics(statTypeName, subTypeFilter, aggregate, statMgr::physicalReads);
-
-    }
-
-    /**
-     * @param statTypeName String representation of {@code StatType}.
-     * @param subTypeFilter Subtype of statistics to filter results.
-     * @param aggregate {@code true} in case statistics should be aggregated.
-     * @param statFunction Function to retrieve statistics.
-     * @return Requested statistics.
-     */
-    private Map<String, Long> getStatistics(String statTypeName, String subTypeFilter, boolean aggregate,
-        BiFunction<StatType, String, Map<PageType, Long>> statFunction) {
-        StatType type = StatType.valueOf(statTypeName);
-
-        Map<PageType, Long> stat = statFunction.apply(type, subTypeFilter);
-
-        if (aggregate)
-            return convertAggregatedStat(statMgr.aggregate(stat));
-        else
-            return convertStat(stat);
-    }
-
-    /**
-     * Convert internal object to simple types for given statistics.
-     *
-     * @param stat Statistics which need to convert.
-     * @return Converted statistics from internal.
-     */
-    @NotNull private Map<String, Long> convertStat(Map<PageType, ? extends Number> stat) {
-        Map<String, Long> res = new HashMap<>(stat.size());
-
-        stat.forEach((k, v) -> {
-            if (v.longValue() != 0)
-                res.put(k.name(), v.longValue());
-        });
-
-        return res;
-    }
-
-    /**
-     * Convert internal object to simple types for given statistics.
-     *
-     * @param stat Statistics which need to convert.
-     * @return Converted statistics from internal.
-     */
-    @NotNull private Map<String, Long> convertAggregatedStat(Map<AggregatePageType, AtomicLong> stat) {
-        Map<String, Long> res = new HashMap<>(stat.size());
-
-        stat.forEach((k, v) -> res.put(k.name(), v.longValue()));
-
-        return res;
+        return statMgr.deriveStatNames(StatType.CACHE);
     }
 }

@@ -161,8 +161,12 @@ public class CacheGroupContext {
     /** */
     private volatile boolean globalWalEnabled;
 
-    /** Statistics holder to track IO operations. */
-    private final StatisticsHolder statisticsHolder;
+    /** Statistics holder to track IO operations for PK index pages. */
+    private final StatisticsHolder statisticsHolderIdx;
+
+    /** Statistics holder to track IO operations for data pages. */
+    private final StatisticsHolder statisticsHolderData;
+
 
     /**
      * @param ctx Context.
@@ -229,7 +233,8 @@ public class CacheGroupContext {
 
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
 
-        statisticsHolder = ctx.kernalContext().ioStats().createAndRegisterStatHolder(StatType.CACHE, ccfg.getName());
+        statisticsHolderIdx = ctx.kernalContext().ioStats().createAndRegisterStatHolder(StatType.INDEX, ccfg.getName(), "PK");
+        statisticsHolderData = ctx.kernalContext().ioStats().createAndRegisterStatHolder(StatType.CACHE, ccfg.getName());
     }
 
     /**
@@ -1111,7 +1116,14 @@ public class CacheGroupContext {
     /**
      * @return Statistics holder to track cache IO operations.
      */
-    public StatisticsHolder statisticsHolder() {
-        return statisticsHolder;
+    public StatisticsHolder statisticsHolderIdx() {
+        return statisticsHolderIdx;
+    }
+
+    /**
+     * @return Statistics holder to track cache IO operations.
+     */
+    public StatisticsHolder statisticsHolderData() {
+        return statisticsHolderData;
     }
 }

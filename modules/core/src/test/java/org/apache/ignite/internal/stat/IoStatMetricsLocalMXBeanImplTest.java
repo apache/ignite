@@ -19,7 +19,7 @@
 package org.apache.ignite.internal.stat;
 
 import java.lang.management.ManagementFactory;
-import java.util.Map;
+import java.util.Set;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.ObjectName;
@@ -31,14 +31,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.IoStatMetricsMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.internal.stat.AggregatePageType.DATA;
-import static org.apache.ignite.internal.stat.AggregatePageType.INDEX;
-
 /**
  * Test of local node IO statistics MX bean.
  */
 public class IoStatMetricsLocalMXBeanImplTest extends GridCommonAbstractTest {
-
+    /** */
+    public static final String PK_INDEX_NAME = "PK";
     /** */
     private static IgniteEx ignite;
 
@@ -69,11 +67,11 @@ public class IoStatMetricsLocalMXBeanImplTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check that JMX bean exposed and works.
+     * Simple test JMX bean for indexes IO stats.
      *
      * @throws Exception In case of failure.
      */
-    public void testBasic() throws Exception {
+    public void testIndexBasic() throws Exception {
         IoStatMetricsMXBean bean = ioStatMXBean();
 
         Assert.assertNotNull(bean.getStartGatheringStatistics());
@@ -81,77 +79,106 @@ public class IoStatMetricsLocalMXBeanImplTest extends GridCommonAbstractTest {
         bean.resetStatistics();
 
         Assert.assertNotNull(bean.getStartGatheringStatistics());
-
-        checkAggregatedStatIsEmpty(bean.getAggregatedLogicalReads());
-
-        checkAggregatedStatIsEmpty(bean.getAggregatedPhysicalReads());
-
-//        checkAggregatedStatIsEmpty(bean.getAggregatedPhysicalWrites());
 
         int cnt = 100;
-        populateCache(ignite, cnt);
 
-        long indexCnt = bean.getAggregatedLogicalReads().get(AggregatePageType.INDEX.name());
+        populateCache(cnt);
 
-        Assert.assertEquals(cnt, indexCnt);
+        Set<String> idxNames = bean.getStatIndexesNames(DEFAULT_CACHE_NAME);
+
+        Assert.assertEquals(1, idxNames.size());
+
+        Assert.assertTrue(idxNames.contains(PK_INDEX_NAME));
+
+        long idxLeafCnt = bean.getIndexLeafLogicalReadsStatistics(DEFAULT_CACHE_NAME, PK_INDEX_NAME);
+
+        Assert.assertEquals(cnt, idxLeafCnt);
+
+        Long aggregatedIdxLogicalRads = bean.getIndexLogicalReadsStatistics(DEFAULT_CACHE_NAME, PK_INDEX_NAME);
+
+        Assert.assertNotNull(aggregatedIdxLogicalRads);
+
+        Assert.assertEquals(aggregatedIdxLogicalRads.longValue(), idxLeafCnt);
+
+        String formatted = bean.getIndexStatisticsFormatted(DEFAULT_CACHE_NAME, PK_INDEX_NAME);
+
+        Assert.assertEquals("INDEX default.PK [LOGICAL_READS_INNER=0, LOGICAL_READS_LEAF=100, " +
+            "PHYSICAL_READS_LEAF=0, PHYSICAL_READS_INNER=0]", formatted);
+
+        String unexistedStats = bean.getIndexStatisticsFormatted("unknownCache", "unknownIdx");
+
+        Assert.assertEquals("INDEX unknownCache.unknownIdx []", unexistedStats);
     }
 
     /**
-     * Check JMX universal statistics methods.
+     * Simple test JMX bean for caches IO stats.
      *
      * @throws Exception In case of failure.
      */
-    public void testUniversalStatisticMethods() throws Exception {
+    public void testCacheBasic() throws Exception {
         IoStatMetricsMXBean bean = ioStatMXBean();
 
-        int cnt = 300;
+        Assert.assertNotNull(bean.getStartGatheringStatistics());
 
         bean.resetStatistics();
 
-        populateCache(ignite, cnt);
+        Assert.assertNotNull(bean.getStartGatheringStatistics());
 
-        // existed cache
-        Map<String, Long> cacheAggregated = bean.getLogicalReadStatistics(StatType.CACHE.name(), DEFAULT_CACHE_NAME, true);
+        int cnt = 100;
 
-        Assert.assertTrue(cacheAggregated.get(DATA.name()) > 0);
+        warmUpMemmory(bean, cnt);
 
-        Assert.assertEquals(cnt, cacheAggregated.get(INDEX.name()).longValue());
+        populateCache(cnt);
 
+        Set<String> cacheNames = bean.getStatCachesNames();
 
-        //unknown cache
-        checkAggregatedStatIsEmpty(bean.getLogicalReadStatistics(StatType.CACHE.name(), "Unknown", true));
+        Assert.assertEquals(2, cacheNames.size());
+
+        Assert.assertTrue(cacheNames.contains(DEFAULT_CACHE_NAME));
+
+        Long cacheLogicalReadsCnt = bean.getCacheLogicalReadsStatistics(DEFAULT_CACHE_NAME);
+
+        Assert.assertNotNull(cacheLogicalReadsCnt);
+
+        Assert.assertEquals(cnt, cacheLogicalReadsCnt.longValue());
+
+        String formatted = bean.getCacheStatisticsFormatted(DEFAULT_CACHE_NAME);
+
+        Assert.assertEquals("CACHE default [LOGICAL_READS=100, PHYSICAL_READS=0]", formatted);
+
+        String unexistedStats = bean.getCacheStatisticsFormatted("unknownCache");
+
+        Assert.assertEquals("CACHE unknownCache []", unexistedStats);
     }
 
     /**
-     * @param ignite Ignite instance.
+     * Warm up memmory to allocate partitions cache pages related to inserting keys.
+     *
+     * @param bean JMX bean.
      * @param cnt Number of inserting elements.
      */
-    private void populateCache(IgniteEx ignite, int cnt) {
+    private void warmUpMemmory(IoStatMetricsMXBean bean, int cnt) {
+        populateCache(cnt);
+
+        clearCache(cnt);
+
+        bean.resetStatistics();
+    }
+
+    /**
+     * @param cnt Number of inserting elements.
+     */
+    private void populateCache(int cnt) {
         for (int i = 0; i < cnt; i++)
             ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
     }
 
     /**
-     * @param aggregatedStat Aggregated IO statistics.
+     * @param cnt Number of removing elements.
      */
-    private void checkAggregatedStatIsNotEmpty(Map<String, Long> aggregatedStat, AggregatePageType... types) {
-        System.out.println(aggregatedStat);
-        for (AggregatePageType type : types) {
-            long val = aggregatedStat.get(type.name());
-
-            Assert.assertTrue(aggregatedStat.toString(), val > 0);
-        }
-    }
-
-    /**
-     * @param aggregatedStat Aggregated IO statistics.
-     */
-    private void checkAggregatedStatIsEmpty(Map<String, Long> aggregatedStat) {
-        for (AggregatePageType type : AggregatePageType.values()) {
-            long val = aggregatedStat.get(type.name());
-
-            Assert.assertEquals(0, val);
-        }
+    private void clearCache(int cnt) {
+        for (int i = 0; i < cnt; i++)
+            ignite.cache(DEFAULT_CACHE_NAME).remove(i);
     }
 
     /**

@@ -20,30 +20,10 @@ package org.apache.ignite.internal.stat;
 
 import java.util.Collections;
 import java.util.Map;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 
 public class StatisticsHolderNoOp implements StatisticsHolder {
     /** {@inheritDoc} */
     @Override public void trackLogicalRead(long pageAddr) {
-//ToDo: remove it
-        PageType pageType = PageType.derivePageType(PageIO.getType(pageAddr));
-        AggregatePageType aggregatedPageType = AggregatePageType.aggregate(pageType);
-        if (aggregatedPageType == AggregatePageType.OTHER) {
-
-            boolean skip = false;
-            for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
-                String s = element.toString().toLowerCase();
-                if (s.contains("meta") || s.contains("initdata") || s.contains("initpage") || s.contains("inittree")
-                    || s.contains("init0") || s.contains("recycle")) {
-                    skip = true;
-                    break;
-                }
-            }
-            if (!skip)
-                System.out.println("!!!!!!!--    ---!!!!!!!");
-
-        }
-
     }
 
     /** {@inheritDoc} */
@@ -51,12 +31,22 @@ public class StatisticsHolderNoOp implements StatisticsHolder {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<PageType, Long> logicalReadsMap() {
+    @Override public long logicalReads() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long physicalReads() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Long> logicalReadsMap() {
         return Collections.emptyMap();
     }
 
     /** {@inheritDoc} */
-    @Override public Map<PageType, Long> physicalReadsMap() {
+    @Override public Map<String, Long> physicalReadsMap() {
         return Collections.emptyMap();
     }
 

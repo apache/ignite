@@ -161,7 +161,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             GridIoStatManager ioStatMngr = cctx.kernalContext().ioStats();
 
-            StatisticsHolder statHldr = ioStatMngr.createAndRegisterStatHolder(StatType.INDEX, idxName);
+            StatisticsHolder statHldr = ioStatMngr.createAndRegisterStatHolder(StatType.INDEX, cctx.name(), idxName);
 
             for (int i = 0; i < segments.length; i++) {
                 db.checkpointReadLock();
