@@ -242,7 +242,11 @@ public class MvccUtils {
         if (mvccCntr > snapshotCntr) // we don't see future updates
             return false;
 
-        if (mvccCntr == snapshotCntr) {
+        // Basically we can make fast decision about visibility if found rows from the same transaction.
+        // But we can't make such decision for read-only queries,
+        // because read-only queries use last committed version in it's snapshot which could be actually aborted
+        // (during transaction recovery we do not know whether recovered transaction was committed or aborted).
+        if (mvccCntr == snapshotCntr && snapshotOpCntr != MVCC_READ_OP_CNTR) {
             assert opCntr <= snapshotOpCntr : "rowVer=" + mvccVersion(mvccCrd, mvccCntr, opCntr) + ", snapshot=" + snapshot;
 
             return opCntr < snapshotOpCntr; // we don't see own pending updates
@@ -462,6 +466,17 @@ public class MvccUtils {
             return cmp;
 
         return 0;
+    }
+
+    /**
+     * Compares left version (xid_min) with the given version ignoring operation counter.
+     *
+     * @param left Version.
+     * @param right Version.
+     * @return Comparison result, see {@link Comparable}.
+     */
+    public static int compareIgnoreOpCounter(MvccVersion left, MvccVersion right) {
+        return compare(left.coordinatorVersion(), left.counter(), 0, right.coordinatorVersion(), right.counter(), 0);
     }
 
     /**

@@ -64,8 +64,6 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.util.lang.IgniteInClosureX;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -88,18 +86,19 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.local.atomic.GridLocalAtomicCache;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -172,6 +171,7 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -1975,6 +1975,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
         prepareStartCaches(startCacheInfos);
 
+        context().exchange().exchangerUpdateHeartbeat();
+
         if (log.isInfoEnabled())
             log.info("Starting caches on local join performed in " + (System.currentTimeMillis() - time) + " ms.");
 
@@ -2077,6 +2079,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                         cacheInfo.isDisabledAfterStart()
                     )
                 );
+
+                context().exchange().exchangerUpdateHeartbeat();
             }
         }
         else {
@@ -2103,6 +2107,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                                 cacheInfo.isDisabledAfterStart()
                             );
                             cacheContexts.put(cacheInfo, cacheCtx);
+
+                            context().exchange().exchangerUpdateHeartbeat();
                         }
                     )
             );
@@ -2123,12 +2129,16 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             for (StartCacheInfo startCacheInfo : cacheInfosInOriginalOrder) {
                 cacheStartFailHandler.handle(
                     startCacheInfo,
-                    cacheInfo -> ctx.query().onCacheStart(
-                        cacheContexts.get(cacheInfo),
-                        cacheInfo.getCacheDescriptor().schema() != null
-                            ? cacheInfo.getCacheDescriptor().schema()
-                            : new QuerySchema()
-                    )
+                    cacheInfo -> {
+                        ctx.query().onCacheStart(
+                            cacheContexts.get(cacheInfo),
+                            cacheInfo.getCacheDescriptor().schema() != null
+                                ? cacheInfo.getCacheDescriptor().schema()
+                                : new QuerySchema()
+                        );
+
+                        context().exchange().exchangerUpdateHeartbeat();
+                    }
                 );
             }
 
@@ -2139,7 +2149,11 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 cacheCtxEntry ->
                     cacheStartFailHandler.handle(
                         cacheCtxEntry.getKey(),
-                        cacheInfo -> onCacheStarted(cacheCtxEntry.getValue())
+                        cacheInfo -> {
+                            onCacheStarted(cacheCtxEntry.getValue());
+
+                            context().exchange().exchangerUpdateHeartbeat();
+                        }
                     )
             );
         }
@@ -2898,6 +2912,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
         CacheJtaManagerAdapter jta = JTA.createOptional();
 
+        MvccCachingManager mvccCachingMgr = new MvccCachingManager();
+
         return new GridCacheSharedContext(
             kernalCtx,
             tm,
@@ -2915,7 +2931,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             ttl,
             evict,
             jta,
-            storeSesLsnrs
+            storeSesLsnrs,
+            mvccCachingMgr
         );
     }
 
@@ -4036,8 +4053,13 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             return msg0.needExchange();
         }
 
-        if (msg instanceof DynamicCacheChangeBatch)
-            return cachesInfo.onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
+        if (msg instanceof DynamicCacheChangeBatch) {
+            boolean changeRequested = cachesInfo.onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
+
+            ctx.query().onCacheChangeRequested((DynamicCacheChangeBatch)msg);
+
+            return changeRequested;
+        }
 
         if (msg instanceof DynamicCacheChangeFailureMessage)
             cachesInfo.onCacheChangeRequested((DynamicCacheChangeFailureMessage)msg, topVer);
@@ -5262,6 +5284,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
             // Make sure to remove future before completion.
             pendingFuts.remove(id, this);
+
+            context().exchange().exchangerUpdateHeartbeat();
 
             return super.onDone(res, err);
         }
