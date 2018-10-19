@@ -263,6 +263,12 @@ public class TcpIgniteClient implements IgniteClient {
         }
 
         /** {@inheritDoc} */
+        @Override public void addMetaLocally(int typeId, BinaryType meta, boolean failIfUnregistered)
+            throws BinaryObjectException {
+            throw new UnsupportedOperationException("Can't register metadata locally for thin client.");
+        }
+
+        /** {@inheritDoc} */
         @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
             BinaryType meta = cache.metadata(typeId);
 
