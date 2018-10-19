@@ -20,14 +20,17 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -68,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccActiveQueriesMes
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccFutureResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccQuerySnapshotRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinishedMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccTxSnapshotRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccWaitTxsRequest;
@@ -189,8 +193,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /** */
     private final GridAtomicLong committedCntr = new GridAtomicLong(MVCC_INITIAL_CNTR);
 
-    /** */
-    private final Map<Long, Long> activeTxs = new HashMap<>();
+    /**
+     * Contains active transactions on mvcc coordinator. Key is mvcc counter.
+     * Access is protected by "this" monitor.
+     */
+    private final Map<Long, ActiveTx> activeTxs = new HashMap<>();
 
     /** Active query trackers. */
     private final Map<Long, MvccQueryTracker> activeTrackers = new ConcurrentHashMap<>();
@@ -221,6 +228,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     /** Flag whether all nodes in cluster support MVCC. */
     private volatile boolean mvccSupported = true;
+
+    /**
+     * Maps failed node id to votes accumulator for that node.
+     */
+    private final ConcurrentHashMap<UUID, RecoveryBallotBox> recoveryBallotBoxes = new ConcurrentHashMap<>();
 
     /**
      * @param ctx Context.
@@ -363,8 +375,12 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     /** {@inheritDoc} */
     @Override public void onExchangeDone(boolean newCrd, DiscoCache discoCache, Map<UUID, GridLongList> activeQueries) {
-        if (!newCrd)
+        if (!newCrd) {
+            if (curCrd != null && ctx.localNodeId().equals(curCrd.nodeId()) && discoCache != null)
+                cleanupOrphanedServerTransactions(discoCache.serverNodes());
+
             return;
+        }
 
         ctx.cache().context().tm().rollbackMvccTxOnCoordinatorChange();
 
@@ -389,6 +405,33 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
             initFut.onDone();
         }
+    }
+
+    /**
+     * Cleans up active transacitons lost near node which is server. Executed on coordinator.
+     * @param liveSrvs Live server nodes at the moment of cleanup.
+     */
+    private void cleanupOrphanedServerTransactions(Collection<ClusterNode> liveSrvs) {
+        Set<UUID> ids = liveSrvs.stream()
+            .map(ClusterNode::id)
+            .collect(Collectors.toSet());
+
+        List<Long> forRmv = new ArrayList<>();
+
+        synchronized (this) {
+            for (Map.Entry<Long, ActiveTx> entry : activeTxs.entrySet()) {
+                // If node started tx is not known as live then remove such tx from active list
+                ActiveTx activeTx = entry.getValue();
+
+                if (activeTx.getClass() == ActiveServerTx.class && !ids.contains(activeTx.nearNodeId))
+                    forRmv.add(entry.getKey());
+            }
+        }
+
+        for (Long txCntr : forRmv)
+            // Committed counter is increased because it is not known if transaction was committed or not and we must
+            // bump committed counter for committed transaction as it is used in (read-only) query snapshot.
+            onTxDone(txCntr, true);
     }
 
     /** {@inheritDoc} */
@@ -530,14 +573,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         if (!ctx.localNodeId().equals(crd.nodeId()) || !initFut.isDone())
             return null;
         else if (tx != null)
-            return assignTxSnapshot(0L);
+            return assignTxSnapshot(0L, ctx.localNodeId(), false);
         else
             return activeQueries.assignQueryCounter(ctx.localNodeId(), 0L);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<MvccSnapshot> requestSnapshotAsync() {
-        return requestSnapshotAsync((IgniteInternalTx)null);
     }
 
     /** {@inheritDoc} */
@@ -585,7 +623,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 });
             }
             else if (tx != null)
-                lsnr.onResponse(assignTxSnapshot(0L));
+                lsnr.onResponse(assignTxSnapshot(0L, ctx.localNodeId(), false));
             else
                 lsnr.onResponse(activeQueries.assignQueryCounter(ctx.localNodeId(), 0L));
 
@@ -741,9 +779,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 first = false;
             }
 
-            for (MvccSnapshotResponseListener lsnr : map.values()) {
+            for (MvccSnapshotResponseListener lsnr : map.values())
                 U.warn(log, ">>> " + lsnr.toString());
-            }
         }
 
         first = true;
@@ -909,10 +946,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         return activeQryTrackers;
     }
 
-    /**
-     * @return Counter.
-     */
-    private MvccSnapshotResponse assignTxSnapshot(long futId) {
+    /** */
+    private MvccSnapshotResponse assignTxSnapshot(long futId, UUID nearId, boolean client) {
         assert initFut.isDone();
         assert crdVer != 0;
         assert ctx.localNodeId().equals(currentCoordinatorId());
@@ -926,14 +961,16 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             tracking = ver;
             cleanup = committedCntr.get() + 1;
 
-            for (Map.Entry<Long, Long> txVer : activeTxs.entrySet()) {
-                cleanup = Math.min(txVer.getValue(), cleanup);
-                tracking = Math.min(txVer.getKey(), tracking);
+            for (Map.Entry<Long, ActiveTx> entry : activeTxs.entrySet()) {
+                cleanup = Math.min(entry.getValue().tracking, cleanup);
+                tracking = Math.min(entry.getKey(), tracking);
 
-                res.addTx(txVer.getKey());
+                res.addTx(entry.getKey());
             }
 
-            boolean add = activeTxs.put(ver, tracking) == null;
+            ActiveTx activeTx = client ? new ActiveTx(tracking, nearId) : new ActiveServerTx(tracking, nearId);
+
+            boolean add = activeTxs.put(ver, activeTx) == null;
 
             assert add : ver;
         }
@@ -950,10 +987,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         return res;
     }
 
-    /**
-     * @param txCntr Counter assigned to transaction.
-     */
-    private void onTxDone(Long txCntr, boolean committed) {
+    /** */
+    private void onTxDone(Long txCntr, boolean increaseCommittedCntr) {
         assert initFut.isDone();
 
         GridFutureAdapter fut;
@@ -961,7 +996,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         synchronized (this) {
             activeTxs.remove(txCntr);
 
-            if (committed)
+            if (increaseCommittedCntr)
                 committedCntr.setIfGreater(txCntr);
         }
 
@@ -1352,10 +1387,14 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             return;
         }
 
-        MvccSnapshotResponse res = assignTxSnapshot(msg.futureId());
+        MvccSnapshotResponse res = assignTxSnapshot(msg.futureId(), nodeId, node.isClient());
+
+        boolean finishFailed = true;
 
         try {
             sendMessage(node.id(), res);
+
+            finishFailed = false;
         }
         catch (ClusterTopologyCheckedException e) {
             if (log.isDebugEnabled())
@@ -1364,6 +1403,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send tx snapshot response [msg=" + msg + ", node=" + nodeId + ']', e);
         }
+
+        if (finishFailed)
+            onTxDone(res.counter(), false);
     }
 
     /**
@@ -1390,9 +1432,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 log.debug("Failed to send query counter response, node left [msg=" + msg + ", node=" + nodeId + ']');
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to send query counter response [msg=" + msg + ", node=" + nodeId + ']', e);
-
             onQueryDone(nodeId, res.tracking());
+
+            U.error(log, "Failed to send query counter response [msg=" + msg + ", node=" + nodeId + ']', e);
         }
     }
 
@@ -1713,6 +1755,23 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             activeQueries.onNodeFailed(nodeId);
 
             prevCrdQueries.onNodeFailed(nodeId);
+
+            recoveryBallotBoxes.forEach((nearNodeId, ballotBox) -> {
+                // Put synthetic vote from another failed node
+                ballotBox.vote(nodeId);
+
+                tryFinishRecoveryVoting(nearNodeId, ballotBox);
+            });
+
+            if (discoEvt.eventNode().isClient()) {
+                RecoveryBallotBox ballotBox = recoveryBallotBoxes
+                    .computeIfAbsent(nodeId, uuid -> new RecoveryBallotBox());
+
+                ballotBox
+                    .voters(discoEvt.topologyNodes().stream().map(ClusterNode::id).collect(Collectors.toList()));
+
+                tryFinishRecoveryVoting(nodeId, ballotBox);
+            }
         }
 
         /** {@inheritDoc} */
@@ -1767,6 +1826,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 processNewCoordinatorQueryAckRequest(nodeId, (MvccAckRequestQueryId)msg);
             else if (msg instanceof MvccActiveQueriesMessage)
                 processCoordinatorActiveQueriesMessage(nodeId, (MvccActiveQueriesMessage)msg);
+            else if (msg instanceof MvccRecoveryFinishedMessage)
+                processRecoveryFinishedMessage(nodeId, ((MvccRecoveryFinishedMessage)msg));
             else
                 U.warn(log, "Unexpected message received [node=" + nodeId + ", msg=" + msg + ']');
         }
@@ -1774,6 +1835,82 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         /** {@inheritDoc} */
         @Override public String toString() {
             return "CoordinatorMessageListener[]";
+        }
+    }
+
+    /**
+     * Accumulates transaction recovery votes for a node left the cluster.
+     * Transactions started by the left node are considered not active
+     * when each cluster server node aknowledges that is has finished transactions for the left node.
+     */
+    private static class RecoveryBallotBox {
+        /** */
+        private List<UUID> voters;
+        /** */
+        private final Set<UUID> ballots = new HashSet<>();
+
+        /**
+         * @param voters Nodes which can have transaction started by the left node.
+         */
+        private synchronized void voters(List<UUID> voters) {
+            this.voters = voters;
+        }
+
+        /**
+         * @param nodeId Voting node id.
+         *
+         */
+        private synchronized void vote(UUID nodeId) {
+            ballots.add(nodeId);
+        }
+
+        /**
+         * @return {@code True} if all nodes expected to vote done it.
+         */
+        private synchronized boolean isVotingDone() {
+            if (voters == null)
+                return false;
+
+            return ballots.containsAll(voters);
+        }
+    }
+
+    /**
+     * Process message that one node has finished with transactions for the left node.
+     * @param nodeId Node sent the message.
+     * @param msg Message.
+     */
+    private void processRecoveryFinishedMessage(UUID nodeId, MvccRecoveryFinishedMessage msg) {
+        UUID nearNodeId = msg.nearNodeId();
+
+        RecoveryBallotBox ballotBox = recoveryBallotBoxes.computeIfAbsent(nearNodeId, uuid -> new RecoveryBallotBox());
+
+        ballotBox.vote(nodeId);
+
+        tryFinishRecoveryVoting(nearNodeId, ballotBox);
+    }
+
+    /**
+     * Finishes recovery on coordinator by removing transactions started by the left node
+     * @param nearNodeId Left node.
+     * @param ballotBox Votes accumulator for the left node.
+     */
+    private void tryFinishRecoveryVoting(UUID nearNodeId, RecoveryBallotBox ballotBox) {
+        if (ballotBox.isVotingDone()) {
+            List<Long> recoveredTxs;
+
+            synchronized (this) {
+                recoveredTxs = activeTxs.entrySet().stream()
+                    .filter(e -> e.getValue().nearNodeId.equals(nearNodeId))
+                    .map(Map.Entry::getKey)
+                    .collect(Collectors.toList());
+            }
+
+            // Committed counter is increased because it is not known if transaction was committed or not and we must
+            // bump committed counter for committed transaction as it is used in (read-only) query snapshot.
+            recoveredTxs.forEach(txCntr -> onTxDone(txCntr, true));
+
+            recoveryBallotBoxes.remove(nearNodeId);
         }
     }
 
@@ -2322,6 +2459,28 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 metrics.addCleanupNanoTime(System.nanoTime() - cleanupStartNanoTime);
                 metrics.addCleanupRowsCnt(cleaned);
             }
+        }
+    }
+
+    /** */
+    private static class ActiveTx {
+        /** */
+        private final long tracking;
+        /** */
+        private final UUID nearNodeId;
+
+        /** */
+        private ActiveTx(long tracking, UUID nearNodeId) {
+            this.tracking = tracking;
+            this.nearNodeId = nearNodeId;
+        }
+    }
+
+    /** */
+    private static class ActiveServerTx extends ActiveTx {
+        /** */
+        private ActiveServerTx(long tracking, UUID nearNodeId) {
+            super(tracking, nearNodeId);
         }
     }
 }
