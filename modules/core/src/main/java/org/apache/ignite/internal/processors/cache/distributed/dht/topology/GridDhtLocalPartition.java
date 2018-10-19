@@ -35,6 +35,9 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.PageSupport;
+import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -1372,9 +1375,18 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /**
      * Preload a partition.
+     * @throws IgniteCheckedException If failed.
      */
-    public void preload() {
-        // TODO.
+    public void preload() throws IgniteCheckedException {
+        if (!grp.persistenceEnabled() || !reserve())
+            return;
+
+        try {
+            grp.offheap().preloadPartition(id());
+        }
+        finally {
+            release();
+        }
     }
 
     /**

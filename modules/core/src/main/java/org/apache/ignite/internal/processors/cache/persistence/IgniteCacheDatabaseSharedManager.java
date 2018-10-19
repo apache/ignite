@@ -1266,4 +1266,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         U.warn(log, "Page-based evictions started." +
                 " Consider increasing 'maxSize' on Data Region configuration: " + regCfg.getName());
     }
+
+    /**
+     * Preload partition.
+     */
+    public void preloadPartition() {
+        // No-op.
+    }
 }
