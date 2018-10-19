@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -129,7 +130,13 @@ import static org.apache.ignite.internal.commandline.Command.TX;
 import static org.apache.ignite.internal.commandline.Command.WAL;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
+import static org.apache.ignite.internal.commandline.cache.CacheCommand.CONTENTION;
+import static org.apache.ignite.internal.commandline.cache.CacheCommand.DISTRIBUTION;
+import static org.apache.ignite.internal.commandline.cache.CacheCommand.HELP;
+import static org.apache.ignite.internal.commandline.cache.CacheCommand.IDLE_VERIFY;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.LIST;
+import static org.apache.ignite.internal.commandline.cache.CacheCommand.RESET_LOST_PARTITIONS;
+import static org.apache.ignite.internal.commandline.cache.CacheCommand.VALIDATE_INDEXES;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.ADD;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.COLLECT;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.REMOVE;
@@ -301,6 +308,21 @@ public class CommandHandler {
     /** */
     private static final String CONFIG = "--config";
 
+    /** Utility name. */
+    private static final String UTILITY_NAME = "control.sh";
+
+    /** Common options. */
+    private static final String COMMON_OPTIONS = "[--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] [--ping-interval PING_INTERVAL] [--ping-timeout PING_TIMEOUT]";
+
+    /** Utility name with common options. */
+    private static final String UTILITY_NAME_WITH_COMMON_OPTIONS = UTILITY_NAME + " " + COMMON_OPTIONS;
+
+    /** Indent for help output. */
+    private static final String INDENT = "  ";
+
+    /** */
+    private static final String NULL = "null";
+
     /** */
     private Iterator<String> argsIt;
 
@@ -323,6 +345,44 @@ public class CommandHandler {
      */
     private void log(String s) {
         System.out.println(s);
+    }
+
+    /**
+     * Adds indent to begin of input string.
+     *
+     * @param s Input string.
+     * @return input string with indent in begin.
+     */
+    private String i(String s) {
+        return i(s, 1);
+    }
+
+    /**
+     * Adds indentCnt indents to begin of input string.
+     *
+     * @param s Input string.
+     * @param indentCnt number of indents.
+     * @return input string with indents in begin.
+     */
+    private String i(String s, int indentCnt) {
+        assert indentCnt >= 0;
+
+        switch (indentCnt) {
+            case 0:
+                return s;
+
+            case 1:
+                return INDENT + s;
+
+            default:
+                SB sb = new SB(s.length() + indentCnt * INDENT.length());
+
+                for (int i = 0; i < indentCnt; i++)
+                    sb.a(INDENT);
+
+                return sb.a(s).toString();
+        }
+
     }
 
     /**
@@ -649,20 +709,22 @@ public class CommandHandler {
      *
      */
     private void printCacheHelp() {
-        log("'--cache subcommand' allows performing the following operations:");
+        final int indentNum = 1;
+        log(i("The '" + CACHE.text() + " subcommand' is used to get information about and perform actions with caches. The command has the following syntax:", indentNum));
+        nl();
+        log(i(UTILITY_NAME_WITH_COMMON_OPTIONS + " " + CACHE.text() + "[subcommand] <subcommand_parameters>", indentNum));
+        nl();
+        log(i("The subcommands that take [nodeId] as an argument ('" + LIST.text() + "', '" + CONTENTION.text() + "' and '" + VALIDATE_INDEXES.text() + "') will be executed on the given node or on all server nodes if the option is not specified. Other commands will run on a random server node.", indentNum));
+        nl();
+        nl();
+        log(i("Subcommands:", indentNum));
 
-        usage("  Show information about caches, groups or sequences that match a regex:", CACHE, " " + LIST.text() + " regexPattern [groups|seq] [nodeId]", " [" + CONFIG + "]", " [" + OUTPUT_FORMAT + " " + MULTI_LINE + "]");
-        usage("  Show hot keys that are point of contention for multiple transactions:", CACHE, " contention minQueueSize [nodeId] [maxPrint]");
-        usage("  Verify partition counters and hashes between primary and backups on idle cluster:", CACHE, " idle_verify [--dump] [--skipZeros] [cache1,...,cacheN]");
-        usage("  Validate custom indexes on idle cluster:", CACHE, " validate_indexes [cache1,...,cacheN] [nodeId] [checkFirst|checkThrough]");
-        usage("  Collect partition distribution information:", CACHE, " distribution nodeId|null [cacheName1,...,cacheNameN] [--user-attributes attributeName1[,...,attributeNameN]]");
-        usage("  Reset lost partitions:", CACHE, " reset_lost_partitions cacheName1[,...,cacheNameN]");
-
-        log("  If [nodeId] is not specified, " + LIST.text() + " without defined [groups|seq], contention and validate_indexes commands will be broadcasted to all server nodes.");
-        log("  Another commands where [nodeId] is optional will run on a random server node.");
-        log("  checkFirst numeric parameter for validate_indexes specifies number of first K keys to be validated.");
-        log("  checkThrough numeric parameter for validate_indexes allows to check each Kth key.");
-        log("  [" + OUTPUT_FORMAT + "] in " + CACHE.text() + " " + LIST.text() + " have significance only with [" + CONFIG + "] option and without defined [groups|seq]");
+        usageCache(indentNum, LIST, "regexPattern", "[groups|seq]", "[nodeId]", op(CONFIG), op(OUTPUT_FORMAT + " " + MULTI_LINE));
+        usageCache(indentNum, CONTENTION, "minQueueSize", "[nodeId]", "[maxPrint]");
+        usageCache(indentNum, IDLE_VERIFY, op(CMD_DUMP), op(CMD_SKIP_ZEROS), "[cache1,...,cacheN]");
+        usageCache(indentNum, VALIDATE_INDEXES, "[cache1,...,cacheN]", "[nodeId]", op(or(VI_CHECK_FIRST + " N", VI_CHECK_THROUGH + " K")));
+        usageCache(indentNum, DISTRIBUTION, or("nodeId", NULL), "[cacheName1,...,cacheNameN]", op(CMD_USER_ATTRIBUTES + " attName1,...,attrNameN"));
+        usageCache(indentNum, RESET_LOST_PARTITIONS, "cacheName1,...,cacheNameN");
         nl();
     }
 
@@ -1417,9 +1479,154 @@ public class CommandHandler {
      */
     private void usage(String desc, Command cmd, String... args) {
         log(desc);
-        log("    control.sh [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] " +
-            " [--ping-interval PING_INTERVAL] [--ping-timeout PING_TIMEOUT] " + cmd.text() + String.join("", args));
+        log(i(UTILITY_NAME_WITH_COMMON_OPTIONS + " " + cmd.text() + String.join("", args), 2));
         nl();
+    }
+
+    /**
+     * Print cache command usage.
+     *
+     * @param indentsNum Number of indents.
+     * @param cmd Cache command.
+     * @param args Cache command arguments.
+     */
+    private void usageCache(int indentsNum, CacheCommand cmd, String... args) {
+        log(i(DELIM, indentsNum));
+        nl();
+        log(i(CACHE.text() + " " + cmd.text() + " " + String.join(" ", args), indentsNum++));
+        nl();
+        log(i(getCacheSubcommandDesc(cmd), indentsNum));
+        nl();
+
+        Map<String, String> paramsDesc = createCacheArgsDesc(cmd);
+
+        if (!paramsDesc.isEmpty()) {
+            log(i("Parameters:", indentsNum));
+
+            usageCacheParams(paramsDesc, indentsNum + 1);
+
+            nl();
+        }
+    }
+
+    /**
+     * Print cache command arguments usage.
+     *
+     * @param paramsDesc Cache command arguments description.
+     * @param indentsNum Number of indents.
+     */
+    private void usageCacheParams(Map<String, String> paramsDesc, int indentsNum) {
+        int maxParamLen = paramsDesc.keySet().stream().max(Comparator.comparingInt(String::length)).get().length();
+
+        for (Map.Entry<String, String> param : paramsDesc.entrySet())
+            log(i(extendToLen(param.getKey(), maxParamLen) + INDENT + "- " + param.getValue(), indentsNum));
+    }
+
+    /**
+     * Appends spaces to end of input string for extending to needed length.
+     *
+     * @param s Input string.
+     * @param targetLen Needed length.
+     * @return String with appended spaces on the end.
+     */
+    private String extendToLen(String s, int targetLen) {
+        assert targetLen >= 0;
+        assert s.length() <= targetLen;
+
+        if (s.length() == targetLen)
+            return s;
+
+        SB sb = new SB(targetLen);
+
+        sb.a(s);
+
+        for (int i = 0; i < targetLen - s.length(); i++)
+            sb.a(" ");
+
+        return sb.toString();
+    }
+
+    /**
+     * Gets cache command description by cache command.
+     *
+     * @param cmd Cache command.
+     * @return Cache command description.
+     */
+    private String getCacheSubcommandDesc(CacheCommand cmd) {
+        switch (cmd) {
+            case LIST:
+                return "Show information about caches, groups or sequences that match a regular expression. When executed without parameters, this subcommand prints the list of caches.";
+
+            case CONTENTION:
+                return "Show the keys that are point of contention for multiple transactions.";
+
+            case IDLE_VERIFY:
+                return "Verify counters and hash sums of primary and backup partitions for the specified caches on an idle cluster and print out the differences, if any.";
+
+            case VALIDATE_INDEXES:
+                return "Validate indexes on an idle cluster and print out the keys that are missing in the indexes.";
+
+            case DISTRIBUTION:
+                return "Prints the information about partition distribution.";
+
+            case RESET_LOST_PARTITIONS:
+                return "Reset the state of lost partitions for the specified caches.";
+
+            default:
+                throw new IllegalArgumentException("Unknown command: " + cmd);
+        }
+    }
+
+    /**
+     * Gets cache command arguments description by cache command.
+     *
+     * @param cmd Cache command.
+     * @return Cache command arguments description.
+     */
+    private Map<String, String> createCacheArgsDesc(CacheCommand cmd) {
+        Map<String, String> map = U.newLinkedHashMap(16);
+        switch (cmd) {
+            case LIST:
+                map.put(CONFIG, "print a all configuration parameters for each cache.");
+                map.put(OUTPUT_FORMAT + " " + MULTI_LINE.text(), "print configuration parameters per line. This option has effect only when used with " + CONFIG + " and without [groups|seq].");
+
+                break;
+            case VALIDATE_INDEXES:
+                map.put(VI_CHECK_FIRST + " N", "validate only the first N keys");
+                map.put(VI_CHECK_THROUGH + " K", "validate every Kth key");
+
+                break;
+        }
+        return map;
+    }
+
+    /**
+     * Wraps input parameter optional braces {@code []}.
+     *
+     * @param param Input parameter.
+     * @return Parameter wrapped optional braces.
+     */
+    private String op(String param) {
+        return "[" + param + "]";
+    }
+
+    /**
+     * Concatenates input parameters to single string with OR delimiter {@code |}.
+     *
+     * @param param1 First parameter.
+     * @param params Remaining parameters.
+     * @return Concatenated string.
+     */
+    private String or(String param1, String... params) {
+        if (params.length == 0)
+            return param1;
+
+        SB sb = new SB(param1);
+
+        for (String param : params)
+            sb.a("|").a(param);
+
+        return sb.toString();
     }
 
     /**
@@ -1743,7 +1950,7 @@ public class CommandHandler {
 
             case DISTRIBUTION:
                 String nodeIdStr = nextArg("Node id expected or null");
-                if (!"null".equals(nodeIdStr))
+                if (!NULL.equals(nodeIdStr))
                     cacheArgs.nodeId(UUID.fromString(nodeIdStr));
 
                 while (hasNextCacheArg()) {
@@ -2150,7 +2357,7 @@ public class CommandHandler {
                 }
 
                 log("  View caches information in a cluster. For more details type:");
-                log("    control.sh --cache help");
+                log("    " + UTILITY_NAME + " --cache help");
                 nl();
 
                 log("By default commands affecting the cluster require interactive confirmation.");
@@ -2175,6 +2382,12 @@ public class CommandHandler {
             }
 
             Arguments args = parseAndValidate(rawArgs);
+
+            if (args.command() == CACHE && args.cacheArgs().command() == HELP) {
+                printCacheHelp();
+
+                return EXIT_CODE_OK;
+            }
 
             if (!args.autoConfirmation() && !confirm(args)) {
                 log("Operation cancelled.");
