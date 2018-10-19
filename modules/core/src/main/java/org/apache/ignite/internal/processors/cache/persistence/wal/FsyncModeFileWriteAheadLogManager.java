@@ -218,7 +218,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      * Maximum number of allowed segments without checkpoint. If we have their more checkpoint should be triggered.
      * It is simple way to calculate wal size without checkpoint instead fair wal size calculating.
      */
-    private final long maxSegCountWithoutCheckpoint;
+    private long maxSegCountWithoutCheckpoint;
 
     /** Size of wal archive since which removing of old archive should be started */
     private final long allowedThresholdWalArchiveSize;
@@ -355,9 +355,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
         evt = ctx.event();
 
-        maxSegCountWithoutCheckpoint =
-            (long)((dsCfg.getMaxWalArchiveSize() * CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE) / dsCfg.getWalSegmentSize());
-
         allowedThresholdWalArchiveSize = (long)(dsCfg.getMaxWalArchiveSize() * THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE);
 
         assert mode == WALMode.FSYNC : dsCfg;
@@ -375,6 +372,10 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
         if (!cctx.kernalContext().clientNode()) {
+            maxSegCountWithoutCheckpoint =
+                (long)((U.adjustedWalHistorySize(dsCfg, log) * CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE)
+                    / dsCfg.getWalSegmentSize());
+
             final PdsFolderSettings resolveFolders = cctx.kernalContext().pdsFolderResolver().resolveFolders();
 
             checkWalConfiguration();
