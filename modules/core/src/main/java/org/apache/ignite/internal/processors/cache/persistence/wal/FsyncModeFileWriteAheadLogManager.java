@@ -419,9 +419,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
             lastTruncatedArchiveIdx = tup == null ? -1 : tup.get1() - 1;
 
-            archiver = new FileArchiver(tup == null ? -1 : tup.get2(), log);
+            archiver = isArchiverEnabled() ? new FileArchiver(tup == null ? -1 : tup.get2(), log) : null;
 
-            if (dsCfg.isWalCompactionEnabled()) {
+            if (archiver != null && dsCfg.isWalCompactionEnabled()) {
                 compressor = new FileCompressor();
 
                 if (decompressor == null) {  // Preventing of two file-decompressor thread instantiations.
@@ -619,7 +619,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     public Collection<File> getAndReserveWalFiles(FileWALPointer low, FileWALPointer high) throws IgniteCheckedException {
         final long awaitIdx = high.index() - 1;
 
-        while (archiver.lastArchivedAbsoluteIndex() < awaitIdx)
+        while (archiver != null && archiver.lastArchivedAbsoluteIndex() < awaitIdx)
             LockSupport.parkNanos(Thread.currentThread(), 1_000_000);
 
         if (!reserve(low))
@@ -918,6 +918,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
     /** {@inheritDoc} */
     @Override public int walArchiveSegments() {
+        if (archiver == null)
+            return 0;
+
         long lastTruncated = lastTruncatedArchiveIdx;
 
         long lastArchived = archiver.lastArchivedAbsoluteIndex();
@@ -966,7 +969,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
     /** {@inheritDoc} */
     @Override public long lastArchivedSegment() {
-        return archiver.lastArchivedAbsoluteIndex();
+        return archiver != null ? archiver.lastArchivedAbsoluteIndex() : -1L;
     }
 
     /** {@inheritDoc} */
@@ -1235,7 +1238,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 if (lastReadPtr == null)
                     hnd.writeSerializerVersion();
 
-                archiver.currentWalIndex(absIdx);
+                if (archiver != null)
+                    archiver.currentWalIndex(absIdx);
 
                 return hnd;
             }
@@ -1411,8 +1415,13 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
     private File pollNextFile(long curIdx) throws StorageException, IgniteInterruptedCheckedException {
+        FileArchiver archiver0 = archiver;
+
+        if (archiver0 == null)
+            return new File(walWorkDir, FileDescriptor.fileName(curIdx + 1));
+
         // Signal to archiver that we are done with the segment and it can be archived.
-        long absNextIdx = archiver.nextAbsoluteSegmentIndex(curIdx);
+        long absNextIdx = archiver0.nextAbsoluteSegmentIndex(curIdx);
 
         long segmentIdx = absNextIdx % dsCfg.getWalSegments();
 
@@ -1724,8 +1733,10 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
                     int segments = dsCfg.getWalSegments();
 
-                    while ((curAbsWalIdx - lastAbsArchivedIdx > segments && cleanException == null))
-                        wait();
+                    if (isArchiverEnabled()) {
+                        while ((curAbsWalIdx - lastAbsArchivedIdx > segments && cleanException == null))
+                            wait();
+                    }
 
                     if (cleanException != null)
                         throw cleanException;
