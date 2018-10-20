@@ -37,13 +37,13 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
         TestSuite suite = IgniteCacheQuerySelfTestSuite.suite();
 
         // Serialization.
-        suite.addTestSuite(BinarySerializationQuerySelfTest.class);
-        suite.addTestSuite(BinarySerializationQueryWithReflectiveSerializerSelfTest.class);
-        suite.addTestSuite(IgniteCacheBinaryObjectsScanSelfTest.class);
-        suite.addTestSuite(IgniteCacheBinaryObjectsScanWithEventsSelfTest.class);
-        suite.addTestSuite(BigEntryQueryTest.class);
-
-        suite.addTestSuite(BinaryMetadataConcurrentUpdateWithIndexesTest.class);
+//        suite.addTestSuite(BinarySerializationQuerySelfTest.class);
+//        suite.addTestSuite(BinarySerializationQueryWithReflectiveSerializerSelfTest.class);
+//        suite.addTestSuite(IgniteCacheBinaryObjectsScanSelfTest.class);
+//        suite.addTestSuite(IgniteCacheBinaryObjectsScanWithEventsSelfTest.class);
+//        suite.addTestSuite(BigEntryQueryTest.class);
+//
+//        suite.addTestSuite(BinaryMetadataConcurrentUpdateWithIndexesTest.class);
 
         //Should be adjusted. Not ready to be used with BinaryMarshaller.
         //suite.addTestSuite(GridCacheBinarySwapScanQuerySelfTest.class);
