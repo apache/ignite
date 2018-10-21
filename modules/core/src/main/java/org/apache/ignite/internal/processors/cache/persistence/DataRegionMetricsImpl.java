@@ -124,9 +124,6 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
-        if (!metricsEnabled)
-            return 0;
-
         return totalAllocatedPages.longValue();
     }
 
@@ -280,9 +277,6 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
     /** {@inheritDoc} */
     @Override public long getOffHeapSize() {
-        if (!metricsEnabled)
-            return 0;
-
         return offHeapSize.get();
     }
 

@@ -101,22 +101,20 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
 
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testSelectForUpdateLocal() throws Exception {
         doTestSelectForUpdateLocal("Person", false);
     }
 
     /**
-     *
      * @throws Exception If failed.
      */
-    public void testSelectForUpdateOutsideTx() throws Exception {
+    public void testSelectForUpdateOutsideTxDistributed() throws Exception {
         doTestSelectForUpdateDistributed("Person", true);
     }
 
     /**
-     *
      * @throws Exception If failed.
      */
     public void testSelectForUpdateOutsideTxLocal() throws Exception {
@@ -162,6 +160,8 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
      * @throws Exception If failed.
      */
     void doTestSelectForUpdateDistributed(String cacheName, boolean outsideTx) throws Exception {
+        awaitPartitionMapExchange();
+
         Ignite node = grid(0);
 
         IgniteCache<Integer, ?> cache = node.cache(cacheName);
@@ -261,6 +261,8 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
             checkLocks("Person", keys, true);
 
             tx.rollback();
+
+            checkLocks("Person", keys, false);
         }
     }
 

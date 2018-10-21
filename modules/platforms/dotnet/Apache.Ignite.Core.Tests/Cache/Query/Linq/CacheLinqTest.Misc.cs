@@ -149,7 +149,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             TestConditionalWithNullableStructs<double>();
             TestConditionalWithNullableStructs<float>();
             TestConditionalWithNullableStructs<decimal>();
-            TestConditionalWithNullableStructs<DateTime>(DateTime.UtcNow);
+            TestConditionalWithNullableStructs<DateTime>(DateTime.Parse("1983-03-14 13:20:15.999999").ToUniversalTime());
 
             var charException = Assert.Throws<NotSupportedException>(() => TestConditionalWithNullableStructs<char>());
             Assert.AreEqual("Type is not supported for SQL mapping: System.Char", charException.Message);

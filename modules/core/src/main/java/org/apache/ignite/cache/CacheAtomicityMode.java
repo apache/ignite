@@ -33,12 +33,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public enum CacheAtomicityMode {
     /**
-     * Specified fully {@code ACID}-compliant transactional cache behavior for key-value API. See
-     * {@link Transaction} for more information about transactions.
+     * Enables fully {@code ACID}-compliant transactional cache behavior for the key-value API.
      * <p>
-     * <b>Note:</b> this mode guaranties transactional behavior <b>only for key-value API</b> operations.
-     * For ACID SQL transactions use {@code CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT} mode.
-     * </p>
+     * <b>Note!</b> In this mode, transactional consistency is guaranteed for key-value API operations only.
+     * To enable ACID capabilities for SQL transactions, use the {@code TRANSACTIONAL_SNAPSHOT} mode.
+     * <p>
+     * <b>Note!</b> This atomicity mode is not compatible with the other modes within the same transaction.
+     * if a transaction is executed over multiple caches, all caches must have the same atomicity mode,
+     * either {@code TRANSACTIONAL_SNAPSHOT} or {@code TRANSACTIONAL}.
+     * <p>
+     * See {@link Transaction} for more information about transactions.
      */
     TRANSACTIONAL,
 
@@ -95,26 +99,24 @@ public enum CacheAtomicityMode {
     ATOMIC,
 
     /**
-     * Specified fully {@code ACID}-compliant transactional cache behavior not only for key-value API,
-     * but also for SQL transactions.
+     * Specifies fully {@code ACID}-compliant transactional cache behavior for both key-value API and SQL transactions.
      * <p>
-     * This cache atomicity mode is implemented within multiversion concurrency control (MVCC) where database can
-     * contain multiple versions of each row to allow readers do not collide with writers.
-     * Each update in this mode generates a new version of a row and don't remove a previous one.
-     * Old versions are cleaned only when they are not visible to anyone.
-     * </p>
+     * This atomicity mode enables multiversion concurrency control (MVCC) for the cache. In MVCC-enabled caches,
+     * when a transaction updates a row, it creates a new version of that row instead of overwriting it.
+     * Other users continue to see the old version of the row until the transaction is committed.
+     * In this way, readers and writers do not conflict with each other and always work with a consistent dataset.
+     * The old version of data is cleaned up when it's no longer accessed by anyone.
      * <p>
-     * There is one node in cluster is elected as MVCC coordinator. This node tracks all in-flight transactions and
-     * queries in the cluster.
-     * Each transaction or query over the cache with {@code TRANSACTIONAL_SNAPSHOT} mode obtains current
-     * database snapshot from the coordinator. This snapshot allows transactions and queries to skip invisible
-     * updates made by concurrent transactions to always observe the same consistent database state.
-     * </p>
+     * With this mode enabled, one node is elected as an MVCC coordinator. This node tracks all in-flight transactions
+     * and queries executed in the cluster. Each transaction or query executed over the cache with
+     * {@code TRANSACTIONAL_SNAPSHOT} mode works with a current snapshot of data generated for this transaction or query
+     * by the coordinator. This snapshot ensures that the transaction works with a consistent database state
+     * during its execution period.
      * <p>
-     * <b>Note!</b> This atomicity mode is not interoperable with the other atomicity modes in the same transaction.
-     * Caches participated in transaction should either be all {@code TRANSACTIONAL} or all
-     * {@code TRANSACTIONAL_SNAPSHOT}, but not the mixed ones.
-     * </p>
+     * <b>Note!</b> This atomicity mode is not compatible with the other modes within the same transaction.
+     * If a transaction is executed over multiple caches, all caches must have the same atomicity mode,
+     * either {@code TRANSACTIONAL_SNAPSHOT} or {@code TRANSACTIONAL}.
+     * <p>
      * See {@link Transaction} for more information about transactions.
      */
     TRANSACTIONAL_SNAPSHOT;

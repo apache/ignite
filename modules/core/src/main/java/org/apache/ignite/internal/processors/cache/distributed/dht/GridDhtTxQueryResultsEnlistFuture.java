@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -34,13 +33,11 @@ import org.apache.ignite.lang.IgniteUuid;
  * Future processing transaction enlisting and locking of entries
  * produces by complex DML queries with reduce step.
  */
-public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxAbstractEnlistFuture implements UpdateSourceIterator<Object> {
-    /** */
-    private static final long serialVersionUID = -4933550335145438798L;
-    /** */
+public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstractEnlistFuture implements UpdateSourceIterator<Object> {
+    /** Enlist operation. */
     private EnlistOperation op;
 
-    /** */
+    /** Source iterator. */
     private Iterator<Object> it;
 
     /**
@@ -91,29 +88,6 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxAbstractEn
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        GridDhtTxQueryResultsEnlistFuture future = (GridDhtTxQueryResultsEnlistFuture)o;
-
-        return Objects.equals(futId, future.futId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return futId.hashCode();
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridDhtTxQueryResultsEnlistFuture.class, this);
-    }
-
-    /** {@inheritDoc} */
     @Override public EnlistOperation operation() {
         return op;
     }
@@ -126,5 +100,10 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxAbstractEn
     /** {@inheritDoc} */
     @Override public Object nextX() {
         return it.next();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridDhtTxQueryResultsEnlistFuture.class, this);
     }
 }

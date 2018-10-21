@@ -99,6 +99,7 @@ import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridTuple6;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -133,6 +134,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.DiscoverySpiMutableCustomMessageSupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
+import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.thread.IgniteThread;
@@ -223,7 +225,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private final DiscoveryWorker discoWrk = new DiscoveryWorker();
 
     /** Discovery event notyfier worker. */
-    private final DiscoveryMessageNotifyerWorker discoNotifierWrk = new DiscoveryMessageNotifyerWorker();
+    private final DiscoveryMessageNotifierWorker discoNtfWrk = new DiscoveryMessageNotifierWorker();
 
     /** Network segment check worker. */
     private SegmentCheckWorker segChkWrk;
@@ -587,7 +589,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
             }
 
-            @Override public IgniteInternalFuture onDiscovery(
+            @Override public IgniteFuture<?> onDiscovery(
                 final int type,
                 final long topVer,
                 final ClusterNode node,
@@ -595,15 +597,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 final Map<Long, Collection<ClusterNode>> snapshots,
                 @Nullable DiscoverySpiCustomMessage spiCustomMsg
             ) {
-                GridFutureAdapter notificationFut = new GridFutureAdapter();
+                GridFutureAdapter<?> notificationFut = new GridFutureAdapter<>();
 
-                discoNotifierWrk.submit(notificationFut, () -> {
+                discoNtfWrk.submit(notificationFut, () -> {
                     synchronized (discoEvtMux) {
                         onDiscovery0(type, topVer, node, topSnapshot, snapshots, spiCustomMsg);
                     }
                 });
 
-                return notificationFut;
+                return new IgniteFutureImpl<>(notificationFut);
             }
 
             /**
@@ -794,6 +796,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         ctx.cache().context().exchange().onLocalJoin(discoEvt, discoCache);
 
                         ctx.authentication().onLocalJoin();
+
+                        ctx.encryption().onLocalJoin();
                     }
 
                     IgniteInternalFuture<Boolean> transitionWaitFut = ctx.state().onLocalJoin(discoCache);
@@ -930,7 +934,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             }
         });
 
-        new IgniteThread(discoNotifierWrk).start();
+        new IgniteThread(discoNtfWrk).start();
 
         startSpi();
 
@@ -1533,13 +1537,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             for (DataRegionConfiguration dataReg : dataRegions) {
                 res += dataReg.getMaxSize();
 
-                res += GridCacheDatabaseSharedManager.checkpointBufferSize(dataReg);
+                res += U.checkpointBufferSize(dataReg);
             }
         }
 
         res += memCfg.getDefaultDataRegionConfiguration().getMaxSize();
 
-        res += GridCacheDatabaseSharedManager.checkpointBufferSize(memCfg.getDefaultDataRegionConfiguration());
+        res += U.checkpointBufferSize(memCfg.getDefaultDataRegionConfiguration());
 
         return res;
     }
@@ -1566,24 +1570,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * @param regCfg Data region configuration.
-     * @return Data region message.
-     */
-    private String dataRegionConfigurationMessage(DataRegionConfiguration regCfg) {
-        if (regCfg == null)
-            return null;
-
-        SB m = new SB();
-
-        m.a("  ^-- ").a(regCfg.getName()).a(" [");
-        m.a("initSize=").a(U.readableSize(regCfg.getInitialSize(), false));
-        m.a(", maxSize=").a(U.readableSize(regCfg.getMaxSize(), false));
-        m.a(", persistenceEnabled=" + regCfg.isPersistenceEnabled()).a(']');
-
-        return m.toString();
-    }
-
-    /**
      * @param clo Wrapper of logger.
      * @param topVer Topology version.
      * @param discoCache Discovery cache.
@@ -1598,10 +1584,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private void topologySnapshotMessage(IgniteClosure<String, Void> clo, long topVer, DiscoCache discoCache,
         int evtType, ClusterNode evtNode, int srvNodesNum, int clientNodesNum, int totalCpus, double heap,
         double offheap) {
+        DiscoveryDataClusterState state = discoCache.state();
+
         String summary = PREFIX + " [" +
             (discoOrdered ? "ver=" + topVer + ", " : "") +
-            "servers=" + srvNodesNum +
+            "locNode=" + U.id8(discoCache.localNode().id()) +
+            ", servers=" + srvNodesNum +
             ", clients=" + clientNodesNum +
+            ", state=" + (state.active() ? "ACTIVE" : "INACTIVE") +
             ", CPUs=" + totalCpus +
             ", offheap=" + offheap + "GB" +
             ", heap=" + heap + "GB]";
@@ -1613,11 +1603,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         if ((evtType == EventType.EVT_NODE_FAILED || evtType == EventType.EVT_NODE_LEFT) &&
                 currCrd != null && currCrd.order() > evtNode.order())
             clo.apply("Coordinator changed [prev=" + evtNode + ", cur=" + currCrd + "]");
-
-        DiscoveryDataClusterState state = discoCache.state();
-
-        clo.apply("  ^-- Node [id=" + discoCache.localNode().id().toString().toUpperCase() + ", clusterState="
-            + (state.active() ? "ACTIVE" : "INACTIVE") + ']');
 
         BaselineTopology blt = state.baselineTopology();
 
@@ -1646,25 +1631,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
                 else
                     clo.apply("  ^-- " + bltOffline + " nodes left for auto-activation" + offlineConsistentIds);
-            }
-        }
-
-        DataStorageConfiguration memCfg = ctx.config().getDataStorageConfiguration();
-
-        if (memCfg == null)
-            return;
-
-        clo.apply("Data Regions Configured:");
-        clo.apply(dataRegionConfigurationMessage(memCfg.getDefaultDataRegionConfiguration()));
-
-        DataRegionConfiguration[] dataRegions = memCfg.getDataRegionConfigurations();
-
-        if (dataRegions != null) {
-            for (int i = 0; i < dataRegions.length; ++i) {
-                String msg = dataRegionConfigurationMessage(dataRegions[i]);
-
-                if (msg != null)
-                    clo.apply(msg);
             }
         }
     }
@@ -1698,9 +1664,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         U.join(discoWrk, log);
 
-        U.cancel(discoNotifierWrk);
+        U.cancel(discoNtfWrk);
 
-        U.join(discoNotifierWrk, log);
+        U.join(discoNtfWrk, log);
 
         // Stop SPI itself.
         stopSpi();
@@ -2671,22 +2637,31 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /**
      *
      */
-    private class DiscoveryMessageNotifyerWorker extends GridWorker {
+    private class DiscoveryMessageNotifierWorker extends GridWorker implements IgniteDiscoveryThread {
         /** Queue. */
         private final BlockingQueue<T2<GridFutureAdapter, Runnable>> queue = new LinkedBlockingQueue<>();
 
         /**
          * Default constructor.
          */
-        protected DiscoveryMessageNotifyerWorker() {
-            super(ctx.igniteInstanceName(), "disco-notyfier-worker", GridDiscoveryManager.this.log, ctx.workersRegistry());
+        protected DiscoveryMessageNotifierWorker() {
+            super(ctx.igniteInstanceName(), "disco-notifier-worker", GridDiscoveryManager.this.log, ctx.workersRegistry());
         }
 
         /**
          *
          */
         private void body0() throws InterruptedException {
-            T2<GridFutureAdapter, Runnable> notification = queue.take();
+            T2<GridFutureAdapter, Runnable> notification;
+
+            blockingSectionBegin();
+
+            try {
+                notification = queue.take();
+            }
+            finally {
+                blockingSectionEnd();
+            }
 
             try {
                 notification.get2().run();
@@ -2848,6 +2823,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             while (!isCancelled()) {
                 try {
                     body0();
+
+                    onIdle();
                 }
                 catch (InterruptedException e) {
                     if (!isCancelled)
@@ -2871,7 +2848,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         @SuppressWarnings("DuplicateCondition")
         private void body0() throws InterruptedException {
             GridTuple6<Integer, AffinityTopologyVersion, ClusterNode, DiscoCache, Collection<ClusterNode>,
-                DiscoveryCustomMessage> evt = evts.take();
+                DiscoveryCustomMessage> evt;
+
+            blockingSectionBegin();
+
+            try {
+                evt = evts.take();
+            }
+            finally {
+                blockingSectionEnd();
+            }
 
             int type = evt.get1();
 

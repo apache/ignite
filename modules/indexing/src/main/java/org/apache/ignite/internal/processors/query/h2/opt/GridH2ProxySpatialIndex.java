@@ -53,9 +53,8 @@ public class GridH2ProxySpatialIndex extends GridH2ProxyIndex implements Spatial
 
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter,
-                                    SortOrder sortOrder, HashSet<Column> cols) {
-        return SpatialTreeIndex.getCostRangeIndex(masks,
-                table.getRowCountApproximation(), columns) / 10;
+        SortOrder sortOrder, HashSet<Column> cols) {
+        return SpatialTreeIndex.getCostRangeIndex(masks, columns) / 10;
     }
 
     /** {@inheritDoc} */
