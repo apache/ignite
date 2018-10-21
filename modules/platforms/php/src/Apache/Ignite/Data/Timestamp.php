@@ -51,7 +51,7 @@ class Timestamp extends Date
     {
         $micros = $dateTime->format('u');
         $millis = intval($micros / 1000);
-        return new Timestamp($dateTime->getTimestamp() * 1000 + $millis, ($micros % 1000) * 10000);
+        return new Timestamp($dateTime->getTimestamp() * 1000 + $millis, ($micros % 1000) * 1000);
     }
     
     /**
