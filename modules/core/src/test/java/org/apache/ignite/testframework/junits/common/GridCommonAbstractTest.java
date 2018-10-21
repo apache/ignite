@@ -670,8 +670,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                             if (readyVer.topologyVersion() > 0 && c.context().started()) {
                                 // Must map on updated version of topology.
-                                Collection<ClusterNode> affNodes =
+                                List<ClusterNode> affNodes =
                                     dht.context().affinity().assignment(readyVer).idealAssignment().get(p);
+
+                                List<ClusterNode> realAffNodes = dht.context().affinity().assignment(readyVer)
+                                    .assignment().get(p);
 
                                 int affNodesCnt = affNodes.size();
 
@@ -685,6 +688,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                 GridDhtLocalPartition loc = top.localPartition(p, readyVer, false);
 
                                 if (affNodesCnt != ownerNodesCnt || !affNodes.containsAll(owners) ||
+                                    !affNodes.get(0).equals(realAffNodes.get(0)) ||
                                     (waitEvicts && loc != null && loc.state() != GridDhtPartitionState.OWNING)) {
                                     if (i % 50 == 0)
                                         LT.warn(log(), "Waiting for topology map update [" +
@@ -795,29 +799,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         }
 
         log.info("awaitPartitionMapExchange finished");
-    }
-
-    /**
-     * @param topVer Topology version.
-     * @param minorTopVer Minor topology version
-     * @throws IgniteCheckedException If failed to wait.
-     */
-    protected void awaitForAffinityTopology(int topVer, int minorTopVer) throws IgniteCheckedException {
-        awaitForAffinityTopology(new AffinityTopologyVersion(topVer, minorTopVer));
-    }
-
-    /**
-     * @param ver Affinity topology version.
-     * @throws IgniteCheckedException If failed to wait.
-     */
-    protected void awaitForAffinityTopology(AffinityTopologyVersion ver) throws IgniteCheckedException {
-        for (Ignite ignite : G.allGrids()) {
-            IgniteInternalFuture<?> fut = ((IgniteEx)ignite).context().cache().context().exchange()
-                .affinityReadyFuture(ver);
-
-            if (fut != null)
-                fut.get(getTestTimeout());
-        }
     }
 
     /**
