@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.GridTcpRestParser;
 
 /**
  * Parser to decode/encode Redis protocol (RESP) requests.
@@ -110,6 +113,60 @@ public class GridRedisProtocolParser {
             throw new IgniteCheckedException("Invalid request syntax!");
 
         return new String(bulkStr);
+    }
+
+    /*
+     * A validation method to check packet completeness.
+     * return true if and only if
+     * 1. First byte is ARRAY (43)
+     * 2. Last two bytes are CR(13) LF(10)
+     *
+     * Otherwise, return false representing this is an incomplete packet with three possible scenarios:
+     * 1. A beginning packet with leading ARRAY byte
+     * 2. A continual packet with ending CRLF bytes.
+     * 3. A continual packet with neither conditions above.
+     */
+    public static boolean validatePacket(ByteBuffer buf) {
+        return validatePacketHeader(buf) && validatePacketFooter(buf);
+    }
+
+    public static boolean validatePacketHeader(ByteBuffer buf) {
+        boolean result = true;
+
+        //mark at initial position
+        buf.mark();
+
+        if(buf.get() != ARRAY) {
+            result = false;
+        }
+
+        //reset to initial position
+        buf.reset();
+
+        return result;
+    }
+
+    public static boolean validatePacketFooter(ByteBuffer buf) {
+        boolean result = true;
+
+        //mark at initial position
+        buf.mark();
+
+
+        int limit = buf.limit();
+
+        assert limit > 2;
+
+        //check the final CR(last -2 ) and LF(last -1) byte
+        if (buf.get(limit - 2) != CR || buf.get(limit - 1) != LF) {
+            result = false;
+        }
+
+
+        //reset to initial position
+        buf.reset();
+
+        return result;
     }
 
     /**
