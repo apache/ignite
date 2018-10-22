@@ -31,7 +31,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedM
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Collection;
@@ -39,9 +38,12 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * Test client connects to two nodes cluster during time more than the {@link org.apache.ignite.configuration.IgniteConfiguration#clientFailureDetectionTimeout}.
+ * Test client connects to two nodes cluster during time more than the
+ * {@link org.apache.ignite.configuration.IgniteConfiguration#clientFailureDetectionTimeout}.
  */
 public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
+    /** Client instance name. */
+    public static final String CLIENT_INSTANCE_NAME = "client";
     /** Client metrics update count. */
     private static volatile int clientMetricsUpdateCnt;
 
@@ -54,25 +56,16 @@ public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
             : new TcpDiscoverySpi();
 
         return super.getConfiguration(igniteInstanceName)
-            .setClientMode(igniteInstanceName.startsWith("client"))
+            .setClientMode(igniteInstanceName.startsWith(CLIENT_INSTANCE_NAME))
             .setClientFailureDetectionTimeout(1_000)
             .setMetricsUpdateFrequency(500)
             .setDiscoverySpi(discoSpi
                 .setReconnectCount(1)
                 .setLocalAddress("127.0.0.1")
                 .setIpFinder(new TcpDiscoveryVmIpFinder()
-                    .setAddresses(Collections.singletonList(igniteInstanceName.startsWith("client")
+                    .setAddresses(Collections.singletonList(igniteInstanceName.startsWith(CLIENT_INSTANCE_NAME)
                         ? "127.0.0.1:47501"
                         : "127.0.0.1:47500..47502"))));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
-        super.optimize(cfg);
-
-        ((TcpDiscoverySpi)super.optimize(cfg).getDiscoverySpi()).setJoinTimeout(0);
-
-        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -93,7 +86,7 @@ public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
     public void testClientConnectToCluster() throws Exception {
         clientMetricsUpdateCnt = 0;
 
-        IgniteEx client = startGrid("client");
+        IgniteEx client = startGrid(CLIENT_INSTANCE_NAME);
 
         assertTrue(clientMetricsUpdateCnt > 0);
 
@@ -128,6 +121,8 @@ public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
                 if (EventType.EVT_NODE_METRICS_UPDATED == type) {
                     log.info("Metrics update message catched from node " + node);
 
+                    assertFalse(locNode.isClient());
+
                     if (node.isClient())
                         clientMetricsUpdateCnt++;
                 }
@@ -140,7 +135,8 @@ public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
 
             /** {@inheritDoc} */
             @Override public void onLocalNodeInitialized(ClusterNode locNode) {
-                // No-op.
+                if (delegate != null)
+                    delegate.onLocalNodeInitialized(locNode);
             }
         }
 
@@ -152,11 +148,8 @@ public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
 
     /** Discovery SPI delayed TcpDiscoveryNodeAddFinishedMessage. */
     private static class DelayedTcpDiscoverySpi extends TcpDiscoverySpi {
-
-        @Override protected <T> T readMessage(Socket sock, @Nullable InputStream in,
-            long timeout) throws IOException, IgniteCheckedException {
-            return super.readMessage(sock, in, timeout);
-        }
+        /** Delay message period millis. */
+        public static final int DELAY_MSG_PERIOD_MILLIS = 2_000;
 
         /** {@inheritDoc} */
         @Override protected void writeToSocket(ClusterNode node, Socket sock, OutputStream out,
@@ -165,10 +158,12 @@ public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
                 log.info("Catched discovery message: " + msg);
 
                 try {
-                    Thread.sleep(2_000);
+                    Thread.sleep(DELAY_MSG_PERIOD_MILLIS);
                 }
                 catch (InterruptedException e) {
                     log.error("Interrupt on DelayedTcpDiscoverySpi.", e);
+
+                    Thread.currentThread().interrupt();
                 }
             }
 
