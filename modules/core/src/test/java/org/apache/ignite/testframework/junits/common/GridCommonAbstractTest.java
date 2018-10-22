@@ -688,7 +688,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                 GridDhtLocalPartition loc = top.localPartition(p, readyVer, false);
 
                                 if (affNodesCnt != ownerNodesCnt || !affNodes.containsAll(owners) ||
-                                    !affNodes.get(0).equals(realAffNodes.get(0)) ||
+                                    !realAffNodes.isEmpty() && !affNodes.get(0).equals(realAffNodes.get(0)) ||
                                     (waitEvicts && loc != null && loc.state() != GridDhtPartitionState.OWNING)) {
                                     if (i % 50 == 0)
                                         LT.warn(log(), "Waiting for topology map update [" +
