@@ -2510,7 +2510,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     /**
      * @param cctx Cache context.
      */
-    private void closeCache(GridCacheContext cctx) {
+    public void closeCache(GridCacheContext cctx) {
         if (cctx.affinityNode()) {
             GridCacheAdapter<?, ?> cache = caches.get(cctx.name());
 

@@ -921,17 +921,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (cacheContext.isRecoveryMode()) {
                     assert !affinityNode : "Cache " + cacheAdapter.context() + " is still in recovery mode after start";
 
-                    cctx.database().checkpointReadLock();
-
-                    try {
-                        cctx.cache().prepareCacheStop(cacheContext.name(), true);
-                    }
-                    finally {
-                        cctx.database().checkpointReadUnlock();
-                    }
-
-                    if (!groupContext.hasCaches())
-                        cctx.cache().stopCacheGroup(groupContext.groupId());
+                    cctx.cache().closeCache(cacheContext);
                 }
             }
         }
