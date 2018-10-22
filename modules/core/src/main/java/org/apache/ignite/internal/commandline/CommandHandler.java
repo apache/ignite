@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.UUID;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
@@ -150,9 +149,6 @@ import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
  * Class that execute several commands passed via command line.
  */
 public class CommandHandler {
-    /** Logger. */
-    private static final Logger log = Logger.getLogger(CommandHandler.class.getName());
-
     /** */
     static final String DFLT_HOST = "127.0.0.1";
 
@@ -191,6 +187,9 @@ public class CommandHandler {
 
     /** */
     private static final String CMD_USER_ATTRIBUTES = "--user-attributes";
+
+    /** Default number of indents in help output. */
+    private static final int DFLT_HELP_IDENT = 1;
 
     /** List of optional auxiliary commands. */
     private static final Set<String> AUX_COMMANDS = new HashSet<>();
@@ -709,22 +708,21 @@ public class CommandHandler {
      *
      */
     private void printCacheHelp() {
-        final int indentNum = 1;
-        log(i("The '" + CACHE.text() + " subcommand' is used to get information about and perform actions with caches. The command has the following syntax:", indentNum));
+        log(i("The '" + CACHE.text() + " subcommand' is used to get information about and perform actions with caches. The command has the following syntax:", DFLT_HELP_IDENT));
         nl();
-        log(i(UTILITY_NAME_WITH_COMMON_OPTIONS + " " + CACHE.text() + "[subcommand] <subcommand_parameters>", indentNum));
+        log(i(UTILITY_NAME_WITH_COMMON_OPTIONS + " " + CACHE.text() + "[subcommand] <subcommand_parameters>", DFLT_HELP_IDENT));
         nl();
-        log(i("The subcommands that take [nodeId] as an argument ('" + LIST.text() + "', '" + CONTENTION.text() + "' and '" + VALIDATE_INDEXES.text() + "') will be executed on the given node or on all server nodes if the option is not specified. Other commands will run on a random server node.", indentNum));
+        log(i("The subcommands that take [nodeId] as an argument ('" + LIST.text() + "', '" + CONTENTION.text() + "' and '" + VALIDATE_INDEXES.text() + "') will be executed on the given node or on all server nodes if the option is not specified. Other commands will run on a random server node.", DFLT_HELP_IDENT));
         nl();
         nl();
-        log(i("Subcommands:", indentNum));
+        log(i("Subcommands:", DFLT_HELP_IDENT));
 
-        usageCache(indentNum, LIST, "regexPattern", "[groups|seq]", "[nodeId]", op(CONFIG), op(OUTPUT_FORMAT + " " + MULTI_LINE));
-        usageCache(indentNum, CONTENTION, "minQueueSize", "[nodeId]", "[maxPrint]");
-        usageCache(indentNum, IDLE_VERIFY, op(CMD_DUMP), op(CMD_SKIP_ZEROS), "[cache1,...,cacheN]");
-        usageCache(indentNum, VALIDATE_INDEXES, "[cache1,...,cacheN]", "[nodeId]", op(or(VI_CHECK_FIRST + " N", VI_CHECK_THROUGH + " K")));
-        usageCache(indentNum, DISTRIBUTION, or("nodeId", NULL), "[cacheName1,...,cacheNameN]", op(CMD_USER_ATTRIBUTES + " attName1,...,attrNameN"));
-        usageCache(indentNum, RESET_LOST_PARTITIONS, "cacheName1,...,cacheNameN");
+        usageCache(DFLT_HELP_IDENT, LIST, "regexPattern", "[groups|seq]", "[nodeId]", op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE.text()));
+        usageCache(DFLT_HELP_IDENT, CONTENTION, "minQueueSize", "[nodeId]", "[maxPrint]");
+        usageCache(DFLT_HELP_IDENT, IDLE_VERIFY, op(CMD_DUMP), op(CMD_SKIP_ZEROS), "[cache1,...,cacheN]");
+        usageCache(DFLT_HELP_IDENT, VALIDATE_INDEXES, "[cache1,...,cacheN]", "[nodeId]", op(or(VI_CHECK_FIRST + " N", VI_CHECK_THROUGH + " K")));
+        usageCache(DFLT_HELP_IDENT, DISTRIBUTION, or("nodeId", NULL), "[cacheName1,...,cacheNameN]", op(CMD_USER_ATTRIBUTES, "attName1,...,attrNameN"));
+        usageCache(DFLT_HELP_IDENT, RESET_LOST_PARTITIONS, "cacheName1,...,cacheNameN");
         nl();
     }
 
@@ -1147,8 +1145,9 @@ public class CommandHandler {
             log("Baseline nodes:");
 
             for (VisorBaselineNode node : baseline.values()) {
-                log("    ConsistentID=" + node.getConsistentId() + ", STATE=" +
-                    (srvs.containsKey(node.getConsistentId()) ? "ONLINE" : "OFFLINE"));
+                boolean online = srvs.containsKey(node.getConsistentId());
+
+                log(i("ConsistentID=" + node.getConsistentId() + ", STATE=" + (online ? "ONLINE" : "OFFLINE"), 2));
             }
 
             log(DELIM);
@@ -1169,7 +1168,7 @@ public class CommandHandler {
                 log("Other nodes:");
 
                 for (VisorBaselineNode node : others)
-                    log("    ConsistentID=" + node.getConsistentId());
+                    log(i("ConsistentID=" + node.getConsistentId(), 2));
 
                 log("Number of other nodes: " + others.size());
             }
@@ -1402,10 +1401,10 @@ public class CommandHandler {
             VisorClusterNode node = nodesInfo.get(entry.getKey());
 
             log("Node=" + node.getConsistentId());
-            log("     addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()));
+            log(i("addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()), 2));
 
             for (String fileName : entry.getValue())
-                log("   " + fileName);
+                log(i(fileName));
 
             nl();
         }
@@ -1414,8 +1413,8 @@ public class CommandHandler {
             VisorClusterNode node = nodesInfo.get(entry.getKey());
 
             log("Node=" + node.getConsistentId());
-            log("     addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()));
-            log("   failed with error: " + entry.getValue().getMessage());
+            log(i("addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames())), 2);
+            log(i("failed with error: " + entry.getValue().getMessage()));
             nl();
         }
     }
@@ -1437,7 +1436,7 @@ public class CommandHandler {
             VisorClusterNode node = nodesInfo.get(entry.getKey());
 
             log("Node=" + node.getConsistentId());
-            log("     addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()));
+            log(i("addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames())), 2);
             nl();
         }
 
@@ -1445,8 +1444,8 @@ public class CommandHandler {
             VisorClusterNode node = nodesInfo.get(entry.getKey());
 
             log("Node=" + node.getConsistentId());
-            log("     addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()));
-            log("   failed with error: " + entry.getValue().getMessage());
+            log(i("addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames())), 2);
+            log(i("failed with error: " + entry.getValue().getMessage()));
             nl();
         }
     }
@@ -1479,7 +1478,7 @@ public class CommandHandler {
      */
     private void usage(String desc, Command cmd, String... args) {
         log(desc);
-        log(i(UTILITY_NAME_WITH_COMMON_OPTIONS + " " + cmd.text() + String.join("", args), 2));
+        log(i(UTILITY_NAME_WITH_COMMON_OPTIONS + " " + cmd.text() + " " + String.join(" ", args), 2));
         nl();
     }
 
@@ -1601,13 +1600,14 @@ public class CommandHandler {
     }
 
     /**
-     * Wraps input parameter optional braces {@code []}.
+     * Join input parameters with space and wrap optional braces {@code []}.
      *
-     * @param param Input parameter.
-     * @return Parameter wrapped optional braces.
+     * @param param First input parameter.
+     * @param params Other input parameter.
+     * @return Joined parameters wrapped optional braces.
      */
-    private String op(String param) {
-        return "[" + param + "]";
+    private String op(String param, String... params) {
+        return "[" + param + " " + String.join(" ", params) + "]";
     }
 
     /**
@@ -2337,27 +2337,23 @@ public class CommandHandler {
             if (F.isEmpty(rawArgs) || (rawArgs.size() == 1 && CMD_HELP.equalsIgnoreCase(rawArgs.get(0)))) {
                 log("This utility can do the following commands:");
 
-                usage("  Activate cluster:", ACTIVATE);
-                usage("  Deactivate cluster:", DEACTIVATE, " [" + CMD_AUTO_CONFIRMATION + "]");
-                usage("  Print current cluster state:", STATE);
-                usage("  Print cluster baseline topology:", BASELINE);
-                usage("  Add nodes into baseline topology:", BASELINE, " add consistentId1[,consistentId2,....,consistentIdN] [" + CMD_AUTO_CONFIRMATION + "]");
-                usage("  Remove nodes from baseline topology:", BASELINE, " remove consistentId1[,consistentId2,....,consistentIdN] [" + CMD_AUTO_CONFIRMATION + "]");
-                usage("  Set baseline topology:", BASELINE, " set consistentId1[,consistentId2,....,consistentIdN] [" + CMD_AUTO_CONFIRMATION + "]");
-                usage("  Set baseline topology based on version:", BASELINE, " version topologyVersion [" + CMD_AUTO_CONFIRMATION + "]");
-                usage("  List or kill transactions:", TX, " [xid XID] [minDuration SECONDS] " +
-                    "[minSize SIZE] [label PATTERN_REGEX] [servers|clients] " +
-                    "[nodes consistentId1[,consistentId2,....,consistentIdN] [limit NUMBER] [order DURATION|SIZE|", CMD_TX_ORDER_START_TIME, "] [kill] [" + CMD_AUTO_CONFIRMATION + "]");
+                usage(i("Activate cluster:"), ACTIVATE);
+                usage(i("Deactivate cluster:"), DEACTIVATE, op(CMD_AUTO_CONFIRMATION));
+                usage(i("Print current cluster state:"), STATE);
+                usage(i("Print cluster baseline topology:"), BASELINE);
+                usage(i("Add nodes into baseline topology:"), BASELINE, BASELINE_ADD, "consistentId1[,consistentId2,....,consistentIdN]", op(CMD_AUTO_CONFIRMATION));
+                usage(i("Remove nodes from baseline topology:"), BASELINE, BASELINE_REMOVE, "consistentId1[,consistentId2,....,consistentIdN]", op(CMD_AUTO_CONFIRMATION));
+                usage(i("Set baseline topology:"), BASELINE, BASELINE_SET, "consistentId1[,consistentId2,....,consistentIdN]", op(CMD_AUTO_CONFIRMATION));
+                usage(i("Set baseline topology based on version:"), BASELINE, BASELINE_SET_VERSION + " topologyVersion", op(CMD_AUTO_CONFIRMATION));
+                usage(i("List or kill transactions:"), TX, op(TX_XID, "XID"), op(TX_DURATION, "SECONDS"), op(TX_SIZE, "SIZE"), op(TX_LABEL, "PATTERN_REGEX"), op(or(TX_SERVERS, TX_CLIENTS)), op(TX_NODES, "consistentId1[,consistentId2,....,consistentIdN]"), op(TX_LIMIT, "NUMBER"), op(TX_ORDER, or("DURATION", "SIZE", CMD_TX_ORDER_START_TIME)), op(TX_KILL), op(CMD_AUTO_CONFIRMATION));
 
                 if (enableExperimental) {
-                    usage("  Print absolute paths of unused archived wal segments on each node:", WAL,
-                        " print [consistentId1,consistentId2,....,consistentIdN]");
-                    usage("  Delete unused archived wal segments on each node:", WAL,
-                        " delete [consistentId1,consistentId2,....,consistentIdN] [" + CMD_AUTO_CONFIRMATION + "]");
+                    usage(i("Print absolute paths of unused archived wal segments on each node:"), WAL, WAL_PRINT, "[consistentId1,consistentId2,....,consistentIdN]");
+                    usage(i("Delete unused archived wal segments on each node:"), WAL, WAL_DELETE, "[consistentId1,consistentId2,....,consistentIdN] ", op(CMD_AUTO_CONFIRMATION));
                 }
 
-                log("  View caches information in a cluster. For more details type:");
-                log("    " + UTILITY_NAME + " --cache help");
+                log(i("View caches information in a cluster. For more details type:"));
+                log(i(String.join(" ", UTILITY_NAME, CACHE.text(), HELP.text()), 2));
                 nl();
 
                 log("By default commands affecting the cluster require interactive confirmation.");
@@ -2365,18 +2361,18 @@ public class CommandHandler {
                 nl();
 
                 log("Default values:");
-                log("    HOST_OR_IP=" + DFLT_HOST);
-                log("    PORT=" + DFLT_PORT);
-                log("    PING_INTERVAL=" + DFLT_PING_INTERVAL);
-                log("    PING_TIMEOUT=" + DFLT_PING_TIMEOUT);
+                log(i("HOST_OR_IP=" + DFLT_HOST), 2);
+                log(i("PORT=" + DFLT_PORT), 2);
+                log(i("PING_INTERVAL=" + DFLT_PING_INTERVAL), 2);
+                log(i("PING_TIMEOUT=" + DFLT_PING_TIMEOUT), 2);
                 nl();
 
                 log("Exit codes:");
-                log("    " + EXIT_CODE_OK + " - successful execution.");
-                log("    " + EXIT_CODE_INVALID_ARGUMENTS + " - invalid arguments.");
-                log("    " + EXIT_CODE_CONNECTION_FAILED + " - connection failed.");
-                log("    " + ERR_AUTHENTICATION_FAILED + " - authentication failed.");
-                log("    " + EXIT_CODE_UNEXPECTED_ERROR + " - unexpected error.");
+                log(i(EXIT_CODE_OK + " - successful execution."), 2);
+                log(i(EXIT_CODE_INVALID_ARGUMENTS + " - invalid arguments."), 2);
+                log(i(EXIT_CODE_CONNECTION_FAILED + " - connection failed."), 2);
+                log(i(ERR_AUTHENTICATION_FAILED + " - authentication failed."), 2);
+                log(i(EXIT_CODE_UNEXPECTED_ERROR + " - unexpected error."), 2);
 
                 return EXIT_CODE_OK;
             }
