@@ -42,16 +42,30 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
         /**
          * Save profile information.
          *
-         * @param {String} host - The host
-         * @param {Object} user - The user
+         * @param {String} host - The host.
+         * @param {Object} user - The user.
+         * @param {String} inviteToken - The invite token.
          * @returns {Promise.<mongo.ObjectId>} that resolves account id of merge operation.
          */
-        static create(host, user) {
+        static create(host, user, inviteToken) {
             return mongo.Account.count().exec()
                 .then((cnt) => {
                     user.admin = cnt === 0;
                     user.registered = new Date();
                     user.token = utilsService.randomString(settings.tokenLength);
+
+                    if (!user.admin && settings.application.registerByInvite) {
+                        if (!inviteToken)
+                            reject(new errors.ServerErrorException('Registration allowed only by invites'));
+
+                        return mongo.Invites.find({email: user.email, token: inviteToken})
+                            .then((found) => {
+                                if (!found)
+                                    reject(new errors.ServerErrorException('Invalid invite'));
+
+                                return new mongo.Account(user);
+                            });
+                    }
 
                     return new mongo.Account(user);
                 })

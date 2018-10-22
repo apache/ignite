@@ -1,4 +1,7 @@
 {
+    "application": {
+        "registerByInvite": false
+    },
     "server": {
         "port": 3000,
         "sessionSecret": "CHANGE ME",

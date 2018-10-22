@@ -49,7 +49,7 @@ module.exports.factory = function(mongo, mailsService, usersService, authService
          * Register new account.
          */
         router.post('/signup', (req, res) => {
-            usersService.create(req.origin(), req.body)
+            usersService.create(req.origin(), req.body, req.query.invite)
                 .then((user) => new Promise((resolve, reject) => {
                     req.logIn(user, {}, (err) => {
                         if (err)

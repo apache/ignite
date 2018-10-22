@@ -1166,6 +1166,12 @@ module.exports.factory = function(mongoose) {
         isShown: Boolean
     });
 
+    // Define Invites schema.
+    const Invites = new Schema({
+        email: String,
+        token: String
+    });
+
     return {
         Space,
         Account,
@@ -1175,6 +1181,7 @@ module.exports.factory = function(mongoose) {
         Cluster,
         Notebook,
         Activities,
-        Notifications
+        Notifications,
+        Invites
     };
 };

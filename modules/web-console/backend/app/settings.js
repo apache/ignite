@@ -58,6 +58,9 @@ module.exports = {
                 dists: nconf.get('agent:dists') || dfltAgentDists
             },
             packaged,
+            application: {
+                registerByInvite: nconf.get('application:registerByInvite') || false
+            },
             server: {
                 host: nconf.get('server:host') || dfltHost,
                 port: _normalizePort(nconf.get('server:port') || dfltPort),
