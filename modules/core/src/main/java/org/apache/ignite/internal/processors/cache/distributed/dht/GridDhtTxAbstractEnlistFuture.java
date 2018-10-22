@@ -194,7 +194,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     private Map<Integer, Boolean> movingParts;
 
     /** Map for tracking nodes to which first request was already sent in order to send smaller subsequent requests. */
-    private Set<ClusterNode> firstReqSent = new HashSet<>();
+    private final Set<ClusterNode> firstReqSent = new HashSet<>();
 
     /**
      * @param nearNodeId Near node ID.

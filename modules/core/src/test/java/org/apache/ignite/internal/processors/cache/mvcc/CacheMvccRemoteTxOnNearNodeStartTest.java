@@ -74,8 +74,6 @@ public class CacheMvccRemoteTxOnNearNodeStartTest extends CacheMvccAbstractTest 
 
         assert keys.size() == 2;
 
-//        GridTestUtils.runAsync(() -> stopGrid(2));
-
         stopGrid(2);
 
         try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -84,12 +82,9 @@ public class CacheMvccRemoteTxOnNearNodeStartTest extends CacheMvccAbstractTest 
                 keys.get(1), 1)
             );
 
-//            cache.put(keys.get(0), 0);
-//            cache.put(keys.get(1), 1);
-
             tx.commit();
         }
 
-        // assert everything went fine
+        // assert transaction was committed without errors
     }
 }
