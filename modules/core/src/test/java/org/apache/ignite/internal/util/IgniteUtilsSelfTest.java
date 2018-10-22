@@ -44,6 +44,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -874,6 +878,76 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         assertFalse(U.isOldestNodeVersionAtLeast(v241, Arrays.asList(node240, node241, node250, node250ts)));
         assertTrue(U.isOldestNodeVersionAtLeast(v250, Arrays.asList(node250, node250ts)));
         assertTrue(U.isOldestNodeVersionAtLeast(v250ts, Arrays.asList(node250, node250ts)));
+    }
+
+    /**
+     *
+     */
+    public void testDoInParallel() throws Throwable {
+        CyclicBarrier barrier = new CyclicBarrier(3);
+
+        IgniteUtils.doInParallel(3,
+            Executors.newFixedThreadPool(3),
+            Arrays.asList(1, 2, 3),
+            i -> {
+                try {
+                    barrier.await(1, TimeUnit.SECONDS);
+                }
+                catch (Exception e) {
+                    throw new IgniteCheckedException(e);
+                }
+            }
+        );
+    }
+
+    /**
+     *
+     */
+    public void testDoInParallelBatch() {
+        CyclicBarrier barrier = new CyclicBarrier(3);
+
+        try {
+            IgniteUtils.doInParallel(2,
+                Executors.newFixedThreadPool(3),
+                Arrays.asList(1, 2, 3),
+                i -> {
+                    try {
+                        barrier.await(400, TimeUnit.MILLISECONDS);
+                    }
+                    catch (Exception e) {
+                        throw new IgniteCheckedException(e);
+                    }
+                }
+            );
+
+            fail("Should throw timeout exception");
+        }
+        catch (Exception e) {
+            assertTrue(e.getCause() instanceof TimeoutException);
+        }
+    }
+
+    /**
+     *
+     */
+    public void testDoInParallelException() {
+        String expectedException = "ExpectedException";
+
+        try {
+            IgniteUtils.doInParallel(3,
+                Executors.newFixedThreadPool(1),
+                Arrays.asList(1, 2, 3),
+                i -> {
+                    if (i == 1)
+                        throw new IgniteCheckedException(expectedException);
+                }
+            );
+
+            fail("Should throw ParallelExecutionException");
+        }
+        catch (IgniteCheckedException e) {
+            assertEquals(expectedException, e.getMessage());
+        }
     }
 
     /**
