@@ -1539,7 +1539,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      */
     public void preloadPartition(int partition);
 
-
     /**
      * Preloads a cache partition into page memory for fast reading.
      *
