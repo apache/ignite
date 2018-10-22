@@ -612,6 +612,8 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         deferredDel = cache.isDht() || cache.isDhtAtomic() || cache.isColocated() ||
             (cache.isNear() && cache.configuration().getAtomicityMode() == ATOMIC);
+
+        log.warning("[1] Cache set");
     }
 
     /**
@@ -2047,6 +2049,8 @@ public class GridCacheContext<K, V> implements Externalizable {
             U.closeQuiet((Closeable)expiryPlc);
 
         mgrs.clear();
+
+        log.warning("[2] Cleanup invoked");
     }
 
     /**

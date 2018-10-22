@@ -159,7 +159,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
-import org.apache.ignite.thread.IgniteTaskTrackingThreadPoolExecutor;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;

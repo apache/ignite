@@ -876,9 +876,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             try {
                 cctx.cache().onKernalStopCaches(true);
 
-            cctx.cache().stopCaches(true);
+                cctx.cache().stopCaches(true);
 
-            cctx.database().cleanupRestoredCaches();
+                cctx.database().cleanupRestoredCaches();
 
                 cctx.database().cleanupCheckpointDirectory();
 
@@ -908,33 +908,35 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         IgniteInternalFuture<?> cachesRegistrationFut = cctx.cache().startCachesOnLocalJoin(initialVersion(),
             exchActions == null ? null : exchActions.localJoinContext());
 
-        ensureClientCachesStarted();
+        if (!cctx.kernalContext().clientNode()) {
+            for (GridCacheAdapter cacheAdapter : cctx.cache().internalCaches()) {
+                GridCacheContext cacheContext = cacheAdapter.context();
+                CacheGroupContext groupContext = cacheContext.group();
 
-        for (GridCacheAdapter cacheAdapter : cctx.cache().internalCaches()) {
-            GridCacheContext cacheContext = cacheAdapter.context();
-            CacheGroupContext groupContext = cacheContext.group();
+                if (groupContext.isLocal())
+                    continue;
 
-            if (groupContext.isLocal())
-                continue;
+                boolean affinityNode = CU.affinityNode(cctx.discovery().localNode(), groupContext.config().getNodeFilter());
 
-            boolean affinityNode = CU.affinityNode(cctx.discovery().localNode(), groupContext.config().getNodeFilter());
+                if (cacheContext.isRecoveryMode()) {
+                    assert !affinityNode : "Cache " + cacheAdapter.context() + " is still in recovery mode after start";
 
-            if (cacheContext.isRecoveryMode()) {
-                assert !affinityNode : "Cache " + cacheAdapter.context() + " is still in recovery mode after start";
+                    cctx.database().checkpointReadLock();
 
-                cctx.database().checkpointReadLock();
+                    try {
+                        cctx.cache().prepareCacheStop(cacheContext.name(), true);
+                    }
+                    finally {
+                        cctx.database().checkpointReadUnlock();
+                    }
 
-                try {
-                    cctx.cache().prepareCacheStop(cacheContext.name(), true);
+                    if (!groupContext.hasCaches())
+                        cctx.cache().stopCacheGroup(groupContext.groupId());
                 }
-                finally {
-                    cctx.database().checkpointReadUnlock();
-                }
-
-                if (!groupContext.hasCaches())
-                    cctx.cache().stopCacheGroup(groupContext.groupId());
             }
         }
+
+        ensureClientCachesStarted();
 
         return cachesRegistrationFut;
     }
@@ -1107,29 +1109,31 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         cctx.exchange().exchangerBlockingSectionEnd();
                     }
 
-                    for (GridCacheAdapter cacheAdapter : cctx.cache().internalCaches()) {
-                        GridCacheContext cacheContext = cacheAdapter.context();
-                        CacheGroupContext groupContext = cacheContext.group();
+                    if (!cctx.kernalContext().clientNode()) {
+                        for (GridCacheAdapter cacheAdapter : cctx.cache().internalCaches()) {
+                            GridCacheContext cacheContext = cacheAdapter.context();
+                            CacheGroupContext groupContext = cacheContext.group();
 
-                        if (groupContext.isLocal())
-                            continue;
+                            if (groupContext.isLocal())
+                                continue;
 
-                        boolean affinityNode = CU.affinityNode(cctx.discovery().localNode(), groupContext.config().getNodeFilter());
+                            boolean affinityNode = CU.affinityNode(cctx.discovery().localNode(), groupContext.config().getNodeFilter());
 
-                        if (cacheContext.isRecoveryMode()) {
-                            assert !affinityNode : "Cache " + cacheAdapter.context() + " is still in recovery mode after start";
+                            if (cacheContext.isRecoveryMode()) {
+                                assert !affinityNode : "Cache " + cacheAdapter.context() + " is still in recovery mode after start";
 
-                            cctx.database().checkpointReadLock();
+                                cctx.database().checkpointReadLock();
 
-                            try {
-                                cctx.cache().prepareCacheStop(cacheContext.name(), true);
+                                try {
+                                    cctx.cache().prepareCacheStop(cacheContext.name(), true);
+                                }
+                                finally {
+                                    cctx.database().checkpointReadUnlock();
+                                }
+
+                                if (!groupContext.hasCaches())
+                                    cctx.cache().stopCacheGroup(groupContext.groupId());
                             }
-                            finally {
-                                cctx.database().checkpointReadUnlock();
-                            }
-
-                            if (!groupContext.hasCaches())
-                                cctx.cache().stopCacheGroup(groupContext.groupId());
                         }
                     }
 
