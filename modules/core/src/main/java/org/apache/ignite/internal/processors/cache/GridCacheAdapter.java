@@ -4976,7 +4976,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public void preloadPartition(int part) throws IgniteCheckedException {
-        if (ctx.affinityNode())
+        if (isLocal())
             ctx.offheap().preloadPartition(part);
         else
             executePreloadTask(part).get();
@@ -4984,7 +4984,18 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> preloadPartitionAsync(int part) throws IgniteCheckedException {
-        return executePreloadTask(part);
+        if (isLocal()) {
+            return ctx.kernalContext().closure().runLocalSafe(() -> {
+                try {
+                    ctx.offheap().preloadPartition(part);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            });
+        }
+        else
+            return executePreloadTask(part);
     }
 
     /**
@@ -6718,7 +6729,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-     * Clear task.
+     * Partition preload job.
      */
     @GridInternal
     private static class PartitionPreloadJob implements IgniteRunnable {
@@ -6736,7 +6747,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** */
         private final String name;
 
-        /** */
+        /** Cache name. */
         private final int part;
 
         /**
@@ -6748,14 +6759,17 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             this.part = part;
         }
 
+        /** {@inheritDoc} */
         @Override public void run() {
-            IgniteInternalCache cache = ((IgniteEx)ignite).context().cache().cache(name);
+            IgniteInternalCache cache = ignite.context().cache().cache(name);
 
             try {
-                cache.preloadPartition(part);
+                cache.context().offheap().preloadPartition(part);
             }
             catch (IgniteCheckedException e) {
-                // TODO report exception.
+                log.error("Failed to preload the partition [cache=" + name + ", partition=" + part + ']');
+
+                throw new IgniteException(e);
             }
         }
     }

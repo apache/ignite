@@ -590,6 +590,14 @@ public interface IgniteCacheOffheapManager {
     public long totalPartitionEntriesCount(int part);
 
     /**
+     * Preload a partition. Must be called under partition reservation for DHT caches.
+     *
+     * @param part Partition.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void preloadPartition(int part) throws IgniteCheckedException;
+
+    /**
      *
      */
     interface OffheapInvokeClosure extends IgniteTree.InvokeClosure<CacheDataRow> {
@@ -1074,5 +1082,11 @@ public interface IgniteCacheOffheapManager {
          * Flushes pending update counters closing all possible gaps.
          */
         void finalizeUpdateCountres();
+
+        /**
+         * Preload store.
+         * @throws IgniteCheckedException
+         */
+        public void preload() throws IgniteCheckedException;
     }
 }

@@ -872,12 +872,15 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** {@inheritDoc} */
     @Override public void preloadPartition(int part) throws IgniteCheckedException {
+        if (grp.isLocal()) {
+            dataStore(part).preload();
+
+            return;
+        }
+
         GridDhtLocalPartition locPart = grp.topology().localPartition(part, AffinityTopologyVersion.NONE, false, false);
 
-        if (locPart == null)
-            return;
-
-        assert locPart.reservations() > 0;
+        assert locPart != null && locPart.reservations() > 0;
 
         locPart.dataStore().preload();
     }
