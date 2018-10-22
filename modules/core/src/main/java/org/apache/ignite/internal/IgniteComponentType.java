@@ -19,7 +19,7 @@ package org.apache.ignite.internal;
 
 import java.lang.reflect.Constructor;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.compress.CompressProcessor;
+import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
@@ -93,7 +93,7 @@ public enum IgniteComponentType {
     ),
 
     COMPRESSION(
-        CompressProcessor.class.getName(),
+        CompressionProcessor.class.getName(),
         "org.apache.ignite.internal.processors.compress.CompressProcessorImpl",
         "ignite-compress"
     );

@@ -7,7 +7,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 
-public class CompressPorcessorImpl extends CompressProcessor {
+public class CompressionPorcessorImpl extends CompressionProcessor {
     /** */
     private final ThreadLocal<ByteBuffer> tmp = new ThreadLocal<ByteBuffer>() {
         @Override protected ByteBuffer initialValue() {
@@ -24,7 +24,7 @@ public class CompressPorcessorImpl extends CompressProcessor {
     /**
      * @param ctx Kernal context.
      */
-    public CompressPorcessorImpl(GridKernalContext ctx) {
+    public CompressionPorcessorImpl(GridKernalContext ctx) {
         super(ctx);
     }
 

@@ -9,7 +9,7 @@ import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-public class CompressProcessor extends GridProcessorAdapter {
+public class CompressionProcessor extends GridProcessorAdapter {
     /** */
     public static final byte UNCOMPRESSED_PAGE = 0;
 
@@ -40,7 +40,7 @@ public class CompressProcessor extends GridProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    public CompressProcessor(GridKernalContext ctx) {
+    public CompressionProcessor(GridKernalContext ctx) {
         super(ctx);
 
 

@@ -26,7 +26,7 @@ import java.nio.channels.CompletionHandler;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.compress.CompressProcessor;
+import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
@@ -60,7 +60,7 @@ public class AsyncFileIO extends AbstractFileIO {
      */
     public AsyncFileIO(File file, ThreadLocal<ChannelOpFuture> holder, OpenOption... modes) throws IOException {
         Path filePath = file.toPath();
-        this.fsBlockSize = CompressProcessor.getFsBlockSize(filePath);
+        this.fsBlockSize = CompressionProcessor.getFsBlockSize(filePath);
         this.ch = AsynchronousFileChannel.open(filePath, modes);
 
         this.holder = holder;
