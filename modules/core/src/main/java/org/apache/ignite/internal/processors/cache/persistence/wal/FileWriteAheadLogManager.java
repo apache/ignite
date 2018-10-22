@@ -97,8 +97,8 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.aware.Segment
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
-import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.LockedSegmentFileInputFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleSegmentFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
@@ -1564,18 +1564,17 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * the absolute index of last archived segment is denoted by A and the absolute index of next segment we want to
      * write is denoted by W, then we can allow write to S(W) if W - A <= walSegments. <br>
      *
-     * Monitor of current object is used for notify on: <ul> <li>exception occurred ({@link
-     * FileArchiver#cleanErr}!=null)</li> <li>stopping thread ({@link FileArchiver#stopped}==true)</li> <li>current file
-     * index changed </li> <li>last archived file index was changed ({@link
-     * </li> <li>some WAL index was removed from map</li>
+     * Monitor of current object is used for notify on: <ul>
+     *     <li>exception occurred ({@link FileArchiver#cleanErr}!=null)</li>
+     *     <li>stopping thread ({@link FileArchiver#isCancelled==true})</li>
+     *     <li>current file index changed </li>
+     *     <li>last archived file index was changed</li>
+     *     <li>some WAL index was removed from map</li>
      * </ul>
      */
     private class FileArchiver extends GridWorker {
         /** Exception which occurred during initial creation of files or during archiving WAL segment */
         private StorageException cleanErr;
-
-        /** current thread stopping advice */
-        private volatile boolean stopped;
 
         /** Formatted index. */
         private int formatted;
@@ -1595,7 +1594,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          */
         private void shutdown() throws IgniteInterruptedCheckedException {
             synchronized (this) {
-                stopped = true;
+                isCancelled = true;
 
                 notifyAll();
             }
@@ -1629,12 +1628,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 segmentAware.awaitSegment(0);//wait for init at least one work segments.
 
-                while (!Thread.currentThread().isInterrupted() && !stopped) {
+                while (!Thread.currentThread().isInterrupted() && !isCancelled()) {
                     long toArchive;
 
                     toArchive = segmentAware.waitNextSegmentForArchivation();
 
-                    if (stopped)
+                    if (isCancelled())
                         break;
 
                     final SegmentArchiveResult res = archiveSegment(toArchive);
@@ -1654,14 +1653,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 Thread.currentThread().interrupt();
 
                 synchronized (this) {
-                    stopped = true;
+                    isCancelled = true;
                 }
             }
             catch (Throwable t) {
                 err = t;
             }
             finally {
-                if (err == null && !stopped)
+                if (err == null && !isCancelled())
                     err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly");
 
                 if (err instanceof OutOfMemoryError)
@@ -1775,7 +1774,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          *
          */
         private boolean checkStop() {
-            return stopped;
+            return isCancelled();
         }
 
         /**
