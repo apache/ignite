@@ -2269,9 +2269,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * Should be called from exchange worker thread.
      */
     public void exchangerBlockingSectionBegin() {
-        assert exchWorker != null && Thread.currentThread() == exchWorker.runner();
-
-        exchWorker.blockingSectionBegin();
+        if (currentThreadIsExchanger())
+            exchWorker.blockingSectionBegin();
     }
 
     /**
@@ -2279,9 +2278,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * Should be called from exchange worker thread.
      */
     public void exchangerBlockingSectionEnd() {
-        assert exchWorker != null && Thread.currentThread() == exchWorker.runner();
+        if (currentThreadIsExchanger())
+            exchWorker.blockingSectionEnd();
+    }
 
-        exchWorker.blockingSectionEnd();
+    /** */
+    private boolean currentThreadIsExchanger() {
+        return exchWorker != null && Thread.currentThread() == exchWorker.runner();
     }
 
     /**
