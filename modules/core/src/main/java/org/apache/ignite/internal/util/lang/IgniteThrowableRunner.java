@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.util.lang;
 
-import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Conflict resolver manager.
+ * Represents a throwable runner.
  */
-public interface CacheConflictResolutionManager<K, V> extends GridCacheManager<K, V> {
+public interface IgniteThrowableRunner {
     /**
-     * @return Cache conflict resolver.
+     * Execute a body.
      */
-    public CacheVersionConflictResolver conflictResolver();
+    void run() throws IgniteCheckedException;
 }

@@ -15,16 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnCreateDestoryIndexTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnSqlQueryTest;
 
 /**
- * Conflict resolver manager.
+ * Test suite for cache queries.
  */
-public interface CacheConflictResolutionManager<K, V> extends GridCacheManager<K, V> {
+public class IgniteCacheBlockExchangeOnSqlReadOperationsTestSuite extends TestSuite {
     /**
-     * @return Cache conflict resolver.
+     * @return Test suite.
      */
-    public CacheVersionConflictResolver conflictResolver();
+    public static TestSuite suite() {
+        TestSuite suite = new TestSuite("Do Not Block Read Operations Test Suite");
+
+        suite.addTestSuite(CacheBlockOnSqlQueryTest.class);
+        suite.addTestSuite(CacheBlockOnCreateDestoryIndexTest.class);
+
+        return suite;
+    }
 }
