@@ -24,6 +24,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import org.apache.ignite.internal.processors.compress.CompressProcessor;
 
 /**
  * File I/O implementation based on {@link FileChannel}.
@@ -35,7 +36,7 @@ public class RandomAccessFileIO extends AbstractFileIO {
     private final FileChannel ch;
 
     /** */
-    private final Path filePath;
+    private final int fsBlockSize;
 
     /**
      * Creates I/O implementation for specified {@code file}
@@ -44,13 +45,14 @@ public class RandomAccessFileIO extends AbstractFileIO {
      * @param modes Open modes.
      */
     public RandomAccessFileIO(File file, OpenOption... modes) throws IOException {
-        filePath = file.toPath();
+        Path filePath = file.toPath();
+        this.fsBlockSize = CompressProcessor.getFsBlockSize(filePath);
         ch = FileChannel.open(filePath, modes);
     }
 
     /** {@inheritDoc} */
-    @Override public Path getFilePath() {
-        return filePath;
+    @Override public int getFileSystemBlockSize() {
+        return fsBlockSize;
     }
 
     /** {@inheritDoc} */

@@ -26,7 +26,6 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.List;
@@ -34,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.processors.compress.CompressProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -47,11 +47,14 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
     /** Negative value for file offset: read/write starting from current file position */
     private static final int FILE_POS_USE_CURRENT = -1;
 
-    /** File system & linux block size. Minimal amount of data can be written using DirectIO. */
-    private final int fsBlockSize;
+    /** Minimal amount of data can be written using DirectIO. */
+    private final int ioBlockSize;
 
-    /** Durable memory Page size. Can have greater value than {@link #fsBlockSize}. */
+    /** Durable memory Page size. Can have greater value than {@link #ioBlockSize}. */
     private final int pageSize;
+
+    /** File system block size. */
+    private final int fsBlockSize;
 
     /** File. */
     private final File file;
@@ -59,7 +62,7 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Thread local with buffers with capacity = one page {@link #pageSize} and aligned using {@link #fsBlockSize}. */
+    /** Thread local with buffers with capacity = one page {@link #pageSize} and aligned using {@link #ioBlockSize}. */
     private ThreadLocal<ByteBuffer> tlbOnePageAligned;
 
     /** Managed aligned buffers. Used to check if buffer is applicable for direct IO our data should be copied. */
@@ -80,18 +83,18 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
     /**
      * Creates Direct File IO.
      *
-     * @param fsBlockSize FS/OS block size.
+     * @param ioBlockSize FS/OS block size.
      * @param pageSize Durable memory Page size.
      * @param file File to open.
      * @param modes Open options (flags).
      * @param tlbOnePageAligned Thread local with buffers with capacity = one page {@code pageSize} and aligned using
-     * {@code fsBlockSize}.
+     * {@code ioBlockSize}.
      * @param managedAlignedBuffers Managed aligned buffers map, used to check if buffer is known.
      * @param log Logger.
      * @throws IOException if file open failed.
      */
     AlignedBuffersDirectFileIO(
-        int fsBlockSize,
+        int ioBlockSize,
         int pageSize,
         File file,
         OpenOption[] modes,
@@ -100,11 +103,13 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
         IgniteLogger log)
         throws IOException {
         this.log = log;
-        this.fsBlockSize = fsBlockSize;
+        this.ioBlockSize = ioBlockSize;
         this.pageSize = pageSize;
         this.file = file;
         this.tlbOnePageAligned = tlbOnePageAligned;
         this.managedAlignedBuffers = managedAlignedBuffers;
+
+        fsBlockSize = CompressProcessor.getFsBlockSize(file.toPath());
 
         String pathname = file.getAbsolutePath();
 
@@ -175,8 +180,8 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public Path getFilePath() {
-        return file.toPath();
+    @Override public int getFileSystemBlockSize() {
+        return fsBlockSize;
     }
 
     /** {@inheritDoc} */
@@ -212,7 +217,7 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
             return readIntoAlignedBuffer(destBuf, filePosition);
 
         boolean useTlb = size == pageSize;
-        ByteBuffer alignedBuf = useTlb ? tlbOnePageAligned.get() : AlignedBuffers.allocate(fsBlockSize, size);
+        ByteBuffer alignedBuf = useTlb ? tlbOnePageAligned.get() : AlignedBuffers.allocate(ioBlockSize, size);
 
         try {
             assert alignedBuf.position() == 0: "Temporary aligned buffer is in incorrect state: position is set incorrectly";
@@ -253,7 +258,7 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
             return writeFromAlignedBuffer(srcBuf, filePosition);
 
         boolean useTlb = size == pageSize;
-        ByteBuffer alignedBuf = useTlb ? tlbOnePageAligned.get() : AlignedBuffers.allocate(fsBlockSize, size);
+        ByteBuffer alignedBuf = useTlb ? tlbOnePageAligned.get() : AlignedBuffers.allocate(ioBlockSize, size);
 
         try {
             assert alignedBuf.position() == 0 : "Temporary aligned buffer is in incorrect state: position is set incorrectly";
@@ -296,16 +301,16 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
     /**
      * Check if size is appropriate for aligned/direct IO.
      *
-     * @param size buffer size to write, should be divisible by {@link #fsBlockSize}.
+     * @param size buffer size to write, should be divisible by {@link #ioBlockSize}.
      * @return size from parameter.
      * @throws IOException if provided size can't be written using direct IO.
      */
     private int checkSizeIsPadded(int size) throws IOException {
-        if (size % fsBlockSize != 0) {
+        if (size % ioBlockSize != 0) {
             throw new IOException(
-                String.format("Unable to apply DirectIO for read/write buffer [%d] bytes on file system " +
+                String.format("Unable to apply DirectIO for read/write buffer [%d] bytes on " +
                     "block size [%d]. Consider setting %s.setPageSize(%d) or disable Direct IO.",
-                    size, fsBlockSize, DataStorageConfiguration.class.getSimpleName(), fsBlockSize));
+                    size, ioBlockSize, DataStorageConfiguration.class.getSimpleName(), ioBlockSize));
         }
 
         return size;
@@ -452,9 +457,9 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
         if (pos > buf.capacity())
             throw new BufferOverflowException();
 
-        if ((alignedPointer + pos) % fsBlockSize != 0) {
+        if ((alignedPointer + pos) % ioBlockSize != 0) {
             U.warn(log, String.format("IO Buffer Pointer [%d] and/or offset [%d] seems to be not aligned " +
-                "for FS block size [%d]. Direct IO may fail.", alignedPointer, buf.position(), fsBlockSize));
+                "for IO block size [%d]. Direct IO may fail.", alignedPointer, buf.position(), ioBlockSize));
         }
 
         return new Pointer(alignedPointer + pos);

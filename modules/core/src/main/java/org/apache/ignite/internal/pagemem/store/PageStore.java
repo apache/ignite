@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.pagemem.store;
 
-import java.nio.file.Path;
-import org.apache.ignite.IgniteCheckedException;
-
 import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 
 /**
@@ -132,8 +130,8 @@ public interface PageStore {
     public void truncate(int tag) throws StorageException;
 
     /**
-     * @return Storage file.
+     * @return Storage block size or negative value if unknown.
      * @throws StorageException If failed.
      */
-    public Path getStorageFile() throws StorageException;
+    public int getBlockSize() throws StorageException;
 }

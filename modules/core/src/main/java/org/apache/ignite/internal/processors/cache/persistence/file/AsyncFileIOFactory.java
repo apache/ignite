@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.file.OpenOption;
+import java.util.function.Function;
+import org.apache.ignite.internal.IgniteComponentType;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;

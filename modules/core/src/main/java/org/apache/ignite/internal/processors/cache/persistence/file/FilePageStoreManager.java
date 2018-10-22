@@ -482,7 +482,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         PageStore store = getStore(cacheId, partId);
 
         try {
-            pageBuf = cctx.cacheContext(cacheId).compress().compressPage(pageId, pageBuf, store.getStorageFile());
+            int blockSize = store.getBlockSize();
+
+            if (blockSize > 0)
+                pageBuf = cctx.cacheContext(cacheId).compress().compressPage(pageId, pageBuf, blockSize);
 
             store.write(pageId, pageBuf, tag, calculateCrc);
         }

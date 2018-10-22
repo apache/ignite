@@ -24,7 +24,6 @@ import java.nio.ByteOrder;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -71,7 +70,7 @@ public class FilePageStore implements PageStore {
     private final FileIOFactory ioFactory;
 
     /** I/O interface for read/write operations with file */
-    private volatile FileIO fileIO;
+    protected volatile FileIO fileIO;
 
     /** */
     private final AtomicLong allocated;
@@ -105,7 +104,8 @@ public class FilePageStore implements PageStore {
         File file,
         FileIOFactory factory,
         DataStorageConfiguration cfg,
-        AllocatedPageTracker allocatedTracker) {
+        AllocatedPageTracker allocatedTracker
+    ) {
         this.type = type;
         this.cfgFile = file;
         this.dbCfg = cfg;
@@ -116,8 +116,8 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public Path getStorageFile() {
-        return fileIO.getFilePath();
+    @Override public int getBlockSize() {
+        return -1; // Header is unaligned in this version.
     }
 
     /** {@inheritDoc} */

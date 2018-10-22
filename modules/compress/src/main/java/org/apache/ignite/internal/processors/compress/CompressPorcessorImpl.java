@@ -1,10 +1,7 @@
 package org.apache.ignite.internal.processors.compress;
 
 import com.github.luben.zstd.Zstd;
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
-import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
@@ -24,9 +21,6 @@ public class CompressPorcessorImpl extends CompressProcessor {
         }
     };
 
-    /** */
-    private final ConcurrentHashMap<Path, Integer> fsBlockSizeCache = new ConcurrentHashMap<>();
-
     /**
      * @param ctx Kernal context.
      */
@@ -39,35 +33,16 @@ public class CompressPorcessorImpl extends CompressProcessor {
         return true;
     }
 
-    private int getFileSystemBlockSize(Path file) throws IgniteCheckedException {
-        Path root;
-
-        try {
-            root = file.toRealPath().getRoot();
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException(e);
-        }
-
-        Integer blockSize = fsBlockSizeCache.get(root);
-
-        if (blockSize == null)
-            fsBlockSizeCache.putIfAbsent(root, blockSize = LinuxFileSystemLibrary.getFileSystemBlockSize(root));
-
-        return blockSize;
-    }
-
     /** {@inheritDoc} */
-    @Override public ByteBuffer compressPage(long pageId, ByteBuffer page, Path file) throws IgniteCheckedException {
+    @Override public ByteBuffer compressPage(long pageId, ByteBuffer page, int fsBlockSize) throws IgniteCheckedException {
         PageIO io = PageIO.getPageIO(page);
 
         if (!(io instanceof CompactablePageIO))
             return page;
 
         int pageSize = page.remaining();
-        int fsBlockSize = getFileSystemBlockSize(file);
 
-        if (pageSize < fsBlockSize * 2) // TODO assume page and block alignment??
+        if (pageSize < fsBlockSize * 2 || pageSize % fsBlockSize != 0)
             return page; // Makes no sense to compress the page, we will not free any disk space.
 
         ByteBuffer compact = tmp.get();

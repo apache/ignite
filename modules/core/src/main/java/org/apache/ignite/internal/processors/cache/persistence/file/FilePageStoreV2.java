@@ -57,4 +57,9 @@ public class FilePageStoreV2 extends FilePageStore {
     @Override public int version() {
         return VERSION;
     }
+
+    /** {@inheritDoc} */
+    @Override public int getBlockSize() {
+        return fileIO.getFileSystemBlockSize();
+    }
 }
