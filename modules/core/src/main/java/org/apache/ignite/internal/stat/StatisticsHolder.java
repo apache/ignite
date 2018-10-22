@@ -20,6 +20,9 @@ package org.apache.ignite.internal.stat;
 
 import java.util.Map;
 
+/**
+ * Holder of IO statistics.
+ */
 public interface StatisticsHolder {
 
     /**

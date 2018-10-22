@@ -21,6 +21,9 @@ package org.apache.ignite.internal.stat;
 import java.util.Collections;
 import java.util.Map;
 
+/**
+ * No Operation IO statistics holder. Use in case statistics shouldn't be gathered.
+ */
 public class StatisticsHolderNoOp implements StatisticsHolder {
     /** {@inheritDoc} */
     @Override public void trackLogicalRead(long pageAddr) {

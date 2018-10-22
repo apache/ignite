@@ -29,6 +29,9 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
 
+/**
+ * IO statistics manager to manage of gathering IO statistics.
+ */
 public class GridIoStatManager {
     /** No OP statistic handler. */
     public final static StatisticsHolder NO_OP_STATISTIC_HOLDER = new StatisticsHolderNoOp();
@@ -55,6 +58,7 @@ public class GridIoStatManager {
     public StatisticsHolder createAndRegisterStatHolder(StatType type, String name) {
         return createAndRegisterStatHolder(type, name, null);
     }
+
     /**
      * Create and register statistics holder.
      *

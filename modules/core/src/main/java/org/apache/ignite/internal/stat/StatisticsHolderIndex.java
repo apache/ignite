@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 
 /**
- *
+ * Index statistics holder to gather statistics related to concrete index.
  */
 public class StatisticsHolderIndex implements StatisticsHolder {
     /** */
