@@ -128,7 +128,8 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
 
         applyDiscoveryHook = false;
 
-        final Ignite ignite0 = startGridsMultiThreaded(2);
+        final Ignite ignite0 = startGrid(0);
+        final Ignite ignite1 = startGrid(1);
 
         final GridFutureAdapter finishFut = new GridFutureAdapter();
 
@@ -196,8 +197,6 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
                 addIntField(ignite0, "f1", 101, 1);
             }
         }).get();
-
-        final IgniteEx ignite1 = grid(1);
 
         // Update metadata (version 2).
         ignite1.executorService(ignite1.cluster().forLocal()).submit(new Runnable() {
