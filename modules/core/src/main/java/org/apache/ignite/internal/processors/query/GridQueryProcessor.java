@@ -40,6 +40,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
@@ -944,7 +945,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (!req.start())
                 continue;
 
-            registerBinaryMetadata(req.startCacheConfiguration(), req.schema());
+            try {
+                registerBinaryMetadata(req.startCacheConfiguration(), req.schema());
+            }
+            catch (BinaryObjectException e) {
+                ctx.cache().completeCacheStartFuture(req, false, e);
+            }
         }
     }
 
@@ -953,8 +959,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param ccfg Cache configuration.
      * @param schema Schema for which register metadata is required.
+     * @throws BinaryObjectException if register was failed.
      */
-    private void registerBinaryMetadata(CacheConfiguration ccfg, QuerySchema schema) {
+    private void registerBinaryMetadata(CacheConfiguration ccfg, QuerySchema schema) throws BinaryObjectException {
         if (schema != null) {
             Collection<QueryEntity> qryEntities = schema.entities();
 
@@ -981,8 +988,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * Register class metadata locally if it didn't do it earlier.
      *
      * @param cls Class for which the metadata should be registered.
+     * @throws BinaryObjectException if register was failed.
      */
-    private void registerDescriptorLocallyIfNeeded(Class<?> cls) {
+    private void registerDescriptorLocallyIfNeeded(Class<?> cls) throws BinaryObjectException {
         IgniteCacheObjectProcessor cacheObjProc = ctx.cacheObjects();
 
         if (cacheObjProc instanceof CacheObjectBinaryProcessorImpl) {

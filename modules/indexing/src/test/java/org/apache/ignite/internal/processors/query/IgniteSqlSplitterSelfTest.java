@@ -91,6 +91,8 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        cleanPersistenceDir();
+
         startGridsMultiThreaded(3, false);
         Ignition.setClientMode(true);
         try {
@@ -99,6 +101,13 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         finally {
             Ignition.setClientMode(false);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        cleanPersistenceDir();
     }
 
     /**
