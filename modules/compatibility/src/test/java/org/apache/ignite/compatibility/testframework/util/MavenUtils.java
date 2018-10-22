@@ -213,6 +213,6 @@ public class MavenUtils {
         if (m2Home == null)
             return "mvn";
 
-        return m2Home + "/bin/mvn" ;
+        return "\"" + m2Home + "/bin/mvn\"" ;
     }
 }
