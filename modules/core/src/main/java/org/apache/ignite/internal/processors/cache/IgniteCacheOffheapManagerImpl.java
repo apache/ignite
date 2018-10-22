@@ -1561,6 +1561,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
+        @Override public void finalizeUpdateCountres() {
+            pCntr.finalizeUpdateCountres();
+        }
+
+        /** {@inheritDoc} */
         @Override public String name() {
             return name;
         }

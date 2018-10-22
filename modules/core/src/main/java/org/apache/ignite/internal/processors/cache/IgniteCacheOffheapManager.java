@@ -590,12 +590,6 @@ public interface IgniteCacheOffheapManager {
     public long totalPartitionEntriesCount(int part);
 
     /**
-     * @param part Partition.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void preloadPartition(int part) throws IgniteCheckedException;
-
-    /**
      *
      */
     interface OffheapInvokeClosure extends IgniteTree.InvokeClosure<CacheDataRow> {
@@ -1073,13 +1067,12 @@ public interface IgniteCacheOffheapManager {
          * Return PendingTree for data store.
          *
          * @return PendingTree instance.
-         * @throws IgniteCheckedException
          */
         PendingEntriesTree pendingTree();
 
         /**
-         * Preload store.
+         * Flushes pending update counters closing all possible gaps.
          */
-        public void preload() throws IgniteCheckedException;
+        void finalizeUpdateCountres();
     }
 }
