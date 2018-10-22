@@ -17,13 +17,14 @@
 
 import template from './template.pug';
 
-import AgentManager from 'app/modules/agent/AgentManager.service';
-
 class controller {
+    /** @type {string} */
+    clusterId;
+
     static $inject = ['AgentManager'];
 
     /**
-     * @param {AgentManager} agentMgr
+     * @param {import('app/modules/agent/AgentManager.service').default} agentMgr
      */
     constructor(agentMgr) {
         this.agentMgr = agentMgr;

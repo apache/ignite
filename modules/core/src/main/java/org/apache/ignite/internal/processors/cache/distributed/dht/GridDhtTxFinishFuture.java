@@ -245,7 +245,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             if (commit && e == null)
                 e = this.tx.commitError();
 
-            Throwable finishErr = e != null ? e : err;
+            Throwable finishErr = mvccFinish(e != null ? e : err);
 
             if (super.onDone(tx, finishErr)) {
                 if (finishErr == null)
@@ -371,7 +371,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.activeCachesDeploymentEnabled(),
                 false,
                 false,
-                tx.mvccSnapshot());
+                tx.mvccSnapshot(),
+                tx.filterUpdateCountersForBackupNode(n));
 
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
@@ -419,7 +420,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         if (tx.onePhaseCommit())
             return false;
 
-        assert !commit || !tx.txState().mvccEnabled(cctx) || tx.mvccSnapshot() != null || F.isEmpty(tx.writeEntries());
+        assert !commit || !tx.txState().mvccEnabled() || tx.mvccSnapshot() != null || F.isEmpty(tx.writeEntries());
 
         boolean sync = tx.syncMode() == FULL_SYNC;
 
@@ -457,11 +458,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             for (IgniteTxEntry e : dhtMapping.entries())
                 updCntrs.add(e.updateCounter());
 
-            Map<Integer, PartitionUpdateCounters> updCntrsForNode = null;
-
-            if (dhtMapping.queryUpdate() && commit)
-                updCntrsForNode = tx.filterUpdateCountersForBackupNode(n);
-
             GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
                 tx.nearNodeId(),
                 futId,
@@ -489,7 +485,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 false,
                 false,
                 mvccSnapshot,
-                updCntrsForNode);
+                commit ? null : tx.filterUpdateCountersForBackupNode(n));
 
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
 
@@ -559,7 +555,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     tx.activeCachesDeploymentEnabled(),
                     false,
                     false,
-                    mvccSnapshot);
+                    mvccSnapshot,
+                    null);
 
                 req.writeVersion(tx.writeVersion());
 
@@ -596,6 +593,23 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         }
 
         return res;
+    }
+
+    /**
+     * Finishes MVCC transaction on the local node.
+     */
+    private Throwable mvccFinish(Throwable commitError) {
+        try {
+            cctx.tm().mvccFinish(tx, commit && commitError == null);
+        }
+        catch (IgniteCheckedException ex) {
+            if (commitError == null)
+                tx.commitError(commitError = ex);
+            else
+                commitError.addSuppressed(ex);
+        }
+
+        return commitError;
     }
 
     /** {@inheritDoc} */

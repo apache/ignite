@@ -71,7 +71,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
         super.afterTest();
 
         if (pageMem != null)
-            pageMem.stop();
+            pageMem.stop(true);
 
         pageMem = null;
     }
