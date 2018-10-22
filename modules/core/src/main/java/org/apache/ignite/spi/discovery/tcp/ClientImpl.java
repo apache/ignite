@@ -303,6 +303,11 @@ class ClientImpl extends TcpDiscoveryImpl {
             }
         }.start();
 
+        timer.schedule(
+            new MetricsSender(),
+            spi.metricsUpdateFreq,
+            spi.metricsUpdateFreq);
+
         try {
             joinLatch.await();
 
@@ -314,11 +319,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         catch (InterruptedException e) {
             throw new IgniteSpiException("Thread has been interrupted.", e);
         }
-
-        timer.schedule(
-            new MetricsSender(),
-            spi.metricsUpdateFreq,
-            spi.metricsUpdateFreq);
 
         spi.printStartInfo();
     }
