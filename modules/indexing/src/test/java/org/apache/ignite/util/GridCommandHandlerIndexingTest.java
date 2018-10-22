@@ -17,10 +17,19 @@
 
 package org.apache.ignite.util;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.RandomAccessFile;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.channels.FileChannel;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
@@ -34,19 +43,31 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.tree.SearchRow;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 
 /**
  *
@@ -136,11 +157,105 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
 
         breakSqlIndex(ignite, cacheName);
 
+        validateIndexesParts(ignite, cacheName);
+
         injectTestSystemOut();
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", cacheName));
 
         assertTrue(testOut.toString().contains("validate_indexes has finished with errors"));
+    }
+
+    /**
+     * Tests that missing rows in H2 indexes are detected.
+     */
+    public void testcrc() throws Exception {
+        Ignite ignite = startGrids(1);
+
+        ignite.cluster().active(true);
+
+        Ignite client = startGrid("client");
+
+        String cacheName = "persons-cache-vi";
+
+        IgniteCache<Integer, Person> personCache = createPersonCache(client, cacheName);
+
+        ThreadLocalRandom rand = ThreadLocalRandom.current();
+
+        for (int i = 0; i < 10_000; i++)
+            personCache.put(i, new Person(rand.nextInt(), String.valueOf(rand.nextLong())));
+
+        forceCheckpoint();
+
+        File path = indexPartition(ignite, cacheName);
+
+        assertTrue(path.exists());
+
+        stopAllGrids();
+
+        RandomAccessFile part = new RandomAccessFile(path, "rw");
+
+        try {
+            byte[] trash = new byte[3];
+
+            rand.nextBytes(trash);
+
+            part.seek(1);
+
+            part.write(trash);
+        }
+        finally {
+            part.close();
+        }
+
+
+        startGrids(1);
+
+        ignite = grid(0);
+
+        awaitPartitionMapExchange();
+
+        //validateIndexesParts(ignite, cacheName);
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", cacheName));
+
+        assertTrue(testOut.toString().contains("validate_indexes has finished with errors"));
+    }
+
+    private File indexPartition(Ignite ig, String cacheName) throws Exception{
+        IgniteEx ig0 = (IgniteEx)ig;
+
+        FilePageStoreManager pageStoreManager = ((FilePageStoreManager) ig0.context().cache().context().pageStore());
+
+        return new File(pageStoreManager.cacheWorkDir(false, cacheName), INDEX_FILE_NAME);
+    }
+
+
+    private void validateIndexesParts(Ignite ig, String cacheName) throws Exception {
+        IgniteEx ig0 = (IgniteEx)ig;
+        int cacheId = CU.cacheId(cacheName);
+
+        String grpName = ig0.context().cache().context().cacheContext(cacheId).config().getGroupName();
+        int cacheGrpId = grpName == null ? cacheName.hashCode() : grpName.hashCode();
+
+        CacheGroupContext grpCtx = ig0.context().cache().context().cache().cacheGroup(cacheGrpId);
+
+        PageStore pageStore = ((FilePageStoreManager) ig0.context().cache().context().pageStore()).getStore(cacheGrpId,
+                PageIdAllocator.INDEX_PARTITION);
+
+        long pageId = PageIdUtils.pageId(PageIdAllocator.INDEX_PARTITION, PageIdAllocator.FLAG_IDX, 0);
+        ByteBuffer buf = ByteBuffer.allocateDirect(ig0.context().config().getDataStorageConfiguration().getPageSize());
+
+        buf.order(ByteOrder.nativeOrder());
+
+        for (int pageNo = 0; pageNo < pageStore.pages(); pageId++, pageNo++) {
+            buf.clear();
+
+            pageStore.read(pageId, buf, true);
+
+            log.error("crc=" + PageIO.getCrc(buf) + " pageId=" + pageId);
+        }
     }
 
     /**
