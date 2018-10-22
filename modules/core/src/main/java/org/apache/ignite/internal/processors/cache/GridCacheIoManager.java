@@ -330,8 +330,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                             }
                         }
 
-                        return false;
                     }
+
+                    return false;
                 }
             }
 
