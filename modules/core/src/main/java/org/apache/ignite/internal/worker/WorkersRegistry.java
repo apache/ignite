@@ -61,8 +61,10 @@ public class WorkersRegistry implements GridWorkerListener {
     /** */
     private final IgniteBiInClosure<GridWorker, FailureType> workerFailedHnd;
 
-    /** Worker heartbeat timeout in milliseconds, when exceeded, worker is considered as blocked. */
-    private final long heartbeatTimeout;
+    /**
+     * Maximum inactivity period for system worker in milliseconds, when exceeded, worker is considered as blocked.
+     */
+    private volatile long sysWorkerBlockedTimeout;
 
     /** Time in milliseconds between successive workers checks. */
     private final long checkInterval;
@@ -72,15 +74,17 @@ public class WorkersRegistry implements GridWorkerListener {
 
     /**
      * @param workerFailedHnd Closure to invoke on worker failure.
-     * @param heartbeatTimeout Maximum allowed worker heartbeat interval in milliseconds, should be positive.
+     * @param sysWorkerBlockedTimeout Maximum allowed worker heartbeat interval in milliseconds, non-positive value denotes
+     * infinite interval.
      */
     public WorkersRegistry(
         @NotNull IgniteBiInClosure<GridWorker, FailureType> workerFailedHnd,
-        long heartbeatTimeout,
-        IgniteLogger log) {
+        long sysWorkerBlockedTimeout,
+        IgniteLogger log
+    ) {
         this.workerFailedHnd = workerFailedHnd;
-        this.heartbeatTimeout = heartbeatTimeout;
-        this.checkInterval = Math.min(DFLT_CHECK_INTERVAL, heartbeatTimeout);
+        this.sysWorkerBlockedTimeout = U.ensurePositive(sysWorkerBlockedTimeout, Long.MAX_VALUE);
+        this.checkInterval = Math.min(DFLT_CHECK_INTERVAL, sysWorkerBlockedTimeout);
         this.log = log;
     }
 
@@ -127,13 +131,31 @@ public class WorkersRegistry implements GridWorkerListener {
     }
 
     /** */
-    boolean livenessCheckEnabled() {
+    public boolean livenessCheckEnabled() {
         return livenessCheckEnabled;
     }
 
     /** */
-    void livenessCheckEnabled(boolean val) {
+    public void livenessCheckEnabled(boolean val) {
         livenessCheckEnabled = val;
+    }
+
+    /**
+     * Returns maximum inactivity period for system worker. When exceeded, worker is considered as blocked.
+     *
+     * @return Maximum inactivity period for system worker in milliseconds.
+     */
+    public long getSystemWorkerBlockedTimeout() {
+        return sysWorkerBlockedTimeout == Long.MAX_VALUE ? 0 : sysWorkerBlockedTimeout;
+    }
+
+    /**
+     * Sets maximum inactivity period for system worker. When exceeded, worker is considered as blocked.
+     *
+     * @param val Maximum inactivity period for system worker in milliseconds.
+     */
+    public void setSystemWorkerBlockedTimeout(long val) {
+        sysWorkerBlockedTimeout = U.ensurePositive(val, Long.MAX_VALUE);
     }
 
     /** {@inheritDoc} */
@@ -164,7 +186,7 @@ public class WorkersRegistry implements GridWorkerListener {
         try {
             lastCheckTs = U.currentTimeMillis();
 
-            long workersToCheck = Math.max(registeredWorkers.size() * checkInterval / heartbeatTimeout, 1);
+            long workersToCheck = Math.max(registeredWorkers.size() * checkInterval / sysWorkerBlockedTimeout, 1);
 
             int workersChecked = 0;
 
@@ -198,7 +220,7 @@ public class WorkersRegistry implements GridWorkerListener {
 
                     long heartbeatDelay = U.currentTimeMillis() - worker.heartbeatTs();
 
-                    if (heartbeatDelay > heartbeatTimeout) {
+                    if (heartbeatDelay > sysWorkerBlockedTimeout) {
                         GridWorker worker0 = registeredWorkers.get(worker.runner().getName());
 
                         if (worker0 != null && worker0 == worker) {
