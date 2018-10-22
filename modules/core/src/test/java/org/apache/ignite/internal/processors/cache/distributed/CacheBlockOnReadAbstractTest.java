@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -34,6 +35,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -69,8 +71,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
@@ -108,6 +113,8 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /** Custom ip finder. */
     private volatile TcpDiscoveryIpFinder customIpFinder;
 
+    /** Discovery message processor. */
+    private volatile BiConsumer<TcpDiscoveryAbstractMessage, String> discoveryMsgProcessor;
     /**
      * Number of baseline servers to start before test.
      *
@@ -268,6 +275,14 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
+        cfg.setDiscoverySpi(new TestTcpDiscoverySpi() {
+            /** {@inheritDoc} */
+            @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
+                if (discoveryMsgProcessor != null)
+                    discoveryMsgProcessor.accept(msg, igniteInstanceName);
+            }
+        });
+
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
@@ -416,25 +431,80 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    public void _testStartClient() throws Exception {
-        startNodesInClientMode(true);
+    @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    public void testStartClient() throws Exception {
+        int clientBaselineNode = 2;
 
-        doTest(
-            asMessagePredicate(discoEvt -> discoEvt.type() == EventType.EVT_NODE_JOINED),
-            () -> {
-                for (int i = 0; i < baselineServersCount() - 2; i++)
-                    cntFinishedReadOperations.countDown();
+        int pauseBaselineNode = 1;
 
-                customIpFinder = new TcpDiscoveryVmIpFinder(false)
-                    .setAddresses(
-                        Collections.singletonList("127.0.0.1:47500")
-                    );
+        RunnableX block = () -> {
+            startNodesInClientMode(true);
 
-                startGrid(UUID.randomUUID().toString());
+            startGrid(UUID.randomUUID().toString());
+        };
 
-                customIpFinder = null;
+        Class<? extends TcpDiscoveryAbstractMessage> blockMsgCls = TcpDiscoveryNodeAddFinishedMessage.class;
+
+        doTest(new BackgroundOperation() {
+            private volatile CountDownLatch blockLatch;
+
+            @Override protected void execute() {
+                try {
+                    blockLatch = new CountDownLatch(1);
+
+                    discoveryMsgProcessor = (msg, receiverConsistentId) -> {
+                        if (!blockMsgCls.isInstance(msg))
+                            return;
+
+                        boolean baselineSnd = Objects.equals(
+                            baseline.get(pauseBaselineNode).localNode().consistentId(),
+                            receiverConsistentId
+                        );
+
+                        if (baselineSnd) {
+                            cntFinishedReadOperations.countDown();
+
+                            try {
+                                blockLatch.await();
+                            }
+                            catch (InterruptedException ignore) {
+                            }
+                        }
+                    };
+
+                    for (int i = 0; i < baselineServersCount() - 2; i++)
+                        cntFinishedReadOperations.countDown();
+
+                    customIpFinder = new TcpDiscoveryVmIpFinder(false)
+                        .setAddresses(
+                            Collections.singletonList("127.0.0.1:4750" + clientBaselineNode)
+                        );
+
+                    try {
+                        block.runx();
+                    }
+                    finally {
+                        customIpFinder = null;
+                    }
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+                finally {
+                    discoveryMsgProcessor = null;
+                }
             }
-        );
+
+            @Override protected long stopTimeout() {
+                return 30_000;
+            }
+
+            @Override void stop() throws Exception {
+                blockLatch.countDown();
+
+                super.stop();
+            }
+        });
     }
 
     /**
@@ -754,6 +824,17 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
             blockMsgPred
         );
 
+        doTest(backgroundOperation);
+    }
+
+    /**
+     * Checks that {@code block} closure doesn't block read operation.
+     * Does it for client, baseline and regular server node.
+     *
+     * @param backgroundOperation Background operation.
+     * @throws Exception If failed.
+     */
+    public void doTest(BackgroundOperation backgroundOperation) throws Exception {
         CacheReadBackgroundOperation<?, ?> readOperation = getReadOperation();
 
         readOperation.initCache(baseline.get(0), true);
