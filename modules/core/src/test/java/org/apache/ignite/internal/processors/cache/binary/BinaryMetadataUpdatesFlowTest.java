@@ -78,7 +78,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
     private volatile DiscoveryHook discoveryHook;
 
     /** */
-    private static final int UPDATES_COUNT = 5_000;
+    private static final int UPDATES_COUNT = 1_000;
 
     /** */
     private static final int RESTART_DELAY = 3_000;
