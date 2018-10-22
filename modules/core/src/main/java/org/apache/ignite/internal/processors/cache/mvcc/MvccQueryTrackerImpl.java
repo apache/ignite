@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -63,7 +62,7 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
     private final boolean canRemap;
 
     /** */
-    private final AtomicBoolean finished = new AtomicBoolean();
+    private boolean done;
 
     /**
      * @param cctx Cache context.
@@ -140,7 +139,7 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
 
     /** {@inheritDoc} */
     @Override public void onDone() {
-        if (!finished.compareAndSet(false, true))
+        if (!checkDone())
             return;
 
         MvccProcessor prc = cctx.shared().coordinators();
@@ -158,7 +157,7 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
     @Override public IgniteInternalFuture<Void> onDone(@NotNull GridNearTxLocal tx, boolean commit) {
         MvccSnapshot snapshot = snapshot(), txSnapshot = tx.mvccSnapshot();
 
-        if (snapshot == null && txSnapshot == null || !finished.compareAndSet(false, true))
+        if (!checkDone() || snapshot == null && txSnapshot == null)
             return commit ? new GridFinishedFuture<>() : null;
 
         MvccProcessor prc = cctx.shared().coordinators();
@@ -333,6 +332,14 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
         }
 
         return true;
+    }
+
+    /** */
+    private synchronized boolean checkDone() {
+        if (!done)
+            return done = true;
+
+        return false;
     }
 
     /** {@inheritDoc} */
