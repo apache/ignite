@@ -43,7 +43,7 @@ goto checkIgniteHome2
 if defined JAVA_HOME  goto checkJdk
     echo %0, ERROR:
     echo JAVA_HOME environment variable is not found.
-    echo Please point JAVA_HOME variable to location of JDK 1.8 or JDK 9.
+    echo Please point JAVA_HOME variable to location of JDK 1.8 or later.
     echo You can also download latest JDK at http://java.com/download.
 goto error_finish
 
@@ -52,7 +52,7 @@ goto error_finish
 if exist "%JAVA_HOME%\bin\java.exe" goto checkJdkVersion
     echo %0, ERROR:
     echo JAVA is not found in JAVA_HOME=%JAVA_HOME%.
-    echo Please point JAVA_HOME variable to installation of JDK 1.8 or JDK 9.
+    echo Please point JAVA_HOME variable to installation of JDK 1.8 or later.
     echo You can also download latest JDK at http://java.com/download.
 goto error_finish
 
@@ -73,7 +73,7 @@ if %MAJOR_JAVA_VER% == 1 set MAJOR_JAVA_VER=%MINOR_JAVA_VER%
 if %MAJOR_JAVA_VER% LSS 8 (
     echo %0, ERROR:
     echo The version of JAVA installed in %JAVA_HOME% is incorrect.
-    echo Please point JAVA_HOME variable to installation of JDK 1.8 or JDK 9.
+    echo Please point JAVA_HOME variable to installation of JDK 1.8 or later.
     echo You can also download latest JDK at http://java.com/download.
 	goto error_finish
 )
