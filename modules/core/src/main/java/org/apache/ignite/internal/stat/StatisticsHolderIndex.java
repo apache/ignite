@@ -72,12 +72,17 @@ public class StatisticsHolderIndex implements StatisticsHolder {
             case INNER:
                 logicalReadInnerCntr.increment();
 
+                StatisticsHelper.trackLogicalReadQuery(pageAddr);
+
                 break;
             case LEAF:
                 logicalReadLeafCntr.increment();
 
+                StatisticsHelper.trackLogicalReadQuery(pageAddr);
+
                 break;
         }
+
     }
 
     /** {@inheritDoc} */
@@ -89,10 +94,14 @@ public class StatisticsHolderIndex implements StatisticsHolder {
                 logicalReadInnerCntr.increment();
                 physicalReadInnerCntr.increment();
 
+                StatisticsHelper.trackPhysicalAndLogicalReadQuery(pageAddr);
+
                 break;
             case LEAF:
                 logicalReadLeafCntr.increment();
                 physicalReadLeafCntr.increment();
+
+                StatisticsHelper.trackPhysicalAndLogicalReadQuery(pageAddr);
 
                 break;
         }
@@ -110,7 +119,7 @@ public class StatisticsHolderIndex implements StatisticsHolder {
 
     /** {@inheritDoc} */
     @Override public Map<String, Long> logicalReadsMap() {
-        Map<String, Long> res = new HashMap<>(6);
+        Map<String, Long> res = new HashMap<>(3);
 
         res.put(LOGICAL_READS_LEAF, logicalReadLeafCntr.longValue());
         res.put(LOGICAL_READS_INNER, logicalReadInnerCntr.longValue());
@@ -120,7 +129,7 @@ public class StatisticsHolderIndex implements StatisticsHolder {
 
     /** {@inheritDoc} */
     @Override public Map<String, Long> physicalReadsMap() {
-        Map<String, Long> res = new HashMap<>(6);
+        Map<String, Long> res = new HashMap<>(3);
 
         res.put(PHYSICAL_READS_LEAF, physicalReadLeafCntr.longValue());
         res.put(PHYSICAL_READS_INNER, physicalReadInnerCntr.longValue());

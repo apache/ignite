@@ -26,7 +26,7 @@ public class StatisticsHelper {
     private static final ThreadLocal<StatisticsHolderQuery> CURRENT_QUERY_STATISTICS = new ThreadLocal<>();
 
     /**
-     * Start gathering IO statistics for query. Should be used together with {@code finishGatheringQueryStatitics}
+     * Start gathering IO statistics for query. Should be used together with {@code finishGatheringQueryStatistics}
      * method.
      *
      * @param qryId Identifier of query.
@@ -58,7 +58,7 @@ public class StatisticsHelper {
      *
      * @return Gathered statistics.
      */
-    public static StatisticsHolder finishGatheringQueryStatitics() {
+    public static StatisticsHolder finishGatheringQueryStatistics() {
         StatisticsHolderQuery currQryStatisticsHolder = CURRENT_QUERY_STATISTICS.get();
 
         assert currQryStatisticsHolder != null;
