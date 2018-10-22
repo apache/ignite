@@ -67,12 +67,12 @@ public class RPropUpdateCalculator implements ParameterUpdateCalculator<SmoothPa
     /**
      * Maximal value for update.
      */
-    private final static double UPDATE_MAX = 50.0;
+    private static final double UPDATE_MAX = 50.0;
 
     /**
      * Minimal value for update.
      */
-    private final static double UPDATE_MIN = 1E-6;
+    private static final double UPDATE_MIN = 1E-6;
 
     /**
      * Loss function.
