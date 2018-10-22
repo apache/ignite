@@ -36,7 +36,7 @@ public abstract class LazyCacheFreeList implements CacheFreeList<CacheDataRow> {
         AtomicReferenceFieldUpdater.newUpdater(LazyCacheFreeList.class, CountDownLatch.class, "initLatch");
 
     /** */
-    private volatile CacheFreeList delegate;
+    private volatile CacheFreeList<CacheDataRow> delegate;
 
     /** */
     private IgniteCheckedException initErr;
@@ -119,14 +119,14 @@ public abstract class LazyCacheFreeList implements CacheFreeList<CacheDataRow> {
      * @return Cache free list.
      * @throws IgniteCheckedException If failed.
      */
-    protected abstract CacheFreeList createDelegate() throws IgniteCheckedException;
+    protected abstract CacheFreeList<CacheDataRow> createDelegate() throws IgniteCheckedException;
 
     /**
      * @return Cache free list.
      * @throws IgniteCheckedException If failed to initialize free list.
      */
-    private CacheFreeList initDelegateIfNeeded() throws IgniteCheckedException {
-        CacheFreeList delegate = this.delegate;
+    private CacheFreeList<CacheDataRow> initDelegateIfNeeded() throws IgniteCheckedException {
+        CacheFreeList<CacheDataRow> delegate = this.delegate;
 
         if (delegate != null)
             return delegate;

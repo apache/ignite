@@ -23,7 +23,6 @@ import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 
 /**
- *
  */
 public interface FreeList<T extends Storable> {
     /**

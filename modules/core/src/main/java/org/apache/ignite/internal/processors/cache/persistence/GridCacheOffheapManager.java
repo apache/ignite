@@ -1368,7 +1368,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     RootPage reuseRoot = metas.reuseListRoot;
 
                     freeList = new LazyCacheFreeList() {
-                        @Override protected CacheFreeList createDelegate() throws IgniteCheckedException {
+                        @Override protected CacheFreeList<CacheDataRow> createDelegate() throws IgniteCheckedException {
                             return new PartitionCacheFreeList(grp, partId, reuseRoot);
                         }
                     };
