@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -27,7 +28,9 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -702,6 +705,60 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         return store.pages();
     }
 
+    /** {@inheritDoc} */
+    @Override public Map<String, StoredCacheData> readCacheConfigurations() throws IgniteCheckedException {
+        if (cctx.kernalContext().clientNode())
+            return Collections.emptyMap();
+
+        File[] files = storeWorkDir.listFiles();
+
+        if (files == null)
+            return Collections.emptyMap();
+
+        Map<String, StoredCacheData> ccfgs = new HashMap<>();
+
+        Arrays.sort(files);
+
+        for (File file : files) {
+            if (file.isDirectory()) {
+                File[] tmpFiles = file.listFiles(new FilenameFilter() {
+                    @Override public boolean accept(File dir, String name) {
+                        return name.endsWith(CACHE_DATA_TMP_FILENAME);
+                    }
+                });
+
+                if (tmpFiles != null) {
+                    for (File tmpFile: tmpFiles) {
+                        if (!tmpFile.delete())
+                            log.warning("Failed to delete temporary cache config file" +
+                                    "(make sure Ignite process has enough rights):" + file.getName());
+                    }
+                }
+
+                if (file.getName().startsWith(CACHE_DIR_PREFIX)) {
+                    File conf = new File(file, CACHE_DATA_FILENAME);
+
+                    if (conf.exists() && conf.length() > 0) {
+                        StoredCacheData cacheData = readCacheData(conf);
+
+                        String cacheName = cacheData.config().getName();
+
+                        if (!ccfgs.containsKey(cacheName))
+                            ccfgs.put(cacheName, cacheData);
+                        else {
+                            U.warn(log, "Cache with name=" + cacheName + " is already registered, skipping config file "
+                                    + file.getName());
+                        }
+                    }
+                }
+                else if (file.getName().startsWith(CACHE_GRP_DIR_PREFIX))
+                    readCacheGroupCaches(file, ccfgs);
+            }
+        }
+
+        return ccfgs;
+    }
+
     /**
      * @param grpDir Group directory.
      * @param ccfgs Cache configurations.
@@ -848,6 +905,23 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             catch (IOException e) {
                 throw new IgniteCheckedException("Failed to delete cache configurations of group: " + ctx.toString(), e);
             }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeCacheData(StoredCacheData cacheData) throws IgniteCheckedException {
+        CacheConfiguration cacheCfg = cacheData.config();
+        File cacheWorkDir = cacheWorkDir(cacheCfg);
+        File file;
+
+        if (cacheData.config().getGroupName() != null)
+            file = new File(cacheWorkDir, cacheCfg.getName() + CACHE_DATA_FILENAME);
+        else
+            file = new File(cacheWorkDir, CACHE_DATA_FILENAME);
+
+        if (file.exists()) {
+            if (!file.delete())
+                throw new IgniteCheckedException("Failed to delete cache configuration:" + cacheCfg.getName());
         }
     }
 

@@ -268,6 +268,9 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     /** MBean group for cache group metrics */
     private final String CACHE_GRP_METRICS_MBEAN_GRP = "Cache groups";
 
+     /** Future that will be done when stored caches configuration will be moved from disk to metastore. */
+    private GridFutureAdapter<Void> moveCacheConfigurationToMetastoreFut = new GridFutureAdapter();
+
     /**
      * @param ctx Kernal context.
      */
@@ -741,6 +744,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
     /** {@inheritDoc} */
     @Override public void onReadyForReadWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
+        moveCacheConfigurationToMetastoreFut.onDone();
     }
 
     /**
@@ -899,6 +903,12 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
             Map<String, StoredCacheData> storedCaches = ctx.cache().context().database().readStoredCacheConfiguration();
 
+            if(F.isEmpty(storedCaches) && ctx.cache().context().pageStore() != null){
+               storedCaches = ctx.cache().context().pageStore().readCacheConfigurations();
+
+               moveCachesConfigurationFromDistToMetastore(storedCaches.values());
+            }
+
             if (!F.isEmpty(storedCaches)) {
                 for (StoredCacheData storedCacheData : storedCaches.values()) {
                     String cacheName = storedCacheData.config().getName();
@@ -958,6 +968,40 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         if (storedVal != staticCfgVal) {
             throw new IgniteCheckedException("Encrypted flag value differs. Static config value is '" + staticCfgVal +
                 "' and value stored on the disk is '" + storedVal + "'");
+        }
+    }
+
+    /**
+     * Moves stored caches configuration from disk to metastore. After moving caches configuration will be removed from
+     * disk.
+     *
+     * @param storedCaches Stored caches configuration.
+     */
+    private void moveCachesConfigurationFromDistToMetastore(Collection<StoredCacheData> storedCaches) {
+        if (!F.isEmpty(storedCaches)) {
+            sharedCtx.kernalContext().closure().runLocalSafe(() -> {
+                try {
+                    // Await while metastore will be ready for read/write operations.
+                    moveCacheConfigurationToMetastoreFut.get();
+
+                    for (StoredCacheData storedCache : storedCaches) {
+                        try {
+                            sharedCtx.database().storeCacheConfiguration(storedCache, false);
+
+                            ctx.cache().context().pageStore().removeCacheData(storedCache);
+                        }
+                        catch (IgniteCheckedException e){
+                            U.error(log, "Failed to move cache configuration from disk to metastore " + storedCache, e);
+                        }
+                    }
+
+                    if(log.isInfoEnabled())
+                        log.info(storedCaches.size() + " caches configuration were moved to metastore.");
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to await metastore ready for read/write operations.", e);
+                }
+            });
         }
     }
 

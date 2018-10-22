@@ -185,6 +185,16 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
+    @Override public Map<String, StoredCacheData> readCacheConfigurations() throws IgniteCheckedException {
+        return Collections.emptyMap();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeCacheData(StoredCacheData cacheData) throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean hasIndexStore(int grpId) {
         return false;
     }
