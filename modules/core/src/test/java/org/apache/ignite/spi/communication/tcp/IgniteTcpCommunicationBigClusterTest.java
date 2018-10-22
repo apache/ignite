@@ -34,7 +34,8 @@ import org.apache.ignite.spi.communication.GridTestMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
-import org.apache.ignite.testframework.GridStringLogger;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
@@ -53,25 +54,18 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
     private static final int CLUSTER_SIZE = 8;
 
     /** */
-    private static final int LOG_LENGTH = 10 * 1024 * 1024;
-
-    /** */
-    private GridStringLogger strLog;
+    private final ListeningTestLogger testLog = new ListeningTestLogger();
 
     static {
-        GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<Message>() {
-            @Override public Message apply() {
-                return new GridTestMessage();
-            }
-        });
+        GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, (CO<Message>)GridTestMessage::new);
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (strLog != null)
-            cfg.setGridLogger(strLog);
+        if (testLog != null)
+            cfg.setGridLogger(testLog);
 
         cfg.setPeerClassLoadingEnabled(false);
 
@@ -94,9 +88,11 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void testHandshakeNoHangOnNodeJoining() throws Exception {
-        strLog = new GridStringLogger();
+        String errMsg = "Handshake timeout has happened.";
 
-        strLog.logLength(LOG_LENGTH);
+        LogListener lsnr = LogListener.matches("Handshake timedout").times(0).orError(errMsg).build();
+
+        testLog.registerListener(lsnr);
 
         AtomicInteger idx = new AtomicInteger();
 
@@ -117,16 +113,16 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
                     }
                 }
                 catch (Exception e) {
-                    error("Test failed.", e);
+                    error("Unexpected exception: ", e);
+
+                    fail("Unexpected exception (see details above): " + e.getMessage());
                 }
             }
         }, CLUSTER_SIZE);
 
         fut.get();
 
-        String logStr = strLog.toString();
-
-        assertFalse("Handshake timeout has happened.", logStr.contains("Handshake timedout"));
+        lsnr.check();
     }
 
     /** */
