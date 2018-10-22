@@ -887,6 +887,8 @@ public abstract class GridAbstractTest extends TestCase {
     protected Ignite startGrid(String igniteInstanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
         throws Exception {
 
+        cfg.setConsistentId(igniteInstanceName);
+
         checkConfiguration(cfg);
 
         if (!isRemoteJvm(igniteInstanceName)) {
@@ -987,6 +989,7 @@ public abstract class GridAbstractTest extends TestCase {
         IgniteConfiguration cfg = F.first(cfgMap.get1());
 
         cfg.setIgniteInstanceName(gridName);
+        cfg.setConsistentId(gridName);
         cfg.setClientMode(client);
 
         return IgnitionEx.start(cfg, cfgMap.getValue());
