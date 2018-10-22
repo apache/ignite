@@ -47,7 +47,7 @@ class CacheContinuousQueryPartitionRecovery {
     }
 
     /** */
-    private final static int MAX_BUFF_SIZE = CacheContinuousQueryHandler.LSNR_MAX_BUF_SIZE;
+    private static final int MAX_BUFF_SIZE = CacheContinuousQueryHandler.LSNR_MAX_BUF_SIZE;
 
     /** */
     private IgniteLogger log;

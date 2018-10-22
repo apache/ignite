@@ -15,13 +15,25 @@
  * limitations under the License.
  */
 
-@import "../../../public/stylesheets/variables";
+package org.apache.ignite.testsuites;
 
-// Statuses coloring
-.ignite-status__active {
-  color: $ignite-status-active !important;
-}
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnCreateDestoryIndexTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnSqlQueryTest;
 
-.ignite-status__inactive {
-  color: $ignite-status-inactive;
+/**
+ * Test suite for cache queries.
+ */
+public class IgniteCacheBlockExchangeOnSqlReadOperationsTestSuite extends TestSuite {
+    /**
+     * @return Test suite.
+     */
+    public static TestSuite suite() {
+        TestSuite suite = new TestSuite("Do Not Block Read Operations Test Suite");
+
+        suite.addTestSuite(CacheBlockOnSqlQueryTest.class);
+        suite.addTestSuite(CacheBlockOnCreateDestoryIndexTest.class);
+
+        return suite;
+    }
 }

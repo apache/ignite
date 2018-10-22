@@ -45,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FsyncModeFileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
@@ -145,6 +144,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
                         return DataStorageConfiguration.DFLT_PAGE_SIZE;
                     }
                 },
+                null,
                 null,
                 null,
                 null,
@@ -490,6 +490,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
             null,
             null,
             new GridCacheIoManager(),
+            null,
             null,
             null,
             null,

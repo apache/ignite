@@ -2055,6 +2055,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         }
                     }
 
+                    if (!recentlyLost.isEmpty()) {
+                        U.warn(log, "Detected lost partitions [grp=" + grp.cacheOrGroupName()
+                            + ", parts=" + S.compact(recentlyLost)
+                            + ", plc=" + plc + "]");
+                    }
+
                     // Update partition state on all nodes.
                     for (Integer part : lost) {
                         long updSeq = updateSeq.incrementAndGet();
@@ -2655,7 +2661,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros) {
+    @Override public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros,
+        boolean finalizeCntrsBeforeCollecting) {
         lock.readLock().lock();
 
         try {
@@ -2675,6 +2682,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 if (part == null)
                     continue;
+
+                if (finalizeCntrsBeforeCollecting)
+                    part.finalizeUpdateCountres();
 
                 long updCntr = part.updateCounter();
                 long initCntr = part.initialUpdateCounter();

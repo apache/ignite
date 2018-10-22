@@ -80,7 +80,7 @@
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
         <javax.cache.tck.version>1.0.1</javax.cache.tck.version>
         <javax.cache.version>1.0.0</javax.cache.version>
-        <jetbrains.annotations.version>13.0</jetbrains.annotations.version>
+        <jetbrains.annotations.version>16.0.3</jetbrains.annotations.version>
         <jetty.version>9.4.11.v20180605</jetty.version>
         <jmh.version>1.13</jmh.version>
         <jms.spec.version>1.1.1</jms.spec.version>
@@ -489,8 +489,16 @@
                                 <packages>org.apache.ignite.ml*</packages>
                             </group>
                             <group>
+                                <title>Ignite TensorFlow</title>
+                                <packages>org.apache.ignite.tensorflow*</packages>
+                            </group>
+                            <group>
                                 <title>Encryption SPI</title>
                                 <packages>org.apache.ignite.spi.encryption*</packages>
+                            </group>
+                            <group>
+                                <title>Ignite Web Console</title>
+                                <packages>org.apache.ignite.console*</packages>
                             </group>
                         </groups>
                         <header>

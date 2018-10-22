@@ -14,5 +14,5 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-div(ng-class='["connected-clusters-cell-status-"+($ctrl.status ? "active" : "not-active")]')
-    i {{ $ctrl.status ? 'Active' : 'Not Active' }}
+span(translate='{{$ctrl.status.label}}' ng-class='$ctrl.statusClassName')
+.spinner-circle(ng-if='$ctrl.status.ongoing')

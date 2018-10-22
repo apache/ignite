@@ -36,6 +36,16 @@ public interface BinaryMetadataHandler {
     public void addMeta(int typeId, BinaryType meta, boolean failIfUnregistered) throws BinaryObjectException;
 
     /**
+     * Adds meta data locally on current node without sending any messages.
+     *
+     * @param typeId Type ID.
+     * @param meta Metadata.
+     * @param failIfUnregistered Fail if unregistered.
+     * @throws BinaryObjectException In case of error.
+     */
+    public void addMetaLocally(int typeId, BinaryType meta, boolean failIfUnregistered) throws BinaryObjectException;
+
+    /**
      * Gets meta data for provided type ID.
      *
      * @param typeId Type ID.

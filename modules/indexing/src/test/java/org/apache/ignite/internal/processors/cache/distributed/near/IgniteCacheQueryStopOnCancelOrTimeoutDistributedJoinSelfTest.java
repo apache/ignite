@@ -40,47 +40,47 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public class IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest extends IgniteCacheQueryAbstractDistributedJoinSelfTest {
     /** */
     public void testCancel1() throws Exception {
-        testQueryCancel(grid(0), "pe", QRY_0, 1, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(grid(0), "pe", QRY_LONG, 1, TimeUnit.MILLISECONDS, false, true);
     }
 
     /** */
     public void testCancel2() throws Exception {
-        testQueryCancel(grid(0), "pe", QRY_0, 50, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(grid(0), "pe", QRY_LONG, 50, TimeUnit.MILLISECONDS, false, true);
     }
 
     /** */
     public void testCancel3() throws Exception {
-        testQueryCancel(grid(0), "pe", QRY_0, 100, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(grid(0), "pe", QRY_LONG, 100, TimeUnit.MILLISECONDS, false, false);
     }
 
     /** */
     public void testCancel4() throws Exception {
-        testQueryCancel(grid(0), "pe", QRY_0, 500, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(grid(0), "pe", QRY_LONG, 500, TimeUnit.MILLISECONDS, false, false);
     }
 
     /** */
     public void testTimeout1() throws Exception {
-        testQueryCancel(grid(0), "pe", QRY_0, 1, TimeUnit.MILLISECONDS, true);
+        testQueryCancel(grid(0), "pe", QRY_LONG, 1, TimeUnit.MILLISECONDS, true, true);
     }
 
     /** */
     public void testTimeout2() throws Exception {
-        testQueryCancel(grid(0), "pe", QRY_0, 50, TimeUnit.MILLISECONDS, true);
+        testQueryCancel(grid(0), "pe", QRY_LONG, 50, TimeUnit.MILLISECONDS, true, true);
     }
 
     /** */
     public void testTimeout3() throws Exception {
-        testQueryCancel(grid(0), "pe", QRY_0, 100, TimeUnit.MILLISECONDS, true);
+        testQueryCancel(grid(0), "pe", QRY_LONG, 100, TimeUnit.MILLISECONDS, true, false);
     }
 
     /** */
     public void testTimeout4() throws Exception {
-        testQueryCancel(grid(0), "pe", QRY_0, 500, TimeUnit.MILLISECONDS, true);
+        testQueryCancel(grid(0), "pe", QRY_LONG, 500, TimeUnit.MILLISECONDS, true, false);
     }
 
     /** */
     private void testQueryCancel(Ignite ignite, String cacheName, String sql, int timeoutUnits, TimeUnit timeUnit,
-                           boolean timeout) throws Exception {
+                           boolean timeout, boolean checkCanceled) throws Exception {
         SqlFieldsQuery qry = new SqlFieldsQuery(sql).setDistributedJoins(true);
 
         IgniteCache<Object, Object> cache = ignite.cache(cacheName);
@@ -101,7 +101,10 @@ public class IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest extend
         }
 
         try (QueryCursor<List<?>> ignored = cursor) {
-            cursor.iterator();
+            cursor.getAll();
+
+            if (checkCanceled)
+                fail("Query not canceled");
         }
         catch (CacheException ex) {
             log().error("Got expected exception", ex);
