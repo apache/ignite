@@ -96,7 +96,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             Assert.AreEqual(expectedRes, jobResult.InnerXml);
         }
 
-#if !NETCOREAPP2_0  // AppDomains are not supported in .NET Core
+#if !NETCOREAPP2_0 && !NETCOREAPP2_1  // AppDomains are not supported in .NET Core
         /// <summary>
         /// Tests custom serialization binder.
         /// </summary>
@@ -111,7 +111,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             for (var i = 0; i < count; i++)
             {
                 dynamic val = Activator.CreateInstance(GenerateDynamicType());
-                
+
                 val.Id = i;
                 val.Name = "Name_" + i;
 
@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                 TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Serializable);
 
             typeBuilder.DefineField("Id", typeof (int), FieldAttributes.Public);
-            
+
             typeBuilder.DefineField("Name", typeof (string), FieldAttributes.Public);
 
             return typeBuilder.CreateType();

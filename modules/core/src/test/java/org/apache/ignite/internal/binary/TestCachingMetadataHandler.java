@@ -39,6 +39,12 @@ public class TestCachingMetadataHandler implements BinaryMetadataHandler {
     }
 
     /** {@inheritDoc} */
+    @Override public void addMetaLocally(int typeId, BinaryType meta, boolean failIfUnregistered)
+        throws BinaryObjectException {
+        addMeta(typeId, meta, failIfUnregistered);
+    }
+
+    /** {@inheritDoc} */
     @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
         return metas.get(typeId);
     }
