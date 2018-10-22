@@ -1405,7 +1405,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     grp.affinity().similarAffinityKey());
 
                 if (sndCounters) {
-                    CachePartitionPartialCountersMap cntrsMap = grp.topology().localUpdateCounters(true);
+                    CachePartitionPartialCountersMap cntrsMap = grp.topology().localUpdateCounters(true, true);
 
                     m.addPartitionUpdateCounters(grp.groupId(),
                         newCntrMap ? cntrsMap : CachePartitionPartialCountersMap.toCountersMap(cntrsMap));
@@ -1429,7 +1429,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 top.similarAffinityKey());
 
             if (sndCounters) {
-                CachePartitionPartialCountersMap cntrsMap = top.localUpdateCounters(true);
+                CachePartitionPartialCountersMap cntrsMap = top.localUpdateCounters(true, true);
 
                 m.addPartitionUpdateCounters(top.groupId(),
                     newCntrMap ? cntrsMap : CachePartitionPartialCountersMap.toCountersMap(cntrsMap));
@@ -2348,9 +2348,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * Should be called from exchange worker thread.
      */
     public void exchangerBlockingSectionBegin() {
-        assert exchWorker != null && Thread.currentThread() == exchWorker.runner();
-
-        exchWorker.blockingSectionBegin();
+        if (currentThreadIsExchanger())
+            exchWorker.blockingSectionBegin();
     }
 
     /**
@@ -2358,9 +2357,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * Should be called from exchange worker thread.
      */
     public void exchangerBlockingSectionEnd() {
-        assert exchWorker != null && Thread.currentThread() == exchWorker.runner();
+        if (currentThreadIsExchanger())
+            exchWorker.blockingSectionEnd();
+    }
 
-        exchWorker.blockingSectionEnd();
+    /** */
+    private boolean currentThreadIsExchanger() {
+        return exchWorker != null && Thread.currentThread() == exchWorker.runner();
     }
 
     /**

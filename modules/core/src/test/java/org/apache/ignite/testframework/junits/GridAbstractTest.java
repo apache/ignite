@@ -19,6 +19,7 @@ package org.apache.ignite.testframework.junits;
 
 import java.io.ObjectStreamException;
 import java.io.Serializable;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -118,6 +119,7 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.Priority;
 import org.apache.log4j.RollingFileAppender;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -196,6 +198,9 @@ public abstract class GridAbstractTest extends TestCase {
 
     /** Number of tests. */
     private int testCnt;
+
+    /** Lazily initialized current test method. */
+    private volatile Method currTestMtd;
 
     /**
      *
@@ -667,6 +672,34 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected String testClassDescription() {
         return GridTestUtils.fullSimpleName(getClass());
+    }
+
+    /**
+     * @return Current test method.
+     * @throws NoSuchMethodError If method wasn't found for some reason.
+     */
+    @NotNull protected Method currentTestMethod() {
+        if (currTestMtd == null) {
+            try {
+                currTestMtd = getClass().getMethod(getName());
+            }
+            catch (NoSuchMethodException e) {
+                throw new NoSuchMethodError("Current test method is not found: " + getName());
+            }
+        }
+
+        return currTestMtd;
+    }
+
+    /**
+     * Search for the annotation of the given type in current test method.
+     *
+     * @param annotationCls Type of annotation to look for.
+     * @param <A> Annotation type.
+     * @return Instance of annotation if it is present in test method.
+     */
+    @Nullable protected <A extends Annotation> A currentTestAnnotation(Class<A> annotationCls) {
+        return currentTestMethod().getAnnotation(annotationCls);
     }
 
     /**
