@@ -72,6 +72,20 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        cleanPersistenceDir();
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        cleanPersistenceDir();
+    }
+
     /** @return number of nodes to be prestarted. */
     private int nodesCount() {
         return 1;

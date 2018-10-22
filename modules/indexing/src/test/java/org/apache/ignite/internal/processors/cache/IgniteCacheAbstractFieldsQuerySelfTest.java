@@ -155,6 +155,8 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        cleanPersistenceDir();
+
         hasCache = true;
 
         startGridsMultiThreaded(gridCount());
@@ -207,6 +209,8 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         strCache = null;
         intCache = null;
         noOpCache = null;
+
+        cleanPersistenceDir();
     }
 
     /** @return cache mode. */

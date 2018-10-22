@@ -30,6 +30,20 @@ public class SqlPushDownFunctionTest extends GridCommonAbstractTest {
     private IgniteEx node;
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        cleanPersistenceDir();
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         node = (IgniteEx)startGrid();
 

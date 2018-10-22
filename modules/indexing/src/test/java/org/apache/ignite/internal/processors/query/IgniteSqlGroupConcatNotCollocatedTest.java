@@ -68,6 +68,8 @@ public class IgniteSqlGroupConcatNotCollocatedTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        cleanPersistenceDir();
+
         startGridsMultiThreaded(3, false);
 
         Ignition.setClientMode(true);
@@ -94,6 +96,8 @@ public class IgniteSqlGroupConcatNotCollocatedTest extends GridCommonAbstractTes
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /**

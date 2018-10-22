@@ -72,12 +72,16 @@ public class IgniteSqlQueryParallelismTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        cleanPersistenceDir();
+
         startGridsMultiThreaded(3, false);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /**
