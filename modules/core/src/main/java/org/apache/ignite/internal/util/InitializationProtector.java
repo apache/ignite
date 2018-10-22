@@ -67,10 +67,9 @@ public class InitializationProtector {
 
     /**
      * It method allows to avoid simultaneous initialization from various threads.
-     * Garantee protection only for first call.
      *
      * @param protectedKey Unique value by which initialization code should be run only from one thread in one time.
-     * @param initializationCode Code for initialization value corresponding protectedKey.
+     * @param initializationCode Code for initialization value corresponding protectedKey. Should be idempotent.
      * @throws IgniteCheckedException if initialization was failed.
      */
     public void protect(Object protectedKey, IgniteThrowableRunner initializationCode) throws IgniteCheckedException {

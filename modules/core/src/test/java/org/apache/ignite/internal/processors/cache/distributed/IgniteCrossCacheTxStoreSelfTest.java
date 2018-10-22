@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import javax.cache.Cache;
+import javax.cache.configuration.Factory;
+import javax.cache.integration.CacheLoaderException;
+import javax.cache.integration.CacheWriterException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import javax.cache.Cache;
-import javax.cache.configuration.Factory;
-import javax.cache.integration.CacheLoaderException;
-import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.store.CacheStore;
@@ -61,7 +61,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cfg3 = cacheConfiguration("cacheC", new SecondStoreFactory());
         CacheConfiguration cfg4 = cacheConfiguration("cacheD", null);
 
-        cfg.setCacheConfiguration(cfg1, cfg2, cfg3, cfg4);
+        cfg.setCacheConfiguration(cfg4, cfg2, cfg3, cfg1);
 
         return cfg;
     }
@@ -91,6 +91,8 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
+
+        cleanPersistenceDir();
 
         startGrids(4);
     }
@@ -162,8 +164,8 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
             "delete cacheA",
             "write cacheB",
             "sessionEnd true"
-        ),
-        firstStoreEvts);
+            ),
+            firstStoreEvts);
 
         assertEquals(0, secondStoreEvts.size());
     }
@@ -211,16 +213,16 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
             "write cacheA",
             "delete cacheA",
             "sessionEnd true"
-        ),
-        firstStoreEvts);
+            ),
+            firstStoreEvts);
 
         assertEqualsCollections(F.asList(
             "writeAll cacheC 2",
             "deleteAll cacheC 2",
             "write cacheC",
             "sessionEnd true"
-        ),
-        secondStoreEvts);
+            ),
+            secondStoreEvts);
     }
 
     /**
@@ -266,8 +268,8 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
             "write cacheA",
             "delete cacheA",
             "sessionEnd true"
-        ),
-        firstStoreEvts);
+            ),
+            firstStoreEvts);
 
         assertEquals(0, secondStoreEvts.size());
     }
@@ -363,15 +365,10 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public CacheStore create() {
+        @Override public synchronized CacheStore create() {
             String igniteInstanceName = ignite.name();
 
-            CacheStore store = firstStores.get(igniteInstanceName);
-
-            if (store == null)
-                store = F.addIfAbsent(firstStores, igniteInstanceName, new TestStore());
-
-            return store;
+            return firstStores.computeIfAbsent(igniteInstanceName, (k) -> new TestStore());
         }
     }
 
@@ -386,12 +383,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
         @Override public CacheStore create() {
             String igniteInstanceName = ignite.name();
 
-            CacheStore store = secondStores.get(igniteInstanceName);
-
-            if (store == null)
-                store = F.addIfAbsent(secondStores, igniteInstanceName, new TestStore());
-
-            return store;
+            return secondStores.computeIfAbsent(igniteInstanceName, (k) -> new TestStore());
         }
     }
 }
