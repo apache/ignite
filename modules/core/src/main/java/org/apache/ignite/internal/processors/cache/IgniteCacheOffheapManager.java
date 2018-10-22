@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.List;
 import java.util.Map;
 import javax.cache.Cache;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -274,10 +275,13 @@ public interface IgniteCacheOffheapManager {
      * @param expireTime Expire time.
      * @param mvccSnapshot MVCC snapshot.
      * @param primary {@code True} if on primary node.
-     * @param needHistory Flag to collect history.
+     * @param needHist Flag to collect history.
      * @param noCreate Flag indicating that row should not be created if absent.
+     * @param needOldVal {@code True} if need old value.
      * @param filter Filter.
      * @param retVal Flag to return previous value.
+     * @param entryProc Entry processor.
+     * @param invokeArgs Entry processor invoke arguments.
      * @return Update result.
      * @throws IgniteCheckedException If failed.
      */
@@ -288,16 +292,20 @@ public interface IgniteCacheOffheapManager {
         long expireTime,
         MvccSnapshot mvccSnapshot,
         boolean primary,
-        boolean needHistory,
+        boolean needHist,
         boolean noCreate,
+        boolean needOldVal,
         @Nullable CacheEntryPredicate filter,
-        boolean retVal) throws IgniteCheckedException;
+        boolean retVal,
+        EntryProcessor entryProc,
+        Object[] invokeArgs) throws IgniteCheckedException;
 
     /**
      * @param entry Entry.
      * @param mvccSnapshot MVCC snapshot.
      * @param primary {@code True} if on primary node.
-     * @param needHistory Flag to collect history.
+     * @param needHist Flag to collect history.
+     * @param needOldVal {@code True} if need old value.
      * @param filter Filter.
      * @param retVal Flag to return previous value.
      * @return Update result.
@@ -307,7 +315,8 @@ public interface IgniteCacheOffheapManager {
         GridCacheMapEntry entry,
         MvccSnapshot mvccSnapshot,
         boolean primary,
-        boolean needHistory,
+        boolean needHist,
+        boolean needOldVal,
         @Nullable CacheEntryPredicate filter,
         boolean retVal) throws IgniteCheckedException;
 
@@ -797,9 +806,12 @@ public interface IgniteCacheOffheapManager {
          * @param expireTime Expire time.
          * @param mvccSnapshot MVCC snapshot.
          * @param filter Filter.
+         * @param entryProc Entry processor.
+         * @param invokeArgs Entry processor invoke arguments.
          * @param primary {@code True} if update is executed on primary node.
-         * @param needHistory Flag to collect history.
+         * @param needHist Flag to collect history.
          * @param noCreate Flag indicating that row should not be created if absent.
+         * @param needOldVal {@code True} if need old value.
          * @param retVal Flag to return previous value.
          * @return Update result.
          * @throws IgniteCheckedException If failed.
@@ -812,9 +824,12 @@ public interface IgniteCacheOffheapManager {
             long expireTime,
             MvccSnapshot mvccSnapshot,
             @Nullable CacheEntryPredicate filter,
+            EntryProcessor entryProc,
+            Object[] invokeArgs,
             boolean primary,
-            boolean needHistory,
+            boolean needHist,
             boolean noCreate,
+            boolean needOldVal,
             boolean retVal) throws IgniteCheckedException;
 
         /**
@@ -824,6 +839,7 @@ public interface IgniteCacheOffheapManager {
          * @param filter Filter.
          * @param primary {@code True} if update is executed on primary node.
          * @param needHistory Flag to collect history.
+         * @param needOldVal {@code True} if need old value.
          * @param retVal Flag to return previous value.
          * @return List of transactions to wait for.
          * @throws IgniteCheckedException If failed.
@@ -835,6 +851,7 @@ public interface IgniteCacheOffheapManager {
             @Nullable CacheEntryPredicate filter,
             boolean primary,
             boolean needHistory,
+            boolean needOldVal,
             boolean retVal) throws IgniteCheckedException;
 
         /**
@@ -1050,8 +1067,12 @@ public interface IgniteCacheOffheapManager {
          * Return PendingTree for data store.
          *
          * @return PendingTree instance.
-         * @throws IgniteCheckedException
          */
         PendingEntriesTree pendingTree();
+
+        /**
+         * Flushes pending update counters closing all possible gaps.
+         */
+        void finalizeUpdateCountres();
     }
 }

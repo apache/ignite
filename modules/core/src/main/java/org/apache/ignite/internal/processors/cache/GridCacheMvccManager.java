@@ -367,6 +367,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                     log.debug("Attempted to remove node locks from removed entry in mvcc manager " +
                         "disco callback (will ignore): " + entry);
             }
+
+            cctx.exchange().exchangerUpdateHeartbeat();
         }
     }
 
