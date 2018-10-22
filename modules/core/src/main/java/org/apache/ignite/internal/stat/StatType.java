@@ -23,9 +23,10 @@ package org.apache.ignite.internal.stat;
  */
 public enum StatType {
     /** */
-    INDEX,
+    INDEX, // TODO -> SORTED_INDEX
+           // TODO -> HASH_INDEX
     /** */
-    CACHE,
+    CACHE, // TODO -> CACHE_GROUP
     /** */
     TABLE,
     /** */

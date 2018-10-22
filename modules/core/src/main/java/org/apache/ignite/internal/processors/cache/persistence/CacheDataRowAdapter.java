@@ -143,6 +143,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
             int grpId = grp != null ? grp.groupId() : 0;
 
+            // TODO: NPE, ignore when group is null
             final long page = pageMem.acquirePage(grpId, pageId, grp.statisticsHolderData());
 
             try {

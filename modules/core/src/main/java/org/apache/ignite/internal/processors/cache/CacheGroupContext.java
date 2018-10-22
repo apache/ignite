@@ -235,6 +235,8 @@ public class CacheGroupContext {
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
 
         statisticsHolderIdx = ctx.kernalContext().ioStats().createAndRegisterStatHolder(StatType.INDEX, ccfg.getName(), "PK");
+
+        // TODO: User cache group name.
         statisticsHolderData = ctx.kernalContext().ioStats().createAndRegisterStatHolder(StatType.CACHE, ccfg.getName());
     }
 
