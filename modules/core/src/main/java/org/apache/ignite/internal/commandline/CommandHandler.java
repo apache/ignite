@@ -311,7 +311,7 @@ public class CommandHandler {
     private static final String UTILITY_NAME = "control.sh";
 
     /** Common options. */
-    private static final String COMMON_OPTIONS = String.join(" ",op(CMD_HOST,"HOST_OR_IP"), op(CMD_PORT, "PORT"),op(CMD_USER,"USER"),op(CMD_PASSWORD, "PASSWORD"),op(CMD_PING_INTERVAL,"PING_INTERVAL"), op(CMD_PING_TIMEOUT, "PING_TIMEOUT"));
+    private static final String COMMON_OPTIONS = String.join(" ", op(CMD_HOST, "HOST_OR_IP"), op(CMD_PORT, "PORT"), op(CMD_USER, "USER"), op(CMD_PASSWORD, "PASSWORD"), op(CMD_PING_INTERVAL, "PING_INTERVAL"), op(CMD_PING_TIMEOUT, "PING_TIMEOUT"));
 
     /** Utility name with common options. */
     private static final String UTILITY_NAME_WITH_COMMON_OPTIONS = String.join(" ", UTILITY_NAME, COMMON_OPTIONS);
@@ -1607,7 +1607,7 @@ public class CommandHandler {
      * @return Joined parameters wrapped optional braces.
      */
     private static String op(String param, String... params) {
-        if(params == null || params.length == 0)
+        if (params == null || params.length == 0)
             return "[" + param + "]";
 
         return "[" + param + " " + String.join(" ", params) + "]";
