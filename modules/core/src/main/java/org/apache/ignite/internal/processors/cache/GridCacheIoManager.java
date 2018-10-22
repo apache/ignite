@@ -299,6 +299,10 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             handleMessage(nodeId, cacheMsg, plc);
         }
 
+        /**
+         * @param cacheMsg Cache message.
+         * @return Whether one should wait for the requested affinity version to handle given message.
+         */
         private boolean shouldWaitForAffinityReadyFuture(GridCacheMessage cacheMsg) {
             if (cacheMsg instanceof GridNearSingleGetRequest || cacheMsg instanceof GridNearGetRequest) {
                 GridDhtPartitionsExchangeFuture lastTopFut = cctx.exchange().lastTopologyFuture();
