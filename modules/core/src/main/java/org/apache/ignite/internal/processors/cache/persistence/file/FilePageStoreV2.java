@@ -62,4 +62,13 @@ public class FilePageStoreV2 extends FilePageStore {
     @Override public int getBlockSize() {
         return fileIO.getFileSystemBlockSize();
     }
+
+    /** {@inheritDoc} */
+    @Override public void punchHole(long pageId, int usefulBytes) {
+        assert usefulBytes >= 0: usefulBytes;
+
+        long off = pageOffset(pageId);
+
+        fileIO.punchHole(off + usefulBytes, pageSize - usefulBytes);
+    }
 }

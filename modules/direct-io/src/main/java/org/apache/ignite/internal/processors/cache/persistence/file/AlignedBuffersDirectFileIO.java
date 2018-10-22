@@ -185,6 +185,11 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
     }
 
     /** {@inheritDoc} */
+    @Override public int punchHole(long position, int len) {
+        return 0; // TODO
+    }
+
+    /** {@inheritDoc} */
     @Override public long position() throws IOException {
         long position = IgniteNativeIoLib.lseek(fdCheckOpened(), 0, IgniteNativeIoLib.SEEK_CUR);
 

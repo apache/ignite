@@ -80,7 +80,7 @@ public class FilePageStore implements PageStore {
     private final AllocatedPageTracker allocatedTracker;
 
     /** */
-    private final int pageSize;
+    protected final int pageSize;
 
     /** */
     private volatile boolean inited;
@@ -119,6 +119,11 @@ public class FilePageStore implements PageStore {
     /** {@inheritDoc} */
     @Override public int getBlockSize() {
         return -1; // Header is unaligned in this version.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void punchHole(long pageId, int usefulBytes) {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

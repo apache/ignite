@@ -42,6 +42,11 @@ public class FileIODecorator extends AbstractFileIO {
     }
 
     /** {@inheritDoc} */
+    @Override public int punchHole(long pos, int len) {
+        return delegate.punchHole(pos, len);
+    }
+
+    /** {@inheritDoc} */
     @Override public long position() throws IOException {
         return delegate.position();
     }

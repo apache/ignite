@@ -134,4 +134,12 @@ public interface PageStore {
      * @throws StorageException If failed.
      */
     public int getBlockSize() throws StorageException;
+
+    /**
+     * Should free all the extra storage space after the given number of useful bytes in the given page.
+     *
+     * @param pageId Page id.
+     * @param usefulBytes Number of useful bytes in the beginning of the page.
+     */
+    void punchHole(long pageId, int usefulBytes);
 }

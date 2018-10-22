@@ -482,9 +482,19 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         PageStore store = getStore(cacheId, partId);
 
         try {
-            pageBuf = compressPage(cacheId, pageId, store.getBlockSize(), pageBuf);
+            int blockSize = store.getBlockSize();
 
-            store.write(pageId, pageBuf, tag, calculateCrc);
+            ByteBuffer ioBuf = pageBuf;
+
+            if (blockSize > 0)
+                ioBuf = cctx.cacheContext(cacheId).compress().compressPage(pageId, pageBuf, blockSize);
+
+            int ioBufSize = ioBuf.remaining();
+
+            store.write(pageId, ioBuf, tag, calculateCrc);
+
+            if (ioBuf != pageBuf)
+                store.punchHole(pageId, ioBufSize);
         }
         catch (StorageException e) {
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
@@ -493,21 +503,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         }
 
         return store;
-    }
-
-    /**
-     * @param cacheId Cache ID.
-     * @param pageId Page ID.
-     * @param blockSize Storage block size.
-     * @param page Page.
-     * @return Compressed or the same buffer.
-     * @throws IgniteCheckedException If failed.
-     */
-    private ByteBuffer compressPage(int cacheId, long pageId, int blockSize, ByteBuffer page) throws IgniteCheckedException {
-        if (blockSize <= 0)
-            return page;
-
-        return cctx.cacheContext(cacheId).compress().compressPage(pageId, page, blockSize);
     }
 
     /**

@@ -2,7 +2,6 @@ package org.apache.ignite.internal.processors.compress;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
-import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
@@ -20,17 +19,23 @@ public class CompressionProcessor extends GridProcessorAdapter {
     public static final byte ZSTD_3_COMPRESSED_PAGE = 2;
 
     /** */
-    private static final String GET_FS_BLOCK_SIZE_LINUX_CLASS =
-        "org.apache.ignite.internal.processors.compress.GetFileSystemBlockSizeLinux";
+    private static final String NATIVE_FS_LINUX_CLASS =
+        "org.apache.ignite.internal.processors.compress.NativeFileSystemLinux";
 
     /** */
-    private static final Function<Path, Integer> getFsBlockSize;
+    private static final NativeFileSystem fs;
 
     /** */
     static {
         try {
-            getFsBlockSize = !IgniteComponentType.COMPRESSION.inClassPath() || !U.isLinux() ? null :
-                U.newInstance(GET_FS_BLOCK_SIZE_LINUX_CLASS);
+            NativeFileSystem x = null;
+
+            if (IgniteComponentType.COMPRESSION.inClassPath()) {
+                if (U.isLinux())
+                    x = U.newInstance(NATIVE_FS_LINUX_CLASS);
+            }
+
+            fs = x;
         }
         catch (IgniteCheckedException e) {
             throw new IllegalStateException(e);
@@ -42,13 +47,16 @@ public class CompressionProcessor extends GridProcessorAdapter {
      */
     public CompressionProcessor(GridKernalContext ctx) {
         super(ctx);
-
-
     }
 
     public static int getFsBlockSize(Path file) {
         assert file != null;
-        return getFsBlockSize == null ? -1 : getFsBlockSize.apply(file);
+
+        return fs == null ? -1 : fs.getFileBlockSize(file);
+    }
+
+    public static int punchHole(int fd, long off, int len) {
+        return fs == null ? -1 : fs.punchHole(fd, off, len);
     }
 
     public boolean isPageCompressionEnabled() {

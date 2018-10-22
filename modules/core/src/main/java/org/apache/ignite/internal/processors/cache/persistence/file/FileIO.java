@@ -258,4 +258,11 @@ public interface FileIO extends AutoCloseable {
      * @return File system block size or negative value if unknown.
      */
     public int getFileSystemBlockSize();
+
+    /**
+     * @param position Starting file position.
+     * @param len Number of bytes to free.
+     * @return The actual freed size.
+     */
+    int punchHole(long position, int len);
 }

@@ -47,12 +47,18 @@ public class RandomAccessFileIO extends AbstractFileIO {
     public RandomAccessFileIO(File file, OpenOption... modes) throws IOException {
         Path filePath = file.toPath();
         this.fsBlockSize = CompressionProcessor.getFsBlockSize(filePath);
+
         ch = FileChannel.open(filePath, modes);
     }
 
     /** {@inheritDoc} */
     @Override public int getFileSystemBlockSize() {
         return fsBlockSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int punchHole(long position, int len) {
+        return 0; // TODO
     }
 
     /** {@inheritDoc} */
