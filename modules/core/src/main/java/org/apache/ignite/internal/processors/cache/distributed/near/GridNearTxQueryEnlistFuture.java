@@ -116,9 +116,8 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
             else {
                 primary = assignment.primaryPartitionNodes();
 
-                for (ClusterNode pNode : primary) {
+                for (ClusterNode pNode : primary)
                     updateMappings(pNode);
-                }
             }
 
             boolean locallyMapped = primary.contains(cctx.localNode());
@@ -129,6 +128,10 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
             int idx = locallyMapped ? 1 : 0;
             boolean first = true;
             boolean clientFirst = false;
+
+            // Need to unlock topology to avoid deadlock with binary descriptors registration.
+            if(!topLocked && cctx.topology().holdsLock())
+                cctx.topology().readUnlock();
 
             for (ClusterNode node : F.view(primary, F.remoteNodes(cctx.localNodeId()))) {
                 add(mini = new MiniFuture(node));
@@ -371,8 +374,12 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
                 if (node.isLocal())
                     tx.colocatedLocallyMapped(false);
             }
-            else if (res != null && res.result() > 0 && !node.isLocal())
-                tx.hasRemoteLocks(true);
+            else if (res != null) {
+                tx.mappings().get(node.id()).addBackups(res.newDhtNodes());
+
+                if (res.result() > 0 && !node.isLocal())
+                    tx.hasRemoteLocks(true);
+            }
 
             return err != null ? onDone(err) : onDone(res.result(), res.error());
         }
