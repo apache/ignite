@@ -97,23 +97,23 @@ public class AgentConfiguration {
 
     /** */
     @Parameter(names = {"-cs", "--client-certificate"},
-        description = "Path to client certificate")
-    private String clientCert;
+        description = "Path to client key store")
+    private String clientKeyStore;
 
     /** */
     @Parameter(names = {"-cp", "--client-password"},
-        description = "Optional password for client certificate")
-    private String clientPass;
+        description = "Optional password for client key store")
+    private String clientKeyStorePass;
 
     /** */
     @Parameter(names = {"-ts", "--trust-store"},
-        description = "Path to trust store")
-    private String trustStore;
+        description = "Path to trust key store")
+    private String trustKeyStore;
 
     /** */
     @Parameter(names = {"-tp", "--trust-store-password"},
-        description = "Password for trust store")
-    private String trustStorePass;
+        description = "Password for trust key store")
+    private String trustKeyStorePass;
 
     /** */
     @Parameter(names = {"-h", "--help"}, help = true, description = "Print this help message")
@@ -239,59 +239,59 @@ public class AgentConfiguration {
     }
 
     /**
-     * @return Path to client certificate.
+     * @return Path to client key store.
      */
-    public String clientCertificate() {
-        return clientCert;
+    public String clientKeyStore() {
+        return clientKeyStore;
     }
 
     /**
-     * @param clientCert Path to client certificate.
+     * @param clientKeyStore Path to client certificate.
      */
-    public void clientCertificate(String clientCert) {
-        this.clientCert = clientCert;
+    public void clientKeyStore(String clientKeyStore) {
+        this.clientKeyStore = clientKeyStore;
     }
 
     /**
-     * @return Client password.
+     * @return Client key store password.
      */
-    public String clientPassword() {
-        return clientPass;
+    public String clientKeyStorePassword() {
+        return clientKeyStorePass;
     }
 
     /**
-     * @param clientPass Client password.
+     * @param clientPass Client key store password.
      */
-    public void clientPassword(String clientPass) {
-        this.clientPass = clientPass;
+    public void clientKeyStorePassword(String clientPass) {
+        this.clientKeyStorePass = clientPass;
     }
 
     /**
-     * @return Path to trust store.
+     * @return Path to trust key store.
      */
     public String trustStore() {
-        return trustStore;
+        return trustKeyStore;
     }
 
     /**
-     * @param trustStore Path to trust store.
+     * @param trustStore Path to trust key store.
      */
     public void trustStore(String trustStore) {
-        this.trustStore = trustStore;
+        this.trustKeyStore = trustStore;
     }
 
     /**
      * @return Trust store password.
      */
-    public String trustStorePassword() {
-        return trustStorePass;
+    public String trustKeyStorePassword() {
+        return trustKeyStorePass;
     }
 
     /**
      * @param trustStorePass Trust store password.
      */
-    public void trustStorePassword(String trustStorePass) {
-        this.trustStorePass = trustStorePass;
+    public void trustKeyStorePassword(String trustStorePass) {
+        this.trustKeyStorePass = trustStorePass;
     }
 
     /**
@@ -373,17 +373,17 @@ public class AgentConfiguration {
         if (disableDemo == null)
             disableDemo(cfg.disableDemo());
 
-        if (clientCert == null)
-            clientCertificate(cfg.clientCertificate());
+        if (clientKeyStore == null)
+            clientKeyStore(cfg.clientKeyStore());
 
-        if (clientPass == null)
-            clientPassword(cfg.clientPassword());
+        if (clientKeyStorePass == null)
+            clientKeyStorePassword(cfg.clientKeyStorePassword());
 
-        if (trustStore == null)
+        if (trustKeyStore == null)
             trustStore(cfg.trustStore());
 
-        if (trustStorePass == null)
-            trustStorePassword(cfg.trustStorePassword());
+        if (trustKeyStorePass == null)
+            trustKeyStorePassword(cfg.trustKeyStorePassword());
     }
 
     /** {@inheritDoc} */

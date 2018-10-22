@@ -335,7 +335,7 @@ public class AgentLauncher {
 
         final Socket client = IO.socket(uri, opts);
 
-        try (RestExecutorPool restPool = new RestExecutorPool(cfg);
+        try (RestExecutorPool restPool = new RestExecutorPool();
              ClusterListener clusterLsnr = new ClusterListener(cfg, client, restPool)) {
             Emitter.Listener onConnect = connectRes -> {
                 log.info("Connection established.");

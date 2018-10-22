@@ -17,45 +17,40 @@
 
 package org.apache.ignite.console.agent.rest;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import org.apache.ignite.console.agent.AgentConfiguration;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Class that store collection of {@link RestExecutor}.
  */
 public class RestExecutorPool implements AutoCloseable {
     /** */
-    private final Map<String, RestExecutor> pool = new HashMap<>();
-
-    /** */
-    private final AgentConfiguration cfg;
+    private final Map<String, RestExecutor> pool = new ConcurrentHashMap<>();
 
     /**
-     * @param cfg Agent configuration.
+     * Get REST executor by name.
+     *
+     * @param name REST executor name.
+     * @param clientStore Optional path to client key store file.
+     * @param clientPwd Optional password for client key store.
+     * @param trustStore Optional path to trust key store file.
+     * @param trustStorePwd Optional password for trust key store.
+     * @return New or existing REST executor.
      */
-    public RestExecutorPool(AgentConfiguration cfg) {
-        this.cfg = cfg;
+    public RestExecutor get(String name, String clientStore, String clientPwd, String trustStore, String trustStorePwd) {
+        return pool.computeIfAbsent(name, (s) -> new RestExecutor(clientStore, clientPwd, trustStore, trustStorePwd));
     }
 
-    /** */
-    public RestResult sendRequest(
-        String name,
-        List<String> nodeURIs,
-        Map<String, Object> params,
-        Map<String, Object> headers
-    ) throws IOException {
-        RestExecutor restExec = pool.get(name);
+    /**
+     * Close executor for specified name.
+     *
+     * @param name Executor name.
+     */
+    public void close(String name) {
+        RestExecutor restExec = pool.remove(name);
 
-        if (restExec == null) {
-            restExec = new RestExecutor(cfg);
-
-            pool.put(name, restExec);
-        }
-
-        return restExec.sendRequest(nodeURIs, params, headers);
+        if (restExec != null)
+            restExec.close();
     }
 
     /** {@inheritDoc} */

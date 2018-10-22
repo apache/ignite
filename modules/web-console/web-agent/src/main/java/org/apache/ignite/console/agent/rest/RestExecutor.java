@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -50,7 +51,6 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -101,9 +101,12 @@ public class RestExecutor implements AutoCloseable {
     /**
      * Constructor.
      *
-     * @param cfg Agent configuration.
+     * @param clientStore Optional path to client key store file.
+     * @param clientPwd Optional password for client key store.
+     * @param trustStore Optional path to trust key store file.
+     * @param trustStorePwd Optional password for trust key store.
      */
-    public RestExecutor(AgentConfiguration cfg) {
+    public RestExecutor(String clientStore, String clientPwd, String trustStore, String trustStorePwd) {
         Dispatcher dispatcher = new Dispatcher();
 
         dispatcher.setMaxRequests(Integer.MAX_VALUE);
@@ -113,7 +116,7 @@ public class RestExecutor implements AutoCloseable {
             .readTimeout(0, TimeUnit.MILLISECONDS)
             .dispatcher(dispatcher);
 
-        // Workaround for use self-signed certificate
+        // Workaround for self-signed certificates.
         if (Boolean.getBoolean("trust.all")) {
             try {
                 SSLContext ctx = SSLContext.getInstance("TLS");
@@ -129,46 +132,46 @@ public class RestExecutor implements AutoCloseable {
                 LT.warn(log, "Failed to initialize socket factory for \"-Dtrust.all\" option to skip certificate validation.");
             }
         }
-        else {
+        else if (trustStore != null) {
             try {
-                String clnJks = cfg.clientCertificate();
-                String trustJks = cfg.trustStore();
+                char[] trustPwd = trustStorePwd != null ? trustStorePwd.toCharArray() : EMPTY_PWD;
+                KeyStore trustKeyStore = keyStore(trustStore, trustPwd);
 
-                if (clnJks != null && trustJks != null) {
-                    char[] clnPwd = cfg.clientPassword() != null ? cfg.clientPassword().toCharArray() : EMPTY_PWD;
+                TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
+                tmf.init(trustKeyStore);
 
-                    KeyStore clnKeyStore = keyStore(clnJks, clnPwd);
+                TrustManager[] trustMgrs = tmf.getTrustManagers();
 
-                    KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
-                    kmf.init(clnKeyStore, clnPwd);
+                X509TrustManager trustMgr = (X509TrustManager)Arrays.stream(trustMgrs)
+                    .filter(tm -> tm instanceof X509TrustManager)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("X509TrustManager manager not found"));
 
-                    char[] trustPwd = cfg.trustStorePassword() != null ? cfg.trustStorePassword().toCharArray() : EMPTY_PWD;
-                    KeyStore trustKeyStore = keyStore(trustJks, trustPwd);
+                SSLContext ctx = SSLContext.getInstance("TLS");
 
-                    TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
-                    tmf.init(trustKeyStore);
+                KeyManager[] keyMgrs = null;
 
-                    TrustManager[] trustMgrs = tmf.getTrustManagers();
+                if (clientStore != null) {
+                    char[] pwd = clientPwd != null ? clientPwd.toCharArray() : EMPTY_PWD;
 
-                    X509TrustManager trustMgr = (X509TrustManager)Arrays.stream(trustMgrs)
-                        .filter(tm -> tm instanceof X509TrustManager)
-                        .findFirst()
-                        .orElseGet(null);
+                    KeyStore keyStore = keyStore(clientStore, pwd);
 
-                    if (trustMgr == null)
-                        throw new IllegalStateException("X509TrustManager manager not found");
+                    KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+                    kmf.init(keyStore, pwd);
 
-                    SSLContext ctx = SSLContext.getInstance("TLS");
-
-                    ctx.init(kmf.getKeyManagers(), trustMgrs, null);
-
-                    builder.sslSocketFactory(ctx.getSocketFactory(), trustMgr);
-
-                    builder.hostnameVerifier((hostname, session) -> true);
+                    keyMgrs = kmf.getKeyManagers();
                 }
+
+                ctx.init(keyMgrs, trustMgrs, null);
+
+                builder.sslSocketFactory(ctx.getSocketFactory(), trustMgr);
             }
             catch (Exception e) {
-                log.error("Failed to initialize socket factory to establish mutual SSL connection with server", e);
+                String err = clientStore != null
+                    ? "Failed to initialize socket factory to establish mutual SSL connection with server"
+                    : "Failed to initialize socket factory to establish SSL connection with server";
+
+                log.error(err, e);
             }
         }
 

@@ -36,6 +36,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.ignite.console.agent.AgentConfiguration;
+import org.apache.ignite.console.agent.rest.RestExecutor;
 import org.apache.ignite.console.agent.rest.RestExecutorPool;
 import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
@@ -393,7 +394,10 @@ public class ClusterListener implements AutoCloseable {
                 params.put("password", cfg.nodePassword());
             }
 
-            RestResult res = restPool.sendRequest("web-agent", cfg.nodeURIs(), params, null);
+            RestExecutor restExec = restPool.get("web-agent", cfg.clientKeyStore(), cfg.clientKeyStorePassword(),
+                    cfg.trustStore(), cfg.trustKeyStorePassword());
+
+            RestResult res = restExec.sendRequest(cfg.nodeURIs(), params, null);
 
             switch (res.getStatus()) {
                 case STATUS_SUCCESS:
