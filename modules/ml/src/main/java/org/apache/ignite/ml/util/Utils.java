@@ -111,6 +111,13 @@ public class Utils {
                 false);
     }
 
+    /**
+     * Convert given iterator to a stream.
+     *
+     * @param iter Iterator.
+     * @param <T> Iterator content type.
+     * @return Stream constructed from iterator.
+     */
     public static <T> Stream<T> asStream(Iterator<T> iter) {
         return StreamSupport.stream(
                 Spliterators.spliteratorUnknownSize(iter, Spliterator.ORDERED),
