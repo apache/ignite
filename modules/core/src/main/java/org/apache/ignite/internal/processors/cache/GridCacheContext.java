@@ -1192,6 +1192,15 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * Flag indicating whether data can be read from backup.
+     *
+     * @return {@code true} if data can be read from backup.
+     */
+    public boolean isReadFromBackup() {
+        return readFromBackup;
+    }
+
+    /**
      * Sets cache object context.
      *
      * @param cacheObjCtx Cache object context.
