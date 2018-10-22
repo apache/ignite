@@ -311,10 +311,10 @@ public class CommandHandler {
     private static final String UTILITY_NAME = "control.sh";
 
     /** Common options. */
-    private static final String COMMON_OPTIONS = "[--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] [--ping-interval PING_INTERVAL] [--ping-timeout PING_TIMEOUT]";
+    private static final String COMMON_OPTIONS = String.join(" ",op(CMD_HOST,"HOST_OR_IP"), op(CMD_PORT, "PORT"),op(CMD_USER,"USER"),op(CMD_PASSWORD, "PASSWORD"),op(CMD_PING_INTERVAL,"PING_INTERVAL"), op(CMD_PING_TIMEOUT, "PING_TIMEOUT"));
 
     /** Utility name with common options. */
-    private static final String UTILITY_NAME_WITH_COMMON_OPTIONS = UTILITY_NAME + " " + COMMON_OPTIONS;
+    private static final String UTILITY_NAME_WITH_COMMON_OPTIONS = String.join(" ", UTILITY_NAME, COMMON_OPTIONS);
 
     /** Indent for help output. */
     private static final String INDENT = "  ";
@@ -352,7 +352,7 @@ public class CommandHandler {
      * @param s Input string.
      * @return input string with indent in begin.
      */
-    private String i(String s) {
+    private static String i(String s) {
         return i(s, 1);
     }
 
@@ -363,7 +363,7 @@ public class CommandHandler {
      * @param indentCnt number of indents.
      * @return input string with indents in begin.
      */
-    private String i(String s, int indentCnt) {
+    private static String i(String s, int indentCnt) {
         assert indentCnt >= 0;
 
         switch (indentCnt) {
@@ -1606,7 +1606,10 @@ public class CommandHandler {
      * @param params Other input parameter.
      * @return Joined parameters wrapped optional braces.
      */
-    private String op(String param, String... params) {
+    private static String op(String param, String... params) {
+        if(params == null || params.length == 0)
+            return "[" + param + "]";
+
         return "[" + param + " " + String.join(" ", params) + "]";
     }
 
@@ -1617,7 +1620,7 @@ public class CommandHandler {
      * @param params Remaining parameters.
      * @return Concatenated string.
      */
-    private String or(String param1, String... params) {
+    private static String or(String param1, String... params) {
         if (params.length == 0)
             return param1;
 
@@ -1959,7 +1962,7 @@ public class CommandHandler {
                     if (CMD_USER_ATTRIBUTES.equals(nextArg)) {
                         nextArg = nextArg("User attributes are expected to be separated by commas");
 
-                        Set<String> userAttrs = new HashSet();
+                        Set<String> userAttrs = new HashSet<>();
 
                         for (String userAttribute : nextArg.split(","))
                             userAttrs.add(userAttribute.trim());
@@ -2361,18 +2364,18 @@ public class CommandHandler {
                 nl();
 
                 log("Default values:");
-                log(i("HOST_OR_IP=" + DFLT_HOST), 2);
-                log(i("PORT=" + DFLT_PORT), 2);
-                log(i("PING_INTERVAL=" + DFLT_PING_INTERVAL), 2);
-                log(i("PING_TIMEOUT=" + DFLT_PING_TIMEOUT), 2);
+                log(i("HOST_OR_IP=" + DFLT_HOST, 2));
+                log(i("PORT=" + DFLT_PORT, 2));
+                log(i("PING_INTERVAL=" + DFLT_PING_INTERVAL, 2));
+                log(i("PING_TIMEOUT=" + DFLT_PING_TIMEOUT, 2));
                 nl();
 
                 log("Exit codes:");
-                log(i(EXIT_CODE_OK + " - successful execution."), 2);
-                log(i(EXIT_CODE_INVALID_ARGUMENTS + " - invalid arguments."), 2);
-                log(i(EXIT_CODE_CONNECTION_FAILED + " - connection failed."), 2);
-                log(i(ERR_AUTHENTICATION_FAILED + " - authentication failed."), 2);
-                log(i(EXIT_CODE_UNEXPECTED_ERROR + " - unexpected error."), 2);
+                log(i(EXIT_CODE_OK + " - successful execution.", 2));
+                log(i(EXIT_CODE_INVALID_ARGUMENTS + " - invalid arguments.", 2));
+                log(i(EXIT_CODE_CONNECTION_FAILED + " - connection failed.", 2));
+                log(i(ERR_AUTHENTICATION_FAILED + " - authentication failed.", 2));
+                log(i(EXIT_CODE_UNEXPECTED_ERROR + " - unexpected error.", 2));
 
                 return EXIT_CODE_OK;
             }
