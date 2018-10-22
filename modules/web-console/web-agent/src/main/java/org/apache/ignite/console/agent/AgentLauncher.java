@@ -416,6 +416,7 @@ public class AgentLauncher {
             };
 
             DatabaseListener dbHnd = new DatabaseListener(cfg);
+
             RestListener restHnd = new RestListener(cfg, restPool);
 
             final CountDownLatch latch = new CountDownLatch(1);
@@ -434,6 +435,8 @@ public class AgentLauncher {
                     log.warn("Security token has been reset: {}", tok);
 
                     cfg.tokens().remove(tok);
+
+                    restPool.close(tok);
 
                     if (cfg.tokens().isEmpty()) {
                         client.off();

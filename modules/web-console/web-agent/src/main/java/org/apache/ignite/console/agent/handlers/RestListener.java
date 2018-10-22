@@ -25,6 +25,7 @@ import org.apache.ignite.console.agent.rest.RestExecutor;
 import org.apache.ignite.console.agent.rest.RestExecutorPool;
 import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.console.demo.AgentClusterDemo;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -66,6 +67,11 @@ public class RestListener extends AbstractListener {
 
         boolean demo = (boolean)args.get("demo");
 
+        String token = (String)args.get("token");
+
+        if (F.isEmpty(token))
+            return RestResult.fail(404, "Request does not contain user token.");
+
         Map<String, Object> headers = null;
 
         if (args.containsKey("headers"))
@@ -80,16 +86,24 @@ public class RestListener extends AbstractListener {
                         return RestResult.fail(404, "Failed to send request because of embedded node for demo mode is not started yet.");
                 }
 
-                RestExecutor restExec = restPool.get("demo-rest-listener",
-                    cfg.clientKeyStore(), cfg.clientKeyStorePassword(),
-                    cfg.trustStore(), cfg.trustKeyStorePassword());
+                RestExecutor restExec = restPool.get("demo-rest-listener");
+
+                if (restExec == null) {
+                    restExec = restPool.open("demo-rest-listener",
+                        cfg.clientKeyStore(), cfg.clientKeyStorePassword(),
+                        cfg.trustStore(), cfg.trustKeyStorePassword());
+                }
 
                 return restExec.sendRequest(AgentClusterDemo.getDemoUrl(), params, headers);
             }
 
-            RestExecutor restExec = restPool.get("rest-listener",
-                cfg.clientKeyStore(), cfg.clientKeyStorePassword(),
-                cfg.trustStore(), cfg.trustKeyStorePassword());
+            RestExecutor restExec = restPool.get(token);
+
+            if (restExec == null) {
+                restExec = restPool.open(token,
+                    cfg.clientKeyStore(), cfg.clientKeyStorePassword(),
+                    cfg.trustStore(), cfg.trustKeyStorePassword());
+            }
 
             return restExec.sendRequest(this.cfg.nodeURIs(), params, headers);
         }

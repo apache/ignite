@@ -19,6 +19,7 @@ package org.apache.ignite.console.agent.rest;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Class that store collection of {@link RestExecutor}.
@@ -31,13 +32,23 @@ public class RestExecutorPool implements AutoCloseable {
      * Get REST executor by name.
      *
      * @param name REST executor name.
+     * @return Existing REST executor or {@code null} if not found.
+     */
+    @Nullable public RestExecutor get(String name) {
+        return pool.get(name);
+    }
+
+    /**
+     * Create new REST executor and cache it.
+     *
+     * @param name REST executor name.
      * @param clientStore Optional path to client key store file.
      * @param clientPwd Optional password for client key store.
      * @param trustStore Optional path to trust key store file.
      * @param trustStorePwd Optional password for trust key store.
      * @return New or existing REST executor.
      */
-    public RestExecutor get(String name, String clientStore, String clientPwd, String trustStore, String trustStorePwd) {
+    public RestExecutor open(String name, String clientStore, String clientPwd, String trustStore, String trustStorePwd) {
         return pool.computeIfAbsent(name, (s) -> new RestExecutor(clientStore, clientPwd, trustStore, trustStorePwd));
     }
 
