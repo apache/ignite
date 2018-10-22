@@ -8169,23 +8169,15 @@ public abstract class IgniteUtils {
             for (Class cls = obj.getClass(); cls != Object.class; cls = cls.getSuperclass()) {
                 for (Field field : cls.getDeclaredFields()) {
                     if (field.getName().equals(fieldName)) {
-                        boolean accessible = field.isAccessible();
-
                         field.setAccessible(true);
 
-                        T val = (T)field.get(obj);
-
-                        if (!accessible)
-                            field.setAccessible(false);
-
-                        return val;
+                        return (T)field.get(obj);
                     }
                 }
             }
         }
         catch (Exception e) {
-            throw new IgniteException("Failed to get field value [fieldName=" + fieldName + ", obj=" + obj + ']',
-                e);
+            throw new IgniteException("Failed to get field value [fieldName=" + fieldName + ", obj=" + obj + ']', e);
         }
 
         throw new IgniteException("Failed to get field value [fieldName=" + fieldName + ", obj=" + obj + ']');
