@@ -207,6 +207,11 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                     CacheObjectBinaryProcessorImpl.this.addMeta(typeId, newMeta0.wrap(binaryCtx), failIfUnregistered);
                 }
 
+                @Override public void addMetaLocally(int typeId, BinaryType meta, boolean failIfUnregistered)
+                    throws BinaryObjectException {
+                    CacheObjectBinaryProcessorImpl.this.addMetaLocally(typeId, meta);
+                }
+
                 @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
                     return CacheObjectBinaryProcessorImpl.this.metadata(typeId);
                 }

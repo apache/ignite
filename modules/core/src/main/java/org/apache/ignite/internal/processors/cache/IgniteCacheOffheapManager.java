@@ -1067,8 +1067,12 @@ public interface IgniteCacheOffheapManager {
          * Return PendingTree for data store.
          *
          * @return PendingTree instance.
-         * @throws IgniteCheckedException
          */
         PendingEntriesTree pendingTree();
+
+        /**
+         * Flushes pending update counters closing all possible gaps.
+         */
+        void finalizeUpdateCountres();
     }
 }
