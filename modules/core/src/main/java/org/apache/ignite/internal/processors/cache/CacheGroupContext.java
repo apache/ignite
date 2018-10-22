@@ -1072,8 +1072,10 @@ public class CacheGroupContext {
      * WAL enabled flag.
      */
     public boolean walEnabled() {
+/*
         if (recoveryMode)
             return false;
+*/
 
         return localWalEnabled && globalWalEnabled;
     }

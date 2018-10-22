@@ -95,6 +95,8 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        cfg.setConsistentId(igniteInstanceName);
+
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
                         new DataRegionConfiguration().setMaxSize(100L * 1024 * 1024).setPersistenceEnabled(true))
