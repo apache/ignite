@@ -901,12 +901,14 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         if (CU.isPersistenceEnabled(ctx.config())) {
             cachesVer.putAll(ctx.cache().context().database().readStoredCachesConfigurationVersion());
 
+            boolean needMoveCfgs = false;
+
             Map<String, StoredCacheData> storedCaches = ctx.cache().context().database().readStoredCacheConfiguration();
 
             if(F.isEmpty(storedCaches) && ctx.cache().context().pageStore() != null){
                storedCaches = ctx.cache().context().pageStore().readCacheConfigurations();
 
-               moveCachesConfigurationFromDistToMetastore(storedCaches.values());
+               needMoveCfgs = true;
             }
 
             if (!F.isEmpty(storedCaches)) {
@@ -925,7 +927,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
                     GridCacheConfigurationVersion ver = cachesVer.get(cacheName);
 
-                    if(ver ==null){
+                    if(ver == null){
                         ver = new GridCacheConfigurationVersion(
                             cacheName,
                             storedCacheData.config().getGroupName(),
@@ -936,7 +938,12 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                     }
 
                     caches.get(cacheName).cacheData().version(ver);
+
+                    storedCacheData.version(ver);
                 }
+
+                if(needMoveCfgs)
+                    moveCachesConfigurationFromDistToMetastore(storedCaches.values());
             }
         }
     }
