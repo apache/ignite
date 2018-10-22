@@ -870,7 +870,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @throws IgniteCheckedException If failed.
      */
     private IgniteInternalFuture<?> initCachesOnLocalJoin() throws IgniteCheckedException {
-        if (isLocalNodeNotInBaseline()) {
+        if (!cctx.kernalContext().clientNode() && isLocalNodeNotInBaseline()) {
             cctx.exchange().exchangerBlockingSectionBegin();
 
             try {

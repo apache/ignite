@@ -467,6 +467,11 @@ public class PageMemoryTracker implements IgnitePlugin {
 
                 page.changeHistory().add(record);
             }
+            catch (Exception e) {
+                log.warning("Failed to apply delta record: " + deltaRecord, e);
+
+                throw e;
+            }
             finally {
                 page.unlock();
             }
@@ -475,18 +480,7 @@ public class PageMemoryTracker implements IgnitePlugin {
             return;
 
         // Increment statistics.
-        AtomicInteger statCnt = stats.get(record.type());
-
-        if (statCnt == null) {
-            statCnt = new AtomicInteger();
-
-            AtomicInteger oldCnt = stats.putIfAbsent(record.type(), statCnt);
-
-            if (oldCnt != null)
-                statCnt = oldCnt;
-        }
-
-        statCnt.incrementAndGet();
+        stats.computeIfAbsent(record.type(), r -> new AtomicInteger()).incrementAndGet();
     }
 
     /**
