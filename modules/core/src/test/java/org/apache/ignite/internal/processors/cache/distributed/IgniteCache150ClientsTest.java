@@ -164,7 +164,7 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
             }
         }, CLIENTS, "start-client");
 
-        fut.get();
+        fut.get(getTestTimeout());
 
         log.info("Started all clients.");
 
