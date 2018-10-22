@@ -117,8 +117,6 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
 
     /** */
     public void testCurrentSegmentTypeLogFsyncModeArchiveOff() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9776");
-
         checkCurrentSegmentType(FSYNC, true);
     }
 
@@ -139,8 +137,6 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
 
     /** */
     public void testNextSegmentTypeFsyncModeArchiveOff() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9776");
-
         checkNextSegmentType(FSYNC, true);
     }
 
@@ -207,8 +203,6 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
 
     /** */
     public void testNextSegmentTypeWithCacheActivityFsyncModeArchiveOff() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9776");
-
         checkNextSegmentTypeWithCacheActivity(FSYNC, true);
     }
 
@@ -295,8 +289,6 @@ public class WalRolloverTypesTest extends GridCommonAbstractTest {
 
     /** */
     public void testCurrentSegmentTypeWithCacheActivityFsyncModeArchiveOff() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9776");
-
         checkCurrentSegmentTypeWithCacheActivity(FSYNC, true);
     }
 

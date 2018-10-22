@@ -19,9 +19,7 @@
 package org.apache.ignite.mxbean;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.internal.stat.StatType;
 
 /**
  * This interface defines JMX view for IO statistics.
@@ -42,115 +40,146 @@ public interface IoStatMetricsMXBean {
     public void resetStatistics();
 
     /**
-     * Universal method to get statistics for IO logical reads
+     * Gets string presentation of cache IO statistics for given cache.
      *
-     * @param statTypeName Type of statistic {@link StatType}
-     * @param subTypeFilter Subtype of statistics to filter results.
-     * @param aggregate True in case statistics should be aggregated.
-     * @return Logical reads statistics for given params.
+     * @param cacheName Name of cache.
+     * @return Formatted representation of cache IO statistics.
      */
-    @MXBeanDescription("Logical read statistics.")
-    @MXBeanParametersNames(
-        {
-            "statTypeName",
-            "subTypeFilter",
-            "aggregate"
-        }
-    )
-    @MXBeanParametersDescriptions(
-        {
-            "Type of statistic.",
-            "Subtype of statistics.",
-            "True in case statistics should be aggregated."
-        }
-    )
-    public Map<String, Long> getLogicalReadStatistics(String statTypeName, String subTypeFilter, boolean aggregate);
+    @MXBeanDescription("String presentation of cache IO statistics.")
+    @MXBeanParametersNames("cacheName")
+    @MXBeanParametersDescriptions("Cache name.")
+    public String getCacheStatisticsFormatted(String cacheName);
 
     /**
-     * Universal method to get statistics for IO physical reads
+     * Gets number of physical page reads for given cache.
      *
-     * @param statTypeName Type of statistic {@link StatType}
-     * @param subTypeFilter Subtype of statistics to filter results.
-     * @param aggregate True in case statistics should be aggregated.
-     * @return Physical reads statistics for given params.
+     * @param cacheName Name of cache.
+     * @return Number of physical page reads for given cache. {@code null} in case such statistics doesn't exists.
      */
-    @MXBeanDescription("Physical read statistics.")
-    @MXBeanParametersNames(
-        {
-            "statTypeName",
-            "subTypeFilter",
-            "aggregate"
-        }
-    )
-    @MXBeanParametersDescriptions(
-        {
-            "Type of statistic.",
-            "Subtype of statistics.",
-            "True in case statistics should be aggregated."
-        }
-    )
-    public Map<String, Long> getPhysicalReadStatistics(String statTypeName, String subTypeFilter, boolean aggregate);
+    @MXBeanDescription("Number of physical page reads for given cache. " +
+        "Can return null in case such statistics doesn't exists.")
+    @MXBeanParametersNames("cacheName")
+    @MXBeanParametersDescriptions("Cache name.")
+    public Long getCachePhysicalReadsStatistics(String cacheName);
 
     /**
-     * @return Number of physical reads splitted by type.
+     * Gets number of logical page reads for given cache.
+     *
+     * @param cacheName Name of cache.
+     * @return Number of logical page reads for given cache. {@code null} in case such statistics doesn't exists.
      */
-    @MXBeanDescription("Physical reads IO statistics.")
-    public Map<String, Long> getPhysicalReads();
+    @MXBeanDescription("Number of logical page reads for given cache. " +
+        "Can return null in case such statistics doesn't exists.")
+    @MXBeanParametersNames("cacheName")
+    @MXBeanParametersDescriptions("Cache name.")
+    public Long getCacheLogicalReadsStatistics(String cacheName);
 
     /**
-     * @return Number of logical reads splitted by type.
+     * Gets string presentation of index IO statistics for given cache and index.
+     *
+     * @param cacheName Name of cache.
+     * @param idxName Name of index.
+     * @return Formatted representation of index IO statistics for given cache and index.
      */
-    @MXBeanDescription("Logical reads IO statistics.")
-    public Map<String, Long> getLogicalReads();
+    @MXBeanDescription("String presentation of index IO statistics.")
+    @MXBeanParametersNames({"cacheName", "idxName"})
+    @MXBeanParametersDescriptions({"Cache name.", "Index name."})
+    public String getIndexStatisticsFormatted(String cacheName, String idxName);
+
 
     /**
-     * @return Number of physical reads splitted by aggregated types.
+     * Gets number of physical index page reads for given cache and index.
+     *
+     * @param cacheName Name of cache.
+     * @param idxName Name of index.
+     * @return Number of physical page reads for given cache and index. {@code null} in case such statistics doesn't exists.
      */
-    @MXBeanDescription("Aggregated physical reads IO statistics.")
-    public Map<String, Long> getAggregatedPhysicalReads();
+    @MXBeanDescription("Number of physical page reads for given cache. " +
+        "Can return null in case such statistics doesn't exists.")
+    @MXBeanParametersNames({"cacheName", "idxName"})
+    @MXBeanParametersDescriptions({"Cache name.", "Index name."})
+    public Long getIndexPhysicalReadsStatistics(String cacheName, String idxName);
 
     /**
-     * @return Number of logical reads splitted by aggregated types.
+     * Gets number of logical index page reads for given cache and index.
+     *
+     * @param cacheName Name of cache.
+     * @param idxName Name of index.
+     * @return Number of logical page reads for given cache and index. {@code null} in case such statistics doesn't exists.
      */
-    @MXBeanDescription("Aggregated logical reads IO statistics.")
-    public Map<String, Long> getAggregatedLogicalReads();
+    @MXBeanDescription("Number of logical page reads for given cache. " +
+        "Can return null in case such statistics doesn't exists.")
+    @MXBeanParametersNames({"cacheName", "idxName"})
+    @MXBeanParametersDescriptions({"Cache name.", "Index name."})
+    public Long getIndexLogicalReadsStatistics(String cacheName, String idxName);
+
 
     /**
-     * @return Names of indexes which have IO statistics.
+     * Gets number of logical leaf index's page reads for given cache and index.
+     *
+     * @param cacheName Name of cache.
+     * @param idxName Name of index.
+     * @return Number of logical leaf index's page reads for given cache and index. {@code null} in case such statistics doesn't exists.
      */
-    @MXBeanDescription("Name of indexes which have IO statistics.")
-    public Set<String> getStatIndexesNames();
+    @MXBeanDescription("Number of logical leaf index's page reads for given cache and index." +
+        "Can return null in case such statistics doesn't exists.")
+    @MXBeanParametersNames({"cacheName", "idxName"})
+    @MXBeanParametersDescriptions({"Cache name.", "Index name."})
+    public Long getIndexLeafLogicalReadsStatistics(String cacheName, String idxName);
 
     /**
-     * @return Names of caches which have IO statistics.
+     * Gets number of physical leaf index's page reads for given cache and index.
+     *
+     * @param cacheName Name of cache.
+     * @param idxName Name of index.
+     * @return Number of physical leaf index's page reads for given cache and index. {@code null} in case such statistics doesn't exists.
      */
-    @MXBeanDescription("Name of caches which have IO statistics.")
+    @MXBeanDescription("Number of physical leaf index's page reads for given cache and index." +
+        "Can return null in case such statistics doesn't exists.")
+    @MXBeanParametersNames({"cacheName", "idxName"})
+    @MXBeanParametersDescriptions({"Cache name.", "Index name."})
+    public Long getIndexLeafPhysicalReadsStatistics(String cacheName, String idxName);
+
+    /**
+     * Gets number of logical inner index's page reads for given cache and index.
+     *
+     * @param cacheName Name of cache.
+     * @param idxName Name of index.
+     * @return Number of logical inner index's page reads for given cache and index. {@code null} in case such statistics doesn't exists.
+     */
+    @MXBeanDescription("Number of logical inner index's page reads for given cache and index." +
+        "Can return null in case such statistics doesn't exists.")
+    @MXBeanParametersNames({"cacheName", "idxName"})
+    @MXBeanParametersDescriptions({"Cache name.", "Index name."})
+    public Long getIndexInnerLogicalReadsStatistics(String cacheName, String idxName);
+
+    /**
+     * Gets number of physical inner index's page reads for given cache and index.
+     *
+     * @param cacheName Name of cache.
+     * @param idxName Name of index.
+     * @return Number of physical inner index's page reads for given cache and index. {@code null} in case such
+     * statistics doesn't exists.
+     */
+    @MXBeanDescription("Number of physical inner index's page reads for given cache and index." +
+        "Can return null in case such statistics doesn't exists.")
+    @MXBeanParametersNames({"cacheName", "idxName"})
+    @MXBeanParametersDescriptions({"Cache name.", "Index name."})
+    public Long getIndexInnerPhysicalReadsStatistics(String cacheName, String idxName);
+
+    /**
+     * @param cacheName Name of cache.
+     * @return Names of indexes registered to gather IO statistics.
+     */
+    @MXBeanDescription("Name of indexes registered to gather IO statisitcs for given cache.")
+    @MXBeanParametersNames("cacheName")
+    @MXBeanParametersDescriptions("Cache name.")
+    public Set<String> getStatIndexesNames(String cacheName);
+
+    /**
+     * @return Names of caches registered to gather IO statistics.
+     */
+    @MXBeanDescription("Name of caches registered to gather IO statistics.")
     public Set<String> getStatCachesNames();
-
-    /**
-     * @param idxName Name of index.
-     * @return Number of physical reads for given index splitted by type.
-     */
-    @MXBeanDescription("Physical reads statistics for concrete index.")
-    @MXBeanParametersNames(
-        "idxName"
-    )
-    @MXBeanParametersDescriptions(
-        "Name of index."
-    )
-    public Map<String, Long> getPhysicalReadsIndex(String idxName);
-
-    /**
-     * @param idxName Name of index.
-     * @return Number of logical reads for given index splitted by type.
-     */
-    @MXBeanDescription("Logical reads statistics for concrete index.")
-    @MXBeanParametersNames(
-        "idxName"
-    )
-    @MXBeanParametersDescriptions(
-        "Name of index."
-    )
-    public Map<String, Long> getLogicalReadsIndex(String idxName);
 
 }

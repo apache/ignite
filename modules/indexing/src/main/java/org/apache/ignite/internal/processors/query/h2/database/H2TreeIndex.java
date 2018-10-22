@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.stat.GridIoStatManager;
-import org.apache.ignite.internal.stat.StatOperationType;
 import org.apache.ignite.internal.stat.StatType;
 import org.apache.ignite.internal.stat.StatisticsHolder;
 import org.apache.ignite.internal.util.IgniteTree;
@@ -79,9 +78,6 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /** Cache context. */
     private final GridCacheContext<?, ?> cctx;
-
-    /** Statistic operation type. */
-    private final StatOperationType statOpType;
 
     /** Table name. */
     private final String tblName;
@@ -133,8 +129,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         this.tblName = tbl.getName();
         this.idxName = idxName;
 
-        statOpType = new StatOperationType(StatType.INDEX, idxName);
-
         IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
 
         IndexColumn.mapColumns(cols, tbl);
@@ -161,7 +155,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             GridIoStatManager ioStatMngr = cctx.kernalContext().ioStats();
 
-            StatisticsHolder statHldr = ioStatMngr.createAndRegisterStatHolder(StatType.INDEX, idxName);
+            StatisticsHolder statHldr = ioStatMngr.createAndRegisterStatHolder(StatType.INDEX, cctx.name(), idxName);
 
             for (int i = 0; i < segments.length; i++) {
                 db.checkpointReadLock();

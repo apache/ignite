@@ -2026,6 +2026,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 t.get2(),
                 exchTopVer,
                 false);
+
+            context().exchange().exchangerUpdateHeartbeat();
         }
 
         if (log.isInfoEnabled())
@@ -2064,6 +2066,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                     null,
                     exchTopVer,
                     false);
+
+                context().exchange().exchangerUpdateHeartbeat();
             }
         }
 
@@ -3819,8 +3823,13 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             return msg0.needExchange();
         }
 
-        if (msg instanceof DynamicCacheChangeBatch)
-            return cachesInfo.onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
+        if (msg instanceof DynamicCacheChangeBatch) {
+            boolean changeRequested = cachesInfo.onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
+
+            ctx.query().onCacheChangeRequested((DynamicCacheChangeBatch)msg);
+
+            return changeRequested;
+        }
 
         if (msg instanceof DynamicCacheChangeFailureMessage)
             cachesInfo.onCacheChangeRequested((DynamicCacheChangeFailureMessage)msg, topVer);
@@ -5029,6 +5038,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
             // Make sure to remove future before completion.
             pendingFuts.remove(id, this);
+
+            context().exchange().exchangerUpdateHeartbeat();
 
             return super.onDone(res, err);
         }

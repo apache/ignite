@@ -18,8 +18,6 @@
 
 package org.apache.ignite.internal.stat;
 
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -37,7 +35,7 @@ import org.junit.Assert;
 public class GridIoStatManagerTest extends GridCommonAbstractTest {
 
     /** */
-    private static final int RECORD_COUNT = 1000;
+    private static final int RECORD_COUNT = 5000;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -75,28 +73,18 @@ public class GridIoStatManagerTest extends GridCommonAbstractTest {
     private void ioStatGlobalPageTrackTest(boolean isPersistent) throws Exception {
         GridIoStatManager ioStatMgr = prepareData(isPersistent);
 
-        long physicalReadsCnt = ioStatMgr.physicalReadsLocalNode().values().stream()
-            .mapToLong(Number::longValue)
-            .reduce(0, Long::sum);
+        long physicalReadsCnt = ioStatMgr.physicalReads(StatType.CACHE, DEFAULT_CACHE_NAME);
 
-//        long physicalWritesCnt = GridIoStatManager.physicalWritesLocalNode().values().stream().reduce(Long::sum).get();
-
-        if (isPersistent) {
+        if (isPersistent)
             Assert.assertTrue(physicalReadsCnt>0);
-
-//            Assert.assertTrue(physicalWritesCnt > 0);
-        }
-        else {
+        else
             Assert.assertEquals(0, physicalReadsCnt);
 
-//            Assert.assertEquals(0, physicalWritesCnt);
-        }
+        Long logicalReads = ioStatMgr.logicalReads(StatType.INDEX, DEFAULT_CACHE_NAME, "PK");
 
-        Map<AggregatePageType, AtomicLong> aggLogReads = ioStatMgr.aggregate(ioStatMgr.logicalReadsLocalNode());
+        Assert.assertNotNull(logicalReads);
 
-        Assert.assertTrue(aggLogReads.containsKey(AggregatePageType.INDEX));
-
-        Assert.assertEquals(RECORD_COUNT, aggLogReads.get(AggregatePageType.INDEX).longValue());
+        Assert.assertEquals(RECORD_COUNT, logicalReads.longValue());
     }
 
     /**
