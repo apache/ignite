@@ -40,6 +40,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import javax.cache.Cache;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -73,6 +74,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridInClosure3;
@@ -1498,14 +1500,43 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         if (X.hasCause(e, TransactionException.class))
             return;
 
-        if (X.hasCause(e, IgniteSQLException.class) && X.cause(e, IgniteSQLException.class).getMessage() != null) {
-            IgniteSQLException ex = X.cause(e, IgniteSQLException.class);
+        if (X.hasCause(e, IgniteTxTimeoutCheckedException.class))
+            return;
 
-            if (ex.getMessage().contains("Transaction is already completed."))
-                return;
+        if (X.hasCause(e, CacheException.class)) {
+            CacheException cacheEx = X.cause(e, CacheException.class);
 
-            if (ex.getMessage().contains("Cannot serialize transaction due to write conflict"))
-                return;
+            if (cacheEx != null && cacheEx.getMessage() != null) {
+                if (cacheEx.getMessage().contains("Data node has left the grid during query execution"))
+                    return;
+            }
+
+            if (cacheEx != null && cacheEx.getMessage() != null) {
+                if (cacheEx.getMessage().contains("Query was interrupted."))
+                    return;
+            }
+
+            if (cacheEx != null && cacheEx.getMessage() != null) {
+                if (cacheEx.getMessage().contains("Failed to fetch data from node"))
+                    return;
+            }
+
+            if (cacheEx != null && cacheEx.getMessage() != null) {
+                if (cacheEx.getMessage().contains("Failed to send message"))
+                    return;
+            }
+        }
+
+        if (X.hasCause(e, IgniteSQLException.class)) {
+            IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
+
+            if (sqlEx != null && sqlEx.getMessage() != null) {
+                if (sqlEx.getMessage().contains("Transaction is already completed."))
+                    return;
+
+                if (sqlEx.getMessage().contains("Cannot serialize transaction due to write conflict"))
+                    return;
+            }
         }
 
         fail("Unexpected tx exception. " + X.getFullStackTrace(e));
