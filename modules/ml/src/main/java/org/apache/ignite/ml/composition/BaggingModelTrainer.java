@@ -101,7 +101,7 @@ public abstract class BaggingModelTrainer<M extends Model<Vector, Double>, R, X>
 
         try(Dataset<EmptyContext, BootstrappedDatasetPartition> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
-            new BootstrappedDatasetBuilder<>(wrapFeatureExtractor(featureExtractor, featuresMapping),
+            new BootstrappedDatasetBuilder<>(featureExtractor,
                 lbExtractor, ensembleSize, samplePartSizePerMdl)
         )) {
             double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
@@ -190,21 +190,22 @@ public abstract class BaggingModelTrainer<M extends Model<Vector, Double>, R, X>
     /**
      * Criterion for stopping global iterations.
      *
+     * @param iterationsCompleted Number of iterations completed.
      * @param models Models.
      * @param meta Metadata.
      * @return Should global iterations loop should stop.
      */
-    protected abstract boolean shouldStop(List<M> models, X meta);
+    protected abstract boolean shouldStop(int iterationsCompleted, List<M> models, X meta);
 
     private final ModelsComposition trainEnsemble(Dataset<EmptyContext, BootstrappedDatasetPartition> ds) {
         List<M> models = IntStream.range(0, ensembleSize).mapToObj(i -> init()).collect(Collectors.toList());
         X meta = getMeta(models);
+        int iter = 0;
 
-        while (!shouldStop(models, meta)) {
+        while (!shouldStop(iter, models, meta)) {
             List<R> identities = IntStream.range(0, ensembleSize).mapToObj(i -> identity()).collect(Collectors.toList());
 
             List<R> trainingResults = ds.compute((data, partIdx) -> {
-                // TODO: check parallelization. Should we use environment here?
                 int totalFeaturesCnt = data.iterator().next().features().size();
                 List<Integer> allFeatureIds = IntStream.range(0, totalFeaturesCnt).boxed().collect(Collectors.toList());
 
@@ -221,6 +222,7 @@ public abstract class BaggingModelTrainer<M extends Model<Vector, Double>, R, X>
             }, (l1, l2) -> zipWith(l1, l2, this::reduceTrainingResults), identities);
 
             models = zipWith(models, trainingResults, this::applyTrainingResultsToModel);
+            iter++;
         }
 
         return new ModelsComposition(models, predictionsAggregator);
