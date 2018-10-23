@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -36,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
@@ -65,12 +67,17 @@ public class FreeListLazyInitializationTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
-        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-        ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setAtomicityMode(TRANSACTIONAL);
-        ccfg.setCacheMode(REPLICATED);
+        CacheConfiguration ccfg1 = new CacheConfiguration(DEFAULT_CACHE_NAME);
+        ccfg1.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg1.setAtomicityMode(TRANSACTIONAL);
+        ccfg1.setCacheMode(REPLICATED);
 
-        cfg.setCacheConfiguration(ccfg);
+        CacheConfiguration ccfg2 = new CacheConfiguration("cache-2");
+        ccfg2.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg2.setAtomicityMode(TRANSACTIONAL);
+        ccfg2.setCacheMode(PARTITIONED);
+
+        cfg.setCacheConfiguration(ccfg1, ccfg2);
 
         return cfg;
     }
@@ -124,6 +131,14 @@ public class FreeListLazyInitializationTest extends GridCommonAbstractTest {
 
         node = startGrid(0);
         node.active(true);
+
+        checkLazyFreeList(node, parts, false);
+
+        // Check second cache and checkpoints do not force unnecessary free lists initialization.
+        node.cache("cache-2").putAll(map);
+        node.cache("cache-2").removeAll(map.keySet());
+
+        forceCheckpoint(node);
 
         checkLazyFreeList(node, parts, false);
 
