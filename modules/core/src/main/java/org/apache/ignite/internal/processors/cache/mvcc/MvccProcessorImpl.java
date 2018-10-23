@@ -1198,7 +1198,17 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                                 }
 
                                 GridCompoundIdentityFuture<VacuumMetrics> res0 =
-                                    new GridCompoundIdentityFuture<>(new VacuumMetricsReducer());
+                                    new GridCompoundIdentityFuture<VacuumMetrics>(new VacuumMetricsReducer()) {
+                                        /** {@inheritDoc} */
+                                        @Override protected void logError(IgniteLogger log, String msg, Throwable e) {
+                                            // no-op
+                                        }
+
+                                        /** {@inheritDoc} */
+                                        @Override protected void logDebug(IgniteLogger log, String msg) {
+                                            // no-op
+                                        }
+                                    };
 
                                 for (CacheGroupContext grp : ctx.cache().cacheGroups()) {
                                     if (grp.mvccEnabled()) {

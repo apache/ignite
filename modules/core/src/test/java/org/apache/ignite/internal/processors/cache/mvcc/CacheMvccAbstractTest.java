@@ -1532,14 +1532,21 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected void verifyOldVersionsCleaned() throws Exception {
-        runVacuumSync();
+        boolean retry;
 
-        awaitPartitionMapExchange();
+        try {
+            runVacuumSync();
 
-        // Check versions.
-        boolean cleaned = checkOldVersions(false);
+            // Check versions.
+            retry = !checkOldVersions(false);
+        }
+        catch (Exception e) {
+            U.warn(log(), "Failed to perform vacuum, will retry.", e);
 
-        if (!cleaned) { // Retry on a stable topology with a newer snapshot.
+            retry = true;
+        }
+
+        if (retry) { // Retry on a stable topology with a newer snapshot.
             awaitPartitionMapExchange();
 
             runVacuumSync();
