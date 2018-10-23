@@ -493,7 +493,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             store.write(pageId, pageBuf, tag, calculateCrc);
 
             // TODO maybe add async punch mode
-            if (compressedSize < pageSize)
+            if (pageSize - compressedSize >= blockSize)
                 store.punchHole(pageId, compressedSize);
         }
         catch (StorageException e) {
