@@ -4066,7 +4066,7 @@ public abstract class IgniteUtils {
                 rsrc.close();
             }
             catch (Exception e) {
-                warn(log, "Failed to close resource: " + e.getMessage(), e);
+                warn(log, "Failed to close resource: " + e.getMessage());
             }
     }
 
