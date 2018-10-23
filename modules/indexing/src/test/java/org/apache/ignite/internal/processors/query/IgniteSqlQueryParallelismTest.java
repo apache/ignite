@@ -71,6 +71,8 @@ public class IgniteSqlQueryParallelismTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGridsMultiThreaded(3, false);
     }
 
