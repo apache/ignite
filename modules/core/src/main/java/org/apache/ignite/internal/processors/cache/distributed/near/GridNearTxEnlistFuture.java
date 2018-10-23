@@ -158,6 +158,10 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
             boolean first = (nodeId != null);
 
+            // Need to unlock topology to avoid deadlock with binary descriptors registration.
+            if(!topLocked && cctx.topology().holdsLock())
+                cctx.topology().readUnlock();
+
             for (Batch batch : next) {
                 ClusterNode node = batch.node();
 
@@ -380,7 +384,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
                 }
             }
 
-            dhtTx.mvccEnlistBatch(cctx, it.operation(), keys, vals, mvccSnapshot.withoutActiveTransactions());
+            cctx.tm().txHandler().mvccEnlistBatch(dhtTx, cctx, it.operation(), keys, vals,
+                mvccSnapshot.withoutActiveTransactions(), null, -1);
         }
         catch (IgniteCheckedException e) {
             onDone(e);
@@ -570,9 +575,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
         if (err == null && res.error() != null)
             err = res.error();
 
-        if (X.hasCause(err, ClusterTopologyCheckedException.class))
-            tx.removeMapping(nodeId);
-        else if (res != null)
+        if (res != null)
             tx.mappings().get(nodeId).addBackups(res.newDhtNodes());
 
         if (err != null)
