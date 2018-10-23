@@ -17,7 +17,6 @@
 
 package org.apache.ignite.yardstick.jdbc;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -46,11 +45,6 @@ public class NativeSqlQueryRangeBenchmark extends AbstractNativeBenchmark {
 
             expRsSize = 1;
         }
-        else if (args.sqlRange() <= 0) {
-            qry = new SqlFieldsQuery("SELECT id, val FROM test_long");
-
-            expRsSize = args.range();
-        }
         else {
             qry = new SqlFieldsQuery("SELECT id, val FROM test_long WHERE id BETWEEN ? AND ?");
 
@@ -62,17 +56,12 @@ public class NativeSqlQueryRangeBenchmark extends AbstractNativeBenchmark {
             expRsSize = args.sqlRange();
         }
 
-        qry.setLazy(args.isLazy());
-
         long rsSize = 0;
 
         try (FieldsQueryCursor<List<?>> cursor = ((IgniteEx)ignite()).context().query()
                 .querySqlFields(qry, false)) {
-            Iterator<List<?>> it = cursor.iterator();
 
-            while (it.hasNext()) {
-                List<?> row = it.next();
-
+            for (List<?> row : cursor) {
                 if ((Long)row.get(0) + 1 != (Long)row.get(1))
                     throw new Exception("Invalid result retrieved");
 
