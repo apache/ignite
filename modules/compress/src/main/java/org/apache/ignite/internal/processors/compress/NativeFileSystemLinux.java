@@ -30,7 +30,7 @@ public class NativeFileSystemLinux implements NativeFileSystem {
     }
 
     /** {@inheritDoc} */
-    @Override public void punchHole(int fd, long off, int len) {
+    @Override public void punchHole(int fd, long off, long len) {
         LinuxFileSystemLibrary.punchHole(fd, off, len);
     }
 }
