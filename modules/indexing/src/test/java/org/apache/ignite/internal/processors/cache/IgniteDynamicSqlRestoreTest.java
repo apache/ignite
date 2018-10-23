@@ -191,6 +191,11 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
         }
     }
 
+    @Override
+    protected long getTestTimeout() {
+        return 1200 * 1000;
+    }
+
     /**
      * @throws Exception if failed.
      */

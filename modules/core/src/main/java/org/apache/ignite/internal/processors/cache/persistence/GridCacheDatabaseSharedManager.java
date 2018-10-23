@@ -136,6 +136,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointe
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
+import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -2027,6 +2028,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
+    private final Map<Integer, QuerySchema> restoredCacheDescriptors = new ConcurrentHashMap<>();
+
     /** {@inheritDoc} */
     @Override public void startMemoryRestore(GridKernalContext kctx) throws IgniteCheckedException {
         if (kctx.clientNode())
@@ -2053,14 +2056,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointReadLock();
 
         try {
-            for (DynamicCacheDescriptor desc : cacheDescriptors)
+            for (DynamicCacheDescriptor desc : cacheDescriptors) {
                 cctx.cache().startCacheOnMemoryRecovery(desc);
+
+                restoredCacheDescriptors.put(desc.cacheId(), desc.schema());
+            }
 
             restoreState();
         }
         finally {
             checkpointReadUnlock();
         }
+    }
+
+    public QuerySchema getRestored(int cacheId) {
+        return restoredCacheDescriptors.get(cacheId);
     }
 
     /**

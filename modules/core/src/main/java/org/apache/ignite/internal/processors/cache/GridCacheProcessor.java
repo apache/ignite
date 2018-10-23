@@ -2096,20 +2096,61 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         if (caches.containsKey(startCfg.getName())) {
             GridCacheAdapter<?, ?> existingCache = caches.get(startCfg.getName());
 
-            CacheGroupContext groupContext = existingCache.context().group();
+            GridCacheContext<?, ?> cctx = existingCache.context();
 
-            if (groupContext.isRecoveryMode())
-                groupContext.finishRecovery(exchTopVer);
+            assert cctx.isRecoveryMode();
 
-            existingCache.context().finishRecovery(exchTopVer);
+            QuerySchema localSchema = ((GridCacheDatabaseSharedManager) ctx.cache().context().database()).getRestored(desc.cacheId());
 
-            onKernalStart(existingCache);
+            QuerySchemaPatch localSchemaPatch = localSchema.makePatch(desc.schema().entities());
 
-            if (log.isInfoEnabled())
-                log.info("Finished recovery for cache " +
-                    "[cache=" + existingCache.name() + ", grp=" + groupContext.cacheOrGroupName() + ", startVer=" + exchTopVer + "]");
+            // Cache schema is changed after restart, just stop existing cache and start new.
+            if (!localSchemaPatch.isEmpty() || localSchemaPatch.hasConflicts()) {
+                cctx.gate().onStopped();
 
-            return;
+                // Do not close client cache while requests processing is in progress.
+                sharedCtx.io().writeLock();
+
+                try {
+                    if (!cctx.affinityNode() && cctx.transactional())
+                        sharedCtx.tm().rollbackTransactionsForCache(cctx.cacheId());
+
+                    completeProxyInitialize(cctx.name());
+
+                    jCacheProxies.remove(cctx.name());
+
+                    sharedCtx.database().checkpointReadLock();
+
+                    try {
+                        prepareCacheStop(cctx.name(), false);
+                    }
+                    finally {
+                        sharedCtx.database().checkpointReadUnlock();
+                    }
+
+                    if (!cctx.group().hasCaches())
+                        stopCacheGroup(cctx.group().groupId());
+                }
+                finally {
+                    sharedCtx.io().writeUnlock();
+                }
+            }
+            else {
+                CacheGroupContext groupContext = existingCache.context().group();
+
+                if (groupContext.isRecoveryMode())
+                    groupContext.finishRecovery(exchTopVer);
+
+                existingCache.context().finishRecovery(exchTopVer);
+
+                onKernalStart(existingCache);
+
+                if (log.isInfoEnabled())
+                    log.info("Finished recovery for cache " +
+                        "[cache=" + existingCache.name() + ", grp=" + groupContext.cacheOrGroupName() + ", startVer=" + exchTopVer + "]");
+
+                return;
+            }
         }
 
         assert !caches.containsKey(startCfg.getName()) : startCfg.getName();
