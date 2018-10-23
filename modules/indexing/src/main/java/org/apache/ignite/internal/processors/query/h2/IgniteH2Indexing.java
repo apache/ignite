@@ -131,6 +131,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.query.h2.sys.SqlSystemTableEngine;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewBaselineNodes;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCaches;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeAttributes;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeMetrics;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodes;
@@ -245,12 +246,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         System.setProperty("h2.serializeJavaObject", "false");
         System.setProperty("h2.objectCacheMaxPerElementSize", "0"); // Avoid ValueJavaObject caching.
         System.setProperty("h2.optimizeTwoEquals", "false"); // Makes splitter fail on subqueries in WHERE.
+        System.setProperty("h2.dropRestrict", "false"); // Drop schema with cascade semantics.
     }
 
     /** Default DB options. */
     private static final String DB_OPTIONS = ";LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE" +
         ";DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=true;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0" +
-        ";RECOMPILE_ALWAYS=1;MAX_OPERATION_MEMORY=0;NESTED_JOINS=0;BATCH_JOINS=1" +
+        ";MAX_OPERATION_MEMORY=0;BATCH_JOINS=1" +
         ";ROW_FACTORY=\"" + GridH2PlainRowFactory.class.getName() + "\"" +
         ";DEFAULT_TABLE_ENGINE=" + GridH2DefaultTableEngine.class.getName();
 
@@ -987,11 +989,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param name Index name,
      * @param tbl Table.
      * @param pk Primary key flag.
+     * @param affinityKey Affinity key flag.
      * @param cols Columns.
      * @param inlineSize Index inline size.
      * @return Index.
      */
-    GridH2IndexBase createSortedIndex(String name, GridH2Table tbl, boolean pk, List<IndexColumn> cols,
+    GridH2IndexBase createSortedIndex(String name, GridH2Table tbl, boolean pk, boolean affinityKey,
+        List<IndexColumn> cols,
         int inlineSize) {
         try {
             GridCacheContext cctx = tbl.cache();
@@ -1003,7 +1007,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             H2RowCache cache = rowCache.forGroup(cctx.groupId());
 
-            return new H2TreeIndex(cctx, cache, tbl, name, pk, cols, inlineSize, segments);
+            return new H2TreeIndex(cctx, cache, tbl, name, pk, affinityKey, cols, inlineSize, segments);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -1981,7 +1985,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return Collections.singletonList(H2Utils.zeroCursor());
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.getSql() + ']', e);
+            throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.getSql() +
+                ", err=" + e.getMessage() + ']', e);
         }
     }
 
@@ -2067,7 +2072,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("ThrowFromFinallyBlock")
     private void doCommit(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
         try {
-            if (!tx.isRollbackOnly())
+            // TODO: Why checking for rollback only?
+            //if (!tx.isRollbackOnly())
                 tx.commit();
         }
         finally {
@@ -3266,6 +3272,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         views.add(new SqlSystemViewNodeAttributes(ctx));
         views.add(new SqlSystemViewBaselineNodes(ctx));
         views.add(new SqlSystemViewNodeMetrics(ctx));
+        views.add(new SqlSystemViewCaches(ctx));
 
         return views;
     }

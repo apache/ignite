@@ -46,15 +46,17 @@ public class NoParallelismStrategy implements ParallelismStrategy {
      * @param <T> Type of result.
      */
     public static class Stub<T> implements Promise<T> {
-        private T result;
+
+        /** Result. */
+        private T res;
 
         /**
          * Create an instance of Stub
          *
-         * @param result Execution result.
+         * @param res Execution result.
          */
-        public Stub(T result) {
-            this.result = result;
+        public Stub(T res) {
+            this.res = res;
         }
 
         /** {@inheritDoc} */
@@ -74,14 +76,14 @@ public class NoParallelismStrategy implements ParallelismStrategy {
 
         /** {@inheritDoc} */
         @Override public T get() throws InterruptedException, ExecutionException {
-            return result;
+            return res;
         }
 
         /** {@inheritDoc} */
         @Override public T get(long timeout,
             @NotNull TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
 
-            return result;
+            return res;
         }
     }
 }

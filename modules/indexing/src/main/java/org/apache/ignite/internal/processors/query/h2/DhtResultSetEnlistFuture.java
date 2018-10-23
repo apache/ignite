@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.query.h2;
 import java.sql.ResultSet;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxAbstractEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryAbstractEnlistFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class DhtResultSetEnlistFuture extends GridDhtTxAbstractEnlistFuture implements ResultSetEnlistFuture  {
+public class DhtResultSetEnlistFuture extends GridDhtTxQueryAbstractEnlistFuture implements ResultSetEnlistFuture  {
     /** */
     private ResultSet rs;
 

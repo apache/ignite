@@ -53,13 +53,16 @@ public class CacheArguments {
     private int checkThrough = -1;
 
     /** Cache view command. */
-    private @Nullable VisorViewCacheCmd cacheCmd;
+    @Nullable private VisorViewCacheCmd cacheCmd;
 
     /** Calculate partition hash and print into standard output. */
     private boolean dump;
 
     /** Skip zeros partitions. */
     private boolean skipZeros;
+
+    /** Additional user attributes in result. Set of attribute names whose values will be searched in ClusterNode.attributes(). */
+    private Set<String> userAttributes;
 
     /**
      * @return Command.
@@ -174,7 +177,7 @@ public class CacheArguments {
     }
 
     /**
-     *  @return Max number of entries to be checked.
+     * @return Max number of entries to be checked.
      */
     public int checkFirst() {
         return checkFirst;
@@ -227,5 +230,19 @@ public class CacheArguments {
      */
     public void skipZeros(boolean skipZeros) {
         this.skipZeros = skipZeros;
+    }
+
+    /**
+     * @return Additional user attributes in result. Set of attribute names whose values will be searched in ClusterNode.attributes().
+     */
+    public Set<String> getUserAttributes() {
+        return userAttributes;
+    }
+
+    /**
+     * @param userAttrs New additional user attributes in result.
+     */
+    public void setUserAttributes(Set<String> userAttrs) {
+        userAttributes = userAttrs;
     }
 }

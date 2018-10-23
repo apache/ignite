@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 
@@ -46,7 +47,6 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
     private final IgniteLogger log;
 
     /** */
-    @GridToStringExclude
     private long crdVer;
 
     /** */
@@ -60,6 +60,9 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
 
     /** */
     private final boolean canRemap;
+
+    /** */
+    private boolean done;
 
     /**
      * @param cctx Cache context.
@@ -136,6 +139,9 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
 
     /** {@inheritDoc} */
     @Override public void onDone() {
+        if (!checkDone())
+            return;
+
         MvccProcessor prc = cctx.shared().coordinators();
 
         MvccSnapshot snapshot = snapshot();
@@ -151,7 +157,7 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
     @Override public IgniteInternalFuture<Void> onDone(@NotNull GridNearTxLocal tx, boolean commit) {
         MvccSnapshot snapshot = snapshot(), txSnapshot = tx.mvccSnapshot();
 
-        if (snapshot == null && txSnapshot == null)
+        if (!checkDone() || snapshot == null && txSnapshot == null)
             return commit ? new GridFinishedFuture<>() : null;
 
         MvccProcessor prc = cctx.shared().coordinators();
@@ -259,6 +265,9 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
         IgniteInternalFuture<AffinityTopologyVersion> waitFut =
             cctx.shared().exchange().affinityReadyFuture(topVer.nextMinorVersion());
 
+        if(log.isDebugEnabled())
+            log.debug("Remap on new topology: " + waitFut);
+
         if (waitFut == null)
             requestSnapshot(cctx.shared().exchange().readyAffinityVersion(), lsnr);
         else {
@@ -323,6 +332,19 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
         }
 
         return true;
+    }
+
+    /** */
+    private synchronized boolean checkDone() {
+        if (!done)
+            return done = true;
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MvccQueryTrackerImpl.class, this);
     }
 
     /** */
