@@ -228,8 +228,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         persistence = false;
 
         try {
-            if(disableScheduledVacuum)
-                verifyOldVersionsCleaned();
+            verifyOldVersionsCleaned();
 
             verifyCoordinatorInternalState();
         }
@@ -1533,12 +1532,21 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected void verifyOldVersionsCleaned() throws Exception {
-        runVacuumSync();
+        boolean retry;
 
-        // Check versions.
-        boolean cleaned = checkOldVersions(false);
+        try {
+            runVacuumSync();
 
-        if (!cleaned) { // Retry on a stable topology with a newer snapshot.
+            // Check versions.
+            retry = !checkOldVersions(false);
+        }
+        catch (Exception e) {
+            U.warn(log(), "Failed to perform vacuum, will retry.", e);
+
+            retry = true;
+        }
+
+        if (retry) { // Retry on a stable topology with a newer snapshot.
             awaitPartitionMapExchange();
 
             runVacuumSync();
@@ -1559,7 +1567,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             for (IgniteCacheProxy cache : ((IgniteKernal)node).caches()) {
                 GridCacheContext cctx = cache.context();
 
-                if (!cctx.userCache() || !cctx.group().mvccEnabled())
+                if (!cctx.userCache() || !cctx.group().mvccEnabled() || F.isEmpty(cctx.group().caches()) || cctx.shared().closed(cctx))
                     continue;
 
                 for (Iterator it = cache.withKeepBinary().iterator(); it.hasNext(); ) {
@@ -1603,10 +1611,6 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                     continue;
 
                 assert GridTestUtils.getFieldValue(crd, "txLog") != null;
-
-                Throwable vacuumError = crd.vacuumError();
-
-                assertNull(X.getFullStackTrace(vacuumError), vacuumError);
 
                 fut.add(crd.runVacuum());
             }
