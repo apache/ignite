@@ -242,7 +242,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                         log.debug(msg0.toString());
                     }
 
-                    if (shouldWaitForAffinityReadyFuture(cacheMsg))
+                    if (shouldWaitForAffinityReadyFuture(cacheMsg, nodeId))
                         fut = cctx.exchange().affinityReadyFuture(rmtAffVer);
                 }
             }
@@ -301,9 +301,10 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         /**
          * @param cacheMsg Cache message.
+         * @param nodeId Node id.
          * @return Whether one should wait for the requested affinity version to handle given message.
          */
-        private boolean shouldWaitForAffinityReadyFuture(GridCacheMessage cacheMsg) {
+        private boolean shouldWaitForAffinityReadyFuture(GridCacheMessage cacheMsg, UUID nodeId) {
             if (cacheMsg instanceof GridNearSingleGetRequest || cacheMsg instanceof GridNearGetRequest) {
                 GridDhtPartitionsExchangeFuture lastTopFut = cctx.exchange().lastTopologyFuture();
 
@@ -331,6 +332,15 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                         }
 
                     }
+
+//                    if (log.isDebugEnabled()) {
+                        StringBuilder msg0 = new StringBuilder("Skip waiting for topology future on message [");
+
+                        appendMessageInfo(cacheMsg, nodeId, msg0).append(']');
+
+//                        log.debug(msg0.toString());
+                        log.info(msg0.toString());
+//                    }
 
                     return false;
                 }
