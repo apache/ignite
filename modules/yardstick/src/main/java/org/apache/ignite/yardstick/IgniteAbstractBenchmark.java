@@ -31,7 +31,6 @@ import org.yardstickframework.BenchmarkDriverAdapter;
 import org.yardstickframework.BenchmarkUtils;
 
 import static org.apache.ignite.events.EventType.EVTS_DISCOVERY;
-import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.yardstickframework.BenchmarkUtils.jcommander;
 import static org.yardstickframework.BenchmarkUtils.println;
 

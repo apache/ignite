@@ -86,7 +86,6 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
@@ -1536,13 +1535,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             for (DataRegionConfiguration dataReg : dataRegions) {
                 res += dataReg.getMaxSize();
 
-                res += GridCacheDatabaseSharedManager.checkpointBufferSize(dataReg);
+                res += U.checkpointBufferSize(dataReg);
             }
         }
 
         res += memCfg.getDefaultDataRegionConfiguration().getMaxSize();
 
-        res += GridCacheDatabaseSharedManager.checkpointBufferSize(memCfg.getDefaultDataRegionConfiguration());
+        res += U.checkpointBufferSize(memCfg.getDefaultDataRegionConfiguration());
 
         return res;
     }

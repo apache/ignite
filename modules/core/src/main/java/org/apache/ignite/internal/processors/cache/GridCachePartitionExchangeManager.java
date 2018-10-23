@@ -109,6 +109,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1405,7 +1406,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     grp.affinity().similarAffinityKey());
 
                 if (sndCounters) {
-                    CachePartitionPartialCountersMap cntrsMap = grp.topology().localUpdateCounters(true);
+                    CachePartitionPartialCountersMap cntrsMap = grp.topology().localUpdateCounters(true, true);
 
                     m.addPartitionUpdateCounters(grp.groupId(),
                         newCntrMap ? cntrsMap : CachePartitionPartialCountersMap.toCountersMap(cntrsMap));
@@ -1429,7 +1430,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 top.similarAffinityKey());
 
             if (sndCounters) {
-                CachePartitionPartialCountersMap cntrsMap = top.localUpdateCounters(true);
+                CachePartitionPartialCountersMap cntrsMap = top.localUpdateCounters(true, true);
 
                 m.addPartitionUpdateCounters(top.groupId(),
                     newCntrMap ? cntrsMap : CachePartitionPartialCountersMap.toCountersMap(cntrsMap));
@@ -2348,9 +2349,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * Should be called from exchange worker thread.
      */
     public void exchangerBlockingSectionBegin() {
-        assert exchWorker != null && Thread.currentThread() == exchWorker.runner();
-
-        exchWorker.blockingSectionBegin();
+        if (currentThreadIsExchanger())
+            exchWorker.blockingSectionBegin();
     }
 
     /**
@@ -2358,9 +2358,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * Should be called from exchange worker thread.
      */
     public void exchangerBlockingSectionEnd() {
-        assert exchWorker != null && Thread.currentThread() == exchWorker.runner();
+        if (currentThreadIsExchanger())
+            exchWorker.blockingSectionEnd();
+    }
 
-        exchWorker.blockingSectionEnd();
+    /** */
+    private boolean currentThreadIsExchanger() {
+        return exchWorker != null && Thread.currentThread() == exchWorker.runner();
     }
 
     /**
@@ -2619,7 +2623,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     err = e;
             }
             catch (Throwable e) {
-                err = e;
+                if (!(stop && X.hasCause(e, IgniteInterruptedCheckedException.class)))
+                    err = e;
             }
             finally {
                 if (err == null && !stop && !reconnectNeeded)
