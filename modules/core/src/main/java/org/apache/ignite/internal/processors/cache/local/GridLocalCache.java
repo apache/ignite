@@ -238,8 +238,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         ctx.offheap().preloadPartition(part);
     }
 
-    /** {@inheritDoc}
-     * @param part*/
+    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> preloadPartitionAsync(int part) throws IgniteCheckedException {
         return ctx.closures().callLocalSafe(new Callable<Void>() {
             @Override public Void call() throws Exception {

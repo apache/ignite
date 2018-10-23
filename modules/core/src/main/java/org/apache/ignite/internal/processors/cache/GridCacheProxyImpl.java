@@ -238,8 +238,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         }
     }
 
-    /** {@inheritDoc}
-     * @param part*/
+    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> preloadPartitionAsync(int part) throws IgniteCheckedException {
         CacheOperationContext prev = gate.enter(opCtx);
 
@@ -1583,8 +1582,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         }
     }
 
-    /** {@inheritDoc}
-     * @param part*/
+    /** {@inheritDoc} */
     @Override public void preloadPartition(int part) throws IgniteCheckedException {
         CacheOperationContext prev = gate.enter(opCtx);
 

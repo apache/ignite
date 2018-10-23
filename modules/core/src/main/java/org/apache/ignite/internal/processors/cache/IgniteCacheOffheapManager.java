@@ -1084,8 +1084,8 @@ public interface IgniteCacheOffheapManager {
         void finalizeUpdateCountres();
 
         /**
-         * Preload store.
-         * @throws IgniteCheckedException
+         * Preload a store into page memory.
+         * @throws IgniteCheckedException If failed.
          */
         public void preload() throws IgniteCheckedException;
     }
