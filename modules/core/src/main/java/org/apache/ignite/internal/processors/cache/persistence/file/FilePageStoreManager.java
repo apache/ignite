@@ -493,6 +493,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
             store.write(pageId, ioBuf, tag, calculateCrc);
 
+            // TODO maybe add async punch mode
             if (ioBuf != pageBuf)
                 store.punchHole(pageId, ioBufSize);
         }
