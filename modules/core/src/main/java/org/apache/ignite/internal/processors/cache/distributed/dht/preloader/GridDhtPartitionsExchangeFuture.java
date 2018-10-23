@@ -827,14 +827,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @throws IgniteCheckedException If failed.
      */
     private IgniteInternalFuture<?> initCachesOnLocalJoin() throws IgniteCheckedException {
-        if (isLocalNodeNotInBaseline()) {
-            cctx.cache().cleanupCachesDirectories();
+        boolean baselineNode = isLocalNodeInBaseline();
 
-            cctx.database().cleanupCheckpointDirectory();
-
-            if (cctx.wal() != null)
-                cctx.wal().cleanupWalDirectories();
-        }
+        if (!baselineNode)
+                cctx.cache().cleanupCachesDirectories();
 
         cctx.activate();
 
@@ -855,7 +851,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
 
-            cctx.database().readCheckpointAndRestoreMemory(startDescs);
+            cctx.database().readCheckpointAndRestoreMemory(startDescs, !baselineNode);
         }
 
         IgniteInternalFuture<?> cachesRegistrationFut = cctx.cache().startCachesOnLocalJoin(initialVersion(), locJoinCtx);
@@ -864,12 +860,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @return {@code true} if local node is not in baseline and {@code false} otherwise.
+     * @return {@code true} if local node is in baseline and {@code false} otherwise.
      */
-    private boolean isLocalNodeNotInBaseline() {
+    private boolean isLocalNodeInBaseline() {
         BaselineTopology topology = cctx.discovery().discoCache().state().baselineTopology();
 
-        return topology!= null && !topology.consistentIds().contains(cctx.localNode().consistentId());
+        return topology != null && topology.consistentIds().contains(cctx.localNode().consistentId());
     }
 
     /**
@@ -972,7 +968,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                 startDescs.add(desc);
                         }
 
-                        cctx.database().readCheckpointAndRestoreMemory(startDescs);
+                        cctx.database().readCheckpointAndRestoreMemory(startDescs, false);
                     }
 
                     assert registerCachesFuture == null : "No caches registration should be scheduled before new caches have started.";
