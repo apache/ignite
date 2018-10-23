@@ -871,16 +871,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @throws IgniteCheckedException If failed.
      */
     private IgniteInternalFuture<?> initCachesOnLocalJoin() throws IgniteCheckedException {
-        if (isLocalNodeNotInBaseline()) {
+        boolean baselineNode = isLocalNodeInBaseline();
+
+        if (!baselineNode) {
             cctx.exchange().exchangerBlockingSectionBegin();
 
             try {
                 cctx.cache().cleanupCachesDirectories();
-
-                cctx.database().cleanupCheckpointDirectory();
-
-                if (cctx.wal() != null)
-                    cctx.wal().cleanupWalDirectories();
             }
             finally {
                 cctx.exchange().exchangerBlockingSectionEnd();
@@ -916,7 +913,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             cctx.exchange().exchangerBlockingSectionBegin();
 
             try {
-                cctx.database().readCheckpointAndRestoreMemory(startDescs);
+                cctx.database().readCheckpointAndRestoreMemory(startDescs, !baselineNode);
             }
             finally {
                 cctx.exchange().exchangerBlockingSectionEnd();
@@ -950,12 +947,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @return {@code true} if local node is not in baseline and {@code false} otherwise.
+     * @return {@code true} if local node is in baseline and {@code false} otherwise.
      */
-    private boolean isLocalNodeNotInBaseline() {
+    private boolean isLocalNodeInBaseline() {
         BaselineTopology topology = cctx.discovery().discoCache().state().baselineTopology();
 
-        return topology!= null && !topology.consistentIds().contains(cctx.localNode().consistentId());
+        return topology != null && topology.consistentIds().contains(cctx.localNode().consistentId());
     }
 
     /**
@@ -1098,7 +1095,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         cctx.exchange().exchangerBlockingSectionBegin();
 
                         try {
-                            cctx.database().readCheckpointAndRestoreMemory(startDescs);
+                            cctx.database().readCheckpointAndRestoreMemory(startDescs, false);
                         }
                         finally {
                             cctx.exchange().exchangerBlockingSectionEnd();
@@ -2105,7 +2102,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 if (drCacheCtx.isDrEnabled()) {
                     try {
-                        drCacheCtx.dr().onExchange(res, exchId.isLeft());
+                        drCacheCtx.dr().onExchange(res, exchId.isLeft(), activateCluster());
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to notify DR: " + e, e);
@@ -3512,36 +3509,34 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             U.doInParallel(
                 cctx.kernalContext().getSystemExecutorService(),
                 nonLocalCacheGroupDescriptors(),
-                new IgniteInClosureX<CacheGroupDescriptor>() {
-                    @Override public void applyx(CacheGroupDescriptor grpDesc) {
-                        CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpDesc.groupId());
+                grpDesc -> {
+                    CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpDesc.groupId());
 
-                        GridDhtPartitionTopology top = grpCtx != null
-                            ? grpCtx.topology()
-                            : cctx.exchange().clientTopology(grpDesc.groupId(), events().discoveryCache());
+                    GridDhtPartitionTopology top = grpCtx != null
+                        ? grpCtx.topology()
+                        : cctx.exchange().clientTopology(grpDesc.groupId(), events().discoveryCache());
 
-                        // Do not validate read or write through caches or caches with disabled rebalance
-                        // or ExpiryPolicy is set or validation is disabled.
-                        if (grpCtx == null
-                            || grpCtx.config().isReadThrough()
-                            || grpCtx.config().isWriteThrough()
-                            || grpCtx.config().getCacheStoreFactory() != null
-                            || grpCtx.config().getRebalanceDelay() == -1
-                            || grpCtx.config().getRebalanceMode() == CacheRebalanceMode.NONE
-                            || grpCtx.config().getExpiryPolicyFactory() == null
-                            || SKIP_PARTITION_SIZE_VALIDATION)
-                            return;
+                    // Do not validate read or write through caches or caches with disabled rebalance
+                    // or ExpiryPolicy is set or validation is disabled.
+                    if (grpCtx == null
+                        || grpCtx.config().isReadThrough()
+                        || grpCtx.config().isWriteThrough()
+                        || grpCtx.config().getCacheStoreFactory() != null
+                        || grpCtx.config().getRebalanceDelay() == -1
+                        || grpCtx.config().getRebalanceMode() == CacheRebalanceMode.NONE
+                        || grpCtx.config().getExpiryPolicyFactory() == null
+                        || SKIP_PARTITION_SIZE_VALIDATION)
+                        return;
 
-                        try {
-                            validator.validatePartitionCountersAndSizes(GridDhtPartitionsExchangeFuture.this, top, msgs);
-                        }
-                        catch (IgniteCheckedException ex) {
-                            log.warning("Partition states validation has failed for group: " + grpCtx.cacheOrGroupName() + ". " + ex.getMessage());
-                            // TODO: Handle such errors https://issues.apache.org/jira/browse/IGNITE-7833
-                        }
+                    try {
+                        validator.validatePartitionCountersAndSizes(GridDhtPartitionsExchangeFuture.this, top, msgs);
                     }
-                },
-                null);
+                    catch (IgniteCheckedException ex) {
+                        log.warning("Partition states validation has failed for group: " + grpCtx.cacheOrGroupName() + ". " + ex.getMessage());
+                        // TODO: Handle such errors https://issues.apache.org/jira/browse/IGNITE-7833
+                    }
+                }
+            );
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to validate partitions state", e);
@@ -3561,21 +3556,19 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             U.doInParallel(
                 cctx.kernalContext().getSystemExecutorService(),
                 nonLocalCacheGroupDescriptors(),
-                new IgniteInClosureX<CacheGroupDescriptor>() {
-                    @Override public void applyx(CacheGroupDescriptor grpDesc) {
-                        CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpDesc.groupId());
+                grpDesc -> {
+                    CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpDesc.groupId());
 
-                        GridDhtPartitionTopology top = grpCtx != null
-                            ? grpCtx.topology()
-                            : cctx.exchange().clientTopology(grpDesc.groupId(), events().discoveryCache());
+                    GridDhtPartitionTopology top = grpCtx != null
+                        ? grpCtx.topology()
+                        : cctx.exchange().clientTopology(grpDesc.groupId(), events().discoveryCache());
 
-                        if (!CU.isPersistentCache(grpDesc.config(), cctx.gridConfig().getDataStorageConfiguration()))
-                            assignPartitionSizes(top);
-                        else
-                            assignPartitionStates(top);
-                    }
-                },
-                null);
+                    if (!CU.isPersistentCache(grpDesc.config(), cctx.gridConfig().getDataStorageConfiguration()))
+                        assignPartitionSizes(top);
+                    else
+                        assignPartitionStates(top);
+                }
+            );
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to assign partition states", e);
