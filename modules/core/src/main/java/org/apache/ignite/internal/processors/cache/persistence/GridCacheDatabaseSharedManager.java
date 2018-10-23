@@ -2227,7 +2227,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     long pageAddr = pageMem.writeLock(grpId, pageId, page);
 
                                     try {
-                                        log.warning("Applying -> " + r);
+                                        //log.warning("Applying -> " + r);
 
                                         r.applyDelta(pageMem, pageAddr);
                                     }

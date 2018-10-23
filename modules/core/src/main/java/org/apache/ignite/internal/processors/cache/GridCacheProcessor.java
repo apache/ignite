@@ -2188,7 +2188,10 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
         ctx.query().onCacheStart(cacheCtx, desc.schema() != null ? desc.schema() : new QuerySchema());
 
-        onCacheStarted(cacheCtx);
+        if (cacheCtx.isRecoveryMode())
+            finishRecovery(exchTopVer, cacheCtx);
+        else
+            onCacheStarted(cacheCtx);
     }
 
     /**
@@ -2291,6 +2294,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     private void finishRecovery(AffinityTopologyVersion cacheStartVer, GridCacheContext<?, ?> cacheContext) throws IgniteCheckedException {
         CacheGroupContext groupContext = cacheContext.group();
 
+        //TODO: possible concurrency issue.
         if (groupContext.isRecoveryMode())
             groupContext.finishRecovery(cacheStartVer);
 
@@ -2299,8 +2303,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         onKernalStart(cacheContext.cache());
 
         if (log.isInfoEnabled())
-            log.info("Finished recovery for cache " +
-                "[cache=" + cacheContext.name() + ", grp=" + groupContext.cacheOrGroupName() + ", startVer=" + cacheStartVer + "]");
+            log.info("Finished recovery for cache [cache=" + cacheContext.name()
+                + ", grp=" + groupContext.cacheOrGroupName() + ", startVer=" + cacheStartVer + "]");
     }
 
     /**
