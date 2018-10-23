@@ -17,6 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -26,7 +37,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
-import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
+import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.command.dml.Insert;
@@ -46,19 +57,6 @@ import org.h2.table.TableBase;
 import org.h2.table.TableType;
 import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.LongAdder;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
@@ -91,12 +89,6 @@ public class GridH2Table extends TableBase {
 
     /** */
     private final ReadWriteLock lock;
-
-    /** Number of reading threads which currently move execution from query pool to dedicated thread. */
-    private final AtomicInteger lazyTransferCnt = new AtomicInteger();
-
-    /** Has writer that waits lock in the loop. */
-    private volatile boolean hasWaitedWriter;
 
     /** */
     private boolean destroyed;
@@ -273,11 +265,6 @@ public class GridH2Table extends TableBase {
 
         ses.addLock(this);
 
-        GridH2QueryContext qctx = GridH2QueryContext.get();
-
-        if (qctx != null)
-           qctx.lockedTables().add(this);
-
         return false;
     }
 
@@ -304,44 +291,15 @@ public class GridH2Table extends TableBase {
         Lock l = exclusive ? lock.writeLock() : lock.readLock();
 
         try {
-            if (exclusive) {
-                // Attempting to obtain exclusive lock for DDL.
-                // Lock is considered acquired only if "lazyTransferCnt" is zero, meaning that 
-                // currently there are no reader threads moving query execution from query 
-                // pool to dedicated thread.
-                // It is possible that reader which is currently transferring execution gets
-                // queued after the write lock we are trying to acquire. So we use timed waiting
-                // and a loop to avoid deadlocks.
-                for (;;) {
-                    if (l.tryLock(200, TimeUnit.MILLISECONDS)) {
-                        if (lazyTransferCnt.get() == 0)
-                            break;
-                        else
-                            l.unlock();
-                    }
-
-                    hasWaitedWriter = true;
-
-                    Thread.yield();
-                }
-
-                hasWaitedWriter = false;
-            }
+            if (!exclusive || !GridMapQueryExecutor.FORCE_LAZY)
+                l.lockInterruptibly();
             else {
-                // Attempt to acquire read lock (query execution, DML, cache update).
-                // If query is being executed inside a query pool, we do not want it to be blocked
-                // for a long time, as it would prevent other queries from being executed. So we
-                // wait a little and then force transfer to dedicated thread by throwing special
-                // timeout exception.GridNioSslSelfTest
-                // If query is not in the query pool, then we simply wait for lock acquisition.
-                if (isSqlNotInLazy()) {
-                    if (hasWaitedWriter || !l.tryLock(200, TimeUnit.MILLISECONDS)) {
-                        throw new GridH2RetryException("Long wait on Table lock: [tableName=" + getName()
-                            + ", hasWaitedWriter=" + hasWaitedWriter + ']');
-                    }
+                for (;;) {
+                    if (l.tryLock(200, TimeUnit.MILLISECONDS))
+                        break;
+                    else
+                        Thread.yield();
                 }
-                else
-                    l.lockInterruptibly();
             }
         }
         catch (InterruptedException e) {
@@ -360,49 +318,6 @@ public class GridH2Table extends TableBase {
         Lock l = exclusive ? lock.writeLock() : lock.readLock();
 
         l.unlock();
-    }
-
-    /**
-     * Check if table is being locked in not lazy thread by SQL query.
-     *
-     * @return {@code True} if is in query pool.
-     */
-    private static boolean isSqlNotInLazy() {
-        return GridH2QueryContext.get() != null && MapQueryLazyWorker.currentWorker() == null;
-    }
-
-    /**
-     * Callback invoked when session is to be transferred to lazy thread. In order to prevent concurrent changes
-     * by DDL during move we increment counter before releasing read lock.
-     *
-     * @param ses Session.
-     */
-    public void onLazyTransferStarted(Session ses) {
-        assert sessions.containsKey(ses) : "Detached session have not locked the table: " + getName();
-
-        lazyTransferCnt.incrementAndGet();
-
-        lock.readLock().unlock();
-    }
-
-    /**
-     * Callback invoked when lazy transfer finished. Acquire the lock, decrement transfer counter.
-     *
-     * @param ses Session to detach.
-     */
-    public void onLazyTransferFinished(Session ses) {
-        assert sessions.containsKey(ses) : "Attached session have not locked the table: " + getName();
-
-        try {
-            lock.readLock().lockInterruptibly();
-
-            lazyTransferCnt.decrementAndGet();
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new IgniteInterruptedException("Thread got interrupted while trying to acquire table lock.", e);
-        }
     }
 
     /**
@@ -494,11 +409,6 @@ public class GridH2Table extends TableBase {
 
         if (exclusive == null)
             return;
-
-        GridH2QueryContext qctx = GridH2QueryContext.get();
-
-        if (qctx != null)
-            qctx.lockedTables().remove(this);
 
         unlock(exclusive);
     }
@@ -1039,10 +949,9 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     * Drop columns.
      *
-     * @param cols Columns.
-     * @param ifExists IF EXISTS flag.
+     * @param cols
+     * @param ifExists
      */
     public void dropColumns(List<String> cols, boolean ifExists) {
         assert !ifExists || cols.size() == 1;
