@@ -761,11 +761,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestSqlQueryTimeout()
         {
             var cache = Cache();
-            PopulateCache(cache, false, 30000, x => true);
+            PopulateCache(cache, false, 20000, x => true);
 
-            var sqlQry = new SqlQuery(typeof(QueryPerson), "WHERE age < 2000")
+            var sqlQry = new SqlQuery(typeof(QueryPerson), "WHERE age < 500 AND name like '%1%'")
             {
-                Timeout = TimeSpan.FromMilliseconds(1)
+                Timeout = TimeSpan.FromMilliseconds(2)
             };
 
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed

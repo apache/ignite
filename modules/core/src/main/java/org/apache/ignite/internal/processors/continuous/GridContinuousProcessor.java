@@ -1423,7 +1423,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                 if (cache != null && !cache.isLocal() && cache.context().userCache())
                     req.addUpdateCounters(ctx.localNodeId(),
-                        toCountersMap(cache.context().topology().localUpdateCounters(false)));
+                        toCountersMap(cache.context().topology().localUpdateCounters(false, false)));
             }
         }
 
@@ -1564,7 +1564,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                                 if (cache != null && !cache.isLocal() && cache.context().userCache()) {
                                     CachePartitionPartialCountersMap cntrsMap =
-                                        cache.context().topology().localUpdateCounters(false);
+                                        cache.context().topology().localUpdateCounters(false, false);
 
                                     cntrs = U.marshal(marsh, cntrsMap);
                                 }
@@ -1594,7 +1594,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     private void sendMessageStartResult(final ClusterNode node,
         final UUID routineId,
         byte[] cntrsMapBytes,
-        final @Nullable Exception err)
+        @Nullable final Exception err)
     {
         byte[] errBytes = null;
 
@@ -2504,7 +2504,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                         if (cctx != null && cntrsPerNode != null && !cctx.isLocal() && cctx.affinityNode())
                             cntrsPerNode.put(ctx.localNodeId(),
-                                toCountersMap(cctx.topology().localUpdateCounters(false)));
+                                toCountersMap(cctx.topology().localUpdateCounters(false, false)));
 
                         routine.handler().updateCounters(topVer, cntrsPerNode, cntrs);
                     }
