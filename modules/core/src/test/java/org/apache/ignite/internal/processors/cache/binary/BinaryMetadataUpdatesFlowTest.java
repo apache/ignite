@@ -44,6 +44,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
@@ -284,12 +285,13 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
         startComputation(4, stopFlag4);
 
-        Thread killer = new Thread(new ServerNodeKiller());
-        Thread resurrection = new Thread(new ServerNodeResurrection());
-        killer.setName("node-killer-thread");
-        killer.start();
-        resurrection.setName("node-resurrection-thread");
-        resurrection.start();
+        final AtomicBoolean stopRestartNodes = new AtomicBoolean();
+
+        IgniteInternalFuture stopFut =
+            GridTestUtils.runAsync(new ServerNodeKiller(stopRestartNodes), "node-killer-thread");
+
+        IgniteInternalFuture startFut =
+            GridTestUtils.runAsync(new ServerNodeResurrection(stopRestartNodes), "node-resurrection-thread");
 
         START_LATCH.countDown();
 
@@ -298,7 +300,17 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
         FINISH_LATCH_NO_CLIENTS.await();
 
-        IgniteEx ignite0 = grid(0);
+        stopRestartNodes.set(true);
+
+        srvResurrectQueue.clear();
+        stopFut.get();
+
+        srvResurrectQueue.put(-1);
+        startFut.get();
+
+        awaitPartitionMapExchange();
+
+        Ignite ignite0 = G.allGrids().get(0);
 
         IgniteCache<Object, Object> cache0 = ignite0.cache(DEFAULT_CACHE_NAME);
 
@@ -307,12 +319,6 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
         assertTrue("Cache cannot contain more entries than were put in it;", cacheEntries <= UPDATES_COUNT);
 
         assertEquals("There are less than expected entries, data loss occurred;", UPDATES_COUNT, cacheEntries);
-
-        killer.interrupt();
-        resurrection.interrupt();
-
-        killer.join();
-        resurrection.join();
     }
 
     /**
@@ -342,21 +348,24 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
         START_LATCH.countDown();
 
-        Thread killer = new Thread(new ServerNodeKiller());
-        Thread resurrection = new Thread(new ServerNodeResurrection());
-        killer.setName("node-killer-thread");
-        killer.start();
-        resurrection.setName("node-resurrection-thread");
-        resurrection.start();
+        final AtomicBoolean stopRestartNodes = new AtomicBoolean();
+
+        IgniteInternalFuture stopFut =
+            GridTestUtils.runAsync(new ServerNodeKiller(stopRestartNodes), "node-killer-thread");
+
+        IgniteInternalFuture startFut =
+            GridTestUtils.runAsync(new ServerNodeResurrection(stopRestartNodes), "node-resurrection-thread");
 
         while (!updatesQueue.isEmpty())
             Thread.sleep(1000);
 
-        killer.interrupt();
-        resurrection.interrupt();
+        stopRestartNodes.set(true);
 
-        killer.join();
-        resurrection.join();
+        srvResurrectQueue.clear();
+        stopFut.get();
+
+        srvResurrectQueue.put(-1);
+        startFut.get();
     }
 
     /**
@@ -405,13 +414,21 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
      * Runnable responsible for stopping (gracefully) server nodes during metadata updates process.
      */
     private final class ServerNodeKiller implements Runnable {
+        /** */
+        private final AtomicBoolean threadStopFlag;
+
+        /** */
+        ServerNodeKiller(AtomicBoolean threadStopFlag) {
+            this.threadStopFlag = threadStopFlag;
+        }
+
         /** {@inheritDoc} */
         @Override public void run() {
             Thread curr = Thread.currentThread();
             try {
                 START_LATCH.await();
 
-                while (!curr.isInterrupted()) {
+                while (!curr.isInterrupted() && !threadStopFlag.get()) {
                     int idx = ThreadLocalRandom.current().nextInt(5);
 
                     AtomicBoolean stopFlag;
@@ -435,7 +452,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
                     stopFlag.set(true);
 
-                    while (stopFlag.get())
+                    while (stopFlag.get() && !threadStopFlag.get())
                         Thread.sleep(10);
 
                     stopGrid(idx);
@@ -455,6 +472,14 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
      * {@link Runnable} object to restart nodes killed by {@link ServerNodeKiller}.
      */
     private final class ServerNodeResurrection implements Runnable {
+        /** */
+        private final AtomicBoolean threadStopFlag;
+
+        /** */
+        ServerNodeResurrection(AtomicBoolean threadStopFlag) {
+            this.threadStopFlag = threadStopFlag;
+        }
+
         /** {@inheritDoc} */
         @Override public void run() {
             Thread curr = Thread.currentThread();
@@ -464,6 +489,9 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
                 while (!curr.isInterrupted()) {
                     Integer idx = srvResurrectQueue.takeFirst();
+
+                    if (threadStopFlag.get())
+                        break;
 
                     AtomicBoolean stopFlag;
 
