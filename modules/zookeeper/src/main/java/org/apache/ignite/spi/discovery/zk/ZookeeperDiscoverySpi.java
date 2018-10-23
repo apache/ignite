@@ -347,11 +347,6 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public ClusterNode getKnownNode(UUID nodeId) {
-        return getNode(nodeId);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean pingNode(UUID nodeId) {
         return impl.pingNode(nodeId);
     }

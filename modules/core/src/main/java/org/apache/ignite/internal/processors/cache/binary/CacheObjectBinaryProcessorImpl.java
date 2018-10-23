@@ -87,10 +87,10 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -102,6 +102,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TEST_FEATURES_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAIT_SCHEMA_UPDATE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
@@ -112,8 +113,6 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
  */
 public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorImpl implements
     CacheObjectBinaryProcessor {
-    /** Version since which handling binary metadata on join is supports correctly. */
-    private static final IgniteProductVersion V_SUPPORTS_METADATA_SINCE = IgniteProductVersion.fromString("2.5.0");
     /** */
     private volatile boolean discoveryStarted;
 
@@ -470,8 +469,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Override public void addMeta(final int typeId, final BinaryType newMeta,
-        boolean failIfUnregistered) throws BinaryObjectException {
+    @Override public void addMeta(final int typeId, final BinaryType newMeta, boolean failIfUnregistered) throws BinaryObjectException {
         assert newMeta != null;
         assert newMeta instanceof BinaryTypeImpl;
 
@@ -618,7 +616,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                         " [typeId=" + typeId
                         + ", schemaId=" + schemaId
                         + ", pendingVer=" + (holder == null ? "NA" : holder.pendingVersion())
-                        + ", acceptedVer=" + (holder == null ? "NA" : holder.acceptedVersion()) + ']');
+                        + ", acceptedVer=" + (holder == null ? "NA" :holder.acceptedVersion()) + ']');
 
                 try {
                     transport.requestUpToDateMetadata(typeId).get();
@@ -634,7 +632,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                         " [typeId=" + typeId
                         + ", schemaId=" + schemaId
                         + ", pendingVer=" + (holder == null ? "NA" : holder.pendingVersion())
-                        + ", acceptedVer=" + (holder == null ? "NA" : holder.acceptedVersion()) + ']');
+                        + ", acceptedVer=" + (holder == null ? "NA" :holder.acceptedVersion()) + ']');
             }
         }
         else {
@@ -680,7 +678,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                         + ", missingSchemaId=" + schemaId
                         + ", pendingVer=" + (holder == null ? "NA" : holder.pendingVersion())
                         + ", acceptedVer=" + (holder == null ? "NA" : holder.acceptedVersion())
-                        + ", binMetaUpdateTimeout=" + waitSchemaTimeout + ']');
+                        + ", binMetaUpdateTimeout=" + waitSchemaTimeout +']');
 
                 long t0 = System.nanoTime();
 
@@ -1073,29 +1071,13 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
         if (!dataBag.commonDataCollectedFor(BINARY_PROC.ordinal())) {
-            if (dataBag.isJoiningNodeClient() && !isBinaryMetadataOnJoinSupports(dataBag.joiningNodeId())) {
-                dataBag.addGridCommonData(BINARY_PROC.ordinal(), U.newHashMap(0));
-
-                return;
-            }
-
             Map<Integer, BinaryMetadataHolder> res = U.newHashMap(metadataLocCache.size());
 
-            for (Map.Entry<Integer, BinaryMetadataHolder> e : metadataLocCache.entrySet())
+            for (Map.Entry<Integer,BinaryMetadataHolder> e : metadataLocCache.entrySet())
                 res.put(e.getKey(), e.getValue());
 
-            dataBag.addGridCommonData(BINARY_PROC.ordinal(), (Serializable)res);
+            dataBag.addGridCommonData(BINARY_PROC.ordinal(), (Serializable) res);
         }
-    }
-
-    /**
-     * @param joiningNodeId Id of joining node.
-     * @return {@code true} if joining node supports handling metadata on join.
-     */
-    private boolean isBinaryMetadataOnJoinSupports(UUID joiningNodeId) {
-        ClusterNode joiningNode = ctx.config().getDiscoverySpi().getKnownNode(joiningNodeId);
-
-        return joiningNode == null || joiningNode.version().compareToIgnoreTimestamp(V_SUPPORTS_METADATA_SINCE) >= 0;
     }
 
     /** {@inheritDoc} */
