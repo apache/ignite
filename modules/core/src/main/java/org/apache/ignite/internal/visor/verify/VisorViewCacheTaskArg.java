@@ -36,7 +36,7 @@ public class VisorViewCacheTaskArg extends VisorDataTransferObject {
     private String regex;
 
     /** Type. */
-    private @Nullable VisorViewCacheCmd cmd;
+    @Nullable private VisorViewCacheCmd cmd;
 
     /**
      * @param regex Regex.
