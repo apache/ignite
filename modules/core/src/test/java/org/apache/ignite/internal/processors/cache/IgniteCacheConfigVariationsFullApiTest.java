@@ -4212,8 +4212,31 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      * @throws Exception If failed.
      */
     private void checkTtl(boolean inTx, boolean oldEntry) throws Exception {
-        int ttl = 1000;
+        int ttlVals[] = {600, 1000, 3000};
 
+        int i = 0;
+        while (i < ttlVals.length) {
+            try {
+                checkTtl0(inTx, oldEntry, ttlVals[i]);
+                break;
+            }
+            catch (AssertionFailedError e) {
+                if (i < ttlVals.length - 1)
+                    info("Ttl test failed, try execute with increased ttl");
+                else
+                    throw e;
+            }
+            i++;
+        }
+    }
+
+    /**
+     * @param inTx In tx flag.
+     * @param oldEntry {@code True} to check TTL on old entry, {@code false} on new.
+     * @param ttl TTL value.
+     * @throws Exception If failed.
+     */
+    private void checkTtl0(boolean inTx, boolean oldEntry, int ttl) throws Exception {
         final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
         final IgniteCache<String, Integer> c = jcache();
@@ -4409,11 +4432,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         // Ensure that old TTL and expire time are not longer "visible".
         entryTtl = entryTtl(srvNodeCache, key);
-
-        assertNotNull(entryTtl.get1());
-        assertNotNull(entryTtl.get2());
-        assertEquals(0, (long)entryTtl.get1());
-        assertEquals(0, (long)entryTtl.get2());
+        assertNull(entryTtl);
 
         // Ensure that next update will not pick old expire time.
 
@@ -4430,7 +4449,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 tx.close();
         }
 
-        U.sleep(2000);
+        U.sleep(ttl + 500);
 
         entryTtl = entryTtl(srvNodeCache, key);
 
@@ -6314,6 +6333,13 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             GridCacheEntryEx entry = internalCache.entryEx(key);
 
             entry.unswap();
+
+            if (!entry.hasValue()) {
+                assertEquals(0, entry.ttl());
+                assertEquals(0, entry.expireTime());
+
+                return null;
+            }
 
             IgnitePair<Long> pair = new IgnitePair<>(entry.ttl(), entry.expireTime());
 
