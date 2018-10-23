@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -84,7 +85,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
     private static final int RESTART_DELAY = 3_000;
 
     /** */
-    private final Queue<BinaryUpdateDescription> updatesQueue = new LinkedBlockingDeque<>(UPDATES_COUNT);
+    private final ArrayBlockingQueue<BinaryUpdateDescription> updatesQueue = new ArrayBlockingQueue<>(UPDATES_COUNT);
 
     /** */
     private static volatile BlockingDeque<Integer> srvResurrectQueue = new LinkedBlockingDeque<>(1);
@@ -193,7 +194,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
         ClusterGroup cg = ignite0.cluster().forNodeId(ignite0.localNode().id());
 
-        ignite0.compute(cg).withAsync().call(new BinaryObjectAdder(ignite0, updatesQueue, 30, stopFlag));
+        ignite0.compute(cg).withAsync().call(new BinaryObjectAdder(ignite0, updatesQueue, stopFlag));
     }
 
     /**
@@ -601,21 +602,16 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
         private final Queue<BinaryUpdateDescription> updatesQueue;
 
         /** */
-        private final long timeout;
-
-        /** */
         private final AtomicBoolean stopFlag;
 
         /**
          * @param ignite Ignite.
          * @param updatesQueue Updates queue.
-         * @param timeout Timeout.
          * @param stopFlag Stop flag.
          */
-        BinaryObjectAdder(IgniteEx ignite, Queue<BinaryUpdateDescription> updatesQueue, long timeout, AtomicBoolean stopFlag) {
+        BinaryObjectAdder(IgniteEx ignite, Queue<BinaryUpdateDescription> updatesQueue, AtomicBoolean stopFlag) {
             this.ignite = ignite;
             this.updatesQueue = updatesQueue;
-            this.timeout = timeout;
             this.stopFlag = stopFlag;
         }
 
@@ -639,8 +635,6 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
                 if (stopFlag.get())
                     break;
-                else
-                    Thread.sleep(timeout);
             }
 
             if (updatesQueue.isEmpty())
