@@ -95,10 +95,6 @@ public abstract class BaggingModelTrainer<M extends Model<Vector, Double>, R, X>
 
         Long startTs = System.currentTimeMillis();
 
-        Random rnd = new Random();
-        long featureExtractorSeed = rnd.nextLong();
-        Map<Integer, Integer> featuresMapping = createFeaturesMapping(featureExtractorSeed, featureVectorSize);
-
         try(Dataset<EmptyContext, BootstrappedDatasetPartition> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
             new BootstrappedDatasetBuilder<>(featureExtractor,
@@ -112,22 +108,6 @@ public abstract class BaggingModelTrainer<M extends Model<Vector, Double>, R, X>
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    /**
-     * Constructs mapping from original feature vector to subspace.
-     *
-     * @param seed Seed.
-     * @param featuresVectorSize Features vector size.
-     */
-    private Map<Integer, Integer> createFeaturesMapping(long seed, int featuresVectorSize) {
-        int[] featureIdxs = Utils.selectKDistinct(featuresVectorSize, maximumFeaturesCntPerMdl, new Random(seed));
-        Map<Integer, Integer> locFeaturesMapping = new HashMap<>();
-
-        IntStream.range(0, maximumFeaturesCntPerMdl)
-            .forEach(localId -> locFeaturesMapping.put(localId, featureIdxs[localId]));
-
-        return locFeaturesMapping;
     }
 
     /**
@@ -233,24 +213,6 @@ public abstract class BaggingModelTrainer<M extends Model<Vector, Double>, R, X>
 
         return new ModelsComposition(models, predictionsAggregator);
     }
-
-    /**
-     * Wraps the original feature extractor with features subspace mapping applying.
-     *
-     * @param featureExtractor Feature extractor.
-     * @param featureMapping Feature mapping.
-     */
-    private <K, V> IgniteBiFunction<K, V, Vector> wrapFeatureExtractor(
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        Map<Integer, Integer> featureMapping) {
-
-        return featureExtractor.andThen((IgniteFunction<Vector, Vector>)featureValues -> {
-            double[] newFeaturesValues = new double[featureMapping.size()];
-            featureMapping.forEach((localId, featureValueId) -> newFeaturesValues[localId] = featureValues.get(featureValueId));
-            return VectorUtils.of(newFeaturesValues);
-        });
-    }
-
     /**
      * Learn new models on dataset and create new Compositions over them and already learned models.
      *
