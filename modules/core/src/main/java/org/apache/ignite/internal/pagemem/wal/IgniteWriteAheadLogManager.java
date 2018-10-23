@@ -190,9 +190,4 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @param grpId Group id.
      */
     public boolean disabled(int grpId);
-
-    /**
-     * Cleanup all directories relating to WAL (e.g. work WAL dir, archive WAL dir).
-     */
-    public void cleanupWalDirectories() throws IgniteCheckedException;
 }

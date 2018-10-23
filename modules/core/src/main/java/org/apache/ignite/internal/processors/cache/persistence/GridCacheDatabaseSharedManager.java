@@ -159,8 +159,8 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 import org.apache.ignite.thread.IgniteThread;
-import org.jetbrains.annotations.NotNull;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
@@ -681,7 +681,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             checkpointReadLock();
 
             try {
-                restoreMemory(status, true, storePageMem, false, Collections.emptySet());
+                restoreMemory(status, true, storePageMem, Collections.emptySet());
 
                 metaStorage = new MetaStorage(cctx, regCfg, memMetrics, true);
 
@@ -884,8 +884,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public WALPointer restoreBinaryMemory(Set<Integer> cacheGrps) throws IgniteCheckedException {
+    /**
+     * @param cacheGrps Cache groups to restore.
+     * @return Last seen WAL pointer during binary memory recovery.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected WALPointer restoreBinaryMemory(Set<Integer> cacheGrps) throws IgniteCheckedException {
         assert !cctx.kernalContext().clientNode();
 
         long time = System.currentTimeMillis();
@@ -905,7 +909,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             WALPointer tailWalPtr = restoreMemory(status,
                 false,
                 (PageMemoryEx)dataRegionMap.get(METASTORE_DATA_REGION_NAME).pageMemory(),
-                true,
                 cacheGrps);
 
             if (tailWalPtr == null && !status.endPtr.equals(CheckpointStatus.NULL_PTR)) {
@@ -2051,7 +2054,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param status Checkpoint status.
      * @param metastoreOnly If {@code True} restores Metastorage only.
      * @param storePageMem Metastore page memory.
-     * @param finalizeCp If {@code True}, finalizes checkpoint on recovery.
      * @param cacheGrps Cache groups to restore.
      * @throws IgniteCheckedException If failed.
      * @throws StorageException In case I/O error occurred during operations with storage.
@@ -2060,7 +2062,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         CheckpointStatus status,
         boolean metastoreOnly,
         PageMemoryEx storePageMem,
-        boolean finalizeCp,
         Set<Integer> cacheGrps
     ) throws IgniteCheckedException {
         assert !metastoreOnly || storePageMem != null;
@@ -2215,7 +2216,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         }
 
-        if (!finalizeCp)
+        if (metastoreOnly)
             return null;
 
         WALPointer lastReadPtr = restoreBinaryState.lastReadRecordPointer();

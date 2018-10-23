@@ -39,7 +39,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
@@ -84,6 +83,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.WalStateAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.Latch;
@@ -103,7 +103,6 @@ import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -870,9 +869,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @throws IgniteCheckedException If failed.
      */
     private IgniteInternalFuture<?> initCachesOnLocalJoin() throws IgniteCheckedException {
-        boolean baselineNode = isLocalNodeInBaseline();
-
-        if (!baselineNode) {
+        if (!isLocalNodeInBaseline()) {
             cctx.exchange().exchangerBlockingSectionBegin();
 
             try {
@@ -880,11 +877,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 cctx.database().cleanupCheckpointDirectory();
 
-                if (cctx.wal() != null)
-                    cctx.wal().cleanupWalDirectories();
+                // Perform cache init from scratch.
+                for (DynamicCacheDescriptor desc : cctx.cache().cacheDescriptors().values()) {
+                    if (CU.isPersistentCache(desc.cacheConfiguration(),
+                        cctx.gridConfig().getDataStorageConfiguration())) {
+                        cctx.pageStore().initializeForCache(desc.groupDescriptor(),
+                            new StoredCacheData(desc.cacheConfiguration()));
+                    }
+                }
 
-                // Perform start node routine from scratch.
-                cctx.database().startMemoryRestore(cctx.kernalContext());
+                // Set initial node started marker.
+                cctx.database().nodeStart(null);
             }
             finally {
                 cctx.exchange().exchangerBlockingSectionEnd();

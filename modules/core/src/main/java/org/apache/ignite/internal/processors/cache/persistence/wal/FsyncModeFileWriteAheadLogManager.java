@@ -1045,29 +1045,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         return cctx.walState().isDisabled(grpId);
     }
 
-    /** {@inheritDoc} */
-    @Override public void cleanupWalDirectories() throws IgniteCheckedException {
-        try {
-            try (DirectoryStream<Path> files = Files.newDirectoryStream(walWorkDir.toPath())) {
-                for (Path path : files)
-                    Files.delete(path);
-            }
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Failed to cleanup wal work directory: " + walWorkDir, e);
-        }
-
-        try {
-            try (DirectoryStream<Path> files = Files.newDirectoryStream(walArchiveDir.toPath())) {
-                for (Path path : files)
-                    Files.delete(path);
-            }
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Failed to cleanup wal archive directory: " + walArchiveDir, e);
-        }
-    }
-
     /**
      * Lists files in archive directory and returns the index of last archived file.
      *
