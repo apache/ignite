@@ -116,6 +116,8 @@ public class FreeListLazyInitializationTest extends GridCommonAbstractTest {
         node.cache(DEFAULT_CACHE_NAME).putAll(map);
         node.cache(DEFAULT_CACHE_NAME).removeAll(map.keySet());
 
+        forceCheckpoint(node);
+
         checkLazyFreeList(node, parts, true);
 
         stopAllGrids();
