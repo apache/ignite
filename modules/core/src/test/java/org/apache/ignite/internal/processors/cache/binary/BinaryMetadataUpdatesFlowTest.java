@@ -20,11 +20,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
@@ -82,34 +82,16 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
     private static final int UPDATES_COUNT = 5_000;
 
     /** */
-    private static final int RESTART_DELAY = 3_000;
+    private static final int RESTART_DELAY = 1_000;
+
+    /** */
+    private static final int GRID_CNT = 5;
 
     /** */
     private final Queue<BinaryUpdateDescription> updatesQueue = new LinkedBlockingDeque<>(UPDATES_COUNT);
 
     /** */
-    private static volatile BlockingDeque<Integer> srvResurrectQueue = new LinkedBlockingDeque<>(1);
-
-    /** */
     private static final CountDownLatch START_LATCH = new CountDownLatch(1);
-
-    /** */
-    private static final CountDownLatch FINISH_LATCH_NO_CLIENTS = new CountDownLatch(5);
-
-    /** */
-    private static volatile AtomicBoolean stopFlag0 = new AtomicBoolean(false);
-
-    /** */
-    private static volatile AtomicBoolean stopFlag1 = new AtomicBoolean(false);
-
-    /** */
-    private static volatile AtomicBoolean stopFlag2 = new AtomicBoolean(false);
-
-    /** */
-    private static volatile AtomicBoolean stopFlag3 = new AtomicBoolean(false);
-
-    /** */
-    private static volatile AtomicBoolean stopFlag4 = new AtomicBoolean(false);
 
     /** */
     private static final String BINARY_TYPE_NAME = "TestBinaryType";
@@ -182,19 +164,17 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Starts new ignite node and submits computation job to it.
-     * @param idx Index.
-     * @param stopFlag Stop flag.
-     * @throws Exception If failed.
+     * Starts computation job.
+     *
+     * @param idx Grid index on which computation job should start.
+     * @param restartIdx The index of the node to be restarted.
      */
-    private void startComputation(int idx, AtomicBoolean stopFlag) throws Exception {
-        clientMode = false;
+    private void startComputation(int idx, AtomicInteger restartIdx) {
+        Ignite ignite = grid(idx);
 
-        final IgniteEx ignite0 = startGrid(idx);
+        ClusterGroup cg = ignite.cluster().forLocal();
 
-        ClusterGroup cg = ignite0.cluster().forNodeId(ignite0.localNode().id());
-
-        ignite0.compute(cg).withAsync().call(new BinaryObjectAdder(ignite0, updatesQueue, 30, stopFlag));
+        ignite.compute(cg).callAsync(new BinaryObjectAdder(idx, updatesQueue, 30, restartIdx));
     }
 
     /**
@@ -275,40 +255,16 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFlowNoConflicts() throws Exception {
-        startComputation(0, stopFlag0);
+        startGridsMultiThreaded(GRID_CNT);
 
-        startComputation(1, stopFlag1);
+        final AtomicInteger restartIdx = new AtomicInteger(-1);
 
-        startComputation(2, stopFlag2);
+        for (int i = 0; i < GRID_CNT; i++)
+            startComputation(i, restartIdx);
 
-        startComputation(3, stopFlag3);
+        doTestFlowNoConflicts(restartIdx);
 
-        startComputation(4, stopFlag4);
-
-        final AtomicBoolean stopRestartNodes = new AtomicBoolean();
-
-        IgniteInternalFuture stopFut =
-            GridTestUtils.runAsync(new ServerNodeKiller(stopRestartNodes), "node-killer-thread");
-
-        IgniteInternalFuture startFut =
-            GridTestUtils.runAsync(new ServerNodeResurrection(stopRestartNodes), "node-resurrection-thread");
-
-        START_LATCH.countDown();
-
-        while (!updatesQueue.isEmpty())
-            Thread.sleep(1000);
-
-        FINISH_LATCH_NO_CLIENTS.await();
-
-        stopRestartNodes.set(true);
-
-        srvResurrectQueue.clear();
-        stopFut.get();
-
-        srvResurrectQueue.put(-1);
-        startFut.get();
-
-        awaitPartitionMapExchange();
+        awaitPartitionMapExchange(true, true, null);
 
         Ignite ignite0 = G.allGrids().get(0);
 
@@ -325,18 +281,15 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFlowNoConflictsWithClients() throws Exception {
-        startComputation(0, stopFlag0);
+        startGridsMultiThreaded(GRID_CNT);
 
         if (!tcpDiscovery())
             return;
 
-        startComputation(1, stopFlag1);
+        final AtomicInteger restartIdx = new AtomicInteger(-1);
 
-        startComputation(2, stopFlag2);
-
-        startComputation(3, stopFlag3);
-
-        startComputation(4, stopFlag4);
+        for (int i = 0; i < GRID_CNT; i++)
+            startComputation(i, restartIdx);
 
         final Set<Integer> deafClientObservedIds = new ConcurrentHashSet<>();
 
@@ -346,26 +299,26 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
         startListening(6, false, regClientObservedIds);
 
-        START_LATCH.countDown();
+        doTestFlowNoConflicts(restartIdx);
+    }
 
-        final AtomicBoolean stopRestartNodes = new AtomicBoolean();
+    /**
+     * @param restartIdx The index of the node to be restarted.
+     * @throws Exception If failed.
+     */
+    private void doTestFlowNoConflicts(AtomicInteger restartIdx) throws Exception {
+        final AtomicBoolean stopFlag = new AtomicBoolean();
 
-        IgniteInternalFuture stopFut =
-            GridTestUtils.runAsync(new ServerNodeKiller(stopRestartNodes), "node-killer-thread");
+        try {
+            IgniteInternalFuture fut =
+                GridTestUtils.runAsync(new NodeRestarter(stopFlag, restartIdx), "worker");
 
-        IgniteInternalFuture startFut =
-            GridTestUtils.runAsync(new ServerNodeResurrection(stopRestartNodes), "node-resurrection-thread");
+            START_LATCH.countDown();
 
-        while (!updatesQueue.isEmpty())
-            Thread.sleep(1000);
-
-        stopRestartNodes.set(true);
-
-        srvResurrectQueue.clear();
-        stopFut.get();
-
-        srvResurrectQueue.put(-1);
-        startFut.get();
+            fut.get();
+        } finally {
+            stopFlag.set(true);
+        }
     }
 
     /**
@@ -408,120 +361,6 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
         for (IgniteInternalFuture fut : futs)
             fut.get();
-    }
-
-    /**
-     * Runnable responsible for stopping (gracefully) server nodes during metadata updates process.
-     */
-    private final class ServerNodeKiller implements Runnable {
-        /** */
-        private final AtomicBoolean threadStopFlag;
-
-        /** */
-        ServerNodeKiller(AtomicBoolean threadStopFlag) {
-            this.threadStopFlag = threadStopFlag;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            Thread curr = Thread.currentThread();
-            try {
-                START_LATCH.await();
-
-                while (!curr.isInterrupted() && !threadStopFlag.get()) {
-                    int idx = ThreadLocalRandom.current().nextInt(5);
-
-                    AtomicBoolean stopFlag;
-
-                    switch (idx) {
-                        case 0:
-                            stopFlag = stopFlag0;
-                            break;
-                        case 1:
-                            stopFlag = stopFlag1;
-                            break;
-                        case 2:
-                            stopFlag = stopFlag2;
-                            break;
-                        case 3:
-                            stopFlag = stopFlag3;
-                            break;
-                        default:
-                            stopFlag = stopFlag4;
-                    }
-
-                    stopFlag.set(true);
-
-                    while (stopFlag.get() && !threadStopFlag.get())
-                        Thread.sleep(10);
-
-                    stopGrid(idx);
-
-                    srvResurrectQueue.put(idx);
-
-                    Thread.sleep(RESTART_DELAY);
-                }
-            }
-            catch (Exception ignored) {
-                // No-op.
-            }
-        }
-    }
-
-    /**
-     * {@link Runnable} object to restart nodes killed by {@link ServerNodeKiller}.
-     */
-    private final class ServerNodeResurrection implements Runnable {
-        /** */
-        private final AtomicBoolean threadStopFlag;
-
-        /** */
-        ServerNodeResurrection(AtomicBoolean threadStopFlag) {
-            this.threadStopFlag = threadStopFlag;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            Thread curr = Thread.currentThread();
-
-            try {
-                START_LATCH.await();
-
-                while (!curr.isInterrupted()) {
-                    Integer idx = srvResurrectQueue.takeFirst();
-
-                    if (threadStopFlag.get())
-                        break;
-
-                    AtomicBoolean stopFlag;
-
-                    switch (idx) {
-                        case 0:
-                            stopFlag = stopFlag0;
-                            break;
-                        case 1:
-                            stopFlag = stopFlag1;
-                            break;
-                        case 2:
-                            stopFlag = stopFlag2;
-                            break;
-                        case 3:
-                            stopFlag = stopFlag3;
-                            break;
-                        default:
-                            stopFlag = stopFlag4;
-                    }
-
-                    clientMode = false;
-                    applyDiscoveryHook = false;
-
-                    startComputation(idx, stopFlag);
-                }
-            }
-            catch (Exception ignored) {
-                // No-op.
-            }
-        }
     }
 
     /**
@@ -621,9 +460,9 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
      * Compute job executed on each node in cluster which constantly adds new entries to ignite cache
      * according to {@link BinaryUpdateDescription descriptions} it reads from shared queue.
      */
-    private static final class BinaryObjectAdder implements IgniteCallable<Object> {
+    private final class BinaryObjectAdder implements IgniteCallable<Object> {
         /** */
-        private final IgniteEx ignite;
+        private final int idx;
 
         /** */
         private final Queue<BinaryUpdateDescription> updatesQueue;
@@ -632,24 +471,31 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
         private final long timeout;
 
         /** */
-        private final AtomicBoolean stopFlag;
+        private final AtomicInteger restartIdx;
 
         /**
-         * @param ignite Ignite.
+         * @param idx Ignite instance index.
          * @param updatesQueue Updates queue.
          * @param timeout Timeout.
-         * @param stopFlag Stop flag.
+         * @param restartIdx The index of the node to be restarted.
          */
-        BinaryObjectAdder(IgniteEx ignite, Queue<BinaryUpdateDescription> updatesQueue, long timeout, AtomicBoolean stopFlag) {
-            this.ignite = ignite;
+        BinaryObjectAdder(
+            int idx,
+            Queue<BinaryUpdateDescription> updatesQueue,
+            long timeout,
+            AtomicInteger restartIdx
+        ) {
+            this.idx = idx;
             this.updatesQueue = updatesQueue;
             this.timeout = timeout;
-            this.stopFlag = stopFlag;
+            this.restartIdx = restartIdx;
         }
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
             START_LATCH.await();
+
+            Ignite ignite = grid(idx);
 
             IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME).withKeepBinary();
 
@@ -665,18 +511,77 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
                 cache.put(desc.itemId, bo);
 
-                if (stopFlag.get())
+                if (restartIdx.get() == idx)
                     break;
                 else
                     Thread.sleep(timeout);
             }
 
-            if (updatesQueue.isEmpty())
-                FINISH_LATCH_NO_CLIENTS.countDown();
-
-            stopFlag.set(false);
+            restartIdx.set(-1);
 
             return null;
+        }
+    }
+
+    /**
+     * Restarts random server node and computation job.
+     */
+    private class NodeRestarter implements Runnable {
+        /** Stop thread flag. */
+        private final AtomicBoolean stopFlag;
+
+        /** The index of the node to be restarted. */
+        private final AtomicInteger restartIdx;
+
+        /**
+         * @param stopFlag Stop thread flag.
+         * @param restartIdx The index of the node to be restarted.
+         */
+        public NodeRestarter(AtomicBoolean stopFlag, AtomicInteger restartIdx) {
+            this.stopFlag = stopFlag;
+            this.restartIdx = restartIdx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            try {
+                START_LATCH.await();
+
+                while (!shouldStop()) {
+                    int idx = ThreadLocalRandom.current().nextInt(5);
+
+                    restartIdx.set(idx);
+
+                    while (restartIdx.get() != -1) {
+                        if (shouldStop())
+                            return;
+
+                        Thread.sleep(10);
+                    }
+
+                    stopGrid(idx);
+
+                    if (shouldStop())
+                        break;
+
+                    applyDiscoveryHook = false;
+
+                    clientMode = false;
+
+                    startGrid(idx);
+
+                    startComputation(idx, restartIdx);
+
+                    Thread.sleep(RESTART_DELAY);
+                }
+            } catch (Exception ignore) {
+                // No-op.
+            }
+        }
+
+        /** */
+        private boolean shouldStop() {
+            return updatesQueue.isEmpty() || stopFlag.get() || Thread.currentThread().isInterrupted();
         }
     }
 }
