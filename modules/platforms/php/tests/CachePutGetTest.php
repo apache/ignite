@@ -18,14 +18,18 @@
 
 namespace Apache\Ignite\Tests;
 
+use \DateTime;
 use Ds\Map;
 use Ds\Set;
 use PHPUnit\Framework\TestCase;
+use Apache\Ignite\Type\ObjectType;
 use Apache\Ignite\Type\MapObjectType;
 use Apache\Ignite\Type\CollectionObjectType;
 use Apache\Ignite\Type\ObjectArrayType;
 use Apache\Ignite\Type\ComplexObjectType;
 use Apache\Ignite\Data\BinaryObject;
+use Apache\Ignite\Data\Date;
+use Apache\Ignite\Data\Timestamp;
 
 class TstComplObjectWithPrimitiveFields
 {
@@ -488,6 +492,85 @@ final class CachePutGetTestCase extends TestCase
             array_push($array, $innerArray);
         }
         $this->putGetObjectArrays(new ObjectArrayType(new ObjectArrayType(new ComplexObjectType())), $array);
+    }
+
+    public function testPutGetDateTime(): void
+    {
+        $this->putGetDate("Y-m-d H:i:s", "2018-10-19 18:31:13", 0);
+        $this->putGetDate("Y-m-d H:i:s", "2018-10-19 18:31:13", 29726);
+        $this->putGetDate("Y-m-d H:i:s", "2018-10-19 18:31:13", 999999);
+
+        $this->putGetTimestamp("Y-m-d H:i:s", "2018-10-19 18:31:13", 0);
+        $this->putGetTimestamp("Y-m-d H:i:s", "2018-10-19 18:31:13", 29726000);
+        $this->putGetTimestamp("Y-m-d H:i:s", "2018-10-19 18:31:13", 999999999);
+
+        $this->putGetTimestampFromDateTime("Y-m-d H:i:s", "2018-10-19 18:31:13", 0);
+        $this->putGetTimestampFromDateTime("Y-m-d H:i:s", "2018-10-19 18:31:13", 29726);
+        $this->putGetTimestampFromDateTime("Y-m-d H:i:s", "2018-10-19 18:31:13", 999999);
+    }
+
+    private function putGetDate(string $format, string $dateString, int $micros): void
+    {
+        $key = microtime();
+        self::$cache->
+            setKeyType(null)->
+            setValueType(ObjectType::DATE);
+        try {
+            $dt = DateTime::createFromFormat("$format.u", sprintf("%s.%06d", $dateString, $micros));
+            $iDate = Date::fromDateTime($dt);
+            self::$cache->put($key, $iDate);
+            $result = self::$cache->get($key);
+
+            $this->assertEquals(sprintf("%06d", intval($micros / 1000) * 1000), $result->toDateTime()->format('u'));
+            $this->assertEquals($dateString, $result->toDateTime()->format($format));
+        } finally {
+            self::$cache->removeAll();
+        }
+    }
+
+    private function putGetTimestamp(string $format, string $dateString, int $nanos): void
+    {
+        $key = microtime();
+        self::$cache->
+            setKeyType(null)->
+            setValueType(ObjectType::TIMESTAMP);
+
+        try {
+            $millis = intval($nanos / 1000000);
+            $nanosInMillis = $nanos % 1000000;
+            self::$cache->put($key,
+                new Timestamp(
+                    DateTime::createFromFormat($format, $dateString)->getTimestamp() * 1000 + $millis,
+                    $nanosInMillis
+                )
+            );
+            $result = self::$cache->get($key);
+
+            $this->assertEquals($nanos % 1000000, $result->getNanos());
+            $this->assertEquals($dateString, $result->toDateTime()->format($format));
+        } finally {
+            self::$cache->removeAll();
+        }
+    }
+
+    private function putGetTimestampFromDateTime(string $format, string $dateString, $micros): void
+    {
+        $key = microtime();
+        self::$cache->
+            setKeyType(null)->
+            setValueType(ObjectType::TIMESTAMP);
+
+        try {
+            self::$cache->put($key, Timestamp::fromDateTime(
+                DateTime::createFromFormat("$format.u", sprintf("%s.%06d", $dateString, $micros))
+            ));
+            $result = self::$cache->get($key);
+
+            $this->assertEquals(intval($micros / 1000) * 1000, $result->toDateTime()->format('u'));
+            $this->assertEquals($dateString, $result->toDateTime()->format($format));
+        } finally {
+            self::$cache->removeAll();
+        }
     }
 
     private function putGetObjectArrays(?ObjectArrayType $arrayType, array $value): void
