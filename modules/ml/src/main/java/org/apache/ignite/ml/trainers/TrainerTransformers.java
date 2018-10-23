@@ -39,10 +39,23 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+/**
+ * Class containing various trainer transformers.
+ */
 public class TrainerTransformers {
+    /**
+     * Add bagging to a given trainer.
+     *
+     * @param ensembleSize Size of ensemble.
+     * @param subsampleRatio Subsample ratio to whole dataset.
+     * @param aggregator Aggregator.
+     * @param <M> Type of one model in ensemble.
+     * @param <L> Type of labels.
+     * @return
+     */
     public static <M extends Model<Vector, Double>, L> IgniteFunction<DatasetTrainer<M, L>, DatasetTrainer<ModelsComposition, L>> makeBagged(
         int ensembleSize,
-        double subsampleSize,
+        double subsampleRatio,
         PredictionsAggregator aggregator) {
         return trainer -> new DatasetTrainer<ModelsComposition, L>() {
             @Override
@@ -54,7 +67,7 @@ public class TrainerTransformers {
                     (db, i) -> (() -> trainer.fit(db, featureExtractor, lbExtractor)),
                     datasetBuilder,
                     ensembleSize,
-                    subsampleSize,
+                    subsampleRatio,
                     aggregator,
                     environment);
             }
@@ -74,7 +87,7 @@ public class TrainerTransformers {
                     (db, i) -> (() -> trainer.updateModel((M) mdl.getModels().get(i), db, featureExtractor, lbExtractor)),
                     datasetBuilder,
                     ensembleSize,
-                    subsampleSize,
+                    subsampleRatio,
                     aggregator,
                     environment);
             }

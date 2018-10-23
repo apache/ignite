@@ -197,6 +197,12 @@ public abstract class BaggingModelTrainer<M extends Model<Vector, Double>, R, X>
      */
     protected abstract boolean shouldStop(int iterationsCompleted, List<M> models, X meta);
 
+    /**
+     * Train ensemble on dataset.
+     *
+     * @param ds Dataset.
+     * @return Models composition trained on given dataset.
+     */
     private final ModelsComposition trainEnsemble(Dataset<EmptyContext, BootstrappedDatasetPartition> ds) {
         List<M> models = IntStream.range(0, ensembleSize).mapToObj(i -> init()).collect(Collectors.toList());
         X meta = getMeta(models);
