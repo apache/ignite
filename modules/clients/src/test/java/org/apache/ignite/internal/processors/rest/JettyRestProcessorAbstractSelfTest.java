@@ -247,8 +247,9 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         JsonNode node = JSON_MAPPER.readTree(content);
 
+        assertTrue("Unexpected error: " + node.get("error").asText(), node.get("error").isNull());
+
         assertEquals(STATUS_SUCCESS, node.get("successStatus").asInt());
-        assertTrue(node.get("error").isNull());
 
         assertNotSame(securityEnabled(), node.get("sessionToken").isNull());
 
@@ -587,6 +588,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         String ret = content(cacheName, GridRestCommand.GET_OR_CREATE_CACHE, params);
 
         info("GetOrCreateCache command result: " + ret);
+
+        jsonResponse(ret);
 
         IgniteCache<String, String> cache = grid(0).cache(cacheName);
 
