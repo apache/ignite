@@ -15,14 +15,30 @@
  * limitations under the License.
  */
 
-import './style.scss';
+import InputDialog from '../input-dialog/input-dialog.service';
+import UserNotificationsService from '../user-notifications/service';
 
-import controller from './controller';
-import templateUrl from './template.tpl.pug';
+export default class PageAdminCtrl {
+    static $inject = ['$http', 'IgniteInput', 'UserNotifications'];
 
-export default angular
-    .module('ignite-console.page-admin', [])
-    .component('pageAdmin', {
-        controller,
-        templateUrl
-    });
+    constructor(
+        private $http: ng.IHttpService,
+        private Input: InputDialog,
+        private UserNotifications: UserNotificationsService
+    ) {}
+
+    changeUserNotifications() {
+        this.UserNotifications.editor();
+    }
+
+    inviteUser() {
+        this.Input.email({
+            title: 'Invite user to Web Console',
+            label: 'User email:',
+            value: ''
+        })
+            .then((userEmail) => {
+                console.log('TODO Invite user: ' + userEmail);
+            });
+    }
+}
