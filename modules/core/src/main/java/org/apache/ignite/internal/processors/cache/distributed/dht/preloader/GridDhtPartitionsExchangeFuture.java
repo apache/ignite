@@ -870,16 +870,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @throws IgniteCheckedException If failed.
      */
     private IgniteInternalFuture<?> initCachesOnLocalJoin() throws IgniteCheckedException {
-        if (isLocalNodeNotInBaseline()) {
+        boolean baselineNode = isLocalNodeInBaseline();
+
+        if (!baselineNode) {
             cctx.exchange().exchangerBlockingSectionBegin();
 
             try {
                 cctx.cache().cleanupCachesDirectories();
-
-                cctx.database().cleanupCheckpointDirectory();
-
-                if (cctx.wal() != null)
-                    cctx.wal().cleanupWalDirectories();
             }
             finally {
                 cctx.exchange().exchangerBlockingSectionEnd();
@@ -915,7 +912,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             cctx.exchange().exchangerBlockingSectionBegin();
 
             try {
-                cctx.database().readCheckpointAndRestoreMemory(startDescs);
+                cctx.database().readCheckpointAndRestoreMemory(startDescs, !baselineNode);
             }
             finally {
                 cctx.exchange().exchangerBlockingSectionEnd();
@@ -949,12 +946,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @return {@code true} if local node is not in baseline and {@code false} otherwise.
+     * @return {@code true} if local node is in baseline and {@code false} otherwise.
      */
-    private boolean isLocalNodeNotInBaseline() {
+    private boolean isLocalNodeInBaseline() {
         BaselineTopology topology = cctx.discovery().discoCache().state().baselineTopology();
 
-        return topology!= null && !topology.consistentIds().contains(cctx.localNode().consistentId());
+        return topology != null && topology.consistentIds().contains(cctx.localNode().consistentId());
     }
 
     /**
@@ -1097,7 +1094,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         cctx.exchange().exchangerBlockingSectionBegin();
 
                         try {
-                            cctx.database().readCheckpointAndRestoreMemory(startDescs);
+                            cctx.database().readCheckpointAndRestoreMemory(startDescs, false);
                         }
                         finally {
                             cctx.exchange().exchangerBlockingSectionEnd();
