@@ -90,7 +90,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
     /**
      * @return WAL mode used in test.
      */
-    abstract protected WALMode walMode();
+    protected abstract WALMode walMode();
 
     /**
      * History size parameters consistency check. Should be set just one of wal history size or max wal archive size.
@@ -159,7 +159,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
 
         CheckpointHistory hist = dbMgr.checkpointHistory();
 
-        assertTrue(hist.checkpoints().size() > 0);
+        assertTrue(!hist.checkpoints().isEmpty());
     }
 
     /**

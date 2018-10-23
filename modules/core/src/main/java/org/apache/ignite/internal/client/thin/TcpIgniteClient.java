@@ -207,7 +207,7 @@ public class TcpIgniteClient implements IgniteClient {
 
     /** @throws IllegalArgumentException if the specified cache name is invalid. */
     private static void ensureCacheName(String name) {
-        if (name == null || name.length() == 0)
+        if (name == null || name.isEmpty())
             throw new IllegalArgumentException("Cache name must be specified");
     }
 
@@ -260,6 +260,12 @@ public class TcpIgniteClient implements IgniteClient {
             }
 
             cache.addMeta(typeId, meta, failIfUnregistered); // merge
+        }
+
+        /** {@inheritDoc} */
+        @Override public void addMetaLocally(int typeId, BinaryType meta, boolean failIfUnregistered)
+            throws BinaryObjectException {
+            throw new UnsupportedOperationException("Can't register metadata locally for thin client.");
         }
 
         /** {@inheritDoc} */

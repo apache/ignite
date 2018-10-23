@@ -50,7 +50,7 @@ import org.apache.ignite.testframework.GridTestUtils;
  */
 public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcThinAbstractSelfTest {
     /** Client node index. */
-    final static int CLI_IDX = 1;
+    static final int CLI_IDX = 1;
 
     /**
      * Closure to perform ordinary delete after repeatable read.
@@ -116,15 +116,13 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     @Override protected IgniteConfiguration getConfiguration(String testIgniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(testIgniteInstanceName);
 
-        cfg.setMvccEnabled(true);
-
         CacheConfiguration<Integer, Person> ccfg = new CacheConfiguration<>("Person");
 
         ccfg.setIndexedTypes(Integer.class, Person.class);
 
         ccfg.getQueryEntities().iterator().next().setKeyFieldName("id");
 
-        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
 
@@ -145,14 +143,14 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
         execute("ALTER TABLE \"Person\".person add if not exists companyid int");
 
         execute("CREATE TABLE City (id int primary key, name varchar, population int) WITH " +
-            "\"atomicity=transactional,template=partitioned,backups=3,cache_name=City\"");
+            "\"atomicity=transactional_snapshot,template=partitioned,backups=3,cache_name=City\"");
 
         execute("CREATE TABLE Company (id int, \"cityid\" int, name varchar, primary key (id, \"cityid\")) WITH " +
-            "\"atomicity=transactional,template=partitioned,backups=1,wrap_value=false,affinity_key=cityid," +
+            "\"atomicity=transactional_snapshot,template=partitioned,backups=1,wrap_value=false,affinity_key=cityid," +
             "cache_name=Company\"");
 
         execute("CREATE TABLE Product (id int primary key, name varchar, companyid int) WITH " +
-            "\"atomicity=transactional,template=partitioned,backups=2,cache_name=Product\"");
+            "\"atomicity=transactional_snapshot,template=partitioned,backups=2,cache_name=Product\"");
 
         execute("CREATE INDEX IF NOT EXISTS prodidx ON Product(companyid)");
 
@@ -757,11 +755,11 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
 
                     return null;
                 }
-            }, IgniteCheckedException.class, "Mvcc version mismatch.");
+            }, IgniteCheckedException.class, "Cannot serialize transaction due to write conflict");
 
             assertTrue(X.hasCause(ex, SQLException.class));
 
-            assertTrue(X.getCause(ex).getMessage().contains("Mvcc version mismatch."));
+            assertTrue(X.getCause(ex).getMessage().contains("Cannot serialize transaction due to write conflict"));
         }
         else
             readFut.get();
@@ -1018,7 +1016,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      * Person class.
      */
-    private final static class Person {
+    private static final class Person {
         /** */
         @QuerySqlField
         public int id;

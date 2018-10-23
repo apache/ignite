@@ -82,6 +82,7 @@ public class MSEHistogramTest extends ImpurityHistogramTest {
         checkCounters(contHist2.getSumOfSquaredLabels(), new double[]{ 2 * 5 * 5, 2 * 1 * 1, 1 * 4 * 4, 1 * 2 * 2, 0 * 3 * 3 });
     }
 
+    /** */
     @Test
     public void testOfSums() {
         int sampleId = 0;
@@ -95,22 +96,24 @@ public class MSEHistogramTest extends ImpurityHistogramTest {
 
         List<MSEHistogram> partitions1 = new ArrayList<>();
         List<MSEHistogram> partitions2 = new ArrayList<>();
-        int countOfPartitions = rnd.nextInt(100);
-        for(int i = 0; i < countOfPartitions; i++) {
+
+        int cntOfPartitions = rnd.nextInt(100);
+
+        for (int i = 0; i < cntOfPartitions; i++) {
             partitions1.add(new MSEHistogram(sampleId, bucketMeta1));
             partitions2.add(new MSEHistogram(sampleId, bucketMeta2));
         }
 
         int datasetSize = rnd.nextInt(1000);
         for(int i = 0; i < datasetSize; i++) {
-            BootstrappedVector vec = randomVector(2, 1, false);
+            BootstrappedVector vec = randomVector(false);
             vec.features().set(1, (vec.features().get(1) * 100) % 100);
 
             forAllHist1.addElement(vec);
             forAllHist2.addElement(vec);
-            int partitionId = rnd.nextInt(countOfPartitions);
-            partitions1.get(partitionId).addElement(vec);
-            partitions2.get(partitionId).addElement(vec);
+            int partId = rnd.nextInt(cntOfPartitions);
+            partitions1.get(partId).addElement(vec);
+            partitions2.get(partId).addElement(vec);
         }
 
         checkSums(forAllHist1, partitions1);

@@ -34,7 +34,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
@@ -42,7 +42,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /** Empty Class[]. */
-    private final static Class[] E = new Class[]{};
+    private static final Class[] E = new Class[]{};
 
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
@@ -158,7 +158,7 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
             final CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>("cache");
 
             cfg.setCacheMode(cacheMode());
-            cfg.setAtomicityMode(TRANSACTIONAL);
+            cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
             try (IgniteCache<Integer, String> cache = node.createCache(cfg)) {
                 GridTestUtils.assertThrows(log, new Callable<Void>() {
@@ -193,7 +193,7 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /**
      *
      */
-    private final static IgniteBiPredicate<Object, Object> P = new IgniteBiPredicate<Object, Object>() {
+    private static final IgniteBiPredicate<Object, Object> P = new IgniteBiPredicate<Object, Object>() {
         @Override public boolean apply(Object o, Object o2) {
             return false;
         }
