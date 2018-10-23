@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import javax.management.MBeanServer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -2155,7 +2154,12 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                     cacheStartFailHandler.handle(
                         cacheCtxEntry.getKey(),
                         cacheInfo -> {
-                            onCacheStarted(cacheCtxEntry.getValue());
+                            GridCacheContext<?, ?> cacheContext = cacheCtxEntry.getValue();
+
+                            if (cacheContext.isRecoveryMode())
+                                finishRecovery(cacheInfo.getExchangeTopVer(), cacheContext);
+                            else
+                                onCacheStarted(cacheCtxEntry.getValue());
 
                             context().exchange().exchangerUpdateHeartbeat();
                         }
@@ -2249,20 +2253,9 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 }
             }
             else {
-                CacheGroupContext groupContext = existingCache.context().group();
+                assert existingCache.context().isRecoveryMode();
 
-                if (groupContext.isRecoveryMode())
-                    groupContext.finishRecovery(exchTopVer);
-
-                existingCache.context().finishRecovery(exchTopVer);
-
-                onKernalStart(existingCache);
-
-                if (log.isInfoEnabled())
-                    log.info("Finished recovery for cache " +
-                        "[cache=" + existingCache.name() + ", grp=" + groupContext.cacheOrGroupName() + ", startVer=" + exchTopVer + "]");
-
-                return;
+                return existingCache.context();
             }
         }
 
@@ -2276,7 +2269,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
         preparePageStore(desc, affNode);
 
-        CacheGroupContext grp = prepareCacheGroup(desc, exchTopVer, cacheObjCtx, affNode, startCfg.getGroupName());
+        CacheGroupContext grp = prepareCacheGroup(desc, exchTopVer, cacheObjCtx, affNode, startCfg.getGroupName(), false);
 
         GridCacheContext cacheCtx = createCache(ccfg,
             grp,
@@ -2286,12 +2279,28 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             cacheObjCtx,
             affNode,
             true,
-            disabledAfterStart
+            disabledAfterStart,
+            false
         );
 
         initCacheContext(cacheCtx, ccfg, desc.deploymentId());
 
         return cacheCtx;
+    }
+
+    private void finishRecovery(AffinityTopologyVersion cacheStartVer, GridCacheContext<?, ?> cacheContext) throws IgniteCheckedException {
+        CacheGroupContext groupContext = cacheContext.group();
+
+        if (groupContext.isRecoveryMode())
+            groupContext.finishRecovery(cacheStartVer);
+
+        cacheContext.finishRecovery(cacheStartVer);
+
+        onKernalStart(cacheContext.cache());
+
+        if (log.isInfoEnabled())
+            log.info("Finished recovery for cache " +
+                "[cache=" + cacheContext.name() + ", grp=" + groupContext.cacheOrGroupName() + ", startVer=" + cacheStartVer + "]");
     }
 
     /**
@@ -2352,7 +2361,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         AffinityTopologyVersion exchTopVer,
         CacheObjectContext cacheObjCtx,
         boolean affNode,
-        String grpName
+        String grpName,
+        boolean recoveryMode
     ) throws IgniteCheckedException {
         if (grpName != null) {
             return initializationProtector.protect(
@@ -2363,7 +2373,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                     desc.cacheType(),
                     affNode,
                     cacheObjCtx,
-                    exchTopVer
+                    exchTopVer,
+                    recoveryMode
                 )
             );
         }
@@ -2372,7 +2383,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             desc.cacheType(),
             affNode,
             cacheObjCtx,
-            exchTopVer
+            exchTopVer,
+            recoveryMode
         );
     }
 
@@ -2468,51 +2480,25 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      * @param desc Cache descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    public void startCacheOnMemoryRecovery(
+    public GridCacheContext<?, ?> startCacheOnMemoryRecovery(
         DynamicCacheDescriptor desc
     ) throws IgniteCheckedException {
-        CacheConfiguration startCfg = desc.cacheConfiguration();
+        CacheConfiguration cfg = desc.cacheConfiguration();
 
-        assert !caches.containsKey(startCfg.getName()) : startCfg.getName();
-
-        CacheConfiguration ccfg = new CacheConfiguration(startCfg);
+        CacheConfiguration ccfg = new CacheConfiguration(cfg);
 
         CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
 
-        boolean affNode = true;
+        preparePageStore(desc, true);
 
-        if (sharedCtx.pageStore() != null && affNode)
-            sharedCtx.pageStore().initializeForCache(desc.groupDescriptor(), desc.toStoredData());
-
-        String grpName = startCfg.getGroupName();
-
-        CacheGroupContext grp = null;
-
-        if (grpName != null) {
-            for (CacheGroupContext grp0 : cacheGrps.values()) {
-                if (grp0.sharedGroup() && grpName.equals(grp0.name())) {
-                    grp = grp0;
-
-                    break;
-                }
-            }
-
-            if (grp == null) {
-                grp = startCacheGroup(desc.groupDescriptor(),
-                    desc.cacheType(),
-                    affNode,
-                    cacheObjCtx,
-                    AffinityTopologyVersion.ZERO,
-                    true);
-            }
-        } else {
-            grp = startCacheGroup(desc.groupDescriptor(),
-                desc.cacheType(),
-                affNode,
-                cacheObjCtx,
-                AffinityTopologyVersion.ZERO,
-                true);
-        }
+        CacheGroupContext grp = prepareCacheGroup(
+            desc,
+            AffinityTopologyVersion.NONE,
+            cacheObjCtx,
+            true,
+            cfg.getGroupName(),
+            true
+        );
 
         GridCacheContext cacheCtx = createCache(ccfg,
             grp,
@@ -2520,27 +2506,35 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             desc,
             AffinityTopologyVersion.ZERO,
             cacheObjCtx,
-            affNode,
             true,
             true,
+            false,
             true
         );
 
-        cacheCtx.dynamicDeploymentId(desc.deploymentId());
+        initCacheContext(cacheCtx, ccfg, desc.deploymentId());
 
-        GridCacheAdapter cache = cacheCtx.cache();
+        cacheCtx.onStarted();
 
-        sharedCtx.addCacheContext(cacheCtx);
+        String dataRegion = cfg.getDataRegionName();
 
-        caches.put(cacheCtx.name(), cache);
+        if (dataRegion == null && ctx.config().getDataStorageConfiguration() != null)
+            dataRegion = ctx.config().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName();
 
-        startCache(cache, desc.schema() != null ? desc.schema() : new QuerySchema());
+        if (log.isInfoEnabled()) {
+            log.info("Started cache in recovery mode [name=" + cfg.getName() +
+                ", id=" + cacheCtx.cacheId() +
+                (cfg.getGroupName() != null ? ", group=" + cfg.getGroupName() : "") +
+                ", dataRegionName=" + dataRegion +
+                ", mode=" + cfg.getCacheMode() +
+                ", atomicity=" + cfg.getAtomicityMode() +
+                ", backups=" + cfg.getBackups() +
+                ", mvcc=" + cacheCtx.mvccEnabled() + ']');
+        }
 
         grp.onCacheStarted(cacheCtx);
-    }
 
-    public void finalizeRecovery(Collection<DynamicCacheDescriptor> clusterCaches) {
-
+        return cacheCtx;
     }
 
     /**
