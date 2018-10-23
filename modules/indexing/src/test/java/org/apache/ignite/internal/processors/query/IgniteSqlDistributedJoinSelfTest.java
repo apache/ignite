@@ -72,6 +72,8 @@ public class IgniteSqlDistributedJoinSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
+        stopAllGrids();
+
         cleanPersistenceDir();
     }
 

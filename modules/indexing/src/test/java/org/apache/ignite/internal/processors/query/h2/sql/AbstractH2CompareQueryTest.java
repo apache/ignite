@@ -137,6 +137,8 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
 
         ignite = null;
 
+        stopAllGrids();
+
         cleanPersistenceDir();
     }
 

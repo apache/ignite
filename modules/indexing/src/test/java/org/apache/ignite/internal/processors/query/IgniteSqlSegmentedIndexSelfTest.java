@@ -106,6 +106,8 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
+        stopAllGrids();
+
         cleanPersistenceDir();
     }
 
