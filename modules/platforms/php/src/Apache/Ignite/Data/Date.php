@@ -47,7 +47,8 @@ class Date
      */
     public static function fromDateTime(DateTime $dateTime)
     {
-        return new Date($dateTime->getTimestamp() * 1000);
+        $millis = intval($dateTime->format('u') / 1000);
+        return new Date($dateTime->getTimestamp() * 1000 + $millis);
     }
     
     /**
@@ -57,11 +58,9 @@ class Date
      */
     public function toDateTime(): DateTime
     {
-        $dateTime = new DateTime();
-        $dateTime->setTimestamp($this->getSeconds());
-        return $dateTime;
+        return DateTime::createFromFormat('U.u', number_format($this->getMillis() / 1000, 6, '.', ''));
     }
-    
+
     /**
      * Returns the date value as number of milliseconds elapsed since January 1, 1970, 00:00:00 UTC.
      * 
