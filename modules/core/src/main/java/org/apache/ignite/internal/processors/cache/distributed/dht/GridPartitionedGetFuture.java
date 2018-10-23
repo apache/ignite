@@ -92,7 +92,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     private MvccQueryTracker mvccTracker;
 
     /** Set of nodes that threw disconnected during current mapping grouped by topology version. */
-    private final Map<AffinityTopologyVersion, Set<ClusterNode>> nodesThatLeftTop = new ConcurrentHashMap<>();
+    private final Map<AffinityTopologyVersion, Set<UUID>> nodesThatLeftTop = new ConcurrentHashMap<>();
 
     /**
      * @param cctx Context.
@@ -295,7 +295,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     /**
      *
      */
-    private Set<ClusterNode> nodesThatLeft(AffinityTopologyVersion topVer) {
+    private Set<UUID> nodesThatLeft(AffinityTopologyVersion topVer) {
         return nodesThatLeftTop.computeIfAbsent(topVer, version -> new GridConcurrentHashSet<>());
     }
 
@@ -494,7 +494,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     cctx.io().send(n, req, cctx.ioPolicy());
                 }
                 catch (ClusterTopologyCheckedException e) {
-                    nodesThatLeft(topVer).add(n);
+                    nodesThatLeft(topVer).add(n.id());
 
                     mapQueue.add(() -> {
                         if (!isDone())
@@ -537,7 +537,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         if (!affNodes.isEmpty()) {
             ClusterNode primaryNode = affNodes.get(0);
 
-            boolean primaryNodeLeftTop = nodesThatLeft(topVer).contains(primaryNode)
+            boolean primaryNodeLeftTop = nodesThatLeft(topVer).contains(primaryNode.id())
                 || !cctx.discovery().alive(primaryNode);
 
             // Local get cannot be used with MVCC as local node can contain some visible version which is not latest.
@@ -559,12 +559,16 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     node = primaryNode;
             }
             else {
+                Set<UUID> nodesThatLeft = nodesThatLeft(topVer);
+
                 affNodes = affNodes.stream().filter(n ->
-                    !nodesThatLeft(topVer).contains(n)
+                    !nodesThatLeft.contains(n.id())
                 ).collect(Collectors.toList());
 
-                // First element of the list might not be a primary node in current situation.
-                node = cctx.selectAffinityNodeBalanced(affNodes, canRemap);
+                if (!affNodes.isEmpty()) {
+                    // First element of the list might not be a primary node in current situation.
+                    node = cctx.selectAffinityNodeBalanced(affNodes, canRemap);
+                }
             }
         }
 
@@ -887,7 +891,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will retry): " + this);
 
-            if (nodesThatLeft(topVer).add(node)) {
+            if (nodesThatLeft(topVer).add(node.id())) {
                 cctx.closures().runLocalSafe(() -> {
                     map(keys.keySet(), F.t(node, keys), topVer);
 

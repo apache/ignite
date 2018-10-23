@@ -139,7 +139,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     private volatile BackupPostProcessingClosure postProcessingClos;
 
     /** Set of nodes that threw disconnected during current mapping grouped by topology version. */
-    private final Map<AffinityTopologyVersion, Set<ClusterNode>> nodesThatLeftTop = new ConcurrentHashMap<>();
+    private final Map<AffinityTopologyVersion, Set<UUID>> nodesThatLeftTop = new ConcurrentHashMap<>();
 
     /**
      * @param cctx Context.
@@ -228,7 +228,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     /**
      *
      */
-    private Set<ClusterNode> nodesThatLeft(AffinityTopologyVersion topVer) {
+    private Set<UUID> nodesThatLeft(AffinityTopologyVersion topVer) {
         return nodesThatLeftTop.computeIfAbsent(topVer, version -> new GridConcurrentHashSet<>());
     }
 
@@ -368,7 +368,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             }
             catch (ClusterTopologyCheckedException e) {
                 if (processResponse(node.id())) {
-                    nodesThatLeft(topVer).add(node);
+                    nodesThatLeft(topVer).add(node.id());
 
                     return true;
                 }
@@ -397,7 +397,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         if (!affNodes.isEmpty()) {
             ClusterNode primaryNode = affNodes.get(0);
 
-            boolean primaryNodeLeftTop = nodesThatLeft(topVer).contains(primaryNode)
+            boolean primaryNodeLeftTop = nodesThatLeft(topVer).contains(primaryNode.id())
                 || !cctx.discovery().alive(primaryNode);
 
             // Local get cannot be used with MVCC as local node can contain some visible version which is not latest.
@@ -420,12 +420,16 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                     affNode = primaryNode;
             }
             else {
+                Set<UUID> nodesThatLeft = nodesThatLeft(topVer);
+
                 affNodes = affNodes.stream().filter(n ->
-                    !nodesThatLeft(topVer).contains(n)
+                    !nodesThatLeft.contains(n.id())
                 ).collect(Collectors.toList());
 
-                // First element of the list might not be a primary node in current situation.
-                affNode = cctx.selectAffinityNodeBalanced(affNodes, canRemap);
+                if (!affNodes.isEmpty()) {
+                    // First element of the list might not be a primary node in current situation.
+                    affNode = cctx.selectAffinityNodeBalanced(affNodes, canRemap);
+                }
             }
         }
 
@@ -809,7 +813,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         if (!processResponse(nodeId))
             return false;
 
-        if (nodesThatLeft(topVer).add(node))
+        if (nodesThatLeft(topVer).add(nodeId))
             remap(topVer);
 
         return true;
