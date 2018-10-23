@@ -94,16 +94,14 @@ public class GridDhtPartitionsReservation implements GridReservable {
         for (GridReservable part : parts) {
             arr[i] = (GridDhtLocalPartition)part;
 
-            // Make sure it will be a sorted array.
-            int id = arr[i].id();
+            if (sorted) { // Make sure it will be a sorted array.
+                int id = arr[i].id();
 
-            if (id <= prevPart) {
-                sorted = false;
+                if (id <= prevPart)
+                    sorted = false;
 
-                break;
+                prevPart = id;
             }
-
-            prevPart = id;
 
             i++;
         }
