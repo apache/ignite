@@ -61,6 +61,11 @@ public class StandaloneNoopDiscoverySpi extends IgniteSpiAdapter implements Disc
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public ClusterNode getKnownNode(UUID nodeId) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean pingNode(UUID nodeId) {
         return false;
     }

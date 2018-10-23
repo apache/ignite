@@ -463,14 +463,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         return impl.getNode(nodeId);
     }
 
-    /**
-     * @param id Id.
-     */
-    public ClusterNode getNode0(UUID id) {
+    /** {@inheritDoc} */
+    @Nullable @Override public ClusterNode getKnownNode(UUID nodeId) {
         if (impl instanceof ServerImpl)
-            return ((ServerImpl)impl).getNode0(id);
+            return ((ServerImpl)impl).getNode0(nodeId);
 
-        return getNode(id);
+        return getNode(nodeId);
     }
 
     /** {@inheritDoc} */
@@ -2218,7 +2216,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** {@inheritDoc} */
     @Override public boolean knownNode(UUID nodeId) {
-        return getNode0(nodeId) != null;
+        return getKnownNode(nodeId) != null;
     }
 
     /** {@inheritDoc} */

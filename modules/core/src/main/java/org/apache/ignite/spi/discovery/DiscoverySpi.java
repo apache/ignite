@@ -70,12 +70,20 @@ public interface DiscoverySpi extends IgniteSpi {
     public ClusterNode getLocalNode();
 
     /**
-     * Gets node by ID.
+     * Gets already joined node by ID.
      *
      * @param nodeId Node ID.
      * @return Node with given ID or {@code null} if node is not found.
      */
     @Nullable public ClusterNode getNode(UUID nodeId);
+
+    /**
+     * Gets any known node by ID include already joined or joining node.
+     *
+     * @param nodeId Node ID.
+     * @return Node with given ID or {@code null} if node is not found.
+     */
+    @Nullable public ClusterNode getKnownNode(UUID nodeId);
 
     /**
      * Pings the remote node to see if it's alive.
