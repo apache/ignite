@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -38,7 +39,7 @@ public class SegmentAwareTest extends TestCase {
      * @throws IgniteCheckedException if failed.
      */
     public void testAvoidDeadlockArchiverAndLockStorage() throws IgniteCheckedException {
-        SegmentAware aware = new SegmentAware(10, false);
+        SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         int iterationCnt = 100_000;
         int segmentToHandle = 1;
@@ -75,7 +76,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testFinishAwaitSegment_WhenExactWaitingSegmentWasSet() throws IgniteCheckedException, InterruptedException {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(10, false);
+        SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         IgniteInternalFuture future = awaitThread(() -> aware.awaitSegment(5));
 
@@ -91,7 +92,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testFinishAwaitSegment_WhenGreaterThanWaitingSegmentWasSet() throws IgniteCheckedException, InterruptedException {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(10, false);
+        SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         IgniteInternalFuture future = awaitThread(() -> aware.awaitSegment(5));
 
@@ -107,7 +108,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testFinishAwaitSegment_WhenNextSegmentEqualToWaitingOne() throws IgniteCheckedException, InterruptedException {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(10, false);
+        SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         IgniteInternalFuture future = awaitThread(() -> aware.awaitSegment(5));
 
@@ -129,7 +130,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testFinishAwaitSegment_WhenInterruptWasCall() throws IgniteCheckedException, InterruptedException {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(10, false);
+        SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         IgniteInternalFuture future = awaitThread(() -> aware.awaitSegment(5));
 
@@ -145,7 +146,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testFinishWaitSegmentForArchive_WhenWorkSegmentIncremented() throws IgniteCheckedException, InterruptedException {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(10, false);
+        SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         aware.curAbsWalIdx(5);
         aware.setLastArchivedAbsoluteIndex(4);
@@ -164,7 +165,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testFinishWaitSegmentForArchive_WhenWorkSegmentGreaterValue() throws IgniteCheckedException, InterruptedException {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(10, false);
+        SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         aware.curAbsWalIdx(5);
         aware.setLastArchivedAbsoluteIndex(4);
@@ -183,7 +184,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testFinishWaitSegmentForArchive_WhenInterruptWasCall() throws IgniteCheckedException, InterruptedException {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(10, false);
+        SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         aware.curAbsWalIdx(5);
         aware.setLastArchivedAbsoluteIndex(4);
@@ -202,7 +203,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testCorrectCalculateNextSegmentIndex() throws IgniteCheckedException, InterruptedException {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(10, false);
+        SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         aware.curAbsWalIdx(5);
 
@@ -218,7 +219,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testFinishWaitNextAbsoluteIndex_WhenMarkAsArchivedFirstSegment() throws IgniteCheckedException, InterruptedException {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(2, false);
+        SegmentAware aware = new SegmentAware(2, false, new NullLogger());
 
         aware.curAbsWalIdx(1);
         aware.setLastArchivedAbsoluteIndex(-1);
@@ -237,7 +238,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testFinishWaitNextAbsoluteIndex_WhenSetToArchivedFirst() throws IgniteCheckedException, InterruptedException {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(2, false);
+        SegmentAware aware = new SegmentAware(2, false, new NullLogger());
 
         aware.curAbsWalIdx(1);
         aware.setLastArchivedAbsoluteIndex(-1);
@@ -256,7 +257,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testFinishWaitNextAbsoluteIndex_WhenOnlyForceInterruptWasCall() throws IgniteCheckedException, InterruptedException {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(2, false);
+        SegmentAware aware = new SegmentAware(2, false, new NullLogger());
 
         aware.curAbsWalIdx(2);
         aware.setLastArchivedAbsoluteIndex(-1);
@@ -281,7 +282,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testFinishSegmentArchived_WhenSetExactWaitingSegment() throws IgniteCheckedException, InterruptedException {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(10, false);
+        SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         IgniteInternalFuture future = awaitThread(() -> aware.awaitSegmentArchived(5));
 
@@ -297,7 +298,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testFinishSegmentArchived_WhenMarkExactWaitingSegment() throws IgniteCheckedException, InterruptedException {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(10, false);
+        SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         IgniteInternalFuture future = awaitThread(() -> aware.awaitSegmentArchived(5));
 
@@ -313,7 +314,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testFinishSegmentArchived_WhenSetGreaterThanWaitingSegment() throws IgniteCheckedException, InterruptedException {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(10, false);
+        SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         IgniteInternalFuture future = awaitThread(() -> aware.awaitSegmentArchived(5));
 
@@ -329,7 +330,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testFinishSegmentArchived_WhenMarkGreaterThanWaitingSegment() throws IgniteCheckedException, InterruptedException {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(10, false);
+        SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         IgniteInternalFuture future = awaitThread(() -> aware.awaitSegmentArchived(5));
 
@@ -345,7 +346,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testFinishSegmentArchived_WhenInterruptWasCall() throws IgniteCheckedException, InterruptedException {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(10, false);
+        SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         aware.curAbsWalIdx(5);
         aware.setLastArchivedAbsoluteIndex(4);
@@ -364,7 +365,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testMarkAsMovedToArchive_WhenReleaseLockedSegment() throws IgniteCheckedException, InterruptedException {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(10, false);
+        SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         aware.checkCanReadArchiveOrReserveWorkSegment(5);
 
@@ -382,7 +383,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testMarkAsMovedToArchive_WhenInterruptWasCall() throws IgniteCheckedException, InterruptedException {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(10, false);
+        SegmentAware aware = new SegmentAware(10, false, new NullLogger());
         aware.checkCanReadArchiveOrReserveWorkSegment(5);
 
         IgniteInternalFuture future = awaitThread(() -> aware.markAsMovedToArchive(5));
@@ -402,7 +403,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testFinishWaitSegmentToCompress_WhenSetLastArchivedSegment() throws IgniteCheckedException, InterruptedException {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(10, true);
+        SegmentAware aware = new SegmentAware(10, true, new NullLogger());
 
         aware.onSegmentCompressed(5);
 
@@ -420,7 +421,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testFinishWaitSegmentToCompress_WhenMarkLastArchivedSegment() throws IgniteCheckedException, InterruptedException {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(10, true);
+        SegmentAware aware = new SegmentAware(10, true, new NullLogger());
 
         aware.onSegmentCompressed(5);
 
@@ -438,7 +439,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testCorrectCalculateNextCompressSegment() throws IgniteCheckedException, InterruptedException {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(10, true);
+        SegmentAware aware = new SegmentAware(10, true, new NullLogger());
 
         aware.onSegmentCompressed(5);
         aware.setLastArchivedAbsoluteIndex(6);
@@ -456,7 +457,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testFinishWaitSegmentToCompress_WhenInterruptWasCall() throws IgniteCheckedException, InterruptedException {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(10, true);
+        SegmentAware aware = new SegmentAware(10, true, new NullLogger());
         aware.onSegmentCompressed(5);
 
         IgniteInternalFuture future = awaitThread(aware::waitNextSegmentToCompress);
@@ -472,7 +473,7 @@ public class SegmentAwareTest extends TestCase {
      * Tests that {@link SegmentAware#onSegmentCompressed} returns segments in proper order.
      */
     public void testLastCompressedIdxProperOrdering() throws IgniteInterruptedCheckedException {
-        SegmentAware aware = new SegmentAware(10, true);
+        SegmentAware aware = new SegmentAware(10, true, new NullLogger());
 
         for (int i = 0; i < 5; i++) {
             aware.setLastArchivedAbsoluteIndex(i);
@@ -496,7 +497,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testReserveCorrectly() {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(10, false);
+        SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         //when: reserve one segment twice and one segment once.
         aware.reserve(5);
@@ -539,7 +540,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testAssertFail_WhenReleaseUnreservedSegment() {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(10, false);
+        SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         aware.reserve(5);
         try {
@@ -558,7 +559,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testReserveWorkSegmentCorrectly() {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(10, false);
+        SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         //when: lock one segment twice.
         aware.checkCanReadArchiveOrReserveWorkSegment(5);
@@ -591,7 +592,7 @@ public class SegmentAwareTest extends TestCase {
      */
     public void testAssertFail_WhenReleaseUnreservedWorkSegment() {
         //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(10, false);
+        SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
         aware.checkCanReadArchiveOrReserveWorkSegment(5);
         try {
