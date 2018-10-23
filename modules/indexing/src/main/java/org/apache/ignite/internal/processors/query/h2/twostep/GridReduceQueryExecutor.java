@@ -1731,7 +1731,7 @@ public class GridReduceQueryExecutor {
         try {
             Session ses = (Session)conn.getSession();
 
-            CreateTableData data = new CreateTableData();
+            CreateTableData data  = new CreateTableData();
 
             data.tableName = "T___";
             data.schema = ses.getDatabase().getSchema(ses.getCurrentSchemaName());
@@ -1919,8 +1919,7 @@ public class GridReduceQueryExecutor {
                 rq.queryPartitions(toArray(partsMap.get(node)));
 
                 return rq;
-            }
-            else if (msg instanceof GridH2DmlRequest) {
+            } else if (msg instanceof GridH2DmlRequest) {
                 GridH2DmlRequest rq = new GridH2DmlRequest((GridH2DmlRequest)msg);
 
                 rq.queryPartitions(toArray(partsMap.get(node)));

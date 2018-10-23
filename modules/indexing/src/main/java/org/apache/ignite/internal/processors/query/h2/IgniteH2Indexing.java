@@ -2576,6 +2576,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (partitions == null && twoStepQry.derivedPartitions() != null) {
             try {
                 partitions = calculateQueryPartitions(twoStepQry.derivedPartitions(), qry.getArgs());
+
                 if (partitions.length == 0) //here we know that result of requested query is empty
                     return new QueryCursorImpl<List<?>>(new Iterable<List<?>>(){
                         @Override public Iterator<List<?>> iterator() {

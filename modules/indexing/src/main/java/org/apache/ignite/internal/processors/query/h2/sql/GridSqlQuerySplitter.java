@@ -2533,7 +2533,8 @@ public class GridSqlQuerySplitter {
             res[0] = new CacheQueryPartitionInfo(holder);
 
             return res;
-        } else if(aWithParams.size() > 0) {
+        }
+        else if(aWithParams.size() > 0) {
             CacheQueryPartitionInfo[][] holder = new CacheQueryPartitionInfo[2][];
 
             holder[0] = aWithParams.toArray(new CacheQueryPartitionInfo[0]);
@@ -2545,7 +2546,8 @@ public class GridSqlQuerySplitter {
             res[0] = new CacheQueryPartitionInfo(holder);
 
             return res;
-        } else if(bWithParams.size() > 0){
+        }
+        else if(bWithParams.size() > 0){
             CacheQueryPartitionInfo[][] holder = new CacheQueryPartitionInfo[2][];
 
             holder[0] = a;
@@ -2557,7 +2559,8 @@ public class GridSqlQuerySplitter {
             res[0] = new CacheQueryPartitionInfo(holder);
 
             return res;
-        } else {
+        }
+        else {
             ArrayList<CacheQueryPartitionInfo> list = new ArrayList<>(a.length + b.length);
 
             for (CacheQueryPartitionInfo partA : a) {
@@ -2571,7 +2574,12 @@ public class GridSqlQuerySplitter {
         }
     }
 
-    // TODO
+    /**
+     * Find parametrized partitions.
+     *
+     * @param parts All partitions.
+     * @return Parametrized partitions.
+     */
     private static ArrayList<CacheQueryPartitionInfo> findParameterized(CacheQueryPartitionInfo[] parts){
         ArrayList<CacheQueryPartitionInfo> res = new ArrayList<CacheQueryPartitionInfo>(parts.length);
 
