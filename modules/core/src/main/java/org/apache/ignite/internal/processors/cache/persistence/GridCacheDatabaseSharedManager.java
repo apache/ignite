@@ -681,7 +681,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             checkpointReadLock();
 
             try {
-                restoreMemory(status, true, storePageMem, Collections.emptySet());
+                restoreMemory(status, true, storePageMem, false, Collections.emptySet());
 
                 metaStorage = new MetaStorage(cctx, regCfg, memMetrics, true);
 
@@ -905,6 +905,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             WALPointer tailWalPtr = restoreMemory(status,
                 false,
                 (PageMemoryEx)dataRegionMap.get(METASTORE_DATA_REGION_NAME).pageMemory(),
+                true,
                 cacheGrps);
 
             if (tailWalPtr == null && !status.endPtr.equals(CheckpointStatus.NULL_PTR)) {
@@ -2050,6 +2051,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param status Checkpoint status.
      * @param metastoreOnly If {@code True} restores Metastorage only.
      * @param storePageMem Metastore page memory.
+     * @param finalizeCp If {@code True}, finalizes checkpoint on recovery.
      * @param cacheGrps Cache groups to restore.
      * @throws IgniteCheckedException If failed.
      * @throws StorageException In case I/O error occurred during operations with storage.
@@ -2058,6 +2060,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         CheckpointStatus status,
         boolean metastoreOnly,
         PageMemoryEx storePageMem,
+        boolean finalizeCp,
         Set<Integer> cacheGrps
     ) throws IgniteCheckedException {
         assert !metastoreOnly || storePageMem != null;
@@ -2212,7 +2215,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         }
 
-        if (metastoreOnly)
+        if (!finalizeCp)
             return null;
 
         WALPointer lastReadPtr = restoreBinaryState.lastReadRecordPointer();
