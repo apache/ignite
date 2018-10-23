@@ -90,8 +90,6 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        cleanPersistenceDir();
-
         startGrids(nodesCount());
     }
 
@@ -100,15 +98,6 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
         super.afterTest();
 
         grid(0).destroyCaches(Arrays.asList(PERSON_CAHE_NAME, ORG_CACHE_NAME));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-
-        cleanPersistenceDir();
     }
 
     /**

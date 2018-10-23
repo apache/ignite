@@ -108,8 +108,6 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        cleanPersistenceDir();
-
         super.beforeTestsStarted();
 
         ignite = startGrids(SRVS);
@@ -136,10 +134,6 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
         conn.close();
 
         ignite = null;
-
-        stopAllGrids();
-
-        cleanPersistenceDir();
     }
 
     /**

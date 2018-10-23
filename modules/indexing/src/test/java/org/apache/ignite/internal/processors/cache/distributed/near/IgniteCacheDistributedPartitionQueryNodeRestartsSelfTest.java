@@ -37,8 +37,6 @@ public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest extends
     IgniteCacheDistributedPartitionQueryAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        cleanPersistenceDir();
-
         super.beforeTestsStarted();
 
         System.setProperty(IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT, Long.toString(1000_000L));
@@ -50,8 +48,6 @@ public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest extends
             Long.toString(GridReduceQueryExecutor.DFLT_RETRY_TIMEOUT));
 
         super.afterTestsStopped();
-
-        cleanPersistenceDir();
     }
 
     /**
