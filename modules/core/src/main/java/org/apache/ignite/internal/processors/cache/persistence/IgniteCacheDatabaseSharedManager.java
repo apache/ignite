@@ -660,15 +660,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param cacheGrps Cache groups to restore.
-     * @return Last seen WAL pointer during binary memory recovery.
-     * @throws IgniteCheckedException If failed.
-     */
-    public WALPointer restoreBinaryMemory(Set<Integer> cacheGrps) throws IgniteCheckedException {
-        return null;
-    }
-
-    /**
      * Creates file with current timestamp and specific "node-started.bin" suffix
      * and writes into memory recovery pointer.
      *
@@ -864,6 +855,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /**
      * Perform memory restore before {@link GridDiscoveryManager} start.
+     *
+     * @param kctx Current kernal context.
+     * @throws IgniteCheckedException If fails.
      */
     public void startMemoryRestore(GridKernalContext kctx) throws IgniteCheckedException {
         // No-op.

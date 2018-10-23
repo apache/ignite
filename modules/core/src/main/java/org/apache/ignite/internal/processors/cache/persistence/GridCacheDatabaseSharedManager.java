@@ -161,8 +161,8 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 import org.apache.ignite.thread.IgniteThread;
-import org.jetbrains.annotations.NotNull;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
@@ -170,6 +170,7 @@ import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
@@ -536,7 +537,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         for (CacheGroupDescriptor grpDesc : cctx.cache().cacheGroupDescriptors().values()) {
             String regionName = grpDesc.config().getDataRegionName();
 
-            DataRegion region = regionName == null ? dfltDataRegion : dataRegionMap.get(regionName);
+            DataRegion region = dataRegionMap.get(regionName == null ? DFLT_DATA_REG_DEFAULT_NAME : regionName);
 
             if (region == null) {
                 log.warning("Skip invalidate for " + grpDesc);
@@ -890,8 +891,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public WALPointer restoreBinaryMemory(Set<Integer> cacheGrps) throws IgniteCheckedException {
+    /**
+     * @param cacheGrps Cache groups to restore.
+     * @return Last seen WAL pointer during binary memory recovery.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected WALPointer restoreBinaryMemory(Set<Integer> cacheGrps) throws IgniteCheckedException {
         assert !cctx.kernalContext().clientNode();
 
         long time = System.currentTimeMillis();
