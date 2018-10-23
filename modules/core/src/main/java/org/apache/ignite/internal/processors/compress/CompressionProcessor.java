@@ -62,13 +62,14 @@ public class CompressionProcessor extends GridProcessorAdapter {
         if (len < fsBlockSize)
             return 0;
 
-        long extra = off % fsBlockSize;
-
-        if (extra != 0) {
-            long blocksOff = off / fsBlockSize + 1;
+        // TODO maybe optimize for power of 2
+        if (off % fsBlockSize != 0) {
             long end = off + len;
-            off = blocksOff * fsBlockSize;
+            off = (off / fsBlockSize + 1) * fsBlockSize;
             len = end - off;
+
+            if (len <= 0)
+                return 0;
         }
 
         len = len / fsBlockSize * fsBlockSize;
