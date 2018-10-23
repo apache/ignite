@@ -29,6 +29,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 
+import static org.apache.ignite.internal.stat.GridIoStatManager.HASH_PK_INDEX_NAME;
+
 /**
  * Tests for IO statistic manager.
  */
@@ -73,14 +75,14 @@ public class GridIoStatManagerTest extends GridCommonAbstractTest {
     private void ioStatGlobalPageTrackTest(boolean isPersistent) throws Exception {
         GridIoStatManager ioStatMgr = prepareData(isPersistent);
 
-        long physicalReadsCnt = ioStatMgr.physicalReads(StatType.CACHE, DEFAULT_CACHE_NAME);
+        long physicalReadsCnt = ioStatMgr.physicalReads(StatType.CACHE_GROUP, DEFAULT_CACHE_NAME);
 
         if (isPersistent)
             Assert.assertTrue(physicalReadsCnt>0);
         else
             Assert.assertEquals(0, physicalReadsCnt);
 
-        Long logicalReads = ioStatMgr.logicalReads(StatType.INDEX, DEFAULT_CACHE_NAME, "PK");
+        Long logicalReads = ioStatMgr.logicalReads(StatType.HASH_INDEX, DEFAULT_CACHE_NAME, HASH_PK_INDEX_NAME);
 
         Assert.assertNotNull(logicalReads);
 

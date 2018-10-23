@@ -36,6 +36,9 @@ public class GridIoStatManager {
     /** No OP statistic handler. */
     public final static StatisticsHolder NO_OP_STATISTIC_HOLDER = new StatisticsHolderNoOp();
 
+    /** */
+    public final static String HASH_PK_INDEX_NAME = "PK";
+
     /** All statistic holders */
     private final Map<StatType, Map<StatisticsHolderKey, StatisticsHolder>> statisticsHolders = new EnumMap<>(StatType.class);
 
@@ -75,13 +78,14 @@ public class GridIoStatManager {
 
         StatisticsHolderKey statisticsHolderKey;
         switch (type) {
-            case CACHE:
+            case CACHE_GROUP:
                 statHolder = new StatisticsHolderCache(name);
 
                 statisticsHolderKey = new StatisticsHolderKey(name);
 
                 break;
-            case INDEX:
+            case HASH_INDEX:
+            case SORTED_INDEX:
                 statHolder = new StatisticsHolderIndex(name, subName);
 
                 statisticsHolderKey = new StatisticsHolderKey(name, subName);

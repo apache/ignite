@@ -35,6 +35,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVers
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.stat.GridIoStatManager;
+import org.apache.ignite.internal.stat.StatisticsHolder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -143,8 +145,10 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
             int grpId = grp != null ? grp.groupId() : 0;
 
-            // TODO: NPE, ignore when group is null
-            final long page = pageMem.acquirePage(grpId, pageId, grp.statisticsHolderData());
+            final StatisticsHolder statHolder = (grp != null) ?
+                grp.statisticsHolderData() : GridIoStatManager.NO_OP_STATISTIC_HOLDER;
+
+            final long page = pageMem.acquirePage(grpId, pageId, statHolder);
 
             try {
                 long pageAddr = pageMem.readLock(grpId, pageId, page); // Non-empty data page must not be recycled.

@@ -23,12 +23,11 @@ package org.apache.ignite.internal.stat;
  */
 public enum StatType {
     /** */
-    INDEX, // TODO -> SORTED_INDEX
-           // TODO -> HASH_INDEX
+    SORTED_INDEX,
     /** */
-    CACHE, // TODO -> CACHE_GROUP
+    HASH_INDEX,
     /** */
-    TABLE,
+    CACHE_GROUP,
     /** */
     SQL
 }

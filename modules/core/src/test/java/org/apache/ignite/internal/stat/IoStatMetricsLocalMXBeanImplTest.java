@@ -31,12 +31,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.IoStatMetricsMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.internal.stat.GridIoStatManager.HASH_PK_INDEX_NAME;
+
 /**
  * Test of local node IO statistics MX bean.
  */
 public class IoStatMetricsLocalMXBeanImplTest extends GridCommonAbstractTest {
-    /** */
-    public static final String PK_INDEX_NAME = "PK";
     /** */
     private static IgniteEx ignite;
 
@@ -84,30 +84,30 @@ public class IoStatMetricsLocalMXBeanImplTest extends GridCommonAbstractTest {
 
         populateCache(cnt);
 
-        Set<String> idxNames = bean.getStatIndexesNames(DEFAULT_CACHE_NAME);
+        Set<String> idxHashNames = bean.getStatHashIndexesNames(DEFAULT_CACHE_NAME);
 
-        Assert.assertEquals(1, idxNames.size());
+        Assert.assertEquals(1, idxHashNames.size());
 
-        Assert.assertTrue(idxNames.contains(PK_INDEX_NAME));
+        Assert.assertTrue(idxHashNames.contains(HASH_PK_INDEX_NAME));
 
-        long idxLeafCnt = bean.getIndexLeafLogicalReadsStatistics(DEFAULT_CACHE_NAME, PK_INDEX_NAME);
+        long idxLeafCnt = bean.getIndexLeafLogicalReadsStatistics(DEFAULT_CACHE_NAME, HASH_PK_INDEX_NAME);
 
         Assert.assertEquals(cnt, idxLeafCnt);
 
-        Long aggregatedIdxLogicalRads = bean.getIndexLogicalReadsStatistics(DEFAULT_CACHE_NAME, PK_INDEX_NAME);
+        Long aggregatedIdxLogicalRads = bean.getIndexLogicalReadsStatistics(DEFAULT_CACHE_NAME, HASH_PK_INDEX_NAME);
 
         Assert.assertNotNull(aggregatedIdxLogicalRads);
 
         Assert.assertEquals(aggregatedIdxLogicalRads.longValue(), idxLeafCnt);
 
-        String formatted = bean.getIndexStatisticsFormatted(DEFAULT_CACHE_NAME, PK_INDEX_NAME);
+        String formatted = bean.getIndexStatisticsFormatted(DEFAULT_CACHE_NAME, HASH_PK_INDEX_NAME);
 
-        Assert.assertEquals("INDEX default.PK [LOGICAL_READS_INNER=0, LOGICAL_READS_LEAF=100, " +
-            "PHYSICAL_READS_LEAF=0, PHYSICAL_READS_INNER=0]", formatted);
+        Assert.assertEquals("HASH_INDEX default.PK [LOGICAL_READS_LEAF=100, LOGICAL_READS_INNER=0, " +
+            "PHYSICAL_READS_INNER=0, PHYSICAL_READS_LEAF=0]", formatted);
 
         String unexistedStats = bean.getIndexStatisticsFormatted("unknownCache", "unknownIdx");
 
-        Assert.assertEquals("INDEX unknownCache.unknownIdx []", unexistedStats);
+        Assert.assertEquals("SORTED_INDEX unknownCache.unknownIdx []", unexistedStats);
     }
 
     /**
@@ -144,11 +144,11 @@ public class IoStatMetricsLocalMXBeanImplTest extends GridCommonAbstractTest {
 
         String formatted = bean.getCacheStatisticsFormatted(DEFAULT_CACHE_NAME);
 
-        Assert.assertEquals("CACHE default [LOGICAL_READS=100, PHYSICAL_READS=0]", formatted);
+        Assert.assertEquals("CACHE_GROUP default [LOGICAL_READS=100, PHYSICAL_READS=0]", formatted);
 
         String unexistedStats = bean.getCacheStatisticsFormatted("unknownCache");
 
-        Assert.assertEquals("CACHE unknownCache []", unexistedStats);
+        Assert.assertEquals("CACHE_GROUP unknownCache []", unexistedStats);
     }
 
     /**

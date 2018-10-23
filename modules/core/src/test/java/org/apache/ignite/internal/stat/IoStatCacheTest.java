@@ -33,6 +33,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
+import static org.apache.ignite.internal.stat.GridIoStatManager.HASH_PK_INDEX_NAME;
+
 /**
  * Tests for cache IO statistics for inmemory mode.
  */
@@ -47,8 +49,16 @@ public class IoStatCacheTest extends GridCommonAbstractTest {
     protected final static String TRANSACTIONAL_CACHE_NAME = "TRANSACTIONAL_CACHE";
 
     /** */
-    protected final static Set<String> ALL_CACHE_NAMES = Sets.newHashSet(GridCacheUtils.UTILITY_CACHE_NAME,
-        ATOMIC_CACHE_NAME, MVCC_CACHE_NAME, TRANSACTIONAL_CACHE_NAME);
+    protected final static String CACHE1_IN_GROUP_NAME = "CACHE1_GROUP";
+    /** */
+    protected final static String CACHE2_IN_GROUP_NAME = "CACHE2_GROUP";
+
+    /** */
+    protected final static String CACHE_GROUP_NAME = "CACHE_GROUP_NAME";
+
+    /** */
+    protected final static Set<String> ALL_CACHE_GROUP_NAMES = Sets.newHashSet(GridCacheUtils.UTILITY_CACHE_NAME,
+        ATOMIC_CACHE_NAME, MVCC_CACHE_NAME, TRANSACTIONAL_CACHE_NAME, CACHE_GROUP_NAME);
 
     /** */
     protected static final int RECORD_COUNT = 100;
@@ -81,6 +91,17 @@ public class IoStatCacheTest extends GridCommonAbstractTest {
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setName(TRANSACTIONAL_CACHE_NAME);
 
+        final CacheConfiguration atomic1CacheGrpCfg = new CacheConfiguration()
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            .setName(CACHE1_IN_GROUP_NAME)
+            .setGroupName(CACHE_GROUP_NAME);
+
+        final CacheConfiguration atomic2CacheGrpCfg = new CacheConfiguration()
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            .setName(CACHE2_IN_GROUP_NAME)
+            .setGroupName(CACHE_GROUP_NAME);
+
+
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
@@ -91,7 +112,8 @@ public class IoStatCacheTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(dsCfg);
 
-        cfg.setCacheConfiguration(transactionalCacheCfg, atomicCacheCfg, mvccCacheCfg);
+        cfg.setCacheConfiguration(transactionalCacheCfg, atomicCacheCfg, mvccCacheCfg,
+            atomic1CacheGrpCfg, atomic2CacheGrpCfg);
 
         return cfg;
     }
@@ -153,16 +175,32 @@ public class IoStatCacheTest extends GridCommonAbstractTest {
 
         GridIoStatManager ioStatMgr = ignite.context().ioStats();
 
-        Set<String> statisticCacheNames = ioStatMgr.deriveStatNames(StatType.CACHE);
+        Set<String> statisticCacheNames = ioStatMgr.deriveStatNames(StatType.CACHE_GROUP);
 
-        Assert.assertEquals(ALL_CACHE_NAMES, statisticCacheNames);
+        Assert.assertEquals(ALL_CACHE_GROUP_NAMES, statisticCacheNames);
 
         Stream.of(ATOMIC_CACHE_NAME, TRANSACTIONAL_CACHE_NAME, MVCC_CACHE_NAME).forEach((cacheName) -> {
-            long logicalReads = ioStatMgr.logicalReads(StatType.CACHE, cacheName);
+            long logicalReads = ioStatMgr.logicalReads(StatType.CACHE_GROUP, cacheName);
 
             Assert.assertTrue(logicalReads > RECORD_COUNT);
-
         });
+    }
+
+    /**
+     * Test statistics for two caches in the same cache group.
+     */
+    public void testCacheGroupCaches() {
+        prepareData(RECORD_COUNT, CACHE1_IN_GROUP_NAME, CACHE2_IN_GROUP_NAME);
+
+        GridIoStatManager ioStatMgr = ignite.context().ioStats();
+
+        Set<String> statisticCacheNames = ioStatMgr.deriveStatNames(StatType.CACHE_GROUP);
+
+        Assert.assertEquals(ALL_CACHE_GROUP_NAMES, statisticCacheNames);
+
+        long logicalReads = ioStatMgr.logicalReads(StatType.CACHE_GROUP, CACHE_GROUP_NAME);
+
+        Assert.assertEquals(RECORD_COUNT * 6, logicalReads);
     }
 
     /**
@@ -176,17 +214,17 @@ public class IoStatCacheTest extends GridCommonAbstractTest {
 
         GridIoStatManager ioStatMgr = ignite.context().ioStats();
 
-        Set<String> statisticCacheNames = ioStatMgr.deriveStatNames(StatType.CACHE);
+        Set<String> statisticCacheNames = ioStatMgr.deriveStatNames(StatType.CACHE_GROUP);
 
-        Assert.assertEquals(ALL_CACHE_NAMES, statisticCacheNames);
+        Assert.assertEquals(ALL_CACHE_GROUP_NAMES, statisticCacheNames);
 
         Assert.assertTrue(statisticCacheNames.contains(cacheName));
 
-        long logicalReadsCache = ioStatMgr.logicalReads(StatType.CACHE, cacheName);
+        long logicalReadsCache = ioStatMgr.logicalReads(StatType.CACHE_GROUP, cacheName);
 
         Assert.assertEquals(dataPageReads, logicalReadsCache);
 
-        long logicalReadsIdx = ioStatMgr.logicalReads(StatType.INDEX, cacheName, "PK");
+        long logicalReadsIdx = ioStatMgr.logicalReads(StatType.HASH_INDEX, cacheName, HASH_PK_INDEX_NAME);
 
         Assert.assertEquals(idxPageReadsCnt, logicalReadsIdx);
 

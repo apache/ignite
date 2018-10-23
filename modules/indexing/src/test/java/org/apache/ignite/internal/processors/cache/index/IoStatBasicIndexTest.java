@@ -18,6 +18,7 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import com.google.common.collect.Sets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -42,6 +43,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
+import static org.apache.ignite.internal.stat.GridIoStatManager.HASH_PK_INDEX_NAME;
+
 /**
  * A set of basic tests for caches with indexes.
  */
@@ -50,7 +54,11 @@ public class IoStatBasicIndexTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final int NUMBER_OF_PK_INDEXES = 3;
+    private static final int NUMBER_OF_PK_SORTED_INDEXES = 1;
+
+    /** */
+    private static final Set<String> PK_HASH_INDEXES = Sets.newHashSet(UTILITY_CACHE_NAME +
+        "." + HASH_PK_INDEX_NAME, DEFAULT_CACHE_NAME + "." + HASH_PK_INDEX_NAME);
 
     /** */
     private Collection<QueryIndex> indexes;
@@ -162,19 +170,23 @@ public class IoStatBasicIndexTest extends GridCommonAbstractTest {
     private void checkStat() {
         GridIoStatManager ioStat = grid().context().ioStats();
 
-        Set<String> statIndexes = ioStat.deriveStatNames(StatType.INDEX);
+        Set<String> hashIndexes = ioStat.deriveStatNames(StatType.HASH_INDEX);
 
-        Assert.assertEquals(statIndexes.toString(), indexes.size() + NUMBER_OF_PK_INDEXES, statIndexes.size());
+        Assert.assertEquals(PK_HASH_INDEXES, hashIndexes);
+
+        Set<String> sortedIndexes = ioStat.deriveStatNames(StatType.SORTED_INDEX);
+
+        Assert.assertEquals(sortedIndexes.toString(), indexes.size() + NUMBER_OF_PK_SORTED_INDEXES, sortedIndexes.size());
 
         String dfltCacheIdxStart = DEFAULT_CACHE_NAME + ".";
 
-        for (String index : statIndexes) {
+        for (String index : sortedIndexes) {
             if (!index.startsWith(dfltCacheIdxStart))
                 break;
 
             String idxName = index.substring(dfltCacheIdxStart.length());
 
-            Long logicalReads = ioStat.logicalReads(StatType.INDEX, DEFAULT_CACHE_NAME, idxName);
+            Long logicalReads = ioStat.logicalReads(StatType.SORTED_INDEX, DEFAULT_CACHE_NAME, idxName);
 
             Assert.assertNotNull(idxName, logicalReads);
 
