@@ -401,8 +401,8 @@ class ClusterCachesInfo {
     }
 
     /**
-     * Creates exchanges actions. Forms a list of caches and cache groups to be stopped
-     * due to dynamic cache start failure.
+     * Creates exchanges actions. Forms a list of caches and cache groups to be stopped due to dynamic cache start
+     * failure.
      *
      * @param failMsg Dynamic change request fail message.
      * @param topVer Topology version.
@@ -420,7 +420,7 @@ class ClusterCachesInfo {
             requests.add(DynamicCacheChangeRequest.stopRequest(ctx, cacheName, cacheDescr.sql(), true));
         }
 
-        processCacheChangeRequests(exchangeActions, requests, topVer,false);
+        processCacheChangeRequests(exchangeActions, requests, topVer, false);
 
         failMsg.exchangeActions(exchangeActions);
     }
@@ -1018,10 +1018,11 @@ class ClusterCachesInfo {
 
     /**
      * @param data Discovery data.
+     * @return {@code true} if caches configuration version were received, {@code false} otherwise.
      */
-    public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
+    public boolean onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
         if (ctx.isDaemon() || data.commonData() == null)
-            return;
+            return false;
 
         assert joinDiscoData != null || disconnectedState();
         assert data.commonData() instanceof CacheNodeCommonDiscoveryData : data;
@@ -1036,7 +1037,7 @@ class ClusterCachesInfo {
         //Replace locally registered data with actual data received from cluster.
         cleanCachesAndGroups();
 
-        registerReceivedCachesConfigurationVersion(cachesData);
+        boolean cachesCfgVerRegistered = registerReceivedCachesConfigurationVersion(cachesData);
 
         registerReceivedCacheGroups(cachesData, locCacheGrps);
 
@@ -1052,6 +1053,8 @@ class ClusterCachesInfo {
 
         if (cachesOnDisconnect == null || cachesOnDisconnect.clusterActive())
             initStartCachesForLocalJoin(false, disconnectedState());
+
+        return cachesCfgVerRegistered;
     }
 
     /**
@@ -1229,9 +1232,13 @@ class ClusterCachesInfo {
      * Register caches configuration version received from cluster.
      *
      * @param cachesData Data received from cluster.
+     * @return {@code true} if caches configuration version were registered, {@code false} otherwise.
      */
-    private void registerReceivedCachesConfigurationVersion(CacheNodeCommonDiscoveryData cachesData){
-        cachesConfigurationVer.putAll(cachesData.cachesConfigurationVersion());
+    private boolean registerReceivedCachesConfigurationVersion(CacheNodeCommonDiscoveryData cachesData) {
+        if (cachesData.cachesConfigurationVersion() != null)
+            cachesConfigurationVer.putAll(cachesData.cachesConfigurationVersion());
+
+        return cachesData.cachesConfigurationVersion() != null;
     }
 
     /**
@@ -1323,8 +1330,8 @@ class ClusterCachesInfo {
     }
 
     /**
-     * Initialize collection with caches to be start:
-     * {@code locJoinStartCaches} or {@code locCfgsForActivation} if cluster is inactive.
+     * Initialize collection with caches to be start: {@code locJoinStartCaches} or {@code locCfgsForActivation} if
+     * cluster is inactive.
      *
      * @param firstNode {@code True} if first node in cluster starts.
      */
@@ -1431,7 +1438,6 @@ class ClusterCachesInfo {
                 if (desc.version() == null)
                     desc.version(getOrCreateVersion(desc));
 
-
                 DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(msg.requestId(),
                     desc.cacheName(),
                     msg.initiatorNodeId());
@@ -1519,7 +1525,7 @@ class ClusterCachesInfo {
      * @param cacheName Cache name.
      * @return Cache configuration version or {@code null}, if configuration not found.
      */
-    GridCacheConfigurationVersion getVersion(String cacheName){
+    GridCacheConfigurationVersion getVersion(String cacheName) {
         assert cacheName != null;
 
         return cachesConfigurationVer.get(cacheName);
@@ -1575,18 +1581,22 @@ class ClusterCachesInfo {
         GridCacheConfigurationVersion old = cachesConfigurationVer.put(ver.cacheName(), ver);
 
         // versions must be same (i.e. one instance) or previous version not exist or version order is correct.
-        assert old == ver || old == null || old.id() < ver.id() : ver + " old: " + (old == null ? "null" : old);
+        assert old == ver || old == null || old.id() < ver.id() : F.concat(ver, " old: ", F.toString(old));
     }
 
     /**
      * @return Missing cache groups id.
      */
-    Collection<Integer> missingCacheGroups() { return missingCacheGrps.keySet(); }
+    Collection<Integer> missingCacheGroups() {
+        return missingCacheGrps.keySet();
+    }
 
     /**
      * @return Caches configuration version.
      */
-    Map<String,GridCacheConfigurationVersion> cachesVersion() { return cachesConfigurationVer; }
+    Map<String, GridCacheConfigurationVersion> cachesVersion() {
+        return cachesConfigurationVer;
+    }
 
     /**
      * @param data Joining node data.
@@ -1734,7 +1744,7 @@ class ClusterCachesInfo {
 
         //If conflict was detected we don't merge config and we leave existed config.
         if (!hasSchemaPatchConflict && !patchesToApply.isEmpty())
-            for(Map.Entry<DynamicCacheDescriptor, QuerySchemaPatch> entry: patchesToApply.entrySet()){
+            for (Map.Entry<DynamicCacheDescriptor, QuerySchemaPatch> entry : patchesToApply.entrySet()) {
                 if (entry.getKey().applySchemaPatch(entry.getValue()))
                     saveCacheConfiguration(entry.getKey());
             }
@@ -1948,7 +1958,8 @@ class ClusterCachesInfo {
      * @param exchActions Optional exchange actions to update if new group was added.
      * @param startedCacheCfg Started cache configuration.
      */
-    private boolean resolvePersistentFlag(@Nullable ExchangeActions exchActions, CacheConfiguration<?, ?> startedCacheCfg) {
+    private boolean resolvePersistentFlag(@Nullable ExchangeActions exchActions,
+        CacheConfiguration<?, ?> startedCacheCfg) {
         if (!ctx.clientNode()) {
             // On server, we always can determine whether cache is persistent by local storage configuration.
             return CU.isPersistentCache(startedCacheCfg, ctx.config().getDataStorageConfiguration());
@@ -2087,6 +2098,7 @@ class ClusterCachesInfo {
 
     /**
      * Returns registered cache descriptors ordered by {@code comparator}
+     *
      * @param comparator Comparator (DIRECT, REVERSE or custom) to order cache descriptors.
      * @return Ordered by comparator cache descriptors.
      */
@@ -2234,9 +2246,8 @@ class ClusterCachesInfo {
     }
 
     /**
-     * Holds direct comparator (first system caches) and reverse comparator (first user caches).
-     * Use DIRECT comparator for ordering cache start operations.
-     * Use REVERSE comparator for ordering cache stop operations.
+     * Holds direct comparator (first system caches) and reverse comparator (first user caches). Use DIRECT comparator
+     * for ordering cache start operations. Use REVERSE comparator for ordering cache stop operations.
      */
     static class CacheComparators {
         /**

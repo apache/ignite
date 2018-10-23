@@ -76,6 +76,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
@@ -3790,7 +3791,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     err = spi.getSpiContext().validateNode(node, bag);
 
-                    msg.gridDiscoveryData().marshalJoiningNodeData(bag,marshaller,log);
+                    if(node.version().compareToIgnoreTimestamp(GridCacheProcessor.RMV_CACHES_ON_VALIDATE_NODE_VER) >= 0)
+                        msg.gridDiscoveryData().marshalJoiningNodeData(bag,marshaller,log);
                 }
 
                 if (err != null) {

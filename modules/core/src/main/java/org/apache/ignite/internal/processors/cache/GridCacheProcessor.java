@@ -157,6 +157,7 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
@@ -209,6 +210,9 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     private static final String MERGE_OF_CONFIG_REQUIRED_MESSAGE = "Failed to join node to the active cluster " +
         "(the config of the cache '%s' has to be merged which is impossible on active grid). " +
         "Deactivate grid and retry node join or clean the joining node.";
+
+    /** Remove caches on validate node min version. */
+    public static final IgniteProductVersion RMV_CACHES_ON_VALIDATE_NODE_VER = IgniteProductVersion.fromString("2.7.0");
     /** */
     private final boolean startClientCaches =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_START_CACHES_ON_JOIN, false);
@@ -883,7 +887,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     private void addCacheOnJoinFromConfig(
         Map<String, CacheInfo> caches,
         Map<String, CacheInfo> templates,
-        Map<String,GridCacheConfigurationVersion> cachesVer
+        Map<String, GridCacheConfigurationVersion> cachesVer
     ) throws IgniteCheckedException {
         assert !ctx.config().isDaemon();
 
@@ -984,7 +988,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      *
      * @param storedCaches Stored caches configuration.
      */
-    private void moveCachesConfigurationFromDistToMetastore(Collection<StoredCacheData> storedCaches) {
+    public void moveCachesConfigurationFromDistToMetastore(Collection<StoredCacheData> storedCaches) {
         if (!F.isEmpty(storedCaches)) {
             sharedCtx.kernalContext().closure().runLocalSafe(() -> {
                 try {
@@ -2869,16 +2873,16 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        cachesInfo.onGridDataReceived(data);
+        if(cachesInfo.onGridDataReceived(data)) {
+            try {
+                sharedCtx.database().clearStoredCachesConfigurationVersion();
 
-        try {
-            sharedCtx.database().clearStoredCachesConfigurationVersion();
-
-            for(GridCacheConfigurationVersion ver : cachesInfo.cachesVersion().values())
-                sharedCtx.database().storeCacheConfigurationVersion(ver, true);
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log,"Can't save received grid data.", e);
+                for (GridCacheConfigurationVersion ver : cachesInfo.cachesVersion().values())
+                    sharedCtx.database().storeCacheConfigurationVersion(ver, true);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Can't save received grid data.", e);
+            }
         }
 
         sharedCtx.walState().onCachesInfoCollected();
@@ -2949,10 +2953,12 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 return new IgniteNodeValidationResult(node.id(), msg, msg);
             }
 
-            for (String cacheName : cachesForRmv)
-                nodeData.caches().remove(cacheName);
+            if(node.version().compareToIgnoreTimestamp(RMV_CACHES_ON_VALIDATE_NODE_VER) >= 0) {
+                for (String cacheName : cachesForRmv)
+                    nodeData.caches().remove(cacheName);
 
-            applyVersionUpdates(nodeData);
+                applyVersionUpdates(nodeData);
+            }
         }
 
         return null;

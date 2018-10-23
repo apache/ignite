@@ -95,6 +95,7 @@ import org.apache.ignite.internal.util.lang.gridfunc.TransformMapView;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformMapView2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -252,10 +253,10 @@ public class GridFunc {
         if(objs.length == 0)
             return "";
 
-        StringBuilder sb = new StringBuilder(16 * objs.length);
+        SB sb = new SB(16 * objs.length);
 
         for(Object obj : objs)
-            sb.append(toString(obj));
+            sb.a(toString(obj));
 
         return sb.toString();
     }

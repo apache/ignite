@@ -457,8 +457,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         clearStoredCachesCfgVerFut.onDone();
 
-        log.info("Metastore cleared from stored caches configuration version!");
-
         metastoreReadyForReadWriteOps.set(true);
 
         for (MetastorageLifecycleListener lsnr : metastorageLifecycleLsnrs)
@@ -1705,6 +1703,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             for (String key : data.keySet())
                 remove(key);
+
+            log.info("Metastore cleared from stored caches configuration version!");
         }
         finally {
             context().database().checkpointReadUnlock();
