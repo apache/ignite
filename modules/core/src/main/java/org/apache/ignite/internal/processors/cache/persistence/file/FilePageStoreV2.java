@@ -67,6 +67,9 @@ public class FilePageStoreV2 extends FilePageStore {
     @Override public void punchHole(long pageId, int usefulBytes) {
         assert usefulBytes >= 0 && usefulBytes <= pageSize: usefulBytes;
 
+        if (usefulBytes == pageSize)
+            return;
+
         long off = pageOffset(pageId);
 
         fileIO.punchHole(off + usefulBytes, pageSize - usefulBytes);

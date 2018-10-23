@@ -130,7 +130,7 @@ public interface PageStore {
     public void truncate(int tag) throws StorageException;
 
     /**
-     * @return Storage block size or negative value if unknown.
+     * @return Storage block size or negative value if unknown or not supported.
      * @throws StorageException If failed.
      */
     public int getBlockSize() throws StorageException;
@@ -139,7 +139,7 @@ public interface PageStore {
      * Should free all the extra storage space after the given number of useful bytes in the given page.
      *
      * @param pageId Page id.
-     * @param usefulBytes Number of useful bytes in the beginning of the page.
+     * @param usefulBytes Number of useful bytes from the beginning of the page.
      */
     void punchHole(long pageId, int usefulBytes);
 }
