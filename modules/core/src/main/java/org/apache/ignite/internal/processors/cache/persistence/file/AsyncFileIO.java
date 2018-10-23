@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
@@ -29,6 +30,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * File I/O implementation based on {@link AsynchronousFileChannel}.
@@ -38,6 +40,9 @@ public class AsyncFileIO extends AbstractFileIO {
      * File channel associated with {@code file}
      */
     private final AsynchronousFileChannel ch;
+
+    /** Native file descriptor. */
+    private final int fd;
 
     /** */
     private final int fsBlockSize;
@@ -60,10 +65,19 @@ public class AsyncFileIO extends AbstractFileIO {
      */
     public AsyncFileIO(File file, ThreadLocal<ChannelOpFuture> holder, OpenOption... modes) throws IOException {
         Path filePath = file.toPath();
-        this.fsBlockSize = CompressionProcessor.getFsBlockSize(filePath);
-        this.ch = AsynchronousFileChannel.open(filePath, modes);
-
+        fsBlockSize = CompressionProcessor.getFsBlockSize(filePath);
+        ch = AsynchronousFileChannel.open(filePath, modes);
+        fd = getFileDescriptor(ch);
         this.holder = holder;
+    }
+
+    /**
+     * @param ch File channel.
+     * @return Native file descriptor.
+     */
+    private static int getFileDescriptor(AsynchronousFileChannel ch) {
+         FileDescriptor fd = U.field(ch, "fdObj");
+         return U.field(fd, "fd");
     }
 
     /** {@inheritDoc} */
@@ -73,8 +87,6 @@ public class AsyncFileIO extends AbstractFileIO {
 
     /** {@inheritDoc} */
     @Override public int punchHole(long position, int len) {
-        int fd = 0; // TODO
-
         return (int)CompressionProcessor.punchHole(fd, position, len, fsBlockSize);
     }
 

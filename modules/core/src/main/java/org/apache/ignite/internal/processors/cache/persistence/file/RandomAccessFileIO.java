@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
@@ -25,6 +26,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * File I/O implementation based on {@link FileChannel}.
@@ -34,6 +36,9 @@ public class RandomAccessFileIO extends AbstractFileIO {
      * File channel.
      */
     private final FileChannel ch;
+
+    /** Native file descriptor. */
+    private final int fd;
 
     /** */
     private final int fsBlockSize;
@@ -46,9 +51,18 @@ public class RandomAccessFileIO extends AbstractFileIO {
      */
     public RandomAccessFileIO(File file, OpenOption... modes) throws IOException {
         Path filePath = file.toPath();
-        this.fsBlockSize = CompressionProcessor.getFsBlockSize(filePath);
-
+        fsBlockSize = CompressionProcessor.getFsBlockSize(filePath);
         ch = FileChannel.open(filePath, modes);
+        fd = getNativeFileDescriptor(ch);
+    }
+
+    /**
+     * @param ch File channel.
+     * @return Native file descriptor.
+     */
+    private static int getNativeFileDescriptor(FileChannel ch) {
+        FileDescriptor fd = U.field(ch, "fd");
+        return U.field(fd, "fd");
     }
 
     /** {@inheritDoc} */
@@ -58,8 +72,6 @@ public class RandomAccessFileIO extends AbstractFileIO {
 
     /** {@inheritDoc} */
     @Override public int punchHole(long position, int len) {
-        int fd = 0; // TODO
-
         return (int)CompressionProcessor.punchHole(fd, position, len, fsBlockSize);
     }
 

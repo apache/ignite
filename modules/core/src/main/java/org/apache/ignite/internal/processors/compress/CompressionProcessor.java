@@ -56,6 +56,9 @@ public class CompressionProcessor extends GridProcessorAdapter {
     }
 
     public static long punchHole(int fd, long off, long len, int fsBlockSize) {
+        assert off >= 0;
+        assert len > 0;
+
         if (fs == null || fsBlockSize <= 0)
             return -1;
 
