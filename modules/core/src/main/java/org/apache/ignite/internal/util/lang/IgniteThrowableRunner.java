@@ -15,23 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.jdbc;
+package org.apache.ignite.internal.util.lang;
 
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
-import org.yardstickframework.BenchmarkConfiguration;
-
-import static org.apache.ignite.yardstick.jdbc.JdbcUtils.fillData;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Abstract class for benchmarks that use {@link SqlFieldsQuery}.
+ * Represents a throwable runner.
  */
-public abstract class AbstractNativeBenchmark extends IgniteAbstractBenchmark {
-    /** {@inheritDoc} */
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
-        super.setUp(cfg);
-
-        fillData(cfg, (IgniteEx)ignite(), args.range(), args.atomicMode());
-    }
+public interface IgniteThrowableRunner {
+    /**
+     * Execute a body.
+     */
+    void run() throws IgniteCheckedException;
 }

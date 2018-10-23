@@ -15,23 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.jdbc;
+package org.apache.ignite.internal.util.lang;
 
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
-import org.yardstickframework.BenchmarkConfiguration;
-
-import static org.apache.ignite.yardstick.jdbc.JdbcUtils.fillData;
+import java.io.Serializable;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Abstract class for benchmarks that use {@link SqlFieldsQuery}.
+ * Represents an operation that accepts a single input argument and returns no result. Unlike most other functional
+ * interfaces, {@code IgniteThrowableConsumer} is expected to operate via side-effects.
+ *
+ * @param <E> Type of closure parameter.
  */
-public abstract class AbstractNativeBenchmark extends IgniteAbstractBenchmark {
-    /** {@inheritDoc} */
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
-        super.setUp(cfg);
-
-        fillData(cfg, (IgniteEx)ignite(), args.range(), args.atomicMode());
-    }
+public interface IgniteThrowableConsumer<E> extends Serializable {
+    /**
+     * Consumer body.
+     *
+     * @param e Consumer parameter.
+     * @throws IgniteCheckedException if body execution was failed.
+     */
+    public void accept(E e) throws IgniteCheckedException;
 }
