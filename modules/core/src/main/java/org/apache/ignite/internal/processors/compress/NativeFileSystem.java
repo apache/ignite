@@ -6,5 +6,5 @@ public interface NativeFileSystem {
 
     int getFileBlockSize(Path path);
 
-    int punchHole(int fd, long off, int len);
+    void punchHole(int fd, long off, int len);
 }

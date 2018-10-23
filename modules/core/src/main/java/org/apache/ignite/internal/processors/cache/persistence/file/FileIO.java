@@ -262,7 +262,7 @@ public interface FileIO extends AutoCloseable {
     /**
      * @param position Starting file position.
      * @param len Number of bytes to free.
-     * @return The actual freed size.
+     * @return The actual freed size or negative value if not supported.
      */
     int punchHole(long position, int len);
 }

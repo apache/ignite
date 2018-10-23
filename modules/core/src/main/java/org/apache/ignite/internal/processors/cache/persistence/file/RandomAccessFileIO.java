@@ -58,7 +58,9 @@ public class RandomAccessFileIO extends AbstractFileIO {
 
     /** {@inheritDoc} */
     @Override public int punchHole(long position, int len) {
-        return 0; // TODO
+        int fd = 0; // TODO
+
+        return CompressionProcessor.punchHole(fd, position, len, fsBlockSize);
     }
 
     /** {@inheritDoc} */

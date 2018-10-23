@@ -55,8 +55,23 @@ public class CompressionProcessor extends GridProcessorAdapter {
         return fs == null ? -1 : fs.getFileBlockSize(file);
     }
 
-    public static int punchHole(int fd, long off, int len) {
-        return fs == null ? -1 : fs.punchHole(fd, off, len);
+    public static int punchHole(int fd, long off, int len, int fsBlockSize) {
+        if (fs == null || fsBlockSize <= 0)
+            return -1;
+
+        if (len < fsBlockSize)
+            return 0;
+
+        long end = off + len;
+
+        assert end % fsBlockSize == 0;
+
+        len = len / fsBlockSize * fsBlockSize;
+        off = end - len;
+
+        fs.punchHole(fd, off, len);
+
+        return len;
     }
 
     public boolean isPageCompressionEnabled() {

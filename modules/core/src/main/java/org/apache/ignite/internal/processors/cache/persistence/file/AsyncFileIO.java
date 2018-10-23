@@ -73,7 +73,9 @@ public class AsyncFileIO extends AbstractFileIO {
 
     /** {@inheritDoc} */
     @Override public int punchHole(long position, int len) {
-        return CompressionProcessor.punchHole(0, position, len); // TODO
+        int fd = 0; // TODO
+
+        return CompressionProcessor.punchHole(fd, position, len, fsBlockSize);
     }
 
     /** {@inheritDoc} */

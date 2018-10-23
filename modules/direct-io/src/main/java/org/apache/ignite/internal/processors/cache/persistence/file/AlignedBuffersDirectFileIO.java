@@ -186,7 +186,7 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
 
     /** {@inheritDoc} */
     @Override public int punchHole(long position, int len) {
-        return 0; // TODO
+        return CompressionProcessor.punchHole(fd, position, len, fsBlockSize);
     }
 
     /** {@inheritDoc} */
