@@ -188,9 +188,6 @@ public class CommandHandler {
     /** */
     private static final String CMD_USER_ATTRIBUTES = "--user-attributes";
 
-    /** Default number of indents in help output. */
-    private static final int DFLT_HELP_IDENT = 1;
-
     /** List of optional auxiliary commands. */
     private static final Set<String> AUX_COMMANDS = new HashSet<>();
 
@@ -708,21 +705,21 @@ public class CommandHandler {
      *
      */
     private void printCacheHelp() {
-        log(i("The '" + CACHE.text() + " subcommand' is used to get information about and perform actions with caches. The command has the following syntax:", DFLT_HELP_IDENT));
+        log(i("The '" + CACHE.text() + " subcommand' is used to get information about and perform actions with caches. The command has the following syntax:"));
         nl();
-        log(i(UTILITY_NAME_WITH_COMMON_OPTIONS + " " + CACHE.text() + "[subcommand] <subcommand_parameters>", DFLT_HELP_IDENT));
+        log(i(UTILITY_NAME_WITH_COMMON_OPTIONS + " " + CACHE.text() + "[subcommand] <subcommand_parameters>"));
         nl();
-        log(i("The subcommands that take [nodeId] as an argument ('" + LIST.text() + "', '" + CONTENTION.text() + "' and '" + VALIDATE_INDEXES.text() + "') will be executed on the given node or on all server nodes if the option is not specified. Other commands will run on a random server node.", DFLT_HELP_IDENT));
+        log(i("The subcommands that take [nodeId] as an argument ('" + LIST.text() + "', '" + CONTENTION.text() + "' and '" + VALIDATE_INDEXES.text() + "') will be executed on the given node or on all server nodes if the option is not specified. Other commands will run on a random server node."));
         nl();
         nl();
-        log(i("Subcommands:", DFLT_HELP_IDENT));
+        log(i("Subcommands:"));
 
-        usageCache(DFLT_HELP_IDENT, LIST, "regexPattern", "[groups|seq]", "[nodeId]", op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE.text()));
-        usageCache(DFLT_HELP_IDENT, CONTENTION, "minQueueSize", "[nodeId]", "[maxPrint]");
-        usageCache(DFLT_HELP_IDENT, IDLE_VERIFY, op(CMD_DUMP), op(CMD_SKIP_ZEROS), "[cache1,...,cacheN]");
-        usageCache(DFLT_HELP_IDENT, VALIDATE_INDEXES, "[cache1,...,cacheN]", "[nodeId]", op(or(VI_CHECK_FIRST + " N", VI_CHECK_THROUGH + " K")));
-        usageCache(DFLT_HELP_IDENT, DISTRIBUTION, or("nodeId", NULL), "[cacheName1,...,cacheNameN]", op(CMD_USER_ATTRIBUTES, "attName1,...,attrNameN"));
-        usageCache(DFLT_HELP_IDENT, RESET_LOST_PARTITIONS, "cacheName1,...,cacheNameN");
+        usageCache(LIST, "regexPattern", "[groups|seq]", "[nodeId]", op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE.text()));
+        usageCache(CONTENTION, "minQueueSize", "[nodeId]", "[maxPrint]");
+        usageCache(IDLE_VERIFY, op(CMD_DUMP), op(CMD_SKIP_ZEROS), "[cache1,...,cacheN]");
+        usageCache(VALIDATE_INDEXES, "[cache1,...,cacheN]", "[nodeId]", op(or(VI_CHECK_FIRST + " N", VI_CHECK_THROUGH + " K")));
+        usageCache(DISTRIBUTION, or("nodeId", NULL), "[cacheName1,...,cacheNameN]", op(CMD_USER_ATTRIBUTES, "attName1,...,attrNameN"));
+        usageCache(RESET_LOST_PARTITIONS, "cacheName1,...,cacheNameN");
         nl();
     }
 
@@ -1481,6 +1478,14 @@ public class CommandHandler {
         log(i(UTILITY_NAME_WITH_COMMON_OPTIONS + " " + cmd.text() + " " + String.join(" ", args), 2));
         nl();
     }
+
+    /**
+     * Print cache command usage with default indention.
+     *
+     * @param cmd Cache command.
+     * @param args Cache command arguments.
+     */
+    private void usageCache(CacheCommand cmd, String... args) { usageCache(1, cmd, args); }
 
     /**
      * Print cache command usage.
