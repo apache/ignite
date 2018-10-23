@@ -175,31 +175,35 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
-            ResultSet rs = meta.getTables("", "pers", "%", new String[]{"TABLE"});
+            ResultSet rs = meta.getTables(null, "pers", "%", new String[]{"TABLE"});
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+            assertEquals(JdbcDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
-            rs = meta.getTables("", "org", "%", new String[]{"TABLE"});
+            rs = meta.getTables(null, "org", "%", new String[]{"TABLE"});
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+            assertEquals(JdbcDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
 
-            rs = meta.getTables("", "pers", "%", null);
+            rs = meta.getTables(null, "pers", "%", null);
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+            assertEquals(JdbcDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
-            rs = meta.getTables("", "org", "%", null);
+            rs = meta.getTables(null, "org", "%", null);
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+            assertEquals(JdbcDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
 
-            rs = meta.getTables("", "PUBLIC", "", new String[]{"WRONG"});
+            rs = meta.getTables(null, "PUBLIC", "", new String[]{"WRONG"});
             assertFalse(rs.next());
         }
     }
@@ -211,7 +215,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
-            ResultSet rs = meta.getColumns("", "pers", "PERSON", "%");
+            ResultSet rs = meta.getColumns(null, "pers", "PERSON", "%");
 
             assertNotNull(rs);
 
@@ -256,7 +260,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             assertTrue(names.isEmpty());
             assertEquals(3, cnt);
 
-            rs = meta.getColumns("", "org", "ORGANIZATION", "%");
+            rs = meta.getColumns(null, "org", "ORGANIZATION", "%");
 
             assertNotNull(rs);
 
@@ -405,7 +409,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             while (rs.next()) {
                 schemas.add(rs.getString(1));
 
-                assertNull(rs.getString(2));
+                assertEquals(JdbcDatabaseMetadata.CATALOG_NAME, rs.getString(2));
             }
 
             assertEquals(expectedSchemas, schemas);

@@ -44,6 +44,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinDatabaseMetadata;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -201,39 +202,43 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
-            ResultSet rs = meta.getTables("", "pers", "%", new String[]{"TABLE"});
+            ResultSet rs = meta.getTables(null, "pers", "%", new String[]{"TABLE"});
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+            assertEquals(JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
 
-            rs = meta.getTables("", "org", "%", new String[]{"TABLE"});
+            rs = meta.getTables(null, "org", "%", new String[]{"TABLE"});
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+            assertEquals(JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
 
-            rs = meta.getTables("", "pers", "%", null);
+            rs = meta.getTables(null, "pers", "%", null);
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+            assertEquals(JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
 
-            rs = meta.getTables("", "org", "%", null);
+            rs = meta.getTables(null, "org", "%", null);
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+            assertEquals(JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
 
-            rs = meta.getTables("", "PUBLIC", "", new String[]{"WRONG"});
+            rs = meta.getTables(null, "PUBLIC", "", new String[]{"WRONG"});
             assertFalse(rs.next());
         }
     }
@@ -276,7 +281,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             DatabaseMetaData meta = conn.getMetaData();
 
-            ResultSet rs = meta.getColumns("", "pers", "PERSON", "%");
+            ResultSet rs = meta.getColumns(null, "pers", "PERSON", "%");
 
             ResultSetMetaData rsMeta = rs.getMetaData();
 
@@ -337,7 +342,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assert names.isEmpty();
             assert cnt == 3;
 
-            rs = meta.getColumns("", "org", "ORGANIZATION", "%");
+            rs = meta.getColumns(null, "org", "ORGANIZATION", "%");
 
             assert rs != null;
 
@@ -609,7 +614,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             while (rs.next()) {
                 schemas.add(rs.getString(1));
 
-                assert rs.getString(2) == null;
+                assertEquals("There is only one possible catalog.",
+                    JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString(2));
             }
 
             assert expectedSchemas.equals(schemas) : "Unexpected schemas: " + schemas +
