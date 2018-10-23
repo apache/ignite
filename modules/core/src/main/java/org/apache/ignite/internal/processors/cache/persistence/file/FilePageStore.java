@@ -258,6 +258,10 @@ public class FilePageStore implements PageStore {
                 + ", delete=" + delete + "]", e);
         }
         finally {
+            allocatedTracker.updateTotalAllocatedPages(-1L * allocated.getAndSet(0) / pageSize);
+
+            inited = false;
+
             lock.writeLock().unlock();
         }
     }
