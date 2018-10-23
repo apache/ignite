@@ -86,6 +86,8 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGridsMultiThreaded(3, true);
 
         ignite(0).createCache(cacheConfig("S2P", true, false).setIndexedTypes(String.class, Person.class));
