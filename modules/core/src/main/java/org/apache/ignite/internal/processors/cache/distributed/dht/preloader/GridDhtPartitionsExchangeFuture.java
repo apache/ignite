@@ -133,6 +133,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverJoinEvent;
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverLeftEvent;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
+import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 
 /**
  * Future for exchanging partition maps.
@@ -3981,15 +3982,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         partHistSuppliers.putAll(msg.partitionHistorySuppliers());
 
-        List<IgniteInternalFuture<?>> futList = new ArrayList<>();
-
         long time = System.currentTimeMillis();
 
-        for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
-            futList.add(cctx.kernalContext().closure().runLocalSafe(new Runnable() {
-                @Override public void run() {
-                    Integer grpId = entry.getKey();
+        int parallelismLvl = cctx.kernalContext().config().getSystemThreadPoolSize();
 
+        // Reserve at least 2 threads for system operations.
+        parallelismLvl = Math.max(1, parallelismLvl - 2);
+
+        try {
+            doInParallel(
+                parallelismLvl,
+                cctx.kernalContext().getSystemExecutorService(),
+                msg.partitions().keySet(), grpId -> {
                     CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
                     if (grp != null) {
@@ -3997,7 +4001,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             grp.topology().partitions());
 
                         grp.topology().update(resTopVer,
-                            entry.getValue(),
+                            msg.partitions().get(grpId),
                             cntrMap,
                             msg.partsToReload(cctx.localNodeId(), grpId),
                             msg.partitionSizes(grpId),
@@ -4013,24 +4017,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                 top.partitions());
 
                             top.update(resTopVer,
-                                entry.getValue(),
+                                msg.partitions().get(grpId),
                                 cntrMap,
                                 Collections.emptySet(),
                                 null,
                                 null);
                         }
                     }
-                }
-            }));
+                });
         }
-
-        for (IgniteInternalFuture<?> fut : futList) {
-            try {
-                fut.get();
-            }
-            catch (IgniteCheckedException e) {
-                log.error("Failed to update full partition map.", e);
-            }
+        catch (IgniteCheckedException e) {
+            log.error("Failed to update full partition map.", e);
         }
 
         partitionsReceived = true;
