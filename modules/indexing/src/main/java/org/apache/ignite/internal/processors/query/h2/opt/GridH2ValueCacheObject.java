@@ -25,6 +25,7 @@ import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.h2.message.DbException;
+import org.h2.util.Bits;
 import org.h2.util.JdbcUtils;
 import org.h2.util.Utils;
 import org.h2.value.CompareMode;

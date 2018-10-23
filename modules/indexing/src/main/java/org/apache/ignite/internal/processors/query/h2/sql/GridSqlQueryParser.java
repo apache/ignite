@@ -50,6 +50,7 @@ import org.h2.command.CommandInterface;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.AlterTableAddConstraint;
 import org.h2.command.ddl.AlterTableAlterColumn;
+import org.h2.command.ddl.CommandWithColumns;
 import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.CreateTable;
 import org.h2.command.ddl.CreateTableData;
