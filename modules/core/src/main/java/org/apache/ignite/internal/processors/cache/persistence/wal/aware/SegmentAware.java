@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 
 import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentArchivedStorage.buildArchivedStorage;
@@ -43,10 +44,11 @@ public class SegmentAware {
     /**
      * @param walSegmentsCnt Total WAL segments count.
      * @param compactionEnabled Is wal compaction enabled.
+     * @param log Logger.
      */
-    public SegmentAware(int walSegmentsCnt, boolean compactionEnabled) {
+    public SegmentAware(int walSegmentsCnt, boolean compactionEnabled, IgniteLogger log) {
         segmentCurrStateStorage = buildCurrentStateStorage(walSegmentsCnt, segmentArchivedStorage);
-        segmentCompressStorage = buildCompressStorage(segmentArchivedStorage, compactionEnabled);
+        segmentCompressStorage = buildCompressStorage(segmentArchivedStorage, compactionEnabled, log);
     }
 
     /**
@@ -110,12 +112,26 @@ public class SegmentAware {
     }
 
     /**
+     * Sets the largest index of previously compressed segment.
+     *
+     * @param idx Segment index.
+     */
+    public void lastSegmentCompressed(long idx) {
+        segmentCompressStorage.lastSegmentCompressed(idx);
+    }
+
+    /**
      * Callback after segment compression finish.
      *
      * @param compressedIdx Index of compressed segment.
      */
     public void onSegmentCompressed(long compressedIdx) {
         segmentCompressStorage.onSegmentCompressed(compressedIdx);
+    }
+
+    /** */
+    public void removeFromCurrentlyCompressedList(long idx) {
+        segmentCompressStorage.removeFromCurrentlyCompressedList(idx);
     }
 
     /**
