@@ -2521,7 +2521,7 @@ public class GridSqlQuerySplitter {
         ArrayList<CacheQueryPartitionInfo> aWithParams = findParameterized(a);
         ArrayList<CacheQueryPartitionInfo> bWithParams = findParameterized(b);
 
-        if (aWithParams.size() > 0 && bWithParams.size() > 0){
+        if (aWithParams.size() > 0 || bWithParams.size() > 0){
             CacheQueryPartitionInfo[][] holder = new CacheQueryPartitionInfo[2][];
 
             holder[0] = a;
@@ -2534,32 +2534,9 @@ public class GridSqlQuerySplitter {
 
             return res;
         }
-        else if(aWithParams.size() > 0) {
-            CacheQueryPartitionInfo[][] holder = new CacheQueryPartitionInfo[2][];
-
-            holder[0] = aWithParams.toArray(new CacheQueryPartitionInfo[0]);
-
-            holder[1] = b;
-
-            CacheQueryPartitionInfo[] res = new CacheQueryPartitionInfo[1];
-
-            res[0] = new CacheQueryPartitionInfo(holder);
-
-            return res;
-        }
-        else if(bWithParams.size() > 0){
-            CacheQueryPartitionInfo[][] holder = new CacheQueryPartitionInfo[2][];
-
-            holder[0] = a;
-
-            holder[1] = bWithParams.toArray(new CacheQueryPartitionInfo[0]);
-
-            CacheQueryPartitionInfo[] res = new CacheQueryPartitionInfo[1];
-
-            res[0] = new CacheQueryPartitionInfo(holder);
-
-            return res;
-        }
+        // Here conjunction logic could be added to handle one-side parameterized cases to remove partitions in cases
+        // like [1,2,?] AND [2,3] where partition 1 could be calculated as not actually needed.
+        // NB! partition 2 should stay as it is playing role in case where parameter belongs to any other after binding
         else {
             ArrayList<CacheQueryPartitionInfo> list = new ArrayList<>(a.length + b.length);
 

@@ -130,7 +130,7 @@ public class AndOperationExtractPartitionSelfTest extends GridCommonAbstractTest
         testAndOperator(Arrays.asList(ORG + 0, ORG + 3, ORG + String.valueOf(ORG_COUNT - 1)), null, 1, 1);
         testAndOperator(Arrays.asList("ORG", ORG + 0, ORG + 4, ORG + String.valueOf(ORG_COUNT - 1)), null, 0, 0);
         testAndOperator(Arrays.asList(ORG + 0, ORG + 2, ORG + String.valueOf(ORG_COUNT - 1), "ORG"), null, 1, 1);
-        testAndOperator(Arrays.asList(ORG + 0, ORG + 1, "MID", ORG + String.valueOf(ORG_COUNT - 1), "ORG"), null, 1, 1);
+        testAndOperator(Arrays.asList(ORG + 0, ORG + 1, "MID", ORG + String.valueOf(ORG_COUNT - 1), ORG+3), null, 2, 2);
 
         final List<String> allArgs3 = Arrays.asList("?", "?", "?");
         final List<String> allArgs4 = Arrays.asList("?", "?", "?", "?");
@@ -139,6 +139,13 @@ public class AndOperationExtractPartitionSelfTest extends GridCommonAbstractTest
         testAndOperator(allArgs4, new String[] {"ORG", ORG + 2, ORG + 8, ORG + String.valueOf(ORG_COUNT - 1)}, 1, 1);
         testAndOperator(allArgs4, new String[] {ORG + 1, ORG + 3, ORG + String.valueOf(ORG_COUNT - 1), "ORG"}, 2, 2);
         testAndOperator(allArgs4, new String[] {ORG + 0, "MID", ORG + String.valueOf(ORG_COUNT - 1), "ORG"}, 0, 0);
+
+        testAndOperator(
+            Arrays.asList("?", ORG + 2, ORG + String.valueOf(ORG_COUNT - 1), "?"),
+            new String[] {ORG + 1, "ORG"},
+            2,
+            2
+        );
 
         testAndOperator(
             Arrays.asList("?", ORG + 9, ORG + String.valueOf(ORG_COUNT - 1), "?"),
@@ -157,6 +164,13 @@ public class AndOperationExtractPartitionSelfTest extends GridCommonAbstractTest
         testBothSidesParameterized(allArgs4, new String[] {"ORG", ORG + 2, ORG + 8, ORG + String.valueOf(ORG_COUNT - 1), ORG + 1}, 1, 1);
         testBothSidesParameterized(allArgs4, new String[] {ORG + 1, ORG + 3, ORG + String.valueOf(ORG_COUNT - 1), "ORG", ORG + 1}, 2, 2);
         testBothSidesParameterized(allArgs4, new String[] {ORG + 0, "MID", ORG + String.valueOf(ORG_COUNT - 1), "ORG", ORG + 1}, 0, 0);
+
+        testAndOperator(
+            Arrays.asList("?", ORG + 10, ORG + String.valueOf(ORG_COUNT - 1), "?"),
+            new String[] {ORG + 1, ORG + 2},
+            2,
+            2
+        );
 
         testBothSidesParameterized(
             Arrays.asList("?", ORG + 9, ORG + String.valueOf(ORG_COUNT - 1), "?"),
