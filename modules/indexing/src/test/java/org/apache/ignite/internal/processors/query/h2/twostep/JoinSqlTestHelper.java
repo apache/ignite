@@ -25,7 +25,10 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
  */
 public class JoinSqlTestHelper {
     /** */
-    private static final int ORG_COUNT = 100;
+    static final String ORG = "org";
+
+    /** */
+    static final int ORG_COUNT = 100;
 
     /** */
     private static final int PERSON_PER_ORG_COUNT = 10;
@@ -43,7 +46,7 @@ public class JoinSqlTestHelper {
         for (int i = 0; i < ORG_COUNT; i++) {
             Organization org = new Organization();
 
-            org.setId("org" + i);
+            org.setId(ORG + i);
 
             org.setName("Organization #" + i);
 
@@ -61,7 +64,7 @@ public class JoinSqlTestHelper {
         for (int i = 0; i < ORG_COUNT; i++) {
             Organization org = new Organization();
 
-            org.setId("org" + i);
+            org.setId(ORG + i);
 
             org.setName("Organization #" + i);
 
