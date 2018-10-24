@@ -1145,7 +1145,12 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
         int cnt = pageSize - firstOff;
         int off = page.limit() - cnt;
 
-        moveBytes(pageAddr, off, cnt, freeSpace, pageSize);
+        assert off > PageIO.COMMON_HEADER_END;
+        assert cnt >= 0: cnt;
+
+        if (cnt != 0)
+            moveBytes(pageAddr, off, cnt, freeSpace, pageSize);
+
         page.limit(pageSize);
     }
 

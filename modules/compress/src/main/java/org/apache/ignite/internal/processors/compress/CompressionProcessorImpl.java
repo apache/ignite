@@ -9,6 +9,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.Compactab
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 
 import static org.apache.ignite.configuration.PageCompression.DROP_GARBAGE;
+import static org.apache.ignite.internal.util.GridUnsafe.NATIVE_BYTE_ORDER;
 
 /**
  * Compression processor.
@@ -18,7 +19,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
     /** */
     private final ThreadLocal<ByteBuffer> tmp = new ThreadLocal<ByteBuffer>() {
         @Override protected ByteBuffer initialValue() {
-            return ByteBuffer.allocateDirect(32 * 1024);
+            return allocateDirectBuffer(32 * 1024);
         }
 
         @Override public ByteBuffer get() {
@@ -33,6 +34,14 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      */
     public CompressionProcessorImpl(GridKernalContext ctx) {
         super(ctx);
+    }
+
+    /**
+     * @param cap Capacity.
+     * @return Direct byte buffer.
+     */
+    static ByteBuffer allocateDirectBuffer(int cap) {
+        return ByteBuffer.allocateDirect(cap).order(NATIVE_BYTE_ORDER);
     }
 
     /** {@inheritDoc} */
@@ -74,10 +83,10 @@ public class CompressionProcessorImpl extends CompressionProcessor {
             PageIO.setCompressedSize(compact, (short)compactedSize);
 
             // Can not return thread local buffer, because the actual write may be async.
-            return (ByteBuffer)ByteBuffer.allocateDirect(compactedSize).put(compact).flip();
+            return (ByteBuffer)allocateDirectBuffer(compactedSize).put(compact).flip();
         }
 
-        ByteBuffer compressed = ByteBuffer.allocateDirect((int)(PageIO.COMMON_HEADER_END +
+        ByteBuffer compressed = allocateDirectBuffer((int)(PageIO.COMMON_HEADER_END +
             Zstd.compressBound(compactedSize - PageIO.COMMON_HEADER_END)));
 
         compressed.put((ByteBuffer)compact.limit(PageIO.COMMON_HEADER_END));
@@ -113,7 +122,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
     /** {@inheritDoc} */
     @Override public void decompressPage(ByteBuffer page) throws IgniteCheckedException {
         final int pos = page.position();
-        final int pageSize = page.remaining();
+        final int pageSize = page.capacity();
 
         byte compressType = PageIO.getCompressionType(page);
         short compressSize = PageIO.getCompressedSize(page);
@@ -121,6 +130,9 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         switch (compressType) {
             case UNCOMPRESSED_PAGE:
                 return;
+
+            case COMPACTED_PAGE:
+                break;
 
             case ZSTD_COMPRESSED_PAGE:
                 assert page.isDirect();

@@ -386,7 +386,7 @@ public abstract class PageIO {
      * @param compressType Compression type.
      */
     public static void setCompressionType(ByteBuffer page, byte compressType) {
-        page.put(page.position() + COMPRESSION_TYPE_OFF, compressType);
+        page.put(COMPRESSION_TYPE_OFF, compressType);
     }
 
     /**
@@ -394,7 +394,7 @@ public abstract class PageIO {
      * @return Compression type.
      */
     public static byte getCompressionType(ByteBuffer page) {
-        return page.get(page.position() + COMPRESSION_TYPE_OFF);
+        return page.get(COMPRESSION_TYPE_OFF);
     }
 
     /**
@@ -402,7 +402,7 @@ public abstract class PageIO {
      * @param compressedSize Compressed size.
      */
     public static void setCompressedSize(ByteBuffer page, short compressedSize) {
-        page.putShort(page.position() + COMPRESSED_SIZE_OFF, compressedSize);
+        page.putShort(COMPRESSED_SIZE_OFF, compressedSize);
     }
 
     /**
@@ -410,7 +410,7 @@ public abstract class PageIO {
      * @return Compressed size.
      */
     public static short getCompressedSize(ByteBuffer page) {
-        return page.getShort(page.position() + COMPRESSED_SIZE_OFF);
+        return page.getShort(COMPRESSED_SIZE_OFF);
     }
 
     /**
