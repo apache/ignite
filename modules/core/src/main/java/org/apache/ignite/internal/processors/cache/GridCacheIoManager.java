@@ -329,17 +329,15 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                                     return true;
                             }
                         }
-
                     }
 
-//                    if (log.isDebugEnabled()) {
+                    if (log.isDebugEnabled()) {
                         StringBuilder msg0 = new StringBuilder("Skip waiting for topology future on message [");
 
                         appendMessageInfo(cacheMsg, nodeId, msg0).append(']');
 
-//                        log.debug(msg0.toString());
-                        log.info(msg0.toString());
-//                    }
+                        log.debug(msg0.toString());
+                    }
 
                     return false;
                 }
