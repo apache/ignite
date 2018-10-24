@@ -147,6 +147,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testWalTxSimple() throws Exception {
+        fail("enableCheckpoints(false) can't be used on production environment");
+
         Ignite ignite = startGrid();
 
         ignite.cluster().active(true);
@@ -222,6 +224,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testWalRecoveryRemoves() throws Exception {
+        fail("enableCheckpoints(false) can't be used on production environment");
+
         Ignite ignite = startGrid();
 
         ignite.cluster().active(true);
@@ -474,6 +478,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testWalAfterPreloading() throws Exception {
+        fail("enableCheckpoints(false) can't be used on production environment");
+
         Ignite ignite = startGrid();
 
         ignite.cluster().active(true);
@@ -516,6 +522,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRecoveryRandomPutRemove() throws Exception {
+        fail("enableCheckpoints(false) can't be used on production environment");
+
         try {
             pageSize = 1024;
 
@@ -573,6 +581,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRecoveryNoPageLost1() throws Exception {
+        fail("enableCheckpoints(false) can't be used on production environment");
+
         recoveryNoPageLost(false);
     }
 

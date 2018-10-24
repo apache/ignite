@@ -1295,6 +1295,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testAbsentDeadlock_Iterator_RollOver_Archivation() throws Exception {
+        fail("enableCheckpoints(false) can't be used on production environment");
+
         try {
             walSegments = 2;
 
@@ -1363,6 +1365,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testApplyDeltaRecords() throws Exception {
+        fail("enableCheckpoints(false) can't be used on production environment");
+
         try {
             IgniteEx ignite0 = (IgniteEx)startGrid("node0");
 
@@ -1576,6 +1580,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      * @throws Exception If any fail.
      */
     public void testTxRecordsConsistency() throws Exception {
+        fail("enableCheckpoints(false) can't be used on production environment");
+
         System.setProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS, "true");
 
         IgniteEx ignite = (IgniteEx) startGrids(3);

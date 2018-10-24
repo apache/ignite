@@ -99,6 +99,8 @@ public class IgnitePdsNoActualWalHistoryTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testWalBig() throws Exception {
+        fail("enableCheckpoints(false) can't be used on production environment");
+
         try {
             IgniteEx ignite = startGrid(1);
 
