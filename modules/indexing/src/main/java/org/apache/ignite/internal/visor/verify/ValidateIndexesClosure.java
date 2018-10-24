@@ -555,7 +555,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
         finally {
             part.release();
 
-            printProgressOfIndexValidatationIfNeeded();
+            printProgressOfIndexValidationIfNeeded();
         }
 
         PartitionKey partKey = new PartitionKey(grpCtx.groupId(), part.id(), grpCtx.cacheOrGroupName());
@@ -568,7 +568,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
     /**
      *
      */
-    private void printProgressOfIndexValidatationIfNeeded() {
+    private void printProgressOfIndexValidationIfNeeded() {
         printProgressIfNeeded("Current progress of ValidateIndexesClosure: processed " +
                 processedPartitions.get() + " of " + totalPartitions + " partitions, " +
                 processedIndexes.get() + " of " + totalIndexes + " SQL indexes");
@@ -701,7 +701,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
         processedIndexes.incrementAndGet();
 
-        printProgressOfIndexValidatationIfNeeded();
+        printProgressOfIndexValidationIfNeeded();
 
         return Collections.singletonMap(uniqueIdxName, idxValidationRes);
     }
