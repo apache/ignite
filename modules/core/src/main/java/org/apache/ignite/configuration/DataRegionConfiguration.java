@@ -135,6 +135,7 @@ public final class DataRegionConfiguration implements Serializable {
 
     /** */
     private PageCompression pageCompression;
+    private int pageCompressionLevel;
 
     /**
      * Gets data region name.
@@ -437,7 +438,7 @@ public final class DataRegionConfiguration implements Serializable {
     }
 
     /**
-     * Gets page compression configuration. Makes sense only with enabled persistence.
+     * Gets page compression algorithm. Makes sense only with enabled persistence.
      *
      * @return Page compression configuration.
      */
@@ -446,12 +447,30 @@ public final class DataRegionConfiguration implements Serializable {
     }
 
     /**
-     * Sets page compression configuration. Makes sense only with enabled persistence.
+     * Sets page compression algorithm. Makes sense only with enabled persistence.
      *
      * @param pageCompression Page compression configuration.
      */
     public void setPageCompression(PageCompression pageCompression) {
         this.pageCompression = pageCompression;
+    }
+
+    /**
+     * Gets {@link #setPageCompression(PageCompression) algorithm specific} page compression level.
+     *
+     * @return Page compression level.
+     */
+    public int getPageCompressionLevel() {
+        return pageCompressionLevel;
+    }
+
+    /**
+     * Sets {@link #setPageCompression(PageCompression) algorithm specific} page compression level.
+     *
+     * @param pageCompressionLevel Page compression level.
+     */
+    public void setPageCompressionLevel(int pageCompressionLevel) {
+        this.pageCompressionLevel = pageCompressionLevel;
     }
 
     /** {@inheritDoc} */

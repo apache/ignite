@@ -36,8 +36,13 @@ public class CompressionProcessorImpl extends CompressionProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public ByteBuffer compressPage(long pageId, ByteBuffer page, int fsBlockSize, PageCompression compression)
-        throws IgniteCheckedException {
+    @Override public ByteBuffer compressPage(
+        long pageId,
+        ByteBuffer page,
+        int fsBlockSize,
+        PageCompression compression,
+        int compressLevel
+    ) throws IgniteCheckedException {
         assert compression != null;
 
         PageIO io = PageIO.getPageIO(page);
@@ -77,7 +82,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
             Zstd.compressBound(compactedSize - PageIO.COMMON_HEADER_END)));
 
         compressed.put((ByteBuffer)compact.limit(PageIO.COMMON_HEADER_END));
-        Zstd.compress(compressed, (ByteBuffer)compact.limit(compactedSize), compression.getLevel());
+        Zstd.compress(compressed, (ByteBuffer)compact.limit(compactedSize), compressLevel);
 
         compressed.flip();
 
@@ -98,9 +103,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      */
     private static byte getCompressionType(PageCompression compression) {
         switch (compression) {
-            case ZSTD_DEFAULT:
-            case ZSTD_BETTER_COMPRESSION:
-            case ZSTD_BETTER_SPEED:
+            case ZSTD:
                 return ZSTD_COMPRESSED_PAGE;
 
             default:

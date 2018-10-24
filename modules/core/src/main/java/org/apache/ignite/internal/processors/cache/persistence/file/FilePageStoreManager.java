@@ -41,7 +41,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PageCompression;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -55,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
-import org.apache.ignite.internal.processors.cache.persistence.CacheCompressionManager;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
@@ -485,20 +483,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         try {
             int pageSize = pageBuf.remaining();
-            int compressedSize = pageSize;
-
-            CacheCompressionManager compressMgr = cctx.cacheContext(cacheId).compress();
-            PageCompression pageCompression = compressMgr.getPageCompression();
-
-            if (pageCompression != null) {
-                pageBuf = compressMgr.compressPage(pageId, pageBuf, store, pageCompression);
-                compressedSize = pageBuf.remaining();
-            }
+            pageBuf = cctx.cacheContext(cacheId).compress().compressPage(pageId, pageBuf, store);
+            int compressedSize = pageBuf.remaining();
 
             store.write(pageId, pageBuf, tag, calculateCrc);
 
             // TODO maybe add async punch mode
-            if (pageCompression != null && pageSize > compressedSize)
+            if (pageSize > compressedSize)
                 store.punchHole(pageId, compressedSize);
         }
         catch (StorageException e) {

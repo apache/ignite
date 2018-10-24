@@ -2,7 +2,6 @@ package org.apache.ignite.internal.processors.compress;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.PageCompression;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -25,13 +24,31 @@ public class CompressionProcessor extends GridProcessorAdapter {
         super(ctx);
     }
 
-    public ByteBuffer compressPage(long pageId, ByteBuffer page, int fsBlockSize, PageCompression compression)
-        throws IgniteCheckedException {
-        throw new IgniteException("Page compression failed: make sure that ignite-compression module is in classpath.");
+    /**
+     * @param pageId Page ID.
+     * @param page Page buffer.
+     * @param storeBlockSize Store block size.
+     * @param compression Compression algorithm.
+     * @param compressLevel Compression level.
+     * @return Possibly compressed buffer.
+     * @throws IgniteCheckedException If failed.
+     */
+    public ByteBuffer compressPage(
+        long pageId,
+        ByteBuffer page,
+        int storeBlockSize,
+        PageCompression compression,
+        int compressLevel
+    ) throws IgniteCheckedException {
+        throw new IgniteCheckedException("Page compression failed: make sure that ignite-compression module is in classpath.");
     }
 
+    /**
+     * @param page Possibly compressed page buffer.
+     * @throws IgniteCheckedException If failed.
+     */
     public void decompressPage(ByteBuffer page) throws IgniteCheckedException {
         if (PageIO.getCompressionType(page) != UNCOMPRESSED_PAGE)
-            throw new IgniteException("Page decompression failed: make sure that ignite-compression module is in classpath.");
+            throw new IgniteCheckedException("Page decompression failed: make sure that ignite-compression module is in classpath.");
     }
 }

@@ -2,35 +2,49 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.PageCompression;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
+import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 
 public class CacheCompressionManager extends GridCacheManagerAdapter {
-    /**
-     * @return Page compression for this cache.
-     */
-    public PageCompression getPageCompression() {
-        return cctx.dataRegion().config().getPageCompression();
+    /** */
+    private PageCompression pageCompression;
+
+    /** */
+    private int compressLevel;
+
+    /** */
+    private CompressionProcessor compressProc;
+
+    /** */
+    @Override protected void start0() throws IgniteCheckedException {
+        compressProc = cctx.kernalContext().compress();
+
+        DataRegionConfiguration cfg = cctx.dataRegion().config();
+
+        pageCompression = cfg.getPageCompression();
+        compressLevel = cfg.getPageCompressionLevel();
     }
 
     /**
      * @param pageId Page id.
      * @param page Page buffer.
      * @param store Page store.
-     * @param compression The compression to apply to the page.
      * @return Compressed or the same buffer.
      * @throws IgniteCheckedException If failed.
      */
-    public ByteBuffer compressPage(long pageId, ByteBuffer page, PageStore store, PageCompression compression) throws IgniteCheckedException {
-        assert compression != null;
+    public ByteBuffer compressPage(long pageId, ByteBuffer page, PageStore store) throws IgniteCheckedException {
+        if (pageCompression == null)
+            return page;
 
         int blockSize = store.getBlockSize();
 
         if (blockSize <= 0)
             throw new IgniteCheckedException("Failed to detect file system block size. Page compression is unsupported on this file system.");
 
-        return cctx.kernalContext().compress().compressPage(pageId, page, blockSize, compression);
+        return compressProc.compressPage(pageId, page, blockSize, pageCompression, compressLevel);
     }
 
     /**
@@ -38,6 +52,6 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void decompressPage(ByteBuffer page) throws IgniteCheckedException {
-        cctx.kernalContext().compress().decompressPage(page);
+        compressProc.decompressPage(page);
     }
 }
