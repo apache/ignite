@@ -73,7 +73,8 @@ export default class AuthService {
                             this.$root.$broadcast('user', user);
                             this.$state.go('default-state');
                             this.$root.gettingStarted.tryShow();
-                        }
+                        } else
+                            this.$root.$broadcast('userCreated');
                     });
             });
     }
