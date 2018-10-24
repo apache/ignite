@@ -77,6 +77,7 @@ import org.apache.ignite.internal.IgniteExecutorServiceTest;
 import org.apache.ignite.internal.IgniteExplicitImplicitDeploymentSelfTest;
 import org.apache.ignite.internal.IgniteRoundRobinErrorAfterClientReconnectTest;
 import org.apache.ignite.internal.TaskNodeRestartTest;
+import org.apache.ignite.internal.VisorManagementEventSelfTest;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManagerSelfTest;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointTaskSelfTest;
 import org.apache.ignite.internal.managers.communication.GridCommunicationManagerListenersSelfTest;
@@ -177,6 +178,8 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(IgniteComputeCustomExecutorSelfTest.class);
 
         suite.addTestSuite(IgniteComputeJobOneThreadTest.class);
+
+        suite.addTestSuite(VisorManagementEventSelfTest.class);
 
         return suite;
     }
