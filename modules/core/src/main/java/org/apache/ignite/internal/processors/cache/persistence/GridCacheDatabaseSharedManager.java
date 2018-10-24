@@ -849,14 +849,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             CheckpointStatus status = readCheckpointStatus();
 
+            log.info("Start from [ptr=" + status.endPtr + ']');
+
             // Memory should be recovered at startup.
             assert !status.needRestoreMemory() : status;
 
             if (!cpHistory.isInit())
                 cpHistory.initialize(retreiveHistory());
 
+            WALPointer walPtr = CheckpointStatus.NULL_PTR.equals(status.endPtr) ? null : status.endPtr;
+
             // Memory restored at startup, just resume logging from last seen WAL pointer.
-            cctx.wal().resumeLogging();
+            cctx.wal().resumeLogging(walPtr);
 
             metaStorage = new MetaStorage(
                 cctx,
@@ -920,8 +924,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             nodeStart(tailWalPtr);
-
-            cctx.wal().tailWalPointer(tailWalPtr);
 
             return tailWalPtr;
         }

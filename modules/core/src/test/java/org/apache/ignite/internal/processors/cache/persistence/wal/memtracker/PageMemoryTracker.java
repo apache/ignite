@@ -160,10 +160,10 @@ public class PageMemoryTracker implements IgnitePlugin {
                         return res;
                     }
 
-                    @Override public void resumeLogging() throws IgniteCheckedException {
-                        super.resumeLogging();
+                    @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
+                        super.resumeLogging(lastPtr);
 
-                        emptyPds = (tailWalPointer() == null);
+                        emptyPds = (lastPtr == null);
                     }
                 };
             }
@@ -177,10 +177,10 @@ public class PageMemoryTracker implements IgnitePlugin {
                         return res;
                     }
 
-                    @Override public void resumeLogging() throws IgniteCheckedException {
-                        super.resumeLogging();
+                    @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
+                        super.resumeLogging(lastPtr);
 
-                        emptyPds = (tailWalPointer() == null);
+                        emptyPds = (lastPtr == null);
                     }
                 };
             }

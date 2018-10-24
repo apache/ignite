@@ -572,14 +572,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                         .context();
 
                     if (nodeName.equals(ig2Name)) {
-                        GridCacheDatabaseSharedManager dbMgr =
-                            (GridCacheDatabaseSharedManager)sharedCtx.database();
-
-                        // Memory restored to the last pointer.
-                        assertNotNull(GridTestUtils.getFieldValue(sharedCtx.wal(),
-                            FileWriteAheadLogManager.class,
-                            "walTail"));
-
                         // Checkpoint history initialized on node start.
                         assertFalse(((GridCacheDatabaseSharedManager)sharedCtx.database())
                             .checkpointHistory().checkpoints().isEmpty());
