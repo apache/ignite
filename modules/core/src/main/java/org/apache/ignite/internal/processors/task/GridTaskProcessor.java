@@ -675,7 +675,10 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             top = nodes != null ? F.nodeIds(nodes) : null;
         }
 
-        UUID subjId = getThreadContext(TC_SUBJ_ID);
+        UUID subjId = (UUID)map.get(TC_SUBJ_ID);
+
+        if (subjId == null)
+            subjId = getThreadContext(TC_SUBJ_ID);
 
         if (subjId == null)
             subjId = ctx.localNodeId();
