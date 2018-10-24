@@ -536,7 +536,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             DataRegion region = dataRegionMap.get(regionName == null ? DFLT_DATA_REG_DEFAULT_NAME : regionName);
 
-            assert region != null : "Data region must be initialized [regionName=" + regionName + ']';
+            if (region == null)
+                continue;
 
             int partitions = grpDesc.config().getAffinity().partitions();
 
