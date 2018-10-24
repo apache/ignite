@@ -920,12 +920,7 @@ public abstract class GridAbstractTest extends TestCase {
     protected Ignite startGrid(String igniteInstanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
         throws Exception {
 
-        if(forceConsistentIdSet() && cfg.getConsistentId() == null) {
-            UUID uuid = UUID.nameUUIDFromBytes(igniteInstanceName.getBytes());
-            assertEquals(uuid, UUID.nameUUIDFromBytes(igniteInstanceName.getBytes()));
-            cfg.setConsistentId(uuid);
-        }
-
+        setConsistentId(cfg, igniteInstanceName);
         checkConfiguration(cfg);
 
         if (!isRemoteJvm(igniteInstanceName)) {
@@ -972,8 +967,13 @@ public abstract class GridAbstractTest extends TestCase {
             return startRemoteGrid(igniteInstanceName, null, ctx);
     }
 
-    protected boolean forceConsistentIdSet() {
-        return true;
+    protected void setConsistentId(IgniteConfiguration cfg, String igniteInstanceName) {
+
+        if(cfg.getConsistentId() == null) {
+            String seed = igniteInstanceName != null ? igniteInstanceName : getClass().getName();
+            UUID uuid = UUID.nameUUIDFromBytes(seed.getBytes());
+            cfg.setConsistentId(uuid);
+        }
     }
 
     /**
@@ -1097,12 +1097,7 @@ public abstract class GridAbstractTest extends TestCase {
         if (cfg == null)
             cfg = optimize(getConfiguration(igniteInstanceName));
 
-        if(forceConsistentIdSet() && cfg.getConsistentId() == null) {
-            UUID uuid = UUID.nameUUIDFromBytes(igniteInstanceName.getBytes());
-            assertEquals(uuid, UUID.nameUUIDFromBytes(igniteInstanceName.getBytes()));
-            cfg.setConsistentId(uuid);
-        }
-
+        setConsistentId(cfg, igniteInstanceName);
         checkConfiguration(cfg);
 
         if (locNode != null) {

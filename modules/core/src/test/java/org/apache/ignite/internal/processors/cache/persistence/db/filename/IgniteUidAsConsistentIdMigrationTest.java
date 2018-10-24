@@ -711,7 +711,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
             + " is expected to exist [" + path + "]", curFolder.exists() && curFolder.isDirectory());
     }
 
-    @Override protected boolean forceConsistentIdSet() {
-        return false;
+    @Override protected void setConsistentId(IgniteConfiguration cfg, String igniteInstanceName) {
+
     }
 }

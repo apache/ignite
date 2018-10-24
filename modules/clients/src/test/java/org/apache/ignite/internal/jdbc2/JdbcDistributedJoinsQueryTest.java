@@ -309,4 +309,7 @@ public class JdbcDistributedJoinsQueryTest extends GridCommonAbstractTest {
         }
     }
 
+    @Override protected void setConsistentId(IgniteConfiguration cfg, String igniteInstanceName) {
+
+    }
 }

@@ -243,4 +243,8 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
             cfg.setDataStorageConfiguration(memCfg);
         }
     }
+
+    @Override protected void setConsistentId(IgniteConfiguration cfg, String igniteInstanceName) {
+
+    }
 }

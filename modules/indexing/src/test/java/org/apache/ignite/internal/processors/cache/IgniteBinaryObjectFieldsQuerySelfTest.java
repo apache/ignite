@@ -297,4 +297,8 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
             return key.<Integer>field("id") <= maxId;
         }
     }
+
+    @Override protected void setConsistentId(IgniteConfiguration cfg, String igniteInstanceName) {
+
+    }
 }

@@ -152,4 +152,8 @@ public class IgniteCacheContinuousQueryNoUnsubscribeTest extends GridCommonAbstr
             return true;
         }
     }
+
+    @Override protected void setConsistentId(IgniteConfiguration cfg, String igniteInstanceName) {
+
+    }
 }

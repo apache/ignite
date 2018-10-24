@@ -377,4 +377,8 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
                 '}';
         }
     }
+
+    @Override protected void setConsistentId(IgniteConfiguration cfg, String igniteInstanceName) {
+
+    }
 }

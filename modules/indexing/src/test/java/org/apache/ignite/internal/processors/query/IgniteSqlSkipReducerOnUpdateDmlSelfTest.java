@@ -748,4 +748,8 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends GridCommonAbstractT
 
         return rate - 1;
     }
+
+    @Override protected void setConsistentId(IgniteConfiguration cfg, String igniteInstanceName) {
+
+    }
 }
