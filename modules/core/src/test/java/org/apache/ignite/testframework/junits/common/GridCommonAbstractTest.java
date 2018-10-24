@@ -687,9 +687,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                                 GridDhtLocalPartition loc = top.localPartition(p, readyVer, false);
 
+                                boolean equalPrimaryAffNodes = !exchMgr.rebalanceTopologyVersion()
+                                    .equals(AffinityTopologyVersion.NONE) &&
+                                    !realAffNodes.isEmpty() && !affNodes.get(0).equals(realAffNodes.get(0));
+
                                 if (affNodesCnt != ownerNodesCnt || !affNodes.containsAll(owners) ||
-                                    !realAffNodes.isEmpty() && !affNodes.get(0).equals(realAffNodes.get(0)) ||
-                                    (waitEvicts && loc != null && loc.state() != GridDhtPartitionState.OWNING)) {
+                                    (waitEvicts && loc != null && loc.state() != GridDhtPartitionState.OWNING) ||
+                                    equalPrimaryAffNodes) {
                                     if (i % 50 == 0)
                                         LT.warn(log(), "Waiting for topology map update [" +
                                             "igniteInstanceName=" + g.name() +
