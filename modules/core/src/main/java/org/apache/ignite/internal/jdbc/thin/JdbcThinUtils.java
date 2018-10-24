@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
+import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
@@ -26,6 +27,7 @@ import static java.sql.Types.BIGINT;
 import static java.sql.Types.BINARY;
 import static java.sql.Types.BOOLEAN;
 import static java.sql.Types.DATE;
+import static java.sql.Types.DECIMAL;
 import static java.sql.Types.DOUBLE;
 import static java.sql.Types.FLOAT;
 import static java.sql.Types.INTEGER;
@@ -72,6 +74,8 @@ public class JdbcThinUtils {
             return FLOAT;
         else if (Double.class.getName().equals(cls) || double.class.getName().equals(cls))
             return DOUBLE;
+        else if (BigDecimal.class.getName().equals(cls))
+            return DECIMAL;
         else if (String.class.getName().equals(cls))
             return VARCHAR;
         else if (byte[].class.getName().equals(cls))
@@ -108,6 +112,8 @@ public class JdbcThinUtils {
             return "FLOAT";
         else if (Double.class.getName().equals(cls) || double.class.getName().equals(cls))
             return "DOUBLE";
+        else if (BigDecimal.class.getName().equals(cls))
+            return "DECIMAL";
         else if (String.class.getName().equals(cls))
             return "VARCHAR";
         else if (byte[].class.getName().equals(cls))

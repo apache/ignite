@@ -25,6 +25,7 @@ import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
@@ -102,7 +103,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         startGridsMultiThreaded(3);
 
         Map<String, Integer> orgPrecision = new HashMap<>();
-        
+
         orgPrecision.put("name", 42);
 
         IgniteCache<String, Organization> orgCache = jcache(grid(0),
@@ -143,7 +144,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         personCache.put(new AffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
         personCache.put(new AffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
 
-        IgniteCache<Integer, Department> departmentCache = jcache(grid(0), 
+        IgniteCache<Integer, Department> departmentCache = jcache(grid(0),
             defaultCacheConfiguration().setIndexedTypes(Integer.class, Department.class), "dep");
 
         try (Connection conn = DriverManager.getConnection(URL)) {
@@ -635,6 +636,70 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(URL)) {
             assert conn.getMetaData().getDatabaseProductVersion().equals(IgniteVersionUtils.VER.toString());
             assert conn.getMetaData().getDriverVersion().equals(IgniteVersionUtils.VER.toString());
+        }
+    }
+
+    /**
+     * Verifies that Connection's metadata contains correct information about column of DECIMAL type.
+     *
+     * @throws SQLException on error.
+     */
+    public void testConnectionMetaDecimalType() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            try (PreparedStatement create =
+                     conn.prepareStatement("CREATE TABLE DECIMAL_TEST (ID DECIMAL PRIMARY KEY, VAL DECIMAL)")) {
+                create.executeUpdate();
+            }
+
+            // Both columns should be decimal:
+            try (ResultSet cols = conn.getMetaData()
+                .getColumns(null, null, "DECIMAL_TEST", null)) {
+                while (cols.next()) {
+                    String colName = cols.getString("COLUMN_NAME");
+
+                    assertEquals("Type name of the column \"" + colName + "\" is not correct.",
+                        "DECIMAL", cols.getString("TYPE_NAME"));
+
+                    assertEquals("Type code (data type) of the column \"" + colName + "\" is not correct",
+                        Types.DECIMAL, cols.getInt("DATA_TYPE"));
+                }
+            }
+        }
+    }
+
+    /**
+     * Verifies that ResultSet's metadata contains correct information about column of DECIMAL type.
+     *
+     * @throws SQLException on error.
+     */
+    public void testResultSetMetaDecimalType() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            final int colCnt = 2;
+
+            try (PreparedStatement create =
+                     conn.prepareStatement("CREATE TABLE DECIMAL_TEST (ID DECIMAL PRIMARY KEY, VAL DECIMAL)")) {
+                create.executeUpdate();
+            }
+
+            // Both columns should be decimal:
+            try (PreparedStatement sel = conn.prepareStatement("SELECT * FROM DECIMAL_TEST");
+                 ResultSet rs = sel.executeQuery()) {
+                ResultSetMetaData meta = rs.getMetaData();
+
+                for (int colNum = 1; colNum <= colCnt; colNum++) {
+                    String colName = meta.getColumnName(colNum);
+
+                    int typeCode = meta.getColumnType(colNum);
+
+                    String typeName = meta.getColumnTypeName(colNum);
+
+                    assertEquals("Type name of the column \"" + colName + "\" is not correct.",
+                        "DECIMAL", typeName);
+
+                    assertEquals("Type code (data type) of the column \"" + colName + "\" is not correct",
+                        Types.DECIMAL, typeCode);
+                }
+            }
         }
     }
 
