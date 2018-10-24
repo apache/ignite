@@ -1,14 +1,17 @@
 package org.apache.ignite.internal.processors.compress;
 
 import java.nio.ByteBuffer;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.PageCompression;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.SimpleDataPageIO;
 import org.apache.ignite.internal.util.GridIntList;
@@ -66,9 +69,22 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
 
         checkIo(io, page);
 
-        ByteBuffer buf = checkCompressDecompress(page);
-        checkIo(io, buf);
-        assertEquals(Collections.emptyList(), io.forAllItems(bufferAddress(buf), (link) -> link));
+        Function<ByteBuffer,List<Bytes>> getContents = (buf) -> {
+            try {
+                long addr = bufferAddress(buf);
+
+                return io.forAllItems(addr, (link) -> {
+                    DataPagePayload payload = io.readPayload(addr, PageIdUtils.itemId(link), pageSize);
+
+                    return new Bytes(payload.getBytes(addr));
+                });
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        };
+
+        checkCompressDecompress(page, getContents);
 
         GridIntList itemIds = new GridIntList();
 
@@ -81,21 +97,12 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
             itemIds.add(io.addRow(pageAddr, row, pageSize));
         }
 
-        List<Long> links = io.forAllItems(pageAddr, (link) -> link);
-
-        buf = checkCompressDecompress(page);
-        checkIo(io, buf);
-        assertEquals(links, io.forAllItems(bufferAddress(buf), (link) -> link));
+        checkCompressDecompress(page, getContents);
 
         for (int i = 0; i < itemIds.size(); i += 2)
             io.removeRow(pageAddr, itemIds.get(i), pageSize);
 
-        links = io.forAllItems(pageAddr, (link) -> link);
-        assertFalse(links.isEmpty());
-
-        buf = checkCompressDecompress(page);
-        checkIo(io, buf);
-        assertEquals(links, io.forAllItems(bufferAddress(buf), (link) -> link));
+        checkCompressDecompress(page, getContents);
     }
 
     private void checkIo(PageIO io, ByteBuffer page) throws IgniteCheckedException {
@@ -103,21 +110,23 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         assertSame(io, PageIO.getPageIO(page));
     }
 
-    private ByteBuffer checkCompressDecompress(ByteBuffer page) throws IgniteCheckedException {
+    private void checkCompressDecompress( ByteBuffer page, Function<ByteBuffer, ?> getPageContents) throws IgniteCheckedException {
         int pageSize = page.remaining();
         long pageId = PageIO.getPageId(page);
+        PageIO io = PageIO.getPageIO(page);
 
-        ByteBuffer compacted = p.compressPage(page, blockSize, compression, compressLevel);
-        int compactedSize = compacted.remaining();
+        ByteBuffer compressed = p.compressPage(page, blockSize, compression, compressLevel);
+        int compressedSize = compressed.remaining();
 
-        assertNotSame(page, compacted);
+        checkIo(io, compressed);
+        assertNotSame(page, compressed);
         assertEquals(0, page.position());
         assertEquals(pageSize, page.limit());
-        assertTrue(compactedSize < pageSize);
-        assertEquals(pageId, PageIO.getPageId(compacted));
+        assertTrue(compressedSize < pageSize);
+        assertEquals(pageId, PageIO.getPageId(compressed));
 
         ByteBuffer decompress = allocateDirectBuffer(pageSize);
-        decompress.put(compacted);
+        decompress.put(compressed);
         decompress.flip();
 
         p.decompressPage(decompress);
@@ -125,6 +134,36 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         assertEquals(0, decompress.position());
         assertEquals(pageSize, decompress.limit());
 
-        return decompress;
+        checkIo(io, decompress);
+
+        assertEquals(getPageContents.apply(page), getPageContents.apply(decompress));
+    }
+
+    private static class Bytes {
+        /** */
+        private final byte[] bytes;
+
+        /**
+         * @param bytes Bytes.
+         */
+        private Bytes(byte[] bytes) {
+            assert bytes != null;
+            this.bytes = bytes;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Bytes bytes1 = (Bytes)o;
+
+            return Arrays.equals(bytes, bytes1.bytes);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Arrays.hashCode(bytes);
+        }
     }
 }

@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
+import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  *
  */
@@ -60,5 +63,18 @@ public class DataPagePayload {
      */
     public long nextLink() {
         return nextLink;
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @return Payload bytes.
+     */
+    public byte[] getBytes(long pageAddr) {
+        return PageUtils.getBytes(pageAddr, off, payloadSize);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DataPagePayload.class, this);
     }
 }
