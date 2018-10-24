@@ -328,11 +328,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         txLogPageStoreInit(mgr);
     }
 
-    /** {@inheritDoc} */
-    @Override public void beforeResumeWalLogging(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
-        txLogPageStoreInit(mgr);
-    }
-
     /**
      * @param mgr Database shared manager.
      * @throws IgniteCheckedException If failed.
@@ -342,11 +337,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         ctx.cache().context().pageStore().initialize(TX_LOG_CACHE_ID, 1,
             TX_LOG_CACHE_NAME, mgr.dataRegion(TX_LOG_CACHE_NAME).memoryMetrics());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void afterMemoryRestore(IgniteCacheDatabaseSharedManager mgr) {
-        // No-op.
     }
 
     /** {@inheritDoc} */

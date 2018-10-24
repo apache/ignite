@@ -653,13 +653,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @throws IgniteCheckedException If fails.
-     */
-    public void onDoneRestoreBinaryMemory() throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /**
      * Creates file with current timestamp and specific "node-started.bin" suffix
      * and writes into memory recovery pointer.
      *
@@ -1234,6 +1227,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             dataRegionMap = null;
 
             if (shutdown && memProviderMap != null) {
+                for (DirectMemoryProvider provider : memProviderMap.values())
+                    provider.shutdown(!reuseMemory);
+
                 memProviderMap.clear();
 
                 memProviderMap = null;

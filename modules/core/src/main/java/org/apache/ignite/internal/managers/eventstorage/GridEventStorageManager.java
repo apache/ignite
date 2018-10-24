@@ -530,6 +530,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     public boolean isRecordable(int type) {
         assert type > 0 : "Invalid event type: " + type;
 
+        if (ctx.recoveryMode())
+            return false;
+
         return type < len ? recordableEvts[type] : isUserRecordable0(type);
     }
 

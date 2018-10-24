@@ -498,15 +498,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     .resolveFolders()
                     .getLockedFileLockHolder();
 
-            fileLockHolder = preLocked == null ?
-                        new FileLockHolder(storeMgr.workDir().getPath(), kernalCtx, log) : preLocked;
-
-            if (log.isDebugEnabled())
-                log.debug("Try to capture file lock [nodeId=" +
-                        cctx.localNodeId() + " path=" + fileLockHolder.lockPath() + "]");
-
-            if (!fileLockHolder.isLocked())
-                fileLockHolder.tryLock(lockWaitTime);
+            acquireFileLock(preLocked);
 
             cleanupTempCheckpointDirectory();
 
@@ -738,16 +730,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         snapshotMgr = cctx.snapshot();
 
+        super.onActivate(ctx);
+
         if (!cctx.kernalContext().clientNode()) {
             initDataBase();
 
             registrateMetricsMBean();
+
+            if (checkpointer == null)
+                checkpointer = new Checkpointer(cctx.igniteInstanceName(), "db-checkpoint-thread", log);
+
+            if (!cpHistory.isInit())
+                cpHistory.initialize(retreiveHistory());
+
+            startMetastorageForWrite();
         }
-
-        if (checkpointer == null)
-            checkpointer = new Checkpointer(cctx.igniteInstanceName(), "db-checkpoint-thread", log);
-
-        super.onActivate(ctx);
     }
 
     /** {@inheritDoc} */
@@ -847,7 +844,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public void onDoneRestoreBinaryMemory() throws IgniteCheckedException {
+    private void startMetastorageForWrite() throws IgniteCheckedException {
         assert !cctx.kernalContext().clientNode();
 
         long time = System.currentTimeMillis();
@@ -855,17 +852,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointReadLock();
 
         try {
-            if (!cpHistory.isInit())
-                cpHistory.initialize(retreiveHistory());
-
-//            cctx.wal().resumeLogging();
-
-            cctx.pageStore().initializeForMetastorage();
+            // Recreate metastorage to refresh page memory state after deactivation.
+            // TODO: Maybe metastorage and his page memory and data region provider can live outside of activate/deactivate cycle?
+            if (metaStorage == null)
+                metaStorage = createMetastorage();
 
             notifyMetastorageReadyForReadWrite();
-
-            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
-                lsnr.afterMemoryRestore(this);
         }
         catch (IgniteCheckedException e) {
             if (X.hasCause(e, StorageException.class, IOException.class))
@@ -876,8 +868,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         finally {
             checkpointReadUnlock();
 
-            U.log(log, "Finish memory restore performed in " + (System.currentTimeMillis() - time) + " ms.");
+            U.log(log, "Start metastorage and notify for write performed in " + (System.currentTimeMillis() - time) + " ms.");
         }
+    }
+
+    private MetaStorage createMetastorage() throws IgniteCheckedException {
+        cctx.pageStore().initializeForMetastorage();
+
+        final MetaStorage storage = new MetaStorage(
+                cctx,
+                dataRegionMap.get(METASTORE_DATA_REGION_NAME),
+                (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME),
+                false
+        );
+
+        storage.init(this);
+
+        return storage;
     }
 
     /**
@@ -885,7 +892,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @return Last seen WAL pointer during binary memory recovery.
      * @throws IgniteCheckedException If failed.
      */
-    protected WALPointer restoreBinaryMemory(Set<Integer> cacheGrps) throws IgniteCheckedException {
+    private WALPointer restoreBinaryMemory(Set<Integer> cacheGrps) throws IgniteCheckedException {
         assert !cctx.kernalContext().clientNode();
 
         long time = System.currentTimeMillis();
@@ -1038,6 +1045,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         super.onKernalStop0(cancel);
 
         unRegistrateMetricsMBean();
+
+        metaStorage = null;
     }
 
     /** {@inheritDoc} */
@@ -1046,15 +1055,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         onKernalStop0(cancel);
 
-        if (!cctx.kernalContext().clientNode()) {
-            if (fileLockHolder != null) {
-                if (log.isDebugEnabled())
-                    log.debug("Release file lock [nodeId=" +
-                            cctx.localNodeId() + " path=" + fileLockHolder.lockPath() + "]");
-
-                fileLockHolder.close();
-            }
-        }
+        releaseFileLock();
     }
 
     /** */
@@ -2061,50 +2062,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (restoredPtr != null)
                 U.log(log, "Binary memory state restored at node startup [restoredPtr=" + restoredPtr + ']');
 
+            cctx.wal().resumeLogging();
+
             for (DynamicCacheDescriptor desc : cacheDescriptors) {
-                cctx.cache().startCacheOnMemoryRecovery(desc);
+                cctx.cache().startCacheInRecoveryMode(desc);
 
                 restoredCacheDescriptors.put(desc.cacheId(), desc.schema());
             }
 
-            cctx.wal().resumeLogging();
+            assert metaStorage == null;
 
-            final MetaStorage storage = new MetaStorage(
-                cctx,
-                dataRegionMap.get(METASTORE_DATA_REGION_NAME),
-                (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME),
-                false
-            );
+            metaStorage = createMetastorage();
 
-            // Init metastore only after WAL logging resumed. Can't do it earlier because
-            // MetaStorage first initialization also touches WAL, look at #isWalDeltaRecordNeeded.
-            storage.init(this);
-
-            metaStorage = storage;
-
-            WALPointer tail = restoreState();
-
-            cctx.wal().tailWalPointer(restoredPtr);
-
-            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                if (grp.isLocal())
-                    continue;
-
-                for (GridDhtLocalPartition partition : grp.topology().localPartitions()) {
-                    log.warning(grp.cacheOrGroupName() + " " + partition.state() + " " + partition.updateCounter());
-                }
-            }
+            restoreState();
         }
         catch (IgniteCheckedException e) {
-            if (!cctx.kernalContext().clientNode()) {
-                if (fileLockHolder != null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Release file lock [nodeId=" +
-                            cctx.localNodeId() + " path=" + fileLockHolder.lockPath() + "]");
-
-                    fileLockHolder.close();
-                }
-            }
+            // Release file lock if recovery has failed.
+            releaseFileLock();
 
             throw e;
         }
@@ -2113,6 +2087,35 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             kctx.recoveryMode(false);
         }
+    }
+
+    private void acquireFileLock(FileLockHolder preLocked) throws IgniteCheckedException {
+        if (cctx.kernalContext().clientNode())
+            return;
+
+        fileLockHolder = preLocked == null ?
+                new FileLockHolder(storeMgr.workDir().getPath(), cctx.kernalContext(), log) : preLocked;
+
+        if (!fileLockHolder.isLocked()) {
+            if (log.isDebugEnabled())
+                log.debug("Try to capture file lock [nodeId=" +
+                        cctx.localNodeId() + " path=" + fileLockHolder.lockPath() + "]");
+
+            fileLockHolder.tryLock(lockWaitTime);
+        }
+    }
+
+    private void releaseFileLock() {
+        if (cctx.kernalContext().clientNode())
+            return;
+
+        assert fileLockHolder != null : "Releasing not acquired lock.";
+
+        if (log.isDebugEnabled())
+            log.debug("Release file lock [nodeId=" +
+                    cctx.localNodeId() + " path=" + fileLockHolder.lockPath() + "]");
+
+        fileLockHolder.close();
     }
 
     public QuerySchema getRestored(int cacheId) {
@@ -2269,8 +2272,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     long pageAddr = pageMem.writeLock(grpId, pageId, page);
 
                                     try {
-                                        log.warning("Applying -> " + r);
-
                                         r.applyDelta(pageMem, pageAddr);
                                     }
                                     finally {
@@ -2653,8 +2654,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                                     changed = updateState(part, stateId);
 
-                                    if (log.isInfoEnabled())
-                                        log.info("Restored partition state (from page memory) " +
+                                    if (log.isDebugEnabled())
+                                        log.debug("Restored partition state (from page memory) " +
                                             "[grp=" + grp.cacheOrGroupName() + ", p=" + i + ", state=" + part.state() +
                                             ", updCntr=" + part.initialUpdateCounter() + ", stateId=" + stateId + "]");
                                 }

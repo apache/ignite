@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -161,7 +162,8 @@ public class CacheGroupContext {
     /** */
     private volatile boolean globalWalEnabled;
 
-    private volatile boolean recoveryMode;
+    /** Flag indicates that cache group is under recovering and not attached to topology. */
+    private final AtomicBoolean recoveryMode;
 
     /**
      * @param ctx Context.
@@ -212,7 +214,7 @@ public class CacheGroupContext {
         this.globalWalEnabled = walEnabled;
         this.persistenceEnabled = persistenceEnabled;
         this.localWalEnabled = true;
-        this.recoveryMode = recoveryMode;
+        this.recoveryMode = new AtomicBoolean(recoveryMode);
 
         ioPlc = cacheType.ioPolicy();
 
@@ -718,10 +720,11 @@ public class CacheGroupContext {
      *
      */
     public void onKernalStop() {
-        aff.cancelFutures(new IgniteCheckedException("Failed to wait for topology update, node is stopping."));
+        if (!isRecoveryMode()) {
+            aff.cancelFutures(new IgniteCheckedException("Failed to wait for topology update, node is stopping."));
 
-        if (!recoveryMode)
             preldr.onKernalStop();
+        }
 
         offheapMgr.onKernalStop();
     }
@@ -750,32 +753,38 @@ public class CacheGroupContext {
 
         aff.cancelFutures(err);
 
-        if (!recoveryMode)
-            preldr.onKernalStop();
+        preldr.onKernalStop();
 
-        offheapMgr.stop();
+        if (!isRecoveryMode())
+            offheapMgr.stop();
 
-        if (!recoveryMode)
-            ctx.io().removeCacheGroupHandlers(grpId);
+        ctx.io().removeCacheGroupHandlers(grpId);
     }
 
+    /**
+     *
+     * @param startVer
+     * @throws IgniteCheckedException
+     */
     public void finishRecovery(AffinityTopologyVersion startVer) throws IgniteCheckedException {
-        recoveryMode = false;
+        if (recoveryMode.compareAndSet(true, false)) {
+            locStartVer = startVer;
 
-        locStartVer = startVer;
+            persistGlobalWalState(globalWalEnabled);
 
-        persistGlobalWalState(globalWalEnabled);
+            initializeIO();
 
-        attachPreloader();
-
-        ctx.affinity().onCacheGroupCreated(this);
+            ctx.affinity().onCacheGroupCreated(this);
+        }
     }
 
     public boolean isRecoveryMode() {
-        return recoveryMode;
+        return recoveryMode.get();
     }
 
-    private void attachPreloader() throws IgniteCheckedException {
+    private void initializeIO() throws IgniteCheckedException {
+        assert !recoveryMode.get() : "Couldn't initialize I/O handlers, recovery mode is on for group " + this;
+
         if (ccfg.getCacheMode() != LOCAL) {
             if (!ctx.kernalContext().clientNode()) {
                 ctx.io().addCacheGroupHandler(groupId(), GridDhtAffinityAssignmentRequest.class,
@@ -955,8 +964,8 @@ public class CacheGroupContext {
 
         offheapMgr.start(ctx, this);
 
-        if (!recoveryMode) {
-            attachPreloader();
+        if (!isRecoveryMode()) {
+            initializeIO();
 
             ctx.affinity().onCacheGroupCreated(this);
         }
@@ -1072,11 +1081,6 @@ public class CacheGroupContext {
      * WAL enabled flag.
      */
     public boolean walEnabled() {
-/*
-        if (recoveryMode)
-            return false;
-*/
-
         return localWalEnabled && globalWalEnabled;
     }
 

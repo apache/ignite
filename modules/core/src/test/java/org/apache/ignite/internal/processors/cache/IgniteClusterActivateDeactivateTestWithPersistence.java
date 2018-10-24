@@ -282,7 +282,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      *
      * @throws Exception If failed.
      */
-    public void _testDeactivateDuringEvictionAndRebalance() throws Exception {
+    public void testDeactivateDuringEvictionAndRebalance() throws Exception {
         IgniteEx srv = (IgniteEx) startGrids(3);
 
         srv.cluster().active(true);
