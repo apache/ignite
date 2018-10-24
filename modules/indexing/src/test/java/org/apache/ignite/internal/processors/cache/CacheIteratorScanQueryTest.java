@@ -136,8 +136,10 @@ public class CacheIteratorScanQueryTest extends GridCommonAbstractTest {
 
             assertEquals(100_000, res.size());
 
-            Collections.sort(res, (e1, e2) -> {
+            Collections.sort(res, new Comparator<Cache.Entry<Integer, Integer>>() {
+                @Override public int compare(Cache.Entry<Integer, Integer> e1, Cache.Entry<Integer, Integer> e2) {
                     return e1.getKey().compareTo(e2.getKey());
+                }
             });
 
             int exp = 0;
