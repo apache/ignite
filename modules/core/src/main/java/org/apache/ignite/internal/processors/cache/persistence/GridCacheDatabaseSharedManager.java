@@ -560,6 +560,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void cleanupCheckpointDirectory() throws IgniteCheckedException {
+        if (cpHistory != null)
+            cpHistory = new CheckpointHistory(cctx.kernalContext());
+
         try {
             try (DirectoryStream<Path> files = Files.newDirectoryStream(cpDir.toPath())) {
                 for (Path path : files)
@@ -1047,8 +1050,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
         super.stop0(cancel);
-
-        onKernalStop0(cancel);
 
         if (!cctx.kernalContext().clientNode()) {
             if (fileLockHolder != null) {
