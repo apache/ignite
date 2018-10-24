@@ -1,45 +1,62 @@
 package org.apache.ignite.internal.processors.compress;
 
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.PageCompression;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.SimpleDataPageIO;
 import org.apache.ignite.internal.util.GridIntList;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.configuration.PageCompression.DROP_GARBAGE;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorImpl.allocateDirectBuffer;
+import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 
 /**
  */
 public class CompressionProcessorTest extends GridCommonAbstractTest {
+    /** */
+    private int blockSize = 16;
+
+    /** */
+    private int pageSize = 4 * 1024;
+
+    /** */
+    private PageCompression compression = DROP_GARBAGE;
+
+    /** */
+    private int compressLevel = 0;
+
+    /** */
+    private CompressionProcessor p;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() {
+        p = new CompressionProcessorImpl(new GridTestKernalContext(log));
+    }
+
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testCompressionProcessor() throws IgniteCheckedException {
-        final Random rnd = ThreadLocalRandom.current();
-
-        final int blockSize = 1024;
-        final int pageSize = 4 * 1024;
+    public void testDataPage() throws IgniteCheckedException {
+        Random rnd = ThreadLocalRandom.current();
 
         final byte[][] rows = new byte[][]{
-            new byte[29],
-            new byte[57],
-            new byte[91]
+            new byte[17], new byte[37], new byte[71]
         };
 
-        for (byte[] row : rows)
-            rnd.nextBytes(row);
+        for (int i = 0; i < rows.length; i++)
+            rnd.nextBytes(rows[i]);
 
         ByteBuffer page = allocateDirectBuffer(pageSize);
-        long pageAddr = GridUnsafe.bufferAddress(page);
+        long pageAddr = bufferAddress(page);
 
         SimpleDataPageIO io = SimpleDataPageIO.VERSIONS.latest();
 
@@ -47,24 +64,50 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
 
         io.initNewPage(pageAddr, pageId, pageSize);
 
-        assertSame(io, PageIO.getPageIO(pageAddr));
-        assertSame(io, PageIO.getPageIO(page));
+        checkIo(io, page);
+
+        ByteBuffer buf = checkCompressDecompress(page);
+        checkIo(io, buf);
+        assertEquals(Collections.emptyList(), io.forAllItems(bufferAddress(buf), (link) -> link));
 
         GridIntList itemIds = new GridIntList();
 
-        while (io.getFreeSpace(pageAddr) > 100)
-            itemIds.add(io.addRow(pageAddr, rows[rnd.nextInt(rows.length)], pageSize));
+        for (;;) {
+            byte[] row = rows[rnd.nextInt(rows.length)];
+
+            if (io.getFreeSpace(pageAddr) < row.length)
+                break;
+
+            itemIds.add(io.addRow(pageAddr, row, pageSize));
+        }
+
+        List<Long> links = io.forAllItems(pageAddr, (link) -> link);
+
+        buf = checkCompressDecompress(page);
+        checkIo(io, buf);
+        assertEquals(links, io.forAllItems(bufferAddress(buf), (link) -> link));
 
         for (int i = 0; i < itemIds.size(); i += 2)
             io.removeRow(pageAddr, itemIds.get(i), pageSize);
 
-        List<Long> links = io.forAllItems(pageAddr, (link) -> link);
-
+        links = io.forAllItems(pageAddr, (link) -> link);
         assertFalse(links.isEmpty());
 
-        CompressionProcessorImpl p = new CompressionProcessorImpl(new GridTestKernalContext(log));
+        buf = checkCompressDecompress(page);
+        checkIo(io, buf);
+        assertEquals(links, io.forAllItems(bufferAddress(buf), (link) -> link));
+    }
 
-        ByteBuffer compacted = p.compressPage(page, blockSize, DROP_GARBAGE, 0);
+    private void checkIo(PageIO io, ByteBuffer page) throws IgniteCheckedException {
+        assertSame(io, PageIO.getPageIO(bufferAddress(page)));
+        assertSame(io, PageIO.getPageIO(page));
+    }
+
+    private ByteBuffer checkCompressDecompress(ByteBuffer page) throws IgniteCheckedException {
+        int pageSize = page.remaining();
+        long pageId = PageIO.getPageId(page);
+
+        ByteBuffer compacted = p.compressPage(page, blockSize, compression, compressLevel);
         int compactedSize = compacted.remaining();
 
         assertNotSame(page, compacted);
@@ -82,10 +125,6 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         assertEquals(0, decompress.position());
         assertEquals(pageSize, decompress.limit());
 
-        long pageAddrx = GridUnsafe.bufferAddress(decompress);
-
-        assertSame(io, PageIO.getPageIO(decompress));
-        assertSame(io, PageIO.getPageIO(pageAddrx));
-        assertEquals(links, io.forAllItems(pageAddrx, (link) -> link));
+        return decompress;
     }
 }

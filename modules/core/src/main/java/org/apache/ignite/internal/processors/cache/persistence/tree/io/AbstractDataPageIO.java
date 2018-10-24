@@ -1112,7 +1112,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
     @Override public void compactPage(ByteBuffer page, ByteBuffer out) {
         assert out.isDirect();
 
-        // TODO May we compactDataEntries in-place and then copy compacted data to out??
+        // TODO May we compactDataEntries in-place and then copy compacted data to out?
 
         int pageSize = page.remaining();
 
@@ -1122,13 +1122,21 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
 
         long pageAddr = GridUnsafe.bufferAddress(out);
 
-        int firstOff = compactDataEntries(pageAddr, getDirectCount(pageAddr), pageSize);
-        setFirstEntryOffset(pageAddr, firstOff, pageSize);
-
+        int directCnt = getDirectCount(pageAddr);
         int freeSpace = getRealFreeSpace(pageAddr);
 
-        // Move all the data entries from page end to the page header to close the gap.
-        moveBytes(pageAddr, firstOff, pageSize - firstOff, -freeSpace, pageSize);
+        if (directCnt != 0) {
+            int firstOff = getFirstEntryOffset(pageAddr);
+
+            if (firstOff - freeSpace != getHeaderSizeWithItems(pageAddr, directCnt)) {
+                firstOff = compactDataEntries(pageAddr, directCnt, pageSize);
+                setFirstEntryOffset(pageAddr, firstOff, pageSize);
+            }
+
+            // Move all the data entries from page end to the page header to close the gap.
+            moveBytes(pageAddr, firstOff, pageSize - firstOff, -freeSpace, pageSize);
+        }
+
         out.limit(pageSize - freeSpace); // Here we have only meaningful data of this page.
     }
 
@@ -1251,7 +1259,16 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
             entriesSize += entrySize;
         }
 
-        return pageSize - ITEMS_OFF - entriesSize - (directCnt + getIndirectCount(pageAddr)) * ITEM_SIZE;
+        return pageSize - entriesSize - getHeaderSizeWithItems(pageAddr, directCnt);
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param directCnt Direct items count.
+     * @return Size of the page header including all items.
+     */
+    private int getHeaderSizeWithItems(long pageAddr, int directCnt) {
+        return ITEMS_OFF + (directCnt + getIndirectCount(pageAddr)) * ITEM_SIZE;
     }
 
     /**
