@@ -36,15 +36,17 @@ public class SecurityContextResolverSecurityProcessorTestSuite extends TestSuite
     /**
      * @param ignoredTests Tests don't include in the execution. Providing null means nothing to exclude.
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite(@Nullable final Set<Class> ignoredTests) throws Exception {
+    public static TestSuite suite(@Nullable final Set<Class> ignoredTests) {
         TestSuite suite = new TestSuite("Initiator Node's Security Context Test Suite");
 
+        suite.addTest(new TestSuite(DistributedClosureTest.class));
         suite.addTest(new TestSuite(ComputeTaskTest.class));
         suite.addTest(new TestSuite(ExecuteServiceTaskTest.class));
         suite.addTest(new TestSuite(ScanQueryTest.class));
         suite.addTest(new TestSuite(EntryProcessorTest.class));
+        suite.addTest(new TestSuite(IgniteDataStreamerTest.class));
+        suite.addTest(new TestSuite(LoadCacheTest.class));
 
         return suite;
     }

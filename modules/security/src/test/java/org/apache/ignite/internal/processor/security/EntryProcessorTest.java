@@ -19,25 +19,20 @@ package org.apache.ignite.internal.processor.security;
 
 import java.util.Collections;
 import java.util.UUID;
-import java.util.function.Consumer;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.internal.IgniteEx;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
+import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
  * Security tests for EntityProcessor.
  */
 public class EntryProcessorTest extends AbstractContextResolverSecurityProcessorTest {
     /** */
-    public void testEntryProcessor() throws Exception {
+    public void testEntryProcessor() {
         successEntryProcessor(succsessClnt, succsessSrv);
         successEntryProcessor(succsessClnt, failSrv);
         successEntryProcessor(succsessSrv, failSrv);
@@ -53,10 +48,10 @@ public class EntryProcessorTest extends AbstractContextResolverSecurityProcessor
     private void successEntryProcessor(IgniteEx initiator, IgniteEx remote) {
         assert !remote.localNode().isClient();
 
-        successCall(new Invoke(initiator, remote));
-        successCall(new InvokeAll(initiator, remote));
-        successCall(new InvokeAsync(initiator, remote));
-        successCall(new InvokeAllAsync(initiator, remote));
+        new Invoke(initiator, remote).call();
+        new InvokeAll(initiator, remote).call();
+        new InvokeAsync(initiator, remote).call();
+        new InvokeAllAsync(initiator, remote).call();
     }
 
     /**
@@ -73,32 +68,19 @@ public class EntryProcessorTest extends AbstractContextResolverSecurityProcessor
     }
 
     /**
-     * @param c Consumer.
+     * @param c CustomInvoke.
      */
-    private void successCall(Consumer<Integer> c){
-        Integer val = values.getAndIncrement();
-
-        c.accept(val);
-
-        assertThat(succsessSrv.cache(CACHE_NAME).get(val), is(val));
-    }
-
-    /**
-     * @param c Consumer.
-     */
-    private void failCall(Consumer<Integer> c) {
+    private void failCall(CustomInvoke c) {
         try {
-            c.accept(0);
+            c.call();
         }
         catch (Throwable e) {
             assertCauseMessage(e);
         }
-
-        assertThat(succsessSrv.cache(CACHE_NAME).get(0), nullValue());
     }
 
     /** */
-    abstract class CommonConsumer implements Consumer<Integer> {
+    abstract class CustomInvoke {
         /** Initiator. */
         protected final IgniteEx initiator;
 
@@ -109,16 +91,21 @@ public class EntryProcessorTest extends AbstractContextResolverSecurityProcessor
          * @param initiator Initiator.
          * @param remote Remote.
          */
-        protected CommonConsumer(IgniteEx initiator, IgniteEx remote) {
+        protected CustomInvoke(IgniteEx initiator, IgniteEx remote) {
             this.initiator = initiator;
             this.remote = remote;
         }
+
+        /**
+         * Calling of invokeXXX method
+         */
+        abstract void call();
     }
 
     /**
      * Call invoke method.
      */
-    class Invoke extends CommonConsumer {
+    class Invoke extends CustomInvoke {
         /**
          * @param initiator Initiator.
          * @param remote Remote.
@@ -128,10 +115,10 @@ public class EntryProcessorTest extends AbstractContextResolverSecurityProcessor
         }
 
         /** {@inheritDoc} */
-        @Override public void accept(Integer key) {
+        @Override public void call() {
             initiator.<Integer, Integer>cache(SEC_CACHE_NAME).invoke(
                 primaryKey(remote),
-                new TestEntryProcessor(remote.localNode().id(), key)
+                new TestEntryProcessor(remote.localNode().id())
             );
         }
     }
@@ -139,7 +126,7 @@ public class EntryProcessorTest extends AbstractContextResolverSecurityProcessor
     /**
      * Call invokeAsync method.
      */
-    class InvokeAsync extends CommonConsumer {
+    class InvokeAsync extends CustomInvoke {
         /**
          * @param initiator Initiator.
          * @param remote Remote.
@@ -149,10 +136,10 @@ public class EntryProcessorTest extends AbstractContextResolverSecurityProcessor
         }
 
         /** {@inheritDoc} */
-        @Override public void accept(Integer key) {
+        @Override public void call() {
             initiator.<Integer, Integer>cache(SEC_CACHE_NAME).invokeAsync(
                 primaryKey(remote),
-                new TestEntryProcessor(remote.localNode().id(), key)
+                new TestEntryProcessor(remote.localNode().id())
             ).get();
         }
     }
@@ -160,7 +147,7 @@ public class EntryProcessorTest extends AbstractContextResolverSecurityProcessor
     /**
      * Call invokeAll method.
      */
-    class InvokeAll extends CommonConsumer {
+    class InvokeAll extends CustomInvoke {
         /**
          * @param initiator Initiator.
          * @param remote Remote.
@@ -170,10 +157,10 @@ public class EntryProcessorTest extends AbstractContextResolverSecurityProcessor
         }
 
         /** {@inheritDoc} */
-        @Override public void accept(Integer key) {
+        @Override public void call() {
             initiator.<Integer, Integer>cache(SEC_CACHE_NAME).invokeAll(
                 Collections.singleton(primaryKey(remote)),
-                new TestEntryProcessor(remote.localNode().id(), key)
+                new TestEntryProcessor(remote.localNode().id())
             ).values().stream().findFirst().ifPresent(EntryProcessorResult::get);
         }
     }
@@ -181,7 +168,7 @@ public class EntryProcessorTest extends AbstractContextResolverSecurityProcessor
     /**
      * Call invokeAllAsync method.
      */
-    class InvokeAllAsync extends CommonConsumer {
+    class InvokeAllAsync extends CustomInvoke {
         /**
          * @param initiator Initiator.
          * @param remote Remote.
@@ -191,32 +178,12 @@ public class EntryProcessorTest extends AbstractContextResolverSecurityProcessor
         }
 
         /** {@inheritDoc} */
-        @Override public void accept(Integer key) {
+        @Override public void call() {
             initiator.<Integer, Integer>cache(SEC_CACHE_NAME).invokeAllAsync(
                 Collections.singleton(primaryKey(remote)),
-                new TestEntryProcessor(remote.localNode().id(), key)
+                new TestEntryProcessor(remote.localNode().id())
             ).get().values().stream().findFirst().ifPresent(EntryProcessorResult::get);
         }
-    }
-
-    /**
-     * Getting the key that is contained on primary partition on passed node.
-     *
-     * @param ignite Node.
-     * @return Key.
-     */
-    private Integer primaryKey(IgniteEx ignite) {
-        Affinity<Integer> affinity = ignite.affinity(SEC_CACHE_NAME);
-
-        int i = 0;
-        do {
-            if (affinity.isPrimary(ignite.localNode(), ++i))
-                return i;
-
-        }
-        while (i <= 1_000);
-
-        throw new IllegalStateException(ignite.name() + " isn't primary node for any key.");
     }
 
     /**
@@ -226,16 +193,11 @@ public class EntryProcessorTest extends AbstractContextResolverSecurityProcessor
         /** Remote node id. */
         protected final UUID remoteId;
 
-        /** Key. */
-        private final Integer key;
-
         /**
          * @param remoteId Remote id.
-         * @param key Key.
          */
-        public TestEntryProcessor(UUID remoteId, Integer key) {
+        public TestEntryProcessor(UUID remoteId) {
             this.remoteId = remoteId;
-            this.key = key;
         }
 
         /** {@inheritDoc} */
@@ -244,7 +206,7 @@ public class EntryProcessorTest extends AbstractContextResolverSecurityProcessor
             IgniteEx loc = (IgniteEx)Ignition.localIgnite();
 
             if (remoteId.equals(loc.localNode().id()))
-                loc.cache(CACHE_NAME).put(key, key);
+                loc.context().security().authorize(CACHE_NAME, SecurityPermission.CACHE_PUT);
 
             return null;
         }

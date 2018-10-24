@@ -23,6 +23,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -128,16 +129,23 @@ public class AbstractContextResolverSecurityProcessorTest extends GridCommonAbst
                     )
             )
             .setAuthenticationEnabled(true)
-            .setCacheConfiguration(
-                new CacheConfiguration<>()
-                    .setName(CACHE_NAME)
-                    .setCacheMode(CacheMode.PARTITIONED)
-                    .setReadFromBackup(false),
-                new CacheConfiguration<>()
-                    .setName(SEC_CACHE_NAME)
-                    .setCacheMode(CacheMode.PARTITIONED)
-                    .setReadFromBackup(false)
-            );
+            .setCacheConfiguration(getCacheConfigurations());
+    }
+
+    /**
+     * Getting array of cache configurations.
+     */
+    protected CacheConfiguration[] getCacheConfigurations() {
+        return new CacheConfiguration[] {
+            new CacheConfiguration<>()
+                .setName(CACHE_NAME)
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setReadFromBackup(false),
+            new CacheConfiguration<>()
+                .setName(SEC_CACHE_NAME)
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setReadFromBackup(false)
+        };
     }
 
     /**
@@ -153,6 +161,26 @@ public class AbstractContextResolverSecurityProcessorTest extends GridCommonAbst
         }
 
         return (TestSecurityProcessor)ignite.context().security();
+    }
+
+    /**
+     * Getting the key that is contained on primary partition on passed node.
+     *
+     * @param ignite Node.
+     * @return Key.
+     */
+    protected Integer primaryKey(IgniteEx ignite) {
+        Affinity<Integer> affinity = ignite.affinity(SEC_CACHE_NAME);
+
+        int i = 0;
+        do {
+            if (affinity.isPrimary(ignite.localNode(), ++i))
+                return i;
+
+        }
+        while (i <= 1_000);
+
+        throw new IllegalStateException(ignite.name() + " isn't primary node for any key.");
     }
 
     /**
