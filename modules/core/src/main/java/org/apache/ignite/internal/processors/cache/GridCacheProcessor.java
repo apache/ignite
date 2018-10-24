@@ -2990,14 +2990,15 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
             StringBuilder errorMessage = new StringBuilder();
 
+            SecurityContext secCtx = null;
+
             for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : nodeData.caches().values()) {
                 try {
-                    byte[] secCtxBytes = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
+                    if(cacheInfo.cacheType() == CacheType.USER){
+                        if(secCtx == null)
+                            secCtx = securityContext(node);
 
-                    if (secCtxBytes != null) {
-                        SecurityContext secCtx = U.unmarshal(marsh, secCtxBytes, U.resolveClassLoader(ctx.config()));
-
-                        if (secCtx != null && cacheInfo.cacheType() == CacheType.USER)
+                        if(secCtx != null)
                             authorizeCacheCreate(cacheInfo.cacheData().config(), secCtx);
                     }
                 }
@@ -3035,6 +3036,17 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         }
 
         return null;
+    }
+
+    /**
+     * Getting node security context.
+     *
+     * @param node Node.
+     */
+    @Nullable private SecurityContext securityContext(ClusterNode node) throws IgniteCheckedException {
+        byte[] secCtxBytes = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
+
+        return secCtxBytes != null ? U.unmarshal(marsh, secCtxBytes, U.resolveClassLoader(ctx.config())) : null;
     }
 
     /**
