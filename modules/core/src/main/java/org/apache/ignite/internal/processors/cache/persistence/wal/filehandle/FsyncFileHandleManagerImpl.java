@@ -47,13 +47,13 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
     /** Persistence metrics tracker. */
     private final DataStorageMetricsImpl metrics;
 
-    /** */
+    /** Last WAL pointer. */
     private final ThreadLocal<WALPointer> lastWALPtr;
 
     /** */
     protected final RecordSerializer serializer;
-
-    private final Supplier<FileWriteHandle> currentHandle;
+    /** Current handle supplier. */
+    private final Supplier<FileWriteHandle> currentHandleSupplier;
 
     /** WAL segment size in bytes. . This is maximum value, actual segments may be shorter. */
     private final long maxWalSegmentSize;
@@ -61,7 +61,7 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
     /** Fsync delay. */
     private final long fsyncDelay;
 
-    /** Thread local byte buffer size, see {@link #tlb} */
+    /** Thread local byte buffer size. */
     private final int tlbSize;
 
     /**
@@ -85,36 +85,35 @@ public class FsyncFileHandleManagerImpl implements FileHandleManager {
         this.metrics = metrics;
         lastWALPtr = ptr;
         this.serializer = serializer;
-        currentHandle = handle;
+        currentHandleSupplier = handle;
         this.maxWalSegmentSize = maxWalSegmentSize;
         this.fsyncDelay = fsyncDelay;
         this.tlbSize = tlbSize;
     }
 
     /** {@inheritDoc} */
-    @Override public FileWriteHandle initHandle(SegmentIO fileIO, long position, boolean resume,
+    @Override public FileWriteHandle initHandle(SegmentIO fileIO, long position,
         RecordSerializer serializer) throws IOException {
-        return new FsyncFileWriteHandle(fileIO,
-            position,
-            maxWalSegmentSize,
-            serializer, mode, tlbSize, cctx, metrics, fsyncDelay);
+        return new FsyncFileWriteHandle(
+            cctx, fileIO, metrics, serializer, position,
+            mode, maxWalSegmentSize, tlbSize, fsyncDelay
+        );
     }
 
     /** {@inheritDoc} */
-    @Override public FileWriteHandle nextHandle(SegmentIO fileIO, long position, boolean resume,
+    @Override public FileWriteHandle nextHandle(SegmentIO fileIO,
         RecordSerializer serializer) throws IOException {
         return new FsyncFileWriteHandle(
-            fileIO,
-            position,
-            maxWalSegmentSize,
-            serializer, mode, tlbSize, cctx, metrics, fsyncDelay);
+            cctx, fileIO, metrics, serializer, 0,
+            mode, maxWalSegmentSize, tlbSize, fsyncDelay
+        );
     }
 
     /**
      * @return Current handle.
      */
     private FsyncFileWriteHandle currentHandle() {
-        return (FsyncFileWriteHandle)currentHandle.get();
+        return (FsyncFileWriteHandle)currentHandleSupplier.get();
     }
 
     /** {@inheritDoc} */

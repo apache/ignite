@@ -87,7 +87,6 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolde
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
-import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.filehandle.AbstractFileHandle;
 import org.apache.ignite.internal.processors.cache.persistence.wal.filehandle.FileHandleManagerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.filehandle.FileHandleManager;
@@ -143,12 +142,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  */
 @SuppressWarnings("IfMayBeConditional")
 public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter implements IgniteWriteAheadLogManager {
-
-
-
-
-
-
     /** */
     private static final FileDescriptor[] EMPTY_DESCRIPTORS = new FileDescriptor[0];
 
@@ -208,8 +201,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** Use mapped byte buffer. */
     private final boolean mmap = IgniteSystemProperties.getBoolean(IGNITE_WAL_MMAP, true);
-
-
 
     /**
      * Percentage of archive size for checkpoint trigger. Need for calculate max size of WAL after last checkpoint.
@@ -307,9 +298,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** */
     private final ThreadLocal<WALPointer> lastWALPtr = new ThreadLocal<>();
 
-    /** Current log segment handle */
+    /** Current log segment handle. */
     private volatile FileWriteHandle currHnd;
 
+    /** File handle manager. */
     private FileHandleManager fileHandleManager;
 
     /** */
@@ -371,7 +363,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         mode = dsCfg.getWalMode();
         flushFreq = dsCfg.getWalFlushFrequency();
         alwaysWriteFullPages = dsCfg.isAlwaysWriteFullPages();
-        ioFactory = new RandomAccessFileIOFactory();
+        ioFactory = mode == WALMode.FSYNC ? dsCfg.getFileIOFactory() : new RandomAccessFileIOFactory();
         segmentFileInputFactory = new SimpleSegmentFileInputFactory();
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
 
@@ -379,6 +371,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         evt = ctx.event();
         failureProcessor = ctx.failure();
+
         fileHandleManagerFactory = new FileHandleManagerFactory(dsCfg);
     }
 
@@ -1223,7 +1216,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     log.info("Resuming logging to WAL segment [file=" + curFile.getAbsolutePath() +
                         ", offset=" + off + ", ver=" + serVer + ']');
 
-                FileWriteHandle hnd = fileHandleManager.initHandle(fileIO, off + len, true, ser);
+                FileWriteHandle hnd = fileHandleManager.initHandle(fileIO, off + len, ser);
 
                 if (archiver0 != null)
                     segmentAware.curAbsWalIdx(absIdx);
@@ -1283,7 +1276,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         lsnr.apply(fileIO);
 
 
-                    hnd = fileHandleManager.nextHandle(fileIO, 0, false, serializer);
+                    hnd = fileHandleManager.nextHandle(fileIO, serializer);
 
                     if (interrupted)
                         Thread.currentThread().interrupt();
@@ -1305,8 +1298,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                         fileIO = null;
                     }
-
-
                 }
             }
 

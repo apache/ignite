@@ -56,7 +56,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.sleep;
  */
 public class FileHandleManagerImpl implements FileHandleManager {
     /** Dfault wal segment sync timeout. */
-    public static final long DFLT_WAL_SEGMENT_SYNC_TIMEOUT = 500L;
+    private static final long DFLT_WAL_SEGMENT_SYNC_TIMEOUT = 500L;
 
     /** WAL writer worker. */
     private WALWriter walWriter;
@@ -125,7 +125,6 @@ public class FileHandleManagerImpl implements FileHandleManager {
     @Override public FileWriteHandle initHandle(
         SegmentIO fileIO,
         long position,
-        boolean resume,
         RecordSerializer serializer
     ) throws IOException {
         SegmentedRingByteBuffer rbuf;
@@ -141,24 +140,14 @@ public class FileHandleManagerImpl implements FileHandleManager {
         rbuf.init(position);
 
         return new FileWriteHandleImpl(
-            fileIO,
-            mmap, position,
-            resume, rbuf,
-            serializer,
-            mode,
-            fsyncDelay,
-            metrics,
-            maxWalSegmentSize,
-            cctx,
-            walWriter
+            cctx, fileIO, rbuf, serializer, metrics, walWriter, position,
+            mode, mmap, true, fsyncDelay, maxWalSegmentSize
         );
     }
 
     /** {@inheritDoc} */
     @Override public FileWriteHandle nextHandle(
         SegmentIO fileIO,
-        long position,
-        boolean resume,
         RecordSerializer serializer
     ) throws IOException {
         SegmentedRingByteBuffer rbuf;
@@ -175,16 +164,8 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
         try {
             handle = new FileWriteHandleImpl(
-                fileIO,
-                mmap, position,
-                resume, rbuf,
-                serializer,
-                mode,
-                fsyncDelay,
-                metrics,
-                maxWalSegmentSize,
-                cctx,
-                walWriter
+                cctx, fileIO, rbuf, serializer, metrics, walWriter, 0,
+                mode, mmap, false, fsyncDelay, maxWalSegmentSize
             );
             return handle;
         }

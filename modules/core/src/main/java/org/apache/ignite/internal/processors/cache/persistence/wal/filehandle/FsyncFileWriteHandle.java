@@ -132,27 +132,21 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
     };
 
     /**
-     * @param fileIO I/O file interface to use.
-     * @param pos Position.
-     * @param maxSegmentSize Max segment size.
-     * @param serializer Serializer.
-     * @param mode WAL mode.
-     * @param size Thread local byte buffer size.
      * @param cctx Context.
+     * @param fileIO I/O file interface to use.
      * @param metrics Data storage metrics.
+     * @param serializer Serializer.
+     * @param pos Position.
+     * @param mode WAL mode.
+     * @param maxSegmentSize Max segment size.
+     * @param size Thread local byte buffer size.
      * @param fsyncDelay Fsync delay.
      * @throws IOException If failed.
      */
     FsyncFileWriteHandle(
-        SegmentIO fileIO,
-        long pos,
-        long maxSegmentSize,
-        RecordSerializer serializer,
-        WALMode mode,
-        int size,
-        GridCacheSharedContext cctx,
-        DataStorageMetricsImpl metrics,
-        long fsyncDelay) throws IOException {
+        GridCacheSharedContext cctx, SegmentIO fileIO,
+        DataStorageMetricsImpl metrics, RecordSerializer serializer, long pos,
+        WALMode mode, long maxSegmentSize, int size, long fsyncDelay) throws IOException {
         super(fileIO);
         this.mode = mode;
         tlbSize = size;

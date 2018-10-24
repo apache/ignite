@@ -29,35 +29,25 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.Re
  */
 public interface FileHandleManager {
     /**
-     * Initialize {@link FileWriteHandle}.
+     * Initialize {@link FileWriteHandle} for first time.
      *
      * @param fileIO FileIO.
      * @param position Init position.
-     * @param resume {@code true} if it is calling during resume of WAL.
      * @param serializer Serializer for file handle.
      * @return Created file handle.
      * @throws IOException if creation was not success.
      */
-    FileWriteHandle initHandle(SegmentIO fileIO,
-        long position,
-        boolean resume,
-        RecordSerializer serializer) throws IOException;
+    FileWriteHandle initHandle(SegmentIO fileIO, long position, RecordSerializer serializer) throws IOException;
 
     /**
      * Create next file handle.
      *
      * @param fileIO FileIO.
-     * @param position Init position.
-     * @param resume {@code true} if it is calling during resume of WAL.
      * @param serializer Serializer for file handle.
      * @return Created file handle.
      * @throws IOException if creation was not success.
      */
-    FileWriteHandle nextHandle(
-        SegmentIO fileIO,
-        long position,
-        boolean resume,
-        RecordSerializer serializer) throws IOException;
+    FileWriteHandle nextHandle(SegmentIO fileIO, RecordSerializer serializer) throws IOException;
 
     /**
      * Start manager.
@@ -68,7 +58,6 @@ public interface FileHandleManager {
      * On activate.
      */
     void onActivate();
-
 
     /**
      * Stop manager.

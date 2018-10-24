@@ -149,30 +149,23 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
     private final FileHandleManagerImpl.WALWriter walWriter;
 
     /**
-     * @param fileIO I/O file interface to use
-     * @param mmap Mmap.
-     * @param pos Initial position.
-     * @param resume Created on resume logging flag.
-     * @param serializer Serializer.
-     * @param mode WAL mode.
-     * @param fsyncDelay Fsync delay.
-     * @param metrics Data storage metrics.
-     * @param maxWalSegmentSize Max WAL segment size.
      * @param cctx Context.
+     * @param fileIO I/O file interface to use
+     * @param serializer Serializer.
+     * @param metrics Data storage metrics.
      * @param writer WAL writer.
+     * @param pos Initial position.
+     * @param mode WAL mode.
+     * @param mmap Mmap.
+     * @param resume Created on resume logging flag.
+     * @param fsyncDelay Fsync delay.
+     * @param maxWalSegmentSize Max WAL segment size.
      * @throws IOException If failed.
      */
     FileWriteHandleImpl(
-        SegmentIO fileIO,
-        boolean mmap, long pos,
-        boolean resume,
-        SegmentedRingByteBuffer rbuf,
-        RecordSerializer serializer,
-        WALMode mode, long fsyncDelay,
-        DataStorageMetricsImpl metrics,
-        long maxWalSegmentSize,
-        GridCacheSharedContext cctx,
-        FileHandleManagerImpl.WALWriter writer) throws IOException {
+        GridCacheSharedContext cctx, SegmentIO fileIO, SegmentedRingByteBuffer rbuf, RecordSerializer serializer,
+        DataStorageMetricsImpl metrics, FileHandleManagerImpl.WALWriter writer, long pos, WALMode mode, boolean mmap,
+        boolean resume, long fsyncDelay, long maxWalSegmentSize) throws IOException {
         super(fileIO);
         this.mmap = mmap;
         this.mode = mode;
