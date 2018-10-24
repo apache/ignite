@@ -25,7 +25,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import org.apache.ignite.internal.processors.compress.CompressionProcessor;
+import org.apache.ignite.internal.processors.compress.FileSystemUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -51,7 +51,7 @@ public class RandomAccessFileIO extends AbstractFileIO {
      */
     public RandomAccessFileIO(File file, OpenOption... modes) throws IOException {
         Path filePath = file.toPath();
-        fsBlockSize = CompressionProcessor.getFsBlockSize(filePath);
+        fsBlockSize = FileSystemUtils.getFileSystemBlockSize(filePath);
         ch = FileChannel.open(filePath, modes);
         fd = getNativeFileDescriptor(ch);
     }
@@ -72,7 +72,7 @@ public class RandomAccessFileIO extends AbstractFileIO {
 
     /** {@inheritDoc} */
     @Override public int punchHole(long position, int len) {
-        return (int)CompressionProcessor.punchHole(fd, position, len, fsBlockSize);
+        return (int)FileSystemUtils.punchHole(fd, position, len, fsBlockSize);
     }
 
     /** {@inheritDoc} */

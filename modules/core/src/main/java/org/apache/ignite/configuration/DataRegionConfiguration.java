@@ -133,6 +133,9 @@ public final class DataRegionConfiguration implements Serializable {
     /** Temporary buffer size for checkpoints in bytes. */
     private long checkpointPageBufSize;
 
+    /** */
+    private PageCompression pageCompression;
+
     /**
      * Gets data region name.
      *
@@ -431,6 +434,24 @@ public final class DataRegionConfiguration implements Serializable {
         this.checkpointPageBufSize = checkpointPageBufSize;
 
         return this;
+    }
+
+    /**
+     * Gets page compression configuration. Makes sense only with enabled persistence.
+     *
+     * @return Page compression configuration.
+     */
+    public PageCompression getPageCompression() {
+        return pageCompression;
+    }
+
+    /**
+     * Sets page compression configuration. Makes sense only with enabled persistence.
+     *
+     * @param pageCompression Page compression configuration.
+     */
+    public void setPageCompression(PageCompression pageCompression) {
+        this.pageCompression = pageCompression;
     }
 
     /** {@inheritDoc} */

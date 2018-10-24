@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.internal.processors.compress.CompressionProcessor;
+import org.apache.ignite.internal.processors.compress.FileSystemUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -109,7 +109,7 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
         this.tlbOnePageAligned = tlbOnePageAligned;
         this.managedAlignedBuffers = managedAlignedBuffers;
 
-        fsBlockSize = CompressionProcessor.getFsBlockSize(file.toPath());
+        fsBlockSize = FileSystemUtils.getFileSystemBlockSize(file.toPath());
 
         String pathname = file.getAbsolutePath();
 
@@ -186,7 +186,7 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
 
     /** {@inheritDoc} */
     @Override public int punchHole(long position, int len) {
-        return (int)CompressionProcessor.punchHole(fd, position, len, fsBlockSize);
+        return (int)FileSystemUtils.punchHole(fd, position, len, fsBlockSize);
     }
 
     /** {@inheritDoc} */

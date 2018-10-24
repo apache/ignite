@@ -3,11 +3,18 @@ package org.apache.ignite.internal.processors.compress;
 import com.github.luben.zstd.Zstd;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.PageCompression;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 
-public class CompressionPorcessorImpl extends CompressionProcessor {
+import static org.apache.ignite.configuration.PageCompression.DROP_GARBAGE;
+
+/**
+ * Compression processor.
+ */
+@SuppressWarnings("unused")
+public class CompressionProcessorImpl extends CompressionProcessor {
     /** */
     private final ThreadLocal<ByteBuffer> tmp = new ThreadLocal<ByteBuffer>() {
         @Override protected ByteBuffer initialValue() {
@@ -24,17 +31,15 @@ public class CompressionPorcessorImpl extends CompressionProcessor {
     /**
      * @param ctx Kernal context.
      */
-    public CompressionPorcessorImpl(GridKernalContext ctx) {
+    public CompressionProcessorImpl(GridKernalContext ctx) {
         super(ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isPageCompressionEnabled() {
-        return true;
-    }
+    @Override public ByteBuffer compressPage(long pageId, ByteBuffer page, int fsBlockSize, PageCompression compression)
+        throws IgniteCheckedException {
+        assert compression != null;
 
-    /** {@inheritDoc} */
-    @Override public ByteBuffer compressPage(long pageId, ByteBuffer page, int fsBlockSize) throws IgniteCheckedException {
         PageIO io = PageIO.getPageIO(page);
 
         if (!(io instanceof CompactablePageIO))
@@ -42,7 +47,7 @@ public class CompressionPorcessorImpl extends CompressionProcessor {
 
         int pageSize = page.remaining();
 
-        if (pageSize < fsBlockSize * 2 || pageSize % fsBlockSize != 0)
+        if (pageSize < fsBlockSize * 2 || pageSize % fsBlockSize != 0) // TODO check
             return page; // Makes no sense to compress the page, we will not free any disk space.
 
         ByteBuffer compact = tmp.get();
@@ -59,7 +64,7 @@ public class CompressionPorcessorImpl extends CompressionProcessor {
 
         int compactedSize = compact.limit();
 
-        if (compactedSize < fsBlockSize) {
+        if (compactedSize < fsBlockSize || compression == DROP_GARBAGE) {
             // No need to compress further.
             PageIO.setCompressionType(compact, COMPACTED_PAGE);
             PageIO.setCompressedSize(compact, (short)compactedSize);
@@ -72,25 +77,39 @@ public class CompressionPorcessorImpl extends CompressionProcessor {
             Zstd.compressBound(compactedSize - PageIO.COMMON_HEADER_END)));
 
         compressed.put((ByteBuffer)compact.limit(PageIO.COMMON_HEADER_END));
-        Zstd.compress(compressed, (ByteBuffer)compact.limit(compactedSize), 3);
+        Zstd.compress(compressed, (ByteBuffer)compact.limit(compactedSize), compression.getLevel());
 
         compressed.flip();
 
         int compressedSize = compressed.limit();
 
-        if (pageSize - compressedSize < fsBlockSize) // TODO assume page and block alignment??
+        if (pageSize - compressedSize < fsBlockSize)
             return page; // Were not able to release file blocks.
 
-        PageIO.setCompressionType(compressed, ZSTD_3_COMPRESSED_PAGE);
+        PageIO.setCompressionType(compressed, getCompressionType(compression));
         PageIO.setCompressedSize(compressed, (short)compressedSize);
 
         return compressed;
     }
 
+    /**
+     * @param compression Compression.
+     * @return Level.
+     */
+    private static byte getCompressionType(PageCompression compression) {
+        switch (compression) {
+            case ZSTD_DEFAULT:
+            case ZSTD_BETTER_COMPRESSION:
+            case ZSTD_BETTER_SPEED:
+                return ZSTD_COMPRESSED_PAGE;
+
+            default:
+                throw new IllegalStateException("Unexpected compression: " + compression);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void decompressPage(ByteBuffer page) throws IgniteCheckedException {
-        assert page.isDirect();
-
         final int pos = page.position();
         final int pageSize = page.remaining();
 
@@ -101,7 +120,9 @@ public class CompressionPorcessorImpl extends CompressionProcessor {
             case UNCOMPRESSED_PAGE:
                 return;
 
-            case ZSTD_3_COMPRESSED_PAGE:
+            case ZSTD_COMPRESSED_PAGE:
+                assert page.isDirect();
+
                 ByteBuffer dst = tmp.get();
 
                 Zstd.decompress(dst, (ByteBuffer)page
