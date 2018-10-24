@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -30,6 +32,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
@@ -41,6 +44,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -49,6 +54,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -79,9 +87,9 @@ public class TxRollbackAsyncOnePhaseTest extends GridCommonAbstractTest {
         cfg.setClientMode(client);
 
 //        if (persistenceEnabled())
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setWalMode(WALMode.LOG_ONLY).setPageSize(1024).
-            setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true).
-                setInitialSize(100 * MB).setMaxSize(100 * MB)));
+//        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setWalMode(WALMode.LOG_ONLY).setPageSize(1024).
+//            setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true).
+//                setInitialSize(100 * MB).setMaxSize(100 * MB)));
 
         if (!client) {
             CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
@@ -156,38 +164,62 @@ public class TxRollbackAsyncOnePhaseTest extends GridCommonAbstractTest {
             int key = 0;
 
             Ignite primary = primaryNode(key, DEFAULT_CACHE_NAME);
-            Ignite backup = backupNode(key, DEFAULT_CACHE_NAME);
+            IgniteEx backup = (IgniteEx)backupNode(key, DEFAULT_CACHE_NAME);
+
+            GridCacheSharedContext<Object, Object> backupCtx = backup.context().cache().context();
+
+            IgniteTxManager newTm = Mockito.spy(backupCtx.tm());
+
+            CountDownLatch l = new CountDownLatch(1);
+
+            Mockito.doAnswer(new Answer() {
+                @Override public Object answer(InvocationOnMock invocation) throws Throwable {
+                    l.await();
+
+                    IgniteInternalTx tx = (IgniteInternalTx)invocation.getArguments()[0];
+
+                    while (tx.remainingTime() >= 0)
+                        doSleep(10);
+
+                    // Call to prepare will trigger timeout exception.
+                    return invocation.callRealMethod();
+                }
+            }).when(newTm).prepareTx(Mockito.any(), Mockito.any());
+
+            backupCtx.setTxManager(newTm);
 
             TestRecordingCommunicationSpi clientSpi = TestRecordingCommunicationSpi.spi(client);
-            clientSpi.blockMessages(GridNearTxFinishRequest.class, primary.name());
+            clientSpi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message message) {
+                    if (message instanceof GridNearTxFinishRequest) {
+                        GridNearTxFinishRequest req = (GridNearTxFinishRequest)message;
 
-            GridTestUtils.runAsync(new Runnable() {
+                        return !req.commit();
+                    }
+
+                    return false;
+                }
+            });
+
+            IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
                 @Override public void run() {
+                    // Wait until client received timeout
                     try {
                         clientSpi.waitForBlocked();
                     }
                     catch (InterruptedException e) {
-                        e.printStackTrace();
+                        fail();
                     }
+
+                    // Notify mocked call to proceed.
+                    l.countDown();
 
                     doSleep(3000);
                     clientSpi.stopBlock();
                 }
             });
 
-            GridTestUtils.runAsync(new Runnable() {
-                @Override public void run() {
-                    try {
-                        clientSpi.waitForBlocked();
-                        LockSupport.park();
-                    }
-                    catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
-
-            try (Transaction tx = client.transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, 200, 1)) {
+            try (Transaction tx = client.transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, 500, 1)) {
                 client.cache(DEFAULT_CACHE_NAME).put(key, key);
 
                 tx.commit();
@@ -199,6 +231,8 @@ public class TxRollbackAsyncOnePhaseTest extends GridCommonAbstractTest {
             }
 
             doSleep(5000);
+
+            fut.get();
 
             checkFutures();
         }

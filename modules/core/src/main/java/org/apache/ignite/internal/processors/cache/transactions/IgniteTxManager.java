@@ -59,7 +59,6 @@ import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVe
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxFinishSync;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxRemoteAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
@@ -892,19 +891,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             throw new IgniteCheckedException("Transaction is marked for rollback: " + tx);
         }
 
-        if (tx.remainingTime() != 0 && tx instanceof GridDistributedTxRemoteAdapter) {
+        if (tx.remainingTime() == -1) {
             tx.setRollbackOnly();
-
-            U.sleep(1000);
 
             throw new IgniteTxTimeoutCheckedException("Transaction timed out: " + this);
         }
-
-//        if (tx.remainingTime() == -1) {
-//            tx.setRollbackOnly();
-//
-//            throw new IgniteTxTimeoutCheckedException("Transaction timed out: " + this);
-//        }
 
         if (tx.pessimistic() && tx.local())
             return; // Nothing else to do in pessimistic mode.

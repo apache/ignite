@@ -1149,5 +1149,4 @@ public class GridCacheSharedContext<K, V> {
     public void setTxManager(IgniteTxManager txMgr) {
         this.txMgr = txMgr;
     }
-
 }

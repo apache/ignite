@@ -31,10 +31,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.Latches;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -706,12 +704,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                 isEmpty = pendingLocks.isEmpty();
             }
 
-//            if (timeoutObj != null) {
-//                // Wait for timeout holding lock.
-//                U.awaitQuiet(Latches.b);
-//                U.awaitQuiet(Latches.b);
-//            }
-
             if (isEmpty)
                 map(entries());
 
@@ -1173,8 +1165,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         /** {@inheritDoc} */
         @SuppressWarnings({"ThrowableInstanceNeverThrown"})
         @Override public void onTimeout() {
-            //U.awaitQuiet(Latches.b);
-
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);
 
@@ -1190,8 +1180,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             boolean releaseLocks = !(inTx() && cctx.tm().deadlockDetectionEnabled());
 
             onComplete(false, false, releaseLocks);
-
-            //U.awaitQuiet(Latches.b);
         }
 
         /** {@inheritDoc} */
