@@ -121,15 +121,12 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
     private static int getStatementCacheSize(GridQueryProcessor qryProcessor) {
         IgniteH2Indexing h2Idx = GridTestUtils.getFieldValue(qryProcessor, GridQueryProcessor.class, "idx");
 
-        ConcurrentMap<Thread, ConcurrentMap<H2ConnectionWrapper, Boolean>> conns =
-            GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "conns");
+        ConcurrentMap<Thread, H2ConnectionWrapper> conns = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "conns");
 
         int cntr = 0;
 
-        for (ConcurrentMap<H2ConnectionWrapper, Boolean> connPerThread: conns.values()) {
-            for (H2ConnectionWrapper w : connPerThread.keySet())
-                cntr += w.statementCacheSize();
-        }
+        for (H2ConnectionWrapper w : conns.values())
+            cntr += w.statementCacheSize();
 
         return cntr;
     }
