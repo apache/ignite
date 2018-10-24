@@ -218,6 +218,7 @@ export default class IgniteListOfRegisteredUsersCtrl {
             reloadUsers({ startDate, endDate });
         }, 250);
 
+        $scope.$on('userCreated', filterDates);
         $scope.$watch(() => $ctrl.params.startDate, filterDates);
         $scope.$watch(() => $ctrl.params.endDate, filterDates);
     }
