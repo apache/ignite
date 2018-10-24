@@ -276,6 +276,20 @@ public class DataStorageConfiguration implements Serializable {
     private boolean walCompactionEnabled = DFLT_WAL_COMPACTION_ENABLED;
 
     /**
+     * ZIP level to WAL compaction.
+     *
+     * @see java.util.zip.ZipOutputStream#setLevel(int)
+     * @see java.util.zip.Deflater#BEST_SPEED
+     * @see java.util.zip.Deflater#BEST_COMPRESSION
+     */
+    private int walCompactionLevel = DFLT_WAL_COMPACTION_LEVEL;
+
+    /** Factory to provide I/O interface for data storage archive */
+    private CompressorFactory walCompactionFactory = DFLT_WAL_COMPACTION_FACTORY;
+
+    /** Timeout for checkpoint read lock acquisition. */
+    private Long checkpointReadLockTimeout;
+    /**
      * Initial size of a data region reserved for system cache.
      *
      * @return Size in bytes.

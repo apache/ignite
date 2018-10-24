@@ -526,7 +526,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             lockedSegmentFileInputFactory = new LockedSegmentFileInputFactory(
                 segmentAware,
                 segmentRouter,
-                ioFactory
+                ioFactory,
+                compressorFactory
             );
         }
     }
@@ -2198,7 +2199,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
 
             for (FileDescriptor desc : descs) {
-                if (desc.isCompressed())
+                if (desc.isCompressed(compressorFactory.filenameExtension()))
                     continue;
 
                 // Do not delete reserved or locked segment and any segment after it.

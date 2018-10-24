@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.io;
 
 import java.io.IOException;
+import org.apache.ignite.internal.processors.cache.persistence.CompressorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentRouter;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Implementation of factory to provide I/O interfaces for read primitives with files.
@@ -37,19 +39,24 @@ public class LockedSegmentFileInputFactory implements SegmentFileInputFactory {
     private final SegmentRouter segmentRouter;
     /** {@link FileIO} factory definition.*/
     private final FileIOFactory fileIOFactory;
+    /** Factory to provide I/O interfaces for read/write operations with archive. */
+    private final CompressorFactory compressorFactory;
 
     /**
      * @param segmentAware Holder of actual information of latest manipulation on WAL segments.
      * @param segmentRouter Manager of segment location.
      * @param fileIOFactory {@link FileIO} factory definition.
+     * @param compressorFactory Factory to provide I/O interfaces for read/write operations with archive.
      */
     public LockedSegmentFileInputFactory(
         SegmentAware segmentAware,
         SegmentRouter segmentRouter,
-        FileIOFactory fileIOFactory) {
+        FileIOFactory fileIOFactory,
+        @NotNull final CompressorFactory compressorFactory) {
         this.segmentAware = segmentAware;
         this.segmentRouter = segmentRouter;
         this.fileIOFactory = fileIOFactory;
+        this.compressorFactory = compressorFactory;
     }
 
     /** {@inheritDoc} */
@@ -61,7 +68,7 @@ public class LockedSegmentFileInputFactory implements SegmentFileInputFactory {
             id -> {
                 FileDescriptor segment = segmentRouter.findSegment(id);
 
-                return segment.toIO(fileIOFactory);
+                return segment.toIO(fileIOFactory, compressorFactory);
             }
         );
     }

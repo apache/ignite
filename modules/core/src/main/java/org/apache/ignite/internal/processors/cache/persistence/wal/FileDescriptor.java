@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.io.File;
 import java.io.IOException;
+import org.apache.ignite.internal.processors.cache.persistence.CompressorFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.CompressorFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.NotNull;
@@ -124,7 +124,7 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
 
     /** {@inheritDoc} */
     @Override public boolean isCompressed(String filenameExtension) {
-        return file.getName().endsWith('.'+filenameExtension);
+        return file.getName().endsWith('.' + filenameExtension);
     }
 
     /** {@inheritDoc} */
@@ -138,8 +138,9 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
     }
 
     /** {@inheritDoc} */
-    @Override public SegmentIO toIO(FileIOFactory fileIOFactory) throws IOException {
-        FileIO fileIO = isCompressed() ? new UnzipFileIO(file()) : fileIOFactory.create(file());
+    @Override public SegmentIO toIO(FileIOFactory fileIOFactory,
+        CompressorFactory compressorFactory) throws IOException {
+        FileIO fileIO = isCompressed(compressorFactory.filenameExtension()) ? new CompressorFileIO(compressorFactory, file) : fileIOFactory.create(file);
 
         return new SegmentIO(idx, fileIO);
     }

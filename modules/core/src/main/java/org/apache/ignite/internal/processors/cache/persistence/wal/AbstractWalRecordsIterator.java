@@ -29,7 +29,6 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CompressorFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.CompressorFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
@@ -383,7 +382,7 @@ public abstract class AbstractWalRecordsIterator
         SegmentIO fileIO = null;
 
         try {
-            fileIO = desc.isCompressed(compressorFactory.filenameExtension()) ? new CompressorFileIO(compressorFactory, desc.file()) : desc.toIO(ioFactory);
+            fileIO = desc.toIO(ioFactory, compressorFactory);
 
             SegmentHeader segmentHeader;
 
@@ -494,9 +493,10 @@ public abstract class AbstractWalRecordsIterator
          * Make fileIo by this description.
          *
          * @param fileIOFactory Factory for fileIo creation.
+         * @param compressorFactory Factory to provide I/O interfaces for read/write operations with archive.
          * @return One of implementation of {@link FileIO}.
          * @throws IOException if creation of fileIo was not success.
          */
-        SegmentIO toIO(FileIOFactory fileIOFactory) throws IOException;
+        SegmentIO toIO(FileIOFactory fileIOFactory, CompressorFactory compressorFactory) throws IOException;
     }
 }
