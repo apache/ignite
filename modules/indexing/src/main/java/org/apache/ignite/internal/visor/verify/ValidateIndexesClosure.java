@@ -579,13 +579,10 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
      */
     private void printProgressIfNeeded(String msg) {
         long curTs = U.currentTimeMillis();
-
         long lastTs = lastProgressPrintTs.get();
 
-        if (curTs - lastTs >= 60_000 && lastProgressPrintTs.compareAndSet(lastTs, curTs)) {
+        if (curTs - lastTs >= 60_000 && lastProgressPrintTs.compareAndSet(lastTs, curTs))
             log.warning(msg);
-        }
-
     }
 
     /**
