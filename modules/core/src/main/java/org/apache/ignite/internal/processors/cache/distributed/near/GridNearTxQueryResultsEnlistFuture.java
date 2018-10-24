@@ -148,7 +148,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
             if (next == null)
                 return;
 
-            boolean first = (nodeId != null);
+            boolean first = (nodeId == null) && !topLocked;
 
             // Need to unlock topology to avoid deadlock with binary descriptors registration.
             if(!topLocked && cctx.topology().holdsLock())

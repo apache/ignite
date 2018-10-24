@@ -748,9 +748,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             return;
         }
 
-        if(tx == null)
-            return;
-
         GridDhtTxQueryEnlistFuture fut = new GridDhtTxQueryEnlistFuture(
             nodeId,
             req.version(),
@@ -2048,6 +2045,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             return;
         }
 
+        if(tx == null)
+            return;
+
         GridDhtTxEnlistFuture fut = new GridDhtTxEnlistFuture(
             nodeId,
             req.version(),
@@ -2136,7 +2136,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         continue;
                     }
 
-                    if (needRemap(topVer, topFut.topologyVersion())) {
+                    if (needRemap(topVer, top.readyTopologyVersion())) {
                         GridNearTxEnlistResponse res = new GridNearTxEnlistResponse( ctx.cacheId(),
                             nearFutId,
                             nearMiniId,

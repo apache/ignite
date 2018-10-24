@@ -158,7 +158,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             if (next == null)
                 return;
 
-            boolean first = (nodeId != null);
+            boolean first = (nodeId == null) && !topLocked;
 
             // Need to unlock topology to avoid deadlock with binary descriptors registration.
             if(!topLocked && cctx.topology().holdsLock())
@@ -534,6 +534,15 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             else
                 sendNextBatches(nodeId);
         }
+        else if(res.remapVer() != null) {
+            assert !tx.hasRemoteLocks(); //TODO IGNITE-7164: can't remap. fail query.
+
+            tx.onRemap(res.remapVer());
+
+            resetIterator();
+
+            sendNextBatches(null);
+        }
     }
 
     /** {@inheritDoc} */
@@ -594,23 +603,16 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             return false;
         }
 
-        if(res.remapVer() != null) {
-            assert !tx.hasRemoteLocks(); //TODO IGNITE-7164: can't remap. fail query.
-
-            tx.onRemap(res.remapVer());
-
-            resetIterator();
-
-            return true;
-        }
+        if (res.remapVer() != null)
+            return false;
 
         assert res != null && res.result() != null;
 
-        if(res.result().success())
+        if (res.result().success())
             tx.hasRemoteLocks(true);
 
         if (res.result().invokeResult()) {
-            if(this.res == null)
+            if (this.res == null)
                 this.res = new GridCacheReturn(true, true);
 
             this.res.success(this.res.success() && err == null && res.result().success());
@@ -758,7 +760,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
         /** {@inheritDoc} */
         @Override public boolean hasNextX() throws IgniteCheckedException {
-            if(F.isEmpty(batches))
+            if (F.isEmpty(batches))
                 return parent.hasNextX();
 
             Iterator<Batch> it = batches.iterator();
@@ -771,16 +773,16 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
         /** {@inheritDoc} */
         @Override public Object nextX() throws IgniteCheckedException {
-            if(F.isEmpty(batches))
+            if (F.isEmpty(batches))
                 return parent.nextX();
 
             Batch batch = batches.get(0);
 
             assert !batch.rows.isEmpty();
 
-            Object res = batch.rows().remove(0);
+            Object res = batch.rows.remove(0);
 
-            if(batch.rows().isEmpty())
+            if (batch.rows.isEmpty())
                 batches.remove(0);
 
             return res;
