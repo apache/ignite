@@ -90,79 +90,81 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Binary Objects Test Suite");
 
-        suite.addTestSuite(BinarySimpleNameTestPropertySelfTest.class);
+//        suite.addTestSuite(BinarySimpleNameTestPropertySelfTest.class);
+//
+//        suite.addTestSuite(BinaryBasicIdMapperSelfTest.class);
+//        suite.addTestSuite(BinaryBasicNameMapperSelfTest.class);
+//
+//        suite.addTestSuite(BinaryTreeSelfTest.class);
+//        suite.addTestSuite(BinaryMarshallerSelfTest.class);
+//        suite.addTestSuite(BinaryObjectExceptionSelfTest.class);
+//
+//        suite.addTestSuite(BinarySerialiedFieldComparatorSelfTest.class);
+//        suite.addTestSuite(BinaryArrayIdentityResolverSelfTest.class);
+//
+//        suite.addTestSuite(BinaryConfigurationConsistencySelfTest.class);
+//        suite.addTestSuite(BinaryConfigurationCustomSerializerSelfTest.class);
+//        suite.addTestSuite(GridBinaryMarshallerCtxDisabledSelfTest.class);
+//        suite.addTestSuite(BinaryObjectBuilderDefaultMappersSelfTest.class);
+//        suite.addTestSuite(BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest.class);
+//        suite.addTestSuite(BinaryObjectBuilderAdditionalSelfTest.class);
+//        //suite.addTestSuite(BinaryFieldExtractionSelfTest.class);
+//        suite.addTestSuite(BinaryFieldsHeapSelfTest.class);
+//        suite.addTestSuite(BinaryFieldsOffheapSelfTest.class);
+//        suite.addTestSuite(BinaryFooterOffsetsHeapSelfTest.class);
+//        suite.addTestSuite(BinaryFooterOffsetsOffheapSelfTest.class);
+//        suite.addTestSuite(BinaryEnumsSelfTest.class);
+//        suite.addTestSuite(GridDefaultBinaryMappersBinaryMetaDataSelfTest.class);
+//        suite.addTestSuite(GridSimpleLowerCaseBinaryMappersBinaryMetaDataSelfTest.class);
+//        suite.addTestSuite(GridBinaryAffinityKeySelfTest.class);
+//        suite.addTestSuite(GridBinaryWildcardsSelfTest.class);
+//        suite.addTestSuite(BinaryObjectToStringSelfTest.class);
+//        suite.addTestSuite(BinaryObjectTypeCompatibilityTest.class);
+//
+//        // Tests for objects with non-compact footers.
+//        suite.addTestSuite(BinaryMarshallerNonCompactSelfTest.class);
+//        suite.addTestSuite(BinaryObjectBuilderNonCompactDefaultMappersSelfTest.class);
+//        suite.addTestSuite(BinaryObjectBuilderNonCompactSimpleNameLowerCaseMappersSelfTest.class);
+//        suite.addTestSuite(BinaryObjectBuilderAdditionalNonCompactSelfTest.class);
+//        suite.addTestSuite(BinaryFieldsHeapNonCompactSelfTest.class);
+//        suite.addTestSuite(BinaryFieldsOffheapNonCompactSelfTest.class);
+//        suite.addTestSuite(BinaryFooterOffsetsHeapNonCompactSelfTest.class);
+//        suite.addTestSuite(BinaryFooterOffsetsOffheapNonCompactSelfTest.class);
+//
+//        suite.addTestSuite(GridCacheBinaryObjectsLocalSelfTest.class);
+//        //suite.addTestSuite(GridCacheBinaryObjectsLocalOnheapSelfTest.class);
+//        suite.addTestSuite(GridCacheBinaryObjectsAtomicLocalSelfTest.class);
+//        suite.addTestSuite(GridCacheBinaryObjectsReplicatedSelfTest.class);
+//        suite.addTestSuite(GridCacheBinaryObjectsPartitionedSelfTest.class);
+//        suite.addTestSuite(GridCacheBinaryObjectsPartitionedNearDisabledSelfTest.class);
+//        //suite.addTestSuite(GridCacheBinaryObjectsPartitionedNearDisabledOnheapSelfTest.class);
+//        //suite.addTestSuite(GridCacheBinaryObjectsPartitionedOnheapSelfTest.class);
+//        suite.addTestSuite(GridCacheBinaryObjectsAtomicSelfTest.class);
+//        //suite.addTestSuite(GridCacheBinaryObjectsAtomicOnheapSelfTest.class);
+//        suite.addTestSuite(GridCacheBinaryObjectsAtomicNearDisabledSelfTest.class);
+//        //suite.addTestSuite(GridCacheBinaryObjectsAtomicNearDisabledOnheapSelfTest.class);
+//
+//        suite.addTestSuite(GridCacheBinaryStoreObjectsSelfTest.class);
+//        suite.addTestSuite(GridCacheBinaryStoreBinariesDefaultMappersSelfTest.class);
+//        suite.addTestSuite(GridCacheBinaryStoreBinariesSimpleNameMappersSelfTest.class);
+//
+//        suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataTest.class);
+//        suite.addTestSuite(GridCacheBinaryObjectMetadataExchangeMultinodeTest.class);
 
-        suite.addTestSuite(BinaryBasicIdMapperSelfTest.class);
-        suite.addTestSuite(BinaryBasicNameMapperSelfTest.class);
-
-        suite.addTestSuite(BinaryTreeSelfTest.class);
-        suite.addTestSuite(BinaryMarshallerSelfTest.class);
-        suite.addTestSuite(BinaryObjectExceptionSelfTest.class);
-
-        suite.addTestSuite(BinarySerialiedFieldComparatorSelfTest.class);
-        suite.addTestSuite(BinaryArrayIdentityResolverSelfTest.class);
-
-        suite.addTestSuite(BinaryConfigurationConsistencySelfTest.class);
-        suite.addTestSuite(BinaryConfigurationCustomSerializerSelfTest.class);
-        suite.addTestSuite(GridBinaryMarshallerCtxDisabledSelfTest.class);
-        suite.addTestSuite(BinaryObjectBuilderDefaultMappersSelfTest.class);
-        suite.addTestSuite(BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest.class);
-        suite.addTestSuite(BinaryObjectBuilderAdditionalSelfTest.class);
-        //suite.addTestSuite(BinaryFieldExtractionSelfTest.class);
-        suite.addTestSuite(BinaryFieldsHeapSelfTest.class);
-        suite.addTestSuite(BinaryFieldsOffheapSelfTest.class);
-        suite.addTestSuite(BinaryFooterOffsetsHeapSelfTest.class);
-        suite.addTestSuite(BinaryFooterOffsetsOffheapSelfTest.class);
-        suite.addTestSuite(BinaryEnumsSelfTest.class);
-        suite.addTestSuite(GridDefaultBinaryMappersBinaryMetaDataSelfTest.class);
-        suite.addTestSuite(GridSimpleLowerCaseBinaryMappersBinaryMetaDataSelfTest.class);
-        suite.addTestSuite(GridBinaryAffinityKeySelfTest.class);
-        suite.addTestSuite(GridBinaryWildcardsSelfTest.class);
-        suite.addTestSuite(BinaryObjectToStringSelfTest.class);
-        suite.addTestSuite(BinaryObjectTypeCompatibilityTest.class);
-
-        // Tests for objects with non-compact footers.
-        suite.addTestSuite(BinaryMarshallerNonCompactSelfTest.class);
-        suite.addTestSuite(BinaryObjectBuilderNonCompactDefaultMappersSelfTest.class);
-        suite.addTestSuite(BinaryObjectBuilderNonCompactSimpleNameLowerCaseMappersSelfTest.class);
-        suite.addTestSuite(BinaryObjectBuilderAdditionalNonCompactSelfTest.class);
-        suite.addTestSuite(BinaryFieldsHeapNonCompactSelfTest.class);
-        suite.addTestSuite(BinaryFieldsOffheapNonCompactSelfTest.class);
-        suite.addTestSuite(BinaryFooterOffsetsHeapNonCompactSelfTest.class);
-        suite.addTestSuite(BinaryFooterOffsetsOffheapNonCompactSelfTest.class);
-
-        suite.addTestSuite(GridCacheBinaryObjectsLocalSelfTest.class);
-        //suite.addTestSuite(GridCacheBinaryObjectsLocalOnheapSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectsAtomicLocalSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectsReplicatedSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectsPartitionedSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectsPartitionedNearDisabledSelfTest.class);
-        //suite.addTestSuite(GridCacheBinaryObjectsPartitionedNearDisabledOnheapSelfTest.class);
-        //suite.addTestSuite(GridCacheBinaryObjectsPartitionedOnheapSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectsAtomicSelfTest.class);
-        //suite.addTestSuite(GridCacheBinaryObjectsAtomicOnheapSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectsAtomicNearDisabledSelfTest.class);
-        //suite.addTestSuite(GridCacheBinaryObjectsAtomicNearDisabledOnheapSelfTest.class);
-
-        suite.addTestSuite(GridCacheBinaryStoreObjectsSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryStoreBinariesDefaultMappersSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryStoreBinariesSimpleNameMappersSelfTest.class);
-
-        suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectMetadataExchangeMultinodeTest.class);
-        suite.addTestSuite(BinaryMetadataUpdatesFlowTest.class);
-        suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataMultinodeTest.class);
-        suite.addTestSuite(IgniteBinaryMetadataUpdateChangingTopologySelfTest.class);
-
-        suite.addTestSuite(BinaryTxCacheLocalEntriesSelfTest.class);
-        suite.addTestSuite(BinaryAtomicCacheLocalEntriesSelfTest.class);
-
-        // Byte order
-        suite.addTestSuite(BinaryHeapStreamByteOrderSelfTest.class);
-        suite.addTestSuite(BinaryAbstractOutputStreamTest.class);
-        suite.addTestSuite(BinaryOffheapStreamByteOrderSelfTest.class);
-
-        suite.addTestSuite(GridCacheBinaryObjectUserClassloaderSelfTest.class);
+        for (int i = 0; i < 400; i++)
+            suite.addTestSuite(BinaryMetadataUpdatesFlowTest.class);
+//        suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataMultinodeTest.class);
+//        suite.addTestSuite(IgniteBinaryMetadataUpdateChangingTopologySelfTest.class);
+//
+//        suite.addTestSuite(BinaryTxCacheLocalEntriesSelfTest.class);
+//        suite.addTestSuite(BinaryAtomicCacheLocalEntriesSelfTest.class);
+//
+//        // Byte order
+//        suite.addTestSuite(BinaryHeapStreamByteOrderSelfTest.class);
+//        suite.addTestSuite(BinaryAbstractOutputStreamTest.class);
+//        suite.addTestSuite(BinaryOffheapStreamByteOrderSelfTest.class);
+//
+//        suite.addTestSuite(GridCacheBinaryObjectUserClassloaderSelfTest.class);
 
         return suite;
     }

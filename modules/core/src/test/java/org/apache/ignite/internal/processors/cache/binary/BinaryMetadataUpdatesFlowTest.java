@@ -45,6 +45,7 @@ import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
@@ -58,6 +59,7 @@ import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  *
@@ -79,10 +81,10 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
     private volatile DiscoveryHook discoveryHook;
 
     /** */
-    private static final int UPDATES_COUNT = 5_000;
+    private static final int UPDATES_COUNT = 1_000;
 
     /** */
-    private static final int RESTART_DELAY = 1_000;
+    private static final int RESTART_DELAY = 500;
 
     /** */
     private static final int GRID_CNT = 5;
@@ -266,21 +268,51 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange(true, true, null);
 
-        Ignite ignite0 = G.allGrids().get(0);
+        Ignite ignite = G.allGrids().get(0);
 
-        IgniteCache<Object, Object> cache0 = ignite0.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache0 = ignite.cache(DEFAULT_CACHE_NAME);
 
         int cacheEntries = cache0.size(CachePeekMode.PRIMARY);
 
         assertTrue("Cache cannot contain more entries than were put in it;", cacheEntries <= UPDATES_COUNT);
 
-        assertEquals("There are less than expected entries, data loss occurred;", UPDATES_COUNT, cacheEntries);
+        Error err = null;
+        boolean finallySucceeded = false;
+
+        try {
+            assertEquals("There are less than expected entries, data loss occurred;", UPDATES_COUNT, cacheEntries);
+        } catch (Error err0) {
+            err = err0;
+
+            log.info("detected err ");
+
+            finallySucceeded = waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    return cache0.size(CachePeekMode.PRIMARY) == UPDATES_COUNT;
+                }
+            }, 30_000);
+        }
+
+        if (err != null) {
+            log.info("Finally succeeded = " + finallySucceeded);
+
+            if (!finallySucceeded) {
+                for (int i = 0; i < UPDATES_COUNT; i++) {
+                    if (!cache0.containsKey(i))
+                        log.info(">xxx> missed key: " + i);
+                }
+            }
+
+            throw err;
+        }
+
+
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testFlowNoConflictsWithClients() throws Exception {
+    public void tes1tFlowNoConflictsWithClients() throws Exception {
         startGridsMultiThreaded(GRID_CNT);
 
         if (!tcpDiscovery())
@@ -324,7 +356,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testConcurrentMetadataUpdates() throws Exception {
+    public void tes1tConcurrentMetadataUpdates() throws Exception {
         startGrid(0);
 
         final Ignite client = startGrid(getConfiguration("client").setClientMode(true));
@@ -511,10 +543,12 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
                 cache.put(desc.itemId, bo);
 
-                if (restartIdx.get() == idx)
+                if (restartIdx.get() == idx) {
+                    log.info("stop compute " + idx);
                     break;
-                else
-                    Thread.sleep(timeout);
+                }
+//                else
+//                    Thread.sleep(timeout);
             }
 
             restartIdx.set(-1);
