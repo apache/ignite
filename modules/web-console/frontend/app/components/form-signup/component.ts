@@ -15,15 +15,18 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-import component from './component';
-import {registerState} from './run';
+import template from './template.pug';
+import './style.scss';
+import {FormSignup} from './controller';
 
-export default angular
-    .module('ignite-console.page-signup', [
-        'ui.router',
-        'ignite-console.user',
-        'ignite-console.form-signup'
-    ])
-    .component('pageSignup', component)
-    .run(registerState);
+export const component: ng.IComponentOptions = {
+    template,
+    controller: FormSignup,
+    bindings: {
+        outerForm: '<',
+        serverError: '<'
+    },
+    require: {
+        ngModel: 'ngModel'
+    }
+};

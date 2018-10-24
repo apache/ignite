@@ -156,6 +156,7 @@ import pagePasswordReset from './components/page-password-reset';
 import pageSignup from './components/page-signup';
 import pageSignin from './components/page-signin';
 import pageForgotPassword from './components/page-forgot-password';
+import formSignup from './components/form-signup';
 
 import igniteServices from './services';
 
@@ -260,7 +261,8 @@ export default angular.module('ignite-console', [
     igniteChartSelector.name,
     statusOutput.name,
     progressLine.name,
-    formField.name
+    formField.name,
+    formSignup.name
 ])
 .service('$exceptionHandler', $exceptionHandler)
 // Directives.

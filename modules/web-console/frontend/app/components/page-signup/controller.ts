@@ -15,11 +15,14 @@
  * limitations under the License.
  */
 
+import Auth from '../../modules/user/Auth.service';
+import MessagesFactory from '../../services/Messages.service';
+import FormUtilsFactoryFactory from '../../services/FormUtils.service';
+import {ISignupData} from '../form-signup';
+
 export default class PageSignup {
-    /** @type {import('./types').ISignupFormController} */
-    form;
-    /** @type {import('./types').ISignupData} */
-    data = {
+    form: ng.IFormController;
+    data: ISignupData = {
         email: null,
         password: null,
         firstName: null,
@@ -27,37 +30,22 @@ export default class PageSignup {
         company: null,
         country: null
     };
-    /** @type {string} */
-    serverError = null;
+    serverError: string | null = null;
 
-    static $inject = ['IgniteCountries', 'Auth', 'IgniteMessages', 'IgniteFormUtils'];
+    static $inject = ['Auth', 'IgniteMessages', 'IgniteFormUtils'];
 
-    /**
-     * @param {ReturnType<typeof import('app/services/Countries.service').default>} Countries
-     * @param {import('app/modules/user/Auth.service').default} Auth
-     * @param {ReturnType<typeof import('app/services/Messages.service').default>} IgniteMessages
-     * @param {ReturnType<typeof import('app/services/FormUtils.service').default>} IgniteFormUtils
-     */
-    constructor(Countries, Auth, IgniteMessages, IgniteFormUtils) {
-        this.Auth = Auth;
-        this.IgniteMessages = IgniteMessages;
-        this.countries = Countries.getAll();
-        this.IgniteFormUtils = IgniteFormUtils;
-    }
+    constructor(
+        private Auth: Auth,
+        private IgniteMessages: ReturnType<typeof MessagesFactory>,
+        private IgniteFormUtils: ReturnType<typeof FormUtilsFactoryFactory>
+    ) {}
 
-    /** @param {import('./types').ISignupFormController} form */
-    canSubmitForm(form) {
+    canSubmitForm(form: PageSignup['form']) {
         return form.$error.server ? true : !form.$invalid;
     }
 
-    $postLink() {
-        this.form.email.$validators.server = () => !this.serverError;
-    }
-
-    /** @param {string} error */
-    setServerError(error) {
+    setServerError(error: PageSignup['serverError']) {
         this.serverError = error;
-        this.form.email.$validate();
     }
 
     signup() {
