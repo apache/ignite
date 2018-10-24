@@ -17,7 +17,6 @@
 
 package org.apache.ignite.util;
 
-import javax.cache.Cache;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -26,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
