@@ -19,8 +19,13 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -50,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSing
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
@@ -78,7 +84,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     private AffinityTopologyVersion topVer;
 
     /** Context. */
-    private final GridCacheContext cctx;
+    private final GridCacheContext<?, ?> cctx;
 
     /** Key. */
     private final KeyCacheObject key;
@@ -131,6 +137,9 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
     /** Post processing closure. */
     private volatile BackupPostProcessingClosure postProcessingClos;
+
+    /** Set of nodes that threw disconnected during current mapping grouped by topology version. */
+    private final Map<AffinityTopologyVersion, Set<UUID>> nodesThatLeftTop = new ConcurrentHashMap<>();
 
     /**
      * @param cctx Context.
@@ -217,20 +226,57 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     }
 
     /**
+     *
+     */
+    private Set<UUID> nodesThatLeft(AffinityTopologyVersion topVer) {
+        return nodesThatLeftTop.computeIfAbsent(topVer, version -> new GridConcurrentHashSet<>());
+    }
+
+    /**
+     * Map single get request on the given topology version. Fails immediately if no suitable nodes found.
+     * Remaps on new topology version if all suitable nodes left the grid and
+     * {@link GridPartitionedSingleGetFuture#canRemap} flag is set to {@code true}.<br>
+     * Node considered suitable if it has required partition on it
+     * (if {@link GridPartitionedSingleGetFuture#forcePrimary} is {@code false}) or if it's the partition's owner
+     * (if {@link GridPartitionedSingleGetFuture#forcePrimary} is {@code true}).
+     *
      * @param topVer Topology version.
      */
     @SuppressWarnings("unchecked")
-    private void map(final AffinityTopologyVersion topVer) {
+    private void map(AffinityTopologyVersion topVer) {
+        try {
+            boolean retry;
+
+            do {
+                retry = map0(topVer);
+            }
+            while (retry);
+        }
+        catch (ClusterTopologyServerNotFoundException e) {
+            if (canRemap)
+                remapOnNextTopologyVersion();
+            else
+                onDone(e);
+        }
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @return {@code true} if method should be called once more.
+     * @throws ClusterTopologyServerNotFoundException If no suitable server was found in current topology.
+     */
+    @SuppressWarnings("unchecked")
+    private boolean map0(AffinityTopologyVersion topVer) throws ClusterTopologyServerNotFoundException {
         ClusterNode node = mapKeyToNode(topVer);
 
         if (node == null) {
             assert isDone() : this;
 
-            return;
+            return false;
         }
 
         if (isDone())
-            return;
+            return false;
 
         if (node.isLocal()) {
             final GridDhtFuture<GridCacheEntryInfo> fut = cctx.dht().getDhtSingleAsync(node.id(),
@@ -320,50 +366,81 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             try {
                 cctx.io().send(node, req, cctx.ioPolicy());
             }
+            catch (ClusterTopologyCheckedException e) {
+                if (processResponse(node.id())) {
+                    nodesThatLeft(topVer).add(node.id());
+
+                    return true;
+                }
+            }
             catch (IgniteCheckedException e) {
-                if (e instanceof ClusterTopologyCheckedException)
-                    onNodeLeft(node.id());
-                else
-                    onDone(e);
+                onDone(e);
             }
         }
+
+        return false;
     }
 
     /**
      * @param topVer Topology version.
      * @return Primary node or {@code null} if future was completed.
+     * @throws ClusterTopologyServerNotFoundException All suitable servers left topology during this get request.
      */
-    @Nullable private ClusterNode mapKeyToNode(AffinityTopologyVersion topVer) {
+    @Nullable private ClusterNode mapKeyToNode(AffinityTopologyVersion topVer)
+        throws ClusterTopologyServerNotFoundException {
         int part = cctx.affinity().partition(key);
 
         List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
 
-        if (affNodes.isEmpty()) {
-            onDone(serverNotFoundError(topVer));
+        ClusterNode affNode = null;
 
-            return null;
-        }
+        if (!affNodes.isEmpty()) {
+            ClusterNode primaryNode = affNodes.get(0);
 
-        // Local get cannot be used with MVCC as local node can contain some visible version which is not latest.
-        boolean fastLocGet = !cctx.mvccEnabled() && (!forcePrimary || affNodes.get(0).isLocal()) &&
-            cctx.reserveForFastLocalGet(part, topVer);
+            boolean primaryNodeLeftTop = nodesThatLeft(topVer).contains(primaryNode.id())
+                || !cctx.discovery().alive(primaryNode);
 
-        if (fastLocGet) {
-            try {
-                if (localGet(topVer, part))
-                    return null;
+            // Local get cannot be used with MVCC as local node can contain some visible version which is not latest.
+            boolean fastLocGet = !cctx.mvccEnabled() &&
+                (!forcePrimary || primaryNode.isLocal()) &&
+                cctx.reserveForFastLocalGet(part, topVer);
+
+            if (fastLocGet) {
+                try {
+                    if (localGet(topVer, part))
+                        return null;
+                }
+                finally {
+                    cctx.releaseForFastLocalGet(part, topVer);
+                }
             }
-            finally {
-                cctx.releaseForFastLocalGet(part, topVer);
+
+            if (forcePrimary || !cctx.isReadFromBackup()) {
+                if (!primaryNodeLeftTop)
+                    affNode = primaryNode;
+            }
+            else {
+                Set<UUID> nodesThatLeft = nodesThatLeft(topVer);
+
+                affNodes = affNodes.stream().filter(n ->
+                    !nodesThatLeft.contains(n.id())
+                ).collect(Collectors.toList());
+
+                if (!affNodes.isEmpty()) {
+                    // First element of the list might not be a primary node in current situation.
+                    affNode = cctx.selectAffinityNodeBalanced(affNodes, canRemap);
+                }
             }
         }
-
-        ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, canRemap);
 
         if (affNode == null) {
-            onDone(serverNotFoundError(topVer));
+            if (nodesThatLeft(topVer).isEmpty()) {
+                onDone(serverNotFoundError(topVer));
 
-            return null;
+                return null;
+            }
+            else
+                throw serverNotFoundError(topVer);
         }
 
         return affNode;
@@ -736,26 +813,32 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         if (!processResponse(nodeId))
             return false;
 
-        if (canRemap) {
-            AffinityTopologyVersion updTopVer = new AffinityTopologyVersion(
-                Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
-
-            cctx.shared().exchange().affinityReadyFuture(updTopVer).listen(
-                new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                        try {
-                            remap(fut.get());
-                        }
-                        catch (IgniteCheckedException e) {
-                            onDone(e);
-                        }
-                    }
-                });
-        }
-        else
+        if (nodesThatLeft(topVer).add(nodeId))
             remap(topVer);
 
         return true;
+    }
+
+    /**
+     *
+     */
+    private void remapOnNextTopologyVersion() {
+        assert canRemap : "Method can't be called if canRemap flag is false";
+
+        AffinityTopologyVersion updTopVer = new AffinityTopologyVersion(
+            Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
+
+        cctx.shared().exchange().affinityReadyFuture(updTopVer).listen(
+            new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
+                    try {
+                        remap(fut.get());
+                    }
+                    catch (IgniteCheckedException e) {
+                        onDone(e);
+                    }
+                }
+            });
     }
 
     /**
