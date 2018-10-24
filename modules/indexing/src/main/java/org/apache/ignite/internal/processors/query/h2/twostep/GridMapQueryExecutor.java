@@ -778,11 +778,6 @@ public class GridMapQueryExecutor {
 
         boolean inTx = (tx != null);
 
-        MapQueryLazyWorker worker = MapQueryLazyWorker.currentWorker();
-
-        if (lazy && worker == null)
-            worker = createLazyWorker(node, reqId, segmentId);
-
         // Prepare to run queries.
         GridCacheContext<?, ?> mainCctx = mainCacheContext(cacheIds);
 
@@ -800,17 +795,13 @@ public class GridMapQueryExecutor {
                 String err = reservePartitions(cacheIds, topVer, parts, reserved, node.id(), reqId);
 
                 if (!F.isEmpty(err)) {
-                    // Unregister lazy worker because re-try may never reach this node again.
-                    if (lazy)
-                        worker.stop(false);
-
                     sendRetry(node, reqId, segmentId, err);
 
                     return;
                 }
             }
 
-            qryResults = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, worker, inTx);
+            qryResults = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, inTx);
 
             // Prepare query context.
             GridH2QueryContext qctx = new GridH2QueryContext(ctx.localNodeId(),
@@ -828,9 +819,6 @@ public class GridMapQueryExecutor {
 
             // qctx is set, we have to release reservations inside of it.
             reserved = null;
-
-            if (worker != null)
-                worker.queryContext(qctx);
 
             GridH2QueryContext.set(qctx);
 
@@ -971,32 +959,29 @@ public class GridMapQueryExecutor {
             }
 
             // All request results are in the memory in result set already, so it's ok to release partitions.
-            if (!lazy)
+            if (!lazy || qryResults.isAllClosed())
                 releaseReservations();
-            else if (!qryResults.isAllClosed()) {
+            else {
                 if (MapQueryLazyWorker.currentWorker() == null) {
                     final ObjectPoolReusable<H2ConnectionWrapper> detachedConn = h2.detachConnection();
 
-                    worker.start(H2Utils.session(conn), detachedConn);
+                    qryResults.lazyWorker().start(H2Utils.session(conn), detachedConn);
 
                     GridH2QueryContext.clearThreadLocal();
                 }
             }
-            else
-                unregisterLazyWorker(worker);
         }
         catch (Throwable e) {
             if (qryResults != null) {
                 nodeRess.remove(reqId, segmentId, qryResults);
 
+                if (qryResults.lazyWorker() != null)
+                    qryResults.lazyWorker().stop(false);
+
                 qryResults.close();
             }
             else
                 releaseReservations();
-
-            // Stop and unregister worker after possible cancellation.
-            if (lazy)
-                worker.stop(false);
 
             if (e instanceof QueryCancelledException)
                 sendError(node, reqId, e);
@@ -1319,6 +1304,16 @@ public class GridMapQueryExecutor {
 
                     qr.lazyWorker().stop(false);
                 }
+            }
+        }
+        else {
+            // Creates lazy worker if the result contains more than one page.
+            if (qr.lazyWorker() == null) {
+                MapQueryLazyWorker worker = createLazyWorker(node, qr.queryRequestId(), segmentId);
+
+                worker.queryContext(GridH2QueryContext.get());
+
+                qr.lazyWorker(worker);
             }
         }
 

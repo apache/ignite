@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
 import org.h2.engine.Session;
+import org.h2.table.Table;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
@@ -329,12 +330,10 @@ public class MapQueryLazyWorker extends GridWorker {
      * @param ses Session.
      */
     private static void lazyTransferStart(Session ses) {
-        GridH2QueryContext qctx = GridH2QueryContext.get();
-
-        assert qctx != null;
-
-        for(GridH2Table tbl : qctx.lockedTables())
-            tbl.onLazyTransferStarted(ses);
+        for (Table tbl : ses.getLocks()) {
+            if (tbl instanceof GridH2Table)
+                ((GridH2Table)tbl).onLazyTransferStarted(ses);
+        }
     }
 
     /**
@@ -343,11 +342,9 @@ public class MapQueryLazyWorker extends GridWorker {
      * @param ses Session.
      */
     private static void lazyTransferFinish(Session ses) {
-        GridH2QueryContext qctx = GridH2QueryContext.get();
-
-        assert qctx != null;
-
-        for(GridH2Table tbl : qctx.lockedTables())
-            tbl.onLazyTransferFinished(ses);
+        for (Table tbl : ses.getLocks()) {
+            if (tbl instanceof GridH2Table)
+                ((GridH2Table)tbl).onLazyTransferFinished(ses);
+        }
     }
 }

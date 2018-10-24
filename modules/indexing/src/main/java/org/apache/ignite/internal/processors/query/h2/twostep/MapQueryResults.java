@@ -46,7 +46,7 @@ class MapQueryResults {
     private final GridCacheContext<?, ?> cctx;
 
     /** Lazy worker. */
-    private final MapQueryLazyWorker lazyWorker;
+    private MapQueryLazyWorker lazyWorker;
 
     /** */
     private volatile boolean cancelled;
@@ -60,17 +60,15 @@ class MapQueryResults {
      * @param qryReqId Query request ID.
      * @param qrys Number of queries.
      * @param cctx Cache context.
-     * @param lazyWorker Lazy worker (if any).
      * @param forUpdate {@code SELECT FOR UPDATE} flag.
      */
     @SuppressWarnings("unchecked")
     MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable GridCacheContext<?, ?> cctx,
-        @Nullable MapQueryLazyWorker lazyWorker, boolean forUpdate) {
+        boolean forUpdate) {
         this.forUpdate = forUpdate;
         this.h2 = h2;
         this.qryReqId = qryReqId;
         this.cctx = cctx;
-        this.lazyWorker = lazyWorker;
 
         results = new AtomicReferenceArray<>(qrys);
         cancels = new GridQueryCancel[qrys];
@@ -95,6 +93,13 @@ class MapQueryResults {
      */
     GridQueryCancel queryCancel(int qryIdx) {
         return cancels[qryIdx];
+    }
+
+    /**
+     * @param lazyWorker Lazy worker.
+     */
+    void lazyWorker(MapQueryLazyWorker lazyWorker) {
+        this.lazyWorker = lazyWorker;
     }
 
     /**
