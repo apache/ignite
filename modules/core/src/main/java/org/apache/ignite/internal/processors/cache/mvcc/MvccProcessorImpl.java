@@ -1244,10 +1244,13 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                                                 && crd.coordinatorVersion() >= snapshot.coordinatorVersion();
 
                                             for (TxKey key : waitMap.keySet()) {
-                                                assert key.major() == snapshot.coordinatorVersion()
+                                                if (!( key.major() == snapshot.coordinatorVersion()
                                                     && key.minor() > snapshot.cleanupVersion()
-                                                    || key.major() > snapshot.coordinatorVersion() :
-                                                    "key=" + key + ", snapshot=" + snapshot;
+                                                    || key.major() > snapshot.coordinatorVersion())) {
+                                                    byte state = state(key.major(), key.minor());
+
+                                                    assert state == TxState.ABORTED : "tx state=" + state;
+                                                }
                                             }
                                         }
 
