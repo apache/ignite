@@ -112,6 +112,7 @@ import id8 from './filters/id8.filter';
 
 // Components
 import igniteListOfRegisteredUsers from './components/list-of-registered-users';
+import dialogAdminCreateUser from './components/dialog-admin-create-user';
 import IgniteActivitiesUserDialog from './components/activities-user-dialog';
 import './components/input-dialog';
 import webConsoleHeader from './components/web-console-header';
@@ -246,6 +247,7 @@ export default angular.module('ignite-console', [
     connectedClusters.name,
     connectedClustersDialog.name,
     igniteListOfRegisteredUsers.name,
+    dialogAdminCreateUser.name,
     pageProfile.name,
     pageLanding.name,
     pagePasswordChanged.name,

@@ -15,14 +15,9 @@
  * limitations under the License.
  */
 
-import UserNotificationsService from '../user-notifications/service';
+import component from './component';
+import {registerState} from './state';
 
-export default class PageAdminCtrl {
-    static $inject = ['UserNotifications'];
-
-    constructor(private UserNotifications: UserNotificationsService) {}
-
-    changeUserNotifications() {
-        this.UserNotifications.editor();
-    }
-}
+export default angular.module('ignite-console.dialog-admin-create-user', [])
+    .run(registerState)
+    .component('dialogAdminCreateUser', component);

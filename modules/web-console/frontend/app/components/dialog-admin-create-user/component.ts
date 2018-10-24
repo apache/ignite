@@ -15,14 +15,13 @@
  * limitations under the License.
  */
 
-import UserNotificationsService from '../user-notifications/service';
+import template from './template.pug';
+import {DialogAdminCreateUser} from './controller';
 
-export default class PageAdminCtrl {
-    static $inject = ['UserNotifications'];
-
-    constructor(private UserNotifications: UserNotificationsService) {}
-
-    changeUserNotifications() {
-        this.UserNotifications.editor();
+export default {
+    template,
+    controller: DialogAdminCreateUser,
+    bindings: {
+        close: '&onHide'
     }
-}
+};

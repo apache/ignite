@@ -15,14 +15,15 @@
  * limitations under the License.
  */
 
-import UserNotificationsService from '../user-notifications/service';
+import {UIRouter} from '@uirouter/angularjs';
+import {dialogState} from '../../utils/dialogState';
 
-export default class PageAdminCtrl {
-    static $inject = ['UserNotifications'];
+registerState.$inject = ['$uiRouter'];
 
-    constructor(private UserNotifications: UserNotificationsService) {}
-
-    changeUserNotifications() {
-        this.UserNotifications.editor();
-    }
+export function registerState(router: UIRouter) {
+    router.stateRegistry.register({
+        ...dialogState('dialog-admin-create-user'),
+        name: 'base.settings.admin.createUser',
+        url: '/create-user'
+    });
 }
