@@ -920,7 +920,11 @@ public abstract class GridAbstractTest extends TestCase {
     protected Ignite startGrid(String igniteInstanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
         throws Exception {
 
-        cfg.setConsistentId(igniteInstanceName);
+        if(forceConsistentIdSet() && cfg.getConsistentId() == null) {
+            UUID uuid = UUID.nameUUIDFromBytes(igniteInstanceName.getBytes());
+            assertEquals(uuid, UUID.nameUUIDFromBytes(igniteInstanceName.getBytes()));
+            cfg.setConsistentId(uuid);
+        }
 
         checkConfiguration(cfg);
 
@@ -966,6 +970,10 @@ public abstract class GridAbstractTest extends TestCase {
         }
         else
             return startRemoteGrid(igniteInstanceName, null, ctx);
+    }
+
+    protected boolean forceConsistentIdSet() {
+        return true;
     }
 
     /**
@@ -1088,6 +1096,12 @@ public abstract class GridAbstractTest extends TestCase {
 
         if (cfg == null)
             cfg = optimize(getConfiguration(igniteInstanceName));
+
+        if(forceConsistentIdSet() && cfg.getConsistentId() == null) {
+            UUID uuid = UUID.nameUUIDFromBytes(igniteInstanceName.getBytes());
+            assertEquals(uuid, UUID.nameUUIDFromBytes(igniteInstanceName.getBytes()));
+            cfg.setConsistentId(uuid);
+        }
 
         checkConfiguration(cfg);
 

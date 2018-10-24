@@ -358,8 +358,8 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     ) throws Exception {
         String workDir = U.defaultWorkDirectory();
 
-        Path fromFile = Paths.get(workDir, fromWorkDir, "binary_meta", "node00-" + fromConsId, fileName);
-        Path toFile = Paths.get(workDir, toWorkDir, "binary_meta", "node00-" + toConsId, fileName);
+        Path fromFile = Paths.get(workDir, fromWorkDir, "binary_meta", U.maskForFileName(fromConsId), fileName);
+        Path toFile = Paths.get(workDir, toWorkDir, "binary_meta", U.maskForFileName(toConsId), fileName);
 
         Files.copy(fromFile, toFile, StandardCopyOption.REPLACE_EXISTING);
     }
