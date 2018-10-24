@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import javax.cache.configuration.FactoryBuilder;
+import javax.cache.expiry.EternalExpiryPolicy;
+import javax.cache.expiry.ExpiryPolicy;
 import javax.management.MBeanServer;
 import java.util.ArrayList;
 import java.util.Collection;
