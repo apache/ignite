@@ -32,7 +32,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -116,9 +115,8 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
             else {
                 primary = assignment.primaryPartitionNodes();
 
-                for (ClusterNode pNode : primary) {
+                for (ClusterNode pNode : primary)
                     updateMappings(pNode);
-                }
             }
 
             boolean locallyMapped = primary.contains(cctx.localNode());
@@ -129,6 +127,10 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
             int idx = locallyMapped ? 1 : 0;
             boolean first = true;
             boolean clientFirst = false;
+
+            // Need to unlock topology to avoid deadlock with binary descriptors registration.
+            if(!topLocked && cctx.topology().holdsLock())
+                cctx.topology().readUnlock();
 
             for (ClusterNode node : F.view(primary, F.remoteNodes(cctx.localNodeId()))) {
                 add(mini = new MiniFuture(node));
@@ -360,8 +362,7 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
                 completed = true;
             }
 
-            if (X.hasCause(err, ClusterTopologyCheckedException.class)
-                || (res != null && res.removeMapping())) {
+            if (res != null && res.removeMapping()) {
                 GridDistributedTxMapping m = tx.mappings().get(node.id());
 
                 assert m != null && m.empty();
@@ -371,8 +372,12 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
                 if (node.isLocal())
                     tx.colocatedLocallyMapped(false);
             }
-            else if (res != null && res.result() > 0 && !node.isLocal())
-                tx.hasRemoteLocks(true);
+            else if (res != null) {
+                tx.mappings().get(node.id()).addBackups(res.newDhtNodes());
+
+                if (res.result() > 0 && !node.isLocal())
+                    tx.hasRemoteLocks(true);
+            }
 
             return err != null ? onDone(err) : onDone(res.result(), res.error());
         }
