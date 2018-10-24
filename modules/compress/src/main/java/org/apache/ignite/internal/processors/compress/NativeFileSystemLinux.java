@@ -119,6 +119,11 @@ public final class NativeFileSystemLinux implements NativeFileSystem {
     private final ConcurrentHashMap<Path, Integer> fsBlockSizeCache = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
+    @Override public boolean isSupported() {
+        return SUPPORTED;
+    }
+
+    /** {@inheritDoc} */
     @Override public int getFileBlockSize(Path path) {
         if (!SUPPORTED)
             throw new UnsupportedOperationException();

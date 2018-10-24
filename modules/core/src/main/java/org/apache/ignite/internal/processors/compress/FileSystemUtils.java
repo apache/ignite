@@ -5,6 +5,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+/**
+ * Native file system API.
+ */
 public final class FileSystemUtils {
     /** */
     private static final String NATIVE_FS_LINUX_CLASS =
@@ -30,12 +33,28 @@ public final class FileSystemUtils {
         }
     }
 
-    public static int getFileSystemBlockSize(Path file) {
-        assert file != null;
-
-        return fs == null ? -1 : fs.getFileBlockSize(file);
+    /**
+     * @return {@code true} If this API is supported.
+     */
+    public static boolean isSupported() {
+        return fs != null && fs.isSupported();
     }
 
+    /**
+     * @param path Path.
+     * @return File system block size.
+     */
+    public static int getFileSystemBlockSize(Path path) {
+        assert path != null;
+        return fs == null ? -1 : fs.getFileBlockSize(path);
+    }
+
+    /**
+     * @param fd Native file descriptor.
+     * @param off Offset of the hole.
+     * @param len Length of the hole.
+     * @param fsBlockSize File system block size.
+     */
     public static long punchHole(int fd, long off, long len, int fsBlockSize) {
         assert off >= 0;
         assert len > 0;
