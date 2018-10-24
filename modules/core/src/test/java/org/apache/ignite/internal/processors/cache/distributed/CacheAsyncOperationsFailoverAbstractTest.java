@@ -111,6 +111,8 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
      * @throws Exception If failed.
      */
     public void testAsyncFailover() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9759");
+
         IgniteCache<TestKey, TestValue> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         int ops = cache.getConfiguration(CacheConfiguration.class).getMaxConcurrentAsyncOperations();
