@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -57,28 +57,18 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  *
  */
 public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
+    /** Test cache name. */
+    private static final String CACHE_NAME = "persons-cache-vi";
+
     /**
      * Tests that validation doesn't fail if nothing is broken.
      */
     public void testValidateIndexesNoErrors() throws Exception {
-        Ignite ignite = startGrids(2);
-
-        ignite.cluster().active(true);
-
-        Ignite client = startGrid("client");
-
-        String cacheName = "persons-cache-vi";
-
-        IgniteCache<Integer, Person> personCache = createPersonCache(client, cacheName);
-
-        ThreadLocalRandom rand = ThreadLocalRandom.current();
-
-        for (int i = 0; i < 10_000; i++)
-            personCache.put(i, new Person(rand.nextInt(), String.valueOf(rand.nextLong())));
+        prepareGridForTest();
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", cacheName));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", CACHE_NAME));
 
         assertTrue(testOut.toString().contains("no issues found"));
     }
@@ -87,22 +77,9 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
      * Tests that missing rows in CacheDataTree are detected.
      */
     public void testBrokenCacheDataTreeShouldFailValidation() throws Exception {
-        Ignite ignite = startGrids(2);
+        Ignite ignite = prepareGridForTest();
 
-        ignite.cluster().active(true);
-
-        Ignite client = startGrid("client");
-
-        String cacheName = "persons-cache-vi";
-
-        IgniteCache<Integer, Person> personCache = createPersonCache(client, cacheName);
-
-        ThreadLocalRandom rand = ThreadLocalRandom.current();
-
-        for (int i = 0; i < 10_000; i++)
-            personCache.put(i, new Person(rand.nextInt(), String.valueOf(rand.nextLong())));
-
-        breakCacheDataTree(ignite, cacheName, 1);
+        breakCacheDataTree(ignite, CACHE_NAME, 1);
 
         injectTestSystemOut();
 
@@ -110,7 +87,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
             execute(
                 "--cache",
                 "validate_indexes",
-                cacheName,
+                CACHE_NAME,
                 "checkFirst", "10000",
                 "checkThrough", "10"));
 
@@ -124,26 +101,13 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
      * Tests that missing rows in H2 indexes are detected.
      */
     public void testBrokenSqlIndexShouldFailValidation() throws Exception {
-        Ignite ignite = startGrids(2);
+        Ignite ignite = prepareGridForTest();
 
-        ignite.cluster().active(true);
-
-        Ignite client = startGrid("client");
-
-        String cacheName = "persons-cache-vi";
-
-        IgniteCache<Integer, Person> personCache = createPersonCache(client, cacheName);
-
-        ThreadLocalRandom rand = ThreadLocalRandom.current();
-
-        for (int i = 0; i < 10_000; i++)
-            personCache.put(i, new Person(rand.nextInt(), String.valueOf(rand.nextLong())));
-
-        breakSqlIndex(ignite, cacheName);
+        breakSqlIndex(ignite, CACHE_NAME);
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", cacheName));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", CACHE_NAME));
 
         assertTrue(testOut.toString().contains("issues found (listed above)"));
     }
@@ -152,6 +116,31 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
      * Tests that missing rows in H2 indexes are detected.
      */
     public void testCorruptedIndexPartitionShouldFailValidation() throws Exception {
+        Ignite ignite = prepareGridForTest();
+
+        forceCheckpoint();
+
+        File idxPath = indexPartition(ignite, CACHE_NAME);
+
+        stopAllGrids();
+
+        corruptIndexPartition(idxPath);
+
+        startGrids(2);
+
+        awaitPartitionMapExchange();
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", CACHE_NAME));
+
+        assertTrue(testOut.toString().contains("issues found (listed above)"));
+    }
+
+    /**
+     *
+     */
+    private Ignite prepareGridForTest() throws Exception{
         Ignite ignite = startGrids(2);
 
         ignite.cluster().active(true);
@@ -160,30 +149,22 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
 
         String cacheName = "persons-cache-vi";
 
-        IgniteCache<Integer, Person> personCache = createPersonCache(client, cacheName);
+        client.getOrCreateCache(new CacheConfiguration<Integer, Person>()
+                .setName(cacheName)
+                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+                .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+                .setBackups(1)
+                .setQueryEntities(F.asList(personEntity(true, true)))
+                .setAffinity(new RendezvousAffinityFunction(false, 32)));
 
         ThreadLocalRandom rand = ThreadLocalRandom.current();
 
-        for (int i = 0; i < 10_000; i++)
-            personCache.put(i, new Person(rand.nextInt(), String.valueOf(rand.nextLong())));
+        try (IgniteDataStreamer<Integer, Person> streamer = client.dataStreamer(CACHE_NAME);) {
+            for (int i = 0; i < 10_000; i++)
+                streamer.addData(i, new Person(rand.nextInt(), String.valueOf(rand.nextLong())));
+        }
 
-        forceCheckpoint();
-
-        File idxPath = indexPartition(ignite, cacheName);
-
-        stopAllGrids();
-
-        corruptIndexPartition(idxPath);
-
-        ignite = startGrids(2);
-
-        awaitPartitionMapExchange();
-
-        injectTestSystemOut();
-
-        assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", cacheName));
-
-        assertTrue(testOut.toString().contains("issues found (listed above)"));
+        return ignite;
     }
 
     /**
@@ -312,22 +293,6 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
                 ctx.shared().database().checkpointReadUnlock();
             }
         }
-    }
-
-    /**
-     * Dynamically creates cache with SQL indexes.
-     *
-     * @param ig Client.
-     * @param cacheName Cache name.
-     */
-    private IgniteCache<Integer, Person> createPersonCache(Ignite ig, String cacheName) {
-        return ig.getOrCreateCache(new CacheConfiguration<Integer, Person>()
-            .setName(cacheName)
-            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-            .setBackups(1)
-            .setQueryEntities(F.asList(personEntity(true, true)))
-            .setAffinity(new RendezvousAffinityFunction(false, 32)));
     }
 
     /**
