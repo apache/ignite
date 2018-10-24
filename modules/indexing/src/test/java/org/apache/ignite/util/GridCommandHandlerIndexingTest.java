@@ -20,6 +20,7 @@ package org.apache.ignite.util;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -96,7 +97,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", cacheName));
 
-        assertTrue(testOut.toString().contains("validate_indexes has finished, no issues found"));
+        assertTrue(testOut.toString().contains("no issues found"));
     }
 
     /**
@@ -130,7 +131,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
                 "checkFirst", "10000",
                 "checkThrough", "10"));
 
-        assertTrue(testOut.toString().contains("validate_indexes has finished with errors"));
+        assertTrue(testOut.toString().contains("issues found (listed above)"));
 
         assertTrue(testOut.toString().contains(
             "Key is present in SQL index, but is missing in corresponding data page."));
@@ -157,20 +158,18 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
 
         breakSqlIndex(ignite, cacheName);
 
-        validateIndexesParts(ignite, cacheName);
-
         injectTestSystemOut();
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", cacheName));
 
-        assertTrue(testOut.toString().contains("validate_indexes has finished with errors"));
+        assertTrue(testOut.toString().contains("issues found (listed above)"));
     }
 
     /**
      * Tests that missing rows in H2 indexes are detected.
      */
-    public void testcrc() throws Exception {
-        Ignite ignite = startGrids(1);
+    public void testCorruptedIndexPartitionShouldFailValidation() throws Exception {
+        Ignite ignite = startGrids(2);
 
         ignite.cluster().active(true);
 
@@ -187,43 +186,27 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
 
         forceCheckpoint();
 
-        File path = indexPartition(ignite, cacheName);
-
-        assertTrue(path.exists());
+        File idxPath = indexPartition(ignite, cacheName);
 
         stopAllGrids();
 
-        RandomAccessFile part = new RandomAccessFile(path, "rw");
+        corruptIndexPartition(idxPath);
 
-        try {
-            byte[] trash = new byte[3];
-
-            rand.nextBytes(trash);
-
-            part.seek(1);
-
-            part.write(trash);
-        }
-        finally {
-            part.close();
-        }
-
-
-        startGrids(1);
-
-        ignite = grid(0);
+        ignite = startGrids(2);
 
         awaitPartitionMapExchange();
 
-        //validateIndexesParts(ignite, cacheName);
         injectTestSystemOut();
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", cacheName));
 
-        assertTrue(testOut.toString().contains("validate_indexes has finished with errors"));
+        assertTrue(testOut.toString().contains("issues found (listed above)"));
     }
 
-    private File indexPartition(Ignite ig, String cacheName) throws Exception{
+    /**
+     * Get index partition file for specific node and cache.
+     */
+    private File indexPartition(Ignite ig, String cacheName) {
         IgniteEx ig0 = (IgniteEx)ig;
 
         FilePageStoreManager pageStoreManager = ((FilePageStoreManager) ig0.context().cache().context().pageStore());
@@ -231,30 +214,22 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
         return new File(pageStoreManager.cacheWorkDir(false, cacheName), INDEX_FILE_NAME);
     }
 
+    /**
+     * Write some random trash in index partition.
+     */
+    private void corruptIndexPartition(File path) throws IOException {
+        assertTrue(path.exists());
 
-    private void validateIndexesParts(Ignite ig, String cacheName) throws Exception {
-        IgniteEx ig0 = (IgniteEx)ig;
-        int cacheId = CU.cacheId(cacheName);
+        ThreadLocalRandom rand = ThreadLocalRandom.current();
 
-        String grpName = ig0.context().cache().context().cacheContext(cacheId).config().getGroupName();
-        int cacheGrpId = grpName == null ? cacheName.hashCode() : grpName.hashCode();
+        try (RandomAccessFile idx = new RandomAccessFile(path, "rw")) {
+            byte[] trash = new byte[1024];
 
-        CacheGroupContext grpCtx = ig0.context().cache().context().cache().cacheGroup(cacheGrpId);
+            rand.nextBytes(trash);
 
-        PageStore pageStore = ((FilePageStoreManager) ig0.context().cache().context().pageStore()).getStore(cacheGrpId,
-                PageIdAllocator.INDEX_PARTITION);
+            idx.seek(4096);
 
-        long pageId = PageIdUtils.pageId(PageIdAllocator.INDEX_PARTITION, PageIdAllocator.FLAG_IDX, 0);
-        ByteBuffer buf = ByteBuffer.allocateDirect(ig0.context().config().getDataStorageConfiguration().getPageSize());
-
-        buf.order(ByteOrder.nativeOrder());
-
-        for (int pageNo = 0; pageNo < pageStore.pages(); pageId++, pageNo++) {
-            buf.clear();
-
-            pageStore.read(pageId, buf, true);
-
-            log.error("crc=" + PageIO.getCrc(buf) + " pageId=" + pageId);
+            idx.write(trash);
         }
     }
 
