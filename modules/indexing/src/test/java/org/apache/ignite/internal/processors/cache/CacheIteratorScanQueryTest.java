@@ -29,7 +29,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import javax.cache.Cache;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;

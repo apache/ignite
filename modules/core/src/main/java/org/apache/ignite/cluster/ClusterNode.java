@@ -23,10 +23,8 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
 /**

@@ -24,6 +24,8 @@ import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccLongList;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -49,9 +51,11 @@ public class MvccSnapshotResponse implements MvccMessage, MvccSnapshot, MvccLong
 
     /** */
     @GridDirectTransient
+    @GridToStringExclude
     private int txsCnt;
 
     /** */
+    @GridToStringInclude
     private long[] txs;
 
     /** */

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.cluster;
 
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterGroup;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Internal projection interface.
