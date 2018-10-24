@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
  * Mapper query results.
  */
 class MapQueryResults {
-    /** H2 indexing. */
+    /** H@ indexing. */
     private final IgniteH2Indexing h2;
 
     /** */
@@ -113,7 +113,10 @@ class MapQueryResults {
      * @param params Query arguments.
      */
     void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
-        MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params);
+        MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params, lazyWorker);
+
+        if (lazyWorker != null)
+            lazyWorker.result(res);
 
         if (!results.compareAndSet(qry, null, res))
             throw new IllegalStateException();
@@ -136,37 +139,28 @@ class MapQueryResults {
     /**
      * Cancels the query.
      */
-    void cancel() {
+    void cancel(boolean forceQryCancel) {
         if (cancelled)
             return;
 
         cancelled = true;
 
         for (int i = 0; i < results.length(); i++) {
-            GridQueryCancel cancel = cancels[i];
-
-            if (cancel != null)
-                cancel.cancel();
-        }
-
-        if (lazyWorker == null)
-            close();
-        else {
-            lazyWorker.submitStopTask(this::close);
-
-            lazyWorker.stop(false);
-        }
-    }
-
-    /**
-     *
-     */
-    public void close() {
-        for (int i = 0; i < results.length(); i++) {
             MapQueryResult res = results.get(i);
 
-            if (res != null)
+            if (res != null) {
                 res.close();
+
+                continue;
+            }
+
+            // NB: Cancel is already safe even for lazy queries (see implementation of passed Runnable).
+            if (forceQryCancel) {
+                GridQueryCancel cancel = cancels[i];
+
+                if (cancel != null)
+                    cancel.cancel();
+            }
         }
     }
 
