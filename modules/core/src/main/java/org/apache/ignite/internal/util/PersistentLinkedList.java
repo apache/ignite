@@ -157,11 +157,11 @@ public class PersistentLinkedList<T extends MemoryBlock.Kind, E extends Serializ
             }
 
             setNextLink(curr, getNextLink(r));
+            if (getNextLink(r) == 0)
+                tail = curr;
             setNextLink(r, 0);
             heap.freeMemoryBlock(getMemoryBlock(r));
 
-            if (getNextLink(curr) == 0)
-                tail = curr;
         });
     }
 
