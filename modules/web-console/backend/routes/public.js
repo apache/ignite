@@ -62,6 +62,8 @@ module.exports.factory = function(mongo, mailsService, usersService, authService
                             resolve(user);
                         });
                     }
+                    else
+                        resolve(user);
                 }))
                 .then(res.api.ok)
                 .catch(res.api.error);

@@ -81,27 +81,27 @@ module.exports.factory = (settings) => {
         }
 
         /**
-         * Send email to user for password reset.
-         * @param host
-         * @param user
-         * @param createdByAdmin
+         * Send email when user signed up.
+         *
+         * @param host Web Console host.
+         * @param user User that signed up.
+         * @param createdByAdmin Whether user was created by admin.
          */
         emailUserSignUp(host, user, createdByAdmin) {
             const resetLink = `${host}/password/reset?token=${user.resetPasswordToken}`;
 
-            if (createdByAdmin) {
-                return this.send(user, `Account was created for ${settings.mail.greeting}.`,
-                    `Hello ${user.firstName} ${user.lastName}!<br><br>` +
-                    `You are receiving this email because administrator created account for you to use <a href="${host}">${settings.mail.greeting}</a>.<br><br>` +
-                    'If you do not need this account or do not know what this email is about, please ignore it.<br>' +
-                    'You must reset the password by clicking on the following link, or paste this into your browser:<br><br>' +
-                    `<a href="${resetLink}">${resetLink}</a>`);
-            }
+            const sbj = createdByAdmin
+                ? 'Account was created for'
+                : 'Thanks for signing up for';
 
-            return this.send(user, `Thanks for signing up for ${settings.mail.greeting}.`,
+            const reason = createdByAdmin
+                ? 'administrator created account for you'
+                : 'you have signed up';
+
+            return this.send(user, `${sbj} ${settings.mail.greeting}.`,
                 `Hello ${user.firstName} ${user.lastName}!<br><br>` +
-                `You are receiving this email because you have signed up to use <a href="${host}">${settings.mail.greeting}</a>.<br><br>` +
-                'If you have not done the sign up and do not know what this email is about, please ignore it.<br>' +
+                `You are receiving this email because ${reason} to use <a href="${host}">${settings.mail.greeting}</a>.<br><br>` +
+                'If you do not know what this email is about, please ignore it.<br>' +
                 'You may reset the password by clicking on the following link, or paste this into your browser:<br><br>' +
                 `<a href="${resetLink}">${resetLink}</a>`);
         }
