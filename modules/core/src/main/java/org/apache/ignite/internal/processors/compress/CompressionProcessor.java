@@ -25,6 +25,22 @@ public class CompressionProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param compression Compression algorithm.
+     * @return Default compression level.
+     */
+    public static int getDefaultCompressionLevel(PageCompression compression) {
+        switch (compression) {
+            case ZSTD:
+                return 3;
+
+            case DROP_GARBAGE:
+                return 0;
+        }
+
+        throw new IllegalArgumentException("Compression: " + compression);
+    }
+
+    /**
      * @param pageId Page ID.
      * @param page Page buffer.
      * @param storeBlockSize Store block size.

@@ -135,7 +135,9 @@ public final class DataRegionConfiguration implements Serializable {
 
     /** */
     private PageCompression pageCompression;
-    private int pageCompressionLevel;
+
+    /** */
+    private Integer pageCompressionLevel;
 
     /**
      * Gets data region name.
@@ -440,7 +442,8 @@ public final class DataRegionConfiguration implements Serializable {
     /**
      * Gets page compression algorithm. Makes sense only with enabled persistence.
      *
-     * @return Page compression configuration.
+     * @return Page compression algorithm.
+     * @see #getPageCompressionLevel()
      */
     public PageCompression getPageCompression() {
         return pageCompression;
@@ -449,7 +452,8 @@ public final class DataRegionConfiguration implements Serializable {
     /**
      * Sets page compression algorithm. Makes sense only with enabled persistence.
      *
-     * @param pageCompression Page compression configuration.
+     * @param pageCompression Page compression algorithm.
+     * @see #setPageCompressionLevel
      */
     public void setPageCompression(PageCompression pageCompression) {
         this.pageCompression = pageCompression;
@@ -458,18 +462,18 @@ public final class DataRegionConfiguration implements Serializable {
     /**
      * Gets {@link #setPageCompression(PageCompression) algorithm specific} page compression level.
      *
-     * @return Page compression level.
+     * @return Page compression level or {@code null} for default.
      */
-    public int getPageCompressionLevel() {
+    public Integer getPageCompressionLevel() {
         return pageCompressionLevel;
     }
 
     /**
      * Sets {@link #setPageCompression(PageCompression) algorithm specific} page compression level.
      *
-     * @param pageCompressionLevel Page compression level.
+     * @param pageCompressionLevel Page compression level, {@code null} for default.
      */
-    public void setPageCompressionLevel(int pageCompressionLevel) {
+    public void setPageCompressionLevel(Integer pageCompressionLevel) {
         this.pageCompressionLevel = pageCompressionLevel;
     }
 

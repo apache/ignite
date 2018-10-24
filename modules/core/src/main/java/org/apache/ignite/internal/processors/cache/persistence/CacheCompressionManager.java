@@ -13,7 +13,7 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
     private PageCompression pageCompression;
 
     /** */
-    private int compressLevel;
+    private int pageCompressLevel;
 
     /** */
     private CompressionProcessor compressProc;
@@ -25,7 +25,12 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
         DataRegionConfiguration cfg = cctx.dataRegion().config();
 
         pageCompression = cfg.getPageCompression();
-        compressLevel = cfg.getPageCompressionLevel();
+        Integer lvl = cfg.getPageCompressionLevel();
+        pageCompressLevel = lvl != null ? lvl :
+            CompressionProcessor.getDefaultCompressionLevel(pageCompression);
+
+        if (pageCompression != null && !cfg.isPersistenceEnabled())
+            throw new IgniteCheckedException("Page compression makes sense only with enabled persistence.");
     }
 
     /**
@@ -44,7 +49,7 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
         if (blockSize <= 0)
             throw new IgniteCheckedException("Failed to detect file system block size. Page compression is unsupported on this file system.");
 
-        return compressProc.compressPage(pageId, page, blockSize, pageCompression, compressLevel);
+        return compressProc.compressPage(pageId, page, blockSize, pageCompression, pageCompressLevel);
     }
 
     /**
