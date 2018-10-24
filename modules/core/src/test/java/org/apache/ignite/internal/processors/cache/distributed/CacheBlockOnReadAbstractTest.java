@@ -70,12 +70,12 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
@@ -110,11 +110,12 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /** Latch that is used to wait until all required messages are blocked. */
     private volatile CountDownLatch cntFinishedReadOperations;
 
-    /** Custom ip finder. */
+    /** Custom ip finder. Replaces {@link #IP_FINDER} if present at the moment of node starting. */
     private volatile TcpDiscoveryIpFinder customIpFinder;
 
-    /** Discovery message processor. */
+    /** Discovery message processor. Used in every started node. */
     private volatile BiConsumer<TcpDiscoveryAbstractMessage, String> discoveryMsgProcessor;
+
     /**
      * Number of baseline servers to start before test.
      *
@@ -271,8 +272,6 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
         cfg.setConsistentId(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(customIpFinder == null ? IP_FINDER : customIpFinder);
-
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         cfg.setDiscoverySpi(new TestTcpDiscoverySpi() {
@@ -281,7 +280,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
                 if (discoveryMsgProcessor != null)
                     discoveryMsgProcessor.accept(msg, igniteInstanceName);
             }
-        });
+        }.setIpFinder(customIpFinder == null ? IP_FINDER : customIpFinder));
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
@@ -426,111 +425,6 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         doTest(
             asMessagePredicate(CacheBlockOnReadAbstractTest::destroyCachePredicate),
             () -> baseline.get(0).destroyCache(cacheNames.remove(0))
-        );
-    }
-    /**
-     * @throws Exception If failed.
-     */
-    @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
-    public void testStartClient() throws Exception {
-        int clientBaselineNode = 2;
-
-        int pauseBaselineNode = 1;
-
-        RunnableX block = () -> {
-            startNodesInClientMode(true);
-
-            startGrid(UUID.randomUUID().toString());
-        };
-
-        Class<? extends TcpDiscoveryAbstractMessage> blockMsgCls = TcpDiscoveryNodeAddFinishedMessage.class;
-
-        doTest(new BackgroundOperation() {
-            private volatile CountDownLatch blockLatch;
-
-            @Override protected void execute() {
-                try {
-                    blockLatch = new CountDownLatch(1);
-
-                    discoveryMsgProcessor = (msg, receiverConsistentId) -> {
-                        if (!blockMsgCls.isInstance(msg))
-                            return;
-
-                        boolean baselineSnd = Objects.equals(
-                            baseline.get(pauseBaselineNode).localNode().consistentId(),
-                            receiverConsistentId
-                        );
-
-                        if (baselineSnd) {
-                            cntFinishedReadOperations.countDown();
-
-                            try {
-                                blockLatch.await();
-                            }
-                            catch (InterruptedException ignore) {
-                            }
-                        }
-                    };
-
-                    for (int i = 0; i < baselineServersCount() - 2; i++)
-                        cntFinishedReadOperations.countDown();
-
-                    customIpFinder = new TcpDiscoveryVmIpFinder(false)
-                        .setAddresses(
-                            Collections.singletonList("127.0.0.1:4750" + clientBaselineNode)
-                        );
-
-                    try {
-                        block.runx();
-                    }
-                    finally {
-                        customIpFinder = null;
-                    }
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
-                finally {
-                    discoveryMsgProcessor = null;
-                }
-            }
-
-            @Override protected long stopTimeout() {
-                return 30_000;
-            }
-
-            @Override void stop() throws Exception {
-                blockLatch.countDown();
-
-                super.stop();
-            }
-        });
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void _testStopClient() throws Exception {
-        customIpFinder = new TcpDiscoveryVmIpFinder(false)
-            .setAddresses(
-                Collections.singletonList("127.0.0.1:47500")
-            );
-
-        startNodesInClientMode(true);
-
-        for (int i = 0; i < 3; i++)
-            clients.add(startGrid(UUID.randomUUID().toString()));
-
-        customIpFinder = null;
-
-        doTest(
-            asMessagePredicate(discoEvt -> discoEvt.type() == EventType.EVT_NODE_LEFT),
-            () -> {
-                for (int i = 0; i < baselineServersCount() - 2; i++)
-                    cntFinishedReadOperations.countDown();
-
-                stopGrid(clients.remove(clients.size() - 1).name());
-            }
         );
     }
 
@@ -754,6 +648,102 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    public void testStartClientAtomicPartitioned() throws Exception {
+        testStartClientTransactionalReplicated();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Params(atomicityMode = ATOMIC, cacheMode = REPLICATED)
+    public void testStartClientAtomicReplicated() throws Exception {
+        testStartClientTransactionalReplicated();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    public void testStartClientTransactionalPartitioned() throws Exception {
+        testStartClientTransactionalReplicated();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Params(atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
+    public void testStartClientTransactionalReplicated() throws Exception {
+        doTest(
+            TcpDiscoveryNodeAddFinishedMessage.class,
+            () -> {
+                startNodesInClientMode(true);
+
+                customIpFinder = new TcpDiscoveryVmIpFinder(false)
+                    .setAddresses(
+                        Collections.singletonList("127.0.0.1:47502")
+                    );
+
+                try {
+                    startGrid(UUID.randomUUID().toString());
+                }
+                finally {
+                    customIpFinder = null;
+                }
+            }
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    public void testStopClientAtomicPartitioned() throws Exception {
+        testStopClientTransactionalReplicated();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Params(atomicityMode = ATOMIC, cacheMode = REPLICATED)
+    public void testStopClientAtomicReplicated() throws Exception {
+        testStopClientTransactionalReplicated();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    public void testStopClientTransactionalPartitioned() throws Exception {
+        testStopClientTransactionalReplicated();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Params(atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED, timeout = 5_000L)
+    public void testStopClientTransactionalReplicated() throws Exception {
+        startNodesInClientMode(true);
+
+        customIpFinder = new TcpDiscoveryVmIpFinder(false)
+            .setAddresses(
+                Collections.singletonList("127.0.0.1:47502")
+            );
+
+        for (int i = 0; i < 3; i++)
+            clients.add(startGrid(UUID.randomUUID().toString()));
+
+        customIpFinder = null;
+
+        doTest(
+            TcpDiscoveryNodeLeftMessage.class,
+            () -> stopGrid(clients.remove(clients.size() - 1).name())
+        );
+    }
+
+    /**
      * Checks that given discovery event is from "Create cache" operation.
      *
      * @param discoEvt Discovery event.
@@ -831,6 +821,23 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
      * Checks that {@code block} closure doesn't block read operation.
      * Does it for client, baseline and regular server node.
      *
+     * @param blockMsgCls Class of discovery message to block.
+     * @param block Blocking operation.
+     * @throws Exception If failed.
+     */
+    public void doTest(Class<? extends TcpDiscoveryAbstractMessage> blockMsgCls, RunnableX block) throws Exception {
+        BlockDiscoveryMessageBackgroundOperation backgroundOperation = new BlockDiscoveryMessageBackgroundOperation(
+            block,
+            blockMsgCls
+        );
+
+        doTest(backgroundOperation);
+    }
+
+    /**
+     * Checks that {@code block} closure doesn't block read operation.
+     * Does it for client, baseline and regular server node.
+     *
      * @param backgroundOperation Background operation.
      * @throws Exception If failed.
      */
@@ -857,13 +864,11 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
             );
         }
 
-
         doTest0(clients.get(0), readOperation, backgroundOperation);
 
         doTest0(srvs.get(0), readOperation, backgroundOperation);
 
         doTest0(baseline.get(0), readOperation, backgroundOperation);
-
 
         try (AutoCloseable read = readOperation.start()) {
             Thread.sleep(500L);
@@ -1044,8 +1049,8 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     }
 
     /**
-     * Background operation that executes some node request and doesn't allow its messages to be fully processed until
-     * operation is stopped.
+     * Background operation that executes some node request and doesn't allow its exchange messages to be fully
+     * processed until operation is stopped.
      */
     protected class BlockMessageOnBaselineBackgroundOperation extends BackgroundOperation {
         /** */
@@ -1114,6 +1119,90 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         }
     }
 
+    /**
+     * Background operation that executes some node request and doesn't allow its discovery messages to be fully
+     * processed until operation is stopped.
+     */
+    protected class BlockDiscoveryMessageBackgroundOperation extends BackgroundOperation {
+        /** */
+        private final RunnableX block;
+
+        /** */
+        private final Class<? extends TcpDiscoveryAbstractMessage> blockMsgCls;
+
+        /** */
+        private volatile CountDownLatch blockLatch;
+
+        /**
+         * @param block Blocking operation.
+         * @param blockMsgCls Class of message to block.
+         *
+         * @see BlockMessageOnBaselineBackgroundOperation#blockMessage(ClusterNode, Message)
+         */
+        protected BlockDiscoveryMessageBackgroundOperation(
+            RunnableX block,
+            Class<? extends TcpDiscoveryAbstractMessage> blockMsgCls
+        ) {
+            this.block = block;
+            this.blockMsgCls = blockMsgCls;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void execute() {
+            try {
+                blockLatch = new CountDownLatch(1);
+
+                discoveryMsgProcessor = this::processMessage;
+
+                for (int i = 0; i < baselineServersCount() - 2; i++)
+                    cntFinishedReadOperations.countDown();
+
+                block.run();
+            }
+            finally {
+                discoveryMsgProcessor = null;
+            }
+        }
+
+        /**
+         * Process discovery spi message.
+         *
+         * @param msg Message.
+         * @param receiverConsistentId Consistent ID of message receiver.
+         */
+        private void processMessage(TcpDiscoveryAbstractMessage msg, String receiverConsistentId) {
+            if (!blockMsgCls.isInstance(msg))
+                return;
+
+            boolean baselineSnd = Objects.equals(
+                baseline.get(1).localNode().consistentId(),
+                receiverConsistentId
+            );
+
+            if (baselineSnd) {
+                cntFinishedReadOperations.countDown();
+
+                try {
+                    blockLatch.await();
+                }
+                catch (InterruptedException ignore) {
+                }
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected long stopTimeout() {
+            // Should be big enough so thread will stop by it's own. Otherwise test will fail, but that's fine.
+            return 30_000L;
+        }
+
+        /** {@inheritDoc} */
+        @Override void stop() throws Exception {
+            blockLatch.countDown();
+
+            super.stop();
+        }
+    }
 
     /**
      * Runnable that can throw exceptions.
