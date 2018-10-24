@@ -881,8 +881,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 for (DynamicCacheDescriptor desc : cctx.cache().cacheDescriptors().values()) {
                     if (CU.isPersistentCache(desc.cacheConfiguration(),
                         cctx.gridConfig().getDataStorageConfiguration())) {
-                        cctx.pageStore().initializeForCache(desc.groupDescriptor(),
-                            new StoredCacheData(desc.cacheConfiguration()));
+                        cctx.cache().preparePageStore(desc, true);
                     }
                 }
 
