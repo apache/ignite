@@ -132,6 +132,7 @@ export default class InputDialog {
 
     /**
      * Open input dialog to configure custom e-mail.
+     *
      * @param options Object with settings for rendering e-mail input.
      * @return User input.
      */

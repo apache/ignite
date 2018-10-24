@@ -44,28 +44,18 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
          *
          * @param {String} host - The host.
          * @param {Object} user - The user.
-         * @param {String} inviteToken - The invite token.
+         * @param {Object} createdByAdmin - Whether user created by admin.
          * @returns {Promise.<mongo.ObjectId>} that resolves account id of merge operation.
          */
-        static create(host, user, inviteToken) {
+        static create(host, user, createdByAdmin) {
             return mongo.Account.count().exec()
                 .then((cnt) => {
                     user.admin = cnt === 0;
                     user.registered = new Date();
                     user.token = utilsService.randomString(settings.tokenLength);
 
-                    if (!user.admin && settings.application.registerByInvite) {
-                        if (!inviteToken)
-                            reject(new errors.ServerErrorException('Registration allowed only by invites'));
-
-                        return mongo.Invites.find({email: user.email, token: inviteToken})
-                            .then((found) => {
-                                if (!found)
-                                    reject(new errors.ServerErrorException('Invalid invite'));
-
-                                return new mongo.Account(user);
-                            });
-                    }
+                    if (settings.application.disableSelfRegistration && !user.admin && !createdByAdmin)
+                        reject(new errors.ServerErrorException('Self registration is not allowed. Ask your Web Conosle administrator to create account for you'));
 
                     return new mongo.Account(user);
                 })
@@ -88,7 +78,7 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                     return registered.save()
                         .then(() => mongo.Space.create({name: 'Personal space', owner: registered._id}))
                         .then(() => {
-                            mailsService.emailUserSignUp(host, registered);
+                            mailsService.emailUserSignUp(host, registered, createdByAdmin);
 
                             return registered;
                         });

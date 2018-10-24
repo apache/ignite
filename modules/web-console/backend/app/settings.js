@@ -59,7 +59,7 @@ module.exports = {
             },
             packaged,
             application: {
-                registerByInvite: nconf.get('application:registerByInvite') || false
+                disableSelfRegistration: nconf.get('application:disableSelfRegistration') || false
             },
             server: {
                 host: nconf.get('server:host') || dfltHost,

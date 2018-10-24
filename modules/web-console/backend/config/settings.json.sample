@@ -1,6 +1,6 @@
 {
     "application": {
-        "registerByInvite": false
+        "disableSelfRegistration": false
     },
     "server": {
         "port": 3000,

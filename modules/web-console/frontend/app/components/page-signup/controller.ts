@@ -22,6 +22,7 @@ import {ISignupData} from '../form-signup';
 
 export default class PageSignup {
     form: ng.IFormController;
+
     data: ISignupData = {
         email: null,
         password: null,
@@ -30,6 +31,7 @@ export default class PageSignup {
         company: null,
         country: null
     };
+
     serverError: string | null = null;
 
     static $inject = ['Auth', 'IgniteMessages', 'IgniteFormUtils'];

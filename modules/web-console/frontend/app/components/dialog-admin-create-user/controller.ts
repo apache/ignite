@@ -22,8 +22,10 @@ import LoadingServiceFactory from '../../modules/loading/loading.service';
 import {ISignupData} from '../form-signup';
 
 export class DialogAdminCreateUser {
-    close: ng.ICompiledExpression
-    form: ng.IFormController
+    close: ng.ICompiledExpression;
+
+    form: ng.IFormController;
+
     data: ISignupData = {
         email: null,
         password: null,
@@ -32,6 +34,7 @@ export class DialogAdminCreateUser {
         company: null,
         country: null
     };
+
     serverError: string | null = null;
 
     static $inject = ['Auth', 'IgniteMessages', 'IgniteFormUtils', 'IgniteLoading'];
@@ -60,15 +63,16 @@ export class DialogAdminCreateUser {
             return;
 
         this.loading.start('createUser');
+
         this.Auth.signnup(this.data, false)
-        .then(() => {
-            this.IgniteMessages.showInfo(`User ${this.data.email} created`);
-            this.close({});
-        })
-        .catch((res) => {
-            this.loading.finish('createUser');
-            this.IgniteMessages.showError(null, res.data);
-            this.setServerError(res.data);
-        });
+            .then(() => {
+                this.IgniteMessages.showInfo(`User ${this.data.email} created`);
+                this.close({});
+            })
+            .catch((res) => {
+                this.loading.finish('createUser');
+                this.IgniteMessages.showError(null, res.data);
+                this.setServerError(res.data);
+            });
     }
 }

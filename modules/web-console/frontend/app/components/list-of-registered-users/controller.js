@@ -91,7 +91,7 @@ export default class IgniteListOfRegisteredUsersCtrl {
             },
             {
                 action: 'Add user',
-                click: () => this.addUser(),
+                sref: '.createUser',
                 available: true
             },
             {
@@ -258,10 +258,6 @@ export default class IgniteListOfRegisteredUsersCtrl {
 
                 user.adminChanging = false;
             });
-    }
-
-    addUser() {
-        console.log('TODO add user');
     }
 
     removeUser() {

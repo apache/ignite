@@ -19,16 +19,16 @@ import CountriesService from '../../services/Countries.service';
 import {ISignupFormController} from '.';
 
 export class FormSignup implements ng.IPostLink, ng.IOnDestroy, ng.IOnChanges {
-    static $inject = ['IgniteCountries']
+    static $inject = ['IgniteCountries'];
 
     constructor(private Countries: ReturnType<typeof CountriesService>) {}
 
     countries = this.Countries.getAll();
 
-    innerForm: ISignupFormController
-    outerForm: ng.IFormController
-    ngModel: ng.INgModelController
-    serverError: string | null = null
+    innerForm: ISignupFormController;
+    outerForm: ng.IFormController;
+    ngModel: ng.INgModelController;
+    serverError: string | null = null;
 
     $postLink() {
         this.outerForm.$addControl(this.innerForm);

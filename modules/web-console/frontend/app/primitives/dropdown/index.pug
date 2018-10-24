@@ -37,5 +37,6 @@ mixin ignite-form-field-bsdropdown({label, model, name, disabled, required, opti
 
         ul.dropdown-menu(role='menu')
             li(ng-repeat=`item in ${options}` ng-if='item.available')
-                a(ng-click='item.click()') {{ item.action }}
+                a(ng-if='item.click' ng-click='item.click()') {{ item.action }}
+                a(ng-if='item.sref' ui-sref='{{:: item.sref}}') {{ item.action }}
 

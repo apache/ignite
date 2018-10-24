@@ -84,9 +84,19 @@ module.exports.factory = (settings) => {
          * Send email to user for password reset.
          * @param host
          * @param user
+         * @param createdByAdmin
          */
-        emailUserSignUp(host, user) {
+        emailUserSignUp(host, user, createdByAdmin) {
             const resetLink = `${host}/password/reset?token=${user.resetPasswordToken}`;
+
+            if (createdByAdmin) {
+                return this.send(user, `Account was created for ${settings.mail.greeting}.`,
+                    `Hello ${user.firstName} ${user.lastName}!<br><br>` +
+                    `You are receiving this email because administrator created account for you to use <a href="${host}">${settings.mail.greeting}</a>.<br><br>` +
+                    'If you do not need this account or do not know what this email is about, please ignore it.<br>' +
+                    'You must reset the password by clicking on the following link, or paste this into your browser:<br><br>' +
+                    `<a href="${resetLink}">${resetLink}</a>`);
+            }
 
             return this.send(user, `Thanks for signing up for ${settings.mail.greeting}.`,
                 `Hello ${user.firstName} ${user.lastName}!<br><br>` +

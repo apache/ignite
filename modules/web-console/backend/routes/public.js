@@ -17,6 +17,7 @@
 
 'use strict';
 
+const _ = require('lodash');
 const express = require('express');
 const passport = require('passport');
 
@@ -49,14 +50,18 @@ module.exports.factory = function(mongo, mailsService, usersService, authService
          * Register new account.
          */
         router.post('/signup', (req, res) => {
-            usersService.create(req.origin(), req.body, req.query.invite)
-                .then((user) => new Promise((resolve, reject) => {
-                    req.logIn(user, {}, (err) => {
-                        if (err)
-                            reject(err);
+            const createdByAdmin = _.get(req, 'user.admin', false);
 
-                        resolve(user);
-                    });
+            usersService.create(req.origin(), req.body, createdByAdmin)
+                .then((user) => new Promise((resolve, reject) => {
+                    if (!createdByAdmin) {
+                        req.logIn(user, {}, (err) => {
+                            if (err)
+                                reject(err);
+
+                            resolve(user);
+                        });
+                    }
                 }))
                 .then(res.api.ok)
                 .catch(res.api.error);

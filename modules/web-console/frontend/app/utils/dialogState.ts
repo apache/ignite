@@ -40,7 +40,9 @@ export function dialogState(component: string): Partial<StateDeclaration> {
                 modal.destroy();
             }
         });
+
         hide = dialog.hide;
+
         dialog.hide = () => router.stateService.go('.^');
     }
 
