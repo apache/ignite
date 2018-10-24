@@ -24,6 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -65,14 +66,19 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
     private GridCacheVersion lockVer;
 
     /** */
+    @GridDirectTransient
     private GridCacheVersion dhtVer;
 
     /** */
+    @GridDirectTransient
     private IgniteUuid dhtFutId;
 
     /** New DHT nodes involved into transaction. */
     @GridDirectCollection(UUID.class)
     private Collection<UUID> newDhtNodes;
+
+    /** */
+    private AffinityTopologyVersion remapVer;
 
     /**
      * Default constructor.
@@ -127,6 +133,24 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
         this.miniId = miniId;
         this.lockVer = lockVer;
         this.err = err;
+    }
+
+    /**
+     * Constructor for remap result.
+     *
+     * @param cacheId Cache id.
+     * @param futId Future id.
+     * @param miniId Mini future id.
+     * @param lockVer Lock version.
+     * @param remapVer Remap affinity version.
+     */
+    public GridNearTxEnlistResponse(int cacheId, IgniteUuid futId, int miniId, GridCacheVersion lockVer,
+        AffinityTopologyVersion remapVer) {
+        this.cacheId = cacheId;
+        this.futId = futId;
+        this.miniId = miniId;
+        this.lockVer = lockVer;
+        this.remapVer = remapVer;
     }
 
     /**
@@ -188,9 +212,16 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
         return newDhtNodes;
     }
 
+    /**
+     * @return Affinity version for remap.
+     */
+    @Nullable public AffinityTopologyVersion remapVer() {
+        return remapVer;
+    }
+
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 10;
     }
 
     /** {@inheritDoc} */
@@ -209,48 +240,42 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeIgniteUuid("dhtFutId", dhtFutId))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeMessage("dhtVer", dhtVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
                 if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 4:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 5:
                 if (!writer.writeMessage("lockVer", lockVer))
                     return false;
 
                 writer.incrementState();
 
-            case 8:
+            case 6:
                 if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
+            case 7:
                 if (!writer.writeCollection("newDhtNodes", newDhtNodes, MessageCollectionItemType.UUID))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 8:
+                if (!writer.writeMessage("remapVer", remapVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 9:
                 if (!writer.writeMessage("res", res))
                     return false;
 
@@ -273,22 +298,6 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
 
         switch (reader.state()) {
             case 3:
-                dhtFutId = reader.readIgniteUuid("dhtFutId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                dhtVer = reader.readMessage("dhtVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
@@ -296,7 +305,7 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
 
                 reader.incrementState();
 
-            case 6:
+            case 4:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -304,7 +313,7 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
 
                 reader.incrementState();
 
-            case 7:
+            case 5:
                 lockVer = reader.readMessage("lockVer");
 
                 if (!reader.isLastRead())
@@ -312,7 +321,7 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
 
                 reader.incrementState();
 
-            case 8:
+            case 6:
                 miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
@@ -320,7 +329,7 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
 
                 reader.incrementState();
 
-            case 9:
+            case 7:
                 newDhtNodes = reader.readCollection("newDhtNodes", MessageCollectionItemType.UUID);
 
                 if (!reader.isLastRead())
@@ -328,7 +337,15 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
 
                 reader.incrementState();
 
-            case 10:
+            case 8:
+                remapVer = reader.readMessage("remapVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 9:
                 res = reader.readMessage("res");
 
                 if (!reader.isLastRead())

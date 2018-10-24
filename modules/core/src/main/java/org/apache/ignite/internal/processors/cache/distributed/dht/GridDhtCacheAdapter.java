@@ -1263,7 +1263,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         if (expVer.equals(curVer))
             return false;
 
-        // TODO IGNITE-7164 check mvcc crd for mvcc enabled txs.
+        if(ctx.mvccEnabled() && expVer.equals(ctx.shared().coordinators().currentCoordinator().topologyVersion()))
+            return true;
 
         Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), expVer);
         Collection<ClusterNode> cacheNodes1 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), curVer);

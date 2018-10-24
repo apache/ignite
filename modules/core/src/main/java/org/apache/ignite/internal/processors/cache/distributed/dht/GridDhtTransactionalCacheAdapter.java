@@ -748,6 +748,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             return;
         }
 
+        if(tx == null)
+            return;
+
         GridDhtTxQueryEnlistFuture fut = new GridDhtTxQueryEnlistFuture(
             nodeId,
             req.version(),
@@ -2118,17 +2121,45 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             if (firstClientReq) {
                 assert nearNode.isClient();
 
-                top = topology();
+                for (; ; ) {
+                    top = topology();
 
-                top.readLock();
+                    top.readLock();
 
-                GridDhtTopologyFuture topFut = top.topologyVersionFuture();
+                    GridDhtTopologyFuture topFut = top.topologyVersionFuture();
 
-                if (!topFut.isDone() || !topFut.topologyVersion().equals(topVer)) {
-                    // TODO IGNITE-7164 Wait for topology change, remap client TX in case affinity was changed.
-                    top.readUnlock();
+                    if (!topFut.isDone()) {
+                        top.readUnlock();
 
-                    throw new ClusterTopologyException("Topology was changed. Please retry on stable topology.");
+                        topFut.get();
+
+                        continue;
+                    }
+
+                    if (needRemap(topVer, topFut.topologyVersion())) {
+                        GridNearTxEnlistResponse res = new GridNearTxEnlistResponse( ctx.cacheId(),
+                            nearFutId,
+                            nearMiniId,
+                            nearLockVer,
+                            /* Remap top ver. */
+                            top.lastTopologyChangeVersion());
+
+                        top.readUnlock();
+
+                        try {
+                            ctx.io().send(nearNode, res, ctx.ioPolicy());
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to send near enlist response [" +
+                                "txId=" + nearLockVer +
+                                ", node=" + nodeId +
+                                ", res=" + res + ']', e);
+                        }
+
+                        return null;
+                    }
+                    else
+                        break;
                 }
             }
 
