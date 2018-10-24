@@ -37,7 +37,6 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer compressPage(
-        long pageId,
         ByteBuffer page,
         int fsBlockSize,
         PageCompression compression,

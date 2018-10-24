@@ -41,13 +41,12 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * @param pageId Page id.
      * @param page Page buffer.
      * @param store Page store.
      * @return Compressed or the same buffer.
      * @throws IgniteCheckedException If failed.
      */
-    public ByteBuffer compressPage(long pageId, ByteBuffer page, PageStore store) throws IgniteCheckedException {
+    public ByteBuffer compressPage(ByteBuffer page, PageStore store) throws IgniteCheckedException {
         if (compressProc == null)
             return page;
 
@@ -58,7 +57,7 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
                 " Page compression is unsupported on this file system.");
         }
 
-        return compressProc.compressPage(pageId, page, blockSize, pageCompression, pageCompressLevel);
+        return compressProc.compressPage(page, blockSize, pageCompression, pageCompressLevel);
     }
 
     /**

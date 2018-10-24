@@ -823,9 +823,10 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
      * @param pageAddr Page address.
      * @param payload Payload.
      * @param pageSize Page size.
+     * @return Item ID.
      * @throws IgniteCheckedException If failed.
      */
-    public void addRow(
+    public int addRow(
         long pageAddr,
         byte[] payload,
         int pageSize
@@ -841,7 +842,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
 
         writeRowData(pageAddr, dataOff, payload);
 
-        addItem(pageAddr, fullEntrySize, directCnt, indirectCnt, dataOff, pageSize);
+        return addItem(pageAddr, fullEntrySize, directCnt, indirectCnt, dataOff, pageSize);
     }
 
     /**

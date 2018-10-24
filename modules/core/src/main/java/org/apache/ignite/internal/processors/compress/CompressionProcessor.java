@@ -63,7 +63,6 @@ public class CompressionProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param pageId Page ID.
      * @param page Page buffer.
      * @param storeBlockSize Store block size.
      * @param compression Compression algorithm.
@@ -72,7 +71,6 @@ public class CompressionProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public ByteBuffer compressPage(
-        long pageId,
         ByteBuffer page,
         int storeBlockSize,
         PageCompression compression,
