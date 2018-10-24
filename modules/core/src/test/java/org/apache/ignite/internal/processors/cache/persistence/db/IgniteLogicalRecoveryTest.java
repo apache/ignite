@@ -82,7 +82,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         cfg.setAtomicityMode(atomicityMode);
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cfg.setBackups(2);
-        cfg.setAffinity(new RendezvousAffinityFunction(true, 32));
+        cfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         return cfg;
     }
@@ -96,7 +96,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         cfg.setAtomicityMode(atomicityMode);
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cfg.setBackups(2);
-        cfg.setAffinity(new RendezvousAffinityFunction(true, 32));
+        cfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         return cfg;
     }
@@ -171,7 +171,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         aggCacheLoader.start();
 
-        U.sleep(3000);
+        U.sleep(10000);
 
         forceCheckpoint();
 

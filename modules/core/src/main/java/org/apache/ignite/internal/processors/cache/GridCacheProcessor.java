@@ -2134,12 +2134,16 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 cacheStartFailHandler.handle(
                     startCacheInfo,
                     cacheInfo -> {
-                        ctx.query().onCacheStart(
-                            cacheContexts.get(cacheInfo),
-                            cacheInfo.getCacheDescriptor().schema() != null
-                                ? cacheInfo.getCacheDescriptor().schema()
-                                : new QuerySchema()
-                        );
+                        GridCacheContext<?, ?> cctx = cacheContexts.get(cacheInfo);
+
+                        if (!cctx.isRecoveryMode()) {
+                            ctx.query().onCacheStart(
+                                cctx,
+                                cacheInfo.getCacheDescriptor().schema() != null
+                                    ? cacheInfo.getCacheDescriptor().schema()
+                                    : new QuerySchema()
+                            );
+                        }
 
                         context().exchange().exchangerUpdateHeartbeat();
                     }
@@ -2537,6 +2541,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         }
 
         grp.onCacheStarted(cacheCtx);
+
+        ctx.query().onCacheStart(cacheCtx, desc.schema() != null ? desc.schema() : new QuerySchema());
 
         return cacheCtx;
     }

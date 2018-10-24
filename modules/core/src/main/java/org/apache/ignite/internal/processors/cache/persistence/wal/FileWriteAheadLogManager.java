@@ -33,10 +33,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
-import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -70,8 +68,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.events.WalSegmentArchivedEvent;
-import org.apache.ignite.events.WalSegmentCompactedEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -83,9 +79,11 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
+import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
@@ -141,8 +139,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SEGMENT_SYNC_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
-import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
-import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.SWITCH_SEGMENT_RECORD;
@@ -533,6 +529,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 segmentRouter,
                 ioFactory
             );
+
+            enableArchiver();
         }
     }
 
@@ -648,6 +646,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+/*
         if (log.isDebugEnabled())
             log.debug("Activated file write ahead log manager [nodeId=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
@@ -655,22 +654,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         start0();
 
         if (!cctx.kernalContext().clientNode()) {
-            if (isArchiverEnabled()) {
-                assert archiver != null;
-
-                new IgniteThread(archiver).start();
-            }
-
-            if (walSegmentSyncWorker != null)
-                new IgniteThread(walSegmentSyncWorker).start();
-
-            if (compressor != null)
-                compressor.start();
         }
+*/
     }
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
+/*
         if (log.isDebugEnabled())
             log.debug("DeActivate file write ahead log [nodeId=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
@@ -681,6 +671,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             walTail = currHnd.position();
 
         currHnd = null;
+*/
     }
 
     /** {@inheritDoc} */
@@ -818,6 +809,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** {@inheritDoc} */
     @Override public WALPointer log(WALRecord rec, RolloverType rolloverType) throws IgniteCheckedException {
         if (serializer == null || mode == WALMode.NONE)
+            return null;
+
+        if (!(rec instanceof PageDeltaRecord || rec instanceof PageSnapshot) && cctx.kernalContext().recoveryMode())
             return null;
 
         FileWriteHandle currWrHandle = currentHandle();
@@ -1085,7 +1079,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public void tailWalPointer(WALPointer pointer) {
-        assert currHnd == null;
+        //assert currHnd == null;
 
         walTail = pointer;
     }
@@ -1138,6 +1132,23 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** {@inheritDoc} */
     @Override public boolean disabled(int grpId) {
         return cctx.walState().isDisabled(grpId);
+    }
+
+    @Override
+    public void enableArchiver() {
+        if (!cctx.kernalContext().clientNode()) {
+            if (isArchiverEnabled()) {
+                assert archiver != null;
+
+                new IgniteThread(archiver).start();
+            }
+
+            if (walSegmentSyncWorker != null)
+                new IgniteThread(walSegmentSyncWorker).start();
+
+            if (compressor != null)
+                compressor.start();
+        }
     }
 
     /**
@@ -1526,8 +1537,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @throws StorageException if formatting failed
      */
     private void formatFile(File file, int bytesCntToFormat) throws StorageException {
-        if (log.isDebugEnabled())
-            log.debug("Formatting file [exists=" + file.exists() + ", file=" + file.getAbsolutePath() + ']');
+        if (log.isInfoEnabled())
+            log.info("Formatting file [exists=" + file.exists() + ", file=" + file.getAbsolutePath() + ']');
 
         try (FileIO fileIO = ioFactory.create(file, CREATE, READ, WRITE)) {
             int left = bytesCntToFormat;
@@ -1795,6 +1806,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         blockingSectionEnd();
                     }
 
+/*
                     if (evt.isRecordable(EVT_WAL_SEGMENT_ARCHIVED)) {
                         evt.record(new WalSegmentArchivedEvent(
                             cctx.discovery().localNode(),
@@ -1802,6 +1814,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             res.getDstArchiveFile())
                         );
                     }
+*/
 
                     onIdle();
                 }
@@ -2107,6 +2120,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             f0.force();
                         }
 
+/*
                         if (evt.isRecordable(EVT_WAL_SEGMENT_COMPACTED)) {
                             evt.record(new WalSegmentCompactedEvent(
                                     cctx.localNode(),
@@ -2114,6 +2128,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                                     zip.getAbsoluteFile())
                             );
                         }
+*/
                     }
 
                     segmentAware.onSegmentCompressed(segIdx);

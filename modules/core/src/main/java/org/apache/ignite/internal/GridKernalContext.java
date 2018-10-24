@@ -698,4 +698,8 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Default uncaught exception handler used by thread pools.
      */
     public Thread.UncaughtExceptionHandler uncaughtExceptionHandler();
+
+    public boolean recoveryMode();
+
+    public void recoveryMode(boolean value);
 }

@@ -415,6 +415,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Failure processor. */
     private FailureProcessor failureProc;
 
+    private volatile boolean recoveryMode;
+
     /**
      * No-arg constructor is required by externalization.
      */
@@ -1178,6 +1180,14 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     public Thread.UncaughtExceptionHandler uncaughtExceptionHandler() {
         return hnd;
+    }
+
+    @Override public boolean recoveryMode() {
+        return recoveryMode;
+    }
+
+    @Override public void recoveryMode(boolean value) {
+        this.recoveryMode = value;
     }
 
     /** {@inheritDoc} */

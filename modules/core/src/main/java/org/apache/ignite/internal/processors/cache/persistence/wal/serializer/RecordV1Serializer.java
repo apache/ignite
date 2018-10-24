@@ -268,7 +268,7 @@ public class RecordV1Serializer implements RecordSerializer {
             WALRecord.RecordType type = WALRecord.RecordType.fromOrdinal(recordType - 1);
 
             if (type != WALRecord.RecordType.HEADER_RECORD)
-                throw new IOException("Can't read serializer version", null);
+                throw new IOException("Can't read serializer version: " + (recordType - 1) + ", type=" + type, null);
 
             // Read file pointer.
             FileWALPointer ptr = readPosition(in);

@@ -652,6 +652,16 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         return null;
     }
 
+    @Override
+    public boolean recoveryMode() {
+        return false;
+    }
+
+    @Override
+    public void recoveryMode(boolean value) {
+
+    }
+
     /** {@inheritDoc} */
     @Override public PdsFoldersResolver pdsFolderResolver() {
         return new PdsFoldersResolver() {

@@ -192,6 +192,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         dbCfg.setWalRecordIteratorBufferSize(1024 * 1024);
 
         dbCfg.setWalHistorySize(2);
+        dbCfg.setCheckpointThreads(1);
 
         if (logOnly)
             dbCfg.setWalMode(WALMode.LOG_ONLY);
@@ -233,7 +234,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         logOnly = false;
 
-        cleanPersistenceDir();
+        if (err == null)
+            cleanPersistenceDir();
     }
 
     /**
@@ -278,41 +280,50 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             assertEquals(map.get(k), cache.get(k));
     }
 
+    private static volatile Throwable err;
+
     /**
      * @throws Exception if failed.
      */
     public void testWalBigObjectNodeCancel() throws Exception {
-        final int MAX_SIZE_POWER = 21;
+        try {
+            final int MAX_SIZE_POWER = 21;
 
-        IgniteEx ignite = startGrid(1);
+            IgniteEx ignite = startGrid(1);
 
-        ignite.cluster().active(true);
+            ignite.cluster().active(true);
 
-        IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
+            IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
 
-        for (int i = 0; i < MAX_SIZE_POWER; ++i) {
-            int size = 1 << i;
+            for (int i = 0; i < MAX_SIZE_POWER; ++i) {
+                int size = 1 << i;
 
-            cache.put("key_" + i, createTestData(size));
+                cache.put("key_" + i, createTestData(size));
+            }
+
+            stopGrid(1, true);
+
+            ignite = startGrid(1);
+
+            ignite.cluster().active(true);
+
+            cache = ignite.cache(CACHE_NAME);
+
+            // Check.
+            for (int i = 0; i < MAX_SIZE_POWER; ++i) {
+                int size = 1 << i;
+
+                int[] data = createTestData(size);
+
+                int[] val = (int[])cache.get("key_" + i);
+
+                assertTrue("Invalid data. [key=key_" + i + ']', Arrays.equals(data, val));
+            }
         }
+        catch (Throwable t) {
+            err = t;
 
-        stopGrid(1, true);
-
-        ignite = startGrid(1);
-
-        ignite.cluster().active(true);
-
-        cache = ignite.cache(CACHE_NAME);
-
-        // Check.
-        for (int i = 0; i < MAX_SIZE_POWER; ++i) {
-            int size = 1 << i;
-
-            int[] data = createTestData(size);
-
-            int[] val = (int[])cache.get("key_" + i);
-
-            assertTrue("Invalid data. [key=key_" + i + ']', Arrays.equals(data, val));
+            throw t;
         }
     }
 
