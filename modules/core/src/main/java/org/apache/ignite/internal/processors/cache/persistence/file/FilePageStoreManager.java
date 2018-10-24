@@ -484,13 +484,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         try {
             int pageSize = pageBuf.remaining();
             pageBuf = cctx.cacheContext(cacheId).compress().compressPage(pageId, pageBuf, store);
-            int compressedSize = pageBuf.remaining();
+            int compressedPageSize = pageBuf.remaining();
 
             store.write(pageId, pageBuf, tag, calculateCrc);
 
-            // TODO maybe add async punch mode
-            if (pageSize > compressedSize)
-                store.punchHole(pageId, compressedSize);
+            // TODO maybe add async punch mode?
+            if (pageSize > compressedPageSize)
+                store.punchHole(pageId, compressedPageSize);
         }
         catch (StorageException e) {
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
