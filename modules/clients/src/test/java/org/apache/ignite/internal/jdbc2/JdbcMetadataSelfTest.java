@@ -409,7 +409,8 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             while (rs.next()) {
                 schemas.add(rs.getString(1));
 
-                assertEquals(JdbcDatabaseMetadata.CATALOG_NAME, rs.getString(2));
+                assertEquals("There is only one possible catalog.",
+                    JdbcDatabaseMetadata.CATALOG_NAME, rs.getString(2));
             }
 
             assertEquals(expectedSchemas, schemas);
