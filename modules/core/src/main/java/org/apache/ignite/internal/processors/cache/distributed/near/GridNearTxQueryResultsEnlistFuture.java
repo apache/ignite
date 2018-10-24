@@ -552,9 +552,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
         if (err == null && res.error() != null)
             err = res.error();
 
-        if (X.hasCause(err, ClusterTopologyCheckedException.class))
-            tx.removeMapping(nodeId);
-        else if (res != null)
+        if (res != null)
             tx.mappings().get(nodeId).addBackups(res.newDhtNodes());
 
         if (err != null)
