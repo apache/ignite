@@ -617,18 +617,6 @@ public class BinaryContext {
      */
     public BinaryClassDescriptor descriptorForClass(Class<?> cls, boolean deserialize, boolean failIfUnregistered)
         throws BinaryObjectException {
-        return descriptorForClass(cls, deserialize, failIfUnregistered, false);
-    }
-
-    /**
-     * @param cls Class.
-     * @param failIfUnregistered Throw exception if class isn't registered.
-     * @param onlyLocReg {@code true} if descriptor need to register only locally when registration is required at all.
-     * @return Class descriptor.
-     * @throws BinaryObjectException In case of error.
-     */
-    public BinaryClassDescriptor descriptorForClass(Class<?> cls, boolean deserialize, boolean failIfUnregistered,
-        boolean onlyLocReg) throws BinaryObjectException {
         assert cls != null;
 
         BinaryClassDescriptor desc = descByCls.get(cls);
@@ -637,7 +625,7 @@ public class BinaryContext {
             if (failIfUnregistered)
                 throw new UnregisteredClassException(cls);
 
-            desc = registerClassDescriptor(cls, deserialize, onlyLocReg);
+            desc = registerClassDescriptor(cls, deserialize);
         }
         else if (!desc.registered()) {
             if (!desc.userType()) {
@@ -674,7 +662,7 @@ public class BinaryContext {
                 if (failIfUnregistered)
                     throw new UnregisteredClassException(cls);
 
-                desc = registerUserClassDescriptor(desc, onlyLocReg);
+                desc = registerUserClassDescriptor(desc);
             }
         }
 
@@ -727,7 +715,7 @@ public class BinaryContext {
         }
 
         if (desc == null) {
-            desc = registerClassDescriptor(cls, deserialize, false);
+            desc = registerClassDescriptor(cls, deserialize);
 
             assert desc.typeId() == typeId : "Duplicate typeId [typeId=" + typeId + ", cls=" + cls
                 + ", desc=" + desc + "]";
@@ -740,10 +728,9 @@ public class BinaryContext {
      * Creates and registers {@link BinaryClassDescriptor} for the given {@code class}.
      *
      * @param cls Class.
-     * @param onlyLocReg {@code true} if descriptor need to register only locally when registration is required at all.
      * @return Class descriptor.
      */
-    private BinaryClassDescriptor registerClassDescriptor(Class<?> cls, boolean deserialize, boolean onlyLocReg) {
+    private BinaryClassDescriptor registerClassDescriptor(Class<?> cls, boolean deserialize) {
         BinaryClassDescriptor desc;
 
         String clsName = cls.getName();
@@ -772,7 +759,7 @@ public class BinaryContext {
                 desc = old;
         }
         else
-            desc = registerUserClassDescriptor(cls, deserialize, onlyLocReg);
+            desc = registerUserClassDescriptor(cls, deserialize);
 
         return desc;
     }
@@ -781,10 +768,9 @@ public class BinaryContext {
      * Creates and registers {@link BinaryClassDescriptor} for the given user {@code class}.
      *
      * @param cls Class.
-     * @param onlyLocReg {@code true} if descriptor need to register only locally.
      * @return Class descriptor.
      */
-    private BinaryClassDescriptor registerUserClassDescriptor(Class<?> cls, boolean deserialize, boolean onlyLocReg) {
+    private BinaryClassDescriptor registerUserClassDescriptor(Class<?> cls, boolean deserialize) {
         boolean registered;
 
         final String clsName = cls.getName();
@@ -795,7 +781,7 @@ public class BinaryContext {
 
         final int typeId = mapper.typeId(clsName);
 
-        registered = registerUserClassName(typeId, cls.getName(), onlyLocReg);
+        registered = registerUserClassName(typeId, cls.getName());
 
         BinarySerializer serializer = serializerForClass(cls);
 
@@ -813,22 +799,9 @@ public class BinaryContext {
             registered
         );
 
-        if (!deserialize) {
-            BinaryMetadata binaryMetadata = new BinaryMetadata(
-                typeId,
-                typeName,
-                desc.fieldsMeta(),
-                affFieldName,
-                null,
-                desc.isEnum(),
-                cls.isEnum() ? enumMap(cls) : null
-            );
-
-            if (onlyLocReg)
-                metaHnd.addMetaLocally(typeId, binaryMetadata.wrap(this), false);
-            else
-                metaHnd.addMeta(typeId, binaryMetadata.wrap(this), false);
-        }
+        if (!deserialize)
+            metaHnd.addMeta(typeId, new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, null,
+                desc.isEnum(), cls.isEnum() ? enumMap(cls) : null).wrap(this), false);
 
         descByCls.put(cls, desc);
 
@@ -841,13 +814,12 @@ public class BinaryContext {
      * Creates and registers {@link BinaryClassDescriptor} for the given user {@code class}.
      *
      * @param desc Old descriptor that should be re-registered.
-     * @param onlyLocReg {@code true} if descriptor need to register only locally.
      * @return Class descriptor.
      */
-    private BinaryClassDescriptor registerUserClassDescriptor(BinaryClassDescriptor desc, boolean onlyLocReg) {
+    private BinaryClassDescriptor registerUserClassDescriptor(BinaryClassDescriptor desc) {
         boolean registered;
 
-        registered = registerUserClassName(desc.typeId(), desc.describedClass().getName(), onlyLocReg);
+        registered = registerUserClassName(desc.typeId(), desc.describedClass().getName());
 
         if (registered) {
             BinarySerializer serializer = desc.initialSerializer();
@@ -1219,18 +1191,15 @@ public class BinaryContext {
      *
      * @param typeId Type ID.
      * @param clsName Class Name.
-     * @param onlyLocReg {@code true} if descriptor need to register only locally.
      * @return {@code True} if the mapping was registered successfully.
      */
-    public boolean registerUserClassName(int typeId, String clsName, boolean onlyLocReg) {
+    public boolean registerUserClassName(int typeId, String clsName) {
         IgniteCheckedException e = null;
 
         boolean res = false;
 
         try {
-            res = onlyLocReg
-                ? marshCtx.registerClassNameLocally(JAVA_ID, typeId, clsName)
-                : marshCtx.registerClassName(JAVA_ID, typeId, clsName);
+            res = marshCtx.registerClassName(JAVA_ID, typeId, clsName);
         }
         catch (DuplicateTypeIdException dupEx) {
             // Ignore if trying to register mapped type name of the already registered class name and vise versa
