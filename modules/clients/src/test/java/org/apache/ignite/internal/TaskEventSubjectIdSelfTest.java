@@ -308,6 +308,9 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Events for class tasks that was started from external clients should contain
+     * client subject id instead of the node where it was started. This test checks it.
+     *
      * @throws Exception If failed.
      */
     public void testClient() throws Exception {
@@ -328,7 +331,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_STARTED, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertEquals(client.id(), evt.subjectId());
 
         assert it.hasNext();
 
@@ -337,7 +340,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_REDUCED, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertEquals(client.id(), evt.subjectId());
 
         assert it.hasNext();
 
@@ -346,7 +349,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_FINISHED, evt.type());
-        assertEquals(nodeId, evt.subjectId());
+        assertEquals(client.id(), evt.subjectId());
 
         assert !it.hasNext();
     }
