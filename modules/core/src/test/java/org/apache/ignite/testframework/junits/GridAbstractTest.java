@@ -2133,7 +2133,8 @@ public abstract class GridAbstractTest extends TestCase {
 
         runner.start();
 
-        runner.join(isDebug() ? 0 : getTestTimeout());
+//        runner.join(isDebug() ? 0 : getTestTimeout());
+        runner.join(10_000);
 
         if (runner.isAlive()) {
             U.error(log,
