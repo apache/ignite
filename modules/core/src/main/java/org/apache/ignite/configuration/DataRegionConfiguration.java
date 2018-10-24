@@ -471,7 +471,7 @@ public final class DataRegionConfiguration implements Serializable {
     /**
      * Sets {@link #setPageCompression(PageCompression) algorithm specific} page compression level.
      *
-     * @param pageCompressionLevel Page compression level, {@code null} for default.
+     * @param pageCompressionLevel Page compression level, {@code null} to use default.
      */
     public void setPageCompressionLevel(Integer pageCompressionLevel) {
         this.pageCompressionLevel = pageCompressionLevel;

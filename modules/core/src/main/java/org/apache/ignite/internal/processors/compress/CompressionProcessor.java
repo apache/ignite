@@ -41,6 +41,28 @@ public class CompressionProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param compressLevel Compression level.
+     * @param compression Compression algorithm.
+     * @return Compression level.
+     */
+    public static int checkCompressionLevelBounds(int compressLevel, PageCompression compression) {
+        switch (compression) {
+            case ZSTD:
+                if (compressLevel < -3 || compressLevel > 22) {
+                    throw new IllegalArgumentException("Compression level for " + compression +
+                        " must be between -3 and 22." );
+                }
+
+                return compressLevel;
+
+            case DROP_GARBAGE:
+                return 0;
+        }
+
+        throw new IllegalArgumentException("Compression: " + compression);
+    }
+
+    /**
      * @param pageId Page ID.
      * @param page Page buffer.
      * @param storeBlockSize Store block size.
