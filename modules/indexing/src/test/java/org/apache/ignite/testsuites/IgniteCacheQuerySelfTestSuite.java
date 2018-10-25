@@ -104,6 +104,7 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.Ignite
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQueryEvtsDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQueryP2PDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.encryption.EncryptedSqlTableTest;
 import org.apache.ignite.internal.processors.cache.index.BasicIndexTest;
 import org.apache.ignite.internal.processors.cache.index.DuplicateKeyValueClassesSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexClientBasicSelfTest;
@@ -185,6 +186,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.BaseH2CompareQueryTest
 import org.apache.ignite.internal.processors.query.h2.sql.GridQueryParsingTest;
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryDistributedJoinsTest;
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryTest;
+import org.apache.ignite.internal.processors.query.h2.twostep.InOperationExtractPartitionSelfTest;
 import org.apache.ignite.internal.processors.sql.IgniteCachePartitionedAtomicColumnConstraintsTest;
 import org.apache.ignite.internal.processors.sql.IgniteCachePartitionedTransactionalColumnConstraintsTest;
 import org.apache.ignite.internal.processors.sql.IgniteCacheReplicatedAtomicColumnConstraintsTest;
@@ -472,6 +474,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         // User operation SQL
         suite.addTestSuite(SqlParserUserSelfTest.class);
         suite.addTestSuite(SqlUserCommandSelfTest.class);
+        suite.addTestSuite(EncryptedSqlTableTest.class);
 
         suite.addTestSuite(ThreadLocalObjectPoolSelfTest.class);
         suite.addTestSuite(H2StatementCacheSelfTest.class);
@@ -483,6 +486,9 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         // GROUP_CONCAT
         suite.addTestSuite(IgniteSqlGroupConcatCollocatedTest.class);
         suite.addTestSuite(IgniteSqlGroupConcatNotCollocatedTest.class);
+
+        // Partition pruning.
+        suite.addTestSuite(InOperationExtractPartitionSelfTest.class);
 
         return suite;
     }

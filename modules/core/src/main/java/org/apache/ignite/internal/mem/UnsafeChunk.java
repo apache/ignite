@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.mem;
 
-import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 

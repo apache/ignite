@@ -18,7 +18,6 @@
 package org.apache.ignite.cache;
 
 import java.util.Collection;
-import java.util.Objects;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
