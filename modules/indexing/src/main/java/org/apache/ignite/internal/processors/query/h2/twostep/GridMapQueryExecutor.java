@@ -959,16 +959,17 @@ public class GridMapQueryExecutor {
             }
 
             // All request results are in the memory in result set already, so it's ok to release partitions.
-            if (!lazy || qryResults.isAllClosed())
+            // The condition: (qryResults.lazyWorker() == null) is used
+            // instead of the (qryResults.isAllClosed()) because the lazy worker is created in case at least one
+            // result is not full fetched and #isAllClosed method iterates over resuts map.
+            if (!lazy || qryResults.lazyWorker() == null)
                 releaseReservations();
             else {
-                if (MapQueryLazyWorker.currentWorker() == null) {
-                    final ObjectPoolReusable<H2ConnectionWrapper> detachedConn = h2.detachConnection();
+                final ObjectPoolReusable<H2ConnectionWrapper> detachedConn = h2.detachConnection();
 
-                    qryResults.lazyWorker().start(H2Utils.session(conn), detachedConn);
+                qryResults.lazyWorker().start(H2Utils.session(conn), detachedConn);
 
-                    GridH2QueryContext.clearThreadLocal();
-                }
+                GridH2QueryContext.clearThreadLocal();
             }
         }
         catch (Throwable e) {
@@ -1033,7 +1034,7 @@ public class GridMapQueryExecutor {
     private MapQueryLazyWorker createLazyWorker(ClusterNode node, long reqId, int segmentId) {
         MapQueryLazyWorkerKey key = new MapQueryLazyWorkerKey(node.id(), reqId, segmentId);
 
-        return  new MapQueryLazyWorker(ctx.igniteInstanceName(), key, log, this);
+        return new MapQueryLazyWorker(ctx.igniteInstanceName(), key, log, this);
     }
 
     /**

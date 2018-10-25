@@ -71,7 +71,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private boolean replicatedOnly;
 
-    /** Lazy mode is default since Ignite v.2.7. */
+    /** Lazy mode is default since Ignite v.2.8. */
     private boolean lazy = true;
 
     /** Partitions for query */

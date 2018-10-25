@@ -171,6 +171,9 @@ public class GridReduceQueryExecutor {
         }
     };
 
+    /** Default query timeout. */
+    private long dfltQueryTimeout;
+
     /**
      * @param qryIdGen Query ID generator.
      * @param busyLock Busy lock.
@@ -188,6 +191,8 @@ public class GridReduceQueryExecutor {
     public void start(final GridKernalContext ctx, final IgniteH2Indexing h2) throws IgniteCheckedException {
         this.ctx = ctx;
         this.h2 = h2;
+
+        dfltQueryTimeout = IgniteSystemProperties.getLong(IGNITE_SQL_RETRY_TIMEOUT, DFLT_RETRY_TIMEOUT);
 
         log = ctx.log(GridReduceQueryExecutor.class);
 
@@ -1220,9 +1225,6 @@ public class GridReduceQueryExecutor {
             }
         }
 
-        r.setStateOnException(ctx.localNodeId(),
-            new CacheException("Query is canceled.", new QueryCancelledException()));
-
         if (!runs.remove(qryReqId, r))
             U.warn(log, "Query run was already removed: " + qryReqId);
         else if (mvccTracker != null)
@@ -1849,6 +1851,13 @@ public class GridReduceQueryExecutor {
     }
 
     /**
+     * @return Kernal context.
+     */
+    public GridKernalContext context() {
+        return ctx;
+    }
+
+    /**
      * Cancel specified queries.
      *
      * @param queries Queries IDs to cancel.
@@ -1898,11 +1907,11 @@ public class GridReduceQueryExecutor {
      * @param qryTimeout Query timeout.
      * @return Query retry timeout.
      */
-    private static long retryTimeout(long qryTimeout) {
+    private long retryTimeout(long qryTimeout) {
         if (qryTimeout > 0)
             return qryTimeout;
 
-        return IgniteSystemProperties.getLong(IGNITE_SQL_RETRY_TIMEOUT, DFLT_RETRY_TIMEOUT);
+        return dfltQueryTimeout;
     }
 
     /** */
