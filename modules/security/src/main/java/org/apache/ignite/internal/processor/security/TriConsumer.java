@@ -34,5 +34,4 @@ public interface TriConsumer<A, B, C> {
      * @param c Third parameter.
      */
     public void accept(A a, B b, C c);
-
 }

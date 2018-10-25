@@ -27,66 +27,105 @@ import org.apache.ignite.plugin.security.SecuritySubjectType;
  * Security subject for tests.
  */
 public class TestSecuritySubject implements SecuritySubject {
-
+    /** Id. */
     private UUID id;
-    private SecuritySubjectType type = SecuritySubjectType.REMOTE_NODE;
-    private Object login;
-    private InetSocketAddress address;
-    private SecurityPermissionSet permissions;
 
+    /** Type. */
+    private SecuritySubjectType type = SecuritySubjectType.REMOTE_NODE;
+
+    /** Login. */
+    private Object login;
+
+    /** Address. */
+    private InetSocketAddress addr;
+
+    /** Permissions. */
+    private SecurityPermissionSet perms;
+
+    /**
+     * Default constructor.
+     */
     public TestSecuritySubject() {
+        // No-op.
     }
 
+    /**
+     * @param id Id.
+     * @param login Login.
+     * @param addr Address.
+     * @param perms Permissions.
+     */
     public TestSecuritySubject(UUID id,
         Object login,
-        InetSocketAddress address,
-        SecurityPermissionSet permissions) {
+        InetSocketAddress addr,
+        SecurityPermissionSet perms) {
         this.id = id;
         this.login = login;
-        this.address = address;
-        this.permissions = permissions;
+        this.addr = addr;
+        this.perms = perms;
     }
 
+    /** {@inheritDoc} */
     @Override public UUID id() {
         return id;
     }
 
+    /**
+     * @param id Id.
+     */
     public void setId(UUID id) {
         this.id = id;
     }
 
+    /** {@inheritDoc} */
     @Override public SecuritySubjectType type() {
         return type;
     }
 
+    /**
+     * @param type Type.
+     */
     public void setType(SecuritySubjectType type) {
         this.type = type;
     }
 
+    /** {@inheritDoc} */
     @Override public Object login() {
         return login;
     }
 
+    /**
+     * @param login Login.
+     */
     public void setLogin(Object login) {
         this.login = login;
     }
 
+    /** {@inheritDoc} */
     @Override public InetSocketAddress address() {
-        return address;
+        return addr;
     }
 
-    public void setAddress(InetSocketAddress address) {
-        this.address = address;
+    /**
+     * @param addr Address.
+     */
+    public void setAddr(InetSocketAddress addr) {
+        this.addr = addr;
     }
 
+    /** {@inheritDoc} */
     @Override public SecurityPermissionSet permissions() {
-        return permissions;
+        return perms;
     }
 
-    public void setPermissions(SecurityPermissionSet permissions) {
-        this.permissions = permissions;
+    /**
+     * @param perms Permissions.
+     */
+    public void setPerms(SecurityPermissionSet perms) {
+        this.perms = perms;
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
         return "TestSecuritySubject{" +
             "id=" + id +

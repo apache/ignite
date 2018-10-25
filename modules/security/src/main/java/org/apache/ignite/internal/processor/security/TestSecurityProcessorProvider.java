@@ -69,11 +69,11 @@ public class TestSecurityProcessorProvider implements PluginProvider {
 
     /** {@inheritDoc} */
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) throws IgniteCheckedException {
-
+        // No-op.
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
+    @Override public @Nullable Object createComponent(PluginContext ctx, Class cls) {
         if (cls.isAssignableFrom(GridSecurityProcessor.class)) {
             String secProcClsName = System.getProperty(
                 TEST_SECURITY_PROCESSOR_CLS, DFLT_TEST_SECURITY_PROCESSOR_CLS_NAME
@@ -139,7 +139,7 @@ public class TestSecurityProcessorProvider implements PluginProvider {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Serializable provideDiscoveryData(UUID nodeId) {
+    @Override public @Nullable Serializable provideDiscoveryData(UUID nodeId) {
         return null;
     }
 
