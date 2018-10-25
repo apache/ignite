@@ -80,10 +80,10 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
     private UpdateSourceIterator<?> it;
 
     /** Batch size. */
-    private int batchSize;
+    private final int batchSize;
 
     /** */
-    private AtomicInteger batchCntr = new AtomicInteger();
+    private final AtomicInteger batchCntr = new AtomicInteger();
 
     /** */
     @SuppressWarnings("unused")
@@ -164,6 +164,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             if(!topLocked && cctx.topology().holdsLock())
                 cctx.topology().readUnlock();
 
+            tx.markQueryEnlisted(null);
+
             for (Batch batch : next) {
                 ClusterNode node = batch.node();
 
@@ -220,8 +222,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
                     throw new ClusterTopologyCheckedException("Failed to get primary node " +
                         "[topVer=" + topVer + ", key=" + key + ']');
 
-                tx.markQueryEnlisted(null);
-
                 if (!sequential)
                     batch = batches.get(node.id());
                 else if (batch != null && !batch.node().equals(node))
@@ -244,7 +244,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
                 }
 
                 batch.add(op.isDeleteOrLock() ? key : cur,
-                    op != EnlistOperation.LOCK && cctx.affinityNode() && (cctx.isReplicated() || nodes.indexOf(cctx.localNode()) > 0));
+                    op != EnlistOperation.LOCK && cctx.affinityNode() && nodes.indexOf(cctx.localNode()) > 0);
 
                 if (batch.size() == batchSize)
                     res = markReady(res, batch);
@@ -260,16 +260,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             return res;
 
         // No data left - flush incomplete batches.
-        for (Batch batch0 : batches.values()) {
-            if (!batch0.ready()) {
-                if (res == null)
-                    res = new ArrayList<>();
-
-                batch0.ready(true);
-
-                res.add(batch0);
-            }
-        }
+        for (Batch batch0 : batches.values())
+            res = markReady(res, batch0);
 
         if (batches.isEmpty())
             onDone(this.res);
@@ -534,8 +526,9 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             else
                 sendNextBatches(nodeId);
         }
-        else if(res.remapVer() != null) {
-            assert !tx.hasRemoteLocks(); //TODO IGNITE-7164: can't remap. fail query.
+        else if (res.remapVer() != null && !isDone()) {
+            assert !tx.hasRemoteLocks();
+            assert SKIP_UPD.get(this) == 0;
 
             tx.onRemap(res.remapVer());
 
@@ -639,9 +632,9 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
         if (it instanceof RemapSourceIterator) {
             // Add current batches to begin.
-            batches.addAll(((RemapSourceIterator)it).batches);
+            batches.addAll(((RemapSourceIterator)it).staleBatches);
 
-            ((RemapSourceIterator)it).batches = batches;
+            ((RemapSourceIterator)it).staleBatches = batches;
         }
         else
             it = new RemapSourceIterator(batches, it);
@@ -743,13 +736,13 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
      */
     private static class RemapSourceIterator implements UpdateSourceIterator<Object> {
         /** */
-        List<Batch> batches;
+        List<Batch> staleBatches;
 
         /** */
         UpdateSourceIterator parent;
 
         public RemapSourceIterator(List<Batch> batches, UpdateSourceIterator it) {
-            this.batches = batches;
+            this.staleBatches = batches;
             this.parent = it;
         }
 
@@ -760,30 +753,30 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
         /** {@inheritDoc} */
         @Override public boolean hasNextX() throws IgniteCheckedException {
-            if (F.isEmpty(batches))
+            if (F.isEmpty(staleBatches))
                 return parent.hasNextX();
 
-            Iterator<Batch> it = batches.iterator();
+            Iterator<Batch> it = staleBatches.iterator();
 
             while (it.hasNext() && it.next().rows().isEmpty())
                 it.remove();
 
-            return !batches.isEmpty();
+            return !staleBatches.isEmpty();
         }
 
         /** {@inheritDoc} */
         @Override public Object nextX() throws IgniteCheckedException {
-            if (F.isEmpty(batches))
+            if (F.isEmpty(staleBatches))
                 return parent.nextX();
 
-            Batch batch = batches.get(0);
+            Batch batch = staleBatches.get(0);
 
             assert !batch.rows.isEmpty();
 
             Object res = batch.rows.remove(0);
 
             if (batch.rows.isEmpty())
-                batches.remove(0);
+                staleBatches.remove(0);
 
             return res;
         }
