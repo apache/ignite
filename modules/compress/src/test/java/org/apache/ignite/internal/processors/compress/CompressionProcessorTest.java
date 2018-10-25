@@ -19,6 +19,7 @@ import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.configuration.PageCompression.DROP_GARBAGE;
+import static org.apache.ignite.configuration.PageCompression.ZSTD;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorImpl.allocateDirectBuffer;
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 
@@ -41,14 +42,98 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     private CompressionProcessor p;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() {
+    @Override protected void beforeTest() {
         p = new CompressionProcessorImpl(new GridTestKernalContext(log));
     }
 
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testDataPage() throws IgniteCheckedException {
+    public void testDataPageCompact16() throws IgniteCheckedException {
+        blockSize = 16;
+        compression = DROP_GARBAGE;
+
+        doTestDataPage();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testDataPageCompact128() throws IgniteCheckedException {
+        blockSize = 128;
+        compression = DROP_GARBAGE;
+
+        doTestDataPage();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testDataPageCompact1k() throws IgniteCheckedException {
+        blockSize = 1024;
+        compression = DROP_GARBAGE;
+
+        doTestDataPage();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testDataPageCompact2k() throws IgniteCheckedException {
+        blockSize = 2 * 1024;
+        compression = DROP_GARBAGE;
+
+        doTestDataPage();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testDataPageZstd16() throws IgniteCheckedException {
+        blockSize = 16;
+        compression = ZSTD;
+        compressLevel = 19;
+
+        doTestDataPage();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testDataPageZstd128() throws IgniteCheckedException {
+        blockSize = 128;
+        compression = ZSTD;
+        compressLevel = 19;
+
+        doTestDataPage();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testDataPageZstd1k() throws IgniteCheckedException {
+        blockSize = 1024;
+        compression = ZSTD;
+        compressLevel = 19;
+
+        doTestDataPage();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testDataPageZstd2k() throws IgniteCheckedException {
+        blockSize = 2 * 1024;
+        compression = ZSTD;
+        compressLevel = 19;
+
+        doTestDataPage();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void doTestDataPage() throws IgniteCheckedException {
         Random rnd = ThreadLocalRandom.current();
 
         final byte[][] rows = new byte[][]{
@@ -84,7 +169,8 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
             }
         };
 
-        checkCompressDecompress(page, getContents);
+        // Empty data page.
+        checkCompressDecompress(page, getContents, false);
 
         GridIntList itemIds = new GridIntList();
 
@@ -97,12 +183,25 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
             itemIds.add(io.addRow(pageAddr, row, pageSize));
         }
 
-        checkCompressDecompress(page, getContents);
+        int freeSpace = io.getFreeSpace(pageAddr);
+
+        if (freeSpace != 0) {
+            byte[] lastRow = new byte[freeSpace];
+            rnd.nextBytes(lastRow);
+
+            io.addRowFragment(pageId, pageAddr, lastRow, 777L, pageSize);
+
+            assertEquals(0, io.getRealFreeSpace(pageAddr));
+        }
+
+        // Full data page.
+        checkCompressDecompress(page, getContents, io.getRealFreeSpace(pageAddr) == 0);
 
         for (int i = 0; i < itemIds.size(); i += 2)
             io.removeRow(pageAddr, itemIds.get(i), pageSize);
 
-        checkCompressDecompress(page, getContents);
+        // Half-filled data page.
+        checkCompressDecompress(page, getContents, false);
     }
 
     private void checkIo(PageIO io, ByteBuffer page) throws IgniteCheckedException {
@@ -110,7 +209,8 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         assertSame(io, PageIO.getPageIO(page));
     }
 
-    private void checkCompressDecompress( ByteBuffer page, Function<ByteBuffer, ?> getPageContents) throws IgniteCheckedException {
+    private void checkCompressDecompress(ByteBuffer page, Function<ByteBuffer, ?> getPageContents, boolean fullPage)
+        throws IgniteCheckedException {
         int pageSize = page.remaining();
         long pageId = PageIO.getPageId(page);
         PageIO io = PageIO.getPageIO(page);
@@ -122,7 +222,10 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         assertNotSame(page, compressed);
         assertEquals(0, page.position());
         assertEquals(pageSize, page.limit());
-        assertTrue(compressedSize < pageSize);
+
+        if (!fullPage || compression != DROP_GARBAGE)
+            assertTrue(compressedSize < pageSize);
+
         assertEquals(pageId, PageIO.getPageId(compressed));
 
         ByteBuffer decompress = allocateDirectBuffer(pageSize);

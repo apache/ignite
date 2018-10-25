@@ -30,9 +30,10 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.util.GridStringBuilder;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 
 /**
  * Data pages IO.
@@ -229,7 +230,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
      * @param pageAddr Page address.
      * @return Free space.
      */
-    private int getRealFreeSpace(long pageAddr) {
+    public int getRealFreeSpace(long pageAddr) {
         return PageUtils.getShort(pageAddr, FREE_SPACE_OFF);
     }
 
@@ -1120,10 +1121,14 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
         out.put(page).flip();
         page.reset();
 
-        long pageAddr = GridUnsafe.bufferAddress(out);
+        long pageAddr = bufferAddress(out);
+
+        int freeSpace = getRealFreeSpace(pageAddr);
+
+        if (freeSpace == 0)
+            return; // No garbage: nothing to compact here.
 
         int directCnt = getDirectCount(pageAddr);
-        int freeSpace = getRealFreeSpace(pageAddr);
 
         if (directCnt != 0) {
             int firstOff = getFirstEntryOffset(pageAddr);
@@ -1146,18 +1151,23 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
         assert page.position() == 0;
         assert page.limit() <= pageSize;
 
-        long pageAddr = GridUnsafe.bufferAddress(page);
+        long pageAddr = bufferAddress(page);
 
         int freeSpace = getRealFreeSpace(pageAddr);
-        int firstOff = getFirstEntryOffset(pageAddr);
-        int cnt = pageSize - firstOff;
-        int off = page.limit() - cnt;
 
-        assert off > PageIO.COMMON_HEADER_END;
-        assert cnt >= 0: cnt;
+        if (freeSpace != 0) {
+            int firstOff = getFirstEntryOffset(pageAddr);
+            int cnt = pageSize - firstOff;
 
-        if (cnt != 0)
-            moveBytes(pageAddr, off, cnt, freeSpace, pageSize);
+            if (cnt != 0) {
+                int off = page.limit() - cnt;
+
+                assert off > PageIO.COMMON_HEADER_END: off;
+                assert cnt > 0 : cnt;
+
+                moveBytes(pageAddr, off, cnt, freeSpace, pageSize);
+            }
+        }
 
         page.limit(pageSize);
     }
@@ -1279,6 +1289,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
      * @param pageSize Page size.
      */
     private void moveBytes(long addr, int off, int cnt, int step, int pageSize) {
+        assert cnt >= 0: cnt;
         assert step != 0 : step;
         assert off + step >= 0;
         assert off + step + cnt <= pageSize : "[off=" + off + ", step=" + step + ", cnt=" + cnt +

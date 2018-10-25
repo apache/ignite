@@ -65,14 +65,11 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
         ByteBuffer compact = tmp.get();
 
-        int limit = page.limit();
-        page.mark();
         try {
             ((CompactablePageIO)io).compactPage(page, compact);
         }
         finally {
-            page.reset();
-            page.limit(limit);
+            page.clear();
         }
 
         int compactedSize = compact.limit();
@@ -121,7 +118,6 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
     /** {@inheritDoc} */
     @Override public void decompressPage(ByteBuffer page) throws IgniteCheckedException {
-        final int pos = page.position();
         final int pageSize = page.capacity();
 
         byte compressType = PageIO.getCompressionType(page);
@@ -139,14 +135,12 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
                 ByteBuffer dst = tmp.get();
 
-                Zstd.decompress(dst, (ByteBuffer)page
-                    .position(pos + PageIO.COMMON_HEADER_END)
-                    .limit(pos + compressSize));
+                page.position(PageIO.COMMON_HEADER_END).limit(compressSize);
+                Zstd.decompress(dst, page);
+                dst.flip();
 
-                page.position(pos + PageIO.COMMON_HEADER_END)
-                    .limit(pos + pageSize);
-                page.put((ByteBuffer)dst.flip())
-                    .position(pos);
+                page.position(PageIO.COMMON_HEADER_END).limit(pageSize);
+                page.put(dst).position(0);
 
                 break;
 
