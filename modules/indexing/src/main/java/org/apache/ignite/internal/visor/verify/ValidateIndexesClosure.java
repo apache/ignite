@@ -198,6 +198,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
         List<T2<GridCacheContext, Index>> idxArgs = new ArrayList<>();
 
         totalCacheGrps = grpIds.size();
+
         Map<Integer, IndexIntegrityCheckIssue> integrityCheckResults = integrityCheckIndexesPartitions(grpIds);
 
         for (Integer grpId : grpIds) {
@@ -305,6 +306,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                     calcExecutor.submit(new Callable<T2<Integer, IndexIntegrityCheckIssue>>() {
                         @Override public T2<Integer, IndexIntegrityCheckIssue> call() throws Exception {
                             IndexIntegrityCheckIssue issue = integrityCheckIndexPartition(grpCtx);
+
                             return new T2<>(grpCtx.groupId(), issue);
                         }
                     });
@@ -351,6 +353,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
             long pageId = PageIdUtils.pageId(PageIdAllocator.INDEX_PARTITION, PageIdAllocator.FLAG_IDX, 0);
 
             ByteBuffer buf = ByteBuffer.allocateDirect(ctx.config().getDataStorageConfiguration().getPageSize());
+
             buf.order(ByteOrder.nativeOrder());
 
             for (int pageNo = 0; pageNo < pageStore.pages(); pageId++, pageNo++) {
@@ -708,6 +711,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
     /**
      * @param e Future result exception.
+     * @return Unwrapped exception.
      */
     private IgniteException unwrapFutureException(Exception e) {
         assert e instanceof InterruptedException || e instanceof ExecutionException : "Expecting either InterruptedException " +
