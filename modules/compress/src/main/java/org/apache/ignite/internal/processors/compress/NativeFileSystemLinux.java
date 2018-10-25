@@ -1,16 +1,11 @@
 package org.apache.ignite.internal.processors.compress;
 
-import com.sun.jna.LastErrorException;
-import com.sun.jna.Native;
-import com.sun.jna.Platform;
-import com.sun.jna.Structure;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
+import org.apache.ignite.IgniteException;
 
-public final class NativeFileSystemLinux implements NativeFileSystem {
+/**
+ * Linux native file system API.
+ */
+public final class NativeFileSystemLinux extends NativeFileSystemPosix {
     /**
      * default is extend size
      */
@@ -100,56 +95,11 @@ public final class NativeFileSystemLinux implements NativeFileSystem {
     /**
      * If the native calls are supported.
      */
-    public static final boolean SUPPORTED;
-
-    static {
-        boolean ok = false;
-
-        if (Platform.isLinux()) {
-            try {
-                Native.register(Platform.C_LIBRARY_NAME);
-                ok = true;
-            }
-            catch (RuntimeException e) {
-                e.printStackTrace();
-            }
-        }
-        else
-            System.out.println("not Linux");
-
-        SUPPORTED = ok;
-    }
-
-    /** */
-    private final ConcurrentHashMap<Path, Integer> fsBlockSizeCache = new ConcurrentHashMap<>();
+    public static final boolean SUPPORTED = true;
 
     /** {@inheritDoc} */
     @Override public boolean isSupported() {
         return SUPPORTED;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getFileBlockSize(Path path) {
-        if (!SUPPORTED)
-            throw new UnsupportedOperationException();
-
-        Path root;
-
-        try {
-            root = path.toRealPath().getRoot();
-        }
-        catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
-
-        Integer fsBlockSize = fsBlockSizeCache.get(root);
-
-        if (fsBlockSize == null) {
-            fsBlockSize = Math.toIntExact(getFileSystemBlockSize(root));
-            fsBlockSizeCache.putIfAbsent(root, fsBlockSize);
-        }
-
-        return fsBlockSize;
     }
 
     /** {@inheritDoc} */
@@ -160,12 +110,7 @@ public final class NativeFileSystemLinux implements NativeFileSystem {
         int res = fallocate(fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, off, len);
 
         if (res != 0)
-            throw new IllegalStateException("errno: " + Native.getLastError());
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSparseFileSize(Path file) {
-        return stat(file).st_blocks * 512;
+            throw new IgniteException("errno: " + res);
     }
 
     /**
@@ -179,112 +124,8 @@ public final class NativeFileSystemLinux implements NativeFileSystem {
      * @param len required length.
      * @return On success, fallocate() returns zero.  On error, -1 is returned and
      *        {@code errno} is set to indicate the error.
-     * @throws LastErrorException If failed.
      */
-    public static native int fallocate(int fd, int mode, long off, long len) throws LastErrorException;
-
-    /**
-     * @param path Path.
-     * @return File system block size in bytes.
-     */
-    public static long getFileSystemBlockSize(Path path) {
-        return stat(path).st_blksize;
-    }
-
-    private static Stat stat(Path path) {
-        Stat s = new Stat();
-
-        int err = stat(path.toString(), s);
-
-        if (err != 0)
-            throw new IllegalStateException("Error code: " + err);
-
-        return s;
-    }
-
-    /**
-     * @param path Path.
-     * @return Error code or {@code 0}.
-     */
-    public static native int stat(String path, Stat stat);
-
-    /**
-     */
-    public static final class TimeStruct extends Structure {
-        /** */
-        long tv_sec;
-
-        /** */
-        long tv_usec;
-
-        /** {@inheritDoc} */
-        @Override protected List<String> getFieldOrder() {
-            return Arrays.asList("tv_sec", "tv_usec");
-        }
-    }
-
-    /**
-     */
-    public static final class Stat extends Structure {
-        /** ID of device containing file. */
-        long st_dev;
-
-        /** inode number. */
-        long st_ino;
-
-        /** Number of hard links. */
-        long st_nlink;
-
-        /** Protection. */
-        int st_mode;
-
-        /** User ID of owner. */
-        int st_uid;
-
-        /** Group ID of owner. */
-        int st_gid;
-
-        /** Padding field. */
-        int unused;
-
-        /** Device ID (if special file). */
-        long st_rdev;
-
-        /** Total size, in bytes. */
-        long st_size;
-
-        /** Blocksize for file system I/O. */
-        long st_blksize;
-
-        /** Number of 512B blocks allocated. */
-        int st_blocks;
-
-        /** Time of last access. */
-        TimeStruct st_atime;
-
-        /** Time of last modification. */
-        TimeStruct st_mtime;
-
-        /** Time of last status change. */
-        TimeStruct st_ctime;
-
-        /** {@inheritDoc} */
-        @Override protected List<String> getFieldOrder() {
-            return Arrays.asList(
-                "st_dev",
-                "st_ino",
-                "st_nlink",
-                "st_mode",
-                "st_uid",
-                "st_gid",
-                "st_rdev",
-                "st_size",
-                "st_blksize",
-                "st_blocks",
-                "st_atime",
-                "st_mtime",
-                "st_ctime"
-            );
-        }
+    public static int fallocate(int fd, int mode, long off, long len) {
+        return 0;
     }
 }

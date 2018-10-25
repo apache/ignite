@@ -32,6 +32,7 @@ public class FileSystemUtilsTest extends TestCase {
         FileChannel ch = raf.getChannel();
 
         int fsBlockSize = getFileSystemBlockSize(file);
+        System.out.println("fsBlockSize: " + fsBlockSize);
         assertTrue(fsBlockSize > 0);
 
         int pageSize = fsBlockSize * 4;
