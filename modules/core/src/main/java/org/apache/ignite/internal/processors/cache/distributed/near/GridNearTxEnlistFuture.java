@@ -753,11 +753,20 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
      */
     private static class RemapSourceIterator implements UpdateSourceIterator<Object> {
         /** */
-        Queue<Object> rows;
+        private static final long serialVersionUID = 1L;
 
         /** */
-        UpdateSourceIterator parent;
+        private Queue<Object> rows;
 
+        /** */
+        private UpdateSourceIterator parent;
+
+        /**
+         * Constructor.
+         *
+         * @param rows Rows.
+         * @param it Parent iterator.
+         */
         public RemapSourceIterator(Queue<Object> rows, UpdateSourceIterator it) {
             this.rows = rows;
             this.parent = it;
