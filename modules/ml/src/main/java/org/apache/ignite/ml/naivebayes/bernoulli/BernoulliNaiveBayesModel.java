@@ -69,7 +69,6 @@ public class BernoulliNaiveBayesModel implements Model<Vector, Double>, Exportab
                 probability += (x == 1 ? Math.log(p) : Math.log(1 - p));
             }
 
-            System.out.println("prbablity = " + probability);
             probability = Math.exp(probability);
             if (probability > maxProbapility) {
                 max = i;
