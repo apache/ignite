@@ -2425,7 +2425,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public void mvccFinish(IgniteTxAdapter tx, boolean commit) throws IgniteCheckedException {
         if (!cctx.kernalContext().clientNode() && tx.mvccSnapshot != null && !(tx.near() && tx.remote()))
-            cctx.coordinators().updateState(tx.mvccSnapshot, commit ? TxState.COMMITTED : TxState.ABORTED, tx.local());
+            cctx.coordinators().updateTxState(
+                tx.mvccSnapshot.coordinatorVersion(),
+                tx.mvccSnapshot.counter(),
+                commit ? TxState.COMMITTED : TxState.ABORTED,
+                tx.local()
+            );
     }
 
     /**
@@ -2435,8 +2440,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @throws IgniteCheckedException If failed to add version to TxLog.
      */
     public void mvccPrepare(IgniteTxAdapter tx) throws IgniteCheckedException {
-        if (!cctx.kernalContext().clientNode() && tx.mvccSnapshot != null && !(tx.near() && tx.remote()))
-            cctx.coordinators().updateState(tx.mvccSnapshot, TxState.PREPARED);
+        if (!cctx.kernalContext().clientNode() && tx.mvccSnapshot != null && !(tx.near() && tx.remote())) {
+            cctx.coordinators().updateTxState(
+                tx.mvccSnapshot.coordinatorVersion(),
+                tx.mvccSnapshot.counter(),
+                TxState.PREPARED,
+                true
+            );
+        }
     }
 
     /**

@@ -467,11 +467,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public byte state(MvccVersion ver) throws IgniteCheckedException {
-        return state(ver.coordinatorVersion(), ver.counter());
-    }
-
-    /** {@inheritDoc} */
     @Override public byte txState(long crdVer, long cntr) throws IgniteCheckedException {
         return txLog.get(crdVer, cntr);
     }
@@ -499,13 +494,13 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public void registerLocalTx(long crd, long cntr) {
-        waitMap.putIfAbsent(new TxKey(crd, cntr), new WaitList());
+    @Override public void registerLocalTx(long crdVer, long cntr) {
+        waitMap.putIfAbsent(new TxKey(crdVer, cntr), new WaitList());
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasLocalTx(long crd, long cntr) {
-        return waitMap.containsKey(new TxKey(crd, cntr));
+    @Override public boolean hasLocalTx(long crdVer, long cntr) {
+        return waitMap.containsKey(new TxKey(crdVer, cntr));
     }
 
     /** {@inheritDoc} */
@@ -1287,7 +1282,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                                                 if (!( key.major() == snapshot.coordinatorVersion()
                                                     && key.minor() > snapshot.cleanupVersion()
                                                     || key.major() > snapshot.coordinatorVersion())) {
-                                                    byte state = state(key.major(), key.minor());
+                                                    byte state = txState(key.major(), key.minor());
 
                                                     assert state == TxState.ABORTED : "tx state=" + state;
                                                 }
