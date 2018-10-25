@@ -259,7 +259,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         assert dhtMap != null;
         assert nearMap != null;
 
-        timeoutObj = timeout > 0 ? new PrepareTimeoutObject(timeout) : null;
+        timeoutObj = timeout > 0 && !tx.onePhaseCommit() ? new PrepareTimeoutObject(timeout) : null;
     }
 
     /** {@inheritDoc} */
@@ -730,7 +730,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             tx.clearPrepareFuture(this);
 
         // Do not commit one-phase commit transaction if originating node has near cache enabled.
-        if (tx.onePhaseCommit() && tx.commitOnPrepare()) {
+        if (tx.commitOnPrepare()) {
             assert last;
 
             Throwable prepErr = this.err;
@@ -738,63 +738,58 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             // Must create prepare response before transaction is committed to grab correct return value.
             final GridNearTxPrepareResponse res = createPrepareResponse(prepErr);
 
-            onComplete(res);
+            if (!onComplete(res))
+                return false;
 
-            if (tx.commitOnPrepare()) {
-                if (tx.markFinalizing(IgniteInternalTx.FinalizationStatus.USER_FINISH)) {
-                    CIX1<IgniteInternalFuture<IgniteInternalTx>> resClo =
-                        new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
-                            @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> fut) {
-                                if(res.error() == null && fut.error() != null)
-                                    res.error(fut.error());
+            if (tx.markFinalizing(IgniteInternalTx.FinalizationStatus.USER_FINISH)) {
+                CIX1<IgniteInternalFuture<IgniteInternalTx>> resClo =
+                    new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
+                        @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> fut) {
+                            if (res.error() == null && fut.error() != null)
+                                res.error(fut.error());
 
-                                if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1))
-                                    sendPrepareResponse(res);
-                            }
-                        };
-
-                    try {
-                        if (prepErr == null) {
-                            try {
-                                tx.commitAsync().listen(resClo);
-                            }
-                            catch (Throwable e) {
-                                res.error(e);
-
-                                tx.systemInvalidate(true);
-
-                                try {
-                                    tx.rollbackAsync().listen(resClo);
-                                }
-                                catch (Throwable e1) {
-                                    e.addSuppressed(e1);
-                                }
-
-                                throw e;
-                            }
+                            if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1))
+                                sendPrepareResponse(res);
                         }
-                        else if (!cctx.kernalContext().isStopping()) {
+                    };
+
+                try {
+                    if (prepErr == null) {
+                        try {
+                            tx.commitAsync().listen(resClo);
+                        }
+                        catch (Throwable e) {
+                            res.error(e);
+
+                            tx.systemInvalidate(true);
+
                             try {
                                 tx.rollbackAsync().listen(resClo);
                             }
-                            catch (Throwable e) {
-                                if (err != null)
-                                    err.addSuppressed(e);
-
-                                throw err;
+                            catch (Throwable e1) {
+                                e.addSuppressed(e1);
                             }
+
+                            throw e;
                         }
                     }
-                    catch (Throwable e){
-                        tx.logTxFinishErrorSafe(log, true, e);
+                    else if (!cctx.kernalContext().isStopping()) {
+                        try {
+                            tx.rollbackAsync().listen(resClo);
+                        }
+                        catch (Throwable e) {
+                            if (err != null)
+                                err.addSuppressed(e);
 
-                        cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+                            throw err;
+                        }
                     }
                 }
-            }
-            else {
-                if (REPLIED_UPD.compareAndSet(this, 0, 1))
-                    sendPrepareResponse(res);
+                catch (Throwable e) {
+                    tx.logTxFinishErrorSafe(log, true, e);
+
+                    cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+                }
             }
 
             return true;
@@ -804,7 +799,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 GridNearTxPrepareResponse res = createPrepareResponse(this.err);
 
                 // Will call super.onDone().
-                onComplete(res);
+                if (!onComplete(res))
+                    return false;
 
                 sendPrepareResponse(res);
 
