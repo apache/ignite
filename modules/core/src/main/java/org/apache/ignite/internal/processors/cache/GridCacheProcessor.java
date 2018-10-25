@@ -1082,8 +1082,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     /**
      * @see ClusterCachesInfo#getOrCreateVersion(String, boolean)
      */
-    public GridCacheConfigurationVersion getOrCreateCacheVersion(String cacheName, boolean staticlyConfigured) {
-        return cachesInfo.getOrCreateVersion(cacheName, staticlyConfigured);
+    public GridCacheConfigurationVersion getOrCreateCacheVersion(String cacheName, boolean staticallyConfigured) {
+        return cachesInfo.getOrCreateVersion(cacheName, staticallyConfigured);
     }
 
     /**
