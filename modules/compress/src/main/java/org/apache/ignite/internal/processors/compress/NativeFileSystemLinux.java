@@ -1,5 +1,6 @@
 package org.apache.ignite.internal.processors.compress;
 
+import jnr.ffi.LibraryLoader;
 import org.apache.ignite.IgniteException;
 
 /**
@@ -97,6 +98,9 @@ public final class NativeFileSystemLinux extends NativeFileSystemPosix {
      */
     public static final boolean SUPPORTED = true;
 
+    /** */
+    private static final LinuxLibC libc = LibraryLoader.create(LinuxLibC.class).load("c");
+
     /** {@inheritDoc} */
     @Override public boolean isSupported() {
         return SUPPORTED;
@@ -107,25 +111,27 @@ public final class NativeFileSystemLinux extends NativeFileSystemPosix {
         if (!SUPPORTED)
             throw new UnsupportedOperationException();
 
-        int res = fallocate(fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, off, len);
+        int res = libc.fallocate(fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, off, len);
 
         if (res != 0)
             throw new IgniteException("errno: " + res);
     }
 
     /**
-     * Allows the caller to directly manipulate the allocated
-     * disk space for the file referred to by fd for the byte range starting
-     * at {@code off} offset and continuing for {@code len} bytes.
-     *
-     * @param fd file descriptor.
-     * @param mode determines the operation to be performed on the given range.
-     * @param off required position offset.
-     * @param len required length.
-     * @return On success, fallocate() returns zero.  On error, -1 is returned and
-     *        {@code errno} is set to indicate the error.
      */
-    public static int fallocate(int fd, int mode, long off, long len) {
-        return 0;
+    public interface LinuxLibC {
+        /**
+         * Allows the caller to directly manipulate the allocated
+         * disk space for the file referred to by fd for the byte range starting
+         * at {@code off} offset and continuing for {@code len} bytes.
+         *
+         * @param fd   file descriptor.
+         * @param mode determines the operation to be performed on the given range.
+         * @param off  required position offset.
+         * @param len  required length.
+         * @return On success, fallocate() returns zero.  On error, -1 is returned and
+         * {@code errno} is set to indicate the error.
+         */
+        public int fallocate(int fd, int mode, long off, long len);
     }
 }
