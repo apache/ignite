@@ -943,7 +943,6 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                     if(ver == null){
                         ver = new GridCacheConfigurationVersion(
                             cacheName,
-                            storedCacheData.config().getGroupName(),
                             caches.get(cacheName).isStaticallyConfigured()
                         );
 
@@ -1081,14 +1080,10 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     }
 
     /**
-     * @see ClusterCachesInfo#getOrCreateVersion(String, String, boolean)
+     * @see ClusterCachesInfo#getOrCreateVersion(String, boolean)
      */
-    public GridCacheConfigurationVersion getOrCreateCacheVersion(
-        String cacheName,
-        String cacheGrpName,
-        boolean staticlyConfigured
-    ) {
-        return cachesInfo.getOrCreateVersion(cacheName, cacheGrpName, staticlyConfigured);
+    public GridCacheConfigurationVersion getOrCreateCacheVersion(String cacheName, boolean staticlyConfigured) {
+        return cachesInfo.getOrCreateVersion(cacheName, staticlyConfigured);
     }
 
     /**

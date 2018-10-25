@@ -37,9 +37,6 @@ public class GridCacheConfigurationVersion implements Serializable {
     /** Cache name. */
     private final String cacheName;
 
-    /** Cache group name. */
-    private final String cacheGrpName;
-
     /** {@code true} if cache was statically configured. */
     private final boolean staticallyConfigured;
 
@@ -47,12 +44,10 @@ public class GridCacheConfigurationVersion implements Serializable {
      * Creates initial version.
      *
      * @param cacheName Cache name.
-     * @param cacheGrpName Cache group name.
      * @param staticallyConfigured Statically configured cache flag.
      */
-    public GridCacheConfigurationVersion(String cacheName, String cacheGrpName, boolean staticallyConfigured) {
+    public GridCacheConfigurationVersion(String cacheName, boolean staticallyConfigured) {
         this.cacheName = cacheName;
-        this.cacheGrpName = cacheGrpName;
         this.staticallyConfigured = staticallyConfigured;
     }
 
@@ -102,11 +97,6 @@ public class GridCacheConfigurationVersion implements Serializable {
     public GridCacheConfigurationChangeAction lastAction() { return lastAct; }
 
     /**
-     * @return Cache group name.
-     */
-    public String cacheGroupName() { return cacheGrpName; }
-
-    /**
      * @return Cache name.
      */
     public String cacheName() { return cacheName; }
@@ -131,12 +121,11 @@ public class GridCacheConfigurationVersion implements Serializable {
         return id == ver.id &&
             staticallyConfigured == ver.staticallyConfigured &&
             lastAct == ver.lastAct &&
-            Objects.equals(cacheName, ver.cacheName) &&
-            Objects.equals(cacheGrpName, ver.cacheGrpName);
+            Objects.equals(cacheName, ver.cacheName);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(cacheName, cacheGrpName, staticallyConfigured);
+        return Objects.hash(cacheName, staticallyConfigured);
     }
 }

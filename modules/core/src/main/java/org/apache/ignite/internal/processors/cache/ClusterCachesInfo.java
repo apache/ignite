@@ -1538,20 +1538,18 @@ class ClusterCachesInfo {
      * @return Cache configuration version for cache with {@code desc} descriptor.
      */
     GridCacheConfigurationVersion getOrCreateVersion(DynamicCacheDescriptor desc) {
-        return getOrCreateVersion(desc.cacheName(), desc.groupDescriptor().groupName(), desc.staticallyConfigured());
+        return getOrCreateVersion(desc.cacheName(), desc.staticallyConfigured());
     }
 
     /**
      * Creates cache configuration version for {@code cacheName}, if it isn't present.
      *
      * @param cacheName Cache name.
-     * @param cacheGrpName Cache group name.
      * @param staticallyConfigured Statically configured cache flag.
      * @return Cache configuration version for cache with {@code cacheName} name.
      */
     GridCacheConfigurationVersion getOrCreateVersion(
         String cacheName,
-        String cacheGrpName,
         boolean staticallyConfigured
     ) {
         assert cacheName != null;
@@ -1559,7 +1557,7 @@ class ClusterCachesInfo {
         GridCacheConfigurationVersion ver = getVersion(cacheName);
 
         if (ver == null) {
-            ver = new GridCacheConfigurationVersion(cacheName, cacheGrpName, staticallyConfigured);
+            ver = new GridCacheConfigurationVersion(cacheName, staticallyConfigured);
 
             GridCacheConfigurationVersion old = cachesConfigurationVer.putIfAbsent(cacheName, ver);
 
