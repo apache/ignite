@@ -1129,6 +1129,8 @@
         <option name="m_reportEmptyBlocks" value="true"/>
         <option name="commentsAreContent" value="true"/>
     </inspection_tool>
+    <inspection_tool class="EqualityToSameElements" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="EqualsOnSuspiciousObject" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="EmptyStatementBodyJS" enabled="false" level="WARNING" enabled_by_default="false">
         <option name="m_reportEmptyBlocks" value="false"/>
     </inspection_tool>
@@ -2499,6 +2501,8 @@
         <scope name="runtime.classes" level="ERROR" enabled="false"/>
     </inspection_tool>
     <inspection_tool class="JavaeeApplicationDomInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
+    <inspection_tool class="JavaReflectionInvocation" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="JavaReflectionMemberAccess" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="JdkProxiedBeanTypeInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
     <inspection_tool class="JpaAttributeMemberSignatureInspection" enabled="false" level="ERROR"
                      enabled_by_default="false"/>
@@ -3060,6 +3064,7 @@
     <inspection_tool class="NumericToString" enabled="false" level="WARNING" enabled_by_default="false">
         <scope name="android" level="WARNING" enabled="false"/>
     </inspection_tool>
+    <inspection_tool class="ObviousNullCheck" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="ObjectAllocationInLoop" enabled="false" level="WARNING" enabled_by_default="false">
         <scope name="android" level="WARNING" enabled="false"/>
     </inspection_tool>
@@ -3088,6 +3093,11 @@
         </scope>
         <option name="ignoreRequiredObsoleteCollectionTypes" value="false"/>
     </inspection_tool>
+    <inspection_tool class="ObviousNullCheck" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="OptionEqualsSome" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="OptionalAssignedToNull" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="OptionalIsPresent" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="OverwrittenKey" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="OctalAndDecimalIntegersMixed" enabled="false" level="WARNING" enabled_by_default="false">
         <scope name="android" level="WARNING" enabled="false"/>
     </inspection_tool>
@@ -4871,6 +4881,8 @@
     <inspection_tool class="UpperCaseFieldNameNotConstant" enabled="false" level="WARNING" enabled_by_default="false">
         <scope name="android" level="WARNING" enabled="false"/>
     </inspection_tool>
+    <inspection_tool class="UseBulkOperation" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="UseCompareMethod" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="UseCouple" enabled="false" level="WARNING" enabled_by_default="false">
         <scope name="android" level="WARNING" enabled="false"/>
     </inspection_tool>
