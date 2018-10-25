@@ -55,7 +55,7 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                     user.token = utilsService.randomString(settings.tokenLength);
 
                     if (settings.application.disableSelfRegistration && !user.admin && !createdByAdmin)
-                        reject(new errors.ServerErrorException('Self registration is not allowed. Ask your Web Conosle administrator to create account for you'));
+                        return Promise.reject(new errors.ServerErrorException('Self registration is not allowed. Ask your Web Console administrator to create account for you.'));
 
                     return new mongo.Account(user);
                 })
