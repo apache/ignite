@@ -82,9 +82,10 @@
         <javax.cache.version>1.0.0</javax.cache.version>
         <jetbrains.annotations.version>16.0.3</jetbrains.annotations.version>
         <jetty.version>9.4.11.v20180605</jetty.version>
-        <jna.version>4.5.2</jna.version>
         <jmh.version>1.13</jmh.version>
         <jms.spec.version>1.1.1</jms.spec.version>
+        <jna.version>4.5.2</jna.version>
+        <jnr.posix.version>3.0.46</jnr.posix.version>
         <jsch.bundle.version>0.1.54_1</jsch.bundle.version>
         <jsch.version>0.1.54</jsch.version>
         <jsonlib.bundle.version>2.4_1</jsonlib.bundle.version>

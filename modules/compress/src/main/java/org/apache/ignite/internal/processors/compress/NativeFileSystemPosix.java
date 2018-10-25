@@ -11,7 +11,7 @@ import org.apache.ignite.IgniteException;
 /**
  * Posix file system API.
  */
-public abstract class NativeFileSystemPosix implements NativeFileSystem {
+public class NativeFileSystemPosix implements NativeFileSystem {
     /** */
     private static POSIX posix = POSIXFactory.getPOSIX();
 
@@ -44,5 +44,10 @@ public abstract class NativeFileSystemPosix implements NativeFileSystem {
         }
 
         return fsBlockSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void punchHole(int fd, long off, long len) {
+        throw new UnsupportedOperationException();
     }
 }

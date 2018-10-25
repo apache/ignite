@@ -91,7 +91,7 @@ public final class NativeFileSystemLinux extends NativeFileSystemPosix {
      * to say that it cannot be used with the punch, zero, collapse, or
      * insert range modes.
      */
-    public static final int FALLOC_FL_UNSHARE_RANGE	= 0x40;
+    public static final int FALLOC_FL_UNSHARE_RANGE = 0x40;
 
     /** */
     private static final LinuxNativeLibC libc = LibraryLoader.create(LinuxNativeLibC.class).load("c");
