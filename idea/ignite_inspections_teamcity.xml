@@ -126,24 +126,6 @@
     <inspection_tool class="CastToConcreteClass" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="CastToIncompatibleInterface" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="CaughtExceptionImmediatelyRethrown" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="CdiAlternativeInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
-    <inspection_tool class="CdiDecoratorInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
-    <inspection_tool class="CdiDisposerMethodInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
-    <inspection_tool class="CdiDomBeans" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="CdiInjectInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
-    <inspection_tool class="CdiInjectionPointsInspection" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="CdiInspectionPointsInspection" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="CdiInterceptorInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
-    <inspection_tool class="CdiManagedBeanInconsistencyInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
-    <inspection_tool class="CdiNormalScopeInspection" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="CdiObservesInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
-    <inspection_tool class="CdiSpecializesInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
-    <inspection_tool class="CdiStereotypeInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
-    <inspection_tool class="CdiStereotypeRestrictionsInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
-    <inspection_tool class="CdiTypedAnnotationInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
-    <inspection_tool class="CdiUnproxyableBeanTypesInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
-    <inspection_tool class="CfmlFileReference" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="CfmlReferenceInspection" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="ChainedEquality" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="ChainedMethodCall" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="ChangeToOperator" enabled="false" level="WEAK WARNING" enabled_by_default="false"/>
@@ -238,11 +220,17 @@
     <inspection_tool class="ConfusingMainMethod" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="ConfusingOctalEscape" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="ConstantAssertCondition" enabled="false" level="WARNING" enabled_by_default="false"/>
+    <inspection_tool class="ConstantConditionIf" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
     <inspection_tool class="ConstantConditionalExpression" enabled="false" level="WARNING" enabled_by_default="false">
         <option name="SUGGEST_NULLABLE_ANNOTATIONS" value="false"/>
         <option name="DONT_REPORT_TRUE_ASSERT_STATEMENTS" value="false"/>
         <option name="REPORT_NULLS_PASSED_TO_NOT_NULL_PARAMETER" value="false"/>
     </inspection_tool>
+    <inspection_tool class="ConstantConditions" enabled="false" level="WARNING" enabled_by_default="false">
+        <option name="SUGGEST_NULLABLE_ANNOTATIONS" value="true" />
+        <option name="DONT_REPORT_TRUE_ASSERT_STATEMENTS" value="true" />
+    </inspection_tool>
+    <inspection_tool class="ConstantExpression" enabled="false" level="INFORMATION" enabled_by_default="false" />
     <inspection_tool class="ConstantDeclaredInAbstractClass" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="ConstantDeclaredInInterface" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="ConstantIfStatement" enabled="false" level="WARNING" enabled_by_default="false">
@@ -259,7 +247,6 @@
     <inspection_tool class="ContextComponentScanInconsistencyInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
     <inspection_tool class="ContextJavaBeanUnresolvedMethodsInspection" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="ContinueOrBreakFromFinallyBlock" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="ContinueOrBreakFromFinallyBlockJS" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="ContinueStatement" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="ContinueStatementWithLabel" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="Contract" enabled="false" level="WARNING" enabled_by_default="false"/>
@@ -467,30 +454,12 @@
     <inspection_tool class="ForLoopThatDoesntUseLoopVariable" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="ForLoopWithMissingComponent" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="ForeachStatement" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="FtlCallsInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
-    <inspection_tool class="FtlDeprecatedBuiltInsInspection" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="FtlFileReferencesInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
-    <inspection_tool class="FtlImportCallInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
-    <inspection_tool class="FtlReferencesInspection" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="FtlTypesInspection" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="FtlWellformednessInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
     <inspection_tool class="GWTRemoteServiceAsyncCheck" enabled="false" level="ERROR" enabled_by_default="false"/>
     <inspection_tool class="GWTStyleCheck" enabled="false" level="ERROR" enabled_by_default="false"/>
     <inspection_tool class="GemInspection" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="Geronimo" enabled="false" level="ERROR" enabled_by_default="false"/>
     <inspection_tool class="GlassFish" enabled="false" level="ERROR" enabled_by_default="false"/>
     <inspection_tool class="Glassfish" enabled="false" level="ERROR" enabled_by_default="false"/>
-    <inspection_tool class="GrDeprecatedAPIUsage" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="GrEqualsBetweenInconvertibleTypes" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="GrFieldAlreadyDefined" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="GrFinalVariableAccess" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="GrMethodMayBeStatic" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="GrPackage" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="GrReassignedInClosureLocalVar" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="GrUnnecessaryDefModifier" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="GrUnnecessaryPublicModifier" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="GrUnnecessarySemicolon" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="GrUnresolvedAccess" enabled="false" level="WEAK WARNING" enabled_by_default="false"/>
     <inspection_tool class="GspInspection" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="GtkPreferredJComboBoxRenderer" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="Guava" enabled="false" level="WARNING" enabled_by_default="false"/>
@@ -1463,11 +1432,6 @@
     <inspection_tool class="VoidMethodAnnotatedWithGET" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="VolatileArrayField" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="VolatileLongOrDoubleField" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="VtlDirectiveArgsInspection" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="VtlFileReferencesInspection" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="VtlInterpolationsInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
-    <inspection_tool class="VtlReferencesInspection" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="VtlTypesInspection" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="WSReferenceInspection" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="WaitCalledOnCondition" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="WaitNotInLoop" enabled="false" level="WARNING" enabled_by_default="false"/>
