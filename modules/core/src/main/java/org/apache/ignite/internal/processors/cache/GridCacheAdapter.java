@@ -138,6 +138,7 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -183,6 +184,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** Maximum number of retries when topology changes. */
     public static final int MAX_RETRIES = IgniteSystemProperties.getInteger(IGNITE_CACHE_RETRIES_COUNT, 100);
+
+    /** Minimum version supporting partition preloading. */
+    private static final IgniteProductVersion PRELOAD_PARTITION_SINCE = IgniteProductVersion.fromString("2.7.0");
 
     /** Deserialization stash. */
     private static final ThreadLocal<IgniteBiTuple<String, String>> stash = new ThreadLocal<IgniteBiTuple<String,
@@ -288,6 +292,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** Asynchronous operations limit semaphore. */
     private Semaphore asyncOpsSem;
+
+    /** {@code True} if attempted to use partition preloading on outdated node. */
+    private volatile boolean partPreloadBadVerWarned;
 
     /** Active. */
     private volatile boolean active;
@@ -1272,6 +1279,20 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     private IgniteInternalFuture<?> executePreloadTask(int part) throws IgniteCheckedException {
         ClusterGroup grp = ctx.grid().cluster().forDataNodes(ctx.name());
+
+        @Nullable ClusterNode targetNode = ctx.affinity().primaryByPartition(part, ctx.topology().readyTopologyVersion());
+
+        if (targetNode == null || targetNode.version().compareTo(PRELOAD_PARTITION_SINCE) < 0) {
+            if (!partPreloadBadVerWarned) {
+                U.warn(log(), "Attempting to execute partition preloading task on outdated or not mapped node " +
+                    "[targetNodeVer=" + (targetNode == null ? "NA" : targetNode.version()) +
+                    ", minSupportedNodeVer=" + PRELOAD_PARTITION_SINCE + ']');
+
+                partPreloadBadVerWarned = true;
+            }
+
+            return new GridFinishedFuture<>();
+        }
 
         return ctx.closures().affinityRun(Collections.singleton(name()), part,
             new PartitionPreloadJob(ctx.name(), part), grp.nodes(), null);
