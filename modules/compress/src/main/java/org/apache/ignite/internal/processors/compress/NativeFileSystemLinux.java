@@ -6,6 +6,7 @@ import com.sun.jna.Platform;
 import com.sun.jna.Structure;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -143,8 +144,10 @@ public final class NativeFileSystemLinux implements NativeFileSystem {
 
         Integer fsBlockSize = fsBlockSizeCache.get(root);
 
-        if (fsBlockSize == null)
-            fsBlockSizeCache.put(root, fsBlockSize = getFileSystemBlockSize(root));
+        if (fsBlockSize == null) {
+            fsBlockSize = Math.toIntExact(getFileSystemBlockSize(root));
+            fsBlockSizeCache.putIfAbsent(root, fsBlockSize);
+        }
 
         return fsBlockSize;
     }
@@ -184,7 +187,7 @@ public final class NativeFileSystemLinux implements NativeFileSystem {
      * @param path Path.
      * @return File system block size in bytes.
      */
-    public static int getFileSystemBlockSize(Path path) {
+    public static long getFileSystemBlockSize(Path path) {
         return stat(path).st_blksize;
     }
 
@@ -205,17 +208,83 @@ public final class NativeFileSystemLinux implements NativeFileSystem {
      */
     public static native int stat(String path, Stat stat);
 
-    static final class Stat extends Structure {
-        /** Total size, in bytes. */
-        long st_size;
-        /** Block size for filesystem I/O. */
-        int st_blksize;
-        /** Number of 512B blocks allocated. */
-        long st_blocks;
+    /**
+     */
+    public static final class TimeStruct extends Structure {
+        /** */
+        long tv_sec;
+
+        /** */
+        long tv_usec;
 
         /** {@inheritDoc} */
         @Override protected List<String> getFieldOrder() {
-            return null;
+            return Arrays.asList("tv_sec", "tv_usec");
+        }
+    }
+
+    /**
+     */
+    public static final class Stat extends Structure {
+        /** ID of device containing file. */
+        long st_dev;
+
+        /** inode number. */
+        long st_ino;
+
+        /** Number of hard links. */
+        long st_nlink;
+
+        /** Protection. */
+        int st_mode;
+
+        /** User ID of owner. */
+        int st_uid;
+
+        /** Group ID of owner. */
+        int st_gid;
+
+        /** Padding field. */
+        int unused;
+
+        /** Device ID (if special file). */
+        long st_rdev;
+
+        /** Total size, in bytes. */
+        long st_size;
+
+        /** Blocksize for file system I/O. */
+        long st_blksize;
+
+        /** Number of 512B blocks allocated. */
+        int st_blocks;
+
+        /** Time of last access. */
+        TimeStruct st_atime;
+
+        /** Time of last modification. */
+        TimeStruct st_mtime;
+
+        /** Time of last status change. */
+        TimeStruct st_ctime;
+
+        /** {@inheritDoc} */
+        @Override protected List<String> getFieldOrder() {
+            return Arrays.asList(
+                "st_dev",
+                "st_ino",
+                "st_nlink",
+                "st_mode",
+                "st_uid",
+                "st_gid",
+                "st_rdev",
+                "st_size",
+                "st_blksize",
+                "st_blocks",
+                "st_atime",
+                "st_mtime",
+                "st_ctime"
+            );
         }
     }
 }
