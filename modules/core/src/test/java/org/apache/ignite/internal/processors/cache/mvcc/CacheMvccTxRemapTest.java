@@ -178,10 +178,12 @@ public class CacheMvccTxRemapTest extends CacheMvccAbstractTest {
             @Override public void run() {
                 int iter = 0;
 
+                Random rnd = new Random();
+
                 final HashMap<Object, Object> map = new HashMap<>();
 
                 while (!stop.get()) {
-                    for (int i = 0; i < 100; i += 3)
+                    for (int i = rnd.nextInt(1); i < 100; i += 3)
                         map.put(i, iter);
 
                     IgniteTransactions txs = cli.transactions();
