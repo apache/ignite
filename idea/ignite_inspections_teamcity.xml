@@ -3517,6 +3517,14 @@
     <inspection_tool class="RedundantVisibilityModifier" enabled="false" level="WARNING" enabled_by_default="false">
         <scope name="android" level="WARNING" enabled="false"/>
     </inspection_tool>
+    <inspection_tool class="RegExpDuplicateAlternationBranch" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RegExpEmptyAlternationBranch" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RegExpEscapedMetaCharacter" enabled="false" level="INFORMATION" enabled_by_default="false" />
+    <inspection_tool class="RegExpOctalEscape" enabled="false" level="INFORMATION" enabled_by_default="false" />
+    <inspection_tool class="RegExpRedundantEscape" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RegExpRepeatedSpace" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RegExpSingleCharAlternation" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="RegExpUnexpectedAnchor" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="ReferencesToClassesFromDefaultPackagesInJSPFile" enabled="false" level="ERROR"
                      enabled_by_default="false"/>
     <inspection_tool class="ReflectionForUnavailableAnnotation" enabled="false" level="WARNING"
