@@ -94,7 +94,7 @@ public enum IgniteComponentType {
 
     COMPRESSION(
         CompressionProcessor.class.getName(),
-        "org.apache.ignite.internal.processors.compress.CompressProcessorImpl",
+        "org.apache.ignite.internal.processors.compress.CompressionProcessorImpl",
         "ignite-compress"
     );
 

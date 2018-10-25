@@ -3,8 +3,10 @@ package org.apache.ignite.internal.processors.compress;
 import com.sun.jna.LastErrorException;
 import com.sun.jna.Native;
 import com.sun.jna.Platform;
+import com.sun.jna.Structure;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class NativeFileSystemLinux implements NativeFileSystem {
@@ -108,9 +110,11 @@ public final class NativeFileSystemLinux implements NativeFileSystem {
                 ok = true;
             }
             catch (RuntimeException e) {
-                // No-op.
+                e.printStackTrace();
             }
         }
+        else
+            System.out.println("not Linux");
 
         SUPPORTED = ok;
     }
@@ -158,7 +162,7 @@ public final class NativeFileSystemLinux implements NativeFileSystem {
 
     /** {@inheritDoc} */
     @Override public long getSparseFileSize(Path file) {
-        return stat(file.toString()).st_blocks * 512;
+        return stat(file).st_blocks * 512;
     }
 
     /**
@@ -181,21 +185,37 @@ public final class NativeFileSystemLinux implements NativeFileSystem {
      * @return File system block size in bytes.
      */
     public static int getFileSystemBlockSize(Path path) {
-        return stat(path.toString()).st_blksize;
+        return stat(path).st_blksize;
+    }
+
+    private static Stat stat(Path path) {
+        Stat s = new Stat();
+
+        int err = stat(path.toString(), s);
+
+        if (err != 0)
+            throw new IllegalStateException("Error code: " + err);
+
+        return s;
     }
 
     /**
      * @param path Path.
-     * @return File system info.
+     * @return Error code or {@code 0}.
      */
-    public static native Stat stat(String path);
+    public static native int stat(String path, Stat stat);
 
-    static final class Stat {
+    static final class Stat extends Structure {
         /** Total size, in bytes. */
         long st_size;
         /** Block size for filesystem I/O. */
         int st_blksize;
         /** Number of 512B blocks allocated. */
         long st_blocks;
+
+        /** {@inheritDoc} */
+        @Override protected List<String> getFieldOrder() {
+            return null;
+        }
     }
 }
