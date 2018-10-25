@@ -45,7 +45,7 @@ public abstract class AbstractFailureHandler implements FailureHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+    public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
         return !ignoredFailureTypes.contains(failureCtx.type()) && handle(ignite, failureCtx);
     }
 

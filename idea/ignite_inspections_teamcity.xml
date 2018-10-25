@@ -504,6 +504,7 @@
     <option name="SUGGEST_NULLABLE_ANNOTATIONS" value="true" />
     <option name="DONT_REPORT_TRUE_ASSERT_STATEMENTS" value="true" />
   </inspection_tool>
+  <inspection_tool class="ConstantIfStatement" enabled="false" level="WARNING" enabled_by_default="false" />
   <inspection_tool class="ConstantExpression" enabled="false" level="INFORMATION" enabled_by_default="false" />
   <inspection_tool class="ContinueOrBreakFromFinallyBlock" enabled="false" level="WARNING" enabled_by_default="false" />
   <inspection_tool class="Contract" enabled="false" level="WARNING" enabled_by_default="false" />
@@ -561,6 +562,7 @@
   <inspection_tool class="DuplicateThrows" enabled="false" level="WARNING" enabled_by_default="false" />
   <inspection_tool class="DuplicatedDataProviderNames" enabled="false" level="ERROR" enabled_by_default="false" />
   <inspection_tool class="EmptyCheck" enabled="false" level="WARNING" enabled_by_default="false" />
+  <inspection_tool class="EmptyCatchBlock" enabled="false" level="WARNING" enabled_by_default="false" />
   <inspection_tool class="EmptyFinallyBlock" enabled="false" level="WARNING" enabled_by_default="false" />
   <inspection_tool class="EmptyMethod" enabled="false" level="WARNING" enabled_by_default="false" />
   <inspection_tool class="EmptyParenMethodAccessedAsParameterless" enabled="false" level="WARNING" enabled_by_default="false" />
