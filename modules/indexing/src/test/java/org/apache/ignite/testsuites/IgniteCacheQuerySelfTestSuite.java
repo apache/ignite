@@ -170,6 +170,7 @@ import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
 import org.apache.ignite.internal.processors.query.LazyQuerySelfTest;
 import org.apache.ignite.internal.processors.query.MultipleStatementsSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.query.SqlIllegalSchemaSelfTest;
+import org.apache.ignite.internal.processors.query.SqlNestedQuerySelfTest;
 import org.apache.ignite.internal.processors.query.SqlPushDownFunctionTest;
 import org.apache.ignite.internal.processors.query.SqlSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.SqlSystemViewsSelfTest;
@@ -489,6 +490,8 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 
         // Partition pruning.
         suite.addTestSuite(InOperationExtractPartitionSelfTest.class);
+
+        suite.addTestSuite(SqlNestedQuerySelfTest.class);
 
         return suite;
     }
