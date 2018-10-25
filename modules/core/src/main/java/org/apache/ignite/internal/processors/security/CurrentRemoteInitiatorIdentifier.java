@@ -39,12 +39,11 @@ public class CurrentRemoteInitiatorIdentifier {
         if (!ctx.localNodeId().equals(nodeId)) {
             UUID oldNodeId = initiator.get();
 
-            if (oldNodeId != null)
-                System.out.println("STOP!!");
-
             assert oldNodeId == null : "oldNodeId=" + oldNodeId;
 
             initiator.set(nodeId);
+
+            return true;
         }
 
         return false;
