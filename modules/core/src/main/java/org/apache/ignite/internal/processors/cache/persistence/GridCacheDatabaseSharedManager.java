@@ -2041,6 +2041,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         kctx.recoveryMode(true);
 
+        IgniteCheckedException recoveryError = null;
+
         try {
             // Preform early regions startup before restoring state.
             initAndStartRegions(kctx.config().getDataStorageConfiguration());
@@ -2077,13 +2079,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             restoreState();
         }
         catch (IgniteCheckedException e) {
-            // Release file lock if recovery has failed.
-            releaseFileLock();
+            recoveryError = e;
 
             throw e;
         }
         finally {
             checkpointReadUnlock();
+
+            if (recoveryError != null) {
+                stop0(true);
+            }
 
             kctx.recoveryMode(false);
         }
@@ -2198,9 +2203,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                                     try {
                                         PageUtils.putBytes(pageAddr, 0, pageRec.pageData());
+
+//                                        log.warning("Applying -> " + rec + " group=" + (grpId == METASTORAGE_CACHE_ID ? "metastorage" : grpId));
                                     }
                                     finally {
-                                        pageMem.writeUnlock(grpId, pageId, page, null, true, true);
+                                        pageMem.writeUnlock(grpId, pageId, page, Boolean.FALSE, true, true);
                                     }
                                 }
                                 finally {
@@ -2272,10 +2279,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     long pageAddr = pageMem.writeLock(grpId, pageId, page);
 
                                     try {
+/*
+                                        log.warning("Applying -> " + rec + " group=" + (grpId == METASTORAGE_CACHE_ID ? "metastorage" : grpId)
+                                        + " addr=" + pageAddr);
+*/
+
                                         r.applyDelta(pageMem, pageAddr);
                                     }
+                                    catch (Throwable t) {
+                                        throw t;
+                                    }
                                     finally {
-                                        pageMem.writeUnlock(grpId, pageId, page, null, true, true);
+                                        pageMem.writeUnlock(grpId, pageId, page, Boolean.FALSE, true, true);
                                     }
                                 }
                                 finally {

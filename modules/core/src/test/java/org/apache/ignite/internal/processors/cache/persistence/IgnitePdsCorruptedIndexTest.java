@@ -318,16 +318,6 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            FileIO delegate = delegateFactory.create(file);
-
-            if (isPartitionFile(file))
-                return new HaltOnTruncateFileIO(delegate, file);
-
-            return delegate;
-        }
-
-        /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             FileIO delegate = delegateFactory.create(file, modes);
 

@@ -33,11 +33,6 @@ public class RandomAccessFileIOFactory implements FileIOFactory {
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override public FileIO create(File file) throws IOException {
-        return create(file, CREATE, READ, WRITE);
-    }
-
-    /** {@inheritDoc} */
     @Override public FileIO create(File file, OpenOption... modes) throws IOException {
         return new RandomAccessFileIO(file, modes);
     }

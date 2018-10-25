@@ -1,5 +1,10 @@
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
+import java.nio.ByteBuffer;
+import java.nio.file.OpenOption;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -11,6 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import com.google.common.collect.Lists;
+import com.sun.corba.se.spi.ior.IORFactory;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -22,10 +28,17 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -40,6 +53,8 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     private static final String DYNAMIC_CACHE_PREFIX = "dynamic-";
 
     private static final String CACHE_PREFIX = "cache-";
+
+    private FileIOFactory ioFactory;
 
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -70,6 +85,9 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
             );
 
         cfg.setDataStorageConfiguration(dsCfg);
+
+        if (ioFactory != null)
+            dsCfg.setFileIOFactory(ioFactory);
 
         return cfg;
     }
@@ -105,12 +123,16 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        System.setProperty(GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, "true");
     }
 
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        System.clearProperty(GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP);
     }
 
     private List<String> allCaches() {
@@ -139,19 +161,6 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         aggCacheLoader.stop();
 
         stopGrid(2, true);
-
-        for (int idx = 0; idx < 2; idx++) {
-            log.warning("Grid [" + idx + "]");
-            IgniteEx grid = grid(idx);
-            for (CacheGroupContext grp : grid.context().cache().cacheGroups()) {
-                if (grp.cacheOrGroupName().contains("sys"))
-                    continue;
-
-                for (GridDhtLocalPartition part : grp.topology().localPartitions()) {
-                    log.info(grp.cacheOrGroupName() + " " + part.id() + " " + part.state() + " " + part.updateCounter() + " " + part.initialUpdateCounter());
-                }
-            }
-        }
 
         startGrid(2);
 
@@ -267,6 +276,52 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         for (int idx = 0; idx < 3; idx++)
             aggCacheLoader.consistencyCheck(grid(idx));
+    }
+
+    public void testCrushOnRecoveryOnNodeStart() throws Exception {
+        IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3, false);
+
+        crd.cluster().active(true);
+
+        IgniteEx node = grid(2);
+
+        AggregateCacheLoader aggCacheLoader = new AggregateCacheLoader(node, allCaches());
+
+        aggCacheLoader.start();
+
+        U.sleep(3000);
+
+/*
+        forceCheckpoint();
+
+        U.sleep(3000);
+*/
+
+        aggCacheLoader.stop();
+
+        stopGrid(2, true);
+
+        ioFactory = new CheckpointFailIoFactory();
+
+        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> startGrid(2));
+
+        U.sleep(5000);
+
+        log.warning("FUT ERR = " + fut.error());
+
+        ioFactory = null;
+
+        // Start node again and check recover.
+        startGrid(2);
+
+        awaitPartitionMapExchange();
+
+        for (int idx = 0; idx < 3; idx++)
+            aggCacheLoader.consistencyCheck(grid(idx));
+    }
+
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new StopNodeFailureHandler();
     }
 
     @Override
@@ -394,6 +449,29 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         @Override public int hashCode() {
             return Objects.hash(cacheName);
+        }
+    }
+
+    static class CheckpointFailIoFactory implements FileIOFactory {
+        @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+            FileIO delegate = new RandomAccessFileIOFactory().create(file, modes);
+
+            if (file.getName().contains("part-"))
+                return new FileIODecorator(delegate) {
+                    @Override public int write(ByteBuffer srcBuf) throws IOException {
+                        throw new IOException("test");
+                    }
+
+                    @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
+                        throw new IOException("test");
+                    }
+
+                    @Override public int write(byte[] buf, int off, int len) throws IOException {
+                        throw new IOException("test");
+                    }
+                };
+
+            return delegate;
         }
     }
 

@@ -463,11 +463,6 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         private volatile IgniteBiClosure<File, OpenOption[], FileIO> createClo;
 
         /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            return create(file, CREATE, READ, WRITE);
-        }
-
-        /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... openOption) throws IOException {
             FileIO fileIO = null;
             if (createClo != null)

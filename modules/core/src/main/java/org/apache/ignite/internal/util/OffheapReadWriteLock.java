@@ -263,7 +263,7 @@ public class OffheapReadWriteLock {
 
             if (lockCount(state) != -1)
                 throw new IllegalMonitorStateException("Attempted to release write lock while not holding it " +
-                    "[lock=" + U.hexLong(lock) + ", state=" + U.hexLong(state));
+                    "[lock=" + U.hexLong(lock) + ", state=" + U.hexLong(state) + " readersWait=" + readersWaitCount(state) + " writersWait=" + writersWaitCount(state) + " tag=" + tag(state) + " ");
 
             updated = releaseWithTag(state, tag);
 
@@ -664,8 +664,11 @@ public class OffheapReadWriteLock {
 
             long updated = updateState(state, 0, 0, delta);
 
-            if (GridUnsafe.compareAndSwapLong(null, lock, state, updated))
+            if (GridUnsafe.compareAndSwapLong(null, lock, state, updated)) {
+                System.err.println("Waiter registered -> " + U.hexLong(lock));
+
                 return;
+            }
         }
     }
 }

@@ -37,11 +37,6 @@ public class AsyncFileIOFactory implements FileIOFactory {
     private transient volatile ThreadLocal<AsyncFileIO.ChannelOpFuture> holder = initHolder();
 
     /** {@inheritDoc} */
-    @Override public FileIO create(File file) throws IOException {
-        return create(file, CREATE, READ, WRITE);
-    }
-
-    /** {@inheritDoc} */
     @Override public FileIO create(File file, OpenOption... modes) throws IOException {
         if (holder == null) {
             synchronized (this) {

@@ -746,6 +746,11 @@ public class CacheGroupContext {
      *
      */
     void stopGroup() {
+        offheapMgr.stop();
+
+        if (isRecoveryMode())
+            return;
+
         IgniteCheckedException err =
             new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
 
@@ -754,9 +759,6 @@ public class CacheGroupContext {
         aff.cancelFutures(err);
 
         preldr.onKernalStop();
-
-        if (!isRecoveryMode())
-            offheapMgr.stop();
 
         ctx.io().removeCacheGroupHandlers(grpId);
     }

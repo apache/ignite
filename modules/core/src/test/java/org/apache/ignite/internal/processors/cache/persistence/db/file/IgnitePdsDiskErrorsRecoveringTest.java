@@ -488,11 +488,6 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            return create(file, CREATE, WRITE, READ);
-        }
-
-        /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             if (file.getName().endsWith(pattern))
                 return delegate.create(file, modes);
@@ -520,11 +515,6 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         private LimitedSizeFileIOFactory(FileIOFactory delegate, long fsSpaceBytes) {
             this.delegate = delegate;
             this.availableSpaceBytes = new AtomicLong(fsSpaceBytes);
-        }
-
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            return new LimitedSizeFileIO(delegate.create(file), availableSpaceBytes);
         }
 
         /** {@inheritDoc} */
