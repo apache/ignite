@@ -2495,9 +2495,8 @@ public class CommandHandler {
 
                         tryConnectMaxCount--;
                     }
-                    else {
+                    else
                         throw e;
-                    }
                 }
             }
             return EXIT_CODE_OK;
