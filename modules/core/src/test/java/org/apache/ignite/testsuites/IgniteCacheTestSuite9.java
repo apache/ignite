@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.cache.CachePutIfAbsentTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectionsSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheOperationsInterruptTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePrimarySyncTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCachePrimarySyncTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCacheWriteSynchronizationModesMultithreadedTest;
@@ -51,6 +52,8 @@ public class IgniteCacheTestSuite9 extends TestSuite {
         suite.addTestSuite(CacheAtomicPrimarySyncBackPressureTest.class);
 
         suite.addTestSuite(TxDataConsistencyOnCommitFailureTest.class);
+
+        suite.addTestSuite(CacheOperationsInterruptTest.class);
 
         return suite;
     }
