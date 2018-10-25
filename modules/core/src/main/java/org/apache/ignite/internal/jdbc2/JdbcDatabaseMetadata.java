@@ -54,7 +54,7 @@ import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
  */
 public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** The only possible name for catalog. */
-    public static final String CATALOG_NAME = "DATABASE";
+    public static final String CATALOG_NAME = "IGNITE";
 
     /** Driver name. */
     public static final String DRIVER_NAME = "Apache Ignite JDBC Driver";

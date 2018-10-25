@@ -57,7 +57,7 @@ import static java.sql.RowIdLifetime.ROWID_UNSUPPORTED;
 @SuppressWarnings("RedundantCast")
 public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** The only possible name for catalog. */
-    public static final String CATALOG_NAME = "DATABASE";
+    public static final String CATALOG_NAME = "IGNITE";
 
     /** Driver name. */
     public static final String DRIVER_NAME = "Apache Ignite Thin JDBC Driver";
@@ -843,7 +843,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
      * @return Column metadata row.
      */
     private List<Object> columnRow(JdbcColumnMeta colMeta, int pos) {
-        List<Object> row = new ArrayList<>(23);
+        List<Object> row = new ArrayList<>(24);
 
         row.add(CATALOG_NAME);                  // 1. TABLE_CAT
         row.add(colMeta.schemaName());          // 2. TABLE_SCHEM
