@@ -68,4 +68,9 @@ public interface RecordSerializerFactory {
      * @param skipPositionCheck Skip position check.
      */
     public RecordSerializerFactory skipPositionCheck(boolean skipPositionCheck);
+
+    /**
+     * Clears factory parameters that are actual only for specific WAL segment.
+     */
+    public RecordSerializerFactory clearSegmentLocalState();
 }
