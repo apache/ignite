@@ -34,8 +34,6 @@ import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestDelayingCommunicationSpi;
@@ -64,10 +62,7 @@ public class CacheMvccTxRemapTest extends CacheMvccAbstractTest {
     public static final int PARTITIONS = 3;
 
     /** */
-    private boolean client;
-
-    /** */
-    private Phaser phaser = new Phaser(2);
+    private Phaser phaser;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -76,8 +71,8 @@ public class CacheMvccTxRemapTest extends CacheMvccAbstractTest {
                 @Override protected boolean delayMessage(Message msg, GridIoMessage ioMsg) {
                     if (msg instanceof GridNearTxEnlistRequest &&
                         ((GridNearTxEnlistRequest)msg).firstClientRequest()) {
-                        if (phaser.arriveAndAwaitAdvance() < 0)
-                            return false;
+
+                        phaser.arriveAndAwaitAdvance();
                     }
 
                     return false;
@@ -86,10 +81,7 @@ public class CacheMvccTxRemapTest extends CacheMvccAbstractTest {
                 @Override protected int delayMillis() {
                     return 1000;
                 }
-            })
-            .setClientMode(client)
-            .setDataStorageConfiguration(new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(100_000_000L)));
+            });
     }
 
     /** {@inheritDoc} */
@@ -113,8 +105,7 @@ public class CacheMvccTxRemapTest extends CacheMvccAbstractTest {
         return new CacheConfiguration<>(cacheName)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
             .setAffinity(new MyAffinityFunction(PARTITIONS))
-            .setBackups(1)
-            .setRebalanceDelay(0L);
+            .setBackups(1);
     }
 
     /**
@@ -122,6 +113,8 @@ public class CacheMvccTxRemapTest extends CacheMvccAbstractTest {
      */
     public void testRemap() throws Exception {
         disableScheduledVacuum = true;
+
+        phaser = new Phaser(2);
 
         startGrid(0);
         startGrid(1);
@@ -141,7 +134,7 @@ public class CacheMvccTxRemapTest extends CacheMvccAbstractTest {
                 try {
                     while (!stop.get()) {
                         if (phaser.arriveAndAwaitAdvance() < 0)
-                            return;
+                            return; // Terminated.
 
                         startGrid(3);
 
@@ -167,7 +160,7 @@ public class CacheMvccTxRemapTest extends CacheMvccAbstractTest {
                 final HashMap<Object, Object> map = new HashMap<>();
 
                 while (!stop.get()) {
-                    for (int i = 0; i < 100; i += 3)
+                    for (int i = iter; i < 100; i += 3)
                         map.put(i, iter);
 
                     IgniteTransactions txs = cli.transactions();
@@ -203,7 +196,7 @@ public class CacheMvccTxRemapTest extends CacheMvccAbstractTest {
         finally {
             stop.set(true);
 
-            phaser.forceTermination();
+            phaser.forceTermination(); // Release threads.
         }
 
         fut.get();
