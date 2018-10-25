@@ -139,3 +139,12 @@ Unit tests are performed with Mocha framework - https://mochajs.org
 To launch tests on your local machine you will need:
 1. In new terminal change directory to 'modules/web-console/backend' folder and execute: "npm install".
 2. To start test environment and tests execute: "npm run test".
+
+
+Web Console settings
+====================
+Web Console backend could be configured with custom parameters.
+
+See "backend/config/settings.json.sample" for list of parameters with example value.
+
+If you need custom parameters, you will need create "backend/config/settings.json" and adjust values.
