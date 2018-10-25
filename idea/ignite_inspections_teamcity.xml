@@ -561,6 +561,7 @@
   <inspection_tool class="DuplicateMnemonic" enabled="false" level="WARNING" enabled_by_default="false" />
   <inspection_tool class="DuplicateThrows" enabled="false" level="WARNING" enabled_by_default="false" />
   <inspection_tool class="DuplicatedDataProviderNames" enabled="false" level="ERROR" enabled_by_default="false" />
+  <inspection_tool class="EjbDomInspection" enabled="false" level="ERROR" enabled_by_default="false" />
   <inspection_tool class="EmptyCheck" enabled="false" level="WARNING" enabled_by_default="false" />
   <inspection_tool class="EmptyCatchBlock" enabled="false" level="WARNING" enabled_by_default="false" />
   <inspection_tool class="EmptyFinallyBlock" enabled="false" level="WARNING" enabled_by_default="false" />
