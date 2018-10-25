@@ -32,7 +32,6 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.transactions.Transaction;
 
 /**

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.database;
 import java.io.Serializable;
 import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
