@@ -140,7 +140,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
                 dst.flip();
 
                 page.position(PageIO.COMMON_HEADER_END).limit(pageSize);
-                page.put(dst).position(0);
+                page.put(dst).flip();
 
                 break;
 
