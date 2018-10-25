@@ -18,21 +18,27 @@
 package org.apache.ignite.yardstick.upload;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.yardstick.upload.model.Values10;
 
 /**
- * Benchmark performs single upload of number of entries using {@link IgniteCache#put(Object, Object)}.
+ * Upload benchmark that uses native sql INSERT operation for data uploading.
  */
-public class NativePutBenchmark extends AbstractNativeBenchmark {
+public class NativeSqlInsertBenchmark extends AbstractNativeBenchmark {
     /**
-     * Uploads randomly generated data using simple put.
+     * Performs data upload using native sql and SqlFieldsQuery.
      *
-     * @param insertsCnt - how many entries should be uploaded.
+     * @param insertsCnt how many rows to upload.
      */
     @Override protected void upload(long insertsCnt) {
         IgniteCache<Object, Object> c = ignite().cache(CACHE_NAME);
 
-        for (long id = 1; id <= insertsCnt; id++)
-            c.put(id, new Values10());
+        SqlFieldsQuery ins = new SqlFieldsQuery(queries.insert());
+
+        for (long i = 1; i <= insertsCnt; i++) {
+            Object[] args = new Values10().toArgs(i);
+
+            c.query(ins.setArgs(args)).getAll();
+        }
     }
 }
