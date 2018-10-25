@@ -891,7 +891,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             throw new IgniteCheckedException("Transaction is marked for rollback: " + tx);
         }
 
-        // One-phase commit tx cannot timeout because it is expected to be committed.
+        // One-phase commit tx cannot timeout on prepare because it is expected to be committed.
         if (tx.remainingTime() == -1 && !tx.onePhaseCommit()) {
             tx.setRollbackOnly();
 

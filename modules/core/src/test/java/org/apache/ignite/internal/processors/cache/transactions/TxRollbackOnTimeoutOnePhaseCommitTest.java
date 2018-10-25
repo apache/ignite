@@ -18,27 +18,35 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.mockito.Mockito;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -78,158 +86,121 @@ public class TxRollbackOnTimeoutOnePhaseCommitTest extends GridCommonAbstractTes
         return cfg;
     }
 
-    /** */
-    public void testRollbackOnTimeoutPartitionDesync() throws Exception {
-        try {
-            Ignite crd = startGridsMultiThreaded(GRID_CNT);
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
-            IgniteEx client = startGrid("client");
+        startGridsMultiThreaded(GRID_CNT);
 
-            assertNotNull(client.cache(DEFAULT_CACHE_NAME));
-
-            int key = 0;
-
-            Ignite primary = primaryNode(key, DEFAULT_CACHE_NAME);
-            Ignite backup = backupNode(key, DEFAULT_CACHE_NAME);
-
-            TestRecordingCommunicationSpi backupSpi = TestRecordingCommunicationSpi.spi(backup);
-            backupSpi.blockMessages(GridDhtTxPrepareResponse.class, primary.name());
-
-            IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
-                @Override public void run() {
-                    try {
-                        backupSpi.waitForBlocked();
-                    }
-                    catch (InterruptedException e) {
-                        fail();
-                    }
-
-                    doSleep(500);
-
-                    backupSpi.stopBlock();
-                }
-            });
-
-            try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 200, 1)) {
-                client.cache(DEFAULT_CACHE_NAME).put(key, key);
-
-                tx.commit();
-            }
-            catch (Exception e) {
-                assertTrue(e.getClass().getName(), X.hasCause(e, TransactionTimeoutException.class));
-            }
-
-            doSleep(5000);
-
-            checkFutures();
-
-            IdleVerifyResultV2 res = idleVerify(client, DEFAULT_CACHE_NAME);
-
-            if (res.hasConflicts()) {
-                StringBuilder b = new StringBuilder();
-
-                res.print(b::append);
-
-                fail(b.toString());
-            }
-        }
-        finally {
-            stopAllGrids();
-        }
+        startGrid("client");
     }
 
     /** */
-    public void testRollbackOnTimeoutBackupTxHang() throws Exception {
-        try (Ignite crd = startGridsMultiThreaded(GRID_CNT)) {
-            IgniteEx client = startGrid("client");
+    public void testRollbackOnTimeoutPartitionDesyncPessimistic() throws Exception {
+        doTestRollbackOnTimeoutPartitionDesync(PESSIMISTIC);
+    }
 
-            assertNotNull(client.cache(DEFAULT_CACHE_NAME));
+    /** */
+    public void testRollbackOnTimeoutPartitionDesyncOptimistic() throws Exception {
+        doTestRollbackOnTimeoutPartitionDesync(OPTIMISTIC);
+    }
 
-            int key = 0;
+    /** */
+    private void doTestRollbackOnTimeoutPartitionDesync(TransactionConcurrency concurrency) throws Exception {
+        IgniteEx client = grid("client");
 
-            IgniteEx backup = (IgniteEx)backupNode(key, DEFAULT_CACHE_NAME);
+        assertNotNull(client.cache(DEFAULT_CACHE_NAME));
 
-            GridCacheSharedContext<Object, Object> backupCtx = backup.context().cache().context();
+        int key = 0;
 
-            IgniteTxManager newTm = Mockito.spy(backupCtx.tm());
+        Ignite primary = primaryNode(key, DEFAULT_CACHE_NAME);
+        Ignite backup = backupNode(key, DEFAULT_CACHE_NAME);
 
-            CountDownLatch l = new CountDownLatch(1);
+        TestRecordingCommunicationSpi backupSpi = TestRecordingCommunicationSpi.spi(backup);
+        backupSpi.blockMessages(GridDhtTxPrepareResponse.class, primary.name());
 
-            // Simulate race between tx timeout on primary node and tx timeout on backup node.
-            Mockito.doAnswer(invocation -> {
-                l.await();
-
-                IgniteInternalTx tx = (IgniteInternalTx)invocation.getArguments()[0];
-
-                while (tx.remainingTime() >= 0)
-                    doSleep(10);
-
-                // Call to prepare will trigger timeout exception.
-                return invocation.callRealMethod();
-            }).when(newTm).prepareTx(Mockito.any(), Mockito.any());
-
-            backupCtx.setTxManager(newTm);
-
-            TestRecordingCommunicationSpi clientSpi = TestRecordingCommunicationSpi.spi(client);
-
-            clientSpi.blockMessages((node, msg) -> {
-                if (msg instanceof GridNearTxFinishRequest) {
-                    GridNearTxFinishRequest req = (GridNearTxFinishRequest)msg;
-
-                    return !req.commit();
-                }
-
-                return false;
-            });
-
-            IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
-                // Wait until client received timeout
+        IgniteInternalFuture fut = runAsync(new Runnable() {
+            @Override public void run() {
                 try {
-                    clientSpi.waitForBlocked();
+                    backupSpi.waitForBlocked();
                 }
                 catch (InterruptedException e) {
                     fail();
                 }
 
-                // Notify mocked call to proceed.
-                l.countDown();
+                doSleep(500);
 
-                doSleep(1000);
-
-                clientSpi.stopBlock();
-            });
-
-            try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 500, 1)) {
-                client.cache(DEFAULT_CACHE_NAME).put(key, key);
-
-                tx.commit();
-
-                fail();
+                backupSpi.stopBlock();
             }
-            catch (Exception e) {
-                assertTrue(e.getClass().getName(), X.hasCause(e, TransactionTimeoutException.class));
-            }
+        });
 
-            fut.get();
+        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 200, 1)) {
+            client.cache(DEFAULT_CACHE_NAME).put(key, key);
 
-            checkFutures();
+            tx.commit();
         }
-        finally {
-            stopAllGrids();
+        catch (Exception e) {
+            assertTrue(e.getClass().getName(), X.hasCause(e, TransactionTimeoutException.class));
         }
+
+        fut.get();
+
+        IdleVerifyResultV2 res = idleVerify(client, DEFAULT_CACHE_NAME);
+
+        if (res.hasConflicts()) {
+            StringBuilder b = new StringBuilder();
+
+            res.print(b::append);
+
+            fail(b.toString());
+        }
+
+        checkFutures();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
+    public void testUnlockOptimistic() throws IgniteCheckedException {
+        IgniteEx client = grid("client");
 
-        cleanPersistenceDir();
-    }
+        assertNotNull(client.cache(DEFAULT_CACHE_NAME));
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
+        int key = 0;
 
-        cleanPersistenceDir();
+        Ignite primary = primaryNode(key, DEFAULT_CACHE_NAME);
+        Ignite backup = backupNode(key, DEFAULT_CACHE_NAME);
+
+        CountDownLatch finish = new CountDownLatch(1);
+
+        IgniteInternalFuture fut = runAsync(new Runnable() {
+            @Override public void run() {
+                try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
+                    client.cache(DEFAULT_CACHE_NAME).put(key, key + 1);
+
+                    try {
+                        assertTrue(U.await(finish, 30, TimeUnit.SECONDS));
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
+                        fail();
+                    }
+
+                    tx.commit();
+                }
+            }
+        });
+
+        try (Transaction tx = client.transactions().txStart(OPTIMISTIC, REPEATABLE_READ, 200, 1)) {
+            client.cache(DEFAULT_CACHE_NAME).put(key, key);
+
+            tx.commit();
+
+            // fail(); // TODO throw timeout exception for optimistic timeout.
+        }
+        catch (Exception e) {
+            assertTrue(e.getClass().getName(), X.hasCause(e, TransactionTimeoutException.class));
+        }
+
+        assertNull(client.cache(DEFAULT_CACHE_NAME).get(key));
+
+        finish.countDown();
+
+        fut.get();
     }
 }

@@ -259,7 +259,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         assert dhtMap != null;
         assert nearMap != null;
 
-        timeoutObj = timeout > 0 && !tx.onePhaseCommit() ? new PrepareTimeoutObject(timeout) : null;
+        timeoutObj = timeout > 0 ? new PrepareTimeoutObject(timeout) : null;
     }
 
     /** {@inheritDoc} */
