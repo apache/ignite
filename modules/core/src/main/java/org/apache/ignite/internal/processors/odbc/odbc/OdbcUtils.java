@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlListenerDataTypes;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Various ODBC utility methods.
@@ -54,6 +55,27 @@ public class OdbcUtils {
             return str.substring(1, str.length() - 1);
 
         return str;
+    }
+
+    /**
+     * Pre-process table or column pattern.
+     *
+     * @param ptrn Pattern to pre-process.
+     * @return Processed pattern.
+     */
+    public static String preprocessPattern(String ptrn) {
+        if (F.isEmpty(ptrn))
+            return ptrn;
+
+        String ptrn0 = ' ' + removeQuotationMarksIfNeeded(ptrn.toUpperCase());
+
+        ptrn0 = ptrn0.replaceAll("([^\\\\])%", "$1.*");
+
+        ptrn0 = ptrn0.replaceAll("([^\\\\])_", "$1.");
+
+        ptrn0 = ptrn0.replaceAll("\\\\(.)", "$1");
+
+        return ptrn0.substring(1);
     }
 
     /**
