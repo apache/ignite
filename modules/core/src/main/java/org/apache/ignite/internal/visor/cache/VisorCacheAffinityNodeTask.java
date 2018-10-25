@@ -21,6 +21,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -30,6 +31,7 @@ import org.jetbrains.annotations.Nullable;
  * Task that will find affinity node for key.
  */
 @GridInternal
+@GridVisorManagementTask
 public class VisorCacheAffinityNodeTask extends VisorOneNodeTask<VisorCacheAffinityNodeTaskArg, UUID> {
     /** */
     private static final long serialVersionUID = 0L;

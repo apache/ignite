@@ -17,21 +17,13 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
@@ -39,11 +31,16 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+
 /**
  * Tests for lazy query execution.
  */
 public class LazyQuerySelfTest extends GridCommonAbstractTest {
-    /** Keys count. */
+    /** Keys ocunt. */
     private static final int KEY_CNT = 200;
 
     /** Base query argument. */
@@ -94,91 +91,6 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
      */
     public void testMultipleNodesWithParallelism() throws Exception {
         checkMultipleNodes(4);
-    }
-
-    /**
-     * Test DDL operation on table with high load queries.
-     *
-     * @throws Exception If failed.
-     */
-    public void testTableWriteLockStarvation() throws Exception {
-        final Ignite srv = startGrid(1);
-
-        srv.createCache(cacheConfiguration(4));
-
-        populateBaseQueryData(srv);
-
-        final AtomicBoolean end = new AtomicBoolean(false);
-
-        final int qryThreads = 10;
-
-        final CountDownLatch latch = new CountDownLatch(qryThreads);
-
-        // Do many concurrent queries.
-        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
-            @Override public void run() {
-                latch.countDown();
-
-                while(!end.get()) {
-                    FieldsQueryCursor<List<?>> cursor = execute(srv, query(0)
-                        .setPageSize(PAGE_SIZE_SMALL));
-
-                    cursor.getAll();
-                }
-            }
-        }, qryThreads, "usr-qry");
-
-        latch.await();
-
-        Thread.sleep(500);
-
-        execute(srv, new SqlFieldsQuery("CREATE INDEX PERSON_NAME ON Person (name asc)")).getAll();
-        execute(srv, new SqlFieldsQuery("DROP INDEX PERSON_NAME")).getAll();
-
-        // Test is OK in case DDL operations is passed on hi load queries pressure.
-        end.set(true);
-        fut.get();
-    }
-
-    /**
-     * Test release reserved partition after query complete (results is bigger than one page).
-     *
-     * @throws Exception If failed.
-     */
-    public void testReleasePartitionReservationSeveralPagesResults() throws Exception {
-        checkReleasePartitionReservation(PAGE_SIZE_SMALL);
-    }
-
-    /**
-     * Test release reserved partition after query complete (results is placed on one page).
-     *
-     * @throws Exception If failed.
-     */
-    public void testReleasePartitionReservationOnePageResults() throws Exception {
-        checkReleasePartitionReservation(KEY_CNT);
-    }
-
-    /**
-     * Test release reserved partition after query complete.
-     *
-     * @param pageSize Results page size.
-     * @throws Exception If failed.
-     */
-    public void checkReleasePartitionReservation(int pageSize) throws Exception {
-        Ignite srv1 = startGrid(1);
-        startGrid(2);
-
-        srv1.createCache(cacheConfiguration(1));
-
-        populateBaseQueryData(srv1);
-
-        FieldsQueryCursor<List<?>> cursor = execute(srv1, query(0).setPageSize(pageSize));
-
-        cursor.getAll();
-
-        startGrid(3);
-
-        awaitPartitionMapExchange();
     }
 
     /**
@@ -239,18 +151,18 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
         assertNoWorkers();
 
         // Test server node leave with active worker.
-        FieldsQueryCursor<List<?>> cursor2 = execute(srv1, baseQuery().setPageSize(PAGE_SIZE_SMALL));
+        cursor = execute(srv1, baseQuery().setPageSize(PAGE_SIZE_SMALL));
 
         try {
-            Iterator<List<?>> iter2 = cursor2.iterator();
+            iter = cursor.iterator();
 
             for (int i = 0; i < 30; i++)
-                iter2.next();
+                iter.next();
 
             stopGrid(2);
         }
         finally {
-            cursor2.close();
+            cursor.close();
         }
 
         assertNoWorkers();
@@ -321,55 +233,7 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
             }
         }
 
-        checkHoldLazyQuery(node);
-
-        checkShortLazyQuery(node);
-    }
-
-    /**
-     * @param node Ignite node.
-     * @throws Exception If failed.
-     */
-    public void checkHoldLazyQuery(Ignite node) throws Exception {
-        ArrayList rows = new ArrayList<>();
-
-        FieldsQueryCursor<List<?>> cursor0 = execute(node, query(BASE_QRY_ARG).setPageSize(PAGE_SIZE_SMALL));
-
-        // Do many concurrent queries to Test full iteration.
-        GridTestUtils.runMultiThreaded(new Runnable() {
-            @Override public void run() {
-                for (int i = 0; i < 5; ++i) {
-                    FieldsQueryCursor<List<?>> cursor = execute(node, query(KEY_CNT - PAGE_SIZE_SMALL + 1)
-                        .setPageSize(PAGE_SIZE_SMALL));
-
-                    cursor.getAll();
-                }
-            }
-        }, 5, "usr-qry");
-
-        for (List<?> row : cursor0)
-            rows.add(row);
-
-        assertBaseQueryResults(rows);
-    }
-
-    /**
-     * @param node Ignite node.
-     * @throws Exception If failed.
-     */
-    public void checkShortLazyQuery(Ignite node) throws Exception {
-        ArrayList rows = new ArrayList<>();
-
-        FieldsQueryCursor<List<?>> cursor0 = execute(node, query(KEY_CNT - PAGE_SIZE_SMALL + 1).setPageSize(PAGE_SIZE_SMALL));
-
-        Iterator<List<?>> it = cursor0.iterator();
-
         assertNoWorkers();
-
-        while (it.hasNext())
-            rows.add(it.next());
-
-        assertQueryResults(rows, KEY_CNT - PAGE_SIZE_SMALL + 1);
     }
 
     /**
@@ -403,11 +267,8 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
      * @return Default cache configuration.
      */
     private static CacheConfiguration<Long, Person> cacheConfiguration(int parallelism) {
-        return new CacheConfiguration<Long, Person>()
-            .setName(CACHE_NAME)
-            .setIndexedTypes(Long.class, Person.class)
-            .setQueryParallelism(parallelism)
-            .setAffinity(new RendezvousAffinityFunction(false, 10));
+        return new CacheConfiguration<Long, Person>().setName(CACHE_NAME).setIndexedTypes(Long.class, Person.class)
+            .setQueryParallelism(parallelism);
     }
 
     /**
@@ -417,7 +278,7 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
      * @return Query.
      */
     private static SqlFieldsQuery query(long arg) {
-        return new SqlFieldsQuery("SELECT id, name FROM Person WHERE id >= " + arg);
+        return new SqlFieldsQuery("SELECT id, name FROM Person WHERE id >= ?").setArgs(arg);
     }
 
     /**
@@ -426,23 +287,13 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
      * @param rows Result rows.
      */
     private static void assertBaseQueryResults(List<List<?>> rows) {
-        assertQueryResults(rows, BASE_QRY_ARG);
-    }
-
-    /**
-     * Assert base query results.
-     *
-     * @param rows Result rows.
-     * @param resSize Result size.
-     */
-    private static void assertQueryResults(List<List<?>> rows, int resSize) {
-        assertEquals(KEY_CNT - resSize, rows.size());
+        assertEquals(KEY_CNT - BASE_QRY_ARG, rows.size());
 
         for (List<?> row : rows) {
             Long id = (Long)row.get(0);
             String name = (String)row.get(1);
 
-            assertTrue(id >= resSize);
+            assertTrue(id >= BASE_QRY_ARG);
             assertEquals(nameForId(id), name);
         }
     }
@@ -466,7 +317,7 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     private static FieldsQueryCursor<List<?>> execute(Ignite node, SqlFieldsQuery qry) {
-        return cache(node).query(qry);
+        return cache(node).query(qry.setLazy(true));
     }
 
     /**
@@ -474,8 +325,8 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    private void assertNoWorkers() throws Exception {
-        if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
+    private static void assertNoWorkers() throws Exception {
+        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 for (Ignite node : Ignition.allGrids()) {
                     IgniteH2Indexing idx = (IgniteH2Indexing) ((IgniteKernal)node).context().query().getIndexing();
@@ -486,22 +337,7 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
 
                 return MapQueryLazyWorker.activeCount() == 0;
             }
-        }, 1000L)) {
-            log.error("Lazy workers on nodes:");
-
-            for (Ignite node : Ignition.allGrids()) {
-                IgniteH2Indexing idx = (IgniteH2Indexing) ((IgniteKernal)node).context().query().getIndexing();
-
-                if (idx.mapQueryExecutor().registeredLazyWorkers() != 0) {
-                    log.error("[node=" + node + ", " + "registeredLazyWorkers="
-                        + idx.mapQueryExecutor().registeredLazyWorkers() + ']');
-                }
-
-                log.error("Active lazy workers: " + MapQueryLazyWorker.activeCount());
-
-                fail("There are not stopped lazy workers. See error message above.");
-            }
-        }
+        }, 1000L);
     }
 
     /**
