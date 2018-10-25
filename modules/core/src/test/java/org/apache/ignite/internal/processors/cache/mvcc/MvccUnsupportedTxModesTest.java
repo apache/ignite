@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import com.google.common.collect.ImmutableMap;
 import java.util.Collections;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -243,16 +242,6 @@ public class MvccUnsupportedTxModesTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testRemoveAll2() {
-        checkOperation(() -> cache.removeAll());
-    }
-
-    /** */
-    public void testRemoveAllAsync2() {
-        checkOperation(() -> cache.removeAllAsync());
-    }
-
-    /** */
     public void testInvoke1() {
         checkOperation(() -> cache.invoke(1, testEntryProcessor));
     }
@@ -300,11 +289,6 @@ public class MvccUnsupportedTxModesTest extends GridCommonAbstractTest {
     /** */
     public void testInvokeAllAsync3() {
         checkOperation(() -> cache.invokeAllAsync(Collections.singletonMap(1, testEntryProcessor)));
-    }
-
-    /** */
-    public void testIterator() {
-        checkOperation(() -> cache.iterator());
     }
 
     /**
