@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.authentication.IgniteAccessControlE
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContextHolder;
@@ -164,7 +163,6 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
             }
 
             ClientListenerResponse resp;
-
 
             AuthorizationContext authCtx = connCtx.authorizationContext();
             SecurityContext oldSecCtx = SecurityContextHolder.push(connCtx.securityContext());

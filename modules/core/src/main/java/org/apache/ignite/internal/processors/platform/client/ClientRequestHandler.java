@@ -22,8 +22,6 @@ import org.apache.ignite.internal.processors.authentication.AuthorizationContext
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
-import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.processors.security.SecurityContextHolder;
 
 /**
  * Thin client request handler.
@@ -49,16 +47,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
 
     /** {@inheritDoc} */
     @Override public ClientListenerResponse handle(ClientListenerRequest req) {
-        if (authCtx != null)
-            AuthorizationContext.context(authCtx);
-
-        try {
-            return ((ClientRequest)req).process(ctx);
-        }
-        finally {
-            if (authCtx != null)
-                AuthorizationContext.clear();
-        }
+        return ((ClientRequest)req).process(ctx);
     }
 
     /** {@inheritDoc} */
