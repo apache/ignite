@@ -156,6 +156,11 @@ public final class NativeFileSystemLinux implements NativeFileSystem {
             throw new IllegalStateException("errno: " + Native.getLastError());
     }
 
+    /** {@inheritDoc} */
+    @Override public long getSparseFileSize(Path file) {
+        return stat(file.toString()).st_blocks * 512;
+    }
+
     /**
      * Allows the caller to directly manipulate the allocated
      * disk space for the file referred to by fd for the byte range starting
@@ -186,7 +191,11 @@ public final class NativeFileSystemLinux implements NativeFileSystem {
     public static native Stat stat(String path);
 
     static final class Stat {
-        /** File system block size in bytes. */
+        /** Total size, in bytes. */
+        long st_size;
+        /** Block size for filesystem I/O. */
         int st_blksize;
+        /** Number of 512B blocks allocated. */
+        long st_blocks;
     }
 }

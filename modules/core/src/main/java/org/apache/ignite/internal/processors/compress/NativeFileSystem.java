@@ -23,4 +23,10 @@ public interface NativeFileSystem {
      * @param len Length of the hole.
      */
     void punchHole(int fd, long off, long len);
+
+    /**
+     * @param file Sparse file path.
+     * @return Sparse size.
+     */
+    long getSparseFileSize(Path file);
 }
