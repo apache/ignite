@@ -27,6 +27,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionIsolation;
 
 import static java.util.Collections.singleton;
@@ -324,8 +325,7 @@ public class MvccUnsupportedTxModesTest extends GridCommonAbstractTest {
 
             fail("Action failure is expected.");
         }
-        catch (IgniteException e) {
-            e.printStackTrace();
+        catch (TransactionException e) {
             assertEquals("Only pessimistic repeatable read transactions are supported when MVCC is enabled.", e.getMessage());
         }
     }
