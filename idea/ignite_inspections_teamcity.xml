@@ -235,6 +235,7 @@
         <option name="m_minLength" value="8"/>
         <option name="m_maxLength" value="64"/>
     </inspection_tool>
+    <inspection_tool class="Annotator" enabled="false" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="Anonymous2MethodRef" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="AnonymousClassVariableHidesContainingMethodVariable" enabled="false" level="WARNING"
                      enabled_by_default="false">
@@ -246,6 +247,7 @@
     <inspection_tool class="AnonymousInnerClassMayBeStatic" enabled="false" level="WARNING" enabled_by_default="false">
         <scope name="android" level="WARNING" enabled="false"/>
     </inspection_tool>
+    <inspection_tool class="AnonymousHasLambdaAlternative" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="AntDuplicateTargetsInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
     <inspection_tool class="AntMissingPropertiesFileInspection" enabled="false" level="ERROR"
                      enabled_by_default="false"/>
