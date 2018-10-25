@@ -1516,7 +1516,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     /**
      * Gets a collection of lost partition IDs.
      *
-     * @return Lost paritions.
+     * @return Lost partitions.
      */
     public Collection<Integer> lostPartitions();
 
