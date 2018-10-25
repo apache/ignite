@@ -165,7 +165,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     private GridLongList mvccWaitTxs;
 
     /** */
-    private volatile boolean qryEnlisted;
+    protected volatile boolean qryEnlisted;
 
     /** Whether to skip update of completed versions map during rollback caused by empty update set in MVCC TX. */
     private boolean forceSkipCompletedVers;

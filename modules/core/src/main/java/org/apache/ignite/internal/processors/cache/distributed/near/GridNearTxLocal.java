@@ -4444,6 +4444,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         nearMap.clear();
         dhtMap.clear();
         mappings.clear();
+        qryEnlisted = false;
 
         synchronized (this) {
             this.topVer = topVer;
