@@ -961,6 +961,10 @@
     <inspection_tool class="Dependency" enabled="false" level="ERROR" enabled_by_default="false">
         <scope name="android" level="ERROR" enabled="false"/>
     </inspection_tool>
+    <inspection_tool class="DeprecatedIsStillUsed" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="DeprecatedMavenDependency" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="DeprecatedViewBound" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="Deprecation" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="DeprecatedCallableAddReplaceWith" enabled="false" level="INFO" enabled_by_default="false">
         <scope name="android" level="INFO" enabled="false"/>
     </inspection_tool>
