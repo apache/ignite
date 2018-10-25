@@ -3493,6 +3493,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         || SKIP_PARTITION_SIZE_VALIDATION)
                         return;
 
+                    if (grpCtx.mvccEnabled())
+                        top.localUpdateCounters(true, true); // Finalize update counters.
+
                     try {
                         validator.validatePartitionCountersAndSizes(GridDhtPartitionsExchangeFuture.this, top, msgs);
                     }

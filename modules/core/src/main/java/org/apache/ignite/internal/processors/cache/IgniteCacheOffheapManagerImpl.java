@@ -1561,8 +1561,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void finalizeUpdateCountres() {
-            pCntr.finalizeUpdateCountres();
+        @Override public void finalizeUpdateCounters(IgniteInClosure<Long> onGapClose) {
+            pCntr.finalizeUpdateCounters(onGapClose);
         }
 
         /** {@inheritDoc} */

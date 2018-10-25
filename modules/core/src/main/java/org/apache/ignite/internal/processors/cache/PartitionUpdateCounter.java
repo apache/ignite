@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -180,14 +181,24 @@ public class PartitionUpdateCounter {
 
     /**
      * Flushes pending update counters closing all possible gaps.
+     *
+     * @param onGapClose Closure to run on gap closing.
      */
-    public synchronized void finalizeUpdateCountres() {
-        Item last = queue.pollLast();
+    public synchronized void finalizeUpdateCounters(IgniteInClosure<Long> onGapClose) {
+        Item item = poll();
 
-        if (last != null)
-            update(last.start + last.delta);
+        while (item != null) {
+            long cur = cntr.get();
 
-        queue.clear();
+            // Call closure for each counter between current value and next range start.
+            for (long cntr0 = cur; cntr0 < item.start; cntr0++)
+                onGapClose.apply(cntr0 + 1);
+
+            // Close pending ranges.
+            update(item.start + item.delta);
+
+            item = poll();
+        }
     }
 
     /**

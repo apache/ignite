@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
@@ -67,6 +68,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -2679,8 +2681,22 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (part == null)
                     continue;
 
-                if (finalizeCntrsBeforeCollecting)
-                    part.finalizeUpdateCountres();
+                if (finalizeCntrsBeforeCollecting && grp.mvccEnabled()) {
+                    // We need to close all gaps in partition update counters sequence. We assume this finalizing is
+                    // happened on exchange and hence all txs are completed. Therefore each gap in update counters
+                    // sequence is a result of undelivered DhtTxFinishMessage on backup (sequences on primary nodes
+                    // do not have gaps). Here we close these gaps and asynchronously notify continuous query engine
+                    // about the skipped events.
+                    AffinityTopologyVersion topVer = ctx.exchange().readyAffinityVersion();
+
+                    part.finalizeUpdateCounters(new IgniteInClosure<Long>() {
+                        @Override public void apply(Long cntr) {
+                            for (GridCacheContext ctx0 : grp.caches()) {
+                                ctx0.continuousQueries().skipUpdateCounter(null, part.id(), cntr, topVer, false);
+                            }
+                        }
+                    });
+                }
 
                 long updCntr = part.updateCounter();
                 long initCntr = part.initialUpdateCounter();

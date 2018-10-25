@@ -45,6 +45,7 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -1079,14 +1080,16 @@ public interface IgniteCacheOffheapManager {
         public PendingEntriesTree pendingTree();
 
         /**
-         * Flushes pending update counters closing all possible gaps.
-         */
-        public void finalizeUpdateCountres();
-
-        /**
          * Preload a store into page memory.
          * @throws IgniteCheckedException If failed.
          */
         public void preload() throws IgniteCheckedException;
+
+        /**
+         * Flushes pending update counters closing all possible gaps.
+         *
+         * @param onGapClose Closure to run on gap closing.
+         */
+        void finalizeUpdateCounters(IgniteInClosure<Long> onGapClose);
     }
 }

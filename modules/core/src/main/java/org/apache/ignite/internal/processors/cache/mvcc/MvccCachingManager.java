@@ -40,8 +40,10 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -253,7 +255,7 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
      * @return Map of listeners to be notified by this update.
      */
     public Map<UUID, CacheContinuousQueryListener> continuousQueryListeners(GridCacheContext ctx0, @Nullable IgniteInternalTx tx, KeyCacheObject key) {
-        boolean internal = key.internal() || !ctx0.userCache();
+        boolean internal = key != null && key.internal() || !ctx0.userCache();
 
         return ctx0.continuousQueries().notifyContinuousQueries(tx) ?
             ctx0.continuousQueries().updateListeners(internal, false) : null;
@@ -268,9 +270,11 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
         private IgniteUuid lastFutId;
 
         /** Main buffer for entries. */
+        @GridToStringInclude
         private Map<KeyCacheObject, MvccTxEntry> cached = new LinkedHashMap<>();
 
         /** Pending entries. */
+        @GridToStringInclude
         private SortedMap<Integer, Map<KeyCacheObject, MvccTxEntry>> pending;
 
         /**
@@ -336,6 +340,11 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
             }
 
             pending.clear();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(EnlistBuffer.class, this);
         }
     }
 }

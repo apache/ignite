@@ -2318,7 +2318,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     req + ']', ioEx);
             }
         }
-        catch (IgniteCheckedException e) {
+        catch (Throwable e) {
             onError(primary, req, e);
         }
     }

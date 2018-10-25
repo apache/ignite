@@ -1372,9 +1372,11 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /**
      * Flushes pending update counters closing all possible gaps.
+     *
+     * @param onGapClose Closure to run on gap closing.
      */
-    public void finalizeUpdateCountres() {
-        store.finalizeUpdateCountres();
+    public void finalizeUpdateCounters(IgniteInClosure<Long> onGapClose) {
+        store.finalizeUpdateCounters(onGapClose);
     }
 
     /**
