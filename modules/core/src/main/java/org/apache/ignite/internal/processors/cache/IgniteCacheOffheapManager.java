@@ -1062,7 +1062,7 @@ public interface IgniteCacheOffheapManager {
         /**
          * @param cntr Counter.
          */
-        void updateInitialCounter(long cntr);
+        public void updateInitialCounter(long cntr);
 
         /**
          * Inject rows cache cleaner.
@@ -1076,12 +1076,12 @@ public interface IgniteCacheOffheapManager {
          *
          * @return PendingTree instance.
          */
-        PendingEntriesTree pendingTree();
+        public PendingEntriesTree pendingTree();
 
         /**
          * Flushes pending update counters closing all possible gaps.
          */
-        void finalizeUpdateCountres();
+        public void finalizeUpdateCountres();
 
         /**
          * Preload a store into page memory.

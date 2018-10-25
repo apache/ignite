@@ -646,16 +646,19 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
         return delegate.lostPartitions();
     }
 
-    /** {@inheritDoc}
-     * @param part*/
+    /** {@inheritDoc} */
     @Override public void preloadPartition(int part) throws IgniteCheckedException {
         delegate.preloadPartition(part);
     }
 
-    /** {@inheritDoc}
-     * @param part*/
+    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> preloadPartitionAsync(int part) throws IgniteCheckedException {
         return delegate.preloadPartitionAsync(part);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean localPreloadPartition(int part) throws IgniteCheckedException {
+        return delegate.localPreloadPartition(part);
     }
 
     /** {@inheritDoc} */

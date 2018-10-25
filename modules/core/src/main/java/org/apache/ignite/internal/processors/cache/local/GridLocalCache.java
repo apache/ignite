@@ -248,4 +248,11 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
             }
         });
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean localPreloadPartition(int part) throws IgniteCheckedException {
+        ctx.offheap().preloadPartition(part);
+
+        return true;
+    }
 }

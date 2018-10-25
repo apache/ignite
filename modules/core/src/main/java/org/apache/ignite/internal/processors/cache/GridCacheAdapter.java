@@ -90,6 +90,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheA
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -151,6 +153,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_KEY_VALIDATI
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_RETRIES_COUNT;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 import static org.apache.ignite.internal.processors.cache.CacheOperationContext.DFLT_ALLOW_ATOMIC_OPS_IN_TX;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_LOAD;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
@@ -4998,6 +5001,28 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             return executePreloadTask(part);
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean localPreloadPartition(int part) throws IgniteCheckedException {
+        if (!ctx.affinityNode())
+            return false;
+
+        GridDhtPartitionTopology top = ctx.group().topology();
+
+        @Nullable GridDhtLocalPartition p = top.localPartition(part, top.readyTopologyVersion(), false);
+
+        if (p == null || p.state() != OWNING || !p.reserve())
+            return false;
+
+        try {
+            p.dataStore().preload();
+        }
+        finally {
+            p.release();
+        }
+
+        return true;
+    }
+
     /**
      *
      */
@@ -6767,7 +6792,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 cache.context().offheap().preloadPartition(part);
             }
             catch (IgniteCheckedException e) {
-                log.error("Failed to preload the partition [cache=" + name + ", partition=" + part + ']');
+                log.error("Failed to preload the partition [cache=" + name + ", partition=" + part + ']', e);
 
                 throw new IgniteException(e);
             }

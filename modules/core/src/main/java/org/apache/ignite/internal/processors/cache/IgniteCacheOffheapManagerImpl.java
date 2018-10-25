@@ -338,7 +338,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** {@inheritDoc} */
     @Override public void preloadPartition(int p) throws IgniteCheckedException {
-        // No-op.
+        throw new IgniteCheckedException("Operation only applicable to caches with enabled persistence");
     }
 
     /**

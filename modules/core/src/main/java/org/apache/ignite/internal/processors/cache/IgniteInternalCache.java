@@ -1822,6 +1822,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     /**
      * Preload cache partition.
      * @param part Partition.
+     * @throws IgniteCheckedException If failed.
      */
     public void preloadPartition(int part) throws IgniteCheckedException;
 
@@ -1829,6 +1830,15 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * Preload cache partition.
      * @param part Partition.
      * @return Future to be completed whenever preloading completes.
+     * @throws IgniteCheckedException If failed.
      */
     public IgniteInternalFuture<?> preloadPartitionAsync(int part) throws IgniteCheckedException;
+
+    /**
+     * Preloads cache partition if it exists on local node.
+     * @param part Partition.
+     * @return {@code True} if partition was preloaded, {@code false} if it doesn't belong to local node.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean localPreloadPartition(int part) throws IgniteCheckedException;
 }
