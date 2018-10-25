@@ -20,6 +20,15 @@ package org.apache.ignite.testsuites;
 import java.util.HashSet;
 import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.processors.cache.GridCacheAtomicMessageCountSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteAtomicCacheEntryProcessorNodeJoinTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtAtomicEvictionNearReadersSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearEvictionEventSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearMultiNodeSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearReadersSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedAtomicGetAndTransformStoreSelfTest;
+import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicBasicStoreSelfTest;
+import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicGetAndTransformStoreSelfTest;
 
 /**
  * Test suite.
@@ -32,6 +41,15 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
         System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
 
         HashSet<Class> ignoredTests = new HashSet<>();
+        ignoredTests.add(GridCacheLocalAtomicBasicStoreSelfTest.class);
+        ignoredTests.add(GridCacheLocalAtomicGetAndTransformStoreSelfTest.class);
+        ignoredTests.add(GridCacheAtomicNearMultiNodeSelfTest.class);
+        ignoredTests.add(GridCacheAtomicNearReadersSelfTest.class);
+        ignoredTests.add(GridCachePartitionedAtomicGetAndTransformStoreSelfTest.class);
+        ignoredTests.add(GridCacheAtomicNearEvictionEventSelfTest.class);
+        ignoredTests.add(GridCacheAtomicMessageCountSelfTest.class);
+        ignoredTests.add(IgniteAtomicCacheEntryProcessorNodeJoinTest.class);
+        ignoredTests.add(GridCacheDhtAtomicEvictionNearReadersSelfTest.class);
 
         TestSuite suite = new TestSuite("IgniteCache Mvcc Test Suite part 2");
 

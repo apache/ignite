@@ -31,6 +31,14 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  * Isolated nodes LOCAL cache self test.
  */
 public class GridCacheLocalIsolatedNodesSelfTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        if(FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+
+        super.beforeTestsStarted();
+    }
+
     /**
      *
      */

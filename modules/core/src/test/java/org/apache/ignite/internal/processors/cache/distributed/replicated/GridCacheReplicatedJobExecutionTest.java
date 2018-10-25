@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheAbstractJobExecutionTest;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -36,6 +38,8 @@ public class GridCacheReplicatedJobExecutionTest extends GridCacheAbstractJobExe
 
         cc.setCacheMode(CacheMode.REPLICATED);
         cc.setWriteSynchronizationMode(FULL_SYNC);
+        cc.setAtomicityMode(TRANSACTIONAL);
+        cc.setNearConfiguration(null);
 
         c.setCacheConfiguration(cc);
 

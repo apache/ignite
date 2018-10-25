@@ -27,6 +27,14 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  */
 public class GridCacheLocalGetAndTransformStoreSelfTest extends GridCacheGetAndTransformStoreAbstractTest {
     /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        if (FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+
+        super.setUp();
+    }
+
+    /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return LOCAL;
     }

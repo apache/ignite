@@ -42,6 +42,14 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  *
  */
 public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        if (FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+
+        super.setUp();
+    }
+
     /** Grid. */
     private Ignite ignite;
 

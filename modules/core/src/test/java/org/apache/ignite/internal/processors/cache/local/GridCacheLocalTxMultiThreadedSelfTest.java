@@ -34,6 +34,15 @@ public class GridCacheLocalTxMultiThreadedSelfTest extends IgniteTxMultiThreaded
     private static final boolean CACHE_DEBUG = false;
 
     /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        if (FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+
+        super.setUp();
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings({"ConstantConditions"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 

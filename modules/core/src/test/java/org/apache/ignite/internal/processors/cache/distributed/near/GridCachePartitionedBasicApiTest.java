@@ -38,7 +38,7 @@ public class GridCachePartitionedBasicApiTest extends GridCacheBasicApiAbstractT
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(1);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setNearConfiguration(new NearCacheConfiguration());
+        cacheCfg.setNearConfiguration(null);
 
         cfg.setCacheConfiguration(cacheCfg);
 

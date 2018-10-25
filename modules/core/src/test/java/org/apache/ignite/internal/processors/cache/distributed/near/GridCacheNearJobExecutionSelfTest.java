@@ -25,11 +25,20 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheAbstractJobExecutionTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Tests cache access from within jobs.
  */
 public class GridCacheNearJobExecutionSelfTest extends GridCacheAbstractJobExecutionTest {
+    /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        if (FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+
+        super.setUp();
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
@@ -37,7 +46,7 @@ public class GridCacheNearJobExecutionSelfTest extends GridCacheAbstractJobExecu
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(CacheMode.PARTITIONED);
-        cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setNearConfiguration(new NearCacheConfiguration());
 

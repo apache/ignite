@@ -28,6 +28,14 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
  */
 public class GridCacheLocalEvictionEventSelfTest extends GridCacheEvictionEventAbstractTest {
     /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        if (FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+
+        super.setUp();
+    }
+
+    /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return CacheMode.LOCAL;
     }

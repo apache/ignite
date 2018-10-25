@@ -74,6 +74,14 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        if(FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-9321");
+
+        super.beforeTestsStarted();
+    }
+
     /** Key 1. */
     private Integer key1;
 

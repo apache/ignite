@@ -109,6 +109,8 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"TooBroadScope"})
     public void testNodeStop() throws Exception {
+
+
         // -- Test parameters. -- //
         int nodeCnt = 3;
         int threadCnt = 20;

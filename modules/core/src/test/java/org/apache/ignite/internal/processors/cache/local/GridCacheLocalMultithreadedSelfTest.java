@@ -42,6 +42,14 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  * Multithreaded local cache locking test.
  */
 public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        if (FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+
+        super.setUp();
+    }
+
     /** Cache. */
     private IgniteCache<Integer, String> cache;
 

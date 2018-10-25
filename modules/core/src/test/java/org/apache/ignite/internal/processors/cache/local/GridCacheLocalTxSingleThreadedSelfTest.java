@@ -30,6 +30,14 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  * Tests for local transactions.
  */
 public class GridCacheLocalTxSingleThreadedSelfTest extends IgniteTxSingleThreadedAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        if (FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+
+        super.setUp();
+    }
+
     /** Cache debug flag. */
     private static final boolean CACHE_DEBUG = false;
 
