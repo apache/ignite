@@ -93,24 +93,11 @@ public final class NativeFileSystemLinux extends NativeFileSystemPosix {
      */
     public static final int FALLOC_FL_UNSHARE_RANGE	= 0x40;
 
-    /**
-     * If the native calls are supported.
-     */
-    public static final boolean SUPPORTED = true;
-
     /** */
-    private static final LinuxLibC libc = LibraryLoader.create(LinuxLibC.class).load("c");
-
-    /** {@inheritDoc} */
-    @Override public boolean isSupported() {
-        return SUPPORTED;
-    }
+    private static final LinuxNativeLibC libc = LibraryLoader.create(LinuxNativeLibC.class).load("c");
 
     /** {@inheritDoc} */
     @Override public void punchHole(int fd, long off, long len) {
-        if (!SUPPORTED)
-            throw new UnsupportedOperationException();
-
         int res = libc.fallocate(fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, off, len);
 
         if (res != 0)
@@ -119,7 +106,7 @@ public final class NativeFileSystemLinux extends NativeFileSystemPosix {
 
     /**
      */
-    public interface LinuxLibC {
+    public interface LinuxNativeLibC {
         /**
          * Allows the caller to directly manipulate the allocated
          * disk space for the file referred to by fd for the byte range starting
@@ -132,6 +119,6 @@ public final class NativeFileSystemLinux extends NativeFileSystemPosix {
          * @return On success, fallocate() returns zero.  On error, -1 is returned and
          * {@code errno} is set to indicate the error.
          */
-        public int fallocate(int fd, int mode, long off, long len);
+        int fallocate(int fd, int mode, long off, long len);
     }
 }

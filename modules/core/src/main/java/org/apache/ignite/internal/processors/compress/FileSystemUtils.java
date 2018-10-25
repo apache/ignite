@@ -38,7 +38,7 @@ public final class FileSystemUtils {
      * @return {@code true} If this API is supported.
      */
     public static boolean isSupported() {
-        return fs != null && fs.isSupported();
+        return fs != null;
     }
 
     /**

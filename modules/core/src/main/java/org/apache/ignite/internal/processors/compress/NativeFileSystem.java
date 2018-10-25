@@ -7,11 +7,6 @@ import java.nio.file.Path;
  */
 public interface NativeFileSystem {
     /**
-     * @return {@code true} If this native APS is supported.
-     */
-    boolean isSupported();
-
-    /**
      * @param path Path.
      * @return File system block size.
      */
