@@ -260,10 +260,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
 
     /** Capacity for StringBuilder in metastore key creation.
-     * Evaluation: Max.of(prefix len) + delimiter + 2*(max len hash + sign) */
+     * Evaluation: Max.of(prefix len) + delimiter + (max len hash + sign) */
     private static final int METASTORE_KEY_SB_CAPACITY = CACHE_GRP_CACHE_NAME_METASTORE_KEY_DELIMITER.length() +
         Math.max(CACHE_CONFIGURATION_VERSION_PREFIX.length(), STORE_CACHE_PREFIX.length()) +
-        2 * String.valueOf(Integer.MIN_VALUE).length();
+        String.valueOf(Integer.MIN_VALUE).length();
 
 
     /** Timeout between partition file destroy and checkpoint to handle it. */
@@ -1569,14 +1569,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         context().database().checkpointReadLock();
 
         try {
-            String key = getCacheConfigVersionMetastoreKey(data.config());
+            String key = getCacheConfigVersionMetastoreKey(data.config().getName());
 
             GridCacheConfigurationVersion ver = readStoredCacheConfigurationVersion(key);
 
             assert ver != null : data;
 
             // 0 - means, that cache isn't user cache.
-            if(ver.id()>0){
+            if(ver.id() > 0){
                 assert ver.isNeedUpdateVersion(DESTROY) : ver;
 
                 ver.updateVersion(DESTROY);
@@ -1789,7 +1789,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         context().database().checkpointReadLock();
 
         try {
-            String verKey = getCacheConfigVersionMetastoreKey(ver);
+            String verKey = getCacheConfigVersionMetastoreKey(ver.cacheName());
 
             GridCacheConfigurationVersion oldVer = readStoredCacheConfigurationVersion(verKey);
 
@@ -1917,39 +1917,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * Creates metastore key for cache configuration version.
      *
-     * @param cacheCfg cache configuration.
-     * @return metastore key.
-     */
-    private String getCacheConfigVersionMetastoreKey(CacheConfiguration<?, ?> cacheCfg){
-        return getCacheConfigVersionMetastoreKey(cacheCfg.getName(), cacheCfg.getGroupName());
-    }
-
-    /**
-     * Creates metastore key for cache configuration version.
-     *
-     * @param ver cache configuration version.
-     * @return metastore key.
-     */
-    private String getCacheConfigVersionMetastoreKey(GridCacheConfigurationVersion ver) {
-        assert ver != null;
-
-        return getCacheConfigVersionMetastoreKey(ver.cacheName(), ver.cacheGroupName());
-    }
-
-    /**
-     * Creates metastore key for cache configuration version.
-     *
      * @param cacheName cache name.
-     * @param cacheGrpName cache group name.
      * @return metastore key.
      */
-    private String getCacheConfigVersionMetastoreKey(String cacheName, @Nullable String cacheGrpName) {
+    private String getCacheConfigVersionMetastoreKey(String cacheName) {
         assert cacheName != null;
 
         return new StringBuilder(METASTORE_KEY_SB_CAPACITY)
             .append(CACHE_CONFIGURATION_VERSION_PREFIX)
-            .append((cacheGrpName == null ? cacheName : cacheGrpName).hashCode())
-            .append(CACHE_GRP_CACHE_NAME_METASTORE_KEY_DELIMITER)
             .append(cacheName.hashCode())
             .toString();
     }
