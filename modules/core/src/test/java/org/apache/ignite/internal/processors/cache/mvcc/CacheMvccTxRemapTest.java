@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -32,7 +33,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -40,9 +40,7 @@ import org.apache.ignite.internal.TestDelayingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxEnlistRequest;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -53,13 +51,10 @@ import org.apache.ignite.transactions.TransactionIsolation;
  */
 public class CacheMvccTxRemapTest extends CacheMvccAbstractTest {
     /** */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final String CACHE_NAME = "cache";
 
     /** */
-    public static final int PARTITIONS = 3;
+    private static final int PARTITIONS = 3;
 
     /** */
     private Phaser phaser;
@@ -98,6 +93,7 @@ public class CacheMvccTxRemapTest extends CacheMvccAbstractTest {
 
     /**
      * Creates cache configuration.
+     *
      * @param cacheName Cache name.
      * @return Cache configuration.
      */
@@ -132,16 +128,41 @@ public class CacheMvccTxRemapTest extends CacheMvccAbstractTest {
         IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
                 try {
+                    Random rnd = new Random();
+
                     while (!stop.get()) {
                         if (phaser.arriveAndAwaitAdvance() < 0)
                             return; // Terminated.
 
-                        startGrid(3);
+                        client = false;
+
+                        int mode = rnd.nextInt(2);
+
+                        switch (mode) {
+                            case 0:
+                                client = true;
+                            case 1: {
+                                startGrid(3);
+
+                                break;
+                            }
+                            case 2:
+                                grid(rnd.nextInt(1)).createCache("myCache");
+                        }
 
                         if (stop.get() || phaser.arriveAndAwaitAdvance() < 0)
                             return;
 
-                        stopGrid(3);
+                        switch (mode) {
+                            case 0:
+                            case 1: {
+                                stopGrid(3);
+
+                                break;
+                            }
+                            case 2:
+                                grid(rnd.nextInt(1)).destroyCache("myCache");
+                        }
                     }
                 }
                 catch (Exception e) {
@@ -160,7 +181,7 @@ public class CacheMvccTxRemapTest extends CacheMvccAbstractTest {
                 final HashMap<Object, Object> map = new HashMap<>();
 
                 while (!stop.get()) {
-                    for (int i = iter; i < 100; i += 3)
+                    for (int i = 0; i < 100; i += 3)
                         map.put(i, iter);
 
                     IgniteTransactions txs = cli.transactions();
@@ -170,13 +191,6 @@ public class CacheMvccTxRemapTest extends CacheMvccAbstractTest {
                         tx.commit();
                     }
                     catch (CacheException e) {
-                        ClusterTopologyException cause = X.cause(e, ClusterTopologyException.class);
-
-                        if (cause != null &&
-                            cause.getMessage().startsWith("Failed to get primary") ||
-                            cause.getMessage().startsWith("Backup node left the grid"))
-                            continue;
-
                         throw e;
                     }
 
@@ -191,7 +205,7 @@ public class CacheMvccTxRemapTest extends CacheMvccAbstractTest {
                 @Override public boolean apply() {
                     return fut.isDone() || fut1.isDone();
                 }
-            }, getTestTimeout()/2);
+            }, getTestTimeout() / 2);
         }
         finally {
             stop.set(true);
