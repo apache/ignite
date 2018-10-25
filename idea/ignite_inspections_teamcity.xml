@@ -1306,6 +1306,10 @@
     <inspection_tool class="ThrowableNotThrown" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="ThrowablePrintedToSystemOut" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="ThrowableResultOfMethodCallIgnored" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="TrivialIf" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="TryFinallyCanBeTryWithResources" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="TryStatementWithMultipleResources" enabled="false" level="INFORMATION" enabled_by_default="false" />
+    <inspection_tool class="TryWithIdenticalCatches" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="TypeParameterExtendsFinalClass" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="TypeParameterExtendsObject" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="TypeParameterHidesVisibleType" enabled="false" level="WARNING" enabled_by_default="false"/>
