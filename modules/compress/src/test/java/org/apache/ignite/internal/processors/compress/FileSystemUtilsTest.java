@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import junit.framework.TestCase;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Assume;
@@ -17,12 +18,42 @@ import static org.apache.ignite.internal.processors.compress.FileSystemUtils.pun
 
 public class FileSystemUtilsTest extends TestCase {
 
+    /**
+     * @throws IOException If failed.
+     */
     public void testSparseFiles() throws IOException {
         Assume.assumeTrue("Native file system API must be supported for " +
-            U.getOsMx().getName() + " " + U.getOsMx().getVersion() + " " + U.getOsMx().getArch(),
+                U.getOsMx().getName() + " " + U.getOsMx().getVersion() + " " + U.getOsMx().getArch(),
             FileSystemUtils.isSupported());
 
         Path file = Files.createTempFile("test_sparse_file_", ".bin");
+
+        try {
+            doTestSparseFiles(file);
+        }
+        finally {
+            Files.delete(file);
+        }
+    }
+
+    /**
+     * @throws IOException If failed.
+     */
+    public void _testFileSystems() throws IOException {
+        doTestSparseFiles(Paths.get("/ext4/test_file"));
+        doTestSparseFiles(Paths.get("/btrfs/test_file"));
+        doTestSparseFiles(Paths.get("/xfs/test_file"));
+    }
+
+    /**
+     * @param file File path.
+     * @throws IOException If failed.
+     */
+    private void doTestSparseFiles(Path file) throws IOException {
+        System.out.println(file);
+
+        if (Files.exists(file))
+            Files.delete(file);
 
         RandomAccessFile raf = new RandomAccessFile(file.toFile(), "rws");
 
