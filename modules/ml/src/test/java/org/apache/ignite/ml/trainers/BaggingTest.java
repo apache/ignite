@@ -23,24 +23,32 @@ import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.composition.BaggingModelTrainer;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
+import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.nn.UpdatesStrategy;
+import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
+import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
+import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 public class BaggingTest extends TrainerTest {
+
     /**
      * Test that count of entries during training is equal to initial dataset size * subsampleRatio.
      */
     @Test
-    public void testBaggingTrainerContextCount() {
+    public void testBaggingTrainerDataCount() {
         Map<Integer, Double[]> cacheMock = getCacheMock();
 
         double subsampleSize = 0.3;
@@ -81,6 +89,37 @@ public class BaggingTest extends TrainerTest {
         count((ctxCount, countData, integer) -> countData.cnt);
     }
 
+    @Test
+    public void testNaiveBaggingLogRegression() {
+        Map<Integer, Double[]> cacheMock = getCacheMock();
+
+        DatasetTrainer<LogisticRegressionModel, Double> trainer =
+            (LogisticRegressionSGDTrainer<?>) new LogisticRegressionSGDTrainer<>()
+            .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
+                SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
+            .withMaxIterations(100000)
+            .withLocIterations(100)
+            .withBatchSize(10)
+            .withSeed(123L);
+
+        DatasetTrainer<ModelsComposition, Double> baggedTrainer =
+            TrainerTransformers.makeBagged(
+                trainer,
+                10,
+                0.6,
+                new OnMajorityPredictionsAggregator());
+
+        ModelsComposition mdl = baggedTrainer.fit(
+            cacheMock,
+            parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+            (k, v) -> v[0]
+        );
+
+        TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(100, 10)), PRECISION);
+        TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(10, 100)), PRECISION);
+    }
+
     protected void count(IgniteTriFunction<Long, CountData, Integer, Long> counter) {
         Map<Integer, Double[]> cacheMock = getCacheMock();
 
@@ -88,8 +127,9 @@ public class BaggingTest extends TrainerTest {
 
         double subsampleRatio = 0.3;
 
-        ModelsComposition model = countTrainer
-            .transform(TrainerTransformers.makeBagged(100, subsampleRatio, new MeanValuePredictionsAggregator()))
+
+
+        ModelsComposition model = TrainerTransformers.makeBagged(countTrainer, 100, subsampleRatio, new MeanValuePredictionsAggregator())
             .fit(cacheMock, parts, null, null);
 
         Double res = model.apply(null);

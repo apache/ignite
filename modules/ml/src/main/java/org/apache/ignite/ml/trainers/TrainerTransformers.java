@@ -52,11 +52,12 @@ public class TrainerTransformers {
      * @param <L>            Type of labels.
      * @return Bagged trainer.
      */
-    public static <M extends Model<Vector, Double>, L> IgniteFunction<DatasetTrainer<M, L>, DatasetTrainer<ModelsComposition, L>> makeBagged(
+    public static <M extends Model<Vector, Double>, L> DatasetTrainer<ModelsComposition, L> makeBagged(
+        DatasetTrainer<M, L> trainer,
         int ensembleSize,
         double subsampleRatio,
         PredictionsAggregator aggregator) {
-        return makeBagged(ensembleSize, subsampleRatio, -1, -1, aggregator);
+        return makeBagged(trainer, ensembleSize, subsampleRatio, -1, -1, aggregator);
     }
 
     /**
@@ -69,13 +70,14 @@ public class TrainerTransformers {
      * @param <L>            Type of labels.
      * @return Bagged trainer.
      */
-    public static <M extends Model<Vector, Double>, L> IgniteFunction<DatasetTrainer<M, L>, DatasetTrainer<ModelsComposition, L>> makeBagged(
+    public static <M extends Model<Vector, Double>, L> DatasetTrainer<ModelsComposition, L> makeBagged(
+        DatasetTrainer<M, L> trainer,
         int ensembleSize,
         double subsampleRatio,
         int featureVectorSize,
         int maxFeaturesCntPerMdl,
         PredictionsAggregator aggregator) {
-        return trainer -> new DatasetTrainer<ModelsComposition, L>() {
+        return new DatasetTrainer<ModelsComposition, L>() {
             @Override
             public <K, V> ModelsComposition fit(
                 DatasetBuilder<K, V> datasetBuilder,
