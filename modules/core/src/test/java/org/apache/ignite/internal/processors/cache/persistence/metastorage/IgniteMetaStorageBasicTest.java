@@ -112,8 +112,6 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     public void testRecoveryOfMetastorageWhenNodeNotInBaseline() throws Exception {
-        fail("enableCheckpoints(false) can't be used on production environment");
-
         IgniteEx ig0 = startGrid(0);
 
         ig0.cluster().active(true);

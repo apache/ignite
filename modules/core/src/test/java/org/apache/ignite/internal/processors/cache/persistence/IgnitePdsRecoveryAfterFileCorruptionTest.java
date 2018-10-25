@@ -118,8 +118,6 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
      * @throws Exception if failed.
      */
     public void testPageRecoveryAfterFileCorruption() throws Exception {
-        fail("enableCheckpoints(false) can't be used on production environment");
-
         IgniteEx ig = startGrid(0);
 
         ig.cluster().active(true);

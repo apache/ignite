@@ -147,8 +147,6 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
      * @throws Exception if failed.
      */
     public void testCheckpointSimulationMultiThreaded() throws Exception {
-        fail("enableCheckpoints(false) can't be used on production environment");
-
         IgniteEx ig = startGrid(0);
 
         ig.active(true);
@@ -206,8 +204,6 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
      * @throws Exception if failed.
      */
     public void testGetForInitialWrite() throws Exception {
-        fail("enableCheckpoints(false) can't be used on production environment");
-
         IgniteEx ig = startGrid(0);
 
         ig.active(true);
@@ -308,8 +304,6 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
      * @throws Exception if failed.
      */
     public void testDataWalEntries() throws Exception {
-        fail("enableCheckpoints(false) can't be used on production environment");
-
         IgniteEx ig = startGrid(0);
 
         ig.active(true);
@@ -417,8 +411,6 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
      * @throws Exception if failed.
      */
     public void testPageWalEntries() throws Exception {
-        fail("enableCheckpoints(false) can't be used on production environment");
-
         IgniteEx ig = startGrid(0);
 
         ig.active(true);
@@ -519,8 +511,6 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
      * @throws Exception if failed.
      */
     public void testDirtyFlag() throws Exception {
-        fail("enableCheckpoints(false) can't be used on production environment");
-
         IgniteEx ig = startGrid(0);
 
         ig.active(true);

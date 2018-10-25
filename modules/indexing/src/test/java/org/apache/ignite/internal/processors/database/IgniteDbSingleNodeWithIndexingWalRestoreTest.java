@@ -126,8 +126,6 @@ public class IgniteDbSingleNodeWithIndexingWalRestoreTest extends GridCommonAbst
      * Test for values without class created with BinaryObjectBuilder.
      */
     public void testClasslessBinaryValuesRestored() throws Exception {
-        fail("enableCheckpoints(false) can't be used on production environment");
-
         IgniteEx ig = startGrid(0);
 
         ig.active(true);
@@ -165,8 +163,6 @@ public class IgniteDbSingleNodeWithIndexingWalRestoreTest extends GridCommonAbst
      * (no metainformation to deserialize values is stored with values themselves).
      */
     public void testRegularClassesRestored() throws Exception {
-        fail("enableCheckpoints(false) can't be used on production environment");
-
         IgniteEx ig = startGrid(0);
 
         ig.active(true);

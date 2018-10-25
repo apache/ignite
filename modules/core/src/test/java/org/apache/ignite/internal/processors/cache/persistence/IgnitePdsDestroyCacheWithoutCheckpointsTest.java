@@ -40,8 +40,6 @@ public class IgnitePdsDestroyCacheWithoutCheckpointsTest extends IgnitePdsDestro
      * @throws Exception If failed.
      */
     public void testDestroyCachesAbruptlyWithoutCheckpoints() throws Exception {
-        fail("enableCheckpoints(false) can't be used on production environment");
-
         Ignite ignite = startGrids(NODES);
 
         ignite.cluster().active(true);
@@ -59,8 +57,6 @@ public class IgnitePdsDestroyCacheWithoutCheckpointsTest extends IgnitePdsDestro
      * @throws Exception If failed.
      */
     public void testDestroyGroupCachesAbruptlyWithoutCheckpoints() throws Exception {
-        fail("enableCheckpoints(false) can't be used on production environment");
-
         Ignite ignite = startGrids(NODES);
 
         ignite.cluster().active(true);
