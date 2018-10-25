@@ -112,7 +112,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+        cleanPersistenceDir();
 
         long seed = System.currentTimeMillis();
 
