@@ -400,7 +400,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         Collection<Object> keys = new ArrayList<>(keys0.size());
 
         for (KeyCacheObject key : keys0)
-            keys.add(cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false));
+            keys.add(cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, true, false));
 
         err.add(keys, res.error(), req.topologyVersion());
     }
