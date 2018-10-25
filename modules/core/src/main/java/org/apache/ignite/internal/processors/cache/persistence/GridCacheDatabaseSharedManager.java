@@ -283,6 +283,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private boolean stopping;
 
+    /**
+     * The position of last seen WAL pointer. Used for resumming logging from this pointer.
+     *
+     * If binary memory recovery pefrormed on node start, the checkpoint END pointer will store
+     * not the last WAL pointer and can't be used for resumming logging.
+     */
+    private volatile WALPointer walTail;
+
     /** Checkpoint runner thread pool. If null tasks are to be run in single thread */
     @Nullable private IgniteThreadPoolExecutor asyncRunner;
 
@@ -849,17 +857,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             CheckpointStatus status = readCheckpointStatus();
 
-            log.info("Start from [ptr=" + status.endPtr + ']');
-
-            // Memory should be recovered at startup.
+            // Binary memory should be recovered at startup.
             assert !status.needRestoreMemory() : status;
 
-            if (!cpHistory.isInit())
-                cpHistory.initialize(retreiveHistory());
+            WALPointer statusEndPtr = CheckpointStatus.NULL_PTR.equals(status.endPtr) ? null : status.endPtr;
 
-            WALPointer walPtr = CheckpointStatus.NULL_PTR.equals(status.endPtr) ? null : status.endPtr;
+            // If binary memory recovery occurs resume from the last walTail in the other case from END checkpoint.
+            WALPointer walPtr = walTail == null ? statusEndPtr : walTail;
 
-            // Memory restored at startup, just resume logging from last seen WAL pointer.
             cctx.wal().resumeLogging(walPtr);
 
             metaStorage = new MetaStorage(
@@ -2047,7 +2052,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
         }
 
-        WALPointer restoredPtr = restoreBinaryMemory(cctx.cache().cacheGroupDescriptors().keySet());
+        final WALPointer restoredPtr = restoreBinaryMemory(cctx.cache().cacheGroupDescriptors().keySet());
+
+        walTail = restoredPtr;
 
         if (restoredPtr != null)
             U.log(log, "Binary memory state restored at node startup [restoredPtr=" + restoredPtr + ']');
@@ -2478,6 +2485,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         finally {
             if (!metastoreOnly)
                 cctx.kernalContext().query().skipFieldLookup(false);
+
+            walTail = null;
         }
 
         if (log.isInfoEnabled())
