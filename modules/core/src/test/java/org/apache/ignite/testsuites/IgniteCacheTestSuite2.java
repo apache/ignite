@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.HashSet;
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeAffinityBackupFilterSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionBackupFilterSelfTest;
@@ -153,7 +154,16 @@ public class IgniteCacheTestSuite2 extends TestSuite {
      * @return IgniteCache test suite.
      * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
+        return suite(null);
+    }
+
+    /**
+     * @param ignoredTests Ignored tests.
+     * @return IgniteCache test suite.
+     * @throws Exception Thrown in case of the failure.
+     */
+    public static TestSuite suite(HashSet<Class> ignoredTests) {
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 2");
 
         // Local cache.
