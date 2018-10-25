@@ -2,7 +2,6 @@ package org.apache.ignite.internal.processors.cache.persistence.db;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.Arrays;
@@ -13,10 +12,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import com.google.common.collect.Lists;
-import com.sun.corba.se.spi.ior.IORFactory;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -32,28 +28,32 @@ import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 
+/**
+ * A set of tests that check correctness of logical recovery performed during node start.
+ */
 public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
-
-    private static final int CACHES = 9;
-
+    /** Shared group name. */
     private static final String SHARED_GROUP_NAME = "group";
 
-    private static final String DYNAMIC_CACHE_PREFIX = "dynamic-";
+    /** Dynamic cache prefix. */
+    private static final String DYNAMIC_CACHE_PREFIX = "dynamic-cache-";
 
+    /** Cache prefix. */
     private static final String CACHE_PREFIX = "cache-";
 
+    /** Io factory. */
     private FileIOFactory ioFactory;
 
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -66,21 +66,19 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
             cacheConfiguration(CACHE_PREFIX + 1, CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL),
             cacheConfiguration(CACHE_PREFIX + 2, CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC),
             cacheConfiguration(CACHE_PREFIX + 3, CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL),
-            cacheConfiguration(CACHE_PREFIX + 4, CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL),
-            cacheConfiguration(CACHE_PREFIX + 5, CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC),
-            cacheConfigurationSharedGroup(CACHE_PREFIX + 6, CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL),
-            cacheConfigurationSharedGroup(CACHE_PREFIX + 7, CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL),
-            cacheConfigurationSharedGroup(CACHE_PREFIX + 8, CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL)
+            cacheConfiguration(CACHE_PREFIX + 4, SHARED_GROUP_NAME, CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL),
+            cacheConfiguration(CACHE_PREFIX + 5, SHARED_GROUP_NAME, CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL)
         );
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
+            .setAlwaysWriteFullPages(true)
             .setWalMode(WALMode.LOG_ONLY)
             .setCheckpointFrequency(1024 * 1024 * 1024) // Disable automatic checkpoints.
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
                     .setName("dflt")
-                    .setInitialSize(512 * 1024 * 1024)
-                    .setMaxSize(2048L * 1024 * 1024)
+                    .setInitialSize(256 * 1024 * 1024)
+                    .setMaxSize(256 * 1024 * 1024)
                     .setPersistenceEnabled(true)
             );
 
@@ -89,12 +87,30 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         if (ioFactory != null)
             dsCfg.setFileIOFactory(ioFactory);
 
+        cfg.setPluginConfigurations(new PageMemoryTrackerConfiguration().setEnabled(false).setCheckPagesOnCheckpoint(true));
+
         return cfg;
     }
 
+    /**
+     * @param name Name.
+     * @param cacheMode Cache mode.
+     * @param atomicityMode Atomicity mode.
+     */
     private CacheConfiguration<Object, Object> cacheConfiguration(String name, CacheMode cacheMode, CacheAtomicityMode atomicityMode) {
+        return cacheConfiguration(name, null, cacheMode, atomicityMode);
+    }
+
+    /**
+     * @param name Name.
+     * @param groupName Group name.
+     * @param cacheMode Cache mode.
+     * @param atomicityMode Atomicity mode.
+     */
+    private CacheConfiguration<Object, Object> cacheConfiguration(String name, @Nullable String groupName, CacheMode cacheMode, CacheAtomicityMode atomicityMode) {
         CacheConfiguration<Object, Object> cfg = new CacheConfiguration<>();
 
+        cfg.setGroupName(groupName);
         cfg.setName(name);
         cfg.setCacheMode(cacheMode);
         cfg.setAtomicityMode(atomicityMode);
@@ -105,20 +121,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    private CacheConfiguration<Object, Object> cacheConfigurationSharedGroup(String name, CacheMode cacheMode, CacheAtomicityMode atomicityMode) {
-        CacheConfiguration<Object, Object> cfg = new CacheConfiguration<>();
-
-        cfg.setGroupName(SHARED_GROUP_NAME);
-        cfg.setName(name);
-        cfg.setCacheMode(cacheMode);
-        cfg.setAtomicityMode(atomicityMode);
-        cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cfg.setBackups(2);
-        cfg.setAffinity(new RendezvousAffinityFunction(false, 32));
-
-        return cfg;
-    }
-
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
@@ -127,6 +130,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         System.setProperty(GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, "true");
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
@@ -135,12 +139,9 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         System.clearProperty(GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP);
     }
 
-    private List<String> allCaches() {
-        return IntStream.range(0, CACHES)
-                .mapToObj(i -> CACHE_PREFIX + i)
-                .collect(Collectors.toList());
-    }
-
+    /**
+     *
+     */
     public void testRecoveryOnJoinToActiveCluster() throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
 
@@ -148,7 +149,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         IgniteEx node = grid(2);
 
-        AggregateCacheLoader aggCacheLoader = new AggregateCacheLoader(node, allCaches());
+        AggregateCacheLoader aggCacheLoader = new AggregateCacheLoader(node);
 
         aggCacheLoader.start();
 
@@ -169,6 +170,9 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         aggCacheLoader.consistencyCheck(grid(2));
     }
 
+    /**
+     *
+     */
     public void testRecoveryOnJoinToInactiveCluster() throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
 
@@ -176,11 +180,11 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         IgniteEx node = grid(2);
 
-        AggregateCacheLoader aggCacheLoader = new AggregateCacheLoader(node, allCaches());
+        AggregateCacheLoader aggCacheLoader = new AggregateCacheLoader(node);
 
         aggCacheLoader.start();
 
-        U.sleep(10000);
+        U.sleep(3000);
 
         forceCheckpoint();
 
@@ -201,6 +205,9 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         aggCacheLoader.consistencyCheck(grid(2));
     }
 
+    /**
+     *
+     */
     public void testRecoveryOnDynamicallyStartedCaches() throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
 
@@ -217,13 +224,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         node.getOrCreateCaches(dynamicCaches);
 
-        List<String> cachesNamesForLoader = allCaches();
-
-        cachesNamesForLoader.addAll(
-            dynamicCaches.stream().map(CacheConfiguration::getName).collect(Collectors.toList())
-        );
-
-        AggregateCacheLoader aggCacheLoader = new AggregateCacheLoader(node, cachesNamesForLoader);
+        AggregateCacheLoader aggCacheLoader = new AggregateCacheLoader(node);
 
         aggCacheLoader.start();
 
@@ -245,6 +246,9 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
             aggCacheLoader.consistencyCheck(grid(idx));
     }
 
+    /**
+     *
+     */
     public void testRecoveryOnJoinToDifferentBlt() throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
 
@@ -252,7 +256,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         IgniteEx node = grid(2);
 
-        AggregateCacheLoader aggCacheLoader = new AggregateCacheLoader(node, allCaches());
+        AggregateCacheLoader aggCacheLoader = new AggregateCacheLoader(node);
 
         aggCacheLoader.start();
 
@@ -278,24 +282,25 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
             aggCacheLoader.consistencyCheck(grid(idx));
     }
 
-    public void testCrushOnRecoveryOnNodeStart() throws Exception {
+    /**
+     *
+     */
+    public void testRecoveryOnCrushDuringCheckpointOnNodeStart() throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3, false);
 
         crd.cluster().active(true);
 
         IgniteEx node = grid(2);
 
-        AggregateCacheLoader aggCacheLoader = new AggregateCacheLoader(node, allCaches());
+        AggregateCacheLoader aggCacheLoader = new AggregateCacheLoader(node);
 
         aggCacheLoader.start();
 
         U.sleep(3000);
 
-/*
         forceCheckpoint();
 
         U.sleep(3000);
-*/
 
         aggCacheLoader.stop();
 
@@ -306,8 +311,6 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         IgniteInternalFuture fut = GridTestUtils.runAsync(() -> startGrid(2));
 
         U.sleep(5000);
-
-        log.warning("FUT ERR = " + fut.error());
 
         ioFactory = null;
 
@@ -320,29 +323,39 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
             aggCacheLoader.consistencyCheck(grid(idx));
     }
 
+    /** {@inheritDoc} */
     @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
         return new StopNodeFailureHandler();
     }
 
-    @Override
-    protected long getTestTimeout() {
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
         return 600 * 1000;
     }
 
+    /**
+     *
+     */
     private class AggregateCacheLoader {
+        /** Ignite. */
         IgniteEx ignite;
 
-        List<String> cacheNames;
-
+        /** Stop flag. */
         AtomicBoolean stopFlag;
 
+        /** Cache loaders. */
         Map<CacheLoader, IgniteInternalFuture> cacheLoaders;
 
-        public AggregateCacheLoader(IgniteEx ignite, List<String> cacheNames) {
+        /**
+         * @param ignite Ignite.
+         */
+        public AggregateCacheLoader(IgniteEx ignite) {
             this.ignite = ignite;
-            this.cacheNames = cacheNames;
         }
 
+        /**
+         *
+         */
         public void start() {
             if (stopFlag != null && !stopFlag.get())
                 throw new IllegalStateException("Cache loaders must be stopped before start again");
@@ -350,7 +363,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
             stopFlag = new AtomicBoolean();
             cacheLoaders = new HashMap<>();
 
-            for (String cacheName : cacheNames) {
+            for (String cacheName : ignite.cacheNames()) {
                 CacheLoader loader = new CacheLoader(ignite, stopFlag, cacheName);
 
                 IgniteInternalFuture loadFuture = GridTestUtils.runAsync(loader);
@@ -359,6 +372,9 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
             }
         }
 
+        /**
+         *
+         */
         public void stop() throws IgniteCheckedException {
             if (stopFlag != null)
                 stopFlag.set(true);
@@ -368,6 +384,9 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
                     loadFuture.get();
         }
 
+        /**
+         * @param ignite Ignite.
+         */
         public void consistencyCheck(IgniteEx ignite) throws IgniteCheckedException {
             if (cacheLoaders != null)
                 for (CacheLoader cacheLoader : cacheLoaders.keySet())
@@ -375,23 +394,37 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         }
     }
 
-    class CacheLoader implements Runnable {
+    /**
+     *
+     */
+    static class CacheLoader implements Runnable {
+        /** Keys space. */
         static final int KEYS_SPACE = 3096;
 
+        /** Ignite. */
         final IgniteEx ignite;
 
+        /** Stop flag. */
         final AtomicBoolean stopFlag;
 
+        /** Cache name. */
         final String cacheName;
 
+        /** Local cache. */
         final Map<Object, Object> locCache = new ConcurrentHashMap<>();
 
+        /**
+         * @param ignite Ignite.
+         * @param stopFlag Stop flag.
+         * @param cacheName Cache name.
+         */
         public CacheLoader(IgniteEx ignite, AtomicBoolean stopFlag, String cacheName) {
             this.ignite = ignite;
             this.stopFlag = stopFlag;
             this.cacheName = cacheName;
         }
 
+        /** {@inheritDoc} */
         @Override public void run() {
             while (!stopFlag.get()) {
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -436,6 +469,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
             }
         }
 
+        /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             if (this == o)
                 return true;
@@ -447,12 +481,17 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
             return Objects.equals(cacheName, loader.cacheName);
         }
 
+        /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(cacheName);
         }
     }
 
+    /**
+     *
+     */
     static class CheckpointFailIoFactory implements FileIOFactory {
+        /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             FileIO delegate = new RandomAccessFileIOFactory().create(file, modes);
 
@@ -475,6 +514,9 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @param arr Array.
+     */
     static String arrayToString(int[] arr) {
         if (arr == null)
             return "null";

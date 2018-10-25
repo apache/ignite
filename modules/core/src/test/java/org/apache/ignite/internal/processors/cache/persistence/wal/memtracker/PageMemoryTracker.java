@@ -531,7 +531,7 @@ public class PageMemoryTracker implements IgnitePlugin {
             dumpStats();
 
             if (emptyPds && pages.size() != totalAllocated) {
-                res = false;
+                res = true;
 
                 log.error("Started from empty PDS, but tracked pages count not equals to allocated pages count");
 

@@ -664,11 +664,8 @@ public class OffheapReadWriteLock {
 
             long updated = updateState(state, 0, 0, delta);
 
-            if (GridUnsafe.compareAndSwapLong(null, lock, state, updated)) {
-                System.err.println("Waiter registered -> " + U.hexLong(lock));
-
+            if (GridUnsafe.compareAndSwapLong(null, lock, state, updated))
                 return;
-            }
         }
     }
 }

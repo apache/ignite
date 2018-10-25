@@ -2225,7 +2225,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
             assert cctx.isRecoveryMode();
 
-            QuerySchema localSchema = ((GridCacheDatabaseSharedManager) ctx.cache().context().database()).getRestored(desc.cacheId());
+            QuerySchema localSchema = ((GridCacheDatabaseSharedManager) ctx.cache().context().database()).recoverQuerySchema(desc.cacheId());
 
             QuerySchemaPatch localSchemaPatch = localSchema.makePatch(desc.schema().entities());
 
