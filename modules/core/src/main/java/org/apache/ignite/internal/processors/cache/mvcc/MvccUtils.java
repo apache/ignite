@@ -938,6 +938,8 @@ public class MvccUtils {
     /** */
     public static class UnsupportedTxModeException extends IgniteCheckedException {
         /** */
+        private static final long serialVersionUID = 0L;
+        /** */
         private UnsupportedTxModeException() {
             super("Only pessimistic repeatable read transactions are supported when MVCC is enabled.");
         }
@@ -945,6 +947,8 @@ public class MvccUtils {
 
     /** */
     public static class NonMvccTransactionException extends IgniteCheckedException {
+        /** */
+        private static final long serialVersionUID = 0L;
         /** */
         private NonMvccTransactionException() {
             super("Operations on MVCC caches are not permitted in transactions spanning non MVCC caches.");
