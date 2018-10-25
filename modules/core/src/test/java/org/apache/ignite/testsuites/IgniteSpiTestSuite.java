@@ -33,37 +33,8 @@ public class IgniteSpiTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite SPIs Test Suite");
 
-        // Failover.
-        suite.addTest(IgniteSpiFailoverSelfTestSuite.suite());
-
-        // Collision.
-        suite.addTest(IgniteSpiCollisionSelfTestSuite.suite());
-
-        // Event storage.
-        suite.addTest(IgniteSpiEventStorageSelfTestSuite.suite());
-
-        // Load Balancing.
-        suite.addTest(IgniteSpiLoadBalancingSelfTestSuite.suite());
-
-        // Checkpoints.
-        suite.addTest(IgniteSpiCheckpointSelfTestSuite.suite());
-
-        // Deployment
-        suite.addTest(IgniteSpiDeploymentSelfTestSuite.suite());
-
-        // Discovery.
-        suite.addTest(IgniteSpiDiscoverySelfTestSuite.suite());
-
-        // Communication.
-        suite.addTest(IgniteSpiCommunicationSelfTestSuite.suite());
-
-        // All other tests.
-        suite.addTestSuite(GridNoopManagerSelfTest.class);
-
-        // Local Message Listener tests.
-        suite.addTestSuite(GridManagerLocalMessageListenerSelfTest.class);
-
-        suite.addTestSuite(KeystoreEncryptionSpiSelfTest.class);
+        for (int i = 0; i < 100; i++)
+            suite.addTest(IgniteSpiDiscoverySelfTestSuite.suite());
 
         return suite;
     }
