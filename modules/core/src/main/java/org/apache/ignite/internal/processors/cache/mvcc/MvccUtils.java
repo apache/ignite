@@ -676,7 +676,7 @@ public class MvccUtils {
         catch (UnsupportedTxModeException e) {
             throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
-        catch (IncompatibleOperationsException e) {
+        catch (NonMvccTransactionException e) {
             throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH);
         }
     }
@@ -686,10 +686,10 @@ public class MvccUtils {
      * @param txId Transaction ID.
      * @return Currently started user transaction, or {@code null} if none started.
      * @throws UnsupportedTxModeException If transaction mode is not supported when MVCC is enabled.
-     * @throws IncompatibleOperationsException t0d0
+     * @throws NonMvccTransactionException If started transaction spans non MVCC caches.
      */
     @Nullable public static GridNearTxLocal currentTx(GridKernalContext ctx,
-        @Nullable GridCacheVersion txId) throws UnsupportedTxModeException, IncompatibleOperationsException {
+        @Nullable GridCacheVersion txId) throws UnsupportedTxModeException, NonMvccTransactionException {
         IgniteTxManager tm = ctx.cache().context().tm();
 
         IgniteInternalTx tx0 = txId == null ? tm.tx() : tm.tx(txId);
@@ -706,7 +706,7 @@ public class MvccUtils {
             if (!tx.isOperationAllowed(true)) {
                 tx.setRollbackOnly();
 
-                throw new IncompatibleOperationsException();
+                throw new NonMvccTransactionException();
             }
         }
 
@@ -944,11 +944,10 @@ public class MvccUtils {
     }
 
     /** */
-    public static class IncompatibleOperationsException extends IgniteCheckedException {
+    public static class NonMvccTransactionException extends IgniteCheckedException {
         /** */
-        private IncompatibleOperationsException() {
-            // t0d0 refine comment?
-            super("SQL queries and cache operations may not be used in the same transaction.");
+        private NonMvccTransactionException() {
+            super("Operations on MVCC caches are not permitted in transactions spanning non MVCC caches.");
         }
     }
 }
