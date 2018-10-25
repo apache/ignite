@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -636,20 +636,25 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
      * Reset source iterator state.
      */
     private void resetIterator() {
-        List<Batch> batches = new LinkedList<>(this.batches.values());
+        Queue<Object> rows = new ArrayDeque<>(batchSize + 1);
 
-        assert this.batches.size() == 1; // There should be only one batch in fly.
+        for (Batch batch : batches.values())
+            rows.addAll(batch.rows);
 
-        this.batches.clear();
+        batches.clear();
+
+        if (peek != null && peek != FINISHED)
+            rows.add(peek);
+
+        peek = null;
 
         if (it instanceof RemapSourceIterator) {
-            // Add current batches to begin.
-            batches.addAll(((RemapSourceIterator)it).staleBatches);
+            rows.addAll(((RemapSourceIterator)it).rows);
 
-            ((RemapSourceIterator)it).staleBatches = batches;
+            ((RemapSourceIterator)it).rows = rows;
         }
         else
-            it = new RemapSourceIterator(batches, it);
+            it = new RemapSourceIterator(rows, it);
     }
 
     /** {@inheritDoc} */
@@ -748,13 +753,13 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
      */
     private static class RemapSourceIterator implements UpdateSourceIterator<Object> {
         /** */
-        List<Batch> staleBatches;
+        Queue<Object> rows;
 
         /** */
         UpdateSourceIterator parent;
 
-        public RemapSourceIterator(List<Batch> batches, UpdateSourceIterator it) {
-            this.staleBatches = batches;
+        public RemapSourceIterator(Queue<Object> rows, UpdateSourceIterator it) {
+            this.rows = rows;
             this.parent = it;
         }
 
@@ -765,32 +770,18 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
         /** {@inheritDoc} */
         @Override public boolean hasNextX() throws IgniteCheckedException {
-            if (F.isEmpty(staleBatches))
+            if (F.isEmpty(rows))
                 return parent.hasNextX();
 
-            Iterator<Batch> it = staleBatches.iterator();
-
-            while (it.hasNext() && it.next().rows().isEmpty())
-                it.remove();
-
-            return !staleBatches.isEmpty();
+            return !rows.isEmpty();
         }
 
         /** {@inheritDoc} */
         @Override public Object nextX() throws IgniteCheckedException {
-            if (F.isEmpty(staleBatches))
+            if (F.isEmpty(rows))
                 return parent.nextX();
 
-            Batch batch = staleBatches.get(0);
-
-            assert !batch.rows.isEmpty();
-
-            Object res = batch.rows.remove(0);
-
-            if (batch.rows.isEmpty())
-                staleBatches.remove(0);
-
-            return res;
+            return rows.poll();
         }
     }
 }
