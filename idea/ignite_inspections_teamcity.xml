@@ -693,6 +693,13 @@
     <inspection_tool class="JavaFxUnusedImports" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="JavaLangImport" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="JavaStylePropertiesInvocation" enabled="false" level="WARNING" enabled_by_default="false"/>
+    <inspection_tool class="JavaModuleNaming" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="JavaMutatorMethodAccessedAsParameterless" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="JavaMutatorMethodOverriddenAsParameterless" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="JavaMutatorMethodOverridenAsParameterless" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="JavaReflectionInvocation" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="JavaReflectionMemberAccess" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="JavaRequiresAutoModule" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="JavacQuirks" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="JavadocHtmlLint" enabled="false" level="ERROR" enabled_by_default="false"/>
     <inspection_tool class="JavadocReference" enabled="false" level="WARNING" enabled_by_default="false">
