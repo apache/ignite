@@ -81,7 +81,7 @@ public abstract class GridRedisRestCommandHandler implements GridRedisCommandHan
 
                         return msg;
                     }
-                }, ctx.getSystemExecutorService());
+                }, ctx.getRestExecutorService());
         }
         catch (IgniteCheckedException e) {
             if (e instanceof GridRedisTypeException)
