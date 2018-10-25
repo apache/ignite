@@ -2,6 +2,9 @@ package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
 import java.nio.ByteBuffer;
 
+/**
+ * Page IO that supports compaction.
+ */
 public interface CompactablePageIO {
     /**
      * Compacts page contents to the output buffer.

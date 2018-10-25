@@ -415,6 +415,15 @@ public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
             .a("\n]");
     }
 
+    /**
+     * @param pageAddr Page address.
+     * @return Offset after the last item.
+     */
+    public int getItemsEnd(long pageAddr) {
+        int cnt = getCount(pageAddr);
+        return offset(cnt);
+    }
+
     /** {@inheritDoc} */
     @Override public void compactPage(ByteBuffer page, ByteBuffer out) {
         page.mark();
@@ -422,17 +431,16 @@ public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
         page.reset();
 
         long pageAddr = GridUnsafe.bufferAddress(out);
-        int lastOff = offset(getCount(pageAddr) - 1);
 
         // Just drop all the extra garbage at the end.
-        out.limit(lastOff + itemSize + (isLeaf() ? 0 : 8));
+        out.limit(getItemsEnd(pageAddr));
     }
 
     /** {@inheritDoc} */
     @Override public void restorePage(ByteBuffer compactPage, int pageSize) {
         assert compactPage.isDirect();
         assert compactPage.position() == 0;
-        assert compactPage.limit() < pageSize;
+        assert compactPage.limit() <= pageSize;
 
         compactPage.limit(pageSize); // Just add garbage to the end.
     }
