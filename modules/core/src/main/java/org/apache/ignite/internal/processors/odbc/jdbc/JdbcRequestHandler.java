@@ -1073,7 +1073,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         if (e instanceof IgniteSQLException)
             return new JdbcResponse(((IgniteSQLException) e).statusCode(), e.getMessage());
         else
-            return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, e.toString());
+            return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, e.getMessage());
     }
 
     /**
