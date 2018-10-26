@@ -1,5 +1,6 @@
 package org.apache.ignite.internal.processors.compress;
 
+import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -13,9 +14,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Assume;
 
-import static java.nio.file.StandardOpenOption.CREATE_NEW;
+import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.SPARSE;
 import static java.nio.file.StandardOpenOption.SYNC;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorImpl.allocateDirectBuffer;
 import static org.apache.ignite.internal.processors.compress.FileSystemUtils.getFileSystemBlockSize;
 import static org.apache.ignite.internal.processors.compress.FileSystemUtils.punchHole;
@@ -69,14 +72,14 @@ public class FileSystemUtilsTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    public void _testFileSystems() throws Exception {
+    public void testFileSystems() throws Exception {
         doTestSparseFiles(Paths.get("/ext4/test_file")); // OK
         doTestSparseFiles(Paths.get("/btrfs/test_file")); // OK
         doTestSparseFiles(Paths.get("/xfs/test_file")); // Fails due to getSparseFileSize instability
     }
 
     private static int getFD(FileChannel ch) throws IgniteCheckedException {
-        return U.<Integer>field(U.field(ch, "fd"), "fd");
+        return U.<Integer>field(U.<FileDescriptor>field(ch, "fd"), "fd");
     }
 
     /**
@@ -86,10 +89,8 @@ public class FileSystemUtilsTest extends TestCase {
     private void doTestSparseFiles(Path file) throws Exception {
         System.out.println(file);
 
-        if (Files.exists(file))
-            Files.delete(file);
-
-        FileChannel ch = FileChannel.open(file, SPARSE, CREATE_NEW, SYNC);
+        FileChannel ch = FileChannel.open(file,
+            READ, WRITE, TRUNCATE_EXISTING, SPARSE, SYNC);
         int fd = getFD(ch);
 
         int fsBlockSize = getFileSystemBlockSize(file);
