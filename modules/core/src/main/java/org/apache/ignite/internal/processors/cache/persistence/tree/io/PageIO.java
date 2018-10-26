@@ -137,10 +137,13 @@ public abstract class PageIO {
     private static final int COMPRESSED_SIZE_OFF = COMPRESSION_TYPE_OFF + 1;
 
     /** */
-    private static final int RESERVED_INT_OFF = COMPRESSED_SIZE_OFF + 2;
+    private static final int COMPACTED_SIZE_OFF = COMPRESSED_SIZE_OFF + 2;
 
     /** */
-    private static final int RESERVED_2_OFF = RESERVED_INT_OFF + 4;
+    private static final int RESERVED_SHORT_OFF = COMPACTED_SIZE_OFF + 2;
+
+    /** */
+    private static final int RESERVED_2_OFF = RESERVED_SHORT_OFF + 2;
 
     /** */
     private static final int RESERVED_3_OFF = RESERVED_2_OFF + 8;
@@ -414,6 +417,22 @@ public abstract class PageIO {
     }
 
     /**
+     * @param page Page buffer.
+     * @param compactedSize Compacted size.
+     */
+    public static void setCompactedSize(ByteBuffer page, short compactedSize) {
+        page.putShort(COMPACTED_SIZE_OFF, compactedSize);
+    }
+
+    /**
+     * @param page Page buffer.
+     * @return Compacted size.
+     */
+    public static short getCompactedSize(ByteBuffer page) {
+        return page.getShort(COMPACTED_SIZE_OFF);
+    }
+
+    /**
      * @param pageAddr Page address.
      * @return Checksum.
      */
@@ -545,7 +564,8 @@ public abstract class PageIO {
         setPageId(pageAddr, pageId);
         setCrc(pageAddr, 0);
 
-        PageUtils.putLong(pageAddr, ROTATED_ID_PART_OFF, 0L); // rotated(1) + compress_type(1) + compressed_size(2) + reserved(4)
+        // rotated(1) + compress_type(1) + compressed_size(2) + compacted_size(2) + reserved(2)
+        PageUtils.putLong(pageAddr, ROTATED_ID_PART_OFF, 0L);
         PageUtils.putLong(pageAddr, RESERVED_2_OFF, 0L);
         PageUtils.putLong(pageAddr, RESERVED_3_OFF, 0L);
     }

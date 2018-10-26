@@ -98,7 +98,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
         if (compactSize < fsBlockSize || compression == DROP_GARBAGE) {
             // No need to compress further or configured just to drop garbage.
-            setCompressionInfo(compactPage, DROP_GARBAGE, compactSize);
+            setCompressionInfo(compactPage, DROP_GARBAGE, 0, compactSize);
 
             // Can not return thread local buffer, because the actual write may be async.
             ByteBuffer res = allocateDirectBuffer(compactSize);
@@ -113,7 +113,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         if (pageSize - compressedSize < fsBlockSize)
             return page; // Were not able to release file blocks.
 
-        setCompressionInfo(compressedPage, compression, compressedSize);
+        setCompressionInfo(compressedPage, compression, compressedSize, compactSize);
 
         return compressedPage;
     }
@@ -122,12 +122,15 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @param page Page.
      * @param compression Compression algorithm.
      * @param compressedSize Compressed size.
+     * @param compactedSize Compact size.
      */
-    private static void setCompressionInfo(ByteBuffer page, PageCompression compression, int compressedSize) {
-        assert compressedSize >= 0 && compressedSize < Short.MAX_VALUE;
+    private static void setCompressionInfo(ByteBuffer page, PageCompression compression, int compressedSize, int compactedSize) {
+        assert compressedSize >= 0 && compressedSize <= Short.MAX_VALUE: compressedSize;
+        assert compactedSize >= 0 && compactedSize <= Short.MAX_VALUE: compactedSize;
 
         PageIO.setCompressionType(page, getCompressionType(compression));
         PageIO.setCompressedSize(page, (short)compressedSize);
+        PageIO.setCompactedSize(page, (short)compactedSize);
     }
 
     /**
@@ -230,6 +233,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
         byte compressType = PageIO.getCompressionType(page);
         short compressedSize = PageIO.getCompressedSize(page);
+        short compactSize = PageIO.getCompactedSize(page);
 
         if (compressType == UNCOMPRESSED_PAGE)
             return; // Nothing to do.
@@ -242,8 +246,10 @@ public class CompressionProcessorImpl extends CompressionProcessor {
             if (compressType == ZSTD_COMPRESSED_PAGE)
                 Zstd.decompress(dst, page);
             else if (compressType == LZ4_COMPRESSED_PAGE) {
-                // TODO Maybe use fastDecompressor(), but we need to store compacted page size in the page then.
-                LZ4Factory.fastestInstance().safeDecompressor().decompress(page, dst);
+                // LZ4 fast decompressor needs this limit to be exact.
+                dst.limit(compactSize - PageIO.COMMON_HEADER_END);
+
+                LZ4Factory.fastestInstance().fastDecompressor().decompress(page, dst);
             } else
                 throw new IllegalStateException("Unknown compression: " + compressType);
 
@@ -257,6 +263,6 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
         io.restorePage(page, pageSize);
 
-        setCompressionInfo(page, null, 0);
+        setCompressionInfo(page, null, 0, 0);
     }
 }
