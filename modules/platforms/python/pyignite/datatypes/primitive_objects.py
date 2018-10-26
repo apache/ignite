@@ -97,7 +97,7 @@ class IntObject(DataObject):
 
 
 class LongObject(DataObject):
-    c_type = ctypes.c_long
+    c_type = ctypes.c_longlong
     type_code = TC_LONG
     pythonic = int
     default = 0

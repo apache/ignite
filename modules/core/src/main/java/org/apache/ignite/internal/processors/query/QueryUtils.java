@@ -378,7 +378,7 @@ public class QueryUtils {
      * @param replace Whether to perform replace of special characters.
      * @return Escaped string.
      */
-    public static @Nullable String normalizeObjectName(@Nullable String str, boolean replace) {
+    @Nullable public static String normalizeObjectName(@Nullable String str, boolean replace) {
         if (str == null)
             return null;
 
