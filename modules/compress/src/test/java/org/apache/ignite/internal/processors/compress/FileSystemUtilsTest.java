@@ -56,7 +56,7 @@ public class FileSystemUtilsTest extends TestCase {
 
         if (U.isLinux()) {
             try {
-                Process proc = new ProcessBuilder("stat", file.toString())
+                Process proc = new ProcessBuilder("stat", file.toRealPath().toString())
                     .inheritIO()
                     .start();
 
