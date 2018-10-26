@@ -107,11 +107,6 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
         return false;
     }
 
-    @Override
-    public void enableArchiver() {
-
-    }
-
     /** {@inheritDoc} */
     @Override public void start(GridCacheSharedContext cctx) throws IgniteCheckedException {
         // No-op.

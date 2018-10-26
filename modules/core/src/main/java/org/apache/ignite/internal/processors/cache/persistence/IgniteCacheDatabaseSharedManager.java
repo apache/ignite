@@ -109,6 +109,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** */
     private volatile boolean dataRegionsStarted;
 
+    /** */
+    private volatile boolean dataRegionsStarted;
+
 
     /** */
     protected DataRegion dfltDataRegion;

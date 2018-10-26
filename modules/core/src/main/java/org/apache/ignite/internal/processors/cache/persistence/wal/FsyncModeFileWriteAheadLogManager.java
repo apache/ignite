@@ -534,11 +534,13 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /** {@inheritDoc} */
-    @Override public void resumeLogging(WALPointer filePtr) throws IgniteCheckedException {
+    @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
         assert currentHnd == null;
-        assert walTail == null || walTail instanceof FileWALPointer;
+        assert lastPtr == null || lastPtr instanceof FileWALPointer;
         assert (isArchiverEnabled() && archiver != null) || (!isArchiverEnabled() && archiver == null) :
             "Trying to restore FileWriteHandle on deactivated write ahead log manager";
+
+        FileWALPointer filePtr = (FileWALPointer)lastPtr;
 
         currentHnd = restoreWriteHandle((FileWALPointer) filePtr);
 

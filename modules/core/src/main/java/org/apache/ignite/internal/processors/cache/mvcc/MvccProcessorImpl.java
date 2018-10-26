@@ -328,6 +328,12 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         txLogPageStoreInit(mgr);
     }
 
+    /** {@inheritDoc} */
+    @Override public void beforeResumeWalLogging(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
+        // In case of blt changed we should re-init TX_LOG cache.
+        txLogPageStoreInit(mgr);
+    }
+
     /**
      * @param mgr Database shared manager.
      * @throws IgniteCheckedException If failed.

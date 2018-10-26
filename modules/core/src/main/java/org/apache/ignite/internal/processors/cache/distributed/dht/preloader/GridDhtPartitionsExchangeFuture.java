@@ -880,8 +880,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 cctx.database().cleanupRestoredCaches();
 
-                cctx.database().cleanupCheckpointDirectory();
-
                 // Perform cache init from scratch.
                 for (DynamicCacheDescriptor desc : cctx.cache().cacheDescriptors().values()) {
                     if (CU.isPersistentCache(desc.cacheConfiguration(),

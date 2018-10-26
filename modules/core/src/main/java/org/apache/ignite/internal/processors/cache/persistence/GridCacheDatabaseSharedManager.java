@@ -168,6 +168,7 @@ import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
@@ -284,6 +285,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** */
     private boolean stopping;
+
+    /**
+     * The position of last seen WAL pointer. Used for resumming logging from this pointer.
+     *
+     * If binary memory recovery pefrormed on node start, the checkpoint END pointer will store
+     * not the last WAL pointer and can't be used for resumming logging.
+     */
+    private volatile WALPointer walTail;
 
     /** Checkpoint runner thread pool. If null tasks are to be run in single thread */
     @Nullable private IgniteThreadPoolExecutor asyncRunner;
@@ -531,11 +540,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             DataRegion region = regionName != null ? dataRegionMap.get(regionName) : dfltDataRegion;
 
-            if (region == null) {
-                log.warning("Skip invalidate for " + grpDesc);
-
+            if (region == null)
                 continue;
-            }
 
             if (log.isInfoEnabled())
                 log.info("Page memory " + region + " for " + grpDesc + " has invalidated.");
@@ -549,8 +555,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     memEx.invalidate(grpDesc.groupId(), partId);
 
                 memEx.invalidate(grpDesc.groupId(), PageIdAllocator.INDEX_PARTITION);
-
-                //memEx.clearAsync(((grpId, pageId) -> grpId == grpDesc.groupId()), true);
             }
         }
 
@@ -565,6 +569,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void cleanupCheckpointDirectory() throws IgniteCheckedException {
+        if (cpHistory != null)
+            cpHistory = new CheckpointHistory(cctx.kernalContext());
+
         try {
             try (DirectoryStream<Path> files = Files.newDirectoryStream(cpDir.toPath())) {
                 for (Path path : files)
@@ -698,6 +705,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             try {
                 dataRegion(METASTORE_DATA_REGION_NAME).pageMemory().start();
+                restoreMemory(status, true, storePageMem, Collections.emptySet());
 
                 performBinaryMemoryRestore(status, Collections.singleton(MetaStorage.METASTORAGE_CACHE_ID), false);
 
@@ -713,6 +721,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 metaStorage = null;
 
                 dataRegion(METASTORE_DATA_REGION_NAME).pageMemory().stop(false);
+
+                cctx.pageStore().cleanupPageStoreIfMatch(new Predicate<Integer>() {
+                    @Override public boolean test(Integer grpId) {
+                        return MetaStorage.METASTORAGE_CACHE_ID == grpId;
+                    }
+                }, false);
+
+                checkpointReadUnlock();
+            }
+                metaStorage = null;
+
+                storePageMem.stop(true);
 
                 cctx.pageStore().cleanupPageStoreIfMatch(new Predicate<Integer>() {
                     @Override public boolean test(Integer grpId) {
@@ -2374,6 +2394,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /**
      * @param status Last registered checkpoint status.
+     * @param metastoreOnly If {@code True} only records related to metastorage will be processed.
      * @throws IgniteCheckedException If failed to apply updates.
      * @throws StorageException If IO exception occurred while reading write-ahead log.
      */
@@ -4460,7 +4481,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    public void notifyMetaStorageSubscribersOnReadyForRead() throws IgniteCheckedException {
+    @Override public void notifyMetaStorageSubscribersOnReadyForRead() throws IgniteCheckedException {
         metastorageLifecycleLsnrs = cctx.kernalContext().internalSubscriptionProcessor().getMetastorageSubscribers();
 
         readMetastore();
