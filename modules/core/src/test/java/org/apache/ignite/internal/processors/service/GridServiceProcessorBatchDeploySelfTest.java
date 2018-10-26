@@ -139,7 +139,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
         IgniteInternalFuture<Object> topChangeFut = runTopChanger(finished);
 
         try {
-            int numServices = 200;
+            int numServices = 50;
             int batchSize = 5;
 
             CountDownLatch latch = new CountDownLatch(numServices);
