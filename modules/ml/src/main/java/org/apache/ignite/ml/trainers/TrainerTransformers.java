@@ -160,7 +160,9 @@ public class TrainerTransformers {
         Long startTs = System.currentTimeMillis();
 
         DatasetBuilder<K, V> bootstrappedBuilder = datasetBuilder.addStreamTransformer(
-            (s, rnd) -> s.flatMap(en -> repeatEntry(en, rnd)),
+            // Sequentiality of stream here is needed because we use instance of
+            // RNG as data, to make it deterministic we should fix order.
+            (s, rnd) -> s.sequential().flatMap(en -> repeatEntry(en, rnd)),
             () -> new PoissonDistribution(subsampleRatio)
         );
 

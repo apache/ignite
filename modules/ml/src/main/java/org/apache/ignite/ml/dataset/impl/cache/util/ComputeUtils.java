@@ -175,7 +175,6 @@ public class ComputeUtils {
             qry.setPartition(part);
             qry.setFilter(filter);
 
-            // TODO: It still is undeterministic in bagging. Should generate seed.
             List<?> data = transformerDataSuppliers.stream().map(Supplier::get).collect(Collectors.toList());
             List<?> dataCopy = Utils.copy(data);
 
