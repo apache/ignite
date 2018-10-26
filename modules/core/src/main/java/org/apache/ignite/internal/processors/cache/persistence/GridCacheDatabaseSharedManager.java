@@ -109,7 +109,6 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
@@ -136,7 +135,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointe
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
-import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -473,13 +471,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         };
 
+        checkpointer = new Checkpointer(cctx.igniteInstanceName(), "db-checkpoint-thread", log);
+
         snapshotMgr = cctx.snapshot();
 
         final GridKernalContext kernalCtx = cctx.kernalContext();
 
         if (!kernalCtx.clientNode()) {
-            checkpointer = new Checkpointer(cctx.igniteInstanceName(), "db-checkpoint-thread", log);
-
             cpHistory = new CheckpointHistory(kernalCtx);
 
             IgnitePageStoreManager store = cctx.pageStore();
@@ -740,8 +738,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         snapshotMgr = cctx.snapshot();
 
-        super.onActivate(ctx);
-
         if (!cctx.kernalContext().clientNode()) {
             initializeCheckpointer();
 
@@ -749,6 +745,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             startMetastorageForWrite();
         }
+
+        super.onActivate(ctx);
     }
 
     /** {@inheritDoc} */
@@ -769,9 +767,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      *
      */
     private void initializeCheckpointer() {
-        if (checkpointer == null)
-            checkpointer = new Checkpointer(cctx.igniteInstanceName(), "db-checkpoint-thread", log);
-
         if (persistenceCfg.getCheckpointThreads() > 1)
             asyncRunner = new IgniteThreadPoolExecutor(
                 CHECKPOINT_RUNNER_THREAD_PREFIX,
@@ -879,6 +874,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
+    /**
+     * @param readOnly Metastorage read-only mode.
+     * @return Instance of Metastorage.
+     * @throws IgniteCheckedException If failed to create metastorage.
+     */
     private MetaStorage createMetastorage(boolean readOnly) throws IgniteCheckedException {
         cctx.pageStore().initializeForMetastorage();
 
@@ -2273,7 +2273,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private PageMemoryEx getPageMemoryForCacheGroup(int grpId) throws IgniteCheckedException {
         if (grpId == MetaStorage.METASTORAGE_CACHE_ID)
-            return (PageMemoryEx)dataRegion(MetaStorage.METASTORAGE_CACHE_NAME).pageMemory();
+            return (PageMemoryEx)dataRegion(METASTORE_DATA_REGION_NAME).pageMemory();
 
         // TODO IGNITE-7792 add generic mapping.
         if (grpId == TxLog.TX_LOG_CACHE_ID)
@@ -4632,6 +4632,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         public WALRecord next(WALIterator it) throws IgniteCheckedException {
             try {
                 for (;;) {
+                    if (!it.hasNextX())
+                        return null;
+
                     IgniteBiTuple<WALPointer, WALRecord> tup = it.nextX();
 
                     if (tup == null)

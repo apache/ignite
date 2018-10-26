@@ -683,6 +683,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (memPlcName == null)
             return dfltDataRegion;
 
+        if (dataRegionMap.isEmpty())
+            return null;
+
         DataRegion plc;
 
         if ((plc = dataRegionMap.get(memPlcName)) == null)
