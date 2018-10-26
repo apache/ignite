@@ -26,7 +26,8 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 /**
  * Bernoulli naive Bayes model which predicts result value {@code y} belongs to a class {@code C_k, k in [0..K]} as
  * {@code p(C_k,y) =x_1*p_1^x * (x_1-1)*p_1^(x_1-1)*...*x_i*p_i^x_i+(x_i-1)*p_i^(x_i-1)}. Where {@code x_i} is a binary
- * feature, {@code p_i} is probability {@code p(x|C_k)}. Returns the number of the most possible class.
+ * feature, {@code p_i} is a prior probability probability {@code p(x|C_k)}. Returns the number of the most possible
+ * class.
  */
 public class BernoulliNaiveBayesModel implements Model<Vector, Double>, Exportable<BernoulliNaiveBayesModel>, Serializable {
     /** */
