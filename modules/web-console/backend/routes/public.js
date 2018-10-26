@@ -53,18 +53,19 @@ module.exports.factory = function(mongo, mailsService, usersService, authService
             const createdByAdmin = _.get(req, 'user.admin', false);
 
             usersService.create(req.origin(), req.body, createdByAdmin)
-                .then((user) => new Promise((resolve, reject) => {
-                    if (!createdByAdmin) {
+                .then((user) => {
+                    if (createdByAdmin)
+                        return user;
+
+                    return new Promise((resolve, reject) => {
                         req.logIn(user, {}, (err) => {
                             if (err)
                                 reject(err);
 
                             resolve(user);
                         });
-                    }
-                    else
-                        resolve(user);
-                }))
+                    });
+                })
                 .then(res.api.ok)
                 .catch(res.api.error);
         });

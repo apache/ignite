@@ -45,7 +45,7 @@ export default class AuthService {
         private User: ReturnType<typeof UserServiceFactory>
     ) {}
 
-    signnup(userInfo: SignupUserInfo, loginAfterSignup: boolean = true) {
+    signup(userInfo: SignupUserInfo, loginAfterSignup: boolean = true) {
         return this._auth('signup', userInfo, loginAfterSignup);
     }
 

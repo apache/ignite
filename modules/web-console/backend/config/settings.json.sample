@@ -1,15 +1,14 @@
 {
-    "application": {
-        "disableSelfRegistration": false
-    },
     "server": {
         "port": 3000,
         "sessionSecret": "CHANGE ME",
         "ssl": false,
         "key": "serve/keys/test.key",
         "cert": "serve/keys/test.crt",
-        "keyPassphrase": "password"
-    },
+        "keyPassphrase": "password",
+        "disable": {
+            "signup": false
+    }    },
     "mongodb": {
         "url": "mongodb://localhost/console"
     },

@@ -54,7 +54,7 @@ All available parameters with defaults:
     Mail FROM:                  --mail:from "Apache Ignite Web Console <someusername@somecompany.somedomain>"
     User to send e-mail:        --mail:auth:user "someusername@somecompany.somedomain"
     E-mail service password:    --mail:auth:pass ""
-    Disable self registration:  --application:disableSelfRegistration false
+    Disable self registration:  --server:disable:signup false
 
 Sample usage:
     `ignite-web-console-win.exe --mail:auth:user "my_user@gmail.com"  --mail:auth:pass "my_password"`

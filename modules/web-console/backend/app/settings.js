@@ -59,7 +59,7 @@ module.exports = {
             },
             packaged,
             application: {
-                disableSelfRegistration: nconf.get('application:disableSelfRegistration') || false
+                disableSelfRegistration: nconf.get('server:disable:signup') || false
             },
             server: {
                 host: nconf.get('server:host') || dfltHost,
