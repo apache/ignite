@@ -133,7 +133,7 @@ public class TxRollbackOnTimeoutOnePhaseCommitTest extends GridCommonAbstractTes
             }
         });
 
-        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 200, 1)) {
+        try (Transaction tx = client.transactions().txStart(concurrency, REPEATABLE_READ, 200, 1)) {
             client.cache(DEFAULT_CACHE_NAME).put(key, key);
 
             tx.commit();
@@ -164,15 +164,15 @@ public class TxRollbackOnTimeoutOnePhaseCommitTest extends GridCommonAbstractTes
 
         int key = 0;
 
-        Ignite primary = primaryNode(key, DEFAULT_CACHE_NAME);
-        Ignite backup = backupNode(key, DEFAULT_CACHE_NAME);
-
+        CountDownLatch lock = new CountDownLatch(1);
         CountDownLatch finish = new CountDownLatch(1);
 
         IgniteInternalFuture fut = runAsync(new Runnable() {
             @Override public void run() {
                 try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
                     client.cache(DEFAULT_CACHE_NAME).put(key, key + 1);
+
+                    lock.countDown();
 
                     try {
                         assertTrue(U.await(finish, 30, TimeUnit.SECONDS));
@@ -187,6 +187,13 @@ public class TxRollbackOnTimeoutOnePhaseCommitTest extends GridCommonAbstractTes
         });
 
         try (Transaction tx = client.transactions().txStart(OPTIMISTIC, REPEATABLE_READ, 200, 1)) {
+            try {
+                assertTrue(U.await(lock, 30, TimeUnit.SECONDS));
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                fail();
+            }
+
             client.cache(DEFAULT_CACHE_NAME).put(key, key);
 
             tx.commit();
