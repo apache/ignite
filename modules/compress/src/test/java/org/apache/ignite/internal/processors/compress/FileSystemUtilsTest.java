@@ -146,6 +146,11 @@ public class FileSystemUtilsTest extends TestCase {
         len = fsBlockSize;
         assertEquals(fsBlockSize, punchHole(fd, off, len, fsBlockSize));
         assertEquals(sparseSize -= fsBlockSize, getSparseFileSize(file));
+
+        for (int i = 0; i < blocks - 1; i++) {
+            punchHole(fd, fsBlockSize * i, fsBlockSize, fsBlockSize);
+            getSparseFileSize(file);
+        }
     }
 
 }
