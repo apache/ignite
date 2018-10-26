@@ -19,34 +19,29 @@ package org.apache.ignite.internal.processors.cache.binary;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.event.CacheEntryListenerException;
-import javax.cache.event.CacheEntryUpdatedListener;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.cache.query.CacheQueryEntryEvent;
-import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -55,10 +50,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  *
@@ -71,16 +66,10 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private volatile boolean clientMode;
-
-    /** */
-    private volatile boolean applyDiscoveryHook;
-
-    /** */
     private volatile DiscoveryHook discoveryHook;
 
     /** */
-    private static final int UPDATES_COUNT = 5_000;
+    private static final int UPDATES_COUNT = 1_000;
 
     /** */
     private static final int RESTART_DELAY = 500;
@@ -98,27 +87,40 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
     private final Queue<BinaryUpdateDescription> updatesQueue = new ConcurrentLinkedQueue<>();
 
     /** */
+    private final List<BinaryUpdateDescription> updatesList = new ArrayList<>(UPDATES_COUNT);
+
+    /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
+
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         for (int i = 0; i < UPDATES_COUNT; i++) {
             FieldType fType = null;
+            Object fVal = null;
+
             switch (i % 4) {
                 case 0:
                     fType = FieldType.NUMBER;
+                    fVal = getNumberFieldVal();
                     break;
                 case 1:
                     fType = FieldType.STRING;
+                    fVal = getStringFieldVal();
                     break;
                 case 2:
                     fType = FieldType.ARRAY;
+                    fVal = getArrayFieldVal();
                     break;
                 case 3:
                     fType = FieldType.OBJECT;
+                    fVal = new Object();
             }
 
-            updatesQueue.add(new BinaryUpdateDescription(i, "f" + (i + 1), fType));
+            BinaryUpdateDescription desc = new BinaryUpdateDescription(i, "f" + (i + 1), fType, fVal);
+
+            updatesQueue.add(desc);
+            updatesList.add(desc);
         }
     }
 
@@ -128,12 +130,10 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        if (applyDiscoveryHook) {
-            final DiscoveryHook hook = discoveryHook != null ? discoveryHook : new DiscoveryHook();
-
+        if (discoveryHook != null) {
             TcpDiscoverySpi discoSpi = new TcpDiscoverySpi() {
                 @Override public void setListener(@Nullable DiscoverySpiListener lsnr) {
-                    super.setListener(GridTestUtils.DiscoverySpiListenerWrapper.wrap(lsnr, hook));
+                    super.setListener(GridTestUtils.DiscoverySpiListenerWrapper.wrap(lsnr, discoveryHook));
                 }
             };
 
@@ -146,7 +146,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
         cfg.setMarshaller(new BinaryMarshaller());
 
-        cfg.setClientMode(clientMode);
+        cfg.setClientMode("client".equals(gridName) || getTestIgniteInstanceIndex(gridName) >= GRID_CNT);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -166,7 +166,8 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
     /**
      * Starts computation job.
-     *  @param idx Grid index on which computation job should start.
+     *
+     * @param idx Grid index on which computation job should start.
      * @param restartIdx The index of the node to be restarted.
      * @param workersCntr The current number of computation threads.
      */
@@ -175,81 +176,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
         ClusterGroup cg = ignite.cluster().forLocal();
 
-        ignite.compute(cg).callAsync(new BinaryObjectAdder(idx, updatesQueue, 30, restartIdx, workersCntr));
-    }
-
-    /**
-     * @param idx Index.
-     * @param deafClient Deaf client.
-     * @param observedIds Observed ids.
-     * @throws Exception If failed.
-     */
-    private void startListening(int idx, boolean deafClient, Set<Integer> observedIds) throws Exception {
-        clientMode = true;
-
-        ContinuousQuery qry = new ContinuousQuery();
-
-        qry.setLocalListener(new CQListener(observedIds));
-
-        if (deafClient) {
-            applyDiscoveryHook = true;
-            discoveryHook = new DiscoveryHook() {
-                @Override public void handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
-                    DiscoveryCustomMessage customMsg = msg == null ? null
-                            : (DiscoveryCustomMessage) IgniteUtils.field(msg, "delegate");
-
-                    if (customMsg instanceof MetadataUpdateProposedMessage) {
-                        if (((MetadataUpdateProposedMessage) customMsg).typeId() == BINARY_TYPE_ID)
-                            GridTestUtils.setFieldValue(customMsg, "typeId", 1);
-                    }
-                    else if (customMsg instanceof MetadataUpdateAcceptedMessage) {
-                        if (((MetadataUpdateAcceptedMessage) customMsg).typeId() == BINARY_TYPE_ID)
-                            GridTestUtils.setFieldValue(customMsg, "typeId", 1);
-                    }
-                }
-            };
-
-            IgniteEx client = startGrid(idx);
-
-            client.cache(DEFAULT_CACHE_NAME).withKeepBinary().query(qry);
-        }
-        else {
-            applyDiscoveryHook = false;
-
-            IgniteEx client = startGrid(idx);
-
-            client.cache(DEFAULT_CACHE_NAME).withKeepBinary().query(qry);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class CQListener implements CacheEntryUpdatedListener {
-        /** */
-        private final Set<Integer> observedIds;
-
-        /**
-         * @param observedIds
-         */
-        CQListener(Set<Integer> observedIds) {
-            this.observedIds = observedIds;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onUpdated(Iterable iterable) throws CacheEntryListenerException {
-            for (Object o : iterable) {
-                if (o instanceof CacheQueryEntryEvent) {
-                    CacheQueryEntryEvent e = (CacheQueryEntryEvent) o;
-
-                    BinaryObjectImpl val = (BinaryObjectImpl) e.getValue();
-
-                    Integer seqNum = val.field(SEQ_NUM_FLD);
-
-                    observedIds.add(seqNum);
-                }
-            }
-        }
+        ignite.compute(cg).callAsync(new BinaryObjectAdder(startLatch, idx, updatesQueue, restartIdx, workersCntr));
     }
 
     /**
@@ -262,15 +189,17 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        Ignite ignite0 = G.allGrids().get(0);
+        Ignite randomNode = G.allGrids().get(0);
 
-        IgniteCache<Object, Object> cache0 = ignite0.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache = randomNode.cache(DEFAULT_CACHE_NAME);
 
-        int cacheEntries = cache0.size(CachePeekMode.PRIMARY);
+        int cacheEntries = cache.size(CachePeekMode.PRIMARY);
 
         assertTrue("Cache cannot contain more entries than were put in it;", cacheEntries <= UPDATES_COUNT);
 
         assertEquals("There are less than expected entries, data loss occurred;", UPDATES_COUNT, cacheEntries);
+
+        validateCache(randomNode);
     }
 
     /**
@@ -282,15 +211,63 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
         if (!tcpDiscovery())
             return;
 
-        final Set<Integer> deafClientObservedIds = new ConcurrentHashSet<>();
+        discoveryHook = new DiscoveryHook() {
+            @Override public void handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
+                DiscoveryCustomMessage customMsg = msg == null ? null
+                    : (DiscoveryCustomMessage) IgniteUtils.field(msg, "delegate");
 
-        startListening(5, true, deafClientObservedIds);
+                if (customMsg instanceof MetadataUpdateProposedMessage) {
+                    if (((MetadataUpdateProposedMessage) customMsg).typeId() == BINARY_TYPE_ID)
+                        GridTestUtils.setFieldValue(customMsg, "typeId", 1);
+                }
+                else if (customMsg instanceof MetadataUpdateAcceptedMessage) {
+                    if (((MetadataUpdateAcceptedMessage) customMsg).typeId() == BINARY_TYPE_ID)
+                        GridTestUtils.setFieldValue(customMsg, "typeId", 1);
+                }
+            }
+        };
 
-        final Set<Integer> regClientObservedIds = new ConcurrentHashSet<>();
+        Ignite deafClient = startGrid(GRID_CNT);
 
-        startListening(6, false, regClientObservedIds);
+        discoveryHook = null;
+
+        Ignite regClient = startGrid(GRID_CNT + 1);
 
         doTestFlowNoConflicts();
+
+        awaitPartitionMapExchange();
+
+        validateCache(deafClient);
+        validateCache(regClient);
+    }
+
+
+    /**
+     * Validates that all updates are readable on the specified node.
+     *
+     * @param ignite Ignite instance.
+     */
+    private void validateCache(Ignite ignite) {
+        String name = ignite.name();
+
+        for (Cache.Entry entry : ignite.cache(DEFAULT_CACHE_NAME).withKeepBinary()) {
+            BinaryObject binObj = (BinaryObject)entry.getValue();
+
+            Integer idx = binObj.field(SEQ_NUM_FLD);
+
+            BinaryUpdateDescription desc = updatesList.get(idx - 1);
+
+            Object val = binObj.field(desc.fieldName);
+
+            String errMsg = "Field " + desc.fieldName + " has unexpeted value (index=" + idx + ", node=" + name + ")";
+
+            if (desc.fieldType == FieldType.OBJECT)
+                assertTrue(errMsg, val instanceof BinaryObject);
+            else if (desc.fieldType == FieldType.ARRAY)
+                assertArrayEquals(errMsg, (byte[])desc.val, (byte[])val);
+            else
+                assertEquals(errMsg, desc.val, binObj.field(desc.fieldName));
+        }
     }
 
     /**
@@ -326,7 +303,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
     public void testConcurrentMetadataUpdates() throws Exception {
         startGrid(0);
 
-        final Ignite client = startGrid(getConfiguration("client").setClientMode(true));
+        final Ignite client = startGrid(getConfiguration("client"));
 
         final IgniteCache<Integer, Object> cache = client.cache(DEFAULT_CACHE_NAME).withKeepBinary();
 
@@ -378,15 +355,20 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
         /** */
         private FieldType fieldType;
 
+        /** */
+        private Object val;
+
         /**
          * @param itemId Item id.
          * @param fieldName Field name.
          * @param fieldType Field type.
+         * @param val Field value.
          */
-        private BinaryUpdateDescription(int itemId, String fieldName, FieldType fieldType) {
+        private BinaryUpdateDescription(int itemId, String fieldName, FieldType fieldType, Object val) {
             this.itemId = itemId;
             this.fieldName = fieldName;
             this.fieldType = fieldType;
+            this.val = val;
         }
     }
 
@@ -437,20 +419,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
      */
     private static BinaryObject newBinaryObject(BinaryObjectBuilder builder, BinaryUpdateDescription desc) {
         builder.setField(SEQ_NUM_FLD, desc.itemId + 1);
-
-        switch (desc.fieldType) {
-            case NUMBER:
-                builder.setField(desc.fieldName, getNumberFieldVal());
-                break;
-            case STRING:
-                builder.setField(desc.fieldName, getStringFieldVal());
-                break;
-            case ARRAY:
-                builder.setField(desc.fieldName, getArrayFieldVal());
-                break;
-            case OBJECT:
-                builder.setField(desc.fieldName, new Object());
-        }
+        builder.setField(desc.fieldName, desc.val);
 
         return builder.build();
     }
@@ -459,7 +428,10 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
      * Compute job executed on each node in cluster which constantly adds new entries to ignite cache
      * according to {@link BinaryUpdateDescription descriptions} it reads from shared queue.
      */
-    private final class BinaryObjectAdder implements IgniteCallable<Object> {
+    private static final class BinaryObjectAdder implements IgniteCallable<Object> {
+        /** */
+        private final CountDownLatch startLatch;
+
         /** */
         private final int idx;
 
@@ -467,31 +439,32 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
         private final Queue<BinaryUpdateDescription> updatesQueue;
 
         /** */
-        private final long timeout;
-
-        /** */
         private final AtomicInteger restartIdx;
 
         /** */
         private final Phaser workersCntr;
 
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
         /**
+         * @param startLatch Startup latch.
          * @param idx Ignite instance index.
          * @param updatesQueue Updates queue.
-         * @param timeout Timeout.
          * @param restartIdx The index of the node to be restarted.
-         * @param workersCntr The number of computation threads.
+         * @param workersCntr The number of active computation threads.
          */
         BinaryObjectAdder(
+            CountDownLatch startLatch,
             int idx,
             Queue<BinaryUpdateDescription> updatesQueue,
-            long timeout,
             AtomicInteger restartIdx,
             Phaser workersCntr
         ) {
+            this.startLatch = startLatch;
             this.idx = idx;
             this.updatesQueue = updatesQueue;
-            this.timeout = timeout;
             this.restartIdx = restartIdx;
             this.workersCntr = workersCntr;
         }
@@ -499,8 +472,6 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
             startLatch.await();
-
-            Ignite ignite = grid(idx);
 
             IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME).withKeepBinary();
 
@@ -521,8 +492,6 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
                     if (restartIdx.get() == idx)
                         break;
-                    else
-                        Thread.sleep(timeout);
                 }
             } finally {
                 workersCntr.arriveAndDeregister();
@@ -538,7 +507,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
     /**
      * Restarts random server node and computation job.
      */
-    private class NodeRestarter implements Runnable {
+    private final class NodeRestarter implements Runnable {
         /** Stop thread flag. */
         private final AtomicBoolean stopFlag;
 
@@ -553,7 +522,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
          * @param restartIdx The index of the node to be restarted.
          * @param workersCntr The current number of computation threads.
          */
-        public NodeRestarter(AtomicBoolean stopFlag, AtomicInteger restartIdx, Phaser workersCntr) {
+        NodeRestarter(AtomicBoolean stopFlag, AtomicInteger restartIdx, Phaser workersCntr) {
             this.stopFlag = stopFlag;
             this.restartIdx = restartIdx;
             this.workersCntr = workersCntr;
@@ -579,11 +548,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
                     stopGrid(idx);
 
                     if (shouldStop())
-                        break;
-
-                    applyDiscoveryHook = false;
-
-                    clientMode = false;
+                        return;
 
                     startGrid(idx);
 
