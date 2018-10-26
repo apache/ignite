@@ -27,8 +27,7 @@ public class FileSystemUtilsTest extends TestCase {
     private static POSIX posix = POSIXFactory.getPOSIX();
 
     /**
-     * !!! May produce wrong results on some file systems:
-     * Ext4 and Btrfs are known to work correctly, but XFS is broken.
+     * On XFS it is known to produce wrong results while the file is open.
      *
      * @param file File path.
      * @return Sparse size.
@@ -77,7 +76,7 @@ public class FileSystemUtilsTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    public void testFileSystems() throws Exception {
+    public void _testFileSystems() throws Exception {
         doTestSparseFiles(Paths.get("/ext4/test_file"), false);
         doTestSparseFiles(Paths.get("/btrfs/test_file"), false);
         doTestSparseFiles(Paths.get("/xfs/test_file"), true);
