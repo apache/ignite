@@ -76,7 +76,7 @@ public class JdbcThinConnection implements Connection {
     private static final Logger LOG = Logger.getLogger(JdbcThinConnection.class.getName());
 
     /** Statements modification mutex. */
-    final private Object stmtsMux = new Object();
+    private final Object stmtsMux = new Object();
 
     /** Schema name. */
     private String schema;
@@ -747,7 +747,7 @@ public class JdbcThinConnection implements Connection {
             JdbcResponse res = cliIo.sendRequest(req);
 
             if (res.status() != ClientListenerResponse.STATUS_SUCCESS)
-                throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()));
+                throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()), res.status());
 
             return (R)res.response();
         }

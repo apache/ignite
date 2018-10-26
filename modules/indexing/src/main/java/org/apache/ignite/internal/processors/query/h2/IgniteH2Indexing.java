@@ -131,6 +131,8 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.query.h2.sys.SqlSystemTableEngine;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewBaselineNodes;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCacheGroups;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCaches;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeAttributes;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeMetrics;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodes;
@@ -245,6 +247,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         System.setProperty("h2.serializeJavaObject", "false");
         System.setProperty("h2.objectCacheMaxPerElementSize", "0"); // Avoid ValueJavaObject caching.
         System.setProperty("h2.optimizeTwoEquals", "false"); // Makes splitter fail on subqueries in WHERE.
+        System.setProperty("h2.dropRestrict", "false"); // Drop schema with cascade semantics.
     }
 
     /** Default DB options. */
@@ -1983,7 +1986,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return Collections.singletonList(H2Utils.zeroCursor());
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.getSql() + ']', e);
+            throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.getSql() +
+                ", err=" + e.getMessage() + ']', e);
         }
     }
 
@@ -2069,7 +2073,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("ThrowFromFinallyBlock")
     private void doCommit(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
         try {
-            if (!tx.isRollbackOnly())
+            // TODO: Why checking for rollback only?
+            //if (!tx.isRollbackOnly())
                 tx.commit();
         }
         finally {
@@ -3268,6 +3273,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         views.add(new SqlSystemViewNodeAttributes(ctx));
         views.add(new SqlSystemViewBaselineNodes(ctx));
         views.add(new SqlSystemViewNodeMetrics(ctx));
+        views.add(new SqlSystemViewCaches(ctx));
+        views.add(new SqlSystemViewCacheGroups(ctx));
 
         return views;
     }
