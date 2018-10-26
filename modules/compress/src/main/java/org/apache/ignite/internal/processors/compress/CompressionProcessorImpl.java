@@ -92,12 +92,8 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
         ByteBuffer compactPage = tmp.get();
 
-        try {
-            ((CompactablePageIO)io).compactPage(page, compactPage);
-        }
-        finally {
-            page.clear();
-        }
+        // Drop the garbage from the page.
+        ((CompactablePageIO)io).compactPage(page, compactPage);
 
         int compactSize = compactPage.limit();
 
@@ -165,16 +161,18 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
         if (compressLevel == 0)
             compressor = lz4.fastCompressor();
-        else
+        else {
+            assert compressLevel >= 1 && compressLevel <= 17: compressLevel;
             compressor = lz4.highCompressor(compressLevel);
+        }
 
         ByteBuffer compressedPage = allocateDirectBuffer(PageIO.COMMON_HEADER_END +
             compressor.maxCompressedLength(compactSize - PageIO.COMMON_HEADER_END));
 
         copyPageHeader(compactPage, compressedPage, compactSize);
         compressor.compress(compactPage, compressedPage);
-        compressedPage.flip();
 
+        compressedPage.flip();
         return compressedPage;
     }
 
@@ -190,8 +188,8 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
         copyPageHeader(compactPage, compressedPage, compactSize);
         Zstd.compress(compressedPage, compactPage, compressLevel);
-        compressedPage.flip();
 
+        compressedPage.flip();
         return compressedPage;
     }
 

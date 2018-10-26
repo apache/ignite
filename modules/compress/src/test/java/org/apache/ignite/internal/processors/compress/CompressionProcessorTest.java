@@ -42,6 +42,7 @@ import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.configuration.PageCompression.DROP_GARBAGE;
+import static org.apache.ignite.configuration.PageCompression.LZ4;
 import static org.apache.ignite.configuration.PageCompression.ZSTD;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorImpl.allocateDirectBuffer;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorTest.TestInnerIO.INNER_IO;
@@ -161,6 +162,94 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         blockSize = 2 * 1024;
         compression = ZSTD;
         compressLevel = 19;
+
+        doTestDataPage();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testDataPageLz4Fast16() throws IgniteCheckedException {
+        blockSize = 16;
+        compression = LZ4;
+        compressLevel = 0;
+
+        doTestDataPage();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testDataPageLz4Fast128() throws IgniteCheckedException {
+        blockSize = 128;
+        compression = LZ4;
+        compressLevel = 0;
+
+        doTestDataPage();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testDataPageLz4Fast1k() throws IgniteCheckedException {
+        blockSize = 1024;
+        compression = LZ4;
+        compressLevel = 0;
+
+        doTestDataPage();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testDataPageLz4Fast2k() throws IgniteCheckedException {
+        blockSize = 2 * 1024;
+        compression = LZ4;
+        compressLevel = 0;
+
+        doTestDataPage();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testDataPageLz4Slow16() throws IgniteCheckedException {
+        blockSize = 16;
+        compression = LZ4;
+        compressLevel = 17;
+
+        doTestDataPage();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testDataPageLz4Slow128() throws IgniteCheckedException {
+        blockSize = 128;
+        compression = LZ4;
+        compressLevel = 17;
+
+        doTestDataPage();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testDataPageLz4Slow1k() throws IgniteCheckedException {
+        blockSize = 1024;
+        compression = LZ4;
+        compressLevel = 17;
+
+        doTestDataPage();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testDataPageLz4Slow2k() throws IgniteCheckedException {
+        blockSize = 2 * 1024;
+        compression = LZ4;
+        compressLevel = 17;
 
         doTestDataPage();
     }
