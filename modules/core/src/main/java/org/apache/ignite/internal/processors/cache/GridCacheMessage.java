@@ -189,7 +189,9 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /**
-     * @return
+     * Returns the earliest affinity topology version for which this message is valid.
+     *
+     * @return Last affinity topology version when affinity was modified.
      */
     public AffinityTopologyVersion lastAffinityChangedTopologyVersion() {
         if (lastAffChangedTopVer == null)
@@ -198,6 +200,11 @@ public abstract class GridCacheMessage implements Message {
         return lastAffChangedTopVer;
     }
 
+    /**
+     * Sets the earliest affinity topology version for which this message is valid.
+     *
+     * @param topVer Last affinity topology version when affinity was modified.
+     */
     public void lastAffinityChangedTopologyVersion(AffinityTopologyVersion topVer) {
         lastAffChangedTopVer = topVer;
     }
