@@ -21,12 +21,10 @@ import java.io.Externalizable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -1273,7 +1271,21 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         // TODO IGNITE-7164 check mvcc crd for mvcc enabled txs.
 
-        return true;
+        Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), expVer);
+        Collection<ClusterNode> cacheNodes1 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), curVer);
+
+        if (!cacheNodes0.equals(cacheNodes1) || ctx.affinity().affinityTopologyVersion().compareTo(curVer) < 0)
+            return true;
+
+        try {
+            List<List<ClusterNode>> aff1 = ctx.affinity().assignments(expVer);
+            List<List<ClusterNode>> aff2 = ctx.affinity().assignments(curVer);
+
+            return !aff1.equals(aff2);
+        }
+        catch (IllegalStateException ignored) {
+            return true;
+        }
     }
 
     /**

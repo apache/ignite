@@ -19,9 +19,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
@@ -700,7 +698,28 @@ public class IgniteTxHandler {
 
         // TODO IGNITE-6754 check mvcc crd for mvcc enabled txs.
 
-        return true;
+        for (IgniteTxEntry e : F.concat(false, req.reads(), req.writes())) {
+            GridCacheContext ctx = e.context();
+
+            Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), expVer);
+            Collection<ClusterNode> cacheNodes1 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), curVer);
+
+            if (!cacheNodes0.equals(cacheNodes1) || ctx.affinity().affinityTopologyVersion().compareTo(curVer) < 0)
+                return true;
+
+            try {
+                List<List<ClusterNode>> aff1 = ctx.affinity().assignments(expVer);
+                List<List<ClusterNode>> aff2 = ctx.affinity().assignments(curVer);
+
+                if (!aff1.equals(aff2))
+                    return true;
+            }
+            catch (IllegalStateException ignored) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
