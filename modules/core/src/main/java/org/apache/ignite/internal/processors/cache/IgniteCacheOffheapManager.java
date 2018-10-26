@@ -23,8 +23,8 @@ import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -590,6 +590,14 @@ public interface IgniteCacheOffheapManager {
     public long totalPartitionEntriesCount(int part);
 
     /**
+     * Preload a partition. Must be called under partition reservation for DHT caches.
+     *
+     * @param part Partition.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void preloadPartition(int part) throws IgniteCheckedException;
+
+    /**
      *
      */
     interface OffheapInvokeClosure extends IgniteTree.InvokeClosure<CacheDataRow> {
@@ -1054,7 +1062,7 @@ public interface IgniteCacheOffheapManager {
         /**
          * @param cntr Counter.
          */
-        void updateInitialCounter(long cntr);
+        public void updateInitialCounter(long cntr);
 
         /**
          * Inject rows cache cleaner.
@@ -1068,11 +1076,17 @@ public interface IgniteCacheOffheapManager {
          *
          * @return PendingTree instance.
          */
-        PendingEntriesTree pendingTree();
+        public PendingEntriesTree pendingTree();
 
         /**
          * Flushes pending update counters closing all possible gaps.
          */
-        void finalizeUpdateCountres();
+        public void finalizeUpdateCountres();
+
+        /**
+         * Preload a store into page memory.
+         * @throws IgniteCheckedException If failed.
+         */
+        public void preload() throws IgniteCheckedException;
     }
 }
