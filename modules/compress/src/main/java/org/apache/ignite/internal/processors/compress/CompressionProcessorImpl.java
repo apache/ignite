@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.PageCompression;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.configuration.PageCompression.DROP_GARBAGE;
 import static org.apache.ignite.internal.util.GridUnsafe.NATIVE_BYTE_ORDER;
@@ -70,6 +71,9 @@ public class CompressionProcessorImpl extends CompressionProcessor {
     ) throws IgniteCheckedException {
         assert compression != null;
 
+        if (!U.isPow2(fsBlockSize))
+            return page; // Our pages will be misaligned.
+
         PageIO io = PageIO.getPageIO(page);
 
         if (!(io instanceof CompactablePageIO))
@@ -77,7 +81,9 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
         int pageSize = page.remaining();
 
-        if (pageSize < fsBlockSize * 2 || pageSize % fsBlockSize != 0) // TODO check
+        assert U.isPow2(pageSize): pageSize;
+
+        if (pageSize < fsBlockSize * 2)
             return page; // Makes no sense to compress the page, we will not free any disk space.
 
         ByteBuffer compact = tmp.get();
