@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import java.sql.ResultSet;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -46,13 +47,19 @@ class MapQueryResults {
     private final GridCacheContext<?, ?> cctx;
 
     /** Lazy worker. */
-    private MapQueryLazyWorker lazyWorker;
+    private volatile MapQueryLazyWorker lazyWorker;
+
+    /** Lazy mode. */
+    private boolean lazy;
 
     /** */
     private volatile boolean cancelled;
 
     /** {@code SELECT FOR UPDATE} flag. */
     private final boolean forUpdate;
+
+    /** Logger. */
+    private final IgniteLogger log;
 
     /**
      * Constructor.
@@ -64,11 +71,13 @@ class MapQueryResults {
      */
     @SuppressWarnings("unchecked")
     MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable GridCacheContext<?, ?> cctx,
-        boolean forUpdate) {
+        boolean forUpdate, boolean lazy, IgniteLogger log) {
         this.forUpdate = forUpdate;
         this.h2 = h2;
         this.qryReqId = qryReqId;
         this.cctx = cctx;
+        this.lazy = lazy;
+        this.log = log;
 
         results = new AtomicReferenceArray<>(qrys);
         cancels = new GridQueryCancel[qrys];
@@ -118,7 +127,7 @@ class MapQueryResults {
      * @param params Query arguments.
      */
     void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
-        MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params);
+        MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params, log);
 
         if (!results.compareAndSet(qry, null, res))
             throw new IllegalStateException();
@@ -154,12 +163,14 @@ class MapQueryResults {
                 cancel.cancel();
         }
 
-        if (lazyWorker == null)
+        if (!lazy)
             close();
         else {
-            lazyWorker.submitStopTask(this::close);
+            if (lazyWorker != null) {
+                lazyWorker.submitStopTask(this::close);
 
-            lazyWorker.stop(false);
+                lazyWorker.stop(false);
+            }
         }
     }
 

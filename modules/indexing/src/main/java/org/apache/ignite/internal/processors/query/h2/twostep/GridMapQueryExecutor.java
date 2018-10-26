@@ -801,7 +801,7 @@ public class GridMapQueryExecutor {
                 }
             }
 
-            qryResults = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, inTx);
+            qryResults = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, inTx, lazy, log);
 
             // Prepare query context.
             GridH2QueryContext qctx = new GridH2QueryContext(ctx.localNodeId(),
@@ -965,6 +965,10 @@ public class GridMapQueryExecutor {
             if (!lazy || qryResults.lazyWorker() == null)
                 releaseReservations();
             else {
+                // Check cancel before start lazy
+                if (qryResults.cancelled())
+                    throw new QueryCancelledException();
+
                 final ObjectPoolReusable<H2ConnectionWrapper> detachedConn = h2.detachConnection();
 
                 qryResults.lazyWorker().start(H2Utils.session(conn), detachedConn);

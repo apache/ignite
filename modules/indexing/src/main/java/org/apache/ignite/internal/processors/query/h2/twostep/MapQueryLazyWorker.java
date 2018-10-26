@@ -341,10 +341,15 @@ public class MapQueryLazyWorker extends GridWorker {
      *
      * @param ses Session.
      */
-    private static void lazyTransferFinish(Session ses) {
-        for (Table tbl : ses.getLocks()) {
-            if (tbl instanceof GridH2Table)
-                ((GridH2Table)tbl).onLazyTransferFinished(ses);
+    private void lazyTransferFinish(Session ses) {
+        synchronized (mux) {
+            if (isCancelled)
+                return;
+
+            for (Table tbl : ses.getLocks()) {
+                if (tbl instanceof GridH2Table)
+                    ((GridH2Table)tbl).onLazyTransferFinished(ses);
+            }
         }
     }
 }

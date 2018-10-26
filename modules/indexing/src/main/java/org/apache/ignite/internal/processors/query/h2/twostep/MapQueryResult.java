@@ -83,6 +83,9 @@ class MapQueryResult {
     private final int cols;
 
     /** */
+    private final IgniteLogger log;
+
+    /** */
     private int page;
 
     /** */
@@ -104,15 +107,17 @@ class MapQueryResult {
      * @param qrySrcNodeId Query source node.
      * @param qry Query.
      * @param params Query params.
+     * @param log Logger.
      */
     MapQueryResult(IgniteH2Indexing h2, ResultSet rs, @Nullable GridCacheContext cctx,
-        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params) {
+        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, IgniteLogger log) {
         this.h2 = h2;
         this.cctx = cctx;
         this.qry = qry;
         this.params = params;
         this.qrySrcNodeId = qrySrcNodeId;
         this.cpNeeded = F.eq(h2.kernalContext().localNodeId(), qrySrcNodeId);
+        this.log = log;
 
         if (rs != null) {
             this.rs = rs;
@@ -260,7 +265,7 @@ class MapQueryResult {
 
             closed = true;
 
-            U.closeQuiet(rs);
+            U.close(rs, log);
         }
     }
 }
