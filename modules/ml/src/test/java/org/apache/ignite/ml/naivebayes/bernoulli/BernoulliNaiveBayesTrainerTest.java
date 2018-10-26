@@ -78,4 +78,35 @@ public class BernoulliNaiveBayesTrainerTest extends TrainerTest {
         Assert.assertArrayEquals(expectedProbabilities, model.getClassProbabilities(), PRECISION);
     }
 
+    /** */
+    @Test
+    public void testReturnsEquivalentProbalitiesWhenSetEquiprobableClasses_() {
+        BernoulliNaiveBayesTrainer trainer = new BernoulliNaiveBayesTrainer()
+            .withEquiprobableClasses();
+
+        BernoulliNaiveBayesModel model = trainer.fit(
+            new LocalDatasetBuilder<>(data, parts),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
+            (k, v) -> v[v.length - 1]
+        );
+
+        Assert.assertArrayEquals(new double[] {.5, .5}, model.getClassProbabilities(), PRECISION);
+    }
+
+    /** */
+    @Test
+    public void testReturnsPresetProbalitiesWhenSetPriorProbabilities() {
+        double[] priorProbabilities = new double[] {.35, .65};
+        BernoulliNaiveBayesTrainer trainer = new BernoulliNaiveBayesTrainer()
+            .setPriorProbabilities(priorProbabilities);
+
+        BernoulliNaiveBayesModel model = trainer.fit(
+            new LocalDatasetBuilder<>(data, parts),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
+            (k, v) -> v[v.length - 1]
+        );
+
+        Assert.assertArrayEquals(priorProbabilities, model.getClassProbabilities(), PRECISION);
+    }
+
 }
