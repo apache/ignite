@@ -34,7 +34,9 @@ public class FileSystemUtilsTest extends TestCase {
      * @param file File path.
      * @return Sparse size.
      */
-    private static long getSparseFileSize(Path file) {
+    private static long getSparseFileSize(int fd, Path file) {
+        long blocks0 = getSparseFileBlocks(fd);
+
         if (U.isLinux()) {
             try {
                 Process proc = new ProcessBuilder("stat", file.toString())
@@ -48,7 +50,19 @@ public class FileSystemUtilsTest extends TestCase {
             }
         }
 
-        return posix.stat(file.toString()).blocks() * 512;
+        long blocks1 = posix.stat(file.toString()).blocks();
+
+        assertEquals(blocks0, blocks1);
+
+        return blocks1 * 512;
+    }
+
+    /**
+     * @param fd File descriptor.
+     * @return Number of blocks.
+     */
+    private static long getSparseFileBlocks(int fd) {
+        return posix.fstat(fd).blocks();
     }
 
     /**
@@ -119,22 +133,22 @@ public class FileSystemUtilsTest extends TestCase {
         }
 
         assertEquals(fileSize, ch.size());
-        assertEquals(fileSize, getSparseFileSize(file));
+        assertEquals(fileSize, getSparseFileSize(fd, file));
 
         int off = fsBlockSize * 3 - (fsBlockSize >>> 2);
         int len = fsBlockSize;
         assertEquals(0, punchHole(fd, off, len, fsBlockSize));
-        assertEquals(fileSize, getSparseFileSize(file));
+        assertEquals(fileSize, getSparseFileSize(fd, file));
 
         off = 2 * fsBlockSize - 3;
         len = 2 * fsBlockSize + 3;
         assertEquals(2 * fsBlockSize, punchHole(fd, off, len, fsBlockSize));
-        assertEquals(sparseSize -= 2 * fsBlockSize, getSparseFileSize(file));
+        assertEquals(sparseSize -= 2 * fsBlockSize, getSparseFileSize(fd, file));
 
         off = 10 * fsBlockSize;
         len = 3 * fsBlockSize + 5;
         assertEquals(3 * fsBlockSize, punchHole(fd, off, len, fsBlockSize));
-        assertEquals(sparseSize -= 3 * fsBlockSize, getSparseFileSize(file));
+        assertEquals(sparseSize -= 3 * fsBlockSize, getSparseFileSize(fd, file));
 
         off = 15 * fsBlockSize + 1;
         len = fsBlockSize;
@@ -151,11 +165,11 @@ public class FileSystemUtilsTest extends TestCase {
         off = 15 * fsBlockSize;
         len = fsBlockSize;
         assertEquals(fsBlockSize, punchHole(fd, off, len, fsBlockSize));
-        assertEquals(sparseSize -= fsBlockSize, getSparseFileSize(file));
+        assertEquals(sparseSize -= fsBlockSize, getSparseFileSize(fd, file));
 
         for (int i = 0; i < blocks - 1; i++) {
             punchHole(fd, fsBlockSize * i, fsBlockSize, fsBlockSize);
-            getSparseFileSize(file);
+            getSparseFileSize(fd, file);
         }
     }
 
