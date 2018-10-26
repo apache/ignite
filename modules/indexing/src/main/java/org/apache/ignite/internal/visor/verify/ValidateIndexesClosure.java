@@ -348,11 +348,13 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
             if (pageStoreMgr == null)
                 return null;
 
+            int pageSz = gctx.dataRegion().pageMemory().pageSize();
+
             PageStore pageStore = pageStoreMgr.getStore(gctx.groupId(), PageIdAllocator.INDEX_PARTITION);
 
             long pageId = PageIdUtils.pageId(PageIdAllocator.INDEX_PARTITION, PageIdAllocator.FLAG_IDX, 0);
 
-            ByteBuffer buf = ByteBuffer.allocateDirect(ctx.config().getDataStorageConfiguration().getPageSize());
+            ByteBuffer buf = ByteBuffer.allocateDirect(pageSz);
 
             buf.order(ByteOrder.nativeOrder());
 
