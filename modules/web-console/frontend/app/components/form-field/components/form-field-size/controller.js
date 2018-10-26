@@ -40,6 +40,10 @@ export default class PCFormFieldSizeController {
             {label: 'Mb', value: 1024 * 1024},
             {label: 'Gb', value: 1024 * 1024 * 1024}
         ],
+        gigabytes: [
+            {label: 'Gb', value: 1},
+            {label: 'Tb', value: 1024}
+        ],
         seconds: [
             {label: 'ns', value: 1 / 1000},
             {label: 'ms', value: 1},
