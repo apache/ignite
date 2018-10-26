@@ -16,7 +16,6 @@ import org.junit.Assume;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.SPARSE;
-import static java.nio.file.StandardOpenOption.SYNC;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorImpl.allocateDirectBuffer;
@@ -104,72 +103,104 @@ public class FileSystemUtilsTest extends TestCase {
         System.out.println(file);
 
         FileChannel ch = FileChannel.open(file,
-            READ, WRITE, TRUNCATE_EXISTING, SPARSE, SYNC);
-        int fd = getFD(ch);
+            READ, WRITE, TRUNCATE_EXISTING, SPARSE);
 
-        int fsBlockSize = getFileSystemBlockSize(file);
+        try {
+            int fd = getFD(ch);
 
-        System.out.println("fsBlockSize: " + fsBlockSize);
+            int fsBlockSize = getFileSystemBlockSize(file);
 
-        assertTrue(fsBlockSize > 0);
+            System.out.println("fsBlockSize: " + fsBlockSize);
 
-        int pageSize = fsBlockSize * 4;
+            assertTrue(fsBlockSize > 0);
 
-        ByteBuffer page = allocateDirectBuffer(pageSize);
+            int pageSize = fsBlockSize * 4;
 
-        while (page.remaining() > 0)
-            page.putLong(0xABCDEF7654321EADL);
-        page.flip();
+            ByteBuffer page = allocateDirectBuffer(pageSize);
 
-        int pages = 5;
-        int blocks = pages * pageSize / fsBlockSize;
-        int fileSize = pages * pageSize;
-        int sparseSize = fileSize;
-
-        for (int i = 0; i < pages; i++) {
-            ch.write(page, i * pageSize);
-            assertEquals(0, page.remaining());
+            while (page.remaining() > 0)
+                page.putLong(0xABCDEF7654321EADL);
             page.flip();
+
+            int pages = 5;
+            int blocks = pages * pageSize / fsBlockSize;
+            int fileSize = pages * pageSize;
+            int sparseSize = fileSize;
+
+            for (int i = 0; i < pages; i++) {
+                ch.write(page, i * pageSize);
+                assertEquals(0, page.remaining());
+                page.flip();
+            }
+
+            // For XFS to make number of blocks correct it is needed to reopen file.
+            ch.force(true);
+            ch.close();
+            ch = FileChannel.open(file, READ, WRITE, SPARSE);
+            fd = getFD(ch);
+
+            assertEquals(fileSize, ch.size());
+            assertEquals(fileSize, getSparseFileSize(fd, file));
+
+            int off = fsBlockSize * 3 - (fsBlockSize >>> 2);
+            int len = fsBlockSize;
+            assertEquals(0, punchHole(fd, off, len, fsBlockSize));
+            ch.force(true);
+            ch.close();
+            ch = FileChannel.open(file, READ, WRITE, SPARSE);
+            fd = getFD(ch);
+            assertEquals(fileSize, getSparseFileSize(fd, file));
+
+            off = 2 * fsBlockSize - 3;
+            len = 2 * fsBlockSize + 3;
+            assertEquals(2 * fsBlockSize, punchHole(fd, off, len, fsBlockSize));
+            ch.force(true);
+            ch.close();
+            ch = FileChannel.open(file, READ, WRITE, SPARSE);
+            fd = getFD(ch);
+            assertEquals(sparseSize -= 2 * fsBlockSize, getSparseFileSize(fd, file));
+
+            off = 10 * fsBlockSize;
+            len = 3 * fsBlockSize + 5;
+            assertEquals(3 * fsBlockSize, punchHole(fd, off, len, fsBlockSize));
+            ch.force(true);
+            ch.close();
+            ch = FileChannel.open(file, READ, WRITE, SPARSE);
+            fd = getFD(ch);
+            assertEquals(sparseSize -= 3 * fsBlockSize, getSparseFileSize(fd, file));
+
+            off = 15 * fsBlockSize + 1;
+            len = fsBlockSize;
+            assertEquals(0, punchHole(fd, off, len, fsBlockSize));
+
+            off = 15 * fsBlockSize - 1;
+            len = fsBlockSize;
+            assertEquals(0, punchHole(fd, off, len, fsBlockSize));
+
+            off = 15 * fsBlockSize;
+            len = fsBlockSize - 1;
+            assertEquals(0, punchHole(fd, off, len, fsBlockSize));
+
+            off = 15 * fsBlockSize;
+            len = fsBlockSize;
+            assertEquals(fsBlockSize, punchHole(fd, off, len, fsBlockSize));
+            ch.force(true);
+            ch.close();
+            ch = FileChannel.open(file, READ, WRITE, SPARSE);
+            fd = getFD(ch);
+            assertEquals(sparseSize -= fsBlockSize, getSparseFileSize(fd, file));
+
+            for (int i = 0; i < blocks - 1; i++)
+                punchHole(fd, fsBlockSize * i, fsBlockSize, fsBlockSize);
+
+            ch.force(true);
+            ch.close();
+            ch = FileChannel.open(file, READ, WRITE, SPARSE);
+            fd = getFD(ch);
+            assertEquals(fsBlockSize, getSparseFileSize(fd, file));
         }
-
-        assertEquals(fileSize, ch.size());
-        assertEquals(fileSize, getSparseFileSize(fd, file));
-
-        int off = fsBlockSize * 3 - (fsBlockSize >>> 2);
-        int len = fsBlockSize;
-        assertEquals(0, punchHole(fd, off, len, fsBlockSize));
-        assertEquals(fileSize, getSparseFileSize(fd, file));
-
-        off = 2 * fsBlockSize - 3;
-        len = 2 * fsBlockSize + 3;
-        assertEquals(2 * fsBlockSize, punchHole(fd, off, len, fsBlockSize));
-        assertEquals(sparseSize -= 2 * fsBlockSize, getSparseFileSize(fd, file));
-
-        off = 10 * fsBlockSize;
-        len = 3 * fsBlockSize + 5;
-        assertEquals(3 * fsBlockSize, punchHole(fd, off, len, fsBlockSize));
-        assertEquals(sparseSize -= 3 * fsBlockSize, getSparseFileSize(fd, file));
-
-        off = 15 * fsBlockSize + 1;
-        len = fsBlockSize;
-        assertEquals(0, punchHole(fd, off, len, fsBlockSize));
-
-        off = 15 * fsBlockSize - 1;
-        len = fsBlockSize;
-        assertEquals(0, punchHole(fd, off, len, fsBlockSize));
-
-        off = 15 * fsBlockSize;
-        len = fsBlockSize - 1;
-        assertEquals(0, punchHole(fd, off, len, fsBlockSize));
-
-        off = 15 * fsBlockSize;
-        len = fsBlockSize;
-        assertEquals(fsBlockSize, punchHole(fd, off, len, fsBlockSize));
-        assertEquals(sparseSize -= fsBlockSize, getSparseFileSize(fd, file));
-
-        for (int i = 0; i < blocks - 1; i++) {
-            punchHole(fd, fsBlockSize * i, fsBlockSize, fsBlockSize);
-            getSparseFileSize(fd, file);
+        finally {
+            ch.close();
         }
     }
 
