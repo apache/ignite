@@ -343,12 +343,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Decompressor. */
     private volatile FileDecompressor decompressor;
 
-    /**
-     * Position of the last seen WAL pointer can be stored in-memory only and should survive
-     * activate\deactivate node events. Used for resumming logging from the last WAL pointer.
-     */
-    private volatile WALPointer walTail;
-
     /** */
     private final ThreadLocal<WALPointer> lastWALPtr = new ThreadLocal<>();
 
@@ -534,7 +528,17 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 ioFactory
             );
 
-            enableArchiver();
+            if (isArchiverEnabled()) {
+                assert archiver != null;
+
+                new IgniteThread(archiver).start();
+            }
+
+            if (walSegmentSyncWorker != null)
+                new IgniteThread(walSegmentSyncWorker).start();
+
+            if (compressor != null)
+                compressor.start();
         }
     }
 
@@ -650,32 +654,16 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-/*
         if (log.isDebugEnabled())
             log.debug("Activated file write ahead log manager [nodeId=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
-
-        start0();
-
-        if (!cctx.kernalContext().clientNode()) {
-        }
-*/
     }
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-/*
         if (log.isDebugEnabled())
             log.debug("DeActivate file write ahead log [nodeId=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
-
-        stop0(true);
-
-        if (currHnd != null)
-            walTail = currHnd.position();
-
-        currHnd = null;
-*/
     }
 
     /** {@inheritDoc} */
@@ -689,20 +677,17 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public void resumeLogging() throws IgniteCheckedException {
+    @Override public void resumeLogging(WALPointer filePtr) throws IgniteCheckedException {
         assert currHnd == null;
-        assert walTail == null || walTail instanceof FileWALPointer;
         assert (isArchiverEnabled() && archiver != null) || (!isArchiverEnabled() && archiver == null) :
             "Trying to restore FileWriteHandle on deactivated write ahead log manager";
-
-        FileWALPointer filePtr = (FileWALPointer)walTail;
 
         walWriter = new WALWriter(log);
 
         if (!mmap)
             new IgniteThread(walWriter).start();
 
-        currHnd = restoreWriteHandle(filePtr);
+        currHnd = restoreWriteHandle((FileWALPointer) filePtr);
 
         // For new handle write serializer version to it.
         if (filePtr == null)
@@ -1082,18 +1067,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public void tailWalPointer(WALPointer pointer) {
-        //assert currHnd == null;
-
-        walTail = pointer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public WALPointer tailWalPointer() {
-        return walTail;
-    }
-
-    /** {@inheritDoc} */
     @Override public long lastCompactedSegment() {
         return segmentAware.lastCompressedIdx();
     }
@@ -1136,23 +1109,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** {@inheritDoc} */
     @Override public boolean disabled(int grpId) {
         return cctx.walState().isDisabled(grpId);
-    }
-
-    @Override
-    public void enableArchiver() {
-        if (!cctx.kernalContext().clientNode()) {
-            if (isArchiverEnabled()) {
-                assert archiver != null;
-
-                new IgniteThread(archiver).start();
-            }
-
-            if (walSegmentSyncWorker != null)
-                new IgniteThread(walSegmentSyncWorker).start();
-
-            if (compressor != null)
-                compressor.start();
-        }
     }
 
     /**

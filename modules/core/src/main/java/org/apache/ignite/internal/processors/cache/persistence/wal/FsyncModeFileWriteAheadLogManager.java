@@ -511,28 +511,16 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-/*        if (log.isDebugEnabled())
+        if (log.isDebugEnabled())
             log.debug("Activated file write ahead log manager [nodeId=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
-
-        start0();
-
-        if (!cctx.kernalContext().clientNode()) {
-        }*/
     }
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-/*        if (log.isDebugEnabled())
+        if (log.isDebugEnabled())
             log.debug("DeActivate file write ahead log [nodeId=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
-
-        stop0(true);
-
-        if (currentHnd != null)
-            walTail = currentHnd.position();
-
-        currentHnd = null;*/
     }
 
     /** {@inheritDoc} */
@@ -546,15 +534,13 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /** {@inheritDoc} */
-    @Override public void resumeLogging() throws IgniteCheckedException {
+    @Override public void resumeLogging(WALPointer filePtr) throws IgniteCheckedException {
         assert currentHnd == null;
         assert walTail == null || walTail instanceof FileWALPointer;
         assert (isArchiverEnabled() && archiver != null) || (!isArchiverEnabled() && archiver == null) :
             "Trying to restore FileWriteHandle on deactivated write ahead log manager";
 
-        FileWALPointer filePtr = (FileWALPointer)walTail;
-
-        currentHnd = restoreWriteHandle(filePtr);
+        currentHnd = restoreWriteHandle((FileWALPointer) filePtr);
 
         if (currentHnd.serializer.version() != serializer.version()) {
             if (log.isInfoEnabled())
@@ -989,18 +975,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /** {@inheritDoc} */
-    @Override public void tailWalPointer(WALPointer pointer) {
-        assert currentHnd == null;
-
-        walTail = pointer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public WALPointer tailWalPointer() {
-        return walTail;
-    }
-
-    /** {@inheritDoc} */
     @Override public long lastCompactedSegment() {
         return compressor != null ? compressor.lastCompressedIdx : -1L;
     }
@@ -1047,11 +1021,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     /** {@inheritDoc} */
     @Override public boolean disabled(int grpId) {
         return cctx.walState().isDisabled(grpId);
-    }
-
-    @Override
-    public void enableArchiver() {
-
     }
 
     /**
