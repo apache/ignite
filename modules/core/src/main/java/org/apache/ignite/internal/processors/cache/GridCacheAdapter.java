@@ -5031,10 +5031,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         @Nullable GridDhtLocalPartition p = top.localPartition(part, top.readyTopologyVersion(), false);
 
-        if (p == null || p.state() != OWNING || !p.reserve())
+        if (p == null)
             return false;
 
         try {
+            if (!p.reserve() || p.state() != OWNING)
+                return false;
+
             p.dataStore().preload();
         }
         finally {
