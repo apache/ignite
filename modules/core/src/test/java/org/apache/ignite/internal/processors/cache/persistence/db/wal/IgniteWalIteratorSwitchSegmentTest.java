@@ -86,11 +86,6 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
         2
     };
 
-    /** FileWriteAheadLogManagers for check. */
-    private Class[] checkWalManagers = new Class[] {
-        FileWriteAheadLogManager.class,
-    };
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -168,15 +163,11 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
      */
     public void testInvariantSwitchSegment() throws Exception {
         for (int serVer : checkSerializerVers) {
-            for (Class walMgrClass : checkWalManagers) {
-                try {
-                    log.info("checking wal manager " + walMgrClass + " with serializer version " + serVer);
-
-                    checkInvariantSwitchSegment(walMgrClass, serVer);
-                }
-                finally {
-                    U.delete(Paths.get(U.defaultWorkDirectory()));
-                }
+            try {
+                checkInvariantSwitchSegment(serVer);
+            }
+            finally {
+                U.delete(Paths.get(U.defaultWorkDirectory()));
             }
         }
     }
@@ -188,24 +179,23 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
      */
     public void testSwitchReadingSegmentFromWorkToArchive() throws Exception {
         for (int serVer : checkSerializerVers) {
-                try {
-                    checkSwitchReadingSegmentDuringIteration(FileWriteAheadLogManager.class, serVer);
-                }
-                finally {
-                    U.delete(Paths.get(U.defaultWorkDirectory()));
-                }
+            try {
+                checkSwitchReadingSegmentDuringIteration(serVer);
+            }
+            finally {
+                U.delete(Paths.get(U.defaultWorkDirectory()));
+            }
         }
     }
 
     /**
-     * @param walMgrClass WAL manager class.
      * @param serVer WAL serializer version.
      * @throws Exception If some thing failed.
      */
-    private void checkInvariantSwitchSegment(Class walMgrClass, int serVer) throws Exception {
+    private void checkInvariantSwitchSegment(int serVer) throws Exception {
         String workDir = U.defaultWorkDirectory();
 
-        T2<IgniteWriteAheadLogManager, RecordSerializer> initTup = initiate(walMgrClass, serVer, workDir);
+        T2<IgniteWriteAheadLogManager, RecordSerializer> initTup = initiate(serVer, workDir);
 
         IgniteWriteAheadLogManager walMgr = initTup.get1();
 
@@ -323,14 +313,13 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param walMgrClass WAL manager class.
      * @param serVer WAL serializer version.
      * @throws Exception If some thing failed.
      */
-    private void checkSwitchReadingSegmentDuringIteration(Class walMgrClass, int serVer) throws Exception {
+    private void checkSwitchReadingSegmentDuringIteration(int serVer) throws Exception {
         String workDir = U.defaultWorkDirectory();
 
-        T2<IgniteWriteAheadLogManager, RecordSerializer> initTup = initiate(walMgrClass, serVer, workDir);
+        T2<IgniteWriteAheadLogManager, RecordSerializer> initTup = initiate(serVer, workDir);
 
         IgniteWriteAheadLogManager walMgr = initTup.get1();
 
@@ -366,7 +355,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
             () -> {
                 // Check that switch segment works as expected and all record is reachable.
                 try (WALIterator it = walMgr.replay(null)) {
-                    Object handle = getFieldValueHierarchy(it,  "currWalSegment");
+                    Object handle = getFieldValueHierarchy(it, "currWalSegment");
 
                     FileInput in = getFieldValueHierarchy(handle, "in");
                     Object delegate = getFieldValueHierarchy(in.io(), "delegate");
@@ -420,14 +409,12 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
     /***
      * Initiate WAL manager.
      *
-     * @param walMgrClass WAL manager class.
      * @param serVer WAL serializer version.
      * @param workDir Work directory path.
      * @return Tuple of WAL manager and WAL record serializer.
      * @throws IgniteCheckedException If some think failed.
      */
     private T2<IgniteWriteAheadLogManager, RecordSerializer> initiate(
-        Class walMgrClass,
         int serVer,
         String workDir
     ) throws IgniteCheckedException {
@@ -445,6 +432,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
                         .setWalMode(WALMode.FSYNC)
                         .setWalPath(workDir + WORK_SUB_DIR)
                         .setWalArchivePath(workDir + ARCHIVE_SUB_DIR)
+                        .setFileIOFactory(new RandomAccessFileIOFactory())
                 );
 
                 cfg.setEventStorageSpi(new NoopEventStorageSpi());
@@ -461,13 +449,9 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
             }
         };
 
-        IgniteWriteAheadLogManager walMgr = null;
+        IgniteWriteAheadLogManager walMgr = new FileWriteAheadLogManager(kctx);
 
-        if (walMgrClass.equals(FileWriteAheadLogManager.class)) {
-            walMgr = new FileWriteAheadLogManager(kctx);
-
-            GridTestUtils.setFieldValue(walMgr, "serializerVer", serVer);
-        }
+        GridTestUtils.setFieldValue(walMgr, "serializerVer", serVer);
 
         GridCacheSharedContext<?, ?> ctx = new GridCacheSharedContext<>(
             kctx,
