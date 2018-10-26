@@ -25,6 +25,7 @@ import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
@@ -620,6 +621,57 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             assert expectedSchemas.equals(schemas) : "Unexpected schemas: " + schemas +
                 ". Expected schemas: " + expectedSchemas;
+        }
+    }
+    /**
+     * Negative scenarios for catalog name.
+     * Perform metadata lookups, that use incorrect catalog names.
+     */
+    public void testCatalogWithNotExistingName() throws SQLException {
+        checkNoEntitiesFoundForCatalog("");
+        checkNoEntitiesFoundForCatalog("NOT_EXISTING_CATALOG");
+    }
+
+    /**
+     * Check that lookup in the metadata have been performed using specified catalog name (that is neither {@code null}
+     * nor correct catalog name), empty result set is returned.
+     *
+     * @param invalidCat catalog name that is not either
+     */
+    private void checkNoEntitiesFoundForCatalog(String invalidCat) throws SQLException {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            // Intention: we set the other arguments that way, the values to have as many results as possible.
+            assertIsEmpty(meta.getTables(invalidCat, null, "%", new String[] {"TABLE"}));
+            assertIsEmpty(meta.getColumns(invalidCat, null, "%", "%"));
+            assertIsEmpty(meta.getColumnPrivileges(invalidCat, "pers", "PERSON", "%"));
+            assertIsEmpty(meta.getTablePrivileges(invalidCat, null, "%"));
+            assertIsEmpty(meta.getPrimaryKeys(invalidCat, "pers", "PERSON"));
+            assertIsEmpty(meta.getImportedKeys(invalidCat, "pers", "PERSON"));
+            assertIsEmpty(meta.getExportedKeys(invalidCat, "pers", "PERSON"));
+            // meta.getCrossReference(...) doesn't make sense because we don't have FK constraint.
+            assertIsEmpty(meta.getIndexInfo(invalidCat, null, "%", false, true));
+            assertIsEmpty(meta.getSuperTables(invalidCat, "%", "%"));
+            assertIsEmpty(meta.getSchemas(invalidCat, null));
+            assertIsEmpty(meta.getPseudoColumns(invalidCat, null, "%", ""));
+        }
+    }
+
+    /**
+     * Assert that specified ResultSet contains no rows.
+     *
+     * @param rs result set to check.
+     * @throws SQLException on error.
+     */
+    private static void assertIsEmpty(ResultSet rs) throws SQLException {
+        try {
+            boolean empty = !rs.next();
+
+            assertTrue("Result should be empty because invalid catalog is specified.", empty);
+        }
+        finally {
+            rs.close();
         }
     }
 
