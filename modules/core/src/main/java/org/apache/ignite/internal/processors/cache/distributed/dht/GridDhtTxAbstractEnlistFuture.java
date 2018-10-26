@@ -193,6 +193,9 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     /** Moving partitions. */
     private Map<Integer, Boolean> movingParts;
 
+    /** Map for tracking nodes to which first request was already sent in order to send smaller subsequent requests. */
+    private final Set<ClusterNode> firstReqSent = new HashSet<>();
+
     /**
      * @param nearNodeId Near node ID.
      * @param nearLockVer Near lock version.
@@ -823,8 +826,11 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
         GridDhtTxQueryEnlistRequest req;
 
-        if (newRemoteTx(node)) {
+        if (newRemoteTx(node))
             addNewRemoteTxNode(node);
+
+        if (!firstReqSent.contains(node)) {
+            firstReqSent.add(node);
 
             // If this is a first request to this node, send full info.
             req = new GridDhtTxQueryFirstEnlistRequest(cctx.cacheId(),

@@ -34,7 +34,6 @@ import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerAdapter;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.GenericApplicationContext;
 
