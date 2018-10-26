@@ -17,13 +17,15 @@
 
 package org.apache.ignite.yardstick.upload;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.yardstick.upload.model.Values10;
 
 /**
- * Benchmark performs single upload of number of entries using {@link IgniteCache#put(Object, Object)}.
+ * Benchmark that performs single upload of number of entries using {@link IgniteCache#putAll(Map)}.
  */
-public class NativePutBenchmark extends AbstractNativeBenchmark {
+public class NativePutAllBenchmark extends AbstractNativeBenchmark {
     /**
      * Uploads randomly generated data using simple put.
      *
@@ -32,7 +34,17 @@ public class NativePutBenchmark extends AbstractNativeBenchmark {
     @Override protected void upload(long insertsCnt) {
         IgniteCache<Object, Object> c = ignite().cache(CACHE_NAME);
 
-        for (long id = 1; id <= insertsCnt; id++)
-            c.put(id, new Values10());
+        long batchSize = args.upload.jdbcBatchSize();
+        Map<Long, Values10> batch = new HashMap<>((int)batchSize);
+
+        for (long id = 1; id <= insertsCnt; id++) {
+            batch.put(id, new Values10());
+
+            if (id % batchSize == 0 || id == insertsCnt) {
+                c.putAll(batch);
+
+                batch.clear();
+            }
+        }
     }
 }

@@ -17,12 +17,16 @@
 
 package org.apache.ignite.yardstick;
 
+import java.util.Collection;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteState;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.yardstickframework.BenchmarkConfiguration;
@@ -138,17 +142,49 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
         }, EVT_NODE_JOINED);
 
         if (!nodesStarted()) {
-            println(cfg, "Waiting for " + (args.nodes() - 1) + " nodes to start...");
+            println(cfg, "Waiting for the cluster to contain at least " + args.nodes() + " nodes...");
 
             nodesStartedLatch.await();
         }
+
+        println("Cluster is ready");
     }
 
     /**
+     * Determine if all required nodes are started. Since nodes can close their local ignite instances, this method
+     * seeks in the history topology containing: 1) driver's local node; 2) right number of nodes.
+     *
      * @return {@code True} if all nodes are started, {@code false} otherwise.
      */
     private boolean nodesStarted() {
-        return ignite().cluster().nodes().size() >= args.nodes();
+        IgniteCluster cluster = ignite().cluster();
+
+        UUID locNodeId = cluster.localNode().id();
+
+        long curTop = cluster.topologyVersion();
+
+        for (long top = curTop; top >= 1; top--) {
+            Collection<ClusterNode> nodes = cluster.topology(top);
+
+            if (topologyContainsId(nodes, locNodeId) && nodes.size() >= args.nodes())
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param top topology (collection of cluster nodes).
+     * @param nodeId id of the node to find.
+     * @return {@code True} if topology contains node with specified id, {@code false} otherwise.
+     */
+    private static boolean topologyContainsId(Collection<? extends ClusterNode> top, UUID nodeId) {
+        for (ClusterNode node : top) {
+            if (node.id().equals(nodeId))
+                return true;
+        }
+
+        return false;
     }
 
     /**
