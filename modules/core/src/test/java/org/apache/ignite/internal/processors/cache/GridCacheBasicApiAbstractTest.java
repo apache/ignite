@@ -89,6 +89,9 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws Exception If test failed.
      */
     public void testBasicLock() throws Exception {
+        if(FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-9324");
+
         IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         Lock lock = cache.lock(1);
@@ -106,6 +109,9 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws IgniteCheckedException If test failed.
      */
     public void testSingleLockReentry() throws IgniteCheckedException {
+        if(FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-9324");
+
         IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         Lock lock = cache.lock(1);
@@ -134,6 +140,9 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws Exception If test failed.
      */
     public void testReentry() throws Exception {
+        if(FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-9324");
+
         IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         Lock lock = cache.lock(1);
@@ -173,6 +182,9 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      *
      */
     public void testInterruptLock() throws InterruptedException {
+        if(FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-9324");
+
         final IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         final Lock lock = cache.lock(1);
@@ -217,6 +229,9 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      *
      */
     public void testInterruptLockWithTimeout() throws Exception {
+        if(FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-9324");
+
         final IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         startGrid(1);
@@ -276,6 +291,9 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws IgniteCheckedException If test failed.
      */
     public void testManyLockReentries() throws IgniteCheckedException {
+        if(FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-9324");
+
         IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         Integer key = 1;
@@ -319,6 +337,9 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws Exception If test failed.
      */
     public void testLockMultithreaded() throws Exception {
+        if(FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-9324");
+
         final IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         final CountDownLatch l1 = new CountDownLatch(1);
@@ -437,6 +458,9 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws Exception If error occur.
      */
     public void testBasicOps() throws Exception {
+        if(FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-9324");
+
         IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -498,6 +522,9 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws Exception If error occur.
      */
     public void testBasicOpsWithReentry() throws Exception {
+        if(FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-9324");
+
         IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         int key = (int)System.currentTimeMillis();
@@ -570,6 +597,9 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws Exception If test failed.
      */
     public void testMultiLocks() throws Exception {
+        if(FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-9324");
+
         IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         Collection<Integer> keys = Arrays.asList(1, 2, 3);
@@ -625,6 +655,9 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws Exception In case of error.
      */
     public void testPutWithExpiration() throws Exception {
+        if(FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-9324");
+
         IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         CacheEventListener lsnr = new CacheEventListener(new CountDownLatch(1));

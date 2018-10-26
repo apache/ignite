@@ -55,6 +55,9 @@ public class NearCacheSyncUpdateTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        if (FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(3);

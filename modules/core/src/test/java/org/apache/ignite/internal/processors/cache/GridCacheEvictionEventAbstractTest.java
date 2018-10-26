@@ -49,6 +49,13 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        if (FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-7956");
+        super.setUp();
+    }
+
     /**
      *
      */

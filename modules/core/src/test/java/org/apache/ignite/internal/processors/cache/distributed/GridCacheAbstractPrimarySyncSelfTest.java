@@ -45,6 +45,14 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        if (FORCE_MVCC && nearConfiguration() != null)
+            fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+
+        super.setUp();
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 

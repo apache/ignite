@@ -72,6 +72,13 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        if (FORCE_MVCC) {
+            fail("https://issues.apache.org/jira/browse/IGNITE-8582");
+
+            if(nearCacheConfiguration() != null)
+                fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+        }
+
         super.beforeTestsStarted();
 
         stores = Collections.synchronizedList(new ArrayList<GridCacheTestStore>());

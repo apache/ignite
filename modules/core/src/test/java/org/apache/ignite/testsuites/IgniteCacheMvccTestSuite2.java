@@ -20,15 +20,35 @@ package org.apache.ignite.testsuites;
 import java.util.HashSet;
 import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeAffinityBackupFilterSelfTest;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionBackupFilterSelfTest;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionExcludeNeighborsSelfTest;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionFastPowerOfTwoHashSelfTest;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionSelfTest;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionStandardHashSelfTest;
+import org.apache.ignite.internal.IgniteReflectionFactorySelfTest;
+import org.apache.ignite.internal.processors.cache.CacheComparatorTest;
+import org.apache.ignite.internal.processors.cache.CacheOptimisticTransactionsWithFilterSingleServerTest;
+import org.apache.ignite.internal.processors.cache.CacheOptimisticTransactionsWithFilterTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicMessageCountSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCachePartitionedProjectionAffinitySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteAtomicCacheEntryProcessorNodeJoinTest;
+import org.apache.ignite.internal.processors.cache.distributed.CachePartitionStateTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.CachePartitionPartialCountersMapSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedOptimisticTransactionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtAtomicEvictionNearReadersSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearEvictionEventSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearReadersSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearClientHitTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearJobExecutionSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedAffinitySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedAtomicGetAndTransformStoreSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheRendezvousAffinityClientSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedJobExecutionTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicBasicStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicGetAndTransformStoreSelfTest;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Test suite.
@@ -41,6 +61,12 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
         System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
 
         HashSet<Class> ignoredTests = new HashSet<>();
+        // Optimistic tx tests
+        ignoredTests.add(GridCacheColocatedOptimisticTransactionSelfTest.class);
+        ignoredTests.add(CacheOptimisticTransactionsWithFilterSingleServerTest.class);
+        ignoredTests.add(CacheOptimisticTransactionsWithFilterTest.class);
+
+        // Atomic cache tests.
         ignoredTests.add(GridCacheLocalAtomicBasicStoreSelfTest.class);
         ignoredTests.add(GridCacheLocalAtomicGetAndTransformStoreSelfTest.class);
         ignoredTests.add(GridCacheAtomicNearMultiNodeSelfTest.class);
@@ -50,6 +76,26 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
         ignoredTests.add(GridCacheAtomicMessageCountSelfTest.class);
         ignoredTests.add(IgniteAtomicCacheEntryProcessorNodeJoinTest.class);
         ignoredTests.add(GridCacheDhtAtomicEvictionNearReadersSelfTest.class);
+        ignoredTests.add(GridCacheNearClientHitTest.class);
+
+        // Other non-tx tests.
+        ignoredTests.add(RendezvousAffinityFunctionSelfTest.class);
+        ignoredTests.add(RendezvousAffinityFunctionExcludeNeighborsSelfTest.class);
+        ignoredTests.add(RendezvousAffinityFunctionFastPowerOfTwoHashSelfTest.class);
+        ignoredTests.add(RendezvousAffinityFunctionStandardHashSelfTest.class);
+        ignoredTests.add(GridCachePartitionedAffinitySelfTest.class);
+        ignoredTests.add(GridCacheRendezvousAffinityClientSelfTest.class);
+        ignoredTests.add(GridCachePartitionedProjectionAffinitySelfTest.class);
+        ignoredTests.add(RendezvousAffinityFunctionBackupFilterSelfTest.class);
+        ignoredTests.add(ClusterNodeAttributeAffinityBackupFilterSelfTest.class);
+
+        ignoredTests.add(GridCacheReplicatedJobExecutionTest.class);
+        ignoredTests.add(GridCacheNearJobExecutionSelfTest.class);
+
+        ignoredTests.add(CachePartitionStateTest.class);
+        ignoredTests.add(CacheComparatorTest.class);
+        ignoredTests.add(CachePartitionPartialCountersMapSelfTest.class);
+        ignoredTests.add(IgniteReflectionFactorySelfTest.class);
 
         TestSuite suite = new TestSuite("IgniteCache Mvcc Test Suite part 2");
 

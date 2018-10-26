@@ -65,6 +65,14 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /** Ip-finder. */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        if (FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+
+        super.setUp();
+    }
+
     /**
      *
      */

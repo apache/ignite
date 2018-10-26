@@ -45,13 +45,24 @@ public class NoneRebalanceModeSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGrid(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        super.afterTestsStopped();
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testRemoveAll() throws Exception {
+        //TODO: IGNITE-10002: What does this test check? Let's remove this.
+
         GridNearTransactionalCache cache = (GridNearTransactionalCache)((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME);
 
         for (GridDhtLocalPartition part : cache.dht().topology().localPartitions())

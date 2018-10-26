@@ -43,6 +43,8 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
@@ -157,6 +159,9 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If check failed.
      */
     protected void checkCommit(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
+        if(FORCE_MVCC && (concurrency != PESSIMISTIC || isolation != REPEATABLE_READ))
+            fail("Mvcc tx mode is not supported.");
+
         int gridIdx = RAND.nextInt(gridCount());
 
         Ignite ignite = grid(gridIdx);
@@ -257,6 +262,9 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
      */
     protected void checkRollback(TransactionConcurrency concurrency, TransactionIsolation isolation)
         throws Exception {
+        if(FORCE_MVCC && (concurrency != PESSIMISTIC || isolation != REPEATABLE_READ))
+            fail("Mvcc tx mode is not supported.");
+
         checkRollback(new ConcurrentHashMap<Integer, String>(), concurrency, isolation);
     }
 

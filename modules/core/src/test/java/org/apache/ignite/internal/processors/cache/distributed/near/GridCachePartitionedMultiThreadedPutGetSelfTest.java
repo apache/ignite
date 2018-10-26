@@ -177,6 +177,9 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      */
     private void doTest(final TransactionConcurrency concurrency, final TransactionIsolation isolation)
         throws Exception {
+        if(FORCE_MVCC && (concurrency != PESSIMISTIC || isolation != REPEATABLE_READ))
+            fail("Mvcc tx mode is not supported.");
+
         final AtomicInteger cntr = new AtomicInteger();
 
         multithreaded(new CAX() {

@@ -24,6 +24,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -81,10 +82,9 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);
-
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-
         cc.setRebalanceMode(NONE);
+        cc.setNearConfiguration(new NearCacheConfiguration());
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 

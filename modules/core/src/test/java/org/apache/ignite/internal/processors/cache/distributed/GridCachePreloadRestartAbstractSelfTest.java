@@ -97,6 +97,14 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        if (FORCE_MVCC && nearEnabled())
+            fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 

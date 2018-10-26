@@ -92,6 +92,9 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        if (FORCE_MVCC && nearCacheEnabled())
+            fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(GRID_CNT - 1);

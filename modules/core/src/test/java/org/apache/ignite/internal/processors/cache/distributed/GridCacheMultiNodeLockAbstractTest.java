@@ -63,6 +63,14 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     /** Listeners. */
     private static Collection<IgnitePredicate<Event>> lsnrs = new ArrayList<>();
 
+    /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        if (FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+
+        super.setUp();
+    }
+
     /**
      *
      */

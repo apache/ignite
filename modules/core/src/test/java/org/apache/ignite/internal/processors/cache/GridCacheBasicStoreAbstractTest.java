@@ -53,6 +53,14 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
     /** Cache store. */
     private static final GridCacheTestStore store = new GridCacheTestStore();
 
+    /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        if(FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-8582");
+
+        super.setUp();
+    }
+
     /**
      *
      */

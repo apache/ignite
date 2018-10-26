@@ -60,6 +60,16 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
     private IgniteCache<String, String> cache;
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        if (FORCE_MVCC) {
+            fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+            fail("https://issues.apache.org/jira/browse/IGNITE-8582");
+        }
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
 

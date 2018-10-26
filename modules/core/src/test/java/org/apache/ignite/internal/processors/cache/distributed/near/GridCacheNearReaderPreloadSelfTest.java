@@ -62,6 +62,14 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
     private IgniteCache<Integer, Integer> cache3;
 
     /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        if (FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+
+        super.setUp();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         cache1 = null;
         cache2 = null;

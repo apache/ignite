@@ -47,6 +47,14 @@ public class IgniteOnePhaseCommitNearReadersTest extends GridCommonAbstractTest 
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        if (FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+
+        super.beforeTestsStarted();
+    }
+
     /** */
     private boolean client;
 
