@@ -21,7 +21,6 @@ import com.github.luben.zstd.Zstd;
 import java.nio.ByteBuffer;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
-import net.jpountz.lz4.LZ4FastDecompressor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.PageCompression;
 import org.apache.ignite.internal.GridKernalContext;
@@ -232,23 +231,26 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         byte compressType = PageIO.getCompressionType(page);
         short compressedSize = PageIO.getCompressedSize(page);
 
-        switch (compressType) {
-            case UNCOMPRESSED_PAGE:
-                return;
+        if (compressType == UNCOMPRESSED_PAGE)
+            return; // Nothing to do.
 
-            case COMPACTED_PAGE:
-                break;
+        if (compressType != COMPACTED_PAGE) {
+            ByteBuffer dst = tmp.get();
 
-            case ZSTD_COMPRESSED_PAGE:
-                decompressPageZstd(page, compressedSize, pageSize);
-                break;
+            page.position(PageIO.COMMON_HEADER_END).limit(compressedSize);
 
-            case LZ4_COMPRESSED_PAGE:
-                decompressPageLz4(page, compressedSize, pageSize);
-                break;
+            if (compressType == ZSTD_COMPRESSED_PAGE)
+                Zstd.decompress(dst, page);
+            else if (compressType == LZ4_COMPRESSED_PAGE) {
+                // TODO Maybe use fastDecompressor(), but we need to store compacted page size in the page then.
+                LZ4Factory.fastestInstance().safeDecompressor().decompress(page, dst);
+            } else
+                throw new IllegalStateException("Unknown compression: " + compressType);
 
-            default:
-                throw new IllegalStateException("Unknown compression type: " + compressType);
+            dst.flip();
+
+            page.position(PageIO.COMMON_HEADER_END).limit(pageSize);
+            page.put(dst).flip();
         }
 
         CompactablePageIO io = PageIO.getPageIO(page);
@@ -256,44 +258,5 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         io.restorePage(page, pageSize);
 
         setCompressionInfo(page, null, 0);
-    }
-
-    /**
-     * @param page Page.
-     * @param compressedSize Compressed size.
-     * @param pageSize Page size.
-     */
-    private void decompressPageZstd(ByteBuffer page, int compressedSize, int pageSize) {
-        assert page.isDirect();
-
-        ByteBuffer dst = tmp.get();
-
-        page.position(PageIO.COMMON_HEADER_END).limit(compressedSize);
-        Zstd.decompress(dst, page);
-        dst.flip();
-
-        page.position(PageIO.COMMON_HEADER_END).limit(pageSize);
-        page.put(dst).flip();
-    }
-
-    /**
-     * @param page Page.
-     * @param compressedSize Compressed size.
-     * @param pageSize Page size.
-     */
-    private void decompressPageLz4(ByteBuffer page, int compressedSize, int pageSize) {
-        LZ4FastDecompressor decompressor = LZ4Factory.fastestInstance().fastDecompressor();
-
-        ByteBuffer dst = tmp.get();
-
-        // LZ4 needs this limit to be exact.
-        dst.limit(pageSize - PageIO.COMMON_HEADER_END);
-
-        page.position(PageIO.COMMON_HEADER_END).limit(compressedSize);
-        decompressor.decompress(page, dst);
-        dst.flip();
-
-        page.position(PageIO.COMMON_HEADER_END).limit(pageSize);
-        page.put(dst).flip();
     }
 }
