@@ -21,6 +21,7 @@ import java.io.FilenameFilter;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 import java.util.Comparator;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -218,6 +219,20 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         }
 
         assertFalse(fail);
+
+        // Check compation successfully reset on blt changed.
+        stopAllGrids();
+
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        resetBaselineTopology();
+
+        // This node will join to different blt.
+        startGrid(2);
+
+        awaitPartitionMapExchange();
     }
 
     /**
