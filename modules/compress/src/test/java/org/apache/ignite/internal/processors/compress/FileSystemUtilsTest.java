@@ -34,7 +34,7 @@ public class FileSystemUtilsTest extends TestCase {
      * @return Sparse size.
      */
     private static long getSparseFileSize(int fd, Path file) {
-        long blocks0 = getSparseFileBlocks(fd);
+        long blocks0 = posix.fstat(fd).blocks();
 
         if (U.isLinux()) {
             try {
@@ -57,14 +57,6 @@ public class FileSystemUtilsTest extends TestCase {
     }
 
     /**
-     * @param fd File descriptor.
-     * @return Number of blocks.
-     */
-    private static long getSparseFileBlocks(int fd) {
-        return posix.fstat(fd).blocks();
-    }
-
-    /**
      * @throws Exception If failed.
      */
     public void testSparseFiles() throws Exception {
@@ -75,7 +67,7 @@ public class FileSystemUtilsTest extends TestCase {
         Path file = Files.createTempFile("test_sparse_file_", ".bin");
 
         try {
-            doTestSparseFiles(file);
+            doTestSparseFiles(file, false, 2); // Ext4
         }
         finally {
             Files.delete(file);
@@ -86,9 +78,9 @@ public class FileSystemUtilsTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testFileSystems() throws Exception {
-        doTestSparseFiles(Paths.get("/ext4/test_file")); // OK
-        doTestSparseFiles(Paths.get("/btrfs/test_file")); // OK
-        doTestSparseFiles(Paths.get("/xfs/test_file")); // Fails due to getSparseFileSize instability
+        doTestSparseFiles(Paths.get("/ext4/test_file"), false, 2);
+        doTestSparseFiles(Paths.get("/btrfs/test_file"), false, 1);
+        doTestSparseFiles(Paths.get("/xfs/test_file"), true, 1);
     }
 
     private static int getFD(FileChannel ch) throws IgniteCheckedException {
@@ -97,9 +89,11 @@ public class FileSystemUtilsTest extends TestCase {
 
     /**
      * @param file File path.
+     * @param reopen Reopen file after each hole punch. XFS needs it.
+     * @param lastBlocks Number of blocks when we have punched all except the last block.
      * @throws Exception If failed.
      */
-    private void doTestSparseFiles(Path file) throws Exception {
+    private void doTestSparseFiles(Path file, boolean reopen, int lastBlocks) throws Exception {
         System.out.println(file);
 
         FileChannel ch = FileChannel.open(file,
@@ -133,11 +127,12 @@ public class FileSystemUtilsTest extends TestCase {
                 page.flip();
             }
 
-            // For XFS to make number of blocks correct it is needed to reopen file.
-            ch.force(true);
-            ch.close();
-            ch = FileChannel.open(file, READ, WRITE, SPARSE);
-            fd = getFD(ch);
+            if (reopen) {
+                ch.force(true);
+                ch.close();
+                ch = FileChannel.open(file, READ, WRITE, SPARSE);
+                fd = getFD(ch);
+            }
 
             assertEquals(fileSize, ch.size());
             assertEquals(fileSize, getSparseFileSize(fd, file));
@@ -145,28 +140,34 @@ public class FileSystemUtilsTest extends TestCase {
             int off = fsBlockSize * 3 - (fsBlockSize >>> 2);
             int len = fsBlockSize;
             assertEquals(0, punchHole(fd, off, len, fsBlockSize));
-            ch.force(true);
-            ch.close();
-            ch = FileChannel.open(file, READ, WRITE, SPARSE);
-            fd = getFD(ch);
+            if (reopen) {
+                ch.force(true);
+                ch.close();
+                ch = FileChannel.open(file, READ, WRITE, SPARSE);
+                fd = getFD(ch);
+            }
             assertEquals(fileSize, getSparseFileSize(fd, file));
 
             off = 2 * fsBlockSize - 3;
             len = 2 * fsBlockSize + 3;
             assertEquals(2 * fsBlockSize, punchHole(fd, off, len, fsBlockSize));
-            ch.force(true);
-            ch.close();
-            ch = FileChannel.open(file, READ, WRITE, SPARSE);
-            fd = getFD(ch);
+            if (reopen) {
+                ch.force(true);
+                ch.close();
+                ch = FileChannel.open(file, READ, WRITE, SPARSE);
+                fd = getFD(ch);
+            }
             assertEquals(sparseSize -= 2 * fsBlockSize, getSparseFileSize(fd, file));
 
             off = 10 * fsBlockSize;
             len = 3 * fsBlockSize + 5;
             assertEquals(3 * fsBlockSize, punchHole(fd, off, len, fsBlockSize));
-            ch.force(true);
-            ch.close();
-            ch = FileChannel.open(file, READ, WRITE, SPARSE);
-            fd = getFD(ch);
+            if (reopen) {
+                ch.force(true);
+                ch.close();
+                ch = FileChannel.open(file, READ, WRITE, SPARSE);
+                fd = getFD(ch);
+            }
             assertEquals(sparseSize -= 3 * fsBlockSize, getSparseFileSize(fd, file));
 
             off = 15 * fsBlockSize + 1;
@@ -184,21 +185,25 @@ public class FileSystemUtilsTest extends TestCase {
             off = 15 * fsBlockSize;
             len = fsBlockSize;
             assertEquals(fsBlockSize, punchHole(fd, off, len, fsBlockSize));
-            ch.force(true);
-            ch.close();
-            ch = FileChannel.open(file, READ, WRITE, SPARSE);
-            fd = getFD(ch);
+            if (reopen) {
+                ch.force(true);
+                ch.close();
+                ch = FileChannel.open(file, READ, WRITE, SPARSE);
+                fd = getFD(ch);
+            }
             assertEquals(sparseSize -= fsBlockSize, getSparseFileSize(fd, file));
 
             for (int i = 0; i < blocks - 1; i++)
                 punchHole(fd, fsBlockSize * i, fsBlockSize, fsBlockSize);
 
-            ch.force(true);
-            ch.close();
-            ch = FileChannel.open(file, READ, WRITE, SPARSE);
-            fd = getFD(ch);
+            if (reopen) {
+                ch.force(true);
+                ch.close();
+                ch = FileChannel.open(file, READ, WRITE, SPARSE);
+                fd = getFD(ch);
+            }
 
-            assertTrue(2 * fsBlockSize >= getSparseFileSize(fd, file));
+            assertEquals(lastBlocks * fsBlockSize, getSparseFileSize(fd, file));
         }
         finally {
             ch.close();
