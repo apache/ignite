@@ -652,14 +652,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         return null;
     }
 
-    @Override
-    public boolean recoveryMode() {
+    /** {@inheritDoc} */
+    @Override public boolean recoveryMode() {
         return false;
-    }
-
-    @Override
-    public void recoveryMode(boolean value) {
-
     }
 
     /** {@inheritDoc} */

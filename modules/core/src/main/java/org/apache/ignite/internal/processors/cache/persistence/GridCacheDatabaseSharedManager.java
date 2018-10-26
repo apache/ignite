@@ -356,9 +356,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Timeout for checkpoint read lock acquisition in milliseconds. */
     private volatile long checkpointReadLockTimeout;
 
-    /** Set of QuerySchema's saved on recovery. It's needed if cache query schema has changed after node joined to topology.*/
-    private final Map<Integer, QuerySchema> recoverQuerySchemas = new ConcurrentHashMap<>();
-
     /**
      * @param ctx Kernal context.
      */
@@ -910,9 +907,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointReadLock();
 
         try {
-            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
-                lsnr.beforeBinaryMemoryRestore(this);
-
             CheckpointStatus status = readCheckpointStatus();
 
             // First, bring memory to the last consistent checkpoint state if needed.
@@ -1981,21 +1975,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         checkpointReadLock();
 
-        kctx.recoveryMode(true);
-
         try {
             // Preform early regions startup before restoring state.
             initAndStartRegions(kctx.config().getDataStorageConfiguration());
 
-            Collection<DynamicCacheDescriptor> cacheDescriptors = cctx.cache().cacheDescriptors().values();
-
-            // Only presistence caches to start.
-            for (DynamicCacheDescriptor desc : cacheDescriptors) {
-                if (CU.isPersistentCache(desc.cacheConfiguration(), cctx.gridConfig().getDataStorageConfiguration()))
-                    storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
-            }
-
-            cctx.pageStore().initializeForMetastorage();
+            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(kctx))
+                lsnr.beforeBinaryMemoryRestore(this);
 
             log.info("Starting binary memory restore for: " + cctx.cache().cacheGroupDescriptors().keySet());
 
@@ -2006,11 +1991,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             cctx.wal().resumeLogging();
 
-            for (DynamicCacheDescriptor desc : cacheDescriptors) {
-                cctx.cache().startCacheInRecoveryMode(desc);
-
-                recoverQuerySchemas.put(desc.cacheId(), desc.schema());
-            }
+            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(kctx))
+                lsnr.afterBinaryMemoryRestore(this);
 
             assert metaStorage == null;
 
@@ -2025,8 +2007,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
         finally {
             checkpointReadUnlock();
-
-            kctx.recoveryMode(false);
         }
     }
 
@@ -2099,8 +2079,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         if (chp != null)
             chp.cpBeginFut.get();
-        else
-            log.warning("No checkpoints :(");
 
         if (log.isInfoEnabled())
             log.info("Checkpointer initilialzation performed in " + (System.currentTimeMillis() - time) + " ms.");
@@ -2114,17 +2092,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         result.add(MetaStorage.METASTORAGE_CACHE_ID);
 
-        result.addAll(cctx.cache().cacheGroupDescriptors().keySet());
+        for (CacheGroupDescriptor desc : cctx.cache().persistentGroups())
+            result.add(desc.groupId());
 
         return result;
-    }
-
-    /**
-     * @param cacheId Cache id.
-     * @return Locally recovered QuerySchema for given cache.
-     */
-    public QuerySchema recoverQuerySchema(int cacheId) {
-        return recoverQuerySchemas.get(cacheId);
     }
 
     /**

@@ -99,6 +99,7 @@ import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.local.atomic.GridLocalAtomicCache;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -106,7 +107,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -201,7 +201,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
  * Cache processor.
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened", "deprecation"})
-public class GridCacheProcessor extends GridProcessorAdapter implements MetastorageLifecycleListener {
+public class GridCacheProcessor extends GridProcessorAdapter {
     /** Template of message of conflicts during configuration merge*/
     private static final String MERGE_OF_CONFIG_CONFLICTS_MESSAGE =
         "Conflicts during configuration merge for cache '%s' : \n%s";
@@ -275,6 +275,9 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
     /** Protector of initialization of specific value. */
     private final InitializationProtector initializationProtector = new InitializationProtector();
+
+    /** Cache recovery lifecycle state and actions. */
+    private final CacheRecoveryLifecycle recovery = new CacheRecoveryLifecycle();
 
     /**
      * @param ctx Kernal context.
@@ -742,41 +745,34 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
-        startCachesOnStart();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onReadyForReadWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
-    }
-
     /**
      * @throws IgniteCheckedException If failed.
      */
-    private void startCachesOnStart() throws IgniteCheckedException {
-        if (!ctx.isDaemon()) {
-            Map<String, CacheInfo> caches = new HashMap<>();
+    private void restoreCacheConfigurations() throws IgniteCheckedException {
+        if (ctx.isDaemon())
+            return;
 
-            Map<String, CacheInfo> templates = new HashMap<>();
+        Map<String, CacheInfo> caches = new HashMap<>();
 
-            addCacheOnJoinFromConfig(caches, templates);
+        Map<String, CacheInfo> templates = new HashMap<>();
 
-            CacheJoinNodeDiscoveryData discoData = new CacheJoinNodeDiscoveryData(
+        addCacheOnJoinFromConfig(caches, templates);
+
+        CacheJoinNodeDiscoveryData discoData = new CacheJoinNodeDiscoveryData(
                 IgniteUuid.randomUuid(),
                 caches,
                 templates,
                 startAllCachesOnClientStart()
-            );
+        );
 
-            cachesInfo.onStart(discoData);
-        }
+        cachesInfo.onStart(discoData);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public void start() throws IgniteCheckedException {
-        ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
+        ctx.internalSubscriptionProcessor().registerMetastorageListener(recovery);
+        ctx.internalSubscriptionProcessor().registerDatabaseListener(recovery);
 
         cachesInfo = new ClusterCachesInfo(ctx);
 
@@ -802,7 +798,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             mgr.start(sharedCtx);
 
         if (!ctx.isDaemon() && (!CU.isPersistenceEnabled(ctx.config())) || ctx.config().isClientMode())
-            startCachesOnStart();
+            restoreCacheConfigurations();
 
         if (log.isDebugEnabled())
             log.debug("Started cache processor.");
@@ -2225,46 +2221,26 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
 
             assert cctx.isRecoveryMode();
 
-            QuerySchema localSchema = ((GridCacheDatabaseSharedManager) ctx.cache().context().database()).recoverQuerySchema(desc.cacheId());
+            QuerySchema localSchema = recovery.querySchemas.get(desc.cacheId());
 
             QuerySchemaPatch localSchemaPatch = localSchema.makePatch(desc.schema().entities());
 
             // Cache schema is changed after restart, just stop existing cache and start new.
             if (!localSchemaPatch.isEmpty() || localSchemaPatch.hasConflicts()) {
-                cctx.gate().onStopped();
-
-                // Do not close client cache while requests processing is in progress.
-                sharedCtx.io().writeLock();
+                sharedCtx.database().checkpointReadLock();
 
                 try {
-                    if (!cctx.affinityNode() && cctx.transactional())
-                        sharedCtx.tm().rollbackTransactionsForCache(cctx.cacheId());
-
-                    completeProxyInitialize(cctx.name());
-
-                    jCacheProxies.remove(cctx.name());
-
-                    sharedCtx.database().checkpointReadLock();
-
-                    try {
-                        prepareCacheStop(cctx.name(), false);
-                    }
-                    finally {
-                        sharedCtx.database().checkpointReadUnlock();
-                    }
-
-                    if (!cctx.group().hasCaches())
-                        stopCacheGroup(cctx.group().groupId());
+                    prepareCacheStop(cctx.name(), false);
                 }
                 finally {
-                    sharedCtx.io().writeUnlock();
+                    sharedCtx.database().checkpointReadUnlock();
                 }
-            }
-            else {
-                assert existingCache.context().isRecoveryMode();
 
-                return existingCache.context();
+                if (!cctx.group().hasCaches())
+                    stopCacheGroup(cctx.group().groupId());
             }
+            else
+                return existingCache.context();
         }
 
         assert !caches.containsKey(startCfg.getName()) : startCfg.getName();
@@ -2296,6 +2272,13 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
         return cacheCtx;
     }
 
+    /**
+     * Finishes recovery for given cache context.
+     *
+     * @param cacheStartVer Cache join to topology version.
+     * @param cacheContext Cache context.
+     * @throws IgniteCheckedException If failed.
+     */
     private void finishRecovery(AffinityTopologyVersion cacheStartVer, GridCacheContext<?, ?> cacheContext) throws IgniteCheckedException {
         CacheGroupContext groupContext = cacheContext.group();
 
@@ -2487,7 +2470,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      * @param desc Cache descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    public GridCacheContext<?, ?> startCacheInRecoveryMode(
+    private GridCacheContext<?, ?> startCacheInRecoveryMode(
         DynamicCacheDescriptor desc
     ) throws IgniteCheckedException {
         CacheConfiguration cfg = desc.cacheConfiguration();
@@ -4720,6 +4703,26 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     }
 
     /**
+     * @return Collection of persistent cache descriptors.
+     */
+    public Collection<DynamicCacheDescriptor> persistentCaches() {
+        return cachesInfo.registeredCaches().values()
+                .stream()
+                .filter(desc -> isPersistentCache(desc.cacheConfiguration(), ctx.config().getDataStorageConfiguration()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * @return Collection of persistent cache group descriptors.
+     */
+    public Collection<CacheGroupDescriptor> persistentGroups() {
+        return cachesInfo.registeredCacheGroups().values()
+                .stream()
+                .filter(CacheGroupDescriptor::persistenceEnabled)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * @return Cache group descriptors.
      */
     public Map<Integer, CacheGroupDescriptor> cacheGroupDescriptors() {
@@ -5400,6 +5403,31 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                 return U.unmarshal(marsh, U.marshal(marsh, obj), U.resolveClassLoader(ctx.config()));
             }
         });
+    }
+
+    /**
+     * Recovery lifecycle for caches.
+     */
+    private class CacheRecoveryLifecycle implements MetastorageLifecycleListener, DatabaseLifecycleListener {
+        /** Set of QuerySchema's saved on recovery. It's needed if cache query schema has changed after node joined to topology.*/
+        private final Map<Integer, QuerySchema> querySchemas = new ConcurrentHashMap<>();
+
+        @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
+            restoreCacheConfigurations();
+        }
+
+        @Override public void beforeBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
+            for (DynamicCacheDescriptor cacheDescriptor : persistentCaches())
+                preparePageStore(cacheDescriptor, true);
+        }
+
+        @Override public void afterBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
+            for (DynamicCacheDescriptor cacheDescriptor : persistentCaches()) {
+                startCacheInRecoveryMode(cacheDescriptor);
+
+                querySchemas.put(cacheDescriptor.groupId(), cacheDescriptor.schema().copy());
+            }
+        }
     }
 
     /**

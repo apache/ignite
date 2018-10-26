@@ -699,7 +699,8 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      */
     public Thread.UncaughtExceptionHandler uncaughtExceptionHandler();
 
+    /**
+     * @return {@code True} if node is in recovery mode (before join to topology).
+     */
     public boolean recoveryMode();
-
-    public void recoveryMode(boolean value);
 }

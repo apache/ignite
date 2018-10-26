@@ -400,6 +400,8 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         this.recoveryMode = recoveryMode;
 
+        assert kernalContext().recoveryMode() == recoveryMode;
+
         if (!recoveryMode) {
             locMacs = localNode().attribute(ATTR_MACS);
 
@@ -407,6 +409,11 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
     }
 
+    /**
+     * Called when cache was restored during recovery and node has joined to topology.
+     *
+     * @param topVer Cache topology join version.
+     */
     public void finishRecovery(AffinityTopologyVersion topVer) {
         assert recoveryMode : this;
 
@@ -419,6 +426,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert locMacs != null;
     }
 
+    /**
+     * @return {@code True} if cache is in recovery mode.
+     */
     public boolean isRecoveryMode() {
         return recoveryMode;
     }
