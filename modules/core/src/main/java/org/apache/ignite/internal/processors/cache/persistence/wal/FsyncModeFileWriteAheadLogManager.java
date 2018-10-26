@@ -1681,7 +1681,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                         notifyAll();
                     }
 
-                    if (evt.isRecordable(EventType.EVT_WAL_SEGMENT_ARCHIVED)) {
+                    if (evt.isRecordable(EventType.EVT_WAL_SEGMENT_ARCHIVED) && !cctx.kernalContext().recoveryMode()) {
                         evt.record(new WalSegmentArchivedEvent(cctx.discovery().localNode(),
                             res.getAbsIdx(), res.getDstArchiveFile()));
                     }
@@ -2047,7 +2047,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                             f0.force();
                         }
 
-                        if (evt.isRecordable(EVT_WAL_SEGMENT_COMPACTED)) {
+                        if (evt.isRecordable(EVT_WAL_SEGMENT_COMPACTED) && !cctx.kernalContext().recoveryMode()) {
                             evt.record(new WalSegmentCompactedEvent(
                                 cctx.discovery().localNode(),
                                 currReservedSegment,

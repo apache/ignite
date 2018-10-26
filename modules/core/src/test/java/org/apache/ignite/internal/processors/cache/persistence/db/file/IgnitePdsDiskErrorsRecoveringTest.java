@@ -38,6 +38,7 @@ import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
@@ -50,9 +51,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
 
 /**
@@ -129,17 +127,24 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         // Fail to initialize page store. 2 extra pages is needed for MetaStorage.
         ioFactory = new FilteringFileIOFactory(".bin", new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), 2 * PAGE_SIZE));
 
-        IgniteEx grid;
-
         boolean failed = false;
 
-        try {
-            grid = startGrid(0);
+        IgniteInternalFuture startGridFut = GridTestUtils.runAsync(() -> {
+            try {
+                IgniteEx grid = startGrid(0);
 
-            grid.cluster().active(true);
+                grid.cluster().active(true);
+            }
+            catch (Exception e) {
+                throw new RuntimeException("Failed to start node.", e);
+            }
+        });
+
+        try {
+            startGridFut.get();
         }
-        catch (Exception expected) {
-            log.warning("Expected cache error", expected);
+        catch (Exception e) {
+            Assert.assertTrue(e.getMessage().contains("Failed to start node."));
 
             failed = true;
         }
@@ -149,7 +154,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         // Grid should be successfully recovered after stopping.
         ioFactory = null;
 
-        grid = startGrid(0);
+        IgniteEx grid = startGrid(0);
 
         grid.cluster().active(true);
     }

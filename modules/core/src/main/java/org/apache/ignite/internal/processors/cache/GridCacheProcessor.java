@@ -5425,7 +5425,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             for (DynamicCacheDescriptor cacheDescriptor : persistentCaches()) {
                 startCacheInRecoveryMode(cacheDescriptor);
 
-                querySchemas.put(cacheDescriptor.groupId(), cacheDescriptor.schema().copy());
+                querySchemas.put(cacheDescriptor.cacheId(), cacheDescriptor.schema().copy());
             }
         }
     }

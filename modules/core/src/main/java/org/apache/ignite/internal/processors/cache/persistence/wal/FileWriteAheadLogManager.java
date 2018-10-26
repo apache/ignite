@@ -1810,7 +1810,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         blockingSectionEnd();
                     }
 
-                    if (evt.isRecordable(EVT_WAL_SEGMENT_ARCHIVED)) {
+                    if (evt.isRecordable(EVT_WAL_SEGMENT_ARCHIVED) && !cctx.kernalContext().recoveryMode()) {
                         evt.record(new WalSegmentArchivedEvent(
                             cctx.discovery().localNode(),
                             res.getAbsIdx(),
@@ -2122,7 +2122,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             f0.force();
                         }
 
-                        if (evt.isRecordable(EVT_WAL_SEGMENT_COMPACTED)) {
+                        if (evt.isRecordable(EVT_WAL_SEGMENT_COMPACTED) && !cctx.kernalContext().recoveryMode()) {
                             evt.record(new WalSegmentCompactedEvent(
                                     cctx.localNode(),
                                     segIdx,
