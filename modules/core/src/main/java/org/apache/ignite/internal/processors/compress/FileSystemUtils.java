@@ -1,6 +1,5 @@
 package org.apache.ignite.internal.processors.compress;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteComponentType;
@@ -83,16 +82,5 @@ public final class FileSystemUtils {
             fs.punchHole(fd, off, len);
 
         return len;
-    }
-
-    /**
-     * @param file File path.
-     * @return Sparse file size or negative value if not supported.
-     */
-    public static long getSparseFileSize(Path file) {
-        if (!Files.isRegularFile(file))
-            throw new IllegalArgumentException("Is not a regular file: " + file);
-
-        return fs == null ? -1: fs.getSparseFileSize(file);
     }
 }

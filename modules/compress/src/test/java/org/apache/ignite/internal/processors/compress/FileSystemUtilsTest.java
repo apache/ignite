@@ -7,16 +7,30 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import jnr.posix.POSIX;
+import jnr.posix.POSIXFactory;
 import junit.framework.TestCase;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Assume;
 
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorImpl.allocateDirectBuffer;
 import static org.apache.ignite.internal.processors.compress.FileSystemUtils.getFileSystemBlockSize;
-import static org.apache.ignite.internal.processors.compress.FileSystemUtils.getSparseFileSize;
 import static org.apache.ignite.internal.processors.compress.FileSystemUtils.punchHole;
 
 public class FileSystemUtilsTest extends TestCase {
+    /** */
+    private static POSIX posix = POSIXFactory.getPOSIX();
+
+    /**
+     * !!! May produce wrong results on some file systems:
+     * Ext4 and Btrfs are known to work correctly, but XFS is broken.
+     *
+     * @param file File path.
+     * @return Sparse size.
+     */
+    private static long getSparseFileSize(Path file) {
+        return posix.stat(file.toString()).blocks() * 512;
+    }
 
     /**
      * @throws IOException If failed.
@@ -40,9 +54,9 @@ public class FileSystemUtilsTest extends TestCase {
      * @throws IOException If failed.
      */
     public void _testFileSystems() throws IOException {
-        doTestSparseFiles(Paths.get("/ext4/test_file"));
-        doTestSparseFiles(Paths.get("/btrfs/test_file"));
-        doTestSparseFiles(Paths.get("/xfs/test_file"));
+        doTestSparseFiles(Paths.get("/ext4/test_file")); // OK
+        doTestSparseFiles(Paths.get("/btrfs/test_file")); // OK
+        doTestSparseFiles(Paths.get("/xfs/test_file")); // Fails due to getSparseFileSize instability
     }
 
     /**

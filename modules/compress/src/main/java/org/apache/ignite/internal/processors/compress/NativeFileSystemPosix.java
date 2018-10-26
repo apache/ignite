@@ -19,12 +19,6 @@ public class NativeFileSystemPosix implements NativeFileSystem {
     private final ConcurrentHashMap<Path, Integer> fsBlockSizeCache = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
-    @Override public long getSparseFileSize(Path file) {
-        FileStat stat = posix.stat(file.toString());
-        return Math.min(stat.blocks() * 512, stat.st_size());
-    }
-
-    /** {@inheritDoc} */
     @Override public int getFileBlockSize(Path path) {
         Path root;
 
