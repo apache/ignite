@@ -875,8 +875,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             try {
                 cctx.database().cleanupRestoredCaches();
 
-                cctx.database().cleanupCheckpointDirectory();
-
                 for (DynamicCacheDescriptor desc : cctx.cache().cacheDescriptors().values()) {
                     if (CU.isPersistentCache(desc.cacheConfiguration(),
                         cctx.gridConfig().getDataStorageConfiguration())) {
