@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteCheckedException;
  *
  */
 public interface DatabaseLifecycleListener {
-
     /**
      * @param mgr Database shared manager.
      *
@@ -31,10 +30,16 @@ public interface DatabaseLifecycleListener {
     void onInitDataRegions(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException;
 
     /**
-     * @param mgr Page store manager.
-     *
+     * @param mgr Database shared manager.
+     * @throws IgniteCheckedException If failed.
      */
-    void beforeMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException;
+    public void beforeBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException;
+
+    /**
+     * @param mgr Database shared manager.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void beforeResumeWalLogging(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException;
 
     /**
      * @param mgr Database shared manager.

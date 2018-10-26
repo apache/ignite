@@ -25,7 +25,6 @@ import java.nio.file.OpenOption;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -177,15 +176,18 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         boolean activationFailed = false;
         try {
             grid = startGrid(0);
-            grid.cluster().active(true);
         }
-        catch (IgniteException e) {
-            log.warning("Activation test exception", e);
+        catch (IgniteCheckedException e) {
+            boolean interrupted = Thread.interrupted();
+
+            if (interrupted)
+                log.warning("Ignore interrupted excpetion [" +
+                    "thread=" + Thread.currentThread().getName() + ']', e);
 
             activationFailed = true;
         }
 
-        Assert.assertTrue("Activation must be failed", activationFailed);
+        Assert.assertTrue("Ignite instance startup must be failed", activationFailed);
 
         // Grid should be automatically stopped after checkpoint fail.
         awaitStop(grid);
