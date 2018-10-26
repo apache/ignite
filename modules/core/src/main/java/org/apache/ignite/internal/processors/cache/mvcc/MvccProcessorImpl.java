@@ -334,10 +334,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
      * @throws IgniteCheckedException If failed.
      */
     private void txLogPageStoreInit(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
-        assert CU.isPersistenceEnabled(ctx.config());
-
-        ctx.cache().context().pageStore().initialize(TX_LOG_CACHE_ID, 1,
-            TX_LOG_CACHE_NAME, mgr.dataRegion(TX_LOG_CACHE_NAME).memoryMetrics());
+        if (CU.isPersistenceEnabled(ctx.config()))
+            ctx.cache().context().pageStore().initialize(TX_LOG_CACHE_ID, 1,
+                TX_LOG_CACHE_NAME, mgr.dataRegion(TX_LOG_CACHE_NAME).memoryMetrics());
     }
 
     /** {@inheritDoc} */
