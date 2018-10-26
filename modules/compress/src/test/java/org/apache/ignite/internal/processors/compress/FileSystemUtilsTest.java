@@ -56,11 +56,10 @@ public class FileSystemUtilsTest extends TestCase {
 
         if (U.isLinux()) {
             try {
-                Process proc = new ProcessBuilder("stat", file.toRealPath().toString())
+                new ProcessBuilder("stat", file.toRealPath().toString())
                     .inheritIO()
-                    .start();
-
-                proc.waitFor();
+                    .start()
+                    .waitFor();
             }
             catch (IOException | InterruptedException e) {
                 e.printStackTrace();
