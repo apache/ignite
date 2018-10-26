@@ -657,6 +657,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (log.isDebugEnabled())
             log.debug("Activated file write ahead log manager [nodeId=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
+
+        start0();
     }
 
     /** {@inheritDoc} */
@@ -664,6 +666,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (log.isDebugEnabled())
             log.debug("DeActivate file write ahead log [nodeId=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
+
+        stop0(true);
+
+        currHnd = null;
     }
 
     /** {@inheritDoc} */
@@ -1500,8 +1506,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @throws StorageException if formatting failed
      */
     private void formatFile(File file, int bytesCntToFormat) throws StorageException {
-        if (log.isInfoEnabled())
-            log.info("Formatting file [exists=" + file.exists() + ", file=" + file.getAbsolutePath() + ']');
+        if (log.isDebugEnabled())
+            log.debug("Formatting file [exists=" + file.exists() + ", file=" + file.getAbsolutePath() + ']');
 
         try (FileIO fileIO = ioFactory.create(file, CREATE, READ, WRITE)) {
             int left = bytesCntToFormat;

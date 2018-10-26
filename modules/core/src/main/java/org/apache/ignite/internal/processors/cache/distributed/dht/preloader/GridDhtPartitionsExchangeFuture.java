@@ -84,7 +84,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
-import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.WalStateAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.Latch;
@@ -881,12 +880,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.database().cleanupRestoredCaches();
 
                 // Perform cache init from scratch.
-                for (DynamicCacheDescriptor desc : cctx.cache().cacheDescriptors().values()) {
-                    if (CU.isPersistentCache(desc.cacheConfiguration(),
-                        cctx.gridConfig().getDataStorageConfiguration())) {
-                        cctx.cache().preparePageStore(desc, true);
-                    }
-                }
+                for (DynamicCacheDescriptor desc : cctx.cache().persistentCaches())
+                    cctx.cache().preparePageStore(desc, true);
 
                 // Set initial node started marker.
                 cctx.database().nodeStart(null);
@@ -1491,7 +1486,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             cctx.exchange().exchangerBlockingSectionBegin();
 
             try {
-                cctx.database().onStateRestored();
+                cctx.database().onStateRestored(initialVersion());
             }
             finally {
                 cctx.exchange().exchangerBlockingSectionEnd();

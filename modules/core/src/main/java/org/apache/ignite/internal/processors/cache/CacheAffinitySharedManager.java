@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import javax.cache.CacheException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,6 +31,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -977,8 +977,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             .map(action -> action.descriptor().groupDescriptor())
             .distinct()
             .collect(Collectors.toList());
-
-
 
         U.doInParallel(
             cctx.kernalContext().getSystemExecutorService(),

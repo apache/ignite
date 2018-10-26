@@ -46,6 +46,7 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -108,10 +109,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** */
     private volatile boolean dataRegionsStarted;
-
-    /** */
-    private volatile boolean dataRegionsStarted;
-
 
     /** */
     protected DataRegion dfltDataRegion;
@@ -861,7 +858,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @throws IgniteCheckedException If failed.
      */
-    public void onStateRestored() throws IgniteCheckedException {
+    public void onStateRestored(AffinityTopologyVersion topVer) throws IgniteCheckedException {
         // No-op.
     }
 

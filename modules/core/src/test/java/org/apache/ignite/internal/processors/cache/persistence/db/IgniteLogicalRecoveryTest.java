@@ -304,17 +304,20 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         aggCacheLoader.stop();
 
-        stopGrid(2, true);
+        stopGrid(2, false);
 
         ioFactory = new CheckpointFailIoFactory();
 
-        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> startGrid(2));
+        IgniteInternalFuture startNodeFut = GridTestUtils.runAsync(() -> startGrid(2));
 
-        U.sleep(5000);
+        try {
+            startNodeFut.get();
+        }
+        catch (Exception expected) { }
 
         ioFactory = null;
 
-        // Start node again and check recover.
+        // Start node again and check recovery.
         startGrid(2);
 
         awaitPartitionMapExchange();

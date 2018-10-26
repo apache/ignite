@@ -297,12 +297,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     /** Decompressor. */
     private volatile FileDecompressor decompressor;
 
-    /**
-     * Position of the last seen WAL pointer can be stored in-memory only and should survive
-     * activate\deactivate node events. Used for resumming logging from the last WAL pointer.
-     */
-    private volatile WALPointer walTail;
-
     /** */
     private final ThreadLocal<WALPointer> lastWALPtr = new ThreadLocal<>();
 
@@ -514,6 +508,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         if (log.isDebugEnabled())
             log.debug("Activated file write ahead log manager [nodeId=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
+
+        start0();
     }
 
     /** {@inheritDoc} */
@@ -521,6 +517,10 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         if (log.isDebugEnabled())
             log.debug("DeActivate file write ahead log [nodeId=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
+
+        stop0(true);
+
+        currentHnd = null;
     }
 
     /** {@inheritDoc} */
