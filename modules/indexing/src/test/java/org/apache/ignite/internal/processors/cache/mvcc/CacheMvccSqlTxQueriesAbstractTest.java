@@ -261,6 +261,8 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
 
                 assertNotNull(cause);
                 assertEquals(IgniteQueryErrorCode.PARSING, cause.statusCode());
+
+                assertFalse(tx.isRollbackOnly());
             }
 
             qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (4,4),(5,5),(6,6)");
