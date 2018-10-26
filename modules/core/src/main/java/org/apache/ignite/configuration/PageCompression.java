@@ -29,4 +29,7 @@ public enum PageCompression {
 
     /** Zstd compression. */
     ZSTD,
+
+    /** LZ4 compression. */
+    LZ4
 }

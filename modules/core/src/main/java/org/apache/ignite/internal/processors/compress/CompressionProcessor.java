@@ -37,6 +37,9 @@ public class CompressionProcessor extends GridProcessorAdapter {
     /** */
     public static final byte ZSTD_COMPRESSED_PAGE = 2;
 
+    /** */
+    public static final byte LZ4_COMPRESSED_PAGE = 3;
+
     /**
      * @param ctx Kernal context.
      */
@@ -52,6 +55,9 @@ public class CompressionProcessor extends GridProcessorAdapter {
         switch (compression) {
             case ZSTD:
                 return 3;
+
+            case LZ4:
+                return 0;
 
             case DROP_GARBAGE:
                 return 0;
@@ -71,14 +77,21 @@ public class CompressionProcessor extends GridProcessorAdapter {
                 // TODO Use Zstd.minCompressionLevel() and Zstd.maxCompressionLevel() after zstd jar upgrade.
                 if (compressLevel < -131072 || compressLevel > 22)
                     throw new IllegalArgumentException("Compression level for ZSTD must be between -131072 and 22." );
+                break;
 
-                return compressLevel;
+            case LZ4:
+                if (compressLevel < 0 || compressLevel > 17)
+                    throw new IllegalArgumentException("Compression level for LZ4 must be between 0 and 17." );
+                break;
 
             case DROP_GARBAGE:
-                return 0;
+                break;
+
+            default:
+                throw new IllegalArgumentException("Compression: " + compression);
         }
 
-        throw new IllegalArgumentException("Compression: " + compression);
+        return compressLevel;
     }
 
     /**

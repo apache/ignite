@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.compress;
 
 import com.github.luben.zstd.Zstd;
 import java.nio.ByteBuffer;
+import net.jpountz.lz4.LZ4Compressor;
+import net.jpountz.lz4.LZ4Factory;
+import net.jpountz.lz4.LZ4FastDecompressor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.PageCompression;
 import org.apache.ignite.internal.GridKernalContext;
@@ -69,6 +72,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         PageCompression compression,
         int compressLevel
     ) throws IgniteCheckedException {
+        assert page.position() == 0 && page.limit() == page.capacity();
         assert compression != null;
 
         if (!U.isPow2(fsBlockSize))
@@ -86,43 +90,120 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         if (pageSize < fsBlockSize * 2)
             return page; // Makes no sense to compress the page, we will not free any disk space.
 
-        ByteBuffer compact = tmp.get();
+        ByteBuffer compactPage = tmp.get();
 
         try {
-            ((CompactablePageIO)io).compactPage(page, compact);
+            ((CompactablePageIO)io).compactPage(page, compactPage);
         }
         finally {
             page.clear();
         }
 
-        int compactedSize = compact.limit();
+        int compactSize = compactPage.limit();
 
-        if (compactedSize < fsBlockSize || compression == DROP_GARBAGE) {
-            // No need to compress further.
-            PageIO.setCompressionType(compact, COMPACTED_PAGE);
-            PageIO.setCompressedSize(compact, (short)compactedSize);
+        if (compactSize < fsBlockSize || compression == DROP_GARBAGE) {
+            // No need to compress further or configured just to drop garbage.
+            setCompressionInfo(compactPage, DROP_GARBAGE, compactSize);
 
             // Can not return thread local buffer, because the actual write may be async.
-            return (ByteBuffer)allocateDirectBuffer(compactedSize).put(compact).flip();
+            ByteBuffer res = allocateDirectBuffer(compactSize);
+            res.put(compactPage).flip();
+            return res;
         }
 
-        ByteBuffer compressed = allocateDirectBuffer((int)(PageIO.COMMON_HEADER_END +
-            Zstd.compressBound(compactedSize - PageIO.COMMON_HEADER_END)));
+        ByteBuffer compressedPage = compressPage(compression, compactPage, compactSize, compressLevel);
 
-        compressed.put((ByteBuffer)compact.limit(PageIO.COMMON_HEADER_END));
-        Zstd.compress(compressed, (ByteBuffer)compact.limit(compactedSize), compressLevel);
-
-        compressed.flip();
-
-        int compressedSize = compressed.limit();
+        int compressedSize = compressedPage.limit();
 
         if (pageSize - compressedSize < fsBlockSize)
             return page; // Were not able to release file blocks.
 
-        PageIO.setCompressionType(compressed, getCompressionType(compression));
-        PageIO.setCompressedSize(compressed, (short)compressedSize);
+        setCompressionInfo(compressedPage, compression, compressedSize);
 
-        return compressed;
+        return compressedPage;
+    }
+
+    /**
+     * @param page Page.
+     * @param compression Compression algorithm.
+     * @param compressedSize Compressed size.
+     */
+    private static void setCompressionInfo(ByteBuffer page, PageCompression compression, int compressedSize) {
+        assert compressedSize >= 0 && compressedSize < Short.MAX_VALUE;
+
+        PageIO.setCompressionType(page, getCompressionType(compression));
+        PageIO.setCompressedSize(page, (short)compressedSize);
+    }
+
+    /**
+     * @param compression Compression algorithm.
+     * @param compactPage Compacted page.
+     * @param compactSize Compacted page size.
+     * @param compressLevel Compression level.
+     * @return Compressed page.
+     */
+    private static ByteBuffer compressPage(PageCompression compression, ByteBuffer compactPage, int compactSize, int compressLevel) {
+        switch (compression) {
+            case ZSTD:
+                return compressPageZstd(compactPage, compactSize, compressLevel);
+
+            case LZ4:
+                return compressPageLz4(compactPage, compactSize, compressLevel);
+        }
+        throw new IllegalStateException("Unsupported compression: " + compression);
+    }
+
+    /**
+     * @param compactPage Compacted page.
+     * @param compactSize Compacted page size.
+     * @param compressLevel Compression level.
+     * @return Compressed page.
+     */
+    private static ByteBuffer compressPageLz4(ByteBuffer compactPage, int compactSize, int compressLevel) {
+        LZ4Factory lz4 = LZ4Factory.fastestInstance();
+        LZ4Compressor compressor;
+
+        if (compressLevel == 0)
+            compressor = lz4.fastCompressor();
+        else
+            compressor = lz4.highCompressor(compressLevel);
+
+        ByteBuffer compressedPage = allocateDirectBuffer(PageIO.COMMON_HEADER_END +
+            compressor.maxCompressedLength(compactSize - PageIO.COMMON_HEADER_END));
+
+        copyPageHeader(compactPage, compressedPage, compactSize);
+        compressor.compress(compactPage, compressedPage);
+        compressedPage.flip();
+
+        return compressedPage;
+    }
+
+    /**
+     * @param compactPage Compacted page.
+     * @param compactSize Compacted page size.
+     * @param compressLevel Compression level.
+     * @return Compressed page.
+     */
+    private static ByteBuffer compressPageZstd(ByteBuffer compactPage, int compactSize, int compressLevel) {
+        ByteBuffer compressedPage = allocateDirectBuffer((int)(PageIO.COMMON_HEADER_END +
+            Zstd.compressBound(compactSize - PageIO.COMMON_HEADER_END)));
+
+        copyPageHeader(compactPage, compressedPage, compactSize);
+        Zstd.compress(compressedPage, compactPage, compressLevel);
+        compressedPage.flip();
+
+        return compressedPage;
+    }
+
+    /**
+     * @param compactPage Compacted page.
+     * @param compressedPage Compressed page.
+     * @param compactSize Compacted page size.
+     */
+    private static void copyPageHeader(ByteBuffer compactPage, ByteBuffer compressedPage, int compactSize) {
+        compactPage.limit(PageIO.COMMON_HEADER_END);
+        compressedPage.put(compactPage);
+        compactPage.limit(compactSize);
     }
 
     /**
@@ -130,13 +211,20 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @return Level.
      */
     private static byte getCompressionType(PageCompression compression) {
+        if (compression == null)
+            return UNCOMPRESSED_PAGE;
+
         switch (compression) {
             case ZSTD:
                 return ZSTD_COMPRESSED_PAGE;
 
-            default:
-                throw new IllegalStateException("Unexpected compression: " + compression);
+            case LZ4:
+                return LZ4_COMPRESSED_PAGE;
+
+            case DROP_GARBAGE:
+                return COMPACTED_PAGE;
         }
+        throw new IllegalStateException("Unexpected compression: " + compression);
     }
 
     /** {@inheritDoc} */
@@ -144,7 +232,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         final int pageSize = page.capacity();
 
         byte compressType = PageIO.getCompressionType(page);
-        short compressSize = PageIO.getCompressedSize(page);
+        short compressedSize = PageIO.getCompressedSize(page);
 
         switch (compressType) {
             case UNCOMPRESSED_PAGE:
@@ -154,28 +242,60 @@ public class CompressionProcessorImpl extends CompressionProcessor {
                 break;
 
             case ZSTD_COMPRESSED_PAGE:
-                assert page.isDirect();
+                decompressPageZstd(page, compressedSize, pageSize);
+                break;
 
-                ByteBuffer dst = tmp.get();
-
-                page.position(PageIO.COMMON_HEADER_END).limit(compressSize);
-                Zstd.decompress(dst, page);
-                dst.flip();
-
-                page.position(PageIO.COMMON_HEADER_END).limit(pageSize);
-                page.put(dst).flip();
-
+            case LZ4_COMPRESSED_PAGE:
+                decompressPageLz4(page, compressedSize, pageSize);
                 break;
 
             default:
-                assert false: compressType;
+                throw new IllegalStateException("Unknown compression type: " + compressType);
         }
 
         CompactablePageIO io = PageIO.getPageIO(page);
 
         io.restorePage(page, pageSize);
 
-        PageIO.setCompressionType(page, (byte)0);
-        PageIO.setCompressedSize(page, (short)0);
+        setCompressionInfo(page, null, 0);
+    }
+
+    /**
+     * @param page Page.
+     * @param compressedSize Compressed size.
+     * @param pageSize Page size.
+     */
+    private void decompressPageZstd(ByteBuffer page, int compressedSize, int pageSize) {
+        assert page.isDirect();
+
+        ByteBuffer dst = tmp.get();
+
+        page.position(PageIO.COMMON_HEADER_END).limit(compressedSize);
+        Zstd.decompress(dst, page);
+        dst.flip();
+
+        page.position(PageIO.COMMON_HEADER_END).limit(pageSize);
+        page.put(dst).flip();
+    }
+
+    /**
+     * @param page Page.
+     * @param compressedSize Compressed size.
+     * @param pageSize Page size.
+     */
+    private void decompressPageLz4(ByteBuffer page, int compressedSize, int pageSize) {
+        LZ4FastDecompressor decompressor = LZ4Factory.fastestInstance().fastDecompressor();
+
+        ByteBuffer dst = tmp.get();
+
+        // LZ4 needs this limit to be exact.
+        dst.limit(pageSize - PageIO.COMMON_HEADER_END);
+
+        page.position(PageIO.COMMON_HEADER_END).limit(compressedSize);
+        decompressor.decompress(page, dst);
+        dst.flip();
+
+        page.position(PageIO.COMMON_HEADER_END).limit(pageSize);
+        page.put(dst).flip();
     }
 }
