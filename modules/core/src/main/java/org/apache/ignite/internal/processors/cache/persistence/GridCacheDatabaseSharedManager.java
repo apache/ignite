@@ -2048,12 +2048,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         // Preform early regions startup before restoring state.
         initAndStartRegions(kctx.config().getDataStorageConfiguration());
 
-        // Only presistence caches to start.
-        for (DynamicCacheDescriptor desc : cctx.cache().cacheDescriptors().values()) {
-            if (CU.isPersistentCache(desc.cacheConfiguration(), cctx.gridConfig().getDataStorageConfiguration()))
-                storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
-        }
-
         final WALPointer restoredPtr = restoreBinaryMemory(cctx.cache().cacheGroupDescriptors().keySet());
 
         walTail = restoredPtr;
@@ -2756,7 +2750,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (tag != null) {
                     tmpWriteBuf.rewind();
 
-                    PageStore store = storeMgr.writeInternal(fullId.groupId(), fullId.pageId(), tmpWriteBuf, tag, true);
+                    PageStore store = storeMgr.writeInternal(fullId.groupId(), fullId.pageId(), tmpWriteBuf, tag,
+                            true, true);
 
                     tmpWriteBuf.rewind();
 
@@ -4220,7 +4215,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     tmpWriteBuf.rewind();
 
-                    PageStore store = storeMgr.writeInternal(grpId, fullId.pageId(), tmpWriteBuf, tag, false);
+                    PageStore store = storeMgr.writeInternal(grpId, fullId.pageId(), tmpWriteBuf, tag,
+                            false, false);
 
                     updStores.computeIfAbsent(store, k -> new LongAdder()).increment();
                 }

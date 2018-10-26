@@ -41,6 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -54,6 +55,7 @@ import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
@@ -63,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolde
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -325,13 +328,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         int grpId = grpDesc.groupId();
 
-        if (!idxCacheStores.containsKey(grpId)) {
-            CacheStoreHolder holder = initForCache(grpDesc, cacheData.config());
-
-            CacheStoreHolder old = idxCacheStores.put(grpId, holder);
-
-            assert old == null : "Non-null old store holder for cache: " + cacheData.config().getName();
-        }
+        idxCacheStores.computeIfAbsent(grpId, (k) -> {
+            try {
+                return initForCache(grpDesc, cacheData.config());
+            } catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -476,7 +479,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void write(int grpId, long pageId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException {
-        writeInternal(grpId, pageId, pageBuf, tag, true);
+        writeInternal(grpId, pageId, pageBuf, tag, true, false);
     }
 
     /** {@inheritDoc} */
@@ -492,13 +495,17 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param pageBuf Page buffer.
      * @param tag Partition tag (growing 1-based partition file version). Used to validate page is not outdated
      * @param calculateCrc if {@code False} crc calculation will be forcibly skipped.
+     * @param recoverMode Recover mode.
      * @return PageStore to which the page has been written.
      * @throws IgniteCheckedException If IO error occurred.
      */
-    public PageStore writeInternal(int cacheId, long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException {
+    public PageStore writeInternal(int cacheId, long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc, boolean recoverMode) throws IgniteCheckedException {
         int partId = PageIdUtils.partId(pageId);
 
         PageStore store = getStore(cacheId, partId);
+
+        if (recoverMode)
+            store.beginRecover();
 
         try {
             store.write(pageId, pageBuf, tag, calculateCrc);
@@ -1011,6 +1018,38 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
+     * Return cache store holedr.
+     *
+     * @param grpId Cache group ID.
+     * @return Cache store holder.
+     */
+    private CacheStoreHolder getHolder(int grpId) {
+        return idxCacheStores.computeIfAbsent((grpId), (key) -> {
+            CacheGroupDescriptor gDesc = cctx.cache().cacheGroupDescriptors().get(grpId);
+
+            CacheStoreHolder holder0 = null;
+
+            if (gDesc != null) {
+                Integer cacheId = F.firstValue(gDesc.caches());
+
+                if (cacheId != null) {
+                    DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptor(cacheId);
+
+                    if (CU.isPersistentCache(cacheDesc.cacheConfiguration(), cctx.gridConfig().getDataStorageConfiguration())) {
+                        try {
+                            holder0 = initForCache(cacheDesc.groupDescriptor(), cacheDesc.cacheConfiguration());
+                        } catch (IgniteCheckedException e) {
+                            throw new IgniteException(e);
+                        }
+                    }
+                }
+            }
+
+            return holder0;
+        });
+    }
+
+    /**
      * @param grpId Cache group ID.
      * @param partId Partition ID.
      * @return Page store for the corresponding parameters.
@@ -1019,7 +1058,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * Note: visible for testing.
      */
     public PageStore getStore(int grpId, int partId) throws IgniteCheckedException {
-        CacheStoreHolder holder = idxCacheStores.get(grpId);
+        CacheStoreHolder holder = getHolder(grpId);
 
         if (holder == null)
             throw new IgniteCheckedException("Failed to get page store for the given cache ID " +
