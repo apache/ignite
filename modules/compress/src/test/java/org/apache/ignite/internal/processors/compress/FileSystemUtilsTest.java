@@ -31,11 +31,13 @@ public class FileSystemUtilsTest extends TestCase {
     private static long getSparseFileSize(Path file) {
         if (U.isLinux()) {
             try {
-                new ProcessBuilder("stat", file.toString())
+                Process proc = new ProcessBuilder("stat", file.toString())
                     .inheritIO()
                     .start();
+
+                proc.waitFor();
             }
-            catch (IOException e) {
+            catch (IOException | InterruptedException e) {
                 e.printStackTrace();
             }
         }
