@@ -17,7 +17,9 @@
 
 package org.apache.ignite.ml.naivebayes.bernoulli;
 
+import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
@@ -57,7 +59,18 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
     @Override protected <K, V> BernoulliNaiveBayesModel updateModel(BernoulliNaiveBayesModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
-        return null;
+
+        try (Dataset<EmptyContext, BernoulliNaiveBayesSumsHolder> dataset = datasetBuilder.build(
+            (upstream, upstreamSize) -> new EmptyContext(),
+            (upstream, upstreamSize, ctx) -> {
+                return new BernoulliNaiveBayesSumsHolder();
+            })) {
+            return null;
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     /** Sets equal probability for all classes. */
