@@ -17,7 +17,9 @@
 
 package org.apache.ignite.ml.naivebayes.bernoulli;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
@@ -108,8 +110,43 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
                 sumsHolder = sumsHolder.merge(mdl.getSumsHolder());
             }
 
+            List<Double> sortedLabels = new ArrayList<>(sumsHolder.featureCountersPerLbl.keySet());
+            sortedLabels.sort(Double::compareTo);
+            assert !sortedLabels.isEmpty() : "The dataset should contain at least one feature";
 
-            return null;
+            int labelCount = sortedLabels.size();
+            int featureCount = sumsHolder.onesCountPerLbl.get(sortedLabels.get(0)).length;
+
+            double[][] probabilities = new double[labelCount][featureCount];
+            double[] classProbabilities = new double[labelCount];
+            double[] labels = new double[labelCount];
+            long datasetSize = sumsHolder.featureCountersPerLbl.values().stream().mapToInt(i -> i).sum();
+
+            int lbl = 0;
+
+            for (Double label : sortedLabels) {
+                int count = sumsHolder.featureCountersPerLbl.get(label);
+                long[] sum = sumsHolder.onesCountPerLbl.get(label);
+
+                for (int i = 0; i < featureCount; i++) {
+                    probabilities[lbl][i] = (double)sum[i] / count;
+                }
+
+                if (equiprobableClasses) {
+                    classProbabilities[lbl] = 1. / labelCount;
+                }
+                else if (priorProbabilities != null) {
+                    assert classProbabilities.length == priorProbabilities.length;
+                    classProbabilities[lbl] = priorProbabilities[lbl];
+                }
+                else {
+                    classProbabilities[lbl] = (double)count / datasetSize;
+                }
+
+                labels[lbl] = label;
+                ++lbl;
+            }
+            return new BernoulliNaiveBayesModel(probabilities, classProbabilities, labels, binarizeThreshold, sumsHolder);
         }
         catch (Exception e) {
             throw new RuntimeException(e);

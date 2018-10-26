@@ -71,10 +71,10 @@ public class BernoulliNaiveBayesTrainerTest extends TrainerTest {
         BernoulliNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            (k, v) -> v[v.length - 1]
         );
 
-        double[] expectedProbabilities = {6./data.size(), 7./data.size()};
+        double[] expectedProbabilities = {6. / data.size(), 7. / data.size()};
         Assert.assertArrayEquals(expectedProbabilities, model.getClassProbabilities(), PRECISION);
     }
 
