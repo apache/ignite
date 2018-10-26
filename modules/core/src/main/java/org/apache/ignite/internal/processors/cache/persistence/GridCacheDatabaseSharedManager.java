@@ -480,13 +480,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         };
 
-        checkpointer = new Checkpointer(cctx.igniteInstanceName(), "db-checkpoint-thread", log);
-
         snapshotMgr = cctx.snapshot();
 
         final GridKernalContext kernalCtx = cctx.kernalContext();
 
         if (!kernalCtx.clientNode()) {
+            checkpointer = new Checkpointer(cctx.igniteInstanceName(), "db-checkpoint-thread", log);
+
             cpHistory = new CheckpointHistory(kernalCtx);
 
             IgnitePageStoreManager store = cctx.pageStore();
@@ -1074,8 +1074,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
         super.stop0(cancel);
-
-        onKernalStop0(cancel);
 
         releaseFileLock();
     }
@@ -2023,7 +2021,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (logicalState.lastRead != null)
                 walTail = logicalState.lastRead.next();
 
-            // Deactivate
             cctx.wal().onDeActivate(kctx);
         }
         catch (IgniteCheckedException e) {
@@ -4678,7 +4675,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     lastRead = (FileWALPointer)ptr;
 
-                    // Filter out records that don't contain in only for groups set.
+                    // Filter out records.
                     if (rec instanceof WalRecordCacheGroupAware) {
                         WalRecordCacheGroupAware groupAwareRecord = (WalRecordCacheGroupAware) rec;
 

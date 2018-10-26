@@ -273,6 +273,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Local node's MAC address. */
     private volatile String locMacs;
 
+    /** Recovery mode flag. */
     private volatile boolean recoveryMode;
 
     /**
@@ -2256,8 +2257,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (!readFromBackup)
             return affNodes.get(0);
 
-        assert locMacs != null :
-            "name=" + name() + ", recoveryMode=" + recoveryMode;
+        assert locMacs != null;
 
         int r = ThreadLocalRandom.current().nextInt(affNodes.size());
 

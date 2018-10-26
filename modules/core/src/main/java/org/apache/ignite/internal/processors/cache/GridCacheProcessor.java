@@ -2261,6 +2261,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return cacheCtx;
     }
 
+    /**
+     * Stops cache under checkpoint lock.
+     * @param cctx Cache context.
+     */
     private void stopCacheSafely(GridCacheContext<?, ?> cctx) {
         sharedCtx.database().checkpointReadLock();
 
@@ -2799,7 +2803,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param cctx Cache context.
      */
-    public void closeCache(GridCacheContext cctx) {
+    private void closeCache(GridCacheContext cctx) {
         if (cctx.affinityNode()) {
             GridCacheAdapter<?, ?> cache = caches.get(cctx.name());
 
@@ -2950,7 +2954,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param grpId Group ID.
      */
-    public void stopCacheGroup(int grpId) {
+    private void stopCacheGroup(int grpId) {
         CacheGroupContext grp = cacheGrps.remove(grpId);
 
         if (grp != null)

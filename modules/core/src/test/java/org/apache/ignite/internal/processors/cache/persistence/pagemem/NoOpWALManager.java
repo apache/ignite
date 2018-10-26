@@ -48,7 +48,7 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
+    @Override public void resumeLogging(WALPointer ptr) throws IgniteCheckedException {
         // No-op.
     }
 

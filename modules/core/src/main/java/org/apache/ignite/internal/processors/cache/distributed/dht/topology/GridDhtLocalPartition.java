@@ -568,6 +568,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to log partition state change to WAL.", e);
                     }
+
+                    if (log.isDebugEnabled())
+                        log.debug("Partition changed state [grp=" + grp.cacheOrGroupName()
+                            + ", p=" + id + ", prev=" + prevState + ", to=" + toState + "]");
                 }
 
                 return update;

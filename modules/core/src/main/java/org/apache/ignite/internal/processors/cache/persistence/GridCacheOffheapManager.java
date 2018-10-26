@@ -303,11 +303,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         changed |= io.setGlobalRemoveId(partMetaPageAddr, rmvId);
                         changed |= io.setSize(partMetaPageAddr, size);
 
-                        if (state != null) {
-                            changed |= io.setPartitionState(partMetaPageAddr, (byte) state.ordinal());
-
-//                            log.warning("Saved partition state: " + grp.cacheOrGroupName() + " " + part.id() + " " + state);
-                        }
+                        if (state != null)
+                            changed |= io.setPartitionState(partMetaPageAddr, (byte)state.ordinal());
                         else
                             assert grp.isLocal() : grp.cacheOrGroupName();
 
@@ -392,10 +389,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     pageMem.releasePage(grpId, partMetaId, partMetaPage);
                 }
             }
-            else {
-                if (needSnapshot)
-                    tryAddEmptyPartitionToSnapshot(store, ctx);
-            }
+            else if (needSnapshot)
+                tryAddEmptyPartitionToSnapshot(store, ctx);
         }
         else if (needSnapshot)
             tryAddEmptyPartitionToSnapshot(store, ctx);

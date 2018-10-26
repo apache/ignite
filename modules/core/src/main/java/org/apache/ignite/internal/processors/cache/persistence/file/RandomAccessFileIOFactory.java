@@ -21,10 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
-
 /**
  * File I/O factory which provides RandomAccessFileIO implementation of FileIO.
  */

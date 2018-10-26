@@ -621,9 +621,6 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                         for (int i = 0; i < ops; i++) {
                             Integer key = rnd.nextInt(1000);
 
-                            if (key % 32 == 9)
-                                continue;
-
                             cache.put(key, new byte[rnd.nextInt(512)]);
 
                             if (rnd.nextBoolean())

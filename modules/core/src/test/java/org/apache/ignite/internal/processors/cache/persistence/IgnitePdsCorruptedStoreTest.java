@@ -54,9 +54,6 @@ import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
@@ -180,14 +177,10 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
             startGrid(0);
         }
         catch (IgniteCheckedException ex) {
-            if (X.hasCause(ex, StorageException.class)) {
-                // Test successful.
-
-                return;
-            }
-
             throw ex;
         }
+
+        waitFailure(StorageException.class);
     }
 
     /**

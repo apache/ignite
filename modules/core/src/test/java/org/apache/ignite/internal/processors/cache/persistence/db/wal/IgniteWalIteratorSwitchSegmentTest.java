@@ -45,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FsyncModeFileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
@@ -502,7 +501,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
 
         walMgr.onActivate(kctx);
 
-        walMgr.resumeLogging((FileWALPointer) null);
+        walMgr.resumeLogging(null);
 
         RecordSerializer recordSerializer = new RecordSerializerFactoryImpl(ctx)
             .createSerializer(walMgr.serializerVersion());

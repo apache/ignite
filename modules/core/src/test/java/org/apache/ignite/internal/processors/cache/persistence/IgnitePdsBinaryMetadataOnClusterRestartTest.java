@@ -318,8 +318,6 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         cache.put(0, bObj);
 
-        U.sleep(1000);
-
         stopAllGrids();
 
         copyIncompatibleBinaryMetadata(

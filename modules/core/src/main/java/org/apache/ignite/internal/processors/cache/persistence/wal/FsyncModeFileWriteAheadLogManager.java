@@ -542,7 +542,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         FileWALPointer filePtr = (FileWALPointer)lastPtr;
 
-        currentHnd = restoreWriteHandle((FileWALPointer) filePtr);
+        currentHnd = restoreWriteHandle(filePtr);
 
         if (currentHnd.serializer.version() != serializer.version()) {
             if (log.isInfoEnabled())

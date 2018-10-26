@@ -872,6 +872,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             cctx.exchange().exchangerBlockingSectionBegin();
 
             try {
+                // Stop all recovered caches and groups.
                 cctx.cache().onKernalStopCaches(true);
 
                 cctx.cache().stopCaches(true);

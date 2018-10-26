@@ -467,11 +467,6 @@ public class PageMemoryTracker implements IgnitePlugin {
 
                 page.changeHistory().add(record);
             }
-            catch (Exception e) {
-                log.warning("Failed to apply delta record: " + deltaRecord, e);
-
-                throw e;
-            }
             finally {
                 page.unlock();
             }
@@ -531,7 +526,7 @@ public class PageMemoryTracker implements IgnitePlugin {
             dumpStats();
 
             if (emptyPds && pages.size() != totalAllocated) {
-                res = true;
+                res = false;
 
                 log.error("Started from empty PDS, but tracked pages count not equals to allocated pages count");
 
