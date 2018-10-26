@@ -109,4 +109,22 @@ public class BernoulliNaiveBayesTrainerTest extends TrainerTest {
         Assert.assertArrayEquals(priorProbabilities, model.getClassProbabilities(), PRECISION);
     }
 
+    /** */
+    @Test
+    public void testReturnsCorrectPriorProbabilities() {
+        double[][] expectedPriorProbabilites = new double[][] {
+            {.5, .5, 1. / 3, .5, .5},
+            {1, 4. / 7, 3. / 7, 5. / 7, 3. / 7}
+        };
+
+        BernoulliNaiveBayesModel model = trainer.fit(
+            new LocalDatasetBuilder<>(data, parts),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
+            (k, v) -> v[v.length - 1]
+        );
+
+        Assert.assertArrayEquals(expectedPriorProbabilites[0], model.getProbabilities()[0], PRECISION);
+        Assert.assertArrayEquals(expectedPriorProbabilites[1], model.getProbabilities()[1], PRECISION);
+    }
+
 }
