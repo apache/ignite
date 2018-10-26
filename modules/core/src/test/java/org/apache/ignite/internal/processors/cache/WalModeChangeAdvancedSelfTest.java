@@ -40,9 +40,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 @SuppressWarnings("unchecked")
 public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSelfTest {
-    /** No-Op failure handler. */
-    private boolean noOpFailureHnd;
-
     /**
      * Constructor.
      */
@@ -56,16 +53,8 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        noOpFailureHnd = false;
-    }
-
-    /** {@inheritDoc} */
     @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        if (noOpFailureHnd)
-            return new NoOpFailureHandler();
-
-        return super.getFailureHandler(igniteInstanceName);
+        return new NoOpFailureHandler();
     }
 
     /** {@inheritDoc} */
@@ -319,8 +308,6 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      * @throws Exception If failed.
      */
     public void testClientReconnect() throws Exception {
-        noOpFailureHnd = true;
-
         final Ignite srv = startGrid(config(SRV_1, false, false));
         Ignite cli = startGrid(config(CLI, true, false));
 

@@ -61,11 +61,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Base class for Mvcc coordinator failover test.
  */
 public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends CacheMvccAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new NoOpFailureHandler();
-    }
-
     /**
      * @param concurrency Transaction concurrency.
      * @param isolation Transaction isolation.
