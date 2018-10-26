@@ -1218,8 +1218,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      *
      */
     private void prepare0() {
-        boolean skipInit = false;
-
         try {
             if (tx.serializable() && tx.optimistic()) {
                 IgniteCheckedException err0;
@@ -1253,8 +1251,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     return;
                 }
             }
-
-            IgniteInternalFuture<MvccSnapshot> waitCrdCntrFut = null;
 
             if (req.requestMvccCounter()) {
                 assert last;
@@ -1296,37 +1292,11 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             if (isDone())
                 return;
 
-            if (last) {
-                if (waitCrdCntrFut != null) {
-                    skipInit = true;
-
-                    waitCrdCntrFut.listen(new IgniteInClosure<IgniteInternalFuture<MvccSnapshot>>() {
-                        @Override public void apply(IgniteInternalFuture<MvccSnapshot> fut) {
-                            try {
-                                fut.get();
-
-                                sendPrepareRequests();
-
-                                markInitialized();
-                            }
-                            catch (Throwable e) {
-                                U.error(log, "Failed to get mvcc version for tx [txId=" + tx.nearXidVersion() +
-                                    ", err=" + e + ']', e);
-
-                                GridNearTxPrepareResponse res = createPrepareResponse(e);
-
-                                onDone(res, res.error());
-                            }
-                        }
-                    });
-                }
-                else
-                    sendPrepareRequests();
-            }
+            if (last)
+                sendPrepareRequests();
         }
         finally {
-            if (!skipInit)
-                markInitialized();
+            markInitialized();
         }
     }
 
