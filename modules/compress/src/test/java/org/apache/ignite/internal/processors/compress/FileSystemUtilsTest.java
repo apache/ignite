@@ -197,7 +197,8 @@ public class FileSystemUtilsTest extends TestCase {
             ch.close();
             ch = FileChannel.open(file, READ, WRITE, SPARSE);
             fd = getFD(ch);
-            assertEquals(fsBlockSize, getSparseFileSize(fd, file));
+
+            assertTrue(2 * fsBlockSize >= getSparseFileSize(fd, file));
         }
         finally {
             ch.close();
