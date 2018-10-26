@@ -98,6 +98,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
+import org.apache.ignite.internal.util.GridListSet;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -182,6 +183,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** */
     private final ConcurrentMap<AffinityTopologyVersion, AffinityReadyFuture> readyFuts =
+        new ConcurrentSkipListMap<>();
+
+    /** */
+    private final ConcurrentNavigableMap<AffinityTopologyVersion, AffinityTopologyVersion> lastAffTopVers =
         new ConcurrentSkipListMap<>();
 
     /**
@@ -996,9 +1001,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         return exchWorker.hasPendingExchange();
     }
 
-    /** */
-    private final ConcurrentNavigableMap<AffinityTopologyVersion, AffinityTopologyVersion> lastAffTopVers = new ConcurrentSkipListMap<>();
-
     /**
      *
      * @param topVer
@@ -1577,7 +1579,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     ) {
         GridDhtPartitionsExchangeFuture fut;
 
-        GridDhtPartitionsExchangeFuture old = exchFuts.putIfAbsent(exchId.topologyVersion(),
+        GridDhtPartitionsExchangeFuture old = exchFuts.addx(
             fut = new GridDhtPartitionsExchangeFuture(cctx, busyLock, exchId, exchActions, affChangeMsg));
 
         if (old != null) {
@@ -3179,7 +3181,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      *
      */
-    private static class ExchangeFutureSet extends ConcurrentSkipListMap<AffinityTopologyVersion, GridDhtPartitionsExchangeFuture> {
+    private static class ExchangeFutureSet extends GridListSet<GridDhtPartitionsExchangeFuture> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -3196,15 +3198,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * @param histSize Max history size.
          */
         private ExchangeFutureSet(int histSize) {
-            super(new Comparator<AffinityTopologyVersion>() {
-                @Override public int compare(
-                    AffinityTopologyVersion t1,
-                    AffinityTopologyVersion t2
-                ) {
-                    // Reverse order.
-                    return t2.compareTo(t1);
-                }
-            });
+            super((f1, f2) -> {
+                AffinityTopologyVersion t1 = f1.exchangeId().topologyVersion();
+                AffinityTopologyVersion t2 = f2.exchangeId().topologyVersion();
+
+                assert t1.topologyVersion() > 0;
+                assert t2.topologyVersion() > 0;
+
+                // Reverse order.
+                return t2.compareTo(t1);
+            }, /*not strict*/false);
 
             this.histSize = histSize;
         }
@@ -3213,20 +3216,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * @param fut Future to add.
          * @return {@code True} if added.
          */
-        @Override public synchronized GridDhtPartitionsExchangeFuture putIfAbsent(
-            AffinityTopologyVersion topVer,
+        @Override public synchronized GridDhtPartitionsExchangeFuture addx(
             GridDhtPartitionsExchangeFuture fut) {
-            assert topVer.topologyVersion() > 0;
-
-            GridDhtPartitionsExchangeFuture cur = super.putIfAbsent(topVer, fut);
+            GridDhtPartitionsExchangeFuture cur = super.addx(fut);
 
             while (size() > histSize) {
-                GridDhtPartitionsExchangeFuture last = lastEntry().getValue();
+                GridDhtPartitionsExchangeFuture last = last();
 
                 if (!last.isDone() || Objects.equals(last.initialVersion(), readyTopVer()))
                     break;
 
-                remove(last.initialVersion());
+                removeLast();
             }
 
             // Return the value in the set.
@@ -3257,16 +3257,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public synchronized GridDhtPartitionsExchangeFuture remove(
-            Object topVer) {
-            return super.remove(topVer);
+        @Nullable @Override public synchronized GridDhtPartitionsExchangeFuture removex(
+            GridDhtPartitionsExchangeFuture val) {
+
+            return super.removex(val);
         }
 
         /**
          * @return Values.
          */
         @Override public synchronized List<GridDhtPartitionsExchangeFuture> values() {
-            return new ArrayList<>(super.values());
+            return super.values();
         }
 
         /** {@inheritDoc} */
