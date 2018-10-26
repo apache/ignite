@@ -80,6 +80,15 @@ public class SegmentCompressStorage {
     }
 
     /**
+     * Sets the largest index of previously compressed segment.
+     *
+     * @param idx Segment index.
+     */
+    synchronized void lastSegmentCompressed(long idx) {
+        onSegmentCompressed(lastEnqueuedToCompressIdx = idx);
+    }
+
+    /**
      * Callback after segment compression finish.
      *
      * @param compressedIdx Index of compressed segment.
@@ -94,6 +103,15 @@ public class SegmentCompressStorage {
             this.lastCompressedIdx = Math.min(lastMaxCompressedIdx, compressingSegments.get(0) - 1);
         else
             this.lastCompressedIdx = lastMaxCompressedIdx;
+    }
+
+    /**
+     * Removes given segment index from the list of segment indices being compressed.
+     *
+     * @param idx Segment index to remove.
+     */
+    synchronized void removeFromCurrentlyCompressedList(long idx) {
+        compressingSegments.remove(idx);
     }
 
     /**

@@ -110,12 +110,30 @@ public class SegmentAware {
     }
 
     /**
+     * Sets the largest index of previously compressed segment.
+     *
+     * @param idx Segment index.
+     */
+    public void lastSegmentCompressed(long idx) {
+        segmentCompressStorage.lastSegmentCompressed(idx);
+    }
+
+    /**
      * Callback after segment compression finish.
      *
      * @param compressedIdx Index of compressed segment.
      */
     public void onSegmentCompressed(long compressedIdx) {
         segmentCompressStorage.onSegmentCompressed(compressedIdx);
+    }
+
+    /**
+     * Removes given segment index from the list of segment indices being compressed.
+     *
+     * @param idx Segment index to remove.
+     */
+    public void removeFromCurrentlyCompressedList(long idx) {
+        segmentCompressStorage.removeFromCurrentlyCompressedList(idx);
     }
 
     /**
