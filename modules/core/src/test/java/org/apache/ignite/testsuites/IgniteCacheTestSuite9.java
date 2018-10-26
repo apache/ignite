@@ -18,6 +18,10 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.managers.communication.IgniteCommunicationBalanceMultipleConnectionsTest;
+import org.apache.ignite.internal.managers.communication.IgniteCommunicationBalancePairedConnectionsTest;
+import org.apache.ignite.internal.managers.communication.IgniteCommunicationBalanceTest;
+import org.apache.ignite.internal.managers.communication.IgniteCommunicationSslBalanceTest;
 import org.apache.ignite.internal.processors.cache.CachePutIfAbsentTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectionsSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
@@ -41,16 +45,10 @@ public class IgniteCacheTestSuite9 extends TestSuite {
 
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 9");
 
-        suite.addTestSuite(IgniteCacheGetCustomCollectionsSelfTest.class);
-        suite.addTestSuite(IgniteCacheLoadRebalanceEvictionSelfTest.class);
-        suite.addTestSuite(IgniteCachePrimarySyncTest.class);
-        suite.addTestSuite(IgniteTxCachePrimarySyncTest.class);
-        suite.addTestSuite(IgniteTxCacheWriteSynchronizationModesMultithreadedTest.class);
-        suite.addTestSuite(CachePutIfAbsentTest.class);
-
-        suite.addTestSuite(CacheAtomicPrimarySyncBackPressureTest.class);
-
-        suite.addTestSuite(TxDataConsistencyOnCommitFailureTest.class);
+        suite.addTestSuite(IgniteCommunicationBalanceTest.class);
+        suite.addTestSuite(IgniteCommunicationBalancePairedConnectionsTest.class);
+        suite.addTestSuite(IgniteCommunicationBalanceMultipleConnectionsTest.class);
+        suite.addTestSuite(IgniteCommunicationSslBalanceTest.class);
 
         return suite;
     }
