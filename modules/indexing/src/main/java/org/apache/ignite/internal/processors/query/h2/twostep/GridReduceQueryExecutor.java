@@ -1213,12 +1213,23 @@ public class GridReduceQueryExecutor {
     public void releaseRemoteResources(Collection<ClusterNode> nodes, ReduceQueryRun r, long qryReqId,
         boolean distributedJoins, MvccQueryTracker mvccTracker) {
         // For distributedJoins need always send cancel request to cleanup resources.
-        if (distributedJoins)
+        if (distributedJoins) {
             send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
+
+            for (GridMergeIndex idx : r.indexes()) {
+                if (!idx.fetchedAll()) {
+                    r.setStateOnException(ctx.localNodeId(),
+                        new CacheException("Query is canceled.", new QueryCancelledException()));
+                }
+            }
+        }
         else {
             for (GridMergeIndex idx : r.indexes()) {
                 if (!idx.fetchedAll()) {
                     send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
+
+                    r.setStateOnException(ctx.localNodeId(),
+                        new CacheException("Query is canceled.", new QueryCancelledException()));
 
                     break;
                 }
