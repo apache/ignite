@@ -29,6 +29,17 @@ public class FileSystemUtilsTest extends TestCase {
      * @return Sparse size.
      */
     private static long getSparseFileSize(Path file) {
+        if (U.isLinux()) {
+            try {
+                new ProcessBuilder("stat", file.toString())
+                    .inheritIO()
+                    .start();
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
         return posix.stat(file.toString()).blocks() * 512;
     }
 
