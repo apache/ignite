@@ -2225,20 +2225,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             QuerySchemaPatch localSchemaPatch = localSchema.makePatch(desc.schema().entities());
 
-            // Cache schema is changed after restart, just stop existing cache and start new.
-            if (!localSchemaPatch.isEmpty() || localSchemaPatch.hasConflicts()) {
-                sharedCtx.database().checkpointReadLock();
-
-                try {
-                    prepareCacheStop(cctx.name(), false);
-                }
-                finally {
-                    sharedCtx.database().checkpointReadUnlock();
-                }
-
-                if (!cctx.group().hasCaches())
-                    stopCacheGroup(cctx.group().groupId());
-            }
+            // Cache schema is changed after restart, workaround is stop existing cache and start new.
+            if (!localSchemaPatch.isEmpty() || localSchemaPatch.hasConflicts())
+                stopCacheSafely(cctx);
             else
                 return existingCache.context();
         }
@@ -2272,6 +2261,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return cacheCtx;
     }
 
+    private void stopCacheSafely(GridCacheContext<?, ?> cctx) {
+        sharedCtx.database().checkpointReadLock();
+
+        try {
+            prepareCacheStop(cctx.name(), false);
+        }
+        finally {
+            sharedCtx.database().checkpointReadUnlock();
+        }
+
+        if (!cctx.group().hasCaches())
+            stopCacheGroup(cctx.group().groupId());
+    }
+
     /**
      * Finishes recovery for given cache context.
      *
@@ -2282,7 +2285,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void finishRecovery(AffinityTopologyVersion cacheStartVer, GridCacheContext<?, ?> cacheContext) throws IgniteCheckedException {
         CacheGroupContext groupContext = cacheContext.group();
 
-        groupContext.finishRecovery(cacheStartVer);
+        groupContext.finishRecovery(cacheStartVer, cacheDescriptor(cacheContext.cacheId()).receivedFrom());
 
         cacheContext.finishRecovery(cacheStartVer);
 
@@ -2291,6 +2294,27 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (log.isInfoEnabled())
             log.info("Finished recovery for cache [cache=" + cacheContext.name()
                 + ", grp=" + groupContext.cacheOrGroupName() + ", startVer=" + cacheStartVer + "]");
+    }
+
+    /**
+     * Stops all caches and groups, that was recovered, but not activated on node join.
+     * Such caches can remain only if it was filtered by node filter on current node.
+     * It's impossible to check whether current node is affinity node for given cache before join to topology.
+     */
+    public void shutdownNotFinishedRecoveryCaches() {
+        for (GridCacheAdapter cacheAdapter : caches.values()) {
+            GridCacheContext cacheContext = cacheAdapter.context();
+
+            if (cacheContext.isLocal())
+                continue;
+
+            if (cacheContext.isRecoveryMode()) {
+                assert !isLocalAffinity(cacheContext.config())
+                    : "Cache " + cacheAdapter.context() + " is still in recovery mode after start, but not activated.";
+
+                stopCacheSafely(cacheContext);
+            }
+        }
     }
 
     /**
@@ -2799,17 +2823,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 jCacheProxies.remove(cctx.name());
 
-                sharedCtx.database().checkpointReadLock();
-
-                try {
-                    prepareCacheStop(cctx.name(), false);
-                }
-                finally {
-                    sharedCtx.database().checkpointReadUnlock();
-                }
-
-                if (!cctx.group().hasCaches())
-                    stopCacheGroup(cctx.group().groupId());
+                stopCacheSafely(cctx);
             }
             finally {
                 sharedCtx.io().writeUnlock();

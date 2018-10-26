@@ -86,7 +86,7 @@ public class CacheGroupContext {
     private final int grpId;
 
     /** Node ID cache group was received from. */
-    private final UUID rcvdFrom;
+    private volatile UUID rcvdFrom;
 
     /** Flag indicating that this cache group is in a recovery mode due to partitions loss. */
     private boolean needsRecovery;
@@ -778,10 +778,14 @@ public class CacheGroupContext {
      * Attaches topology version and initializes I/O.
      *
      * @param startVer Cache group start version.
+     * @param originalReceivedFrom UUID of node that was first who initiated cache group creating.
+     *                             This is needed to decide should node calculate affinity locally or fetch from other nodes.
      * @throws IgniteCheckedException If failed.
      */
-    public void finishRecovery(AffinityTopologyVersion startVer) throws IgniteCheckedException {
+    public void finishRecovery(AffinityTopologyVersion startVer, UUID originalReceivedFrom) throws IgniteCheckedException {
         if (recoveryMode.compareAndSet(true, false)) {
+            rcvdFrom = originalReceivedFrom;
+
             locStartVer = startVer;
 
             persistGlobalWalState(globalWalEnabled);

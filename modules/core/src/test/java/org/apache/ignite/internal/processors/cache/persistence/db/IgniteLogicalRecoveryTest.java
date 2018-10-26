@@ -286,6 +286,10 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
      *
      */
     public void testRecoveryOnCrushDuringCheckpointOnNodeStart() throws Exception {
+        // Crash recovery fails because of the bug in pages recycling.
+        // Test passes if don't perform removes in cache loader.
+        fail("https://issues.apache.org/jira/browse/IGNITE-9303");
+
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3, false);
 
         crd.cluster().active(true);

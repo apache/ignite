@@ -77,7 +77,6 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -903,23 +902,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         IgniteInternalFuture<?> cachesRegistrationFut = cctx.cache().startCachesOnLocalJoin(initialVersion(),
             exchActions == null ? null : exchActions.localJoinContext());
 
-        if (!cctx.kernalContext().clientNode()) {
-            for (GridCacheAdapter cacheAdapter : cctx.cache().internalCaches()) {
-                GridCacheContext cacheContext = cacheAdapter.context();
-                CacheGroupContext groupContext = cacheContext.group();
-
-                if (groupContext.isLocal())
-                    continue;
-
-                boolean affinityNode = CU.affinityNode(cctx.discovery().localNode(), groupContext.config().getNodeFilter());
-
-                if (cacheContext.isRecoveryMode()) {
-                    assert !affinityNode : "Cache " + cacheAdapter.context() + " is still in recovery mode after start";
-
-                    cctx.cache().closeCache(cacheContext);
-                }
-            }
-        }
+        if (!cctx.kernalContext().clientNode())
+            cctx.cache().shutdownNotFinishedRecoveryCaches();
 
         ensureClientCachesStarted();
 
@@ -1086,37 +1070,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     try {
                         registerCachesFuture = cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
+
+                        if (!cctx.kernalContext().clientNode())
+                            cctx.cache().shutdownNotFinishedRecoveryCaches();
                     }
                     finally {
                         cctx.exchange().exchangerBlockingSectionEnd();
-                    }
-
-                    if (!cctx.kernalContext().clientNode()) {
-                        for (GridCacheAdapter cacheAdapter : cctx.cache().internalCaches()) {
-                            GridCacheContext cacheContext = cacheAdapter.context();
-                            CacheGroupContext groupContext = cacheContext.group();
-
-                            if (groupContext.isLocal())
-                                continue;
-
-                            boolean affinityNode = CU.affinityNode(cctx.discovery().localNode(), groupContext.config().getNodeFilter());
-
-                            if (cacheContext.isRecoveryMode()) {
-                                assert !affinityNode : "Cache " + cacheAdapter.context() + " is still in recovery mode after start";
-
-                                cctx.database().checkpointReadLock();
-
-                                try {
-                                    cctx.cache().prepareCacheStop(cacheContext.name(), true);
-                                }
-                                finally {
-                                    cctx.database().checkpointReadUnlock();
-                                }
-
-                                if (!groupContext.hasCaches())
-                                    cctx.cache().stopCacheGroup(groupContext.groupId());
-                            }
-                        }
                     }
 
                     if (log.isInfoEnabled()) {
@@ -1446,16 +1405,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
-        /* It is necessary to run database callback before all topology callbacks.
-           In case of persistent store is enabled we first restore partitions presented on disk.
-           We need to guarantee that there are no partition state changes logged to WAL before this callback
-           to make sure that we correctly restored last actual states. */
-        boolean restored;
-
         cctx.exchange().exchangerBlockingSectionBegin();
 
         try {
-            restored = cctx.database().beforeExchange(this);
+            /* It is necessary to run database callback before all topology callbacks.
+               In case of persistent store is enabled we first restore partitions presented on disk.
+               We need to guarantee that there are no partition state changes logged to WAL before this callback
+               to make sure that we correctly restored last actual states. */
+
+            cctx.database().beforeExchange(this);
         }
         finally {
             cctx.exchange().exchangerBlockingSectionEnd();
@@ -1482,7 +1440,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         // After all partitions have been restored and pre-created it's safe to make first checkpoint.
-        if (restored) {
+        if (localJoinExchange() || activateCluster()) {
             cctx.exchange().exchangerBlockingSectionBegin();
 
             try {

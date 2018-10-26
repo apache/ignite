@@ -1166,7 +1166,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                         List<ClusterNode> nodes = toNodes(topVer, e.getValue());
 
-/*
                         assert !nodes.equals(assignment.get(part)) : "Assignment did not change " +
                             "[cacheGrp=" + aff.cacheOrGroupName() +
                             ", part=" + part +
@@ -1175,7 +1174,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                             ", exchVer=" + exchFut.initialVersion() +
                             ", msgVer=" + msg.topologyVersion() +
                             ']';
-*/
 
                         assignment.set(part, nodes);
                     }

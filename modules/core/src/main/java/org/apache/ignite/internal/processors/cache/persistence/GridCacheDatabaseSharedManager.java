@@ -71,8 +71,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -1373,25 +1371,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public boolean beforeExchange(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
-        DiscoveryEvent discoEvt = fut.firstEvent();
-
-        boolean joinEvt = discoEvt.type() == EventType.EVT_NODE_JOINED;
-
-        boolean locNode = discoEvt.eventNode().isLocal();
-
-        boolean isSrvNode = !cctx.kernalContext().clientNode();
-
-        boolean clusterInTransitionStateToActive = fut.activateCluster();
-
+    @Override public void beforeExchange(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
         // Try to restore partition states.
-        U.doInParallel(
-            cctx.kernalContext().getSystemExecutorService(),
-            cctx.cache().cacheGroups(),
-            cacheGroup -> {
-                cacheGroup.restorePartitionStates(Collections.emptyMap());
-            }
-        );
+        if (fut.localJoinExchange() || fut.activateCluster()) {
+            U.doInParallel(
+                cctx.kernalContext().getSystemExecutorService(),
+                cctx.cache().cacheGroups(),
+                cacheGroup -> {
+                    cacheGroup.restorePartitionStates(Collections.emptyMap());
+                    cacheGroup.topology().afterStateRestored(fut.initialVersion());
+                }
+            );
+        }
 
         if (cctx.kernalContext().query().moduleEnabled()) {
             ExchangeActions acts = fut.exchangeActions();
@@ -1407,8 +1398,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
             }
         }
-
-        return clusterInTransitionStateToActive || (joinEvt && locNode && isSrvNode);
     }
 
     /**
@@ -2107,15 +2096,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     @Override public void onStateRestored(AffinityTopologyVersion topVer) throws IgniteCheckedException {
         long time = System.currentTimeMillis();
-
-        // Try to restore partition states.
-        U.doInParallel(
-            cctx.kernalContext().getSystemExecutorService(),
-            cctx.cache().cacheGroups(),
-            cacheGroup -> {
-                cacheGroup.topology().afterStateRestored(topVer);
-            }
-        );
 
         new IgniteThread(cctx.igniteInstanceName(), "db-checkpoint-thread", checkpointer).start();
 
