@@ -2019,8 +2019,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (cmd instanceof SqlBeginTransactionCommand) {
             if (!mvccEnabled(ctx))
-                throw new IgniteSQLException("MVCC must be enabled in order to start transaction: " +
-                    qry.getSql(), IgniteQueryErrorCode.MVCC_DISABLED);
+                throw new IgniteSQLException("MVCC must be enabled in order to start transaction.",
+                    IgniteQueryErrorCode.MVCC_DISABLED);
 
             if (tx != null) {
                 if (nestedTxMode == null)

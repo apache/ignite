@@ -19,7 +19,6 @@ package org.apache.ignite.jdbc.suite;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.jdbc.JdbcVersionMismatchSelfTest;
-import org.apache.ignite.jdbc.thin.JdbcMvccDisabledTxCommandsTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionMvccEnabledSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsClientAutoCommitComplexSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsClientNoAutoCommitComplexSelfTest;
@@ -44,7 +43,6 @@ public class IgniteJdbcDriverMvccTestSuite extends TestSuite {
         suite.addTestSuite(JdbcThinTransactionsServerAutoCommitComplexSelfTest.class);
         suite.addTestSuite(JdbcThinTransactionsClientNoAutoCommitComplexSelfTest.class);
         suite.addTestSuite(JdbcThinTransactionsServerNoAutoCommitComplexSelfTest.class);
-        suite.addTestSuite(JdbcMvccDisabledTxCommandsTest.class);
 
         return suite;
     }
