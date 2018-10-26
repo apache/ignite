@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -39,6 +40,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.resolveIgfsPr
  * Remove all IGFS profiler logs.
  */
 @GridInternal
+@GridVisorManagementTask
 public class VisorIgfsProfilerClearTask extends VisorOneNodeTask<VisorIgfsProfilerClearTaskArg, VisorIgfsProfilerClearTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
