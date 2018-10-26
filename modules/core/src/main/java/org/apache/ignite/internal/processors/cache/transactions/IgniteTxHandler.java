@@ -700,37 +700,7 @@ public class IgniteTxHandler {
 
         // TODO IGNITE-6754 check mvcc crd for mvcc enabled txs.
 
-        Collection<IgniteTxEntry> entries = F.concat(false, req.reads(), req.writes());
-
-        Set<Integer> checkedPartitions = null;
-
-        if (entries.size() > 2)
-            checkedPartitions = new HashSet<>();
-
-        for (IgniteTxEntry e : entries) {
-            GridCacheContext ctx = e.context();
-
-            assert e.key().partition() != -1;
-
-            if (checkedPartitions != null && checkedPartitions.contains(e.key().partition()))
-                continue;
-
-            try {
-                List<ClusterNode> aff1 = ctx.affinity().assignments(expVer).get(e.key().partition());
-                List<ClusterNode> aff2 = ctx.affinity().assignments(curVer).get(e.key().partition());
-
-                if (!aff1.containsAll(aff2) || aff2.isEmpty() ||!aff1.get(0).equals(aff2.get(0)))
-                    return true;
-            }
-            catch (IllegalStateException ignored) {
-                return true;
-            }
-
-            if (checkedPartitions != null)
-                checkedPartitions.add(e.key().partition());
-        }
-
-        return false;
+        return true;
     }
 
     /**

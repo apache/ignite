@@ -1273,33 +1273,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         // TODO IGNITE-7164 check mvcc crd for mvcc enabled txs.
 
-        Set<Integer> checkedPartitions = null;
-
-        if (keys.size() > 2)
-            checkedPartitions = new HashSet<>();
-
-        for (KeyCacheObject key : keys) {
-            assert key.partition() != -1;
-
-            if (checkedPartitions != null && checkedPartitions.contains(key.partition()))
-                continue;
-
-            try {
-                List<ClusterNode> aff1 = ctx.affinity().assignments(expVer).get(key.partition());
-                List<ClusterNode> aff2 = ctx.affinity().assignments(curVer).get(key.partition());
-
-                if (!aff1.containsAll(aff2) || aff2.isEmpty() || !aff1.get(0).equals(aff2.get(0)))
-                    return true;
-            }
-            catch (IllegalStateException ignored) {
-                return true;
-            }
-
-            if (checkedPartitions != null)
-                checkedPartitions.add(key.partition());
-        }
-
-        return false;
+        return true;
     }
 
     /**
