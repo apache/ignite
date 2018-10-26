@@ -1,7 +1,6 @@
 package org.apache.ignite.internal.processors.compress;
 
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
@@ -10,9 +9,13 @@ import java.nio.file.Paths;
 import jnr.posix.POSIX;
 import jnr.posix.POSIXFactory;
 import junit.framework.TestCase;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Assume;
 
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
+import static java.nio.file.StandardOpenOption.SPARSE;
+import static java.nio.file.StandardOpenOption.SYNC;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorImpl.allocateDirectBuffer;
 import static org.apache.ignite.internal.processors.compress.FileSystemUtils.getFileSystemBlockSize;
 import static org.apache.ignite.internal.processors.compress.FileSystemUtils.punchHole;
@@ -46,9 +49,9 @@ public class FileSystemUtilsTest extends TestCase {
     }
 
     /**
-     * @throws IOException If failed.
+     * @throws Exception If failed.
      */
-    public void testSparseFiles() throws IOException {
+    public void testSparseFiles() throws Exception {
         Assume.assumeTrue("Native file system API must be supported for " +
                 U.getOsMx().getName() + " " + U.getOsMx().getVersion() + " " + U.getOsMx().getArch(),
             FileSystemUtils.isSupported());
@@ -64,30 +67,30 @@ public class FileSystemUtilsTest extends TestCase {
     }
 
     /**
-     * @throws IOException If failed.
+     * @throws Exception If failed.
      */
-    public void _testFileSystems() throws IOException {
+    public void _testFileSystems() throws Exception {
         doTestSparseFiles(Paths.get("/ext4/test_file")); // OK
         doTestSparseFiles(Paths.get("/btrfs/test_file")); // OK
         doTestSparseFiles(Paths.get("/xfs/test_file")); // Fails due to getSparseFileSize instability
     }
 
+    private static int getFD(FileChannel ch) throws IgniteCheckedException {
+        return U.<Integer>field(U.field(ch, "fd"), "fd");
+    }
+
     /**
      * @param file File path.
-     * @throws IOException If failed.
+     * @throws Exception If failed.
      */
-    private void doTestSparseFiles(Path file) throws IOException {
+    private void doTestSparseFiles(Path file) throws Exception {
         System.out.println(file);
 
         if (Files.exists(file))
             Files.delete(file);
 
-        RandomAccessFile raf = new RandomAccessFile(file.toFile(), "rws");
-
-        int fd = U.field(raf.getFD(), "fd");
-        assertTrue(fd > 0);
-
-        FileChannel ch = raf.getChannel();
+        FileChannel ch = FileChannel.open(file, SPARSE, CREATE_NEW, SYNC);
+        int fd = getFD(ch);
 
         int fsBlockSize = getFileSystemBlockSize(file);
 
