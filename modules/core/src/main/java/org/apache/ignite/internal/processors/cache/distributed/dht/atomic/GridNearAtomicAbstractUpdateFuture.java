@@ -36,16 +36,25 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
+import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -55,7 +64,10 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
+import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 
 /**
  * Base for near atomic update futures.
@@ -141,6 +153,9 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
 
     /** Operation result. */
     protected GridCacheReturn opRes;
+
+    /** */
+    protected Map<KeyCacheObject, GridNearCacheEntry> reservedEntries;
 
     /**
      * Constructor.
@@ -242,29 +257,40 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      * Performs future mapping.
      */
     public final void map() {
+        map(false);
+    }
+
+    /**
+     * Performs future mapping.
+     *
+     * @param remap Remap flag.
+     */
+    protected final void map(boolean remap) {
         AffinityTopologyVersion topVer = cctx.shared().lockedTopologyVersion(null);
 
         if (topVer == null)
-            mapOnTopology();
+            mapOnTopology(remap);
         else {
             topLocked = true;
 
             // Cannot remap.
             remapCnt = 1;
 
-            map(topVer);
+            map(topVer, remap);
         }
     }
 
     /**
      * @param topVer Topology version.
+     * @param remap Remap flag.
      */
-    protected abstract void map(AffinityTopologyVersion topVer);
+    protected abstract void map(AffinityTopologyVersion topVer, boolean remap);
 
     /**
      * Maps future on ready topology.
+     * @param remap Remap flag.
      */
-    protected abstract void mapOnTopology();
+    protected abstract void mapOnTopology(boolean remap);
 
     /** {@inheritDoc} */
     @Override public IgniteUuid futureId() {
@@ -357,7 +383,8 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         if (futId != null)
             cctx.mvcc().removeAtomicFuture(futId);
 
-        super.onDone(retval, err);
+        if (super.onDone(retval, err) && nearEnabled)
+            releaseNearCacheEntries();
     }
 
     /** {@inheritDoc} */
@@ -380,10 +407,32 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
             if (futId != null)
                 cctx.mvcc().removeAtomicFuture(futId);
 
+            if (nearEnabled)
+                releaseNearCacheEntries();
+
             return true;
         }
 
         return false;
+    }
+
+    /**
+     *
+     */
+    private void releaseNearCacheEntries() {
+        Map<KeyCacheObject, GridNearCacheEntry> reservedEntries0;
+
+        synchronized (this) {
+            if (reservedEntries == null|| reservedEntries.isEmpty())
+                return;
+
+            reservedEntries0 = reservedEntries;
+
+            reservedEntries = null;
+        }
+
+        for (GridNearCacheEntry entry : reservedEntries0.values())
+            entry.releaseEviction();
     }
 
     /**
@@ -468,6 +517,240 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         res.addFailedKeys(req.updateRequest().keys(), e);
 
         onPrimaryResponse(req.updateRequest().nodeId(), res, true);
+    }
+
+    /**
+     * @return Near cache.
+     */
+    protected final GridNearAtomicCache nearCache() {
+        return (GridNearAtomicCache)cctx.dht().near();
+    }
+
+    /**
+     * @param key Key,
+     * @param topVer Update topology version.
+     */
+    protected final void reserveNearCacheEntry(KeyCacheObject key, AffinityTopologyVersion topVer) {
+        assert nearEnabled;
+        assert reservedEntries != null;
+
+        if (cctx.affinityNode() && cctx.affinity().partitionBelongs(cctx.localNode(), cctx.affinity().partition(key), topVer))
+            return;
+
+        GridNearAtomicCache nearCache = nearCache();
+
+        synchronized (this) {
+            if (reservedEntries.containsKey(key))
+                return;
+
+            while (true) {
+                try {
+                    GridNearCacheEntry entry =  nearCache.entryExx(key, topVer);
+
+                    entry.reserveEviction();
+
+                    reservedEntries.put(key, entry);
+
+                    return;
+                }
+                catch (GridCacheEntryRemovedException ignored) {
+                    if (log.isDebugEnabled())
+                        log.debug("Got removed entry while reserving near cache entry (will retry): " + key);
+                }
+            }
+        }
+    }
+
+    /**
+     * @param req Update request.
+     * @param res Update response.
+     */
+    protected final void processNearAtomicUpdateResponse(
+            GridNearAtomicAbstractUpdateRequest req,
+            GridNearAtomicUpdateResponse res
+    ) {
+        if (F.size(res.failedKeys()) == req.size())
+            return;
+
+        GridNearAtomicCache nearCache = nearCache();
+
+        /*
+         * Choose value to be stored in near cache: first check key is not in failed and not in skipped list,
+         * then check if value was generated on primary node, if not then use value sent in request.
+         */
+
+        Collection<KeyCacheObject> failed = res.failedKeys();
+        List<Integer> nearValsIdxs = res.nearValuesIndexes();
+        List<Integer> skipped = res.skippedIndexes();
+
+        GridCacheVersion ver = res.nearVersion();
+
+        assert ver != null : "Failed to find version [req=" + req + ", res=" + res + ']';
+
+        int nearValIdx = 0;
+
+        String taskName = cctx.kernalContext().task().resolveTaskName(req.taskNameHash());
+
+        for (int i = 0; i < req.size(); i++) {
+            if (F.contains(skipped, i))
+                continue;
+
+            KeyCacheObject key = req.key(i);
+
+            if (F.contains(failed, key))
+                continue;
+
+            if (cctx.affinity().partitionBelongs(cctx.localNode(), cctx.affinity().partition(key), req.topologyVersion())) { // Reader became backup.
+                GridCacheEntryEx entry = nearCache.peekEx(key);
+
+                if (entry != null && entry.markObsolete(ver))
+                    nearCache.removeEntry(entry);
+
+                continue;
+            }
+
+            CacheObject val = null;
+
+            if (F.contains(nearValsIdxs, i)) {
+                val = res.nearValue(nearValIdx);
+
+                nearValIdx++;
+            }
+            else {
+                assert req.operation() != TRANSFORM;
+
+                if (req.operation() != DELETE)
+                    val = req.value(i);
+            }
+
+            long ttl = res.nearTtl(i);
+            long expireTime = res.nearExpireTime(i);
+
+            if (ttl != CU.TTL_NOT_CHANGED && expireTime == CU.EXPIRE_TIME_CALCULATE)
+                expireTime = CU.toExpireTime(ttl);
+
+            try {
+                processNearAtomicUpdateResponse(
+                    nearCache,
+                    topVer,
+                    ver,
+                    key,
+                    val,
+                    ttl,
+                    expireTime,
+                    req.keepBinary(),
+                    req.nodeId(),
+                    req.subjectId(),
+                    taskName,
+                    req.operation() == TRANSFORM);
+            }
+            catch (IgniteCheckedException e) {
+                res.addFailedKey(key, new IgniteCheckedException("Failed to update key in near cache: " + key, e));
+            }
+        }
+    }
+
+    /**
+     * @param nearCache Near cache.
+     * @param topVer Update topology version.
+     * @param ver Version.
+     * @param key Key.
+     * @param val Value.
+     * @param ttl TTL.
+     * @param expireTime Expire time.
+     * @param keepBinary Keep binary flag.
+     * @param nodeId Node ID.
+     * @param subjId Subject ID.
+     * @param taskName Task name.
+     * @param transformedValue {@code True} if transformed value.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void processNearAtomicUpdateResponse(
+        GridNearAtomicCache nearCache,
+        AffinityTopologyVersion topVer,
+        GridCacheVersion ver,
+        KeyCacheObject key,
+        @Nullable CacheObject val,
+        long ttl,
+        long expireTime,
+        boolean keepBinary,
+        UUID nodeId,
+        UUID subjId,
+        String taskName,
+        boolean transformedValue) throws IgniteCheckedException {
+        try {
+            while (true) {
+                GridNearCacheEntry entry = null;
+
+                try {
+                    entry = nearCache.entryExx(key, topVer);
+
+                    GridCacheOperation op = val != null ? UPDATE : DELETE;
+
+                    GridCacheUpdateAtomicResult updRes = entry.innerUpdate(
+                            ver,
+                            nodeId,
+                            nodeId,
+                            op,
+                            val,
+                            null,
+                            /*write-through*/false,
+                            /*read-through*/false,
+                            /*retval*/false,
+                            keepBinary,
+                            /*expiry policy*/null,
+                            /*event*/true,
+                            /*metrics*/true,
+                            /*primary*/false,
+                            /*check version*/true,
+                            topVer,
+                            CU.empty0(),
+                            DR_NONE,
+                            ttl,
+                            expireTime,
+                            null,
+                            false,
+                            false,
+                            subjId,
+                            taskName,
+                            null,
+                            null,
+                            null,
+                            transformedValue);
+
+                    boolean release;
+
+                    synchronized (this) {
+                        GridNearCacheEntry reserved = reservedEntries.remove(key);
+
+                        assert reserved == null || reserved == entry;
+
+                        release = reserved != null;
+                    }
+
+                    if (release)
+                        entry.releaseEviction();
+
+                    if (updRes.removeVersion() != null)
+                        nearCache.context().onDeferredDelete(entry, updRes.removeVersion());
+
+                    break; // While.
+                }
+                catch (GridCacheEntryRemovedException ignored) {
+                    if (log.isDebugEnabled())
+                        log.debug("Got removed entry while updating near cache value (will retry): " + key);
+
+                    entry = null;
+                }
+                finally {
+                    if (entry != null)
+                        entry.touch(topVer);
+                }
+            }
+        }
+        catch (GridDhtInvalidPartitionException ignored) {
+            // Ignore.
+        }
     }
 
     /**

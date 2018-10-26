@@ -717,7 +717,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     /**
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    void reserveEviction() throws GridCacheEntryRemovedException {
+    public void reserveEviction() throws GridCacheEntryRemovedException {
         lockEntry();
 
         try {
@@ -733,7 +733,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     /**
      *
      */
-    void releaseEviction() {
+    public void releaseEviction() {
         lockEntry();
 
         try {

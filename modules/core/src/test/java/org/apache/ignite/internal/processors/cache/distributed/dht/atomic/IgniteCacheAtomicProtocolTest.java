@@ -33,6 +33,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
@@ -873,6 +874,49 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         fut.get();
 
         checkData(map);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNearEntryUpdateRace() throws Exception {
+        ccfg = cacheConfiguration(1, FULL_SYNC);
+
+        client = false;
+
+        Ignite srv0 = startGrid(0);
+
+        IgniteCache<Object, Object> srvCache = srv0.cache(TEST_CACHE);
+
+        int key = 0;
+
+        ccfg = null;
+
+        client = true;
+
+        Ignite client1 = startGrid(1);
+
+        IgniteCache<Object, Object> nearCache = client1.createNearCache(TEST_CACHE, new NearCacheConfiguration<>());
+
+        testSpi(srv0).blockMessages(GridNearAtomicUpdateResponse.class, client1.name());
+
+        IgniteInternalFuture<?> nearPutFut = GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                nearCache.put(key, 1);
+            }
+        });
+
+        testSpi(srv0).waitForBlocked();
+
+        srvCache.put(key, 2);
+
+        assertFalse(nearPutFut.isDone());
+
+        testSpi(srv0).stopBlock();
+
+        nearPutFut.get();
+
+        assertEquals(2, nearCache.get(key));
     }
 
     /**
