@@ -89,6 +89,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        //TODO IGNITE-10002: replace with cache recreation.
         for (Ignite g : G.allGrids())
             g.cache(DEFAULT_CACHE_NAME).clear();
     }

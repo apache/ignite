@@ -75,6 +75,14 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
     /** Grid instances. */
     private static final List<Ignite> IGNITEs = new ArrayList<>();
 
+    /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        if (FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+
+        super.setUp();
+    }
+
     /**
      * Start grid by default.
      */
