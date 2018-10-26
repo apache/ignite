@@ -249,7 +249,7 @@ public class TrainerTransformers {
      * @param <Y> Output space.
      * @param <M> Model.
      */
-    public static class ModelWithEndomorphism<X, Y, M extends Model<X, Y>> implements Model<X, Y> {
+    private static class ModelWithEndomorphism<X, Y, M extends Model<X, Y>> implements Model<X, Y> {
         M model;
         IgniteFunction<X, X> endo;
 
