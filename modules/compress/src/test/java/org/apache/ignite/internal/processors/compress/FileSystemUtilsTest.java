@@ -67,7 +67,7 @@ public class FileSystemUtilsTest extends TestCase {
         Path file = Files.createTempFile("test_sparse_file_", ".bin");
 
         try {
-            doTestSparseFiles(file, false, 2); // Ext4
+            doTestSparseFiles(file, false); // Ext4 expected as default FS.
         }
         finally {
             Files.delete(file);
@@ -78,9 +78,9 @@ public class FileSystemUtilsTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testFileSystems() throws Exception {
-        doTestSparseFiles(Paths.get("/ext4/test_file"), false, 2);
-        doTestSparseFiles(Paths.get("/btrfs/test_file"), false, 1);
-        doTestSparseFiles(Paths.get("/xfs/test_file"), true, 1);
+        doTestSparseFiles(Paths.get("/ext4/test_file"), false);
+        doTestSparseFiles(Paths.get("/btrfs/test_file"), false);
+        doTestSparseFiles(Paths.get("/xfs/test_file"), true);
     }
 
     private static int getFD(FileChannel ch) throws IgniteCheckedException {
@@ -90,10 +90,9 @@ public class FileSystemUtilsTest extends TestCase {
     /**
      * @param file File path.
      * @param reopen Reopen file after each hole punch. XFS needs it.
-     * @param lastBlocks Number of blocks when we have punched all except the last block.
      * @throws Exception If failed.
      */
-    private void doTestSparseFiles(Path file, boolean reopen, int lastBlocks) throws Exception {
+    private void doTestSparseFiles(Path file, boolean reopen) throws Exception {
         System.out.println(file);
 
         FileChannel ch = FileChannel.open(file,
@@ -203,7 +202,7 @@ public class FileSystemUtilsTest extends TestCase {
                 fd = getFD(ch);
             }
 
-            assertEquals(lastBlocks * fsBlockSize, getSparseFileSize(fd, file));
+            assertEquals(fsBlockSize, getSparseFileSize(fd, file));
         }
         finally {
             ch.close();
