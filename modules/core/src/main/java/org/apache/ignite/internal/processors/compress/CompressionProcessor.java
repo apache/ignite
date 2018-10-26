@@ -68,10 +68,9 @@ public class CompressionProcessor extends GridProcessorAdapter {
     public static int checkCompressionLevelBounds(int compressLevel, PageCompression compression) {
         switch (compression) {
             case ZSTD:
-                if (compressLevel < -3 || compressLevel > 22) {
-                    throw new IllegalArgumentException("Compression level for " + compression +
-                        " must be between -3 and 22." );
-                }
+                // TODO Use Zstd.minCompressionLevel() and Zstd.maxCompressionLevel() after zstd jar upgrade.
+                if (compressLevel < -131072 || compressLevel > 22)
+                    throw new IllegalArgumentException("Compression level for ZSTD must be between -131072 and 22." );
 
                 return compressLevel;
 
