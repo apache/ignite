@@ -435,6 +435,8 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testCancelAllTopologyChange() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10021");
+
         Ignite client = grid(CLIENT_NODE_NAME);
 
         int numServices = 500;
