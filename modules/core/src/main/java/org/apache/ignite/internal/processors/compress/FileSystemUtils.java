@@ -46,7 +46,7 @@ public final class FileSystemUtils {
      */
     public static int getFileSystemBlockSize(Path path) {
         assert path != null;
-        return fs == null ? -1 : fs.getFileBlockSize(path);
+        return fs == null ? -1 : fs.getFileSystemBlockSize(path);
     }
 
     /**

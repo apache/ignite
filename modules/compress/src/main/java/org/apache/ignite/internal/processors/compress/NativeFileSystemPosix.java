@@ -19,7 +19,7 @@ public class NativeFileSystemPosix implements NativeFileSystem {
     private final ConcurrentHashMap<Path, Integer> fsBlockSizeCache = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
-    @Override public int getFileBlockSize(Path path) {
+    @Override public int getFileSystemBlockSize(Path path) {
         Path root;
 
         try {

@@ -8,9 +8,9 @@ import java.nio.file.Path;
 public interface NativeFileSystem {
     /**
      * @param path Path.
-     * @return File system block size.
+     * @return File system block size in bytes.
      */
-    int getFileBlockSize(Path path);
+    int getFileSystemBlockSize(Path path);
 
     /**
      * @param fd Native file descriptor.
