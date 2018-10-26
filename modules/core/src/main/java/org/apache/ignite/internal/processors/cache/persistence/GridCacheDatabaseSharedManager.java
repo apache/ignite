@@ -867,6 +867,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             cctx.wal().resumeLogging(walPtr);
 
+            walTail = null;
+
             metaStorage = new MetaStorage(
                 cctx,
                 dataRegionMap.get(METASTORE_DATA_REGION_NAME),
@@ -2485,8 +2487,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         finally {
             if (!metastoreOnly)
                 cctx.kernalContext().query().skipFieldLookup(false);
-
-            walTail = null;
         }
 
         if (log.isInfoEnabled())
