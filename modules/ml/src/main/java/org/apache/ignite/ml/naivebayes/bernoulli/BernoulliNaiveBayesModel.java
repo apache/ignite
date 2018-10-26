@@ -38,18 +38,22 @@ public class BernoulliNaiveBayesModel implements Model<Vector, Double>, Exportab
     private final double[] classProbabilities;
     /** Labels. */
     private final double[] labels;
-    private double binarizeThreshold = .5;
+    private final double binarizeThreshold;
     private double alpha;
+    private final BernoulliNaiveBayesSumsHolder sumsHolder;
 
     /**
      * @param probabilities Means of features for all classes.
      * @param classProbabilities Probabilities for all classes.
      * @param labels Labels.
      */
-    public BernoulliNaiveBayesModel(double[][] probabilities, double[] classProbabilities, double[] labels) {
+    public BernoulliNaiveBayesModel(double[][] probabilities, double[] classProbabilities, double[] labels,
+        double binarizeThreshold, BernoulliNaiveBayesSumsHolder sumsHolder) {
         this.probabilities = probabilities;
         this.classProbabilities = classProbabilities;
         this.labels = labels;
+        this.binarizeThreshold = binarizeThreshold;
+        this.sumsHolder = sumsHolder;
     }
 
     /** {@inheritDoc} */
@@ -88,6 +92,21 @@ public class BernoulliNaiveBayesModel implements Model<Vector, Double>, Exportab
     /** */
     public double[] getClassProbabilities() {
         return classProbabilities;
+    }
+
+    /** */
+    public double getBinarizeThreshold() {
+        return binarizeThreshold;
+    }
+
+    /** */
+    public double getAlpha() {
+        return alpha;
+    }
+
+    /** */
+    public BernoulliNaiveBayesSumsHolder getSumsHolder() {
+        return sumsHolder;
     }
 
     private int toZeroOne(double value) {

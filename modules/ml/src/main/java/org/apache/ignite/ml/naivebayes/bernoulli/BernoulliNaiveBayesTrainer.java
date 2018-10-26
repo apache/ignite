@@ -17,8 +17,10 @@
 
 package org.apache.ignite.ml.naivebayes.bernoulli;
 
+import java.util.Arrays;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -36,6 +38,9 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
     private double[] priorProbabilities;
     /* Sets equivalent probability for all classes. */
     private boolean equiprobableClasses;
+
+    private double binarizeThreshold = .5;
+    private double alpha;
 
     /**
      * Trains model based on the specified data.
@@ -63,8 +68,47 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
         try (Dataset<EmptyContext, BernoulliNaiveBayesSumsHolder> dataset = datasetBuilder.build(
             (upstream, upstreamSize) -> new EmptyContext(),
             (upstream, upstreamSize, ctx) -> {
-                return new BernoulliNaiveBayesSumsHolder();
+                BernoulliNaiveBayesSumsHolder res = new BernoulliNaiveBayesSumsHolder();
+                while (upstream.hasNext()) {
+                    UpstreamEntry<K, V> entity = upstream.next();
+
+                    Vector features = featureExtractor.apply(entity.getKey(), entity.getValue());
+                    Double label = lbExtractor.apply(entity.getKey(), entity.getValue());
+
+                    long[] onesCount;
+
+                    if (!res.onesCountPerLbl.containsKey(label)) {
+                        onesCount = new long[features.size()];
+                        Arrays.fill(onesCount, 0L);
+                        res.onesCountPerLbl.put(label, onesCount);
+                    }
+                    if (!res.featureCountersPerLbl.containsKey(label)) {
+                        res.featureCountersPerLbl.put(label, 0);
+                    }
+                    res.featureCountersPerLbl.put(label, res.featureCountersPerLbl.get(label) + 1);
+
+                    onesCount = res.onesCountPerLbl.get(label);
+                    for (int j = 0; j < features.size(); j++) {
+                        double x = features.get(j);
+                        if (x >= binarizeThreshold)
+                            ++onesCount[j];
+                    }
+                }
+                return res;
             })) {
+            BernoulliNaiveBayesSumsHolder sumsHolder = dataset.compute(t -> t, (a, b) -> {
+                if (a == null)
+                    return b == null ? new BernoulliNaiveBayesSumsHolder() : b;
+                if (b == null)
+                    return a;
+                return a.merge(b);
+            });
+            if (mdl != null && mdl.getSumsHolder() != null) {
+                assert mdl.getBinarizeThreshold() == binarizeThreshold;
+                sumsHolder = sumsHolder.merge(mdl.getSumsHolder());
+            }
+
+
             return null;
         }
         catch (Exception e) {
