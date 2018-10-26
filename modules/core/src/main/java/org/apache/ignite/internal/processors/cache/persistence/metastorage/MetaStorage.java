@@ -136,11 +136,6 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     }
 
     /** */
-    public MetaStorage(GridCacheSharedContext cctx, DataRegion memPlc, DataRegionMetricsImpl memMetrics) {
-        this(cctx, memPlc, memMetrics, false);
-    }
-
-    /** */
     public void init(IgniteCacheDatabaseSharedManager db) throws IgniteCheckedException {
         getOrAllocateMetas();
 

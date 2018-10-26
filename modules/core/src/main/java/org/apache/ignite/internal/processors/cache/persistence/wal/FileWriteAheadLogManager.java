@@ -29,10 +29,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ClosedByInterruptException;
-import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -620,6 +618,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
         assert currHnd == null;
         assert lastPtr == null || lastPtr instanceof FileWALPointer;
+        assert (isArchiverEnabled() && archiver != null) || (!isArchiverEnabled() && archiver == null) :
+            "Trying to restore FileWriteHandle on deactivated write ahead log manager";
 
         FileWALPointer filePtr = (FileWALPointer)lastPtr;
 
@@ -1351,29 +1351,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
         else
             checkFiles(0, false, null, null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void cleanupWalDirectories() throws IgniteCheckedException {
-        try {
-            try (DirectoryStream<Path> files = Files.newDirectoryStream(walWorkDir.toPath())) {
-                for (Path path : files)
-                    Files.delete(path);
-            }
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Failed to cleanup wal work directory: " + walWorkDir, e);
-        }
-
-        try {
-            try (DirectoryStream<Path> files = Files.newDirectoryStream(walArchiveDir.toPath())) {
-                for (Path path : files)
-                    Files.delete(path);
-            }
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Failed to cleanup wal archive directory: " + walArchiveDir, e);
-        }
     }
 
     /**
