@@ -92,6 +92,9 @@ public class GridLuceneIndex implements AutoCloseable {
     /** Field name for string representation of value. */
     public static final String VAL_STR_FIELD_NAME = "_gg_val_str__";
     public static final String DLF_LUCENE_CONFIG = "default";
+    
+    
+    static ApplicationContext springCtx = null;
 
     /** */
     private final String cacheName;
@@ -123,12 +126,12 @@ public class GridLuceneIndex implements AutoCloseable {
         throws IgniteCheckedException {
         this.ctx = ctx;
         this.cacheName = cacheName;
-        this.type = type;
-        
-        ApplicationContext springCtx = null;
+        this.type = type;       
         
         try{
-    		springCtx = initContext(this.getClass().getResourceAsStream("/lucene.xml"));    
+        	if(springCtx==null)
+        		springCtx = initContext(this.getClass().getResourceAsStream("/lucene.xml"));    
+        	
     		if(springCtx.containsBean(cacheName)){
     			this.config = springCtx.getBean(cacheName,LuceneConfiguration.class);
     		}
@@ -139,7 +142,7 @@ public class GridLuceneIndex implements AutoCloseable {
     			this.config = LuceneConfiguration.getConfiguration(type.schemaName(),type.tableName());     
     		}
     	}
-    	catch(BeansException|IgniteCheckedException e){   
+    	catch(Exception e){   
     		this.config = LuceneConfiguration.getConfiguration(type.schemaName(),type.tableName());  
     		ctx.grid().log().error(e.getMessage(),e);
     	}
