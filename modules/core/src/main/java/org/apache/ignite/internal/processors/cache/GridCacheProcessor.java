@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import javax.management.MBeanServer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -2265,7 +2264,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
      * @param affNode {@code true} if it is affinity node for cache.
      * @throws IgniteCheckedException if failed.
      */
-    private void preparePageStore(DynamicCacheDescriptor desc, boolean affNode) throws IgniteCheckedException {
+    public void preparePageStore(DynamicCacheDescriptor desc, boolean affNode) throws IgniteCheckedException {
         if (sharedCtx.pageStore() != null && affNode)
             initializationProtector.protect(
                 desc.groupDescriptor().groupId(),
@@ -4066,13 +4065,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
             return msg0.needExchange();
         }
 
-        if (msg instanceof DynamicCacheChangeBatch) {
-            boolean changeRequested = cachesInfo.onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
-
-            ctx.query().onCacheChangeRequested((DynamicCacheChangeBatch)msg);
-
-            return changeRequested;
-        }
+        if (msg instanceof DynamicCacheChangeBatch)
+            return cachesInfo.onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
 
         if (msg instanceof DynamicCacheChangeFailureMessage)
             cachesInfo.onCacheChangeRequested((DynamicCacheChangeFailureMessage)msg, topVer);

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.visor.service;
 
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -27,6 +28,7 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * Task for cancel services with specified name.
  */
 @GridInternal
+@GridVisorManagementTask
 public class VisorCancelServiceTask extends VisorOneNodeTask<VisorCancelServiceTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
