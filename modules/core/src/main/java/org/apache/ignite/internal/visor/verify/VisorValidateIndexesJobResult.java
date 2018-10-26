@@ -87,7 +87,7 @@ public class VisorValidateIndexesJobResult extends VisorDataTransferObject {
     /**
      * @return Collection of failed integrity checks.
      */
-    public Collection<IndexIntegrityCheckIssue> integrityCheckFailures() {
+    @Nullable public Collection<IndexIntegrityCheckIssue> integrityCheckFailures() {
         return integrityCheckFailures;
     }
 
