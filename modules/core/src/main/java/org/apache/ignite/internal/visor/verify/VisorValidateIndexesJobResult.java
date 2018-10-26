@@ -21,12 +21,13 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 /**
  *
@@ -50,9 +51,9 @@ public class VisorValidateIndexesJobResult extends VisorDataTransferObject {
      * @param  integrityCheckFailures Collection of indexes integrity check failures.
      */
     public VisorValidateIndexesJobResult(
-            Map<PartitionKey, ValidateIndexesPartitionResult> partRes,
-            Map<String, ValidateIndexesPartitionResult> idxRes,
-            Collection<IndexIntegrityCheckIssue> integrityCheckFailures
+            @NotNull Map<PartitionKey, ValidateIndexesPartitionResult> partRes,
+            @NotNull Map<String, ValidateIndexesPartitionResult> idxRes,
+            @NotNull Collection<IndexIntegrityCheckIssue> integrityCheckFailures
     ) {
         this.partRes = partRes;
         this.idxRes = idxRes;
@@ -81,14 +82,14 @@ public class VisorValidateIndexesJobResult extends VisorDataTransferObject {
      * @return Results of reverse indexes validation from node.
      */
     public Map<String, ValidateIndexesPartitionResult> indexResult() {
-        return idxRes;
+        return idxRes == null ? Collections.emptyMap() : idxRes;
     }
 
     /**
      * @return Collection of failed integrity checks.
      */
-    @Nullable public Collection<IndexIntegrityCheckIssue> integrityCheckFailures() {
-        return integrityCheckFailures;
+    public Collection<IndexIntegrityCheckIssue> integrityCheckFailures() {
+        return integrityCheckFailures == null ? Collections.emptyList() : integrityCheckFailures;
     }
 
     /** {@inheritDoc} */

@@ -698,7 +698,7 @@ public class CommandHandler {
 
             Collection<IndexIntegrityCheckIssue> integrityCheckFailures = nodeEntry.getValue().integrityCheckFailures();
 
-            if (integrityCheckFailures != null && !integrityCheckFailures.isEmpty()) {
+            if (!integrityCheckFailures.isEmpty()) {
                 errors = true;
 
                 for (IndexIntegrityCheckIssue is : integrityCheckFailures)
