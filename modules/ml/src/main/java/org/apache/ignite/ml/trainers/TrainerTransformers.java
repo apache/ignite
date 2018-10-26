@@ -33,8 +33,10 @@ import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.util.Utils;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -151,14 +153,8 @@ public class TrainerTransformers {
 
         List<Map<Integer, Integer>> mappings = null;
         if (featuresVectorSize > 0) {
-            mappings = IntStream.range(0, ensembleSize).mapToObj(x -> {
-                int[] featureIdxs = Utils.selectKDistinct(featuresVectorSize, maximumFeaturesCntPerMdl, new Random());
-                Map<Integer, Integer> featureMapping = new HashMap<>();
-                IntStream.range(0, maximumFeaturesCntPerMdl)
-                    .forEach(localId -> featureMapping.put(localId, featureIdxs[localId]));
-                return featureMapping;
-            })
-            .collect(Collectors.toList());
+            mappings = IntStream.range(0, ensembleSize).mapToObj(modelIdx -> getMapping(featuresVectorSize, maximumFeaturesCntPerMdl))
+                .collect(Collectors.toList());
         }
 
         Long startTs = System.currentTimeMillis();
@@ -190,7 +186,7 @@ public class TrainerTransformers {
         // If we need to do projection, do it.
         if (mappings != null) {
             for (int i = 0; i < models.size(); i++) {
-                models.get(i).setEndo(projector(mappings.get(i)));
+                models.get(i).setEndo(getProjector(mappings.get(i)));
             }
         }
 
@@ -199,6 +195,15 @@ public class TrainerTransformers {
         log.log(MLLogger.VerboseLevel.LOW, "Learning finished.");
 
         return new ModelsComposition(models, aggregator);
+    }
+
+    @NotNull
+    public static Map<Integer, Integer> getMapping(int featuresVectorSize, int maximumFeaturesCntPerMdl) {
+        int[] featureIdxs = Utils.selectKDistinct(featuresVectorSize, maximumFeaturesCntPerMdl, new Random());
+        Map<Integer, Integer> featureMapping = new HashMap<>();
+        IntStream.range(0, maximumFeaturesCntPerMdl)
+            .forEach(localId -> featureMapping.put(localId, featureIdxs[localId]));
+        return featureMapping;
     }
 
     /**
@@ -218,10 +223,9 @@ public class TrainerTransformers {
         return IntStream.range(0, count).mapToObj(i -> en);
     }
 
-    private static IgniteFunction<Vector, Vector> projector(Map<Integer, Integer> mapping) {
+    public static IgniteFunction<Vector, Vector> getProjector(Map<Integer, Integer> mapping) {
         return v -> {
             Vector res = VectorUtils.zeroes(mapping.size());
-
             mapping.keySet().stream().forEach(locId -> res.set(locId, v.get(mapping.get(locId))));
 
             return res;

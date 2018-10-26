@@ -99,7 +99,7 @@ public class BaggingTest extends TrainerTest {
             (LogisticRegressionSGDTrainer<?>) new LogisticRegressionSGDTrainer<>()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
                 SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
-            .withMaxIterations(10000)
+            .withMaxIterations(30000)
             .withLocIterations(100)
             .withBatchSize(10)
             .withSeed(123L);

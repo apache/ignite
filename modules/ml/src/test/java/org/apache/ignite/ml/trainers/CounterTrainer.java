@@ -22,6 +22,7 @@ import org.apache.ignite.ml.composition.BaggingModelTrainer;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedDatasetPartition;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 import java.util.List;
@@ -47,7 +48,7 @@ public class CounterTrainer extends BaggingModelTrainer<Model<Vector, Double>, I
         int partitionIdx,
         BootstrappedDatasetPartition part,
         int modelIdx,
-        Set<Integer> subspace,
+        IgniteFunction<Vector, Vector> projector,
         Void meta) {
         int res = 0;
         for (int i = 0; i < part.getRowsCount(); i++) {
