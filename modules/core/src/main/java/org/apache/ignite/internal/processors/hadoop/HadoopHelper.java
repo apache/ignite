@@ -59,4 +59,9 @@ public interface HadoopHelper {
      * @return Work directory.
      */
     public String workDirectory();
+
+    /**
+     * Close helper.
+     */
+    public void close();
 }

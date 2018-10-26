@@ -17,20 +17,22 @@
 
 package org.apache.ignite.yardstick;
 
+import java.util.Collection;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCountDownLatch;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteState;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkDriverAdapter;
 import org.yardstickframework.BenchmarkUtils;
 
-import static org.apache.ignite.events.EventType.EVTS_DISCOVERY;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.yardstickframework.BenchmarkUtils.jcommander;
 import static org.yardstickframework.BenchmarkUtils.println;
@@ -39,8 +41,6 @@ import static org.yardstickframework.BenchmarkUtils.println;
  * Abstract class for Ignite benchmarks.
  */
 public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
-    private static final long WAIT_NODES_TIMEOUT = TimeUnit.SECONDS.toMillis(30);
-
     /** Arguments. */
     protected final IgniteBenchmarkArguments args = new IgniteBenchmarkArguments();
 
@@ -130,37 +130,61 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
      * @throws Exception If failed.
      */
     private void waitForNodes() throws Exception {
-        IgniteCountDownLatch allNodesReady = ignite().countDownLatch("allNodesReady", 1, false, true);
+        final CountDownLatch nodesStartedLatch = new CountDownLatch(1);
 
-        // wait for condition when all nodes are ready and release distributed barrier.
         ignite().events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event gridEvt) {
-                if (nodesStarted()) {
-                    allNodesReady.countDown();
-                    // todo: return false so unregister?
-                }
+                if (nodesStarted())
+                    nodesStartedLatch.countDown();
 
                 return true;
             }
-        }, EVTS_DISCOVERY);
+        }, EVT_NODE_JOINED);
 
-        if (nodesStarted())
-            allNodesReady.countDown();
+        if (!nodesStarted()) {
+            println(cfg, "Waiting for the cluster to contain at least " + args.nodes() + " nodes...");
 
-        // block on distributed barrier till member 0 release it.
-        println(cfg, "Start waiting for cluster to contain " + args.nodes() + ".");
+            nodesStartedLatch.await();
+        }
 
-        //todo: timeouts?
-        allNodesReady.await();
-
-        println(cfg, "Cluster is ready.");
+        println("Cluster is ready");
     }
 
     /**
+     * Determine if all required nodes are started. Since nodes can close their local ignite instances, this method
+     * seeks in the history topology containing: 1) driver's local node; 2) right number of nodes.
+     *
      * @return {@code True} if all nodes are started, {@code false} otherwise.
      */
     private boolean nodesStarted() {
-        return ignite().cluster().nodes().size() >= args.nodes();
+        IgniteCluster cluster = ignite().cluster();
+
+        UUID locNodeId = cluster.localNode().id();
+
+        long curTop = cluster.topologyVersion();
+
+        for (long top = curTop; top >= 1; top--) {
+            Collection<ClusterNode> nodes = cluster.topology(top);
+
+            if (topologyContainsId(nodes, locNodeId) && nodes.size() >= args.nodes())
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param top topology (collection of cluster nodes).
+     * @param nodeId id of the node to find.
+     * @return {@code True} if topology contains node with specified id, {@code false} otherwise.
+     */
+    private static boolean topologyContainsId(Collection<? extends ClusterNode> top, UUID nodeId) {
+        for (ClusterNode node : top) {
+            if (node.id().equals(nodeId))
+                return true;
+        }
+
+        return false;
     }
 
     /**
