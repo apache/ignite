@@ -841,6 +841,15 @@ public abstract class AbstractVector implements Vector {
         return like(size()).assign(this);
     }
 
+    /** {@inheritDoc} */
+    @Override public Vector copyOfRange(int from, int to) {
+        Vector copiedVector = like(to - from);
+        for (int i = from, j = 0; i < to; i++, j++)
+            copiedVector.set(j, this.get(i));
+
+        return copiedVector;
+    }
+
     /**
      * @return Result of dot with self.
      */

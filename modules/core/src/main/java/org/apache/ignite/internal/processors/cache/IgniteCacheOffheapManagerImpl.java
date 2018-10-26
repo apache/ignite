@@ -336,6 +336,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void preloadPartition(int p) throws IgniteCheckedException {
+        throw new IgniteCheckedException("Operation only applicable to caches with enabled persistence");
+    }
+
     /**
      * @param p Partition.
      * @return Partition data.
@@ -2904,6 +2909,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public PendingEntriesTree pendingTree() {
             return pendingEntries;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void preload() throws IgniteCheckedException {
+            // No-op.
         }
 
         /**

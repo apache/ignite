@@ -45,7 +45,7 @@ public class DecisionTreeClassificationTrainerExample {
      *
      * @param args Command line arguments, none required.
      */
-    public static void main(String... args) throws InterruptedException {
+    public static void main(String... args) {
         System.out.println(">>> Decision tree classification trainer example started.");
 
         // Start ignite grid.
