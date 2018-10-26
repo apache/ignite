@@ -177,6 +177,7 @@ public class ComputeUtils {
 
             // TODO: It still is undeterministic in bagging. Should generate seed.
             List<?> data = transformerDataSuppliers.stream().map(Supplier::get).collect(Collectors.toList());
+            List<?> dataCopy = Utils.copy(data);
 
             long cnt = computeCount(upstreamCache, qry, transformers, data);
 
@@ -184,16 +185,15 @@ public class ComputeUtils {
                 try (QueryCursor<UpstreamEntry<K, V>> cursor = upstreamCache.query(qry,
                     e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
 
-                    Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(cursor.iterator(), cnt,
+                    Iterator<UpstreamEntry<K, V>> it = cursor.iterator();
+                    if (!data.isEmpty()) {
+                        Stream<UpstreamEntry<K, V>> transformedStream = transformStream(Utils.asStream(it), transformers, dataCopy);
+                        it = transformedStream.iterator();
+                    }
+
+                    Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(it, cnt,
                         "Cache expected to be not modified during dataset data building [partition=" + part + ']');
 
-
-                    if (!data.isEmpty()) {
-                        Stream<UpstreamEntry<K, V>> initialStream = Utils.asStream(iter);
-                        Stream<UpstreamEntry<K, V>> transformedStream = transformStream(initialStream, transformers, data);
-
-                        return partDataBuilder.build(transformedStream, cnt, ctx);
-                    }
                     return partDataBuilder.build(iter, cnt, ctx);
                 }
             }
@@ -257,7 +257,7 @@ public class ComputeUtils {
 
                 Iterator<UpstreamEntry<K, V>> it = cursor.iterator();
                 if (!data.isEmpty()) {
-                    Stream<UpstreamEntry<K, V>> transformedStream = transformStream(Utils.asStream(cursor.iterator()), transformers, dataCopy);
+                    Stream<UpstreamEntry<K, V>> transformedStream = transformStream(Utils.asStream(it), transformers, dataCopy);
                     it = transformedStream.iterator();
                 }
                 Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(

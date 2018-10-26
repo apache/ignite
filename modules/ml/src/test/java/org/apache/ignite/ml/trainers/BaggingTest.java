@@ -35,6 +35,8 @@ import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpda
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
+import org.apache.ignite.ml.selection.cv.CrossValidation;
+import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
@@ -97,7 +99,7 @@ public class BaggingTest extends TrainerTest {
             (LogisticRegressionSGDTrainer<?>) new LogisticRegressionSGDTrainer<>()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
                 SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg))
-            .withMaxIterations(100000)
+            .withMaxIterations(10000)
             .withLocIterations(100)
             .withBatchSize(10)
             .withSeed(123L);
@@ -118,6 +120,23 @@ public class BaggingTest extends TrainerTest {
 
         TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(100, 10)), PRECISION);
         TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(10, 100)), PRECISION);
+
+//        double[] score = new CrossValidation<ModelsComposition, Double, Integer, Double[]>().score(
+//            baggedTrainer,
+//            new Accuracy<>(),
+//            getCacheMock(),
+//            parts,
+//            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+//            (k, v) -> v[0],
+//            3
+//        );
+//
+//        Arrays.stream(score).forEach(System.out::println);
+    }
+
+    @Test
+    public void t() {
+
     }
 
     protected void count(IgniteTriFunction<Long, CountData, Integer, Long> counter) {

@@ -29,6 +29,7 @@ import org.apache.ignite.ml.environment.parallelism.Promise;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.util.Utils;
@@ -43,7 +44,7 @@ import java.util.stream.Stream;
  */
 public class TrainerTransformers {
     /**
-     * Add bagging to a given trainer.
+     * Add bagging logic to a given trainer.
      *
      * @param ensembleSize   Size of ensemble.
      * @param subsampleRatio Subsample ratio to whole dataset.
@@ -61,7 +62,7 @@ public class TrainerTransformers {
     }
 
     /**
-     * Add bagging to a given trainer.
+     * Add bagging logic to a given trainer.
      *
      * @param ensembleSize   Size of ensemble.
      * @param subsampleRatio Subsample ratio to whole dataset.
@@ -84,15 +85,13 @@ public class TrainerTransformers {
                 IgniteBiFunction<K, V, Vector> featureExtractor,
                 IgniteBiFunction<K, V, L> lbExtractor) {
                 return runOnEnsemble(
-                    (db, i) -> {
-                        IgniteBiFunction<K, V, Vector> wrappedExtractor = maxFeaturesCntPerMdl > 0 ?
-                            wrapFeatureExtractor(featureVectorSize, maxFeaturesCntPerMdl, featureExtractor) :
-                            featureExtractor;
-                        return (() -> trainer.fit(db, wrappedExtractor, lbExtractor));
-                    },
+                    (db, i, fe) -> (() -> trainer.fit(db, fe, lbExtractor)),
                     datasetBuilder,
                     ensembleSize,
                     subsampleRatio,
+                    featureVectorSize,
+                    maxFeaturesCntPerMdl,
+                    featureExtractor,
                     aggregator,
                     environment);
             }
@@ -109,16 +108,13 @@ public class TrainerTransformers {
                 IgniteBiFunction<K, V, Vector> featureExtractor,
                 IgniteBiFunction<K, V, L> lbExtractor) {
                 return runOnEnsemble(
-                    (db, i) -> {
-                        M iThModel = (M) mdl.getModels().get(i);
-                        IgniteBiFunction<K, V, Vector> wrappedExtractor = maxFeaturesCntPerMdl > 0 ?
-                            wrapFeatureExtractor(featureVectorSize, maxFeaturesCntPerMdl, featureExtractor) :
-                            featureExtractor;
-                        return (() -> trainer.updateModel(iThModel, db, wrappedExtractor, lbExtractor));
-                    },
+                    (db, i, fe) -> (() -> trainer.updateModel(((ModelWithEndomorphism<Vector, Double, M>) mdl.getModels().get(i)).model(), db, fe, lbExtractor)),
                     datasetBuilder,
                     ensembleSize,
                     subsampleRatio,
+                    featureVectorSize,
+                    maxFeaturesCntPerMdl,
+                    featureExtractor,
                     aggregator,
                     environment);
             }
@@ -141,14 +137,29 @@ public class TrainerTransformers {
      * @return Composition of models trained on bagged dataset.
      */
     private static <K, V, M extends Model<Vector, Double>> ModelsComposition runOnEnsemble(
-        IgniteBiFunction<DatasetBuilder<K, V>, Integer, IgniteSupplier<M>> trainingTaskGenerator,
+        IgniteTriFunction<DatasetBuilder<K, V>, Integer, IgniteBiFunction<K, V, Vector>, IgniteSupplier<M>> trainingTaskGenerator,
         DatasetBuilder<K, V> datasetBuilder,
         int ensembleSize,
         double subsampleRatio,
+        int featuresVectorSize,
+        int maximumFeaturesCntPerMdl,
+        IgniteBiFunction<K, V, Vector> extractor,
         PredictionsAggregator aggregator,
         LearningEnvironment environment) {
         MLLogger log = environment.logger(datasetBuilder.getClass());
         log.log(MLLogger.VerboseLevel.LOW, "Start learning.");
+
+        List<Map<Integer, Integer>> mappings = null;
+        if (featuresVectorSize > 0) {
+            mappings = IntStream.range(0, ensembleSize).mapToObj(x -> {
+                int[] featureIdxs = Utils.selectKDistinct(featuresVectorSize, maximumFeaturesCntPerMdl, new Random());
+                Map<Integer, Integer> featureMapping = new HashMap<>();
+                IntStream.range(0, maximumFeaturesCntPerMdl)
+                    .forEach(localId -> featureMapping.put(localId, featureIdxs[localId]));
+                return featureMapping;
+            })
+            .collect(Collectors.toList());
+        }
 
         Long startTs = System.currentTimeMillis();
 
@@ -158,14 +169,30 @@ public class TrainerTransformers {
         );
 
         List<IgniteSupplier<M>> tasks = new ArrayList<>();
-
-        for (int i = 0; i < ensembleSize; i++) {
-            tasks.add(trainingTaskGenerator.apply(bootstrappedBuilder, i));
+        List<IgniteBiFunction<K, V, Vector>> extractors = null;
+        if (mappings != null) {
+            extractors = mappings
+                .stream()
+                .map(m -> wrapExtractor(extractor, m))
+                .collect(Collectors.toList());
         }
 
-        List<M> models = environment.parallelismStrategy().submit(tasks)
-            .stream().map(Promise::unsafeGet)
+        for (int i = 0; i < ensembleSize; i++) {
+            tasks.add(trainingTaskGenerator.apply(bootstrappedBuilder, i, mappings != null ? extractors.get(i) : extractor));
+        }
+
+        List<ModelWithEndomorphism<Vector, Double, M>> models = environment.parallelismStrategy().submit(tasks)
+            .stream()
+            .map(Promise::unsafeGet)
+            .map(ModelWithEndomorphism<Vector, Double, M>::new)
             .collect(Collectors.toList());
+
+        // If we need to do projection, do it.
+        if (mappings != null) {
+            for (int i = 0; i < models.size(); i++) {
+                models.get(i).setEndo(projector(mappings.get(i)));
+            }
+        }
 
         double learningTime = (double) (System.currentTimeMillis() - startTs) / 1000.0;
         log.log(MLLogger.VerboseLevel.LOW, "The training time was %.2fs.", learningTime);
@@ -191,23 +218,17 @@ public class TrainerTransformers {
         return IntStream.range(0, count).mapToObj(i -> en);
     }
 
-    /**
-     * Wraps the original feature extractor with features subspace mapping applying.
-     *
-     * @param featuresVectorSize       Size of feature vector.
-     * @param maximumFeaturesCntPerMdl Maximum features count per model.
-     * @param featureExtractor         Feature extractor.
-     */
-    private static <K, V> IgniteBiFunction<K, V, Vector> wrapFeatureExtractor(
-        int featuresVectorSize,
-        int maximumFeaturesCntPerMdl,
-        IgniteBiFunction<K, V, Vector> featureExtractor) {
-        int[] featureIdxs = Utils.selectKDistinct(featuresVectorSize, maximumFeaturesCntPerMdl, new Random());
-        Map<Integer, Integer> featureMapping = new HashMap<>();
+    private static IgniteFunction<Vector, Vector> projector(Map<Integer, Integer> mapping) {
+        return v -> {
+            Vector res = VectorUtils.zeroes(mapping.size());
 
-        IntStream.range(0, maximumFeaturesCntPerMdl)
-            .forEach(localId -> featureMapping.put(localId, featureIdxs[localId]));
+            mapping.keySet().stream().forEach(locId -> res.set(locId, v.get(mapping.get(locId))));
 
+            return res;
+        };
+    }
+
+    private static <K, V> IgniteBiFunction<K, V, Vector> wrapExtractor(IgniteBiFunction<K, V, Vector> featureExtractor, Map<Integer, Integer> featureMapping) {
         return featureExtractor.andThen((IgniteFunction<Vector, Vector>) featureValues -> {
             double[] newFeaturesValues = new double[featureMapping.size()];
             featureMapping.forEach((localId, featureValueId) -> newFeaturesValues[localId] = featureValues.get(featureValueId));
@@ -215,5 +236,41 @@ public class TrainerTransformers {
         });
     }
 
+    /**
+     * Model with endomorphism (Function from X to X).
+     *
+     * @param <X> Input space.
+     * @param <Y> Output space.
+     * @param <M> Model.
+     */
+    public static class ModelWithEndomorphism<X, Y, M extends Model<X, Y>> implements Model<X, Y> {
+        M model;
+        IgniteFunction<X, X> endo;
 
+        public ModelWithEndomorphism(M model) {
+            this(model, x -> x);
+        }
+
+        public ModelWithEndomorphism(M model, IgniteFunction<X, X> endo) {
+            this.model = model;
+            this.endo = endo;
+        }
+
+        public void setEndo(IgniteFunction<X, X> endo) {
+            this.endo = endo;
+        }
+
+        @Override
+        public Y apply(X x) {
+            return model.apply(endo.apply(x));
+        }
+
+        public M model() {
+            return model;
+        }
+
+        public IgniteFunction<X, X> endo() {
+            return endo;
+        }
+    }
 }

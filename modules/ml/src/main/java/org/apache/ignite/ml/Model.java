@@ -17,8 +17,9 @@
 
 package org.apache.ignite.ml;
 
-import java.util.function.BiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+
+import java.util.function.BiFunction;
 
 /** Basic interface for all models. */
 public interface Model<T, V> extends IgniteFunction<T, V> {
