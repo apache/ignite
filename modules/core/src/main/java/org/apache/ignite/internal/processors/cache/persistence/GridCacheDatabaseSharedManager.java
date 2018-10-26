@@ -1145,13 +1145,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             (fullId, pageBuf, tag) -> {
                 memMetrics.onPageWritten();
 
-                // First of all, write page to disk.
+                // We can write only page from disk into snapshot.
+                snapshotMgr.beforePageWrite(fullId);
+
+                // Write page to disk.
                 storeMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag);
-
-                pageBuf.rewind();
-
-                // Only after write we can write page into snapshot.
-                snapshotMgr.flushDirtyPageHandler(fullId, pageBuf, tag);
 
                 AtomicInteger cntr = evictedPagesCntr;
 
@@ -4152,8 +4150,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private List<FullPageId> writePages(Collection<FullPageId> writePageIds) throws IgniteCheckedException {
             ByteBuffer tmpWriteBuf = threadBuf.get();
 
-            long writeAddr = GridUnsafe.bufferAddress(tmpWriteBuf);
-
             List<FullPageId> pagesToRetry = new ArrayList<>();
 
             for (FullPageId fullId : writePageIds) {
@@ -4208,19 +4204,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             tracker.onDataPageWritten();
                     }
 
-                    if (!skipCrc) {
-                        PageIO.setCrc(writeAddr, FastCrc.calcCrc(tmpWriteBuf, pageSize()));
-
-                        tmpWriteBuf.rewind();
-                    }
-
-                    int curWrittenPages = writtenPagesCntr.incrementAndGet();
-
-                    snapshotMgr.onPageWrite(fullId, tmpWriteBuf, curWrittenPages, totalPagesToWrite);
-
-                    tmpWriteBuf.rewind();
-
-                    PageStore store = storeMgr.writeInternal(grpId, fullId.pageId(), tmpWriteBuf, tag, false);
+                    PageStore store = storeMgr.writeInternal(grpId, fullId.pageId(), tmpWriteBuf, tag, true);
 
                     updStores.computeIfAbsent(store, k -> new LongAdder()).increment();
                 }
