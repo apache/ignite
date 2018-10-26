@@ -28,11 +28,14 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionSel
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionStandardHashSelfTest;
 import org.apache.ignite.internal.IgniteReflectionFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.CacheComparatorTest;
+import org.apache.ignite.internal.processors.cache.CacheConfigurationLeakTest;
+import org.apache.ignite.internal.processors.cache.CacheGroupLocalConfigurationSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheOptimisticTransactionsWithFilterSingleServerTest;
 import org.apache.ignite.internal.processors.cache.CacheOptimisticTransactionsWithFilterTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicMessageCountSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionedProjectionAffinitySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteAtomicCacheEntryProcessorNodeJoinTest;
+import org.apache.ignite.internal.processors.cache.MemoryPolicyConfigValidationTest;
 import org.apache.ignite.internal.processors.cache.distributed.CachePartitionStateTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CachePartitionPartialCountersMapSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedOptimisticTransactionSelfTest;
@@ -48,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheRen
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedJobExecutionTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicBasicStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicGetAndTransformStoreSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicyInitializationTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -91,6 +95,11 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
 
         ignoredTests.add(GridCacheReplicatedJobExecutionTest.class);
         ignoredTests.add(GridCacheNearJobExecutionSelfTest.class);
+
+        ignoredTests.add(CacheConfigurationLeakTest.class);
+        ignoredTests.add(MemoryPolicyConfigValidationTest.class);
+        ignoredTests.add( MemoryPolicyInitializationTest.class);
+        ignoredTests.add(CacheGroupLocalConfigurationSelfTest.class);
 
         ignoredTests.add(CachePartitionStateTest.class);
         ignoredTests.add(CacheComparatorTest.class);

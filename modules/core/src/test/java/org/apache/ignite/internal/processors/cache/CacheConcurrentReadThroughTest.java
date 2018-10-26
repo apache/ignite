@@ -50,6 +50,15 @@ public class CacheConcurrentReadThroughTest extends GridCommonAbstractTest {
     private boolean client;
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        if (FORCE_MVCC) {
+            fail("https://issues.apache.org/jira/browse/IGNITE-8582");
+        }
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);

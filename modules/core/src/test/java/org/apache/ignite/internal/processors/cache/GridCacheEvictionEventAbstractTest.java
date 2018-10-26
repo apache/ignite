@@ -53,6 +53,7 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
     @Override protected void setUp() throws Exception {
         if (FORCE_MVCC)
             fail("https://issues.apache.org/jira/browse/IGNITE-7956");
+
         super.setUp();
     }
 
