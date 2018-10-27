@@ -128,7 +128,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testDataPageZstd16() throws IgniteCheckedException {
         blockSize = 16;
         compression = ZSTD;
-        compressLevel = 19;
+        compressLevel = 22;
 
         doTestDataPage();
     }
@@ -139,7 +139,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testDataPageZstd128() throws IgniteCheckedException {
         blockSize = 128;
         compression = ZSTD;
-        compressLevel = 19;
+        compressLevel = 22;
 
         doTestDataPage();
     }
@@ -150,7 +150,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testDataPageZstd1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = ZSTD;
-        compressLevel = 19;
+        compressLevel = 22;
 
         doTestDataPage();
     }
@@ -161,7 +161,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testDataPageZstd2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = ZSTD;
-        compressLevel = 19;
+        compressLevel = 22;
 
         doTestDataPage();
     }
@@ -280,7 +280,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testInnerPageZstd16() throws IgniteCheckedException {
         blockSize = 16;
         compression = ZSTD;
-        compressLevel = 19;
+        compressLevel = 22;
 
         doTestBTreePage(INNER_IO);
     }
@@ -291,7 +291,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testLeafPageZstd16() throws IgniteCheckedException {
         blockSize = 16;
         compression = ZSTD;
-        compressLevel = 19;
+        compressLevel = 22;
 
         doTestBTreePage(LEAF_IO);
     }
@@ -367,7 +367,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testInnerPageZstd128() throws IgniteCheckedException {
         blockSize = 128;
         compression = ZSTD;
-        compressLevel = 19;
+        compressLevel = 22;
 
         doTestBTreePage(INNER_IO);
     }
@@ -378,7 +378,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testLeafPageZstd128() throws IgniteCheckedException {
         blockSize = 128;
         compression = ZSTD;
-        compressLevel = 19;
+        compressLevel = 22;
 
         doTestBTreePage(LEAF_IO);
     }
@@ -453,7 +453,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testInnerPageZstd1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = ZSTD;
-        compressLevel = 19;
+        compressLevel = 22;
 
         doTestBTreePage(INNER_IO);
     }
@@ -464,7 +464,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testLeafPageZstd1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = ZSTD;
-        compressLevel = 19;
+        compressLevel = 22;
 
         doTestBTreePage(LEAF_IO);
     }
@@ -539,7 +539,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testInnerPageZstd2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = ZSTD;
-        compressLevel = 19;
+        compressLevel = 22;
 
         doTestBTreePage(INNER_IO);
     }
@@ -550,7 +550,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testLeafPageZstd2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = ZSTD;
-        compressLevel = 19;
+        compressLevel = 22;
 
         doTestBTreePage(LEAF_IO);
     }
