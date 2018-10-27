@@ -1428,6 +1428,28 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
                 assertEquals(publicCache.getConfiguration(CacheConfiguration.class).getCacheMode(), cacheMode);
             }
         }
+
+        // Test that caches were excluded.
+        ret = content(null, GridRestCommand.TOPOLOGY,
+            "attr", "false",
+            "mtr", "false",
+            "excludeCaches", "true"
+        );
+
+        info("Topology command result: " + ret);
+
+        res = jsonResponse(ret);
+
+        assertEquals(gridCount(), res.size());
+
+        for (JsonNode node : res) {
+            assertTrue(node.get("attributes").isNull());
+            assertTrue(node.get("metrics").isNull());
+
+            JsonNode caches = node.get("caches");
+
+            assertTrue(caches.isNull());
+        }
     }
 
     /**

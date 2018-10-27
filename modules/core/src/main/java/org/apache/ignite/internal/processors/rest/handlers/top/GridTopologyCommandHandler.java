@@ -95,8 +95,9 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
 
         GridRestResponse res = new GridRestResponse();
 
-        boolean mtr = req0.includeMetrics();
-        boolean attr = req0.includeAttributes();
+        boolean includeMetrics = req0.includeMetrics();
+        boolean includeAtts = req0.includeAttributes();
+        boolean excludeCaches = req0.excludeCaches();
 
         switch (req.command()) {
             case TOPOLOGY: {
@@ -107,7 +108,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
                     new ArrayList<>(allNodes.size());
 
                 for (ClusterNode node : allNodes)
-                    top.add(createNodeBean(node, mtr, attr));
+                    top.add(createNodeBean(node, includeMetrics, includeAtts, excludeCaches));
 
                 res.setResponse(top);
 
@@ -143,7 +144,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
                     });
 
                 if (node != null)
-                    res.setResponse(createNodeBean(node, mtr, attr));
+                    res.setResponse(createNodeBean(node, includeMetrics, includeAtts, excludeCaches));
                 else
                     res.setResponse(null);
 
@@ -196,14 +197,20 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /**
-     * Creates node bean out of grid node. Notice that cache attribute is handled separately.
+     * Creates node bean out of cluster node. Notice that cache attribute is handled separately.
      *
-     * @param node Grid node.
-     * @param mtr {@code true} to add metrics.
-     * @param attr {@code true} to add attributes.
+     * @param node Cluster node.
+     * @param includeMetrics Whether to include metrics.
+     * @param includeAttrs Whether to include node attributes.
+     * @param excludeCaches Whether to exclude caches.
      * @return Grid Node bean.
      */
-    private GridClientNodeBean createNodeBean(ClusterNode node, boolean mtr, boolean attr) {
+    private GridClientNodeBean createNodeBean(
+        ClusterNode node,
+        boolean includeMetrics,
+        boolean includeAttrs,
+        boolean excludeCaches
+    ) {
         assert node != null;
 
         GridClientNodeBean nodeBean = new GridClientNodeBean();
@@ -216,16 +223,18 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
         nodeBean.setTcpAddresses(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_ADDRS)));
         nodeBean.setTcpHostNames(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_HOST_NAMES)));
 
-        Map<String, CacheConfiguration> nodeCaches = ctx.discovery().nodePublicCaches(node);
+        if (!excludeCaches) {
+            Map<String, CacheConfiguration> nodeCaches = ctx.discovery().nodePublicCaches(node);
 
-        Collection<GridClientCacheBean> caches = new ArrayList<>(nodeCaches.size());
+            ArrayList<GridClientCacheBean> caches = new ArrayList<>(nodeCaches.size());
 
-        for (CacheConfiguration ccfg : nodeCaches.values())
-            caches.add(createCacheBean(ccfg));
+            for (CacheConfiguration ccfg : nodeCaches.values())
+                caches.add(createCacheBean(ccfg));
 
-        nodeBean.setCaches(caches);
+            nodeBean.setCaches(caches);
+        }
 
-        if (mtr) {
+        if (includeMetrics) {
             ClusterMetrics metrics = node.metrics();
 
             GridClientNodeMetricsBean metricsBean = new GridClientNodeMetricsBean();
@@ -284,7 +293,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
             nodeBean.setMetrics(metricsBean);
         }
 
-        if (attr) {
+        if (includeAttrs) {
             Map<String, Object> attrs = new HashMap<>(node.attributes());
 
             attrs.remove(ATTR_CACHE);
