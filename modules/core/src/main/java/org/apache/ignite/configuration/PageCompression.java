@@ -24,8 +24,8 @@ package org.apache.ignite.configuration;
  * @see DataRegionConfiguration#setPageCompressionLevel
  */
 public enum PageCompression {
-    /** Only retain useful data from half-filled pages, but do not apply any compression. */
-    DROP_GARBAGE,
+    /** Retain only useful data from half-filled pages, but do not apply any compression. */
+    SKIP_GARBAGE,
 
     /** Zstd compression. */
     ZSTD,

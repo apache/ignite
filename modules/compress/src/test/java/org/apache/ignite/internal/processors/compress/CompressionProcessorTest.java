@@ -41,7 +41,7 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.configuration.PageCompression.DROP_GARBAGE;
+import static org.apache.ignite.configuration.PageCompression.SKIP_GARBAGE;
 import static org.apache.ignite.configuration.PageCompression.LZ4;
 import static org.apache.ignite.configuration.PageCompression.ZSTD;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorImpl.allocateDirectBuffer;
@@ -62,7 +62,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     private int pageSize = 4 * 1024;
 
     /** */
-    private PageCompression compression = DROP_GARBAGE;
+    private PageCompression compression = SKIP_GARBAGE;
 
     /** */
     private int compressLevel = 0;
@@ -87,7 +87,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
      */
     public void testDataPageCompact16() throws IgniteCheckedException {
         blockSize = 16;
-        compression = DROP_GARBAGE;
+        compression = SKIP_GARBAGE;
 
         doTestDataPage();
     }
@@ -97,7 +97,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
      */
     public void testDataPageCompact128() throws IgniteCheckedException {
         blockSize = 128;
-        compression = DROP_GARBAGE;
+        compression = SKIP_GARBAGE;
 
         doTestDataPage();
     }
@@ -107,7 +107,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
      */
     public void testDataPageCompact1k() throws IgniteCheckedException {
         blockSize = 1024;
-        compression = DROP_GARBAGE;
+        compression = SKIP_GARBAGE;
 
         doTestDataPage();
     }
@@ -117,7 +117,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
      */
     public void testDataPageCompact2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
-        compression = DROP_GARBAGE;
+        compression = SKIP_GARBAGE;
 
         doTestDataPage();
     }
@@ -259,7 +259,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
      */
     public void testInnerPageCompact16() throws IgniteCheckedException {
         blockSize = 16;
-        compression = DROP_GARBAGE;
+        compression = SKIP_GARBAGE;
 
         doTestBTreePage(INNER_IO);
     }
@@ -269,7 +269,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
      */
     public void testLeafPageCompact16() throws IgniteCheckedException {
         blockSize = 16;
-        compression = DROP_GARBAGE;
+        compression = SKIP_GARBAGE;
 
         doTestBTreePage(LEAF_IO);
     }
@@ -346,7 +346,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
      */
     public void testInnerPageCompact128() throws IgniteCheckedException {
         blockSize = 128;
-        compression = DROP_GARBAGE;
+        compression = SKIP_GARBAGE;
 
         doTestBTreePage(INNER_IO);
     }
@@ -356,7 +356,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
      */
     public void testLeafPageCompact128() throws IgniteCheckedException {
         blockSize = 128;
-        compression = DROP_GARBAGE;
+        compression = SKIP_GARBAGE;
 
         doTestBTreePage(LEAF_IO);
     }
@@ -432,7 +432,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
      */
     public void testInnerPageCompact1k() throws IgniteCheckedException {
         blockSize = 1024;
-        compression = DROP_GARBAGE;
+        compression = SKIP_GARBAGE;
 
         doTestBTreePage(INNER_IO);
     }
@@ -442,7 +442,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
      */
     public void testLeafPageCompact1k() throws IgniteCheckedException {
         blockSize = 1024;
-        compression = DROP_GARBAGE;
+        compression = SKIP_GARBAGE;
 
         doTestBTreePage(LEAF_IO);
     }
@@ -518,7 +518,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
      */
     public void testInnerPageCompact2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
-        compression = DROP_GARBAGE;
+        compression = SKIP_GARBAGE;
 
         doTestBTreePage(INNER_IO);
     }
@@ -528,7 +528,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
      */
     public void testLeafPageCompact2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
-        compression = DROP_GARBAGE;
+        compression = SKIP_GARBAGE;
 
         doTestBTreePage(LEAF_IO);
     }
@@ -762,7 +762,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
 
         info(io.getClass().getSimpleName() + " " + compression + " " + compressLevel + ": " + compressedSize + "/" + pageSize);
 
-        if (!fullPage || compression != DROP_GARBAGE)
+        if (!fullPage || compression != SKIP_GARBAGE)
             assertTrue(compressedSize < pageSize);
 
         assertEquals(pageId, PageIO.getPageId(compressed));

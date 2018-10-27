@@ -59,7 +59,7 @@ public class CompressionProcessor extends GridProcessorAdapter {
             case LZ4:
                 return 0;
 
-            case DROP_GARBAGE:
+            case SKIP_GARBAGE:
                 return 0;
         }
 
@@ -84,7 +84,7 @@ public class CompressionProcessor extends GridProcessorAdapter {
                     throw new IllegalArgumentException("Compression level for LZ4 must be between 0 and 17." );
                 break;
 
-            case DROP_GARBAGE:
+            case SKIP_GARBAGE:
                 break;
 
             default:

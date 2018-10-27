@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.Compactab
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.configuration.PageCompression.DROP_GARBAGE;
+import static org.apache.ignite.configuration.PageCompression.SKIP_GARBAGE;
 import static org.apache.ignite.internal.util.GridUnsafe.NATIVE_BYTE_ORDER;
 
 /**
@@ -96,9 +96,9 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
         int compactSize = compactPage.limit();
 
-        if (compactSize < fsBlockSize || compression == DROP_GARBAGE) {
+        if (compactSize < fsBlockSize || compression == SKIP_GARBAGE) {
             // No need to compress further or configured just to drop garbage.
-            setCompressionInfo(compactPage, DROP_GARBAGE, 0, compactSize);
+            setCompressionInfo(compactPage, SKIP_GARBAGE, 0, compactSize);
 
             // Can not return thread local buffer, because the actual write may be async.
             ByteBuffer res = allocateDirectBuffer(compactSize);
@@ -221,7 +221,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
             case LZ4:
                 return LZ4_COMPRESSED_PAGE;
 
-            case DROP_GARBAGE:
+            case SKIP_GARBAGE:
                 return COMPACTED_PAGE;
         }
         throw new IllegalStateException("Unexpected compression: " + compression);
