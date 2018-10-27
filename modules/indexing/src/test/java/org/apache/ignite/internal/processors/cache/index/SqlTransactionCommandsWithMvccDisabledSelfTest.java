@@ -18,14 +18,13 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.concurrent.Callable;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  *
  */
-public class SqlTransactionsComandsWithMvccDisabledSelfTest extends AbstractSchemaSelfTest {
+public class SqlTransactionCommandsWithMvccDisabledSelfTest extends AbstractSchemaSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -47,7 +46,7 @@ public class SqlTransactionsComandsWithMvccDisabledSelfTest extends AbstractSche
     /**
      * @throws Exception if failed.
      */
-    public void testBeginWithMvccDisabledThrows() throws Exception {
+    public void testBeginWithMvccDisabled() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 execute(grid(0), "BEGIN");
@@ -60,7 +59,7 @@ public class SqlTransactionsComandsWithMvccDisabledSelfTest extends AbstractSche
     /**
      * @throws Exception if failed.
      */
-    public void testCommitWithMvccDisabledThrows() throws Exception {
+    public void testCommitWithMvccDisabled() throws Exception {
         execute(grid(0), "COMMIT");
         // assert no exception
     }
@@ -68,7 +67,7 @@ public class SqlTransactionsComandsWithMvccDisabledSelfTest extends AbstractSche
     /**
      * @throws Exception if failed.
      */
-    public void testRollbackWithMvccDisabledThrows() throws Exception {
+    public void testRollbackWithMvccDisabled() throws Exception {
         execute(grid(0), "ROLLBACK");
         // assert no exception
     }
