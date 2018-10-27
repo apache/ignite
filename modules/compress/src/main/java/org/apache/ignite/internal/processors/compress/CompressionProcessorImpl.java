@@ -243,14 +243,14 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
             page.position(PageIO.COMMON_HEADER_END).limit(compressedSize);
 
+            // LZ4 needs this limit to be exact.
+            dst.limit(compactSize - PageIO.COMMON_HEADER_END);
+
             if (compressType == ZSTD_COMPRESSED_PAGE)
                 Zstd.decompress(dst, page);
-            else if (compressType == LZ4_COMPRESSED_PAGE) {
-                // LZ4 fast decompressor needs this limit to be exact.
-                dst.limit(compactSize - PageIO.COMMON_HEADER_END);
-
+            else if (compressType == LZ4_COMPRESSED_PAGE)
                 LZ4Factory.fastestInstance().fastDecompressor().decompress(page, dst);
-            } else
+            else
                 throw new IllegalStateException("Unknown compression: " + compressType);
 
             dst.flip();
