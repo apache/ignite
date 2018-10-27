@@ -443,7 +443,7 @@ public final class DataRegionConfiguration implements Serializable {
      * Gets page compression algorithm. Makes sense only with enabled persistence.
      *
      * @return Page compression algorithm.
-     * @see #getPageCompressionLevel()
+     * @see #getPageCompressionLevel
      */
     public PageCompression getPageCompression() {
         return pageCompression;
@@ -460,7 +460,7 @@ public final class DataRegionConfiguration implements Serializable {
     }
 
     /**
-     * Gets {@link #setPageCompression(PageCompression) algorithm specific} page compression level.
+     * Gets {@link #getPageCompression algorithm} specific page compression level.
      *
      * @return Page compression level or {@code null} for default.
      */
@@ -469,7 +469,7 @@ public final class DataRegionConfiguration implements Serializable {
     }
 
     /**
-     * Sets {@link #setPageCompression(PageCompression) algorithm specific} page compression level.
+     * Sets {@link #setPageCompression algorithm} specific page compression level.
      *
      * @param pageCompressionLevel Page compression level, {@code null} to use default.
      */
