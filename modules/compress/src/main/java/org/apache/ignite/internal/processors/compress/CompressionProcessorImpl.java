@@ -21,6 +21,7 @@ import com.github.luben.zstd.Zstd;
 import java.nio.ByteBuffer;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
+import net.jpountz.lz4.LZ4FastDecompressor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.PageCompression;
 import org.apache.ignite.internal.GridKernalContext;
@@ -176,7 +177,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @return Compressed page.
      */
     private static ByteBuffer compressPageLz4(ByteBuffer compactPage, int compactSize, int compressLevel) {
-        LZ4Compressor compressor = getLz4Compressor(compressLevel);
+        LZ4Compressor compressor = Lz4.getCompressor(compressLevel);
 
         ByteBuffer compressedPage = allocateDirectBuffer(PageIO.COMMON_HEADER_END +
             compressor.maxCompressedLength(compactSize - PageIO.COMMON_HEADER_END));
@@ -186,19 +187,6 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
         compressedPage.flip();
         return compressedPage;
-    }
-
-    /**
-     * @param compressLevel Compression level.
-     * @return LZ4 compressor.
-     */
-    private static LZ4Compressor getLz4Compressor(int compressLevel) {
-        assert compressLevel >= 0 && compressLevel <= 17: compressLevel;
-
-        LZ4Factory lz4 = LZ4Factory.fastestInstance();
-
-        return compressLevel == 0 ? lz4.fastCompressor():
-            lz4.highCompressor(compressLevel);
     }
 
     /**
@@ -275,7 +263,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
             if (compressType == ZSTD_COMPRESSED_PAGE)
                 Zstd.decompress(dst, page);
             else if (compressType == LZ4_COMPRESSED_PAGE)
-                LZ4Factory.fastestInstance().fastDecompressor().decompress(page, dst);
+                Lz4.decompress(page, dst);
             else
                 throw new IllegalStateException("Unknown compression: " + compressType);
 
@@ -290,5 +278,34 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         io.restorePage(page, pageSize);
 
         setCompressionInfo(page, null, 0, 0);
+    }
+
+    /** */
+    static class Lz4 {
+        /** */
+        static final LZ4Factory factory = LZ4Factory.fastestInstance();
+
+        /** */
+        static final LZ4FastDecompressor decompressor = factory.fastDecompressor();
+
+        /** */
+        static final LZ4Compressor fastCompressor = factory.fastCompressor();
+
+        /**
+         * @param level Compression level.
+         * @return Compressor.
+         */
+        static LZ4Compressor getCompressor(int level) {
+            assert level >= 0 && level <= 17: level;
+            return level == 0 ? fastCompressor : factory.highCompressor(level);
+        }
+
+        /**
+         * @param page Page.
+         * @param dst Destination buffer.
+         */
+        static void decompress(ByteBuffer page, ByteBuffer dst) {
+            decompressor.decompress(page, dst);
+        }
     }
 }
