@@ -158,15 +158,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @return Compressed page.
      */
     private static ByteBuffer compressPageLz4(ByteBuffer compactPage, int compactSize, int compressLevel) {
-        LZ4Factory lz4 = LZ4Factory.fastestInstance();
-        LZ4Compressor compressor;
-
-        if (compressLevel == 0)
-            compressor = lz4.fastCompressor();
-        else {
-            assert compressLevel >= 1 && compressLevel <= 17: compressLevel;
-            compressor = lz4.highCompressor(compressLevel);
-        }
+        LZ4Compressor compressor = getLz4Compressor(compressLevel);
 
         ByteBuffer compressedPage = allocateDirectBuffer(PageIO.COMMON_HEADER_END +
             compressor.maxCompressedLength(compactSize - PageIO.COMMON_HEADER_END));
@@ -176,6 +168,19 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
         compressedPage.flip();
         return compressedPage;
+    }
+
+    /**
+     * @param compressLevel Compression level.
+     * @return LZ4 compressor.
+     */
+    private static LZ4Compressor getLz4Compressor(int compressLevel) {
+        assert compressLevel >= 0 && compressLevel <= 17: compressLevel;
+
+        LZ4Factory lz4 = LZ4Factory.fastestInstance();
+
+        return compressLevel == 0 ? lz4.fastCompressor():
+            lz4.highCompressor(compressLevel);
     }
 
     /**
