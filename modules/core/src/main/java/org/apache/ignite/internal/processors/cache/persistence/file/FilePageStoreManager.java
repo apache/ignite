@@ -51,6 +51,7 @@ import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
@@ -476,19 +477,24 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @return PageStore to which the page has been written.
      * @throws IgniteCheckedException If IO error occurred.
      */
-    public PageStore writeInternal(int cacheId, long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException {
+    public PageStore writeInternal(int cacheId, long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc)
+        throws IgniteCheckedException {
         int partId = PageIdUtils.partId(pageId);
 
         PageStore store = getStore(cacheId, partId);
 
         try {
             int pageSize = store.getPageSize();
+            int compressedPageSize = pageSize;
 
-            assert pageBuf.capacity() == pageSize;
+            GridCacheContext cctx0 = cctx.cacheContext(cacheId);
 
-            pageBuf = cctx.cacheContext(cacheId).compress().compressPage(pageBuf, store);
+            if (cctx0 != null) {
+                assert pageBuf.position() == 0 && pageBuf.limit() == pageSize: pageBuf;
 
-            int compressedPageSize = pageBuf.remaining();
+                pageBuf = cctx0.compress().compressPage(pageBuf, store);
+                compressedPageSize = pageBuf.remaining();
+            }
 
             store.write(pageId, pageBuf, tag, calculateCrc);
 
