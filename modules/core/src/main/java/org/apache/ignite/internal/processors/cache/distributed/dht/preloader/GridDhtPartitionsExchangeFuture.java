@@ -3992,7 +3992,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 });
         }
         catch (IgniteCheckedException e) {
-            log.error("Failed to update full partition map.", e);
+            throw new IgniteException(e);
         }
 
         partitionsReceived = true;
