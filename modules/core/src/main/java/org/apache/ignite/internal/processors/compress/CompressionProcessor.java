@@ -21,11 +21,14 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.PageCompression;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 
 /**
  * Compression processor.
+ *
+ * @see IgniteComponentType#COMPRESSION
  */
 public class CompressionProcessor extends GridProcessorAdapter {
     /** */
@@ -108,7 +111,8 @@ public class CompressionProcessor extends GridProcessorAdapter {
         PageCompression compression,
         int compressLevel
     ) throws IgniteCheckedException {
-        throw new IgniteCheckedException("Page compression failed: make sure that ignite-compression module is in classpath.");
+        throw new IgniteCheckedException("Page compression failed: " +
+            "make sure that ignite-compression module is in classpath.");
     }
 
     /**
@@ -116,7 +120,9 @@ public class CompressionProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void decompressPage(ByteBuffer page) throws IgniteCheckedException {
-        if (PageIO.getCompressionType(page) != UNCOMPRESSED_PAGE)
-            throw new IgniteCheckedException("Page decompression failed: make sure that ignite-compression module is in classpath.");
+        if (PageIO.getCompressionType(page) != UNCOMPRESSED_PAGE) {
+            throw new IgniteCheckedException("Page decompression failed: " +
+                "make sure that ignite-compression module is in classpath.");
+        }
     }
 }
