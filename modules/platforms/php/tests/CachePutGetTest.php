@@ -30,6 +30,8 @@ use Apache\Ignite\Type\ComplexObjectType;
 use Apache\Ignite\Data\BinaryObject;
 use Apache\Ignite\Data\Date;
 use Apache\Ignite\Data\Timestamp;
+use Apache\Ignite\Data\EnumItem;
+use Apache\Ignite\Exception\ClientException;
 
 class TstComplObjectWithPrimitiveFields
 {
@@ -507,6 +509,40 @@ final class CachePutGetTestCase extends TestCase
         $this->putGetTimestampFromDateTime("Y-m-d H:i:s", "2018-10-19 18:31:13", 0);
         $this->putGetTimestampFromDateTime("Y-m-d H:i:s", "2018-10-19 18:31:13", 29726);
         $this->putGetTimestampFromDateTime("Y-m-d H:i:s", "2018-10-19 18:31:13", 999999);
+    }
+
+    public function testPutEnumItems(): void
+    {
+        $fakeTypeId = 12345;
+        $enumItem1 = new EnumItem($fakeTypeId);
+        $enumItem1->setOrdinal(1);
+        $this->putEnumItem($enumItem1, null);
+        $this->putEnumItem($enumItem1, ObjectType::ENUM);
+        $enumItem2 = new EnumItem($fakeTypeId);
+        $enumItem2->setName('name');
+        $this->putEnumItem($enumItem2, null);
+        $this->putEnumItem($enumItem2, ObjectType::ENUM);
+        $enumItem3 = new EnumItem($fakeTypeId);
+        $enumItem3->setOrdinal(2);
+        $this->putEnumItem($enumItem3, null);
+        $this->putEnumItem($enumItem3, ObjectType::ENUM);
+    }
+
+    private function putEnumItem($value, $valueType): void
+    {
+        $key = microtime();
+        self::$cache->
+            setKeyType(null)->
+            setValueType($valueType);
+        // Enums registration is not supported by the client, therefore put EnumItem must throw ClientException
+        try {
+            self::$cache->put($key, $value);
+            $this->fail('put EnumItem must throw ClientException');
+        } catch (ClientException $e) {
+            $this->assertContains('Enum item can not be serialized', $e->getMessage());
+        } finally {
+            self::$cache->removeAll();
+        }
     }
 
     private function putGetDate(string $format, string $dateString, int $micros): void
