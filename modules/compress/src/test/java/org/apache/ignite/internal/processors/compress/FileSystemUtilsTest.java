@@ -32,7 +32,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Assume;
 
 import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.SPARSE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorImpl.allocateDirectBuffer;
@@ -113,7 +112,7 @@ public class FileSystemUtilsTest extends TestCase {
         System.out.println(file);
 
         FileChannel ch = FileChannel.open(file,
-            READ, WRITE, TRUNCATE_EXISTING, SPARSE);
+            READ, WRITE, TRUNCATE_EXISTING);
 
         try {
             int fd = getFD(ch);
@@ -146,7 +145,7 @@ public class FileSystemUtilsTest extends TestCase {
             if (reopen) {
                 ch.force(true);
                 ch.close();
-                ch = FileChannel.open(file, READ, WRITE, SPARSE);
+                ch = FileChannel.open(file, READ, WRITE);
                 fd = getFD(ch);
             }
 
@@ -159,7 +158,7 @@ public class FileSystemUtilsTest extends TestCase {
             if (reopen) {
                 ch.force(true);
                 ch.close();
-                ch = FileChannel.open(file, READ, WRITE, SPARSE);
+                ch = FileChannel.open(file, READ, WRITE);
                 fd = getFD(ch);
             }
             assertEquals(fileSize, getSparseFileSize(fd, file));
@@ -170,7 +169,7 @@ public class FileSystemUtilsTest extends TestCase {
             if (reopen) {
                 ch.force(true);
                 ch.close();
-                ch = FileChannel.open(file, READ, WRITE, SPARSE);
+                ch = FileChannel.open(file, READ, WRITE);
                 fd = getFD(ch);
             }
             assertEquals(sparseSize -= 2 * fsBlockSize, getSparseFileSize(fd, file));
@@ -181,7 +180,7 @@ public class FileSystemUtilsTest extends TestCase {
             if (reopen) {
                 ch.force(true);
                 ch.close();
-                ch = FileChannel.open(file, READ, WRITE, SPARSE);
+                ch = FileChannel.open(file, READ, WRITE);
                 fd = getFD(ch);
             }
             assertEquals(sparseSize -= 3 * fsBlockSize, getSparseFileSize(fd, file));
@@ -204,7 +203,7 @@ public class FileSystemUtilsTest extends TestCase {
             if (reopen) {
                 ch.force(true);
                 ch.close();
-                ch = FileChannel.open(file, READ, WRITE, SPARSE);
+                ch = FileChannel.open(file, READ, WRITE);
                 fd = getFD(ch);
             }
             assertEquals(sparseSize -= fsBlockSize, getSparseFileSize(fd, file));
@@ -215,7 +214,7 @@ public class FileSystemUtilsTest extends TestCase {
             if (reopen) {
                 ch.force(true);
                 ch.close();
-                ch = FileChannel.open(file, READ, WRITE, SPARSE);
+                ch = FileChannel.open(file, READ, WRITE);
                 fd = getFD(ch);
             }
 
