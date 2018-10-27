@@ -17,7 +17,6 @@
 
 package org.apache.ignite.yardstick.jdbc;
 
-import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
@@ -34,46 +33,30 @@ public class JdbcUtils {
      * @param cfg Benchmark configuration.
      * @param ignite Ignite node.
      * @param range Data key range.
-     * @param atomicMode Cache atomic mode.
      */
     public static void fillData(BenchmarkConfiguration cfg,  IgniteEx ignite, long range, CacheAtomicityMode atomicMode) {
-        IgniteSemaphore sem = ignite.semaphore("jdbc-setup", 1, true, true);
+        println(cfg, "Create table...");
 
-        try {
-            if (sem.tryAcquire()) {
-                println(cfg, "Create table...");
+        String withExpr = atomicMode != null ? " WITH \"atomicity=" + atomicMode.name() + "\";" : ";";
 
-                String withExpr = atomicMode != null ? " WITH \"atomicity=" + atomicMode.name() + "\";" : ";";
+        String qry = "CREATE TABLE test_long (id long primary key, val long)" + withExpr;
 
-                String qry = "CREATE TABLE test_long (id long primary key, val long)" + withExpr;
+        println(cfg, "Creating table with schema: " + qry);
 
-                println(cfg, "Creating table with schema: " + qry);
+        ignite.context().query().querySqlFields(
+            new SqlFieldsQuery(qry), true);
 
-                ignite.context().query().querySqlFields(
-                    new SqlFieldsQuery(qry), true);
+        println(cfg, "Populate data...");
 
-                println(cfg, "Populate data...");
+        for (long l = 1; l <= range; ++l) {
+            ignite.context().query().querySqlFields(
+                new SqlFieldsQuery("insert into test_long (id, val) values (?, ?)")
+                    .setArgs(l, l + 1), true);
 
-                for (long l = 1; l <= range; ++l) {
-                    ignite.context().query().querySqlFields(
-                        new SqlFieldsQuery("insert into test_long (id, val) values (?, ?)")
-                            .setArgs(l, l + 1), true);
-
-                    if (l % 10000 == 0)
-                        println(cfg, "Populate " + l);
-                }
-
-                println(cfg, "Finished populating data");
-            }
-            else {
-                // Acquire (wait setup by other client) and immediately release/
-                println(cfg, "Waits for setup...");
-
-                sem.acquire();
-            }
+            if (l % 10000 == 0)
+                println(cfg, "Populate " + l);
         }
-        finally {
-            sem.release();
-        }
+
+        println(cfg, "Finished populating data");
     }
 }
