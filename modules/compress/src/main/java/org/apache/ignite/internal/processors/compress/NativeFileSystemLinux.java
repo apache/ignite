@@ -111,7 +111,8 @@ public final class NativeFileSystemLinux extends NativeFileSystemPosix {
     public static final int FALLOC_FL_UNSHARE_RANGE = 0x40;
 
     /** */
-    private static final LinuxNativeLibC libc = LibraryLoader.create(LinuxNativeLibC.class).load("c");
+    private static final LinuxNativeLibC libc = LibraryLoader.create(LinuxNativeLibC.class)
+        .failImmediately().load("c");
 
     /** {@inheritDoc} */
     @Override public void punchHole(int fd, long off, long len) {

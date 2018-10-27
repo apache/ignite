@@ -65,6 +65,14 @@ public class CompressionProcessorImpl extends CompressionProcessor {
     }
 
     /** {@inheritDoc} */
+    @Override public void checkPageCompressionSupported() throws IgniteCheckedException {
+        if (!U.isLinux())
+            throw new IgniteCheckedException("Currently page compression is supported only for Linux.");
+
+        FileSystemUtils.checkSupported();
+    }
+
+    /** {@inheritDoc} */
     @Override public ByteBuffer compressPage(
         ByteBuffer page,
         int fsBlockSize,

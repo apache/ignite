@@ -98,6 +98,20 @@ public class CompressionProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @throws IgniteCheckedException Always.
+     */
+    private <T> T fail() throws IgniteCheckedException {
+        throw new IgniteCheckedException("Make sure that ignite-compression module is in classpath.");
+    }
+
+    /**
+     * @throws IgniteCheckedException If compression is not supported.
+     */
+    public void checkPageCompressionSupported() throws IgniteCheckedException {
+        fail();
+    }
+
+    /**
      * @param page Page buffer.
      * @param storeBlockSize Store block size.
      * @param compression Compression algorithm.
@@ -111,8 +125,7 @@ public class CompressionProcessor extends GridProcessorAdapter {
         PageCompression compression,
         int compressLevel
     ) throws IgniteCheckedException {
-        throw new IgniteCheckedException("Page compression failed: " +
-            "make sure that ignite-compression module is in classpath.");
+        return fail();
     }
 
     /**
@@ -120,9 +133,7 @@ public class CompressionProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void decompressPage(ByteBuffer page) throws IgniteCheckedException {
-        if (PageIO.getCompressionType(page) != UNCOMPRESSED_PAGE) {
-            throw new IgniteCheckedException("Page decompression failed: " +
-                "make sure that ignite-compression module is in classpath.");
-        }
+        if (PageIO.getCompressionType(page) != UNCOMPRESSED_PAGE)
+            fail();
     }
 }

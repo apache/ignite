@@ -76,9 +76,8 @@ public class FileSystemUtilsTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testSparseFiles() throws Exception {
-        Assume.assumeTrue("Native file system API must be supported for " +
-                U.getOsMx().getName() + " " + U.getOsMx().getVersion() + " " + U.getOsMx().getArch(),
-            FileSystemUtils.isSupported());
+        Assume.assumeTrue("Native file system API is not supported on: " +
+            U.getOsMx().getName(), U.isLinux());
 
         Path file = Files.createTempFile("test_sparse_file_", ".bin");
 
