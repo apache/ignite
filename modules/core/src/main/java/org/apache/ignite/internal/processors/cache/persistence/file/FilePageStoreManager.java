@@ -426,7 +426,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         try {
             store.read(pageId, pageBuf, keepCrc);
 
-            cctx.cacheContext(cacheId).compress().decompressPage(pageBuf);
+            cctx.kernalContext().compress().decompressPage(pageBuf, store.getPageSize());
         }
         catch (StorageException e) {
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));

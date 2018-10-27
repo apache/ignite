@@ -75,11 +75,14 @@ public class CompressionProcessorImpl extends CompressionProcessor {
     /** {@inheritDoc} */
     @Override public ByteBuffer compressPage(
         ByteBuffer page,
+        int pageSize,
         int fsBlockSize,
         PageCompression compression,
         int compressLevel
     ) throws IgniteCheckedException {
-        assert page.position() == 0 && page.limit() == page.capacity();
+        assert U.isPow2(pageSize): pageSize;
+        assert pageSize >= fsBlockSize * 2;
+        assert page.position() == 0 && page.limit() == pageSize;
         assert compression != null;
 
         if (!U.isPow2(fsBlockSize))
@@ -90,11 +93,6 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         if (!(io instanceof CompactablePageIO))
             return page;
 
-        int pageSize = page.remaining();
-
-        assert U.isPow2(pageSize): pageSize;
-        assert pageSize >= fsBlockSize * 2;
-
         ByteBuffer compactPage = tmp.get();
 
         // Drop the garbage from the page.
@@ -102,26 +100,40 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
         int compactSize = compactPage.limit();
 
-        if (compactSize < fsBlockSize || compression == SKIP_GARBAGE) {
-            // No need to compress further or configured just to drop garbage.
-            setCompressionInfo(compactPage, SKIP_GARBAGE, compactSize, compactSize);
-
-            // Can not return thread local buffer, because the actual write may be async.
-            ByteBuffer res = allocateDirectBuffer(compactSize);
-            res.put(compactPage).flip();
-            return res;
-        }
+        // If no need to compress further or configured just to drop garbage.
+        if (compactSize < fsBlockSize || compression == SKIP_GARBAGE)
+            return createCompactPageResult(compactPage, compactSize);
 
         ByteBuffer compressedPage = compressPage(compression, compactPage, compactSize, compressLevel);
 
         int compressedSize = compressedPage.limit();
 
-        if (pageSize - compressedSize < fsBlockSize)
-            return page; // Were not able to release file blocks.
+        int freeCompactBlocks = (pageSize - compactSize) / fsBlockSize;
+        int freeCompressedBlocks = (pageSize - compressedSize) / fsBlockSize;
+
+        if (freeCompactBlocks >= freeCompressedBlocks) {
+            if (freeCompactBlocks == 0)
+                return page; // No blocks will be released.
+
+            return createCompactPageResult(compactPage, compactSize);
+        }
 
         setCompressionInfo(compressedPage, compression, compressedSize, compactSize);
-
         return compressedPage;
+    }
+
+    /**
+     * @param compactPage Compacted page.
+     * @param compactSize Compacted page size.
+     * @return New buffer.
+     */
+    private static ByteBuffer createCompactPageResult(ByteBuffer compactPage, int compactSize) {
+        setCompressionInfo(compactPage, SKIP_GARBAGE, compactSize, compactSize);
+
+        // Can not return thread local buffer, because the actual write may be async.
+        ByteBuffer res = allocateDirectBuffer(compactSize);
+        res.put(compactPage).flip();
+        return res;
     }
 
     /**
@@ -239,15 +251,18 @@ public class CompressionProcessorImpl extends CompressionProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public void decompressPage(ByteBuffer page) throws IgniteCheckedException {
-        final int pageSize = page.capacity();
+    @Override public void decompressPage(ByteBuffer page, int pageSize) throws IgniteCheckedException {
+        assert page.position() == 0: page;
 
         byte compressType = PageIO.getCompressionType(page);
-        short compressedSize = PageIO.getCompressedSize(page);
-        short compactSize = PageIO.getCompactedSize(page);
 
         if (compressType == UNCOMPRESSED_PAGE)
             return; // Nothing to do.
+
+        short compressedSize = PageIO.getCompressedSize(page);
+        short compactSize = PageIO.getCompactedSize(page);
+
+        assert compactSize <= pageSize && compactSize >= compressedSize;
 
         if (compressType != COMPACTED_PAGE) {
             ByteBuffer dst = tmp.get();

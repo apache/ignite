@@ -560,8 +560,8 @@ public class FilePageStore implements PageStore {
                     assert (off >= 0 && off <= allocated.get()) || recover :
                         "off=" + U.hexLong(off) + ", allocated=" + U.hexLong(allocated.get()) + ", pageId=" + U.hexLong(pageId);
 
-                    // Do not assert for capacity or limit to be equal to page size because the buffer can be compressed.
-                    assert pageBuf.position() == 0;
+                    assert pageBuf.position() == 0: pageBuf;
+                    assert pageBuf.limit() <= pageSize: pageBuf; // May be less if the page is compressed.
                     assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
                         + " should be same with " + ByteOrder.nativeOrder();
                     assert PageIO.getType(pageBuf) != 0 : "Invalid state. Type is 0! pageId = " + U.hexLong(pageId);

@@ -69,7 +69,7 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public ByteBuffer compressPage(ByteBuffer page, PageStore store) throws IgniteCheckedException {
-        if (compressProc == null)
+        if (pageCompression == null)
             return page;
 
         int blockSize = store.getBlockSize();
@@ -85,15 +85,6 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
                 " bytes) for page compression.");
         }
 
-        return compressProc.compressPage(page, blockSize, pageCompression, pageCompressLevel);
-    }
-
-    /**
-     * @param page Page buffer.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void decompressPage(ByteBuffer page) throws IgniteCheckedException {
-        if (compressProc != null)
-            compressProc.decompressPage(page);
+        return compressProc.compressPage(page, pageSize, blockSize, pageCompression, pageCompressLevel);
     }
 }

@@ -752,7 +752,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         long pageId = PageIO.getPageId(page);
         PageIO io = PageIO.getPageIO(page);
 
-        ByteBuffer compressed = p.compressPage(page, blockSize, compression, compressLevel);
+        ByteBuffer compressed = p.compressPage(page, pageSize, blockSize, compression, compressLevel);
         int compressedSize = compressed.remaining();
 
         checkIo(io, compressed);
@@ -771,7 +771,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         decompress.put(compressed);
         decompress.flip();
 
-        p.decompressPage(decompress);
+        p.decompressPage(decompress, pageSize);
 
         assertEquals(0, decompress.position());
         assertEquals(pageSize, decompress.limit());
