@@ -104,7 +104,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
         if (compactSize < fsBlockSize || compression == SKIP_GARBAGE) {
             // No need to compress further or configured just to drop garbage.
-            setCompressionInfo(compactPage, SKIP_GARBAGE, 0, compactSize);
+            setCompressionInfo(compactPage, SKIP_GARBAGE, compactSize, compactSize);
 
             // Can not return thread local buffer, because the actual write may be async.
             ByteBuffer res = allocateDirectBuffer(compactSize);

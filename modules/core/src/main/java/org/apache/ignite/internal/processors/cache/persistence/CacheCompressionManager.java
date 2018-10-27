@@ -58,7 +58,6 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
                 getDefaultCompressionLevel(pageCompression);
 
             compressProc = cctx.kernalContext().compress();
-
             compressProc.checkPageCompressionSupported();
         }
     }
