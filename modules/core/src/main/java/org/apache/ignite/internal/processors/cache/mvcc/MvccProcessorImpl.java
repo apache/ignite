@@ -324,10 +324,22 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
-    @Override public void beforeMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
+    @Override public void beforeBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
+        txLogPageStoreInit(mgr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void beforeResumeWalLogging(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
+        // In case of blt changed we should re-init TX_LOG cache.
+        txLogPageStoreInit(mgr);
+    }
+
+    /**
+     * @param mgr Database shared manager.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void txLogPageStoreInit(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
         assert CU.isPersistenceEnabled(ctx.config());
-        assert txLog == null;
 
         ctx.cache().context().pageStore().initialize(TX_LOG_CACHE_ID, 1,
             TX_LOG_CACHE_NAME, mgr.dataRegion(TX_LOG_CACHE_NAME).memoryMetrics());
@@ -1244,10 +1256,13 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                                                 && crd.coordinatorVersion() >= snapshot.coordinatorVersion();
 
                                             for (TxKey key : waitMap.keySet()) {
-                                                assert key.major() == snapshot.coordinatorVersion()
+                                                if (!( key.major() == snapshot.coordinatorVersion()
                                                     && key.minor() > snapshot.cleanupVersion()
-                                                    || key.major() > snapshot.coordinatorVersion() :
-                                                    "key=" + key + ", snapshot=" + snapshot;
+                                                    || key.major() > snapshot.coordinatorVersion())) {
+                                                    byte state = state(key.major(), key.minor());
+
+                                                    assert state == TxState.ABORTED : "tx state=" + state;
+                                                }
                                             }
                                         }
 

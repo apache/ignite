@@ -921,6 +921,8 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * Verifies that emty batch can be performed.
+     *
      * @throws Exception If failed.
      */
     public void testBatchEmpty() throws Exception {
@@ -929,17 +931,8 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         stmt.addBatch("");
         stmt.clearBatch();
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    stmt.executeBatch();
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Batch is empty"
-        );
+        // Just verify that no exception have been thrown.
+        stmt.executeBatch();
     }
 
     /**

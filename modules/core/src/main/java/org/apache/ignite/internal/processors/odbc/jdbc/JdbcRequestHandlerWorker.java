@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.concurrent.LinkedBlockingQueue;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
