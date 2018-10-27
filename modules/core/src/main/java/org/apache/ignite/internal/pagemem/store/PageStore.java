@@ -130,6 +130,11 @@ public interface PageStore {
     public void truncate(int tag) throws StorageException;
 
     /**
+     * @return Page size in bytes.
+     */
+    public int getPageSize();
+
+    /**
      * @return Storage block size or negative value if unknown or not supported.
      * @throws StorageException If failed.
      */

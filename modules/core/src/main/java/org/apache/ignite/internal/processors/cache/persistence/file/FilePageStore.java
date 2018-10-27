@@ -117,6 +117,11 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
+    @Override public int getPageSize() {
+        return pageSize;
+    }
+
+    /** {@inheritDoc} */
     @Override public int getBlockSize() {
         return -1; // Header is unaligned in this version.
     }
@@ -535,8 +540,7 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc)
-        throws IgniteCheckedException {
+    @Override public void write(long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException {
         init();
 
         boolean interrupted = false;
@@ -556,7 +560,7 @@ public class FilePageStore implements PageStore {
                     assert (off >= 0 && off <= allocated.get()) || recover :
                         "off=" + U.hexLong(off) + ", allocated=" + U.hexLong(allocated.get()) + ", pageId=" + U.hexLong(pageId);
 
-                    // Do not assert for page size because the buffer can be compressed.
+                    // Do not assert for capacity or limit to be equal to page size because the buffer can be compressed.
                     assert pageBuf.position() == 0;
                     assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
                         + " should be same with " + ByteOrder.nativeOrder();
