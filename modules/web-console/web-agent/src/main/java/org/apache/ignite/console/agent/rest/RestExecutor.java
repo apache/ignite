@@ -173,32 +173,45 @@ public class RestExecutor implements AutoCloseable {
 
     /** */
     public RestResult sendRequest(List<String> nodeURIs, Map<String, Object> params, Map<String, Object> headers) throws IOException {
-        Integer startIdx = startIdxs.getOrDefault(nodeURIs, 0);
+        long tm = System.currentTimeMillis();
 
-        for (int i = 0;  i < nodeURIs.size(); i++) {
-            Integer currIdx = (startIdx + i) % nodeURIs.size();
+        try {
+            Integer startIdx = startIdxs.getOrDefault(nodeURIs, 0);
 
-            String nodeUrl = nodeURIs.get(currIdx);
+            for (int i = 0;  i < nodeURIs.size(); i++) {
+                Integer currIdx = (startIdx + i) % nodeURIs.size();
 
-            try {
-                RestResult res = sendRequest(nodeUrl, params, headers);
+                String nodeUrl = nodeURIs.get(currIdx);
 
-                LT.info(log, "Connected to cluster [url=" + nodeUrl + "]");
+                try {
+                    RestResult res = sendRequest(nodeUrl, params, headers);
 
-                startIdxs.put(nodeURIs, currIdx);
+                    LT.info(log, "Connected to cluster [url=" + nodeUrl + "]");
 
-                return res;
+                    startIdxs.put(nodeURIs, currIdx);
+
+                    return res;
+                }
+                catch (ConnectException ignored) {
+                    // No-op.
+                }
             }
-            catch (ConnectException ignored) {
-                // No-op.
+
+            LT.warn(log, "Failed connect to cluster. " +
+                "Please ensure that nodes have [ignite-rest-http] module in classpath " +
+                "(was copied from libs/optional to libs folder).");
+
+            throw new ConnectException("Failed connect to cluster [urls=" + nodeURIs + ", parameters=" + params + "]");
+        }
+        finally {
+            if (log.isDebugEnabled()) {
+                boolean exe = params.containsKey("p2");
+
+                String cmd =  String.valueOf(params.get(exe ? "p2" : "cmd"));
+
+                log.debug("Command executed [cmd=" + cmd + ", duration=" + (System.currentTimeMillis() - tm) + "]");
             }
         }
-
-        LT.warn(log, "Failed connect to cluster. " +
-            "Please ensure that nodes have [ignite-rest-http] module in classpath " +
-            "(was copied from libs/optional to libs folder).");
-
-        throw new ConnectException("Failed connect to cluster [urls=" + nodeURIs + ", parameters=" + params + "]");
     }
 
     /**
