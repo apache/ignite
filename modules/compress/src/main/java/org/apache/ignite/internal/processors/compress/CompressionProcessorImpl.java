@@ -83,7 +83,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         assert compression != null;
 
         if (!U.isPow2(fsBlockSize))
-            return page; // Our pages will be misaligned.
+            throw new IgniteCheckedException("Storage block size must be power of 2: " + fsBlockSize);
 
         PageIO io = PageIO.getPageIO(page);
 
@@ -93,9 +93,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         int pageSize = page.remaining();
 
         assert U.isPow2(pageSize): pageSize;
-
-        if (pageSize < fsBlockSize * 2)
-            return page; // Makes no sense to compress the page, we will not free any disk space.
+        assert pageSize >= fsBlockSize * 2;
 
         ByteBuffer compactPage = tmp.get();
 

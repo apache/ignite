@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.compress;
 
-import java.lang.management.OperatingSystemMXBean;
 import java.nio.file.Path;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteComponentType;
@@ -61,12 +60,8 @@ public final class FileSystemUtils {
         Throwable e = err;
 
         if (e != null || fs == null) {
-            OperatingSystemMXBean os = U.getOsMx();
-
-            String msg = "Native file system API is not supported on this platform: " +
-                os.getName() + " " + os.getVersion() + " " + os.getArch();
-
-            throw new IgniteCheckedException(msg, e);
+            throw new IgniteCheckedException(
+                "Native file system API is not supported on " + U.osString(), e);
         }
     }
 

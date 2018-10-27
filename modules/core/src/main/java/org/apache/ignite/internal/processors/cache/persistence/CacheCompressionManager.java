@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.PageCompression;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.checkCompressionLevelBounds;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.getDefaultCompressionLevel;
@@ -74,9 +75,15 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
 
         int blockSize = store.getBlockSize();
 
-        if (blockSize <= 0) {
-            throw new IgniteCheckedException("Failed to detect file system block size." +
-                " Page compression is unsupported on this file system.");
+        if (blockSize <= 0)
+            throw new IgniteCheckedException("Failed to detect storage block size on " + U.osString());
+
+        int pageSize = page.remaining();
+
+        if (pageSize < blockSize * 2) {
+            throw new IgniteCheckedException("Page size (now configured to " + pageSize + " bytes) " +
+                "must be at least 2 times larger than the underlying storage block size (detected to be " + blockSize +
+                " bytes) for page compression.");
         }
 
         return compressProc.compressPage(page, blockSize, pageCompression, pageCompressLevel);
