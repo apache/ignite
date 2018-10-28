@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
@@ -135,7 +136,7 @@ public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemor
 
     /** {@inheritDoc} */
     @Override public void start(PluginContext ctx) {
-        // No-op
+        ((IgniteEx)ctx.grid()).context().internalSubscriptionProcessor().registerDatabaseListener(this);
     }
 
     /** {@inheritDoc} */

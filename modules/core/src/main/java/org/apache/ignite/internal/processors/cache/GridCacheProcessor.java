@@ -2270,13 +2270,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         try {
             prepareCacheStop(cctx.name(), false);
+
+            if (!cctx.group().hasCaches())
+                stopCacheGroup(cctx.group().groupId());
         }
         finally {
             sharedCtx.database().checkpointReadUnlock();
         }
 
-        if (!cctx.group().hasCaches())
-            stopCacheGroup(cctx.group().groupId());
     }
 
     /**

@@ -1376,7 +1376,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 cctx.kernalContext().getSystemExecutorService(),
                 cctx.cache().cacheGroups(),
                 cacheGroup -> {
+                    if (cacheGroup.isLocal())
+                        return;
+
                     cacheGroup.restorePartitionStates(Collections.emptyMap());
+
                     cacheGroup.topology().afterStateRestored(fut.initialVersion());
                 }
             );
@@ -2018,8 +2022,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             // Restore state for all groups.
             restorePartitionStates(cctx.cache().cacheGroups(), logicalState.partitionRecoveryStates);
 
-            if (logicalState.lastRead != null)
+            if (logicalState.lastRead != null) {
                 walTail = logicalState.lastRead.next();
+
+                log.warning("WAL TAIL CHANGED to " + walTail);
+            }
 
             cctx.wal().onDeActivate(kctx);
         }

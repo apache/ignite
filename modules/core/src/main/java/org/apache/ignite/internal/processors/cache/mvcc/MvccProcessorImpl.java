@@ -319,7 +319,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public void afterInitialise(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
+    @Override public void beforeResumeWalLogging(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
         // In case of blt changed we should re-init TX_LOG cache.
         txLogPageStoreInit(mgr);
     }
@@ -334,9 +334,10 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
      * @throws IgniteCheckedException If failed.
      */
     private void txLogPageStoreInit(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
-        if (CU.isPersistenceEnabled(ctx.config()))
-            ctx.cache().context().pageStore().initialize(TX_LOG_CACHE_ID, 1,
-                TX_LOG_CACHE_NAME, mgr.dataRegion(TX_LOG_CACHE_NAME).memoryMetrics());
+        assert CU.isPersistenceEnabled(ctx.config());
+
+        ctx.cache().context().pageStore().initialize(TX_LOG_CACHE_ID, 1,
+            TX_LOG_CACHE_NAME, mgr.dataRegion(TX_LOG_CACHE_NAME).memoryMetrics());
     }
 
     /** {@inheritDoc} */
