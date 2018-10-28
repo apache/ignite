@@ -748,11 +748,11 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
 
     private void checkCompressDecompress(ByteBuffer page, Function<ByteBuffer, ?> getPageContents, boolean fullPage)
         throws IgniteCheckedException {
-        int pageSize = page.remaining();
         long pageId = PageIO.getPageId(page);
         PageIO io = PageIO.getPageIO(page);
 
         ByteBuffer compressed = p.compressPage(page, pageSize, blockSize, compression, compressLevel);
+
         int compressedSize = compressed.remaining();
 
         checkIo(io, compressed);

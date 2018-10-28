@@ -101,7 +101,9 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
         int compactSize = compactPage.limit();
 
-        // If no need to compress further or configured just to drop garbage.
+        assert compactSize <= pageSize: compactSize;
+
+        // If no need to compress further or configured just to skip garbage.
         if (compactSize < fsBlockSize || compression == SKIP_GARBAGE)
             return createCompactPageResult(compactPage, compactSize);
 
@@ -116,6 +118,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
             if (freeCompactBlocks == 0)
                 return page; // No blocks will be released.
 
+            compactPage.flip();
             return createCompactPageResult(compactPage, compactSize);
         }
 
