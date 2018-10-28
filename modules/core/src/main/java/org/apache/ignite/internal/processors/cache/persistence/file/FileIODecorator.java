@@ -26,7 +26,7 @@ import java.nio.MappedByteBuffer;
  */
 public class FileIODecorator extends AbstractFileIO {
     /** File I/O delegate */
-    private final FileIO delegate;
+    protected final FileIO delegate;
 
     /**
      *
