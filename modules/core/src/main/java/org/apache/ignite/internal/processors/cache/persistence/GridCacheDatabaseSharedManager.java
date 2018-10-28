@@ -4691,9 +4691,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         rec = new DataRecord(
                             dataRecord.writeEntries().stream().filter(entry -> {
-                                DynamicCacheDescriptor desc = cctx.cache().cacheDescriptor(entry.cacheId());
+                                int cacheId = entry.cacheId();
 
-                                return desc != null && onlyForGroups.contains(desc.groupId());
+                                return cctx.cacheContext(cacheId) != null && onlyForGroups.contains(cctx.cacheContext(cacheId).groupId());
                             })
                             .collect(Collectors.toList())
                         );
