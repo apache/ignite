@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -546,12 +547,12 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         AllocatedPageTracker allocatedTracker = regionMetrics.getOrAllocateGroupPageAllocationTracker(grpId);
 
         return initDir(
-            cacheWorkDir,
-            grpDesc.groupId(),
-            grpDesc.config().getAffinity().partitions(),
-            allocatedTracker,
-            ccfg.isEncryptionEnabled()
-        );
+                    cacheWorkDir,
+                    grpDesc.groupId(),
+                    grpDesc.config().getAffinity().partitions(),
+                    allocatedTracker,
+                    ccfg.isEncryptionEnabled()
+                );
     }
 
     /**
@@ -628,8 +629,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
             return new CacheStoreHolder(idxStore, partStores);
         }
-        catch (StorageException e) {
-            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+        catch (IgniteCheckedException e) {
+            if (X.hasCause(e, StorageException.class, IOException.class))
+                cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             throw e;
         }
