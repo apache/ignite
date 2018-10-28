@@ -281,8 +281,6 @@ public class CompressionProcessorImpl extends CompressionProcessor {
     @Override public void decompressPage(ByteBuffer page, int pageSize) throws IgniteCheckedException {
         assert page.capacity() == pageSize;
 
-        page.position(0);
-
         byte compressType = PageIO.getCompressionType(page);
 
         if (compressType == UNCOMPRESSED_PAGE)
@@ -316,6 +314,8 @@ public class CompressionProcessorImpl extends CompressionProcessor {
             page.put(dst).flip();
             assert page.limit() == compactSize;
         }
+        else
+            page.position(0).limit(compactSize);
 
         CompactablePageIO io = PageIO.getPageIO(page);
 

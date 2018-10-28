@@ -768,7 +768,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         for (int i = compressedSize; i < pageSize; i++)
             assertEquals(0, compressed.get(i));
 
-        compressed.position(0).limit(compressedSize);
+        compressed.clear();
 
         checkIo(io, compressed);
         assertNotSame(page, compressed);
