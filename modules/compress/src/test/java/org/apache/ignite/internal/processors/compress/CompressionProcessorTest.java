@@ -756,12 +756,12 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
 
         ByteBuffer compressed = p.compressPage(page, pageSize, blockSize, compression, compressLevel);
 
-        int compressedSize = compressed.remaining();
-
-        assertEquals(0, compressed.position());
+        int compressedSize = PageIO.getCompressedSize(compressed);
 
         // For consistent CRC compressed buffer must of the page size but filled with 0 after the compressed part.
         assertEquals(pageSize, compressed.capacity());
+        assertEquals(0, compressed.position());
+        assertEquals(pageSize, compressed.limit());
 
         compressed.position(compressedSize).limit(pageSize);
 

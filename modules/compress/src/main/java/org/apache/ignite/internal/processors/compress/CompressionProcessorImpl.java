@@ -123,7 +123,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
         if (freeCompactBlocks >= freeCompressedBlocks) {
             if (freeCompactBlocks == 0)
-                return page; // No blocks will be released.
+                return (ByteBuffer)page.clear(); // No blocks will be released.
 
             compactPage.flip();
             return createCompactPageResult(compactPage, compactSize, pageSize);
@@ -132,13 +132,21 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         setCompressionInfo(compressedPage, compression, compressedSize, compactSize);
 
         // Need to return correctly sized buffer.
-        if (compressedPage.capacity() == pageSize)
-            return compressedPage;
+        return compressedPage.capacity() == pageSize ? (ByteBuffer)compressedPage.clear() :
+            copyToPageSizedBuffer(compressedPage, pageSize);
+    }
 
-        assert compressedSize < pageSize;
+    /**
+     * @param b Buffer.
+     * @param pageSize Page size.
+     * @return New direct buffer.
+     */
+    private static ByteBuffer copyToPageSizedBuffer(ByteBuffer b, int pageSize) {
+        assert b.position() == 0;
+        assert b.limit() <= pageSize;
+        assert b.capacity() != pageSize;
 
-        return (ByteBuffer)allocateDirectBuffer(pageSize)
-            .put(compressedPage).flip();
+        return (ByteBuffer)allocateDirectBuffer(pageSize).put(b).clear();
     }
 
     /**
@@ -151,9 +159,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
         // Can not return thread local buffer, because the actual write may be async.
         // Also we have to always return buffer of correct page size.
-        ByteBuffer res = allocateDirectBuffer(pageSize);
-        res.put(compactPage).flip();
-        return res;
+        return copyToPageSizedBuffer(compactPage, pageSize);
     }
 
     /**
