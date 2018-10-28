@@ -27,7 +27,6 @@ import java.nio.file.Files;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -44,6 +43,7 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
+import static org.apache.ignite.internal.processors.compress.CompressionProcessor.checkAllZeroTail;
 
 /**
  * File page store.
@@ -373,6 +373,8 @@ public class FilePageStore implements PageStore {
             PageIO.setCrc(pageBuf, 0);
 
             pageBuf.position(0);
+
+            assert checkAllZeroTail(pageBuf);
 
             if (!skipCrc) {
                 int curCrc32 = FastCrc.calcCrc(pageBuf, pageSize);
