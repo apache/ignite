@@ -63,25 +63,25 @@ public class BernoulliNaiveBayesModel implements Model<Vector, Double>, Exportab
 
     /** Returns a label with max probability. */
     @Override public Double apply(Vector vector) {
-        double maxProbapility = -Double.MIN_VALUE;
-        int max = 0;
+        double maxProbapilityPower = -Double.MAX_VALUE;
+        int maxLabelIndex = -1;
 
         for (int i = 0; i < classProbabilities.length; i++) {
-            double probability = Math.log(classProbabilities[i]);
+            double probabilityPower = Math.log(classProbabilities[i]);
 
             for (int j = 0; j < probabilities[0].length; j++) {
                 int x = toZeroOne(vector.get(j));
                 double p = probabilities[i][j];
-                probability += (x == 1 ? Math.log(p) : Math.log(1 - p));
+                probabilityPower += (x == 1 ? Math.log(p) : Math.log(1 - p));
             }
 
-            probability = Math.exp(probability);
-            if (probability > maxProbapility) {
-                max = i;
-                maxProbapility = probability;
+            System.out.println(probabilityPower);
+            if (probabilityPower > maxProbapilityPower) {
+                maxLabelIndex = i;
+                maxProbapilityPower = probabilityPower;
             }
         }
-        return labels[max];
+        return labels[maxLabelIndex];
     }
 
     /** */
@@ -110,6 +110,6 @@ public class BernoulliNaiveBayesModel implements Model<Vector, Double>, Exportab
     }
 
     private int toZeroOne(double value) {
-        return value > binarizeThreshold ? 1 : 0;
+        return value >= binarizeThreshold ? 1 : 0;
     }
 }
