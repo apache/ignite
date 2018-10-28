@@ -40,18 +40,14 @@ public class CompressionProcessorImpl extends CompressionProcessor {
     /** */
     static boolean testMode = false;
 
-    /** */
-    private final ThreadLocal<ByteBuffer> tmp = new ThreadLocal<ByteBuffer>() {
-        @Override protected ByteBuffer initialValue() {
-            return allocateDirectBuffer(32 * 1024);
-        }
+    /** A bit more than max page size. */
+    private static final int THREAD_LOCAL_BUF_SIZE = 18 * 1024;
 
-        @Override public ByteBuffer get() {
-            ByteBuffer buf = super.get();
-            buf.clear();
-            return buf;
-        }
-    };
+    /** */
+    private final ThreadLocalByteBuffer tmp = new ThreadLocalByteBuffer(THREAD_LOCAL_BUF_SIZE);
+
+    /** */
+    private final ThreadLocalByteBuffer extraTmp = new ThreadLocalByteBuffer(THREAD_LOCAL_BUF_SIZE);
 
     /**
      * @param ctx Kernal context.
@@ -183,7 +179,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @param pageSize Page size.
      * @return Compressed page.
      */
-    private static ByteBuffer compressPage(PageCompression compression, ByteBuffer compactPage, int compactSize, int compressLevel, int pageSize) {
+    private ByteBuffer compressPage(PageCompression compression, ByteBuffer compactPage, int compactSize, int compressLevel, int pageSize) {
         switch (compression) {
             case ZSTD:
                 return compressPageZstd(compactPage, compactSize, compressLevel, pageSize);
@@ -201,11 +197,11 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @param pageSize Page size.
      * @return Compressed page.
      */
-    private static ByteBuffer compressPageLz4(ByteBuffer compactPage, int compactSize, int compressLevel, int pageSize) {
+    private ByteBuffer compressPageLz4(ByteBuffer compactPage, int compactSize, int compressLevel, int pageSize) {
         LZ4Compressor compressor = Lz4.getCompressor(compressLevel);
 
-        ByteBuffer compressedPage = allocateDirectBuffer(Math.max(pageSize,
-            PageIO.COMMON_HEADER_END + compressor.maxCompressedLength(compactSize - PageIO.COMMON_HEADER_END)));
+        ByteBuffer compressedPage = getBufferForCompression(pageSize, PageIO.COMMON_HEADER_END +
+            compressor.maxCompressedLength(compactSize - PageIO.COMMON_HEADER_END));
 
         copyPageHeader(compactPage, compressedPage, compactSize);
         compressor.compress(compactPage, compressedPage);
@@ -220,15 +216,27 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @param compressLevel Compression level.
      * @return Compressed page.
      */
-    private static ByteBuffer compressPageZstd(ByteBuffer compactPage, int compactSize, int compressLevel, int pageSize) {
-        ByteBuffer compressedPage = allocateDirectBuffer(Math.max(pageSize,
-            (int)(PageIO.COMMON_HEADER_END + Zstd.compressBound(compactSize - PageIO.COMMON_HEADER_END))));
+    private ByteBuffer compressPageZstd(ByteBuffer compactPage, int compactSize, int compressLevel, int pageSize) {
+        ByteBuffer compressedPage = getBufferForCompression(pageSize, (int)(PageIO.COMMON_HEADER_END +
+            Zstd.compressBound(compactSize - PageIO.COMMON_HEADER_END)));
 
         copyPageHeader(compactPage, compressedPage, compactSize);
         Zstd.compress(compressedPage, compactPage, compressLevel);
 
         compressedPage.flip();
         return compressedPage;
+    }
+
+    /**
+     * @param pageSize Page size.
+     * @param compressionBoundSize Max possible size after the compression.
+     * @return Buffer.
+     */
+    private ByteBuffer getBufferForCompression(int pageSize, int compressionBoundSize) {
+        if (compressionBoundSize <= pageSize)
+            return allocateDirectBuffer(pageSize); // We will be able to return it right away.
+
+        return extraTmp.get();
     }
 
     /**
@@ -336,6 +344,32 @@ public class CompressionProcessorImpl extends CompressionProcessor {
          */
         static void decompress(ByteBuffer dst, ByteBuffer page) {
             decompressor.decompress(page, dst);
+        }
+    }
+
+    /**
+     */
+    static class ThreadLocalByteBuffer extends ThreadLocal<ByteBuffer> {
+        /** */
+        final int size;
+
+        /**
+         * @param size Size.
+         */
+        ThreadLocalByteBuffer(int size) {
+            this.size = size;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected ByteBuffer initialValue() {
+            return allocateDirectBuffer(size);
+        }
+
+        /** {@inheritDoc} */
+        @Override public ByteBuffer get() {
+            ByteBuffer buf = super.get();
+            buf.clear();
+            return buf;
         }
     }
 }
