@@ -527,19 +527,24 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 segmentRouter,
                 ioFactory
             );
-
-            if (isArchiverEnabled()) {
-                assert archiver != null;
-
-                new IgniteThread(archiver).start();
-            }
-
-            if (walSegmentSyncWorker != null)
-                new IgniteThread(walSegmentSyncWorker).start();
-
-            if (compressor != null)
-                compressor.start();
         }
+    }
+
+    /**
+     *
+     */
+    private void startArchiverAndCompressor() {
+        if (isArchiverEnabled()) {
+            assert archiver != null;
+
+            new IgniteThread(archiver).start();
+        }
+
+        if (walSegmentSyncWorker != null)
+            new IgniteThread(walSegmentSyncWorker).start();
+
+        if (compressor != null)
+            compressor.start();
     }
 
     /**
@@ -693,6 +698,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
+        startArchiverAndCompressor();
+
         assert currHnd == null;
         assert lastPtr == null || lastPtr instanceof FileWALPointer;
         assert (isArchiverEnabled() && archiver != null) || (!isArchiverEnabled() && archiver == null) :
@@ -1729,6 +1736,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     notifyAll();
                 }
 
+                e.printStackTrace();
+
                 cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
 
                 return;
@@ -1804,6 +1813,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
             catch (Throwable t) {
                 err = t;
+
+                err.printStackTrace();
             }
             finally {
                 if (err == null && !isCancelled())

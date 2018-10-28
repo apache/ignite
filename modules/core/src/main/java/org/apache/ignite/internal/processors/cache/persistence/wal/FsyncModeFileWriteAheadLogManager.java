@@ -441,16 +441,21 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             else
                 U.quietAndWarn(log, "Started write-ahead log manager in NONE mode, persisted data may be lost in " +
                     "a case of unexpected node failure. Make sure to deactivate the cluster before shutdown.");
-
-            if (isArchiverEnabled()) {
-                assert archiver != null;
-
-                new IgniteThread(archiver).start();
-            }
-
-            if (compressor != null)
-                compressor.start();
         }
+    }
+
+    /**
+     *
+     */
+    private void startArchiverAndCompressor() {
+        if (isArchiverEnabled()) {
+            assert archiver != null;
+
+            new IgniteThread(archiver).start();
+        }
+
+        if (compressor != null)
+            compressor.start();
     }
 
     /**
@@ -544,6 +549,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
     /** {@inheritDoc} */
     @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
+        startArchiverAndCompressor();
+
         assert currentHnd == null;
         assert lastPtr == null || lastPtr instanceof FileWALPointer;
         assert (isArchiverEnabled() && archiver != null) || (!isArchiverEnabled() && archiver == null) :
