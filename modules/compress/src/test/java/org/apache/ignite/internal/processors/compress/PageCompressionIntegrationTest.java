@@ -63,27 +63,37 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
     FileIOFactory fileIOFactory;
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+        CompressionProcessorImpl.testMode = true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        CompressionProcessorImpl.testMode = false;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         cleanPersistenceDir();
         PunchFileIO.resetPunchCount();
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        DataStorageConfiguration dsCfg = new DataStorageConfiguration();
+    @Override protected IgniteConfiguration getConfiguration(String igniteName) throws Exception {
+        DataRegionConfiguration drCfg = new DataRegionConfiguration()
+            .setMaxSize(20 * 1024 * 1024)
+            .setPersistenceEnabled(true)
+            .setPageCompression(compression)
+            .setPageCompressionLevel(compressionLevel);
 
-        dsCfg.setPageSize(16 * 1024);
-        dsCfg.setCheckpointFrequency(1000);
-        dsCfg.setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration()
-                .setMaxSize(1024 * 1024)
-                .setPersistenceEnabled(true)
-                .setPageCompression(compression)
-                .setPageCompressionLevel(compressionLevel)
-        );
-        dsCfg.setFileIOFactory(new PunchFileIOFactory(fileIOFactory));
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration()
+            .setPageSize(16 * 1024)
+            .setCheckpointFrequency(1000)
+            .setDefaultDataRegionConfiguration(drCfg)
+            .setFileIOFactory(new PunchFileIOFactory(fileIOFactory));
 
-        return super.getConfiguration().setDataStorageConfiguration(dsCfg);
+        return super.getConfiguration(igniteName).setDataStorageConfiguration(dsCfg);
     }
 
     /**
@@ -146,6 +156,8 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
         String igniteName = getTestIgniteInstanceName();
         IgniteEx ignite = startGrid(igniteName);
 
+        ignite.cluster().active(true);
+
         CacheConfiguration<Integer,TestVal> ccfg = new CacheConfiguration<Integer,TestVal>()
             .setName("test")
             .setBackups(0)
@@ -162,7 +174,7 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
         for (int i = 0; i < cnt; i += 2)
             assertEquals(new TestVal(i), cache.getAndRemove(i));
 
-        U.sleep(3000);
+        U.sleep(2000);
 
         stopGrid(igniteName, false, true);
 
@@ -172,7 +184,7 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
 
         cache = ignite.getOrCreateCache(ccfg);
 
-        for (int i = 0; i < 20_000; i++)
+        for (int i = 0; i < cnt; i++)
             assertEquals(new TestVal(i), cache.get(i));
 
         assertPunched(false);

@@ -38,6 +38,9 @@ import static org.apache.ignite.internal.util.GridUnsafe.NATIVE_BYTE_ORDER;
 @SuppressWarnings("unused")
 public class CompressionProcessorImpl extends CompressionProcessor {
     /** */
+    static boolean testMode = false;
+
+    /** */
     private final ThreadLocal<ByteBuffer> tmp = new ThreadLocal<ByteBuffer>() {
         @Override protected ByteBuffer initialValue() {
             return allocateDirectBuffer(32 * 1024);
@@ -67,6 +70,9 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
     /** {@inheritDoc} */
     @Override public void checkPageCompressionSupported() throws IgniteCheckedException {
+        if (testMode)
+            return;
+
         if (!U.isLinux())
             throw new IgniteCheckedException("Currently page compression is supported only for Linux.");
 
@@ -77,17 +83,22 @@ public class CompressionProcessorImpl extends CompressionProcessor {
     @Override public ByteBuffer compressPage(
         ByteBuffer page,
         int pageSize,
-        int fsBlockSize,
+        int blockSize,
         PageCompression compression,
         int compressLevel
     ) throws IgniteCheckedException {
-        assert U.isPow2(pageSize): pageSize;
-        assert pageSize >= fsBlockSize * 2;
-        assert page.position() == 0 && page.limit() == pageSize;
         assert compression != null;
+        assert U.isPow2(pageSize): pageSize;
+        assert page.position() == 0 && page.limit() == pageSize;
 
-        if (!U.isPow2(fsBlockSize))
-            throw new IgniteCheckedException("Storage block size must be power of 2: " + fsBlockSize);
+        if (!U.isPow2(blockSize))
+            throw new IgniteCheckedException("Storage block size must be power of 2: " + blockSize);
+
+        if (pageSize < blockSize * 2) {
+            throw new IgniteCheckedException("Page size (now configured to " + pageSize + " bytes) " +
+                "must be at least 2 times larger than the underlying storage block size (detected to be " + blockSize +
+                " bytes) for page compression.");
+        }
 
         PageIO io = PageIO.getPageIO(page);
 
@@ -104,26 +115,34 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         assert compactSize <= pageSize: compactSize;
 
         // If no need to compress further or configured just to skip garbage.
-        if (compactSize < fsBlockSize || compression == SKIP_GARBAGE)
-            return createCompactPageResult(compactPage, compactSize);
+        if (compactSize < blockSize || compression == SKIP_GARBAGE)
+            return createCompactPageResult(compactPage, compactSize, pageSize);
 
-        ByteBuffer compressedPage = compressPage(compression, compactPage, compactSize, compressLevel);
+        ByteBuffer compressedPage = compressPage(compression, compactPage, compactSize, compressLevel, pageSize);
 
         int compressedSize = compressedPage.limit();
 
-        int freeCompactBlocks = (pageSize - compactSize) / fsBlockSize;
-        int freeCompressedBlocks = (pageSize - compressedSize) / fsBlockSize;
+        int freeCompactBlocks = (pageSize - compactSize) / blockSize;
+        int freeCompressedBlocks = (pageSize - compressedSize) / blockSize;
 
         if (freeCompactBlocks >= freeCompressedBlocks) {
             if (freeCompactBlocks == 0)
                 return page; // No blocks will be released.
 
             compactPage.flip();
-            return createCompactPageResult(compactPage, compactSize);
+            return createCompactPageResult(compactPage, compactSize, pageSize);
         }
 
         setCompressionInfo(compressedPage, compression, compressedSize, compactSize);
-        return compressedPage;
+
+        // Need to return correctly sized buffer.
+        if (compressedPage.capacity() == pageSize)
+            return compressedPage;
+
+        assert compressedSize < pageSize;
+
+        return (ByteBuffer)allocateDirectBuffer(pageSize)
+            .put(compressedPage).flip();
     }
 
     /**
@@ -131,11 +150,12 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @param compactSize Compacted page size.
      * @return New buffer.
      */
-    private static ByteBuffer createCompactPageResult(ByteBuffer compactPage, int compactSize) {
+    private static ByteBuffer createCompactPageResult(ByteBuffer compactPage, int compactSize, int pageSize) {
         setCompressionInfo(compactPage, SKIP_GARBAGE, compactSize, compactSize);
 
         // Can not return thread local buffer, because the actual write may be async.
-        ByteBuffer res = allocateDirectBuffer(compactSize);
+        // Also we have to always return buffer of correct page size.
+        ByteBuffer res = allocateDirectBuffer(pageSize);
         res.put(compactPage).flip();
         return res;
     }
@@ -160,15 +180,16 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @param compactPage Compacted page.
      * @param compactSize Compacted page size.
      * @param compressLevel Compression level.
+     * @param pageSize Page size.
      * @return Compressed page.
      */
-    private static ByteBuffer compressPage(PageCompression compression, ByteBuffer compactPage, int compactSize, int compressLevel) {
+    private static ByteBuffer compressPage(PageCompression compression, ByteBuffer compactPage, int compactSize, int compressLevel, int pageSize) {
         switch (compression) {
             case ZSTD:
-                return compressPageZstd(compactPage, compactSize, compressLevel);
+                return compressPageZstd(compactPage, compactSize, compressLevel, pageSize);
 
             case LZ4:
-                return compressPageLz4(compactPage, compactSize, compressLevel);
+                return compressPageLz4(compactPage, compactSize, compressLevel, pageSize);
         }
         throw new IllegalStateException("Unsupported compression: " + compression);
     }
@@ -177,13 +198,14 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @param compactPage Compacted page.
      * @param compactSize Compacted page size.
      * @param compressLevel Compression level.
+     * @param pageSize Page size.
      * @return Compressed page.
      */
-    private static ByteBuffer compressPageLz4(ByteBuffer compactPage, int compactSize, int compressLevel) {
+    private static ByteBuffer compressPageLz4(ByteBuffer compactPage, int compactSize, int compressLevel, int pageSize) {
         LZ4Compressor compressor = Lz4.getCompressor(compressLevel);
 
-        ByteBuffer compressedPage = allocateDirectBuffer(PageIO.COMMON_HEADER_END +
-            compressor.maxCompressedLength(compactSize - PageIO.COMMON_HEADER_END));
+        ByteBuffer compressedPage = allocateDirectBuffer(Math.max(pageSize,
+            PageIO.COMMON_HEADER_END + compressor.maxCompressedLength(compactSize - PageIO.COMMON_HEADER_END)));
 
         copyPageHeader(compactPage, compressedPage, compactSize);
         compressor.compress(compactPage, compressedPage);
@@ -198,9 +220,9 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @param compressLevel Compression level.
      * @return Compressed page.
      */
-    private static ByteBuffer compressPageZstd(ByteBuffer compactPage, int compactSize, int compressLevel) {
-        ByteBuffer compressedPage = allocateDirectBuffer((int)(PageIO.COMMON_HEADER_END +
-            Zstd.compressBound(compactSize - PageIO.COMMON_HEADER_END)));
+    private static ByteBuffer compressPageZstd(ByteBuffer compactPage, int compactSize, int compressLevel, int pageSize) {
+        ByteBuffer compressedPage = allocateDirectBuffer(Math.max(pageSize,
+            (int)(PageIO.COMMON_HEADER_END + Zstd.compressBound(compactSize - PageIO.COMMON_HEADER_END))));
 
         copyPageHeader(compactPage, compressedPage, compactSize);
         Zstd.compress(compressedPage, compactPage, compressLevel);
@@ -243,7 +265,9 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
     /** {@inheritDoc} */
     @Override public void decompressPage(ByteBuffer page, int pageSize) throws IgniteCheckedException {
-        assert page.position() == 0: page;
+        assert page.capacity() == pageSize;
+
+        page.position(0);
 
         byte compressType = PageIO.getCompressionType(page);
 

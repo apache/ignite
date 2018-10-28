@@ -77,14 +77,6 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
         if (blockSize <= 0)
             throw new IgniteCheckedException("Failed to detect storage block size on " + U.osString());
 
-        int pageSize = store.getPageSize();
-
-        if (pageSize < blockSize * 2) {
-            throw new IgniteCheckedException("Page size (now configured to " + pageSize + " bytes) " +
-                "must be at least 2 times larger than the underlying storage block size (detected to be " + blockSize +
-                " bytes) for page compression.");
-        }
-
-        return compressProc.compressPage(page, pageSize, blockSize, pageCompression, pageCompressLevel);
+        return compressProc.compressPage(page, store.getPageSize(), blockSize, pageCompression, pageCompressLevel);
     }
 }
