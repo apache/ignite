@@ -44,6 +44,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.configuration.PageCompression.SKIP_GARBAGE;
 import static org.apache.ignite.configuration.PageCompression.LZ4;
 import static org.apache.ignite.configuration.PageCompression.ZSTD;
+import static org.apache.ignite.internal.processors.compress.CompressionProcessor.LZ4_MAX_LEVEL;
+import static org.apache.ignite.internal.processors.compress.CompressionProcessor.LZ4_MIN_LEVEL;
+import static org.apache.ignite.internal.processors.compress.CompressionProcessor.ZSTD_MAX_LEVEL;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorImpl.allocateDirectBuffer;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorTest.TestInnerIO.INNER_IO;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorTest.TestLeafIO.LEAF_IO;
@@ -62,10 +65,10 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     private int pageSize = 4 * 1024;
 
     /** */
-    private PageCompression compression = SKIP_GARBAGE;
+    private PageCompression compression;
 
     /** */
-    private int compressLevel = 0;
+    private int compressLevel;
 
     /** */
     private CompressionProcessor p;
@@ -128,7 +131,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testDataPageZstd16() throws IgniteCheckedException {
         blockSize = 16;
         compression = ZSTD;
-        compressLevel = 22;
+        compressLevel = ZSTD_MAX_LEVEL;
 
         doTestDataPage();
     }
@@ -139,7 +142,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testDataPageZstd128() throws IgniteCheckedException {
         blockSize = 128;
         compression = ZSTD;
-        compressLevel = 22;
+        compressLevel = ZSTD_MAX_LEVEL;
 
         doTestDataPage();
     }
@@ -150,7 +153,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testDataPageZstd1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = ZSTD;
-        compressLevel = 22;
+        compressLevel = ZSTD_MAX_LEVEL;
 
         doTestDataPage();
     }
@@ -161,7 +164,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testDataPageZstd2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = ZSTD;
-        compressLevel = 22;
+        compressLevel = ZSTD_MAX_LEVEL;
 
         doTestDataPage();
     }
@@ -172,7 +175,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testDataPageLz4Fast16() throws IgniteCheckedException {
         blockSize = 16;
         compression = LZ4;
-        compressLevel = 0;
+        compressLevel = LZ4_MIN_LEVEL;
 
         doTestDataPage();
     }
@@ -183,7 +186,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testDataPageLz4Fast128() throws IgniteCheckedException {
         blockSize = 128;
         compression = LZ4;
-        compressLevel = 0;
+        compressLevel = LZ4_MIN_LEVEL;
 
         doTestDataPage();
     }
@@ -194,7 +197,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testDataPageLz4Fast1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = LZ4;
-        compressLevel = 0;
+        compressLevel = LZ4_MIN_LEVEL;
 
         doTestDataPage();
     }
@@ -205,7 +208,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testDataPageLz4Fast2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = LZ4;
-        compressLevel = 0;
+        compressLevel = LZ4_MIN_LEVEL;
 
         doTestDataPage();
     }
@@ -216,7 +219,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testDataPageLz4Slow16() throws IgniteCheckedException {
         blockSize = 16;
         compression = LZ4;
-        compressLevel = 17;
+        compressLevel = LZ4_MAX_LEVEL;
 
         doTestDataPage();
     }
@@ -227,7 +230,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testDataPageLz4Slow128() throws IgniteCheckedException {
         blockSize = 128;
         compression = LZ4;
-        compressLevel = 17;
+        compressLevel = LZ4_MAX_LEVEL;
 
         doTestDataPage();
     }
@@ -238,7 +241,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testDataPageLz4Slow1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = LZ4;
-        compressLevel = 17;
+        compressLevel = LZ4_MAX_LEVEL;
 
         doTestDataPage();
     }
@@ -249,7 +252,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testDataPageLz4Slow2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = LZ4;
-        compressLevel = 17;
+        compressLevel = LZ4_MAX_LEVEL;
 
         doTestDataPage();
     }
@@ -280,7 +283,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testInnerPageZstd16() throws IgniteCheckedException {
         blockSize = 16;
         compression = ZSTD;
-        compressLevel = 22;
+        compressLevel = ZSTD_MAX_LEVEL;
 
         doTestBTreePage(INNER_IO);
     }
@@ -291,7 +294,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testLeafPageZstd16() throws IgniteCheckedException {
         blockSize = 16;
         compression = ZSTD;
-        compressLevel = 22;
+        compressLevel = ZSTD_MAX_LEVEL;
 
         doTestBTreePage(LEAF_IO);
     }
@@ -303,7 +306,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testInnerPageLz4Fast16() throws IgniteCheckedException {
         blockSize = 16;
         compression = LZ4;
-        compressLevel = 0;
+        compressLevel = LZ4_MIN_LEVEL;
 
         doTestBTreePage(INNER_IO);
     }
@@ -314,7 +317,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testLeafPageLz4Fast16() throws IgniteCheckedException {
         blockSize = 16;
         compression = LZ4;
-        compressLevel = 0;
+        compressLevel = LZ4_MIN_LEVEL;
 
         doTestBTreePage(LEAF_IO);
     }
@@ -325,7 +328,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testInnerPageLz4Slow16() throws IgniteCheckedException {
         blockSize = 16;
         compression = LZ4;
-        compressLevel = 17;
+        compressLevel = LZ4_MAX_LEVEL;
 
         doTestBTreePage(INNER_IO);
     }
@@ -336,7 +339,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testLeafPageLz4Slow16() throws IgniteCheckedException {
         blockSize = 16;
         compression = LZ4;
-        compressLevel = 17;
+        compressLevel = LZ4_MAX_LEVEL;
 
         doTestBTreePage(LEAF_IO);
     }
@@ -367,7 +370,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testInnerPageZstd128() throws IgniteCheckedException {
         blockSize = 128;
         compression = ZSTD;
-        compressLevel = 22;
+        compressLevel = ZSTD_MAX_LEVEL;
 
         doTestBTreePage(INNER_IO);
     }
@@ -378,7 +381,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testLeafPageZstd128() throws IgniteCheckedException {
         blockSize = 128;
         compression = ZSTD;
-        compressLevel = 22;
+        compressLevel = ZSTD_MAX_LEVEL;
 
         doTestBTreePage(LEAF_IO);
     }
@@ -389,7 +392,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testInnerPageLz4Fast128() throws IgniteCheckedException {
         blockSize = 128;
         compression = LZ4;
-        compressLevel = 0;
+        compressLevel = LZ4_MIN_LEVEL;
 
         doTestBTreePage(INNER_IO);
     }
@@ -400,7 +403,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testLeafPageLz4Fast128() throws IgniteCheckedException {
         blockSize = 128;
         compression = LZ4;
-        compressLevel = 0;
+        compressLevel = LZ4_MIN_LEVEL;
 
         doTestBTreePage(LEAF_IO);
     }
@@ -411,7 +414,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testInnerPageLz4Slow128() throws IgniteCheckedException {
         blockSize = 128;
         compression = LZ4;
-        compressLevel = 17;
+        compressLevel = LZ4_MAX_LEVEL;
 
         doTestBTreePage(INNER_IO);
     }
@@ -422,7 +425,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testLeafPageLz4Slow128() throws IgniteCheckedException {
         blockSize = 128;
         compression = LZ4;
-        compressLevel = 17;
+        compressLevel = LZ4_MAX_LEVEL;
 
         doTestBTreePage(LEAF_IO);
     }
@@ -453,7 +456,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testInnerPageZstd1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = ZSTD;
-        compressLevel = 22;
+        compressLevel = ZSTD_MAX_LEVEL;
 
         doTestBTreePage(INNER_IO);
     }
@@ -464,7 +467,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testLeafPageZstd1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = ZSTD;
-        compressLevel = 22;
+        compressLevel = ZSTD_MAX_LEVEL;
 
         doTestBTreePage(LEAF_IO);
     }
@@ -475,7 +478,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testInnerPageLz4Fast1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = LZ4;
-        compressLevel = 0;
+        compressLevel = LZ4_MIN_LEVEL;
 
         doTestBTreePage(INNER_IO);
     }
@@ -486,7 +489,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testLeafPageLz4Fast1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = LZ4;
-        compressLevel = 0;
+        compressLevel = LZ4_MIN_LEVEL;
 
         doTestBTreePage(LEAF_IO);
     }
@@ -497,7 +500,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testInnerPageLz4Slow1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = LZ4;
-        compressLevel = 17;
+        compressLevel = LZ4_MAX_LEVEL;
 
         doTestBTreePage(INNER_IO);
     }
@@ -508,7 +511,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testLeafPageLz4Slow1k() throws IgniteCheckedException {
         blockSize = 1024;
         compression = LZ4;
-        compressLevel = 17;
+        compressLevel = LZ4_MAX_LEVEL;
 
         doTestBTreePage(LEAF_IO);
     }
@@ -539,7 +542,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testInnerPageZstd2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = ZSTD;
-        compressLevel = 22;
+        compressLevel = ZSTD_MAX_LEVEL;
 
         doTestBTreePage(INNER_IO);
     }
@@ -550,7 +553,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testLeafPageZstd2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = ZSTD;
-        compressLevel = 22;
+        compressLevel = ZSTD_MAX_LEVEL;
 
         doTestBTreePage(LEAF_IO);
     }
@@ -561,7 +564,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testInnerPageLz4Fast2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = LZ4;
-        compressLevel = 0;
+        compressLevel = LZ4_MIN_LEVEL;
 
         doTestBTreePage(INNER_IO);
     }
@@ -572,7 +575,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testLeafPageLz4Fast2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = LZ4;
-        compressLevel = 0;
+        compressLevel = LZ4_MIN_LEVEL;
 
         doTestBTreePage(LEAF_IO);
     }
@@ -583,7 +586,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testInnerPageLz4Slow2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = LZ4;
-        compressLevel = 17;
+        compressLevel = LZ4_MAX_LEVEL;
 
         doTestBTreePage(INNER_IO);
     }
@@ -594,7 +597,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     public void testLeafPageLz4Slow2k() throws IgniteCheckedException {
         blockSize = 2 * 1024;
         compression = LZ4;
-        compressLevel = 17;
+        compressLevel = LZ4_MAX_LEVEL;
 
         doTestBTreePage(LEAF_IO);
     }
