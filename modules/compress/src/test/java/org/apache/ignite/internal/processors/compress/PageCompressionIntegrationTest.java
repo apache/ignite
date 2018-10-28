@@ -40,7 +40,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.configuration.PageCompression.LZ4;
+import static org.apache.ignite.configuration.PageCompression.SKIP_GARBAGE;
 import static org.apache.ignite.configuration.PageCompression.ZSTD;
+import static org.apache.ignite.internal.processors.compress.CompressionProcessor.LZ4_MAX_LEVEL;
+import static org.apache.ignite.internal.processors.compress.CompressionProcessor.LZ4_MIN_LEVEL;
+import static org.apache.ignite.internal.processors.compress.CompressionProcessor.ZSTD_MAX_LEVEL;
+import static org.apache.ignite.internal.processors.compress.CompressionProcessor.ZSTD_MIN_LEVEL;
 import static org.apache.ignite.internal.processors.compress.PageCompressionIntegrationTest.PunchFileIO.assertPunched;
 
 /**
@@ -67,8 +73,10 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
         dsCfg.setPageSize(16 * 1024);
+        dsCfg.setCheckpointFrequency(1000);
         dsCfg.setDefaultDataRegionConfiguration(
             new DataRegionConfiguration()
+                .setMaxSize(1024 * 1024)
                 .setPersistenceEnabled(true)
                 .setPageCompression(compression)
                 .setPageCompressionLevel(compressionLevel)
@@ -84,7 +92,7 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
     public void testPageCompression_RandomAccessFileIO_Zstd_Max() throws Exception {
         fileIOFactory = new RandomAccessFileIOFactory();
         compression = ZSTD;
-        compressionLevel = 22;
+        compressionLevel = ZSTD_MAX_LEVEL;
 
         doTestPageCompression();
     }
@@ -92,21 +100,71 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testPageCompression_RandomAccessFileIO_Zstd_Min() throws Exception {
+        fileIOFactory = new RandomAccessFileIOFactory();
+        compression = ZSTD;
+        compressionLevel = ZSTD_MIN_LEVEL;
+
+        doTestPageCompression();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPageCompression_RandomAccessFileIO_Lz4_Max() throws Exception {
+        fileIOFactory = new RandomAccessFileIOFactory();
+        compression = LZ4;
+        compressionLevel = LZ4_MAX_LEVEL;
+
+        doTestPageCompression();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPageCompression_RandomAccessFileIO_Lz4_Min() throws Exception {
+        fileIOFactory = new RandomAccessFileIOFactory();
+        compression = LZ4;
+        compressionLevel = LZ4_MIN_LEVEL;
+
+        doTestPageCompression();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPageCompression_RandomAccessFileIO_SkipGarbage() throws Exception {
+        fileIOFactory = new RandomAccessFileIOFactory();
+        compression = SKIP_GARBAGE;
+
+        doTestPageCompression();
+    }
+    /**
+     * @throws Exception If failed.
+     */
     void doTestPageCompression() throws Exception {
-        IgniteEx ignite = startGrid(0);
+        String igniteName = getTestIgniteInstanceName();
+        IgniteEx ignite = startGrid(igniteName);
 
         CacheConfiguration<Integer,TestVal> ccfg = new CacheConfiguration<Integer,TestVal>()
             .setName("test")
             .setBackups(0)
             .setAtomicityMode(ATOMIC)
-            .setIndexedTypes(Integer.TYPE, TestVal.class);
+            .setIndexedTypes(Integer.class, TestVal.class);
 
         IgniteCache<Integer,TestVal> cache = ignite.getOrCreateCache(ccfg);
 
-        for (int i = 0; i < 20_000; i++)
+        int cnt = 50_000;
+
+        for (int i = 0; i < cnt; i++)
             assertTrue(cache.putIfAbsent(i, new TestVal(i)));
 
-        stopAllGrids(false);
+        for (int i = 0; i < cnt; i += 2)
+            assertEquals(new TestVal(i), cache.getAndRemove(i));
+
+        U.sleep(3000);
+
+        stopGrid(igniteName, false, true);
 
         assertPunched(true);
 
