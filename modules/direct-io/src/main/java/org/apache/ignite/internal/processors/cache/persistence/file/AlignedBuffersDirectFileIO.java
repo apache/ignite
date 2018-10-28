@@ -109,8 +109,6 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
         this.tlbOnePageAligned = tlbOnePageAligned;
         this.managedAlignedBuffers = managedAlignedBuffers;
 
-        fsBlockSize = FileSystemUtils.getFileSystemBlockSize(file.toPath());
-
         String pathname = file.getAbsolutePath();
 
         int openFlags = setupOpenFlags(modes, log, true);
@@ -132,6 +130,7 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
                         "(probably incompatible file system selected, for example, tmpfs): " + msg);
 
                     this.fd = fd;
+                    fsBlockSize = FileSystemUtils.getFileSystemBlockSize(fd);
 
                     return;
                 }
@@ -141,6 +140,7 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
         }
 
         this.fd = fd;
+        fsBlockSize = FileSystemUtils.getFileSystemBlockSize(fd);
     }
 
     /**

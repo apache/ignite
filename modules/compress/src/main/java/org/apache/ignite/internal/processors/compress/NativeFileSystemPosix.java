@@ -17,13 +17,10 @@
 
 package org.apache.ignite.internal.processors.compress;
 
-import java.io.IOException;
 import java.nio.file.Path;
-import java.util.concurrent.ConcurrentHashMap;
 import jnr.posix.FileStat;
 import jnr.posix.POSIX;
 import jnr.posix.POSIXFactory;
-import org.apache.ignite.IgniteException;
 
 /**
  * Posix file system API.
@@ -32,29 +29,16 @@ public class NativeFileSystemPosix implements NativeFileSystem {
     /** */
     private static POSIX posix = POSIXFactory.getPOSIX();
 
-    /** */
-    private final ConcurrentHashMap<Path, Integer> fsBlockSizeCache = new ConcurrentHashMap<>();
-
     /** {@inheritDoc} */
     @Override public int getFileSystemBlockSize(Path path) {
-        Path root;
+        FileStat stat = posix.stat(path.toString());
+        return Math.toIntExact(stat.blockSize());
+    }
 
-        try {
-            root = path.toRealPath().getRoot();
-        }
-        catch (IOException e) {
-            throw new IgniteException(e);
-        }
-
-        Integer fsBlockSize = fsBlockSizeCache.get(root);
-
-        if (fsBlockSize == null) {
-            FileStat stat = posix.stat(root.toString());
-            fsBlockSize = Math.toIntExact(stat.blockSize());
-            fsBlockSizeCache.putIfAbsent(root, fsBlockSize);
-        }
-
-        return fsBlockSize;
+    /** {@inheritDoc} */
+    @Override public int getFileSystemBlockSize(int fd) {
+        FileStat stat = posix.fstat(fd);
+        return Math.toIntExact(stat.blockSize());
     }
 
     /** {@inheritDoc} */

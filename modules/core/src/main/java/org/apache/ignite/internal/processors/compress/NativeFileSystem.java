@@ -31,6 +31,12 @@ public interface NativeFileSystem {
 
     /**
      * @param fd Native file descriptor.
+     * @return File system block size in bytes.
+     */
+    int getFileSystemBlockSize(int fd);
+
+    /**
+     * @param fd Native file descriptor.
      * @param off Offset of the hole.
      * @param len Length of the hole.
      */

@@ -65,9 +65,9 @@ public class AsyncFileIO extends AbstractFileIO {
      */
     public AsyncFileIO(File file, ThreadLocal<ChannelOpFuture> holder, OpenOption... modes) throws IOException {
         Path filePath = file.toPath();
-        fsBlockSize = FileSystemUtils.getFileSystemBlockSize(filePath);
         ch = AsynchronousFileChannel.open(filePath, modes);
         fd = getFileDescriptor(ch);
+        fsBlockSize = FileSystemUtils.getFileSystemBlockSize(fd);
         this.holder = holder;
     }
 

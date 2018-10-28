@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.compress;
 
-import java.nio.file.Path;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -63,12 +62,11 @@ public final class FileSystemUtils {
     }
 
     /**
-     * @param path Path.
+     * @param fd Native file descriptor.
      * @return File system block size or negative value if not supported.
      */
-    public static int getFileSystemBlockSize(Path path) {
-        assert path != null;
-        return fs == null ? -1 : fs.getFileSystemBlockSize(path);
+    public static int getFileSystemBlockSize(int fd) {
+        return fs == null ? -1 : fs.getFileSystemBlockSize(fd);
     }
 
     /**

@@ -116,7 +116,7 @@ public class FileSystemUtilsTest extends TestCase {
         try {
             int fd = getFD(ch);
 
-            int fsBlockSize = getFileSystemBlockSize(file);
+            int fsBlockSize = getFileSystemBlockSize(fd);
 
             System.out.println("fsBlockSize: " + fsBlockSize);
 

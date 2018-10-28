@@ -51,9 +51,9 @@ public class RandomAccessFileIO extends AbstractFileIO {
      */
     public RandomAccessFileIO(File file, OpenOption... modes) throws IOException {
         Path filePath = file.toPath();
-        fsBlockSize = FileSystemUtils.getFileSystemBlockSize(filePath);
         ch = FileChannel.open(filePath, modes);
         fd = getNativeFileDescriptor(ch);
+        fsBlockSize = FileSystemUtils.getFileSystemBlockSize(fd);
     }
 
     /**
