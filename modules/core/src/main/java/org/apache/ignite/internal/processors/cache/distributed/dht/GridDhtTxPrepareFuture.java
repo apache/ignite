@@ -804,8 +804,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 GridNearTxPrepareResponse res = createPrepareResponse(this.err);
 
                 // Will call super.onDone().
-                if (!onComplete(res))
-                    return false;
+                onComplete(res);
 
                 sendPrepareResponse(res);
 
