@@ -48,6 +48,7 @@ import static org.apache.ignite.internal.processors.compress.CompressionProcesso
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.ZSTD_MAX_LEVEL;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.ZSTD_MIN_LEVEL;
 import static org.apache.ignite.internal.processors.compress.PageCompressionIntegrationTest.PunchFileIO.assertPunched;
+import static org.apache.ignite.internal.processors.compress.PageCompressionIntegrationTest.PunchFileIO.resetPunchCount;
 
 /**
  *
@@ -80,16 +81,20 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids(true);
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteName) throws Exception {
         DataRegionConfiguration drCfg = new DataRegionConfiguration()
-            .setMaxSize(20 * 1024 * 1024)
             .setPersistenceEnabled(true)
             .setPageCompression(compression)
             .setPageCompressionLevel(compressionLevel);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setPageSize(16 * 1024)
-            .setCheckpointFrequency(1000)
+            .setCheckpointFrequency(750)
             .setDefaultDataRegionConfiguration(drCfg)
             .setFileIOFactory(new PunchFileIOFactory(fileIOFactory));
 
@@ -149,6 +154,7 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
 
         doTestPageCompression();
     }
+
     /**
      * @throws Exception If failed.
      */
@@ -166,7 +172,7 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer,TestVal> cache = ignite.getOrCreateCache(ccfg);
 
-        int cnt = 50_000;
+        int cnt = 10_000;
 
         for (int i = 0; i < cnt; i++)
             assertTrue(cache.putIfAbsent(i, new TestVal(i)));
@@ -174,20 +180,32 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
         for (int i = 0; i < cnt; i += 2)
             assertEquals(new TestVal(i), cache.getAndRemove(i));
 
-        U.sleep(2000);
-
-        stopGrid(igniteName, false, true);
+        U.sleep(1000);
 
         assertPunched(true);
 
+        stopGrid(igniteName, false, true);
+
         ignite = startGrid(0);
+
+        resetPunchCount();
 
         cache = ignite.getOrCreateCache(ccfg);
 
-        for (int i = 0; i < cnt; i++)
-            assertEquals(new TestVal(i), cache.get(i));
+        for (int i = 0; i < cnt; i++) {
+            if (i % 2 == 0)
+                assertNull(cache.get(i));
+            else
+                assertEquals(new TestVal(i), cache.get(i));
+        }
 
         assertPunched(false);
+
+        cache.put(-1, new TestVal(-1));
+
+        U.sleep(1000);
+
+        assertPunched(true);
     }
 
     /**
