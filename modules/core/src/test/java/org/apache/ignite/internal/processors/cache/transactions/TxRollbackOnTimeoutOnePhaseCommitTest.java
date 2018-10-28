@@ -90,6 +90,13 @@ public class TxRollbackOnTimeoutOnePhaseCommitTest extends GridCommonAbstractTes
         startGrid("client");
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+    }
+
     /** */
     public void testRollbackOnTimeoutPartitionDesyncPessimistic() throws Exception {
         doTestRollbackOnTimeoutPartitionDesync(PESSIMISTIC);
