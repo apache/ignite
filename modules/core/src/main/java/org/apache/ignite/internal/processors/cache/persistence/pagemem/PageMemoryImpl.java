@@ -797,9 +797,9 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     memMetrics.onPageRead();
                 }
-                catch (IgniteDataIntegrityViolationException ignore) {
+                catch (IgniteDataIntegrityViolationException e) {
                     U.warn(log, "Failed to read page (data integrity violation encountered, will try to " +
-                        "restore using existing WAL) [fullPageId=" + fullId + ']');
+                        "restore using existing WAL) [fullPageId=" + fullId + ']', e);
 
                     buf.rewind();
 
