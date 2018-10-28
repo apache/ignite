@@ -126,7 +126,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     private boolean fork;
 
     /** */
-    private static final String CACHE_NAME = "partitioned";
+    private final static String CACHE_NAME = "partitioned";
 
     /** */
     private static final String RENAMED_CACHE_NAME = "partitioned0";
@@ -153,7 +153,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     private long customFailureDetectionTimeout = -1;
 
     /** {@inheritDoc} */
-    @Override protected boolean isMultiJvm() {
+    protected boolean isMultiJvm() {
         return fork;
     }
 
@@ -249,6 +249,9 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         Random rnd = new Random();
 
         Map<Integer, IndexedObject> map = new HashMap<>();
+
+        if (map.size() == 0)
+            log.info("Map is empty.");
 
         for (int i = 0; i < 10_000; i++) {
             if (i % 1000 == 0)
