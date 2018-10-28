@@ -521,6 +521,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     assert checkAllZeroTail(pageBuf);
 
                     compressedPageSize = PageIO.getCompressedSize(pageBuf);
+
+                    if (!calculateCrc) {
+                        calculateCrc = true;
+                        PageIO.setCrc(pageBuf, 0);
+                    }
                 }
             }
 
