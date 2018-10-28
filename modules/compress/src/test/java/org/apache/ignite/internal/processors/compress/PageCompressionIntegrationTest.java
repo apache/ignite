@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PageCompression;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.file.AlignedBuffersDirectFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
@@ -65,6 +66,9 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
     /** */
     FileIOFactory fileIOFactory;
 
+    /** */
+    int pageSize = 16 * 1024;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -78,6 +82,9 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        compression = null;
+        compressionLevel = null;
+        fileIOFactory = null;
         cleanPersistenceDir();
         PunchFileIO.resetPunchCount();
     }
@@ -95,7 +102,7 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
             .setPageCompressionLevel(compressionLevel);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
-            .setPageSize(16 * 1024)
+            .setPageSize(pageSize)
             .setCheckpointFrequency(750)
             .setDefaultDataRegionConfiguration(drCfg)
             .setFileIOFactory(new PunchFileIOFactory(fileIOFactory));
@@ -241,10 +248,109 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPageCompression_AsyncFileIO_SkipGarbage() throws Exception {
+        if (!U.isLinux())
+            return;
+
         fileIOFactory = new RandomAccessFileIOFactory();
         compression = SKIP_GARBAGE;
 
         doTestPageCompression();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPageCompression_DirectFileIO_Zstd_Max() throws Exception {
+        if (!U.isLinux())
+            return;
+
+        fileIOFactory = newAlignedBufferFactory();
+        compression = ZSTD;
+        compressionLevel = ZSTD_MAX_LEVEL;
+
+        doTestPageCompression();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPageCompression_DirectFileIO_Zstd_Default() throws Exception {
+        if (!U.isLinux())
+            return;
+
+        fileIOFactory = newAlignedBufferFactory();
+        compression = ZSTD;
+        compressionLevel = null;
+
+        doTestPageCompression();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPageCompression_DirectFileIO_Zstd_Min() throws Exception {
+        if (!U.isLinux())
+            return;
+
+        fileIOFactory = newAlignedBufferFactory();
+        compression = ZSTD;
+        compressionLevel = ZSTD_MIN_LEVEL;
+
+        doTestPageCompression();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPageCompression_DirectFileIO_Lz4_Max() throws Exception {
+        if (!U.isLinux())
+            return;
+
+        fileIOFactory = newAlignedBufferFactory();
+        compression = LZ4;
+        compressionLevel = LZ4_MAX_LEVEL;
+
+        doTestPageCompression();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPageCompression_DirectFileIO_Lz4_Default() throws Exception {
+        if (!U.isLinux())
+            return;
+
+        fileIOFactory = newAlignedBufferFactory();
+        compression = LZ4;
+        compressionLevel = null;
+
+        doTestPageCompression();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPageCompression_DirectFileIO_Lz4_Min() throws Exception {
+        assertEquals(LZ4_MIN_LEVEL, LZ4_DEFAULT_LEVEL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPageCompression_DirectFileIO_SkipGarbage() throws Exception {
+        if (!U.isLinux())
+            return;
+
+        fileIOFactory = newAlignedBufferFactory();
+        compression = SKIP_GARBAGE;
+
+        doTestPageCompression();
+    }
+
+    private AlignedBuffersDirectFileIOFactory newAlignedBufferFactory() throws Exception {
+        File storePath = new File(super.getConfiguration().getDataStorageConfiguration().getStoragePath());
+
+        return new AlignedBuffersDirectFileIOFactory(log, storePath, pageSize, new RandomAccessFileIOFactory());
     }
 
     /**
