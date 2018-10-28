@@ -40,9 +40,8 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
     private double[] priorProbabilities;
     /* Sets equivalent probability for all classes. */
     private boolean equiprobableClasses;
-
+    /** The threshold to convert a feature to a binary value. Default value is {@code 0.5}. */
     private double binarizeThreshold = .5;
-    private double alpha;
 
     /**
      * Trains model based on the specified data.
@@ -156,20 +155,25 @@ public class BernoulliNaiveBayesTrainer extends SingleLabelDatasetTrainer<Bernou
 
     /** Sets equal probability for all classes. */
     public BernoulliNaiveBayesTrainer withEquiprobableClasses() {
-        resetSettings();
+        resetProbabilitiesSettings();
         equiprobableClasses = true;
         return this;
     }
 
     /** Sets prior probabilities. */
     public BernoulliNaiveBayesTrainer setPriorProbabilities(double[] priorProbabilities) {
-        resetSettings();
+        resetProbabilitiesSettings();
         this.priorProbabilities = priorProbabilities.clone();
         return this;
     }
 
-    /** Sets default settings. */
-    public BernoulliNaiveBayesTrainer resetSettings() {
+    /** */
+    public void setBinarizeThreshold(double binarizeThreshold) {
+        this.binarizeThreshold = binarizeThreshold;
+    }
+
+    /** Sets default settings {@code equiprobableClasses} to {@code false} and removes priorProbabilities. */
+    public BernoulliNaiveBayesTrainer resetProbabilitiesSettings() {
         equiprobableClasses = false;
         priorProbabilities = null;
         return this;
