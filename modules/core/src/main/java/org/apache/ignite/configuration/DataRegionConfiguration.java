@@ -453,10 +453,13 @@ public final class DataRegionConfiguration implements Serializable {
      * Sets page compression algorithm. Makes sense only with enabled persistence.
      *
      * @param pageCompression Page compression algorithm.
+     * @return {@code this} for chaining.
      * @see #setPageCompressionLevel
      */
-    public void setPageCompression(PageCompression pageCompression) {
+    public DataRegionConfiguration setPageCompression(PageCompression pageCompression) {
         this.pageCompression = pageCompression;
+
+        return this;
     }
 
     /**
@@ -474,9 +477,12 @@ public final class DataRegionConfiguration implements Serializable {
      * @param pageCompressionLevel Page compression level or {@code null} to use default.
      *                             {@link PageCompression#ZSTD Zstd}: from {@code -131072} to {@code 22} (default {@code 3}).
      *                             {@link PageCompression#LZ4 LZ4}: from {@code 0} to {@code 17} (default {@code 0}).
+     * @return {@code this} for chaining.
      */
-    public void setPageCompressionLevel(Integer pageCompressionLevel) {
+    public DataRegionConfiguration setPageCompressionLevel(Integer pageCompressionLevel) {
         this.pageCompressionLevel = pageCompressionLevel;
+
+        return this;
     }
 
     /** {@inheritDoc} */

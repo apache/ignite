@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.compress;
 
 import java.nio.file.Path;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -54,15 +54,12 @@ public final class FileSystemUtils {
     }
 
     /**
-     * @throws IgniteCheckedException If failed.
      */
-    public static void checkSupported() throws IgniteCheckedException {
+    public static void checkSupported() {
         Throwable e = err;
 
-        if (e != null || fs == null) {
-            throw new IgniteCheckedException(
-                "Native file system API is not supported on " + U.osString(), e);
-        }
+        if (e != null || fs == null)
+            throw new IgniteException("Native file system API is not supported on " + U.osString(), e);
     }
 
     /**
@@ -79,14 +76,13 @@ public final class FileSystemUtils {
      * @param off Offset of the hole.
      * @param len Length of the hole.
      * @param fsBlockSize File system block size.
-     * @return Actual punched hole size or negative value if not supported.
+     * @return Actual punched hole size.
      */
     public static long punchHole(int fd, long off, long len, int fsBlockSize) {
         assert off >= 0;
         assert len > 0;
 
-        if (fs == null || fsBlockSize <= 0)
-            return -1;
+        checkSupported();
 
         if (len < fsBlockSize)
             return 0;
