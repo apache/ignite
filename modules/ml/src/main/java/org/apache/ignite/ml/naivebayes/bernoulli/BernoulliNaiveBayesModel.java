@@ -75,7 +75,6 @@ public class BernoulliNaiveBayesModel implements Model<Vector, Double>, Exportab
                 probabilityPower += (x == 1 ? Math.log(p) : Math.log(1 - p));
             }
 
-            System.out.println(probabilityPower);
             if (probabilityPower > maxProbapilityPower) {
                 maxLabelIndex = i;
                 maxProbapilityPower = probabilityPower;

@@ -35,7 +35,7 @@ public class BernoulliNaiveBayesTest {
 
     /** Example from book Barber D. Bayesian reasoning and machine learning. Chapter 10. */
     @Test
-    public void test1() {
+    public void testLearnsAndPredictCorrently() {
         double english = 1.;
         double scottish = 2.;
         Map<Integer, double[]> data = new HashMap<>();
