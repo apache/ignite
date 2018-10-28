@@ -641,11 +641,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             internalSubscriptionProc = (GridInternalSubscriptionProcessor)comp;
         else if (comp instanceof IgniteAuthenticationProcessor)
             authProc = (IgniteAuthenticationProcessor)comp;
+        else if (comp instanceof CompressionProcessor)
+            compressProc = (CompressionProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
             || comp instanceof PlatformPluginProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
-        else if (comp instanceof CompressionProcessor)
-            compressProc = (CompressionProcessor)comp;
 
         if (addToList)
             comps.add(comp);
