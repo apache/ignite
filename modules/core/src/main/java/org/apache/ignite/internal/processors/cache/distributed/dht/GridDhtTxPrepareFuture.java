@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -216,6 +217,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     /** Timeout object. */
     private final PrepareTimeoutObject timeoutObj;
 
+    /** */
+    private CountDownLatch timeoutAddedLatch;
+
     /**
      * @param cctx Context.
      * @param tx Transaction.
@@ -259,6 +263,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         assert nearMap != null;
 
         timeoutObj = timeout > 0 ? new PrepareTimeoutObject(timeout) : null;
+
+        if (tx.onePhaseCommit())
+            timeoutAddedLatch = new CountDownLatch(1);
     }
 
     /** {@inheritDoc} */
@@ -691,8 +698,10 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             if (!MAPPED_UPD.compareAndSet(this, 0, 1))
                 return false;
 
-            // Disable timeouts after all locks are acquired for one-phase commit or partition desync will occur.
-            if (tx.onePhaseCommit() && timeoutObj != null) {
+            if (timeoutObj != null && tx.onePhaseCommit()) {
+                U.awaitQuiet(timeoutAddedLatch);
+
+                // Disable timeouts after all locks are acquired for one-phase commit or partition desync will occur.
                 if (!cctx.time().removeTimeoutObject(timeoutObj))
                     return true; // Should not proceed with prepare if tx is already timed out.
             }
@@ -1062,9 +1071,14 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         readyLocks();
 
-        if (timeoutObj != null && !isDone()) {
-            // Start timeout tracking after 'readyLocks' to avoid race with timeout processing.
+        // Start timeout tracking after 'readyLocks' to avoid race with timeout processing.
+        if (timeoutObj != null) {
             cctx.time().addTimeoutObject(timeoutObj);
+
+            // Fix race with add/remove timeout object if locks are mapped from another
+            // thread before timeout object is enqueued.
+            if (tx.onePhaseCommit())
+                timeoutAddedLatch.countDown();
         }
 
         mapIfLocked();

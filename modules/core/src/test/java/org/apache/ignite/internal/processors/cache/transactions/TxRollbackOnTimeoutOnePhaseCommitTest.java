@@ -158,6 +158,8 @@ public class TxRollbackOnTimeoutOnePhaseCommitTest extends GridCommonAbstractTes
         finish.countDown();
 
         fut.get();
+
+        assertEquals(1, client.cache(DEFAULT_CACHE_NAME).get(key));
     }
 
     /** */
@@ -176,7 +178,7 @@ public class TxRollbackOnTimeoutOnePhaseCommitTest extends GridCommonAbstractTes
 
         IgniteInternalFuture fut = runAsync(() -> {
             try {
-                backupSpi.waitForBlocked();
+                backupSpi.waitForBlocked(1, 5000);
             }
             catch (InterruptedException e) {
                 fail();
@@ -187,7 +189,7 @@ public class TxRollbackOnTimeoutOnePhaseCommitTest extends GridCommonAbstractTes
             backupSpi.stopBlock();
         });
 
-        try (Transaction tx = client.transactions().txStart(concurrency, REPEATABLE_READ, 200, 1)) {
+        try (Transaction tx = client.transactions().txStart(concurrency, REPEATABLE_READ, 500, 1)) {
             client.cache(DEFAULT_CACHE_NAME).put(key, key);
 
             tx.commit();
