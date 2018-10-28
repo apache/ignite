@@ -489,14 +489,23 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             if (currHnd != null)
                 currHnd.close(false);
 
-            if (archiver != null)
+            if (archiver != null) {
                 archiver.shutdown();
 
-            if (compressor != null)
+                archiver = null;
+            }
+
+            if (compressor != null) {
                 compressor.shutdown();
 
-            if (decompressor != null)
+                compressor = null;
+            }
+
+            if (decompressor != null) {
                 decompressor.shutdown();
+
+                decompressor = null;
+            }
         }
         catch (Exception e) {
             U.error(log, "Failed to gracefully close WAL segment: " + currentHnd.fileIO, e);
