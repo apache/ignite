@@ -258,7 +258,9 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         if (compressType != COMPACTED_PAGE) {
             ByteBuffer dst = tmp.get();
 
-            page.position(PageIO.COMMON_HEADER_END).limit(compressedSize);
+            // Position on a part that needs to be decompressed.
+            page.limit(compressedSize)
+                .position(PageIO.COMMON_HEADER_END);
 
             // LZ4 needs this limit to be exact.
             dst.limit(compactSize - PageIO.COMMON_HEADER_END);
@@ -266,14 +268,15 @@ public class CompressionProcessorImpl extends CompressionProcessor {
             if (compressType == ZSTD_COMPRESSED_PAGE)
                 Zstd.decompress(dst, page);
             else if (compressType == LZ4_COMPRESSED_PAGE)
-                Lz4.decompress(page, dst);
+                Lz4.decompress(dst, page);
             else
                 throw new IllegalStateException("Unknown compression: " + compressType);
 
             dst.flip();
 
-            page.position(PageIO.COMMON_HEADER_END).limit(pageSize);
+            page.position(PageIO.COMMON_HEADER_END).limit(compactSize);
             page.put(dst).flip();
+            assert page.limit() == compactSize;
         }
 
         CompactablePageIO io = PageIO.getPageIO(page);
@@ -304,10 +307,10 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         }
 
         /**
-         * @param page Page.
          * @param dst Destination buffer.
+         * @param page Page.
          */
-        static void decompress(ByteBuffer page, ByteBuffer dst) {
+        static void decompress(ByteBuffer dst, ByteBuffer page) {
             decompressor.decompress(page, dst);
         }
     }
