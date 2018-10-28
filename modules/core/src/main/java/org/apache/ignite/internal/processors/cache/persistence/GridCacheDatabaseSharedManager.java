@@ -2009,12 +2009,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (restored != null)
                 U.log(log, "Binary memory state restored at node startup [restoredPtr=" + restored + ']');
 
+            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(kctx))
+                lsnr.afterBinaryMemoryRestore(this);
+
             cctx.wal().resumeLogging(restored);
 
             walTail = restored;
-
-            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(kctx))
-                lsnr.afterBinaryMemoryRestore(this);
 
             assert metaStorage == null;
 
