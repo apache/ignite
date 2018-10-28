@@ -743,8 +743,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             // Must create prepare response before transaction is committed to grab correct return value.
             final GridNearTxPrepareResponse res = createPrepareResponse(prepErr);
 
-            if (!onComplete(res))
-                return false;
+            onComplete(res);
 
             if (tx.markFinalizing(IgniteInternalTx.FinalizationStatus.USER_FINISH)) {
                 CIX1<IgniteInternalFuture<IgniteInternalTx>> resClo =
