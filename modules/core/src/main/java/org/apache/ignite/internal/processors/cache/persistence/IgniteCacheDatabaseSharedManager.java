@@ -67,6 +67,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE;
@@ -222,7 +223,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 MBEAN_GROUP_NAME,
                 memPlcCfg.getName(),
                 new DataRegionMetricsMXBeanImpl((DataRegionMetricsImpl)memMetrics, memPlcCfg),
-                DataRegionMetricsMXBeanImpl.class
+                DataRegionMetricsMXBean.class
             );
         }
     }
