@@ -484,14 +484,16 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public int getFileSystemBlockSize() {
-            return !U.isLinux() ? 1024 :
-                super.getFileSystemBlockSize();
+            if (U.isLinux())
+                return delegate.getFileSystemBlockSize();
+
+            return 4 * 1024;
         }
 
         /** {@inheritDoc} */
         @Override public int punchHole(long pos, int len) {
             if (U.isLinux())
-                len = super.punchHole(pos, len);
+                len = delegate.punchHole(pos, len);
             else {
                 int blockSize = getFileSystemBlockSize();
                 len = len / blockSize * blockSize;
