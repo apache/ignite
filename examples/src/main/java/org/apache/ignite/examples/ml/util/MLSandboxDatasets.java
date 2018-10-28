@@ -50,7 +50,10 @@ public enum MLSandboxDatasets {
     WINE_RECOGNITION("examples/src/main/resources/datasets/wine.txt", false, ","),
 
     /** The Boston house-prices dataset. Could be found <a href="https://archive.ics.uci.edu/ml/machine-learning-databases/housing/">here</a>. */
-    BOSTON_HOUSE_PRICES("examples/src/main/resources/datasets/boston_housing_dataset.txt", false, ",");
+    BOSTON_HOUSE_PRICES("examples/src/main/resources/datasets/boston_housing_dataset.txt", false, ","),
+
+    /** Example from book Barber D. Bayesian reasoning and machine learning. Chapter 10. */
+    ENGLISH_VS_SCOTTISH("examples/src/main/resources/datasets/binary_dataset.csv", true, ",");
 
     /** Filename. */
     private final String filename;
