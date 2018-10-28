@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -70,6 +71,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.newDirectoryStream;
+import static org.apache.ignite.internal.processors.compress.CompressionProcessor.UNCOMPRESSED_PAGE;
+import static org.apache.ignite.internal.processors.compress.CompressionProcessor.checkAllZeroTail;
 
 /**
  * File page store manager.
@@ -491,9 +494,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
             if (cctx0 != null) {
                 assert pageBuf.position() == 0 && pageBuf.limit() == pageSize: pageBuf;
-
                 pageBuf = cctx0.compress().compressPage(pageBuf, store);
-                compressedPageSize = pageBuf.remaining();
+
+                if (PageIO.getCompressionType(pageBuf) != UNCOMPRESSED_PAGE) {
+                    assert checkAllZeroTail(pageBuf);
+
+                    compressedPageSize = PageIO.getCompressedSize(pageBuf);
+                }
             }
 
             store.write(pageId, pageBuf, tag, calculateCrc);

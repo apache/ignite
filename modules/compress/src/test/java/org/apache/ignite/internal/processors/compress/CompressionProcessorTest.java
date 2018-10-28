@@ -47,6 +47,7 @@ import static org.apache.ignite.configuration.PageCompression.ZSTD;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.LZ4_MAX_LEVEL;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.LZ4_MIN_LEVEL;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.ZSTD_MAX_LEVEL;
+import static org.apache.ignite.internal.processors.compress.CompressionProcessor.checkAllZeroTail;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorImpl.allocateDirectBuffer;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorTest.TestInnerIO.INNER_IO;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorTest.TestLeafIO.LEAF_IO;
@@ -759,16 +760,11 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         int compressedSize = PageIO.getCompressedSize(compressed);
 
         // For consistent CRC compressed buffer must of the page size but filled with 0 after the compressed part.
+        assertTrue(checkAllZeroTail(compressed));
         assertEquals(pageSize, compressed.capacity());
         assertEquals(0, compressed.position());
         assertEquals(pageSize, compressed.limit());
 
-        compressed.position(compressedSize).limit(pageSize);
-
-        for (int i = compressedSize; i < pageSize; i++)
-            assertEquals(0, compressed.get(i));
-
-        compressed.clear();
 
         checkIo(io, compressed);
         assertNotSame(page, compressed);

@@ -50,7 +50,7 @@ public class CompressionProcessor extends GridProcessorAdapter {
     public static final int ZSTD_DEFAULT_LEVEL = 3;
 
     /** */
-    protected static final byte UNCOMPRESSED_PAGE = 0;
+    public static final byte UNCOMPRESSED_PAGE = 0;
 
     /** */
     protected static final byte COMPACTED_PAGE = 1;
@@ -124,9 +124,33 @@ public class CompressionProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param page Page.
+     * @return {@code true} If it is either an uncompressed page or a valid compressed page with zeroed tail.
+     */
+    public static boolean checkAllZeroTail(ByteBuffer page) {
+        if (PageIO.getCompressionType(page) == UNCOMPRESSED_PAGE)
+            return true;
+
+        int compressedSize = PageIO.getCompressedSize(page);
+
+        page.limit(page.capacity()).position(compressedSize);
+
+        try {
+            for (int i = compressedSize; i < page.capacity(); i++) {
+                if (page.get(i) != 0)
+                    return false;
+            }
+            return true;
+        }
+        finally {
+            page.clear();
+        }
+    }
+
+    /**
      * @throws IgniteCheckedException Always.
      */
-    private <T> T fail() throws IgniteCheckedException {
+    private static <T> T fail() throws IgniteCheckedException {
         throw new IgniteCheckedException("Make sure that ignite-compression module is in classpath.");
     }
 
