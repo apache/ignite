@@ -156,6 +156,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
@@ -768,7 +769,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             MBEAN_GROUP,
             MBEAN_NAME,
             persStoreMetrics,
-            DataStorageMetricsImpl.class
+            DataStorageMetricsMXBean.class
         );
     }
 
