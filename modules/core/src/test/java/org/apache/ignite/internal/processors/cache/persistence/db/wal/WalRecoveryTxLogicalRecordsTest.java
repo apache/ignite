@@ -57,7 +57,9 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -117,6 +119,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
             .setMaxSize(100L * 1024 * 1024)
             .setPersistenceEnabled(true));
 
+        //dbCfg.setAlwaysWriteFullPages(true);
+
         if (checkpointFreq != null)
             dbCfg.setCheckpointFrequency(checkpointFreq);
 
@@ -129,6 +133,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
         binCfg.setCompactFooter(false);
 
         cfg.setBinaryConfiguration(binCfg);
+
+        cfg.setPluginConfigurations(new PageMemoryTrackerConfiguration().setEnabled(true).setCheckPagesOnCheckpoint(true));
 
         return cfg;
     }
@@ -590,6 +596,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
      */
     public void testRecoveryNoPageLost3() throws Exception {
         try {
+            log.warning("Metastorage cache id = " + MetaStorage.METASTORAGE_CACHE_ID);
+
             pageSize = 1024;
             checkpointFreq = 100L;
             extraCcfg = new CacheConfiguration(CACHE2_NAME);
@@ -647,6 +655,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
      */
     private void recoveryNoPageLost(boolean checkpoint) throws Exception {
         try {
+            log.warning("Metastorage cache id = " + CU.cacheId(CACHE2_NAME));
+
             pageSize = 1024;
             extraCcfg = new CacheConfiguration(CACHE2_NAME);
             extraCcfg.setAffinity(new RendezvousAffinityFunction(false, 32));

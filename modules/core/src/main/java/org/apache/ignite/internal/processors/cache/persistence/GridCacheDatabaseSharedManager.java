@@ -2094,20 +2094,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * @return Set of all available cache group ids and metastorage cache id.
-     */
-    private Set<Integer> allCacheGroupsAndMetastorage() {
-        Set<Integer> result = new HashSet<>();
-
-        result.add(MetaStorage.METASTORAGE_CACHE_ID);
-
-        for (CacheGroupDescriptor desc : cctx.cache().persistentGroups())
-            result.add(desc.groupId());
-
-        return result;
-    }
-
-    /**
      * @param status Checkpoint status.
      * @param cacheGroupsPredicate Cache groups to restore.
      * @throws IgniteCheckedException If failed.
@@ -4693,7 +4679,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 .filter(entry -> {
                                     int cacheId = entry.cacheId();
 
-                                    return cctx.cacheContext(cacheId) != null && cacheGroupPredicate.test(cctx.cacheContext(cacheId).groupId());
+                                    return cctx != null && cctx.cacheContext(cacheId) != null && cacheGroupPredicate.test(cctx.cacheContext(cacheId).groupId());
                                 })
                                 .collect(Collectors.toList());
 
