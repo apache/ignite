@@ -1429,11 +1429,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             }
         }
 
-        // Test that caches were excluded.
+        // Test that caches not included.
         ret = content(null, GridRestCommand.TOPOLOGY,
             "attr", "false",
             "mtr", "false",
-            "excludeCaches", "true"
+            "caches", "false"
         );
 
         info("Topology command result: " + ret);
@@ -1445,10 +1445,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         for (JsonNode node : res) {
             assertTrue(node.get("attributes").isNull());
             assertTrue(node.get("metrics").isNull());
-
-            JsonNode caches = node.get("caches");
-
-            assertTrue(caches.isNull());
+            assertTrue(node.get("caches").isNull());
         }
     }
 
@@ -1468,6 +1465,12 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         assertTrue(res.get("attributes").isObject());
         assertTrue(res.get("metrics").isObject());
+
+        JsonNode caches = res.get("caches");
+
+        assertTrue(caches.isArray());
+        assertFalse(caches.isNull());
+        assertEquals(grid(0).context().cache().publicCaches().size(), caches.size());
 
         ret = content(null, GridRestCommand.NODE,
             "attr", "false",
@@ -1494,6 +1497,20 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         res = jsonResponse(ret);
 
         assertTrue(res.isNull());
+
+        // Check that caches not included.
+        ret = content(null, GridRestCommand.NODE,
+            "id", grid(0).localNode().id().toString(),
+            "attr", "false",
+            "mtr", "false",
+            "caches", "false"
+        );
+
+        info("Topology command result: " + ret);
+
+        assertTrue(res.get("attributes").isNull());
+        assertTrue(res.get("metrics").isNull());
+        assertTrue(res.get("metrics").isNull());
     }
 
     /**

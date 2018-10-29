@@ -36,8 +36,8 @@ public class GridRestTopologyRequest extends GridRestRequest {
     /** Include node attributes flag. */
     private boolean includeAttrs;
 
-    /** Exclude caches flag. */
-    private boolean excludeCaches;
+    /** Include caches flag. */
+    private boolean includeCaches = true;
 
     /**
      * @return Include metrics flag.
@@ -68,17 +68,17 @@ public class GridRestTopologyRequest extends GridRestRequest {
     }
 
     /**
-     * @return Exclude caches flag.
+     * @return Include caches flag.
      */
-    public boolean excludeCaches() {
-        return excludeCaches;
+    public boolean includeCaches() {
+        return includeCaches;
     }
 
     /**
-     * @param excludeCaches Exclude caches flag.
+     * @param includeCaches Include caches flag.
      */
-    public void excludeCaches(boolean excludeCaches) {
-        this.excludeCaches = excludeCaches;
+    public void includeCaches(boolean includeCaches) {
+        this.includeCaches = includeCaches;
     }
 
     /**
