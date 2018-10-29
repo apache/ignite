@@ -2041,8 +2041,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             // Restore state for all groups.
             restorePartitionStates(cctx.cache().cacheGroups(), logicalState.partitionRecoveryStates);
 
-            if (logicalState.lastRead != null)
-                walTail = logicalState.lastRead.next();
+            walTail = tailPointer(logicalState.lastRead);
 
             cctx.wal().onDeActivate(kctx);
         }
@@ -2054,6 +2053,30 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         finally {
             checkpointReadUnlock();
         }
+    }
+
+    /**
+     * Calculates tail pointer for WAL at the end of logical recovery.
+     *
+     * @param from Start replay WAL from.
+     * @return Tail pointer.
+     * @throws IgniteCheckedException If failed.
+     */
+    private WALPointer tailPointer(WALPointer from) throws IgniteCheckedException {
+        WALPointer lastRead = from;
+
+        try (WALIterator it = cctx.wal().replay(from)) {
+            while (it.hasNextX()) {
+                IgniteBiTuple<WALPointer, WALRecord> rec = it.nextX();
+
+                if (rec == null)
+                    break;
+
+                lastRead = rec.get1();
+            }
+        }
+
+        return lastRead != null ? lastRead.next() : null;
     }
 
     /**
@@ -4656,6 +4679,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Set to {@code true} if data records should be skipped. */
         private final boolean skipDataRecords;
 
+        private List<WALRecord> readRecs = new ArrayList<>();
+
         /**
          * @param lastArchivedSegment Last archived segment index.
          */
@@ -4690,6 +4715,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     lastRead = (FileWALPointer)ptr;
 
                     rec.position(ptr);
+
+                    readRecs.add(rec);
 
                     // Filter out records.
                     if (rec instanceof WalRecordCacheGroupAware) {

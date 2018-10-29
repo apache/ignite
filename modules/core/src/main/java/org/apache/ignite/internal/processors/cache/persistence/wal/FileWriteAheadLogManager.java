@@ -695,10 +695,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
-        startArchiverAndCompressor();
-
         assert currHnd == null;
         assert lastPtr == null || lastPtr instanceof FileWALPointer;
+
+        startArchiverAndCompressor();
+
         assert (isArchiverEnabled() && archiver != null) || (!isArchiverEnabled() && archiver == null) :
             "Trying to restore FileWriteHandle on deactivated write ahead log manager";
 

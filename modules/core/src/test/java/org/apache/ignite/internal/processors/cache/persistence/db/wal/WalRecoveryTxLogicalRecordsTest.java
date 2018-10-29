@@ -58,8 +58,6 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.Abstract
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
-import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerConfiguration;
-import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerPluginProvider;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -131,8 +129,6 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
         binCfg.setCompactFooter(false);
 
         cfg.setBinaryConfiguration(binCfg);
-
-        cfg.setPluginConfigurations(new PageMemoryTrackerConfiguration().setEnabled(true).setCheckPagesOnCheckpoint(false));
 
         return cfg;
     }
@@ -651,8 +647,6 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
      */
     private void recoveryNoPageLost(boolean checkpoint) throws Exception {
         try {
-            log.warning("Metastorage cache id = " + CU.cacheId(CACHE2_NAME));
-
             pageSize = 1024;
             extraCcfg = new CacheConfiguration(CACHE2_NAME);
             extraCcfg.setAffinity(new RendezvousAffinityFunction(false, 32));
@@ -686,8 +680,6 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                     cache.put(cnt.incrementAndGet(), new byte[256 + iter * 100]);
 
                 pages = allocatedPages(ignite, CACHE2_NAME);
-
-                assertTrue(PageMemoryTrackerPluginProvider.tracker(ignite).checkPages(true));
 
                 stopGrid(0, true);
             }
