@@ -73,6 +73,9 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        if (FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-7952");
+
         startGridsMultiThreaded(3);
 
         ignite1 = grid(0);

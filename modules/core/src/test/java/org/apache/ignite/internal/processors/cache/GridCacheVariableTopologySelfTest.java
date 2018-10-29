@@ -109,8 +109,6 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"TooBroadScope"})
     public void testNodeStop() throws Exception {
-        //TODO: IGNITE-10002: What does this test check?  Let's move this to failover tests/suite.
-
         // -- Test parameters. -- //
         int nodeCnt = 3;
         int threadCnt = 20;

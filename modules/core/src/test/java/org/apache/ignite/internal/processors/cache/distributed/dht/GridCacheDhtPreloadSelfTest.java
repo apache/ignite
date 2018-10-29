@@ -212,6 +212,8 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
      */
     private void checkActivePartitionTransfer(int keyCnt, int nodeCnt, boolean sameCoord, boolean shuffle)
         throws Exception {
+        if (FORCE_MVCC && preloadMode == SYNC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-7955"); // Local peek is not supported yet.
 
         try {
             Ignite ignite1 = startGrid(0);

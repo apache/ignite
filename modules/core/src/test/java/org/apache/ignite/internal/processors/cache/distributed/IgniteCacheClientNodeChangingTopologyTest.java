@@ -140,6 +140,14 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     }
 
     /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        if (FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-9530");
+
+        super.setUp();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 

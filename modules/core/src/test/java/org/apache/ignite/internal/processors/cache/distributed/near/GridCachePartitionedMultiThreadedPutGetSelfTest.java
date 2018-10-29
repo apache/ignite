@@ -98,6 +98,9 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        if(FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-7952");
+
         for (int i = 0; i < GRID_CNT; i++)
             startGrid(i);
     }

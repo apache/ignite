@@ -73,6 +73,14 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
     /** IP finder. */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        if(FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+
+        super.beforeTestsStarted();
+    }
+
     /**
      *
      */

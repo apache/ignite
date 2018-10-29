@@ -57,6 +57,9 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
      */
     protected void checkCommitMultithreaded(final TransactionConcurrency concurrency,
         final TransactionIsolation isolation) throws Exception {
+        if(FORCE_MVCC && (concurrency != PESSIMISTIC || isolation != REPEATABLE_READ))
+            fail("Mvcc tx mode is not supported.");
+
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
                 Thread t = Thread.currentThread();

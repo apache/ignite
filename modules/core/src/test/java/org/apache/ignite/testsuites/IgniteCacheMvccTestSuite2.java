@@ -48,11 +48,11 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNea
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedAffinitySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedAtomicGetAndTransformStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheRendezvousAffinityClientSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.NoneRebalanceModeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedJobExecutionTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicBasicStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicGetAndTransformStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicyInitializationTest;
-import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Test suite.
@@ -93,12 +93,14 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
         ignoredTests.add(RendezvousAffinityFunctionBackupFilterSelfTest.class);
         ignoredTests.add(ClusterNodeAttributeAffinityBackupFilterSelfTest.class);
 
+        ignoredTests.add(NoneRebalanceModeSelfTest.class);
+
         ignoredTests.add(GridCacheReplicatedJobExecutionTest.class);
         ignoredTests.add(GridCacheNearJobExecutionSelfTest.class);
 
         ignoredTests.add(CacheConfigurationLeakTest.class);
         ignoredTests.add(MemoryPolicyConfigValidationTest.class);
-        ignoredTests.add( MemoryPolicyInitializationTest.class);
+        ignoredTests.add(MemoryPolicyInitializationTest.class);
         ignoredTests.add(CacheGroupLocalConfigurationSelfTest.class);
 
         ignoredTests.add(CachePartitionStateTest.class);
