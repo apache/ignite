@@ -159,7 +159,7 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testDelayedFullMessageReplacedIfCoordinatorChanged() throws Exception {
-        IgniteEx crd = startGrid("crd");
+        IgniteEx crd = (IgniteEx) startGrid("crd");
 
         IgniteEx newCrd = startGrid(1);
 
