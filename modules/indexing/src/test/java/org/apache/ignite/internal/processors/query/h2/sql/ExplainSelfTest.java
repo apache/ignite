@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.List;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -32,6 +33,9 @@ public class ExplainSelfTest extends GridCommonAbstractTest {
     /** Ignite instance. */
     private static IgniteEx ignite;
 
+    /** Handle to underlying cache of the TEST table. */
+    private static IgniteCache<?,?> cache;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -39,6 +43,8 @@ public class ExplainSelfTest extends GridCommonAbstractTest {
         ignite = startGrid(1);
 
         execute("CREATE TABLE TEST (ID LONG PRIMARY KEY, VAL LONG);");
+
+        cache = ignite.cache("SQL_PUBLIC_TEST");
     }
 
     /** {@inheritDoc} */
@@ -75,7 +81,7 @@ public class ExplainSelfTest extends GridCommonAbstractTest {
      * @return fully fetched result of query.
      */
     private List<List<?>> execute(String sql) {
-        return ignite.context().query().querySqlFields(new SqlFieldsQuery(sql), false).getAll();
+        return cache.query(new SqlFieldsQuery(sql)).getAll();
     }
 
     /**
