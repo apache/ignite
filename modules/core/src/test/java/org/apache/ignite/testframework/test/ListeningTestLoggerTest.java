@@ -344,6 +344,8 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
         int total = threadCnt * iterCnt;
         int rndNum = ThreadLocalRandom.current().nextInt(iterCnt);
 
+        ListeningTestLogger log = new ListeningTestLogger();
+
         LogListener lsnr = LogListener.matches("abba").times(total)
             .andMatches(Pattern.compile("(?i)abba")).times(total * 2)
             .andMatches("ab").times(total)
