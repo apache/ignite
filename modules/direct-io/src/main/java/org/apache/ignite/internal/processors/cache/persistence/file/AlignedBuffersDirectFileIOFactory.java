@@ -43,6 +43,9 @@ import static java.nio.file.StandardOpenOption.WRITE;
  * situations, such as when applications do their own caching.<br>
  */
 public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
+    /** */
+    static final long serialVersionUID = 1L;
+
     /** Logger. */
     private final IgniteLogger log;
 
@@ -59,7 +62,7 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
     private boolean useBackupFactory;
 
     /** Thread local with buffers with capacity = one page {@code pageSize} and aligned using {@code ioBlockSize}. */
-    private ThreadLocal<ByteBuffer> tlbOnePageAligned;
+    private transient ThreadLocal<ByteBuffer> tlbOnePageAligned;
 
     /**
      * Managed aligned buffers. This collection is used to free buffers, an for checking if buffer is known to be
