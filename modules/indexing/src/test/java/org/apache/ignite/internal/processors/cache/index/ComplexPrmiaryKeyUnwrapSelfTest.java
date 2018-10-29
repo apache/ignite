@@ -30,7 +30,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Test of creating and using PK indexes for tables created through SQL.
  */
 @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
-public class UnfolldingComplexPkIndexesForCreateTableAsSQLTest extends GridCommonAbstractTest {
+public class ComplexPrmiaryKeyUnwrapSelfTest extends GridCommonAbstractTest {
 
     /** Counter to generate unique table names. */
     private static int tblCnt = 0;
