@@ -869,6 +869,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointReadLock();
 
         try {
+            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
+                lsnr.beforeResumeWalLogging(this);
+
             // Try to resume logging since last finished checkpoint if possible.
             if (walTail == null) {
                 CheckpointStatus status = readCheckpointStatus();
