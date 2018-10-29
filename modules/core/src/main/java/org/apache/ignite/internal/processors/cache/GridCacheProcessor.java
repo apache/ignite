@@ -2294,6 +2294,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheContext.finishRecovery(cacheStartVer);
 
+        // Statistics mode may globally changed after node restart.
+        cacheContext.statisticsEnabled(cacheDescriptor(cacheContext.cacheId()).cacheConfiguration().isStatisticsEnabled());
+
         onKernalStart(cacheContext.cache());
 
         if (log.isInfoEnabled())
