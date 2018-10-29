@@ -57,7 +57,6 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import javax.management.ObjectName;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -328,9 +327,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private DataStorageMetricsImpl persStoreMetrics;
 
-    /** */
-    private ObjectName persistenceMetricsMbeanName;
-
     /** Counter for written checkpoint pages. Not null only if checkpoint is running. */
     private volatile AtomicInteger writtenPagesCntr = null;
 
@@ -442,7 +438,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         addDataRegion(
             memCfg,
-            createDataRegionConfiguration(memCfg),
+            createMetastoreDataRegionConfig(memCfg),
             false
         );
 
@@ -455,7 +451,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param storageCfg Data storage configuration.
      * @return Data region configuration.
      */
-    private DataRegionConfiguration createDataRegionConfiguration(DataStorageConfiguration storageCfg) {
+    private DataRegionConfiguration createMetastoreDataRegionConfig(DataStorageConfiguration storageCfg) {
         DataRegionConfiguration cfg = new DataRegionConfiguration();
 
         cfg.setName(METASTORE_DATA_REGION_NAME);
@@ -671,7 +667,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try {
             DataStorageConfiguration memCfg = cctx.kernalContext().config().getDataStorageConfiguration();
 
-            DataRegionConfiguration plcCfg = createDataRegionConfiguration(memCfg);
+            DataRegionConfiguration plcCfg = createMetastoreDataRegionConfig(memCfg);
 
             File allocPath = buildAllocPath(plcCfg);
 
@@ -737,10 +733,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         snapshotMgr = cctx.snapshot();
 
-        if (!cctx.kernalContext().clientNode()) {
-            initDataBase();
-
-            registrateMetricsMBean();
+        if (!cctx.kernalContext().clientNode() && persistenceCfg.getCheckpointThreads() > 1) {
+            asyncRunner = new IgniteThreadPoolExecutor(
+                CHECKPOINT_RUNNER_THREAD_PREFIX,
+                cctx.igniteInstanceName(),
+                persistenceCfg.getCheckpointThreads(),
+                persistenceCfg.getCheckpointThreads(),
+                30_000,
+                new LinkedBlockingQueue<>()
+            );
         }
 
         if (checkpointer == null)
@@ -763,61 +764,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         stopping = false;
     }
 
-    /**
-     *
-     */
-    private void initDataBase() {
-        if (persistenceCfg.getCheckpointThreads() > 1)
-            asyncRunner = new IgniteThreadPoolExecutor(
-                CHECKPOINT_RUNNER_THREAD_PREFIX,
-                cctx.igniteInstanceName(),
-                persistenceCfg.getCheckpointThreads(),
-                persistenceCfg.getCheckpointThreads(),
-                30_000,
-                new LinkedBlockingQueue<Runnable>()
-            );
-    }
+    /** {@inheritDoc} */
+    @Override protected void registerMetricsMBeans(IgniteConfiguration cfg) {
+        super.registerMetricsMBeans(cfg);
 
-    /**
-     * Try to register Metrics MBean.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    private void registrateMetricsMBean() throws IgniteCheckedException {
-        if (U.IGNITE_MBEANS_DISABLED)
-            return;
-
-        try {
-            persistenceMetricsMbeanName = U.registerMBean(
-                cctx.kernalContext().config().getMBeanServer(),
-                cctx.kernalContext().igniteInstanceName(),
-                MBEAN_GROUP,
-                MBEAN_NAME,
-                persStoreMetrics,
-                DataStorageMetricsMXBean.class);
-        }
-        catch (Throwable e) {
-            throw new IgniteCheckedException("Failed to register " + MBEAN_NAME + " MBean.", e);
-        }
-    }
-
-    /**
-     * Unregister metrics MBean.
-     */
-    private void unRegistrateMetricsMBean() {
-        if (persistenceMetricsMbeanName == null)
-            return;
-
-        assert !U.IGNITE_MBEANS_DISABLED;
-
-        try {
-            cctx.kernalContext().config().getMBeanServer().unregisterMBean(persistenceMetricsMbeanName);
-
-            persistenceMetricsMbeanName = null;
-        }
-        catch (Throwable e) {
-            U.error(log, "Failed to unregister " + MBEAN_NAME + " MBean.", e);
-        }
+        registerMetricsMBean(
+            cctx.kernalContext().config(),
+            MBEAN_GROUP,
+            MBEAN_NAME,
+            persStoreMetrics,
+            DataStorageMetricsMXBean.class
+        );
     }
 
     /** {@inheritDoc} */
@@ -930,8 +887,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 cacheGrps);
 
             if (tailWalPtr == null && !status.endPtr.equals(CheckpointStatus.NULL_PTR)) {
-                throw new StorageException("Restore wal pointer = " + tailWalPtr + ", while status.endPtr = " +
-                    status.endPtr + ". Can't restore memory - critical part of WAL archive is missing.");
+                throw new StorageException("The memory cannot be restored. The critical part of WAL archive is missing " +
+                    "[tailWalPtr=" + tailWalPtr + ", endPtr=" + status.endPtr + ']');
             }
 
             nodeStart(tailWalPtr);
@@ -1057,7 +1014,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         super.onKernalStop0(cancel);
 
-        unRegistrateMetricsMBean();
+        unregisterMetricsMBean(
+            cctx.gridConfig(),
+            MBEAN_GROUP,
+            MBEAN_NAME
+        );
     }
 
     /** {@inheritDoc} */
@@ -1230,8 +1191,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 plc = PageMemoryImpl.ThrottlingPolicy.valueOf(throttlingPolicyOverride.toUpperCase());
             }
             catch (IllegalArgumentException e) {
-                log.error("Incorrect value of IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED property: " +
-                    throttlingPolicyOverride + ". Default throttling policy " + plc + " will be used.");
+                log.error("Incorrect value of IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED property. " +
+                    "The default throttling policy will be used [plc=" + throttlingPolicyOverride +
+                    ", defaultPlc=" + plc + ']');
             }
         }
         return plc;
@@ -1243,8 +1205,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (!regCfg.isPersistenceEnabled())
             super.checkRegionEvictionProperties(regCfg, dbCfg);
         else if (regCfg.getPageEvictionMode() != DataPageEvictionMode.DISABLED) {
-            U.warn(log, "Page eviction mode set for [" + regCfg.getName() + "] data will have no effect" +
-                " because the oldest pages are evicted automatically if Ignite persistence is enabled.");
+            U.warn(log, "Page eviction mode will have no effect because the oldest pages are evicted automatically " +
+                "if Ignite persistence is enabled: " + regCfg.getName());
         }
     }
 
@@ -2243,7 +2205,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     "[cpStatus=" + status + ", lastRead=" + lastReadPtr + "]");
 
             log.info("Finished applying memory changes [changesApplied=" + applied +
-                ", time=" + (U.currentTimeMillis() - start) + "ms]");
+                ", time=" + (U.currentTimeMillis() - start) + " ms]");
 
             if (applied > 0)
                 finalizeCheckpointOnRecovery(status.cpStartTs, status.cpStartId, status.startPtr);
@@ -2323,7 +2285,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                             if (cacheCtx != null)
                                                 applyUpdate(cacheCtx, dataEntry);
                                             else if (log != null)
-                                                log.warning("Cache (cacheId=" + cacheId + ") is not started, can't apply updates.");
+                                                log.warning("Cache is not started. Updates cannot be applied " +
+                                                    "[cacheId=" + cacheId + ']');
                                         }
                                         finally {
                                             checkpointReadUnlock();
@@ -2527,7 +2490,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         if (log.isInfoEnabled())
             log.info("Finished applying WAL changes [updatesApplied=" + applied +
-                ", time=" + (U.currentTimeMillis() - start) + "ms]");
+                ", time=" + (U.currentTimeMillis() - start) + " ms]");
     }
 
     /**
@@ -3289,7 +3252,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
             finally {
                 if (err == null && !(stopping && isCancelled))
-                    err = new IllegalStateException("Thread " + name() + " is terminated unexpectedly");
+                    err = new IllegalStateException("Thread is terminated unexpectedly: " + name());
 
                 if (err instanceof OutOfMemoryError)
                     cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
@@ -3920,7 +3883,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
                 catch (IgniteException e) {
                     U.error(log, "Failed to wait for snapshot operation initialization: " +
-                        curr.snapshotOperation + "]", e);
+                        curr.snapshotOperation, e);
                 }
             }
 
@@ -4585,9 +4548,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         if (content == null)
                             content = readContent();
 
-                        log.warning("Failed to acquire file lock (local nodeId:" + ctx.localNodeId()
-                            + ", already locked by " + content + "), will try again in 1s: "
-                            + file.getAbsolutePath());
+                        log.warning("Failed to acquire file lock. Will try again in 1s " +
+                            "[nodeId=" + ctx.localNodeId() + ", holder=" + content +
+                            ", path=" + file.getAbsolutePath() + ']');
                     }
 
                     U.sleep(1000);
@@ -4596,8 +4559,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (content == null)
                     content = readContent();
 
-                failMsg = "Failed to acquire file lock during " + (lockWaitTimeMillis / 1000) +
-                    " sec, (locked by " + content + "): " + file.getAbsolutePath();
+                failMsg = "Failed to acquire file lock [holder=" + content + ", time=" + (lockWaitTimeMillis / 1000) +
+                    " sec, path=" + file.getAbsolutePath() + ']';
             }
             catch (Exception e) {
                 throw new IgniteCheckedException(e);
@@ -4883,7 +4846,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         return null;
                 }
 
-                log.error("Catch error during restore state, throwsCRCError=" + throwsCRCError, e);
+                log.error("There is an error during restore state [throwsCRCError=" + throwsCRCError + ']', e);
 
                 throw e;
             }
@@ -4974,8 +4937,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @return Flag indicates need throws CRC exception or not.
          */
         @Override public boolean throwsCRCError() {
-            log.info("Throws CRC error check, needApplyBinaryUpdates=" + needApplyBinaryUpdates +
-                ", lastArchivedSegment=" + lastArchivedSegment + ", lastRead=" + lastRead);
+            log.info("Throws CRC error check [needApplyBinaryUpdates=" + needApplyBinaryUpdates +
+                ", lastArchivedSegment=" + lastArchivedSegment + ", lastRead=" + lastRead + ']');
 
             if (needApplyBinaryUpdates)
                 return true;
