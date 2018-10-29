@@ -92,9 +92,6 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientStartCoordinatorFailsAtomic() throws Exception {
-        if (FORCE_MVCC)
-            return;
-
         clientStartCoordinatorFails(ATOMIC);
     }
 

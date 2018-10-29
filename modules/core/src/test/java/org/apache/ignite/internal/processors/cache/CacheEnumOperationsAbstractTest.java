@@ -66,6 +66,9 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        if(FORCE_MVCC && !singleNode())
+            fail("https://issues.apache.org/jira/browse/IGNITE-7187");
+
         super.beforeTestsStarted();
 
         if (!singleNode()) {

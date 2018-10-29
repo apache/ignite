@@ -124,6 +124,8 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
      */
     private void checkTransactionTimeout(TransactionConcurrency concurrency,
         TransactionIsolation isolation) throws Exception {
+        if(FORCE_MVCC && (concurrency != PESSIMISTIC || isolation != REPEATABLE_READ))
+            fail("Mvcc tx mode is not supported.");
 
         int idx = RAND.nextInt(GRID_COUNT);
 

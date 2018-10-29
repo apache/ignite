@@ -49,6 +49,14 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
     private static final int PUT_CNT = 100;
 
     /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        if(FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-8582");
+
+        super.setUp();
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);

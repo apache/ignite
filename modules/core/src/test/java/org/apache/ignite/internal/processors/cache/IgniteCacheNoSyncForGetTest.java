@@ -135,6 +135,14 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
         final boolean getAll,
         final boolean cfgExpiryPlc,
         final boolean withExpiryPlc) throws Exception {
+        if(FORCE_MVCC) {
+            if (heapCache)
+                fail("MVCC does not supported on-heap cache.");
+
+            if(cfgExpiryPlc || withExpiryPlc)
+                fail("https://issues.apache.org/jira/browse/IGNITE-7311");
+        }
+
         log.info("Test get [getAll=" + getAll + ", cfgExpiryPlc=" + cfgExpiryPlc + ']');
 
         Ignite srv = ignite(0);

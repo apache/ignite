@@ -43,6 +43,14 @@ public class IgniteCacheClearDuringRebalanceTest extends GridCommonAbstractTest 
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        if(FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-7952");
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
