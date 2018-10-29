@@ -1003,8 +1003,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /**
      *
-     * @param topVer
-     * @return
+     * @param topVer Topology version.
+     * @return Last topology version before the provided one when affinity was modified.
      */
     public AffinityTopologyVersion lastAffinityChangedTopologyVersion(AffinityTopologyVersion topVer) {
         if (topVer.topologyVersion() <= 0)
@@ -1017,9 +1017,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /**
      *
-     * @param topVer
-     * @param lastAffTopVer
-     * @return
+     * @param topVer Topology version.
+     * @param lastAffTopVer Last topology version before the provided one when affinity was modified.
+     * @return {@code True} if data was modified.
      */
     public boolean lastAffinityChangedTopologyVersion(AffinityTopologyVersion topVer, AffinityTopologyVersion lastAffTopVer) {
         assert lastAffTopVer.compareTo(topVer) <= 0;
