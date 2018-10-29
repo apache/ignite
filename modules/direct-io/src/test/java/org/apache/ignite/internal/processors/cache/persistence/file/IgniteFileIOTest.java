@@ -60,7 +60,7 @@ public class IgniteFileIOTest extends TestCase {
         }
 
         /** {@inheritDoc} */
-        @Override public long blocks() {
+        @Override public long getSparseSize() {
             return -1;
         }
 

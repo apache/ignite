@@ -58,9 +58,9 @@ public class UnzipFileIO extends AbstractFileIO {
         return -1;
     }
 
-
-    @Override public long blocks() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public long getSparseSize() {
+        return -1;
     }
 
     /** {@inheritDoc} */

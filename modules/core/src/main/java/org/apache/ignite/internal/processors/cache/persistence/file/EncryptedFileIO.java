@@ -104,7 +104,7 @@ public class EncryptedFileIO implements FileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public long blocks() {
+    @Override public long getSparseSize() {
         return -1;
     }
 

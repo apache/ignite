@@ -42,8 +42,8 @@ public class FileIODecorator extends AbstractFileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public long blocks() {
-        return delegate.blocks();
+    @Override public long getSparseSize() {
+        return delegate.getSparseSize();
     }
 
     /** {@inheritDoc} */

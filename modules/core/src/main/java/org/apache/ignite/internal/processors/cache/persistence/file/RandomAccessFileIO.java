@@ -71,8 +71,8 @@ public class RandomAccessFileIO extends AbstractFileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public long blocks() {
-        return FileSystemUtils.getFileBlocks(fd);
+    @Override public long getSparseSize() {
+        return FileSystemUtils.getSparseFileSize(fd);
     }
 
     /** {@inheritDoc} */

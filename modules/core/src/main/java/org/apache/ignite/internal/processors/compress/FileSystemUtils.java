@@ -70,11 +70,17 @@ public final class FileSystemUtils {
     }
 
     /**
+     * !!! Use with caution. May produce unexpected results.
+     *
+     * Known to work correctly on Linux EXT4 and Btrfs,
+     * while on XSF it returns meaningful result only after
+     * file reopening.
+     *
      * @param fd Native file descriptor.
-     * @return Number of file blocks in the file or negative value if unsupported.
+     * @return Approximate system dependent size of the sparse file.
      */
-    public static long getFileBlocks(int fd) {
-        return fs == null ? -1 : fs.getFileBlocks(fd);
+    public static long getSparseFileSize(int fd) {
+        return fs == null ? -1 : fs.getSparseFileSize(fd);
     }
 
     /**

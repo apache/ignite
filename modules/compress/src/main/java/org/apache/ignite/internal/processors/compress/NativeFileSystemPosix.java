@@ -42,13 +42,9 @@ public class NativeFileSystemPosix implements NativeFileSystem {
     }
 
     /** {@inheritDoc} */
-    @Override public long getFileBlocks(int fd) {
+    @Override public long getSparseFileSize(int fd) {
         FileStat stat = posix.fstat(fd);
-
-        long blockSize = stat.blockSize();
-        long blocks512 = stat.blocks();
-
-        return blocks512 * 512 / blockSize;
+        return stat.blocks() * 512;
     }
 
     /** {@inheritDoc} */

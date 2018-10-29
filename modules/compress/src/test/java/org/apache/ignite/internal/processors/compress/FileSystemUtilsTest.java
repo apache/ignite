@@ -32,8 +32,8 @@ import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorImpl.allocateDirectBuffer;
-import static org.apache.ignite.internal.processors.compress.FileSystemUtils.getFileBlocks;
 import static org.apache.ignite.internal.processors.compress.FileSystemUtils.getFileSystemBlockSize;
+import static org.apache.ignite.internal.processors.compress.FileSystemUtils.getSparseFileSize;
 import static org.apache.ignite.internal.processors.compress.FileSystemUtils.punchHole;
 
 /**
@@ -67,17 +67,6 @@ public class FileSystemUtilsTest extends TestCase {
 
     private static int getFD(FileChannel ch) throws IgniteCheckedException {
         return U.<Integer>field(U.<FileDescriptor>field(ch, "fd"), "fd");
-    }
-
-    /**
-     * @param fd Native file descriptor.
-     * @return Size.
-     */
-    private long getSparseFileSize(int fd) {
-        int blockSize = getFileSystemBlockSize(fd);
-        long blocks = getFileBlocks(fd);
-
-        return blocks * blockSize;
     }
 
     /**

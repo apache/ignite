@@ -267,7 +267,9 @@ public interface FileIO extends AutoCloseable {
     int punchHole(long position, int len);
 
     /**
-     * @return Number of allocated file system blocks or negative value if not supported.
+     * Implementation is system dependent and may produce unexpected results!
+     *
+     * @return Sparse size of the file or negative result if unsupported.
      */
-    long blocks();
+    long getSparseSize();
 }

@@ -44,7 +44,7 @@ public interface NativeFileSystem {
 
     /**
      * @param fd Native file descriptor.
-     * @return Number of file blocks in the file.
+     * @return Approximate system dependent size of the sparse file.
      */
-    long getFileBlocks(int fd);
+    long getSparseFileSize(int fd);
 }
