@@ -68,6 +68,9 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
     /** */
     protected int pageSize = 16 * 1024;
 
+    /** */
+    private FileIOFactory factory;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -98,16 +101,13 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
             .setPageCompression(compression)
             .setPageCompressionLevel(compressionLevel);
 
-        FileIOFactory factory = getFileIOFactory();
-
-        if (!U.isLinux())
-            factory = new PunchFileIOFactory(factory);
+        factory = getFileIOFactory();
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setPageSize(pageSize)
             .setCheckpointFrequency(750)
             .setDefaultDataRegionConfiguration(drCfg)
-            .setFileIOFactory(factory);
+            .setFileIOFactory(U.isLinux() ? factory : new PunchFileIOFactory(factory));
 
         return super.getConfiguration(igniteName).setDataStorageConfiguration(dsCfg);
     }
@@ -216,6 +216,8 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
         FilePageStoreManager storeMgr = ((GridCacheDatabaseSharedManager)ignite.context()
             .cache().context().database()).getFileStoreManager();
 
+        checkFileIOFactory(storeMgr.getPageStoreFileIoFactory());
+
         GridCacheContext<?,?> cctx = ignite.cachex(cacheName).context();
 
         int parts = cctx.affinity().partitions();
@@ -227,6 +229,16 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
         }
 
         fail("No files were compacted.");
+    }
+
+    /**
+     * @param f Factory.
+     */
+    protected void checkFileIOFactory(FileIOFactory f) {
+        if (!U.isLinux())
+            f = ((PunchFileIOFactory)f).delegate;
+
+        assertSame(factory, f);
     }
 
     /**
