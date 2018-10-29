@@ -64,7 +64,7 @@ public class FilePageStoreV2 extends FilePageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public long blocks() {
+    @Override public long getSparseSize() {
         return fileIO.getSparseSize();
     }
 

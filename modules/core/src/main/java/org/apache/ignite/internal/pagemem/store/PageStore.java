@@ -141,9 +141,11 @@ public interface PageStore {
     public int getBlockSize() throws StorageException;
 
     /**
-     * @return Number of allocated storage blocks or negative value if unsupported.
+     * @return Approximate system dependent size of the storage or negative
+     *          value if not supported.
+     * @see #punchHole
      */
-    public long blocks();
+    public long getSparseSize();
 
     /**
      * Should free all the extra storage space after the given number of useful bytes in the given page.

@@ -77,7 +77,8 @@ public final class FileSystemUtils {
      * file reopening.
      *
      * @param fd Native file descriptor.
-     * @return Approximate system dependent size of the sparse file.
+     * @return Approximate system dependent size of the sparse file or negative
+     *          value if not supported.
      */
     public static long getSparseFileSize(int fd) {
         return fs == null ? -1 : fs.getSparseFileSize(fd);

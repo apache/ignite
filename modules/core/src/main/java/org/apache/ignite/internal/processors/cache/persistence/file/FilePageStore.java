@@ -127,7 +127,7 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public long blocks() {
+    @Override public long getSparseSize() {
         return -1;
     }
 
