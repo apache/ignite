@@ -388,27 +388,31 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param testNodeFactory Test node factory.
+     * @param execNodeFactory Test node factory.
      * @param preloadMode Preload mode.
      */
-    private void preloadPartition(Supplier<Ignite> testNodeFactory, PreloadMode preloadMode) throws Exception {
+    private void preloadPartition(Supplier<Ignite> execNodeFactory, PreloadMode preloadMode) throws Exception {
         Ignite crd = startGridsMultiThreaded(GRIDS_CNT);
 
-        int cnt = 0;
+        Ignite testNode = grid(1);
 
-        Ignite primary = grid(1);
+        Object consistentId = testNode.cluster().localNode().consistentId();
 
-        assertEquals(PRIMARY_NODE, primary.cluster().localNode().consistentId());
+        assertEquals(PRIMARY_NODE, testNode.cluster().localNode().consistentId());
 
-        Integer key = primaryKey(primary.cache(DEFAULT_CACHE_NAME));
+        boolean locCacheMode = testNode.cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).getCacheMode() == LOCAL;
+
+        Integer key = primaryKey(testNode.cache(DEFAULT_CACHE_NAME));
 
         int preloadPart = crd.affinity(DEFAULT_CACHE_NAME).partition(key);
 
-        try (IgniteDataStreamer<Integer, Integer> streamer = primary.dataStreamer(DEFAULT_CACHE_NAME)) {
+        int cnt = 0;
+
+        try (IgniteDataStreamer<Integer, Integer> streamer = testNode.dataStreamer(DEFAULT_CACHE_NAME)) {
             int k = 0;
 
             while (cnt < ENTRY_CNT) {
-                if (primary.affinity(DEFAULT_CACHE_NAME).partition(k) == preloadPart) {
+                if (testNode.affinity(DEFAULT_CACHE_NAME).partition(k) == preloadPart) {
                     streamer.addData(k, k);
 
                     cnt++;
@@ -424,36 +428,49 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(GRIDS_CNT);
 
-        primary = G.allGrids().stream().
+        testNode = G.allGrids().stream().
             filter(ignite -> PRIMARY_NODE.equals(ignite.cluster().localNode().consistentId())).findFirst().get();
 
-        assertEquals(primary, primaryNode(key, DEFAULT_CACHE_NAME));
+        if (!locCacheMode)
+            assertEquals(testNode, primaryNode(key, DEFAULT_CACHE_NAME));
 
-        Ignite testNode = testNodeFactory.get();
+        Ignite execNode = execNodeFactory.get();
 
         switch (preloadMode) {
             case SYNC:
-                testNode.cache(DEFAULT_CACHE_NAME).preloadPartition(preloadPart);
+                execNode.cache(DEFAULT_CACHE_NAME).preloadPartition(preloadPart);
+
+                if (locCacheMode) {
+                    testNode = G.allGrids().stream().filter(ignite ->
+                        ignite.cluster().localNode().consistentId().equals(consistentId)).findFirst().get();
+                }
 
                 break;
             case ASYNC:
-                testNode.cache(DEFAULT_CACHE_NAME).preloadPartitionAsync(preloadPart).get();
+                execNode.cache(DEFAULT_CACHE_NAME).preloadPartitionAsync(preloadPart).get();
+
+                if (locCacheMode) {
+                    testNode = G.allGrids().stream().filter(ignite ->
+                        ignite.cluster().localNode().consistentId().equals(consistentId)).findFirst().get();
+                }
 
                 break;
             case LOCAL:
-                assertTrue(testNode.cache(DEFAULT_CACHE_NAME).localPreloadPartition(preloadPart));
+                assertTrue(execNode.cache(DEFAULT_CACHE_NAME).localPreloadPartition(preloadPart));
+
+                testNode = execNode; // For local preloading testNode == execNode
 
                 break;
         }
 
-        long c0 = primary.dataRegionMetrics(DEFAULT_REGION).getPagesRead();
+        long c0 = testNode.dataRegionMetrics(DEFAULT_REGION).getPagesRead();
 
         // After partition preloading no pages should be read from store.
         List<Cache.Entry<Object, Object>> list = U.arrayList(testNode.cache(DEFAULT_CACHE_NAME).localEntries(), 1000);
 
         assertEquals(ENTRY_CNT, list.size());
 
-        assertEquals("Read pages count must be same", c0, primary.dataRegionMetrics(DEFAULT_REGION).getPagesRead());
+        assertEquals("Read pages count must be same", c0, testNode.dataRegionMetrics(DEFAULT_REGION).getPagesRead());
     }
 
     /** */
