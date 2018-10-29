@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.File;
+import java.io.IOException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
 
@@ -64,7 +65,7 @@ public class FilePageStoreV2 extends FilePageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public long getSparseSize() {
+    @Override public long getSparseSize() throws IOException {
         return fileIO.getSparseSize();
     }
 

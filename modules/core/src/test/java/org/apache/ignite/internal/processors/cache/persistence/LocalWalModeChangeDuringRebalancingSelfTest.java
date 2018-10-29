@@ -576,7 +576,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         }
 
         /** {@inheritDoc} */
-        @Override public long getSparseSize() {
+        @Override public long getSparseSize() throws IOException {
             return delegate.getSparseSize();
         }
 

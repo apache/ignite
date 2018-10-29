@@ -17,8 +17,15 @@
 
 package org.apache.ignite.internal.processors.compress;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
+import java.nio.file.OpenOption;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -27,7 +34,13 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PageCompression;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -85,11 +98,16 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
             .setPageCompression(compression)
             .setPageCompressionLevel(compressionLevel);
 
+        FileIOFactory factory = getFileIOFactory();
+
+        if (!U.isLinux())
+            factory = new PunchFileIOFactory(factory);
+
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setPageSize(pageSize)
             .setCheckpointFrequency(750)
             .setDefaultDataRegionConfiguration(drCfg)
-            .setFileIOFactory(getFileIOFactory());
+            .setFileIOFactory(factory);
 
         return super.getConfiguration(igniteName).setDataStorageConfiguration(dsCfg);
     }
@@ -175,8 +193,10 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
 
         ignite.cluster().active(true);
 
+        String cacheName = "test";
+
         CacheConfiguration<Integer,TestVal> ccfg = new CacheConfiguration<Integer,TestVal>()
-            .setName("test")
+            .setName(cacheName)
             .setBackups(0)
             .setAtomicityMode(ATOMIC)
             .setIndexedTypes(Integer.class, TestVal.class);
@@ -192,6 +212,21 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
             assertEquals(new TestVal(i), cache.getAndRemove(i));
 
         U.sleep(1000);
+
+        FilePageStoreManager storeMgr = ((GridCacheDatabaseSharedManager)ignite.context()
+            .cache().context().database()).getFileStoreManager();
+
+        GridCacheContext<?,?> cctx = ignite.cachex(cacheName).context();
+
+        int parts = cctx.affinity().partitions();
+
+        for (int i = 0; i < parts; i++) {
+            PageStore store = storeMgr.getStore(cctx.cacheId(), i);
+            if (store.getSparseSize() < store.pages() * store.getPageSize())
+                return;
+        }
+
+        fail("No files were compacted.");
     }
 
     /**
@@ -242,6 +277,84 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
             result = 31 * result + (int)(x ^ (x >>> 32));
             result = 31 * result + (id != null ? id.hashCode() : 0);
             return result;
+        }
+    }
+
+    /**
+     */
+    static class PunchFileIO extends FileIODecorator {
+        /** */
+        private ConcurrentMap<Long, Integer> holes = new ConcurrentHashMap<>();
+
+        /**
+         * @param delegate File I/O delegate
+         */
+        public PunchFileIO(FileIO delegate) {
+            super(Objects.requireNonNull(delegate));
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getFileSystemBlockSize() {
+            assertFalse(U.isLinux());
+
+            return 4 * 1024;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getSparseSize() throws IOException {
+            assertFalse(U.isLinux());
+
+            long holesSize = holes.values().stream().mapToLong(x -> x).sum();
+
+            return size() - holesSize;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int writeFully(ByteBuffer srcBuf, long position) throws IOException {
+            assertFalse(U.isLinux());
+
+            holes.remove(position);
+            return super.writeFully(srcBuf, position);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int punchHole(long pos, int len) {
+            assertFalse(U.isLinux());
+
+            assertTrue(len > 0);
+
+            int blockSize = getFileSystemBlockSize();
+
+            len = len / blockSize * blockSize;
+
+            if (len > 0)
+                holes.put(pos, len);
+
+            return len;
+        }
+    }
+
+    /**
+     */
+    static class PunchFileIOFactory implements FileIOFactory {
+        /** */
+        final FileIOFactory delegate;
+
+        /**
+         * @param delegate Delegate.
+         */
+        PunchFileIOFactory(FileIOFactory delegate) {
+            this.delegate = Objects.requireNonNull(delegate);
+        }
+
+        /** {@inheritDoc} */
+        @Override public FileIO create(File file) throws IOException {
+            return new PunchFileIO(delegate.create(file));
+        }
+
+        /** {@inheritDoc} */
+        @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+            return new PunchFileIO(delegate.create(file, modes));
         }
     }
 }

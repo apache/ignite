@@ -271,5 +271,5 @@ public interface FileIO extends AutoCloseable {
      *          value if not supported.
      * @see #punchHole
      */
-    long getSparseSize();
+    long getSparseSize() throws IOException;
 }
