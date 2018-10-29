@@ -15,15 +15,13 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-import component from './component';
-import {registerState} from './run';
+import template from './template.pug';
+import {DialogAdminCreateUser} from './controller';
 
-export default angular
-    .module('ignite-console.page-signup', [
-        'ui.router',
-        'ignite-console.user',
-        'ignite-console.form-signup'
-    ])
-    .component('pageSignup', component)
-    .run(registerState);
+export default {
+    template,
+    controller: DialogAdminCreateUser,
+    bindings: {
+        close: '&onHide'
+    }
+};

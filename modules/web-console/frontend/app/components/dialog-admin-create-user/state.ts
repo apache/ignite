@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-import component from './component';
-import {registerState} from './run';
+import {UIRouter} from '@uirouter/angularjs';
+import {dialogState} from '../../utils/dialogState';
 
-export default angular
-    .module('ignite-console.page-signup', [
-        'ui.router',
-        'ignite-console.user',
-        'ignite-console.form-signup'
-    ])
-    .component('pageSignup', component)
-    .run(registerState);
+registerState.$inject = ['$uiRouter'];
+
+export function registerState(router: UIRouter) {
+    router.stateRegistry.register({
+        ...dialogState('dialog-admin-create-user'),
+        name: 'base.settings.admin.createUser',
+        url: '/create-user'
+    });
+}
