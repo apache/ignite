@@ -148,16 +148,23 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
 
         Map<KeyCacheObject, MvccTxEntry> cached = buf.getCached();
 
-        if (F.isEmpty(cached) || !commit)
+        if (F.isEmpty(cached))
             return;
 
         TxCounters txCntrs = tx.txCounters(false);
 
-        assert txCntrs != null;
+        assert txCntrs != null || !commit;
 
-        Collection<PartitionUpdateCountersMessage> cntrsColl =  txCntrs.updateCounters();
+        if (txCntrs == null)
+            return;
 
-        assert  !F.isEmpty(cntrsColl) : cntrsColl;
+        Collection<PartitionUpdateCountersMessage> cntrsColl = txCntrs.updateCounters();
+
+        if (F.isEmpty(cntrsColl)) {
+            assert !commit;
+
+            return;
+        }
 
         // cacheId -> partId -> initCntr -> cntr + delta.
         Map<Integer, Map<Integer, T2<AtomicLong, Long>>> cntrsMap = new HashMap<>();
@@ -221,8 +228,8 @@ public class MvccCachingManager extends GridCacheSharedManagerAdapter {
                         contQryMgr.onEntryUpdated(
                             lsnrCol,
                             e.key(),
-                            e.value(),
-                            e.oldValue(),
+                            commit ? e.value() : null, // Force skip update counter if rolled back.
+                            commit ? e.oldValue() : null, // Force skip update counter if rolled back.
                             false,
                             e.key().partition(),
                             tx.local(),

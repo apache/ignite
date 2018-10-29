@@ -790,7 +790,18 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                     expEvts.add(new T3<>((Object)key, (Object)val, (Object)key));
             }
 
-            clnCache.put(key, val);
+            boolean updated = false;
+
+            while (!updated) {
+                try {
+                    clnCache.put(key, val);
+
+                    updated = true;
+                }
+                catch (Exception ignore) {
+                    assertEquals(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, atomicityMode());
+                }
+            }
 
             filtered = !filtered;
         }
@@ -2049,7 +2060,6 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                                 updated = true;
                             }
                             catch (CacheException e) {
-                                assertTrue(X.hasCause(e, TransactionRollbackException.class));
                                 assertSame(atomicityMode(), CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
                             }
                         }

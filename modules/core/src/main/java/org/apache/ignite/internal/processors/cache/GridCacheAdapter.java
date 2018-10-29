@@ -4304,7 +4304,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                             AffinityTopologyVersion awaitVer = new AffinityTopologyVersion(
                                 topVer.topologyVersion() + 1, 0);
 
-                            ctx.shared().exchange().affinityReadyFuture(awaitVer).get();
+                            ctx.shared().exchange().affinityReadyFuture(awaitVer).get(); // TODO ??
 
                             continue;
                         }

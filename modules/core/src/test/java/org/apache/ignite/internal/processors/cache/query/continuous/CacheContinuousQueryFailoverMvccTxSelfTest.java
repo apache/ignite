@@ -40,4 +40,9 @@ public class CacheContinuousQueryFailoverMvccTxSelfTest extends CacheContinuousQ
     @Override public void testBackupQueueEvict() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-7311");
     }
+
+    /** {@inheritDoc} */
+    @Override public void testLeftPrimaryAndBackupNodes() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10047");
+    }
 }
