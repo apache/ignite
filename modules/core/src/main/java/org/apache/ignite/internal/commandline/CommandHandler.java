@@ -96,6 +96,7 @@ import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTask;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
+import org.apache.ignite.internal.visor.verify.IndexIntegrityCheckIssue;
 import org.apache.ignite.internal.visor.verify.IndexValidationIssue;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesPartitionResult;
 import org.apache.ignite.internal.visor.verify.VisorContentionTask;
@@ -821,9 +822,20 @@ public class CommandHandler {
             }
         }
 
-        boolean errors = false;
-
         for (Map.Entry<UUID, VisorValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {
+            boolean errors = false;
+
+            log("validate_indexes result on node " + nodeEntry.getKey() + ":");
+
+            Collection<IndexIntegrityCheckIssue> integrityCheckFailures = nodeEntry.getValue().integrityCheckFailures();
+
+            if (!integrityCheckFailures.isEmpty()) {
+                errors = true;
+
+                for (IndexIntegrityCheckIssue is : integrityCheckFailures)
+                    log("\t" + is.toString());
+            }
+
             Map<PartitionKey, ValidateIndexesPartitionResult> partRes = nodeEntry.getValue().partitionResult();
 
             for (Map.Entry<PartitionKey, ValidateIndexesPartitionResult> e : partRes.entrySet()) {
@@ -832,10 +844,10 @@ public class CommandHandler {
                 if (!res.issues().isEmpty()) {
                     errors = true;
 
-                    log(e.getKey().toString() + " " + e.getValue().toString());
+                    log("\t" + e.getKey().toString() + " " + e.getValue().toString());
 
                     for (IndexValidationIssue is : res.issues())
-                        log(is.toString());
+                        log("\t\t" + is.toString());
                 }
             }
 
@@ -847,18 +859,18 @@ public class CommandHandler {
                 if (!res.issues().isEmpty()) {
                     errors = true;
 
-                    log("SQL Index " + e.getKey() + " " + e.getValue().toString());
+                    log("\tSQL Index " + e.getKey() + " " + e.getValue().toString());
 
                     for (IndexValidationIssue is : res.issues())
-                        log(is.toString());
+                        log("\t\t" + is.toString());
                 }
             }
-        }
 
-        if (!errors)
-            log("validate_indexes has finished, no issues found.");
-        else
-            log("validate_indexes has finished with errors (listed above).");
+            if (!errors)
+                log("no issues found.\n");
+            else
+                log("issues found (listed above).\n");
+        }
     }
 
     /**
