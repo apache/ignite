@@ -26,7 +26,6 @@ import java.nio.file.Paths;
 import junit.framework.TestCase;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.junit.Assume;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
@@ -43,8 +42,8 @@ public class FileSystemUtilsTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testSparseFiles() throws Exception {
-        Assume.assumeTrue("Native file system API is not supported on: " + U.osString(),
-            U.isLinux());
+        if (!U.isLinux())
+            return;
 
         Path file = Files.createTempFile("test_sparse_file_", ".bin");
 
