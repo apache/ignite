@@ -53,9 +53,7 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-/**
- * Test ensuring that cluster could be deactivate successfully after
- */
+/** */
 public class PersistenceDeactivationWithActiveMvccTransactionTest extends GridCommonAbstractTest {
     // t0d0 different commit modes sql
     /** {@inheritDoc} */
