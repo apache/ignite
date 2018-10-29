@@ -45,6 +45,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.configuration.PageCompression.LZ4;
 import static org.apache.ignite.configuration.PageCompression.SKIP_GARBAGE;
 import static org.apache.ignite.configuration.PageCompression.ZSTD;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.LZ4_DEFAULT_LEVEL;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.LZ4_MAX_LEVEL;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.LZ4_MIN_LEVEL;
@@ -348,7 +349,7 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
     }
 
     private AlignedBuffersDirectFileIOFactory newAlignedBufferFactory() throws Exception {
-        File storePath = new File(super.getConfiguration().getDataStorageConfiguration().getStoragePath());
+        File storePath = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
 
         return new AlignedBuffersDirectFileIOFactory(log, storePath, pageSize, new RandomAccessFileIOFactory());
     }
