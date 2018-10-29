@@ -69,7 +69,7 @@ module.exports = {
                     cert: fs.readFileSync(nconf.get('server:cert')),
                     passphrase: nconf.get('server:keyPassphrase')
                 },
-                disableSignup: nconf.get('server:disable:signup') || false
+                disable: nconf.get('server:disable') || {}
             },
             mail,
             mongoUrl: nconf.get('mongodb:url') || 'mongodb://127.0.0.1/console',
