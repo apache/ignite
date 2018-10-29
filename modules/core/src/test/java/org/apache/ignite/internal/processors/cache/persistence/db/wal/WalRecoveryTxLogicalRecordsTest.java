@@ -120,7 +120,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
             .setMaxSize(100L * 1024 * 1024)
             .setPersistenceEnabled(true));
 
-        //dbCfg.setAlwaysWriteFullPages(true);
+        dbCfg.setAlwaysWriteFullPages(true);
 
         if (checkpointFreq != null)
             dbCfg.setCheckpointFrequency(checkpointFreq);
@@ -694,7 +694,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
                 assertTrue(PageMemoryTrackerPluginProvider.tracker(ignite).checkPages(true));
 
-                stopGrid(0, false);
+                stopGrid(0, true);
             }
         }
         finally {

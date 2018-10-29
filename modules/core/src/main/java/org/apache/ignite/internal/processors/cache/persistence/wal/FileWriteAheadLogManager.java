@@ -825,12 +825,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (serializer == null || mode == WALMode.NONE)
             return null;
 
+        // Only delta-records and page snapshots are allowed to write in recovery mode.
         if (!(rec instanceof PageDeltaRecord || rec instanceof PageSnapshot) && cctx.kernalContext().recoveryMode())
             return null;
-
-        if (rec instanceof PageDeltaRecord || rec instanceof PageSnapshot) {
-            assert cctx.database().checkpointLockIsHeldByThread();
-        }
 
         FileWriteHandle currWrHandle = currentHandle();
 
