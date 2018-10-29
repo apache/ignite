@@ -59,7 +59,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -362,11 +364,15 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         int grpId = MetaStorage.METASTORAGE_CACHE_ID;
 
         if (!idxCacheStores.containsKey(grpId)) {
+            DataRegion reg = cctx.database().dataRegion(GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME);
+
+            AllocatedPageTracker allocTracker = reg.memoryMetrics().getOrAllocateGroupPageAllocationTracker(grpId);
+
             CacheStoreHolder holder = initDir(
                 new File(storeWorkDir, META_STORAGE_NAME),
                     grpId,
                     1,
-                    AllocatedPageTracker.NO_OP,
+                allocTracker,
                     false);
 
             CacheStoreHolder old = idxCacheStores.put(grpId, holder);

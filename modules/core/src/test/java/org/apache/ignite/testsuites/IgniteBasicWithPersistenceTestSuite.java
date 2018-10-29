@@ -31,6 +31,7 @@ import org.apache.ignite.internal.encryption.EncryptedCacheNodeJoinTest;
 import org.apache.ignite.internal.encryption.EncryptedCachePreconfiguredRestartTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheRestartTest;
 import org.apache.ignite.internal.GridNodeMetricsLogPdsSelfTest;
+import org.apache.ignite.internal.processors.database.DataRegionMetricsPdsSelfTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOnActivationTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOutsideBaselineTest;
 import org.apache.ignite.marshaller.GridMarshallerMappingConsistencyTest;
@@ -72,6 +73,7 @@ public class IgniteBasicWithPersistenceTestSuite extends TestSuite {
         suite.addTestSuite(GridInternalTaskUnusedWalSegmentsTest.class);
 
         suite.addTestSuite(GridNodeMetricsLogPdsSelfTest.class);
+        suite.addTestSuite(DataRegionMetricsPdsSelfTest.class);
 
         suite.addTestSuite(EncryptedCacheBigEntryTest.class);
         suite.addTestSuite(EncryptedCacheCreateTest.class);
