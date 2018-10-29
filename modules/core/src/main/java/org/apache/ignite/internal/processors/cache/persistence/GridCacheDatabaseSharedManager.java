@@ -2150,6 +2150,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                             PageMemoryEx pageMem = getPageMemoryForCacheGroup(grpId);
 
+                            if (pageMem == null)
+                                break;
+
                             long page = pageMem.acquirePage(grpId, pageId, true);
 
                             try {
@@ -2202,6 +2205,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                             PageMemoryEx pageMem = getPageMemoryForCacheGroup(grpId);
 
+                            if (pageMem == null)
+                                break;
+
                             pageMem.invalidate(grpId, destroyRecord.partitionId());
 
                             schedulePartitionDestroy(grpId, destroyRecord.partitionId());
@@ -2218,6 +2224,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             long pageId = r.pageId();
 
                             PageMemoryEx pageMem = getPageMemoryForCacheGroup(grpId);
+
+                            if (pageMem == null)
+                                break;
 
                             // Here we do not require tag check because we may be applying memory changes after
                             // several repetitive restarts and the same pages may have changed several times.
@@ -2292,7 +2301,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         CacheGroupDescriptor desc = sharedCtx.cache().cacheGroupDescriptors().get(grpId);
 
         if (desc == null)
-            throw new IgniteCheckedException("Failed to find cache group descriptor [grpId=" + grpId + ']');
+            return null;
 
         String memPlcName = desc.config().getDataRegionName();
 
@@ -2459,6 +2468,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         PageDeltaRecord rec0 = (PageDeltaRecord) rec;
 
                         PageMemoryEx pageMem = getPageMemoryForCacheGroup(rec0.groupId());
+
+                        if (pageMem == null)
+                            break;
 
                         long page = pageMem.acquirePage(rec0.groupId(), rec0.pageId(), true);
 
@@ -4675,27 +4687,31 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             continue;
                     }
 
-                    if (rec instanceof MetastoreDataRecord) {
-                        if (skipDataRecords)
-                            continue;
-                    }
+                    switch (rec.type()) {
+                        case METASTORE_DATA_RECORD:
+                        case DATA_RECORD:
+                            if (skipDataRecords)
+                                continue;
 
-                    if (rec instanceof DataRecord) {
-                        if (skipDataRecords)
-                            continue;
+                            if (rec instanceof DataRecord) {
+                                DataRecord dataRecord = (DataRecord) rec;
 
-                        DataRecord dataRecord = (DataRecord) rec;
+                                // Filter data entries by group id.
+                                List<DataEntry> filteredEntries = dataRecord.writeEntries().stream()
+                                        .filter(entry -> {
+                                            int cacheId = entry.cacheId();
 
-                        // Filter data entries by group id.
-                        List<DataEntry> filteredEntries = dataRecord.writeEntries().stream()
-                                .filter(entry -> {
-                                    int cacheId = entry.cacheId();
+                                            return cctx != null && cctx.cacheContext(cacheId) != null && cacheGroupPredicate.test(cctx.cacheContext(cacheId).groupId());
+                                        })
+                                        .collect(Collectors.toList());
 
-                                    return cctx != null && cctx.cacheContext(cacheId) != null && cacheGroupPredicate.test(cctx.cacheContext(cacheId).groupId());
-                                })
-                                .collect(Collectors.toList());
+                                dataRecord.setWriteEntries(filteredEntries);
+                            }
 
-                        dataRecord.setWriteEntries(filteredEntries);
+                            break;
+
+                        default:
+                            break;
                     }
 
                     return rec;
