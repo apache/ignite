@@ -5431,17 +5431,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /** Set of QuerySchema's saved on recovery. It's needed if cache query schema has changed after node joined to topology.*/
         private final Map<Integer, QuerySchema> querySchemas = new ConcurrentHashMap<>();
 
+        /** {@inheritDoc} */
         @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
             restoreCacheConfigurations();
         }
 
+        /** {@inheritDoc} */
         @Override public void beforeBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
             for (DynamicCacheDescriptor cacheDescriptor : persistentCaches())
                 preparePageStore(cacheDescriptor, true);
         }
 
+        /** {@inheritDoc} */
         @Override public void afterBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
             for (DynamicCacheDescriptor cacheDescriptor : persistentCaches()) {
+                // Skip MVCC caches.
+                if (cacheDescriptor.cacheConfiguration().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+                    continue;
+
                 startCacheInRecoveryMode(cacheDescriptor);
 
                 querySchemas.put(cacheDescriptor.cacheId(), cacheDescriptor.schema().copy());
