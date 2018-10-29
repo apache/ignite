@@ -1928,11 +1928,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             cmd = parser.nextCommand();
 
             if (!(cmd instanceof SqlCommitTransactionCommand || cmd instanceof SqlRollbackTransactionCommand) && !ctx.state().publicApiActiveState(true)) {
+//            if (!ctx.state().publicApiActiveState(true)) {
                 throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
                     "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
                     "join the cluster. To activate the cluster call Ignite.active(true).");
             }
             // t0d0 multiple commands?
+            // t0d0 permit queries when transaction is already opened?
+            // t0d0 check how exception is wrapped during propagation from current method
 
             // No support for multiple commands for now.
             if (parser.nextCommand() != null)
