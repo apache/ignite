@@ -64,7 +64,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
         try {
             startGridsMultiThreaded(gridCnt);
 
-            lsnr.check();
+            assertTrue(lsnr.check());
         } finally {
             stopAllGrids();
         }
@@ -88,8 +88,8 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
 
         log.info(msg);
 
-        lsnr1.check();
-        lsnr2.check();
+        assertTrue(lsnr1.check());
+        assertTrue(lsnr2.check());
 
         // Repeat these steps to ensure that the state is cleared during registration.
         log.registerListener(lsnr1);
@@ -101,8 +101,8 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
 
         log.info(msg);
 
-        lsnr1.check();
-        lsnr2.check();
+        assertTrue(lsnr1.check());
+        assertTrue(lsnr2.check());
     }
 
     /**
@@ -125,24 +125,18 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
      * Checks basic API.
      */
     public void testBasicApi() {
-        String errMsg = "Word started with \"a\" not found.";
-
-        LogListener lsnr = LogListener.matches(Pattern.compile("a[a-z]+")).orError(errMsg)
+        LogListener lsnr = LogListener.matches(Pattern.compile("a[a-z]+"))
             .andMatches("Exception message.").andMatches(".java:").build();
 
         log.registerListener(lsnr);
 
         log.info("Something new.");
 
-        assertThrows(log(), () -> {
-            lsnr.check();
-
-            return null;
-        }, AssertionError.class, errMsg);
+        assertFalse(lsnr.check());
 
         log.error("There was an error.", new RuntimeException("Exception message."));
 
-        lsnr.check();
+        assertTrue(lsnr.check());
     }
 
     /**
@@ -155,7 +149,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
 
         log.info("");
 
-        emptyLineLsnr.check();
+        assertTrue(emptyLineLsnr.check());
     }
 
     /** */
@@ -176,7 +170,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
         // Check custom exception.
         LogListener lsnr2 = LogListener.matches(msg -> {
             throw new IllegalStateException("Illegal state");
-        }).orError("ignored blah-blah").build();
+        }).build();
 
         log.registerListener(lsnr2);
 
@@ -201,18 +195,18 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
         log.info(msg);
         log.info(msg);
 
-        lsnr2.check();
-        lsnr2_3.check();
+        assertTrue(lsnr2.check());
+        assertTrue(lsnr2_3.check());
 
         log.info(msg);
 
-        assertThrowsWithCause(lsnr2::check, AssertionError.class);
+        assertFalse(lsnr2.check());
 
-        lsnr2_3.check();
+        assertTrue(lsnr2_3.check());
 
         log.info(msg);
 
-        assertThrowsWithCause(lsnr2_3::check, AssertionError.class);
+        assertFalse(lsnr2_3.check());
     }
 
     /**
@@ -227,11 +221,11 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
 
         log.info("1");
 
-        notPresent.check();
+        assertTrue(notPresent.check());
 
         log.info(msg);
 
-        assertThrowsWithCause(notPresent::check, AssertionError.class);
+        assertFalse(notPresent.check());
     }
 
     /**
@@ -246,11 +240,11 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
 
         log.info(msg);
 
-        assertThrowsWithCause(atLeast2::check, AssertionError.class);
+        assertFalse(atLeast2.check());
 
         log.info(msg);
 
-        atLeast2.check();
+        assertTrue(atLeast2.check());
     }
 
     /**
@@ -263,16 +257,16 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
 
         log.registerListener(atMost2);
 
-        atMost2.check();
+        assertTrue(atMost2.check());
 
         log.info(msg);
         log.info(msg);
 
-        atMost2.check();
+        assertTrue(atMost2.check());
 
         log.info(msg);
 
-        assertThrowsWithCause(atMost2::check, AssertionError.class);
+        assertFalse(atMost2.check());
     }
 
     /**
@@ -287,9 +281,9 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < 6; i++) {
             if (i < 4)
-                atMost3.check();
+                assertTrue(atMost3.check());
             else
-                assertThrowsWithCause(atMost3::check, AssertionError.class);
+                assertFalse(atMost3.check());
 
             log.info(msg);
         }
@@ -302,9 +296,9 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
             log.info(msg);
 
             if (i == 4)
-                lsnr4.check();
+                assertTrue(lsnr4.check());
             else
-                assertThrowsWithCause(lsnr4::check, AssertionError.class);
+                assertFalse(lsnr4.check());
         }
     }
 
@@ -319,7 +313,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
         log.info("aabaab");
         log.info("abaaab");
 
-        lsnr.check();
+        assertTrue(lsnr.check());
 
         LogListener newLineLsnr = LogListener.matches("\n").times(5).build();
 
@@ -327,7 +321,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
 
         log.info("\n1\n2\n\n3\n");
 
-        newLineLsnr.check();
+        assertTrue(newLineLsnr.check());
 
         LogListener regexpLsnr = LogListener.matches(Pattern.compile("(?i)hi|hello")).times(3).build();
 
@@ -336,7 +330,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
         log.info("Hi! Hello!");
         log.info("Hi folks");
 
-        regexpLsnr.check();
+        assertTrue(regexpLsnr.check());
     }
 
     /**
@@ -369,8 +363,8 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
             }
         }, threadCnt, "test-listening-log");
 
-        lsnr.check();
-        mtLsnr.check();
+        assertTrue(lsnr.check());
+        assertTrue(mtLsnr.check());
     }
 
     /**
