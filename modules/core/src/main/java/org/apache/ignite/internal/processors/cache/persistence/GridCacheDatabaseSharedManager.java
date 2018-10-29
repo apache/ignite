@@ -2128,6 +2128,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         int applied = 0;
 
+        Map<T2<Integer, Long>, List<WALRecord>> changesApplied = new HashMap<>();
+
         try (WALIterator it = cctx.wal().replay(status.endPtr)) {
             while (it.hasNextX()) {
                 WALRecord rec = restoreBinaryState.next(it);
@@ -2154,7 +2156,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 long pageAddr = pageMem.writeLock(grpId, pageId, page);
 
                                 try {
+                                    changesApplied.computeIfAbsent(new T2<>(grpId, pageId), k -> new ArrayList<>()).add(rec);
+
                                     PageUtils.putBytes(pageAddr, 0, pageRec.pageData());
+                                }
+                                catch (Throwable t) {
+                                    int k = 2;
                                 }
                                 finally {
                                     pageMem.writeUnlock(grpId, pageId, page, null, true, true);
@@ -2220,7 +2227,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 long pageAddr = pageMem.writeLock(grpId, pageId, page);
 
                                 try {
+                                    changesApplied.computeIfAbsent(new T2<>(grpId, pageId), k -> new ArrayList<>()).add(rec);
+
                                     r.applyDelta(pageMem, pageAddr);
+                                }
+                                catch (Throwable t) {
+                                    int k = 2;
                                 }
                                 finally {
                                     pageMem.writeUnlock(grpId, pageId, page, null, true, true);

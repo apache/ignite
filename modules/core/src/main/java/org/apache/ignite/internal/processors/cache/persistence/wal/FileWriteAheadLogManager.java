@@ -828,6 +828,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (!(rec instanceof PageDeltaRecord || rec instanceof PageSnapshot) && cctx.kernalContext().recoveryMode())
             return null;
 
+        if (rec instanceof PageDeltaRecord || rec instanceof PageSnapshot) {
+            assert cctx.database().checkpointLockIsHeldByThread();
+        }
+
         FileWriteHandle currWrHandle = currentHandle();
 
         WALDisableContext isDisable = walDisableContext;

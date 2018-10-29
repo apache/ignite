@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesLis
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerConfiguration;
+import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerPluginProvider;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -134,7 +135,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
         cfg.setBinaryConfiguration(binCfg);
 
-        cfg.setPluginConfigurations(new PageMemoryTrackerConfiguration().setEnabled(true).setCheckPagesOnCheckpoint(true));
+        cfg.setPluginConfigurations(new PageMemoryTrackerConfiguration().setEnabled(true).setCheckPagesOnCheckpoint(false));
 
         return cfg;
     }
@@ -691,7 +692,9 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
                 pages = allocatedPages(ignite, CACHE2_NAME);
 
-                ignite.close();
+                assertTrue(PageMemoryTrackerPluginProvider.tracker(ignite).checkPages(true));
+
+                stopGrid(0, false);
             }
         }
         finally {

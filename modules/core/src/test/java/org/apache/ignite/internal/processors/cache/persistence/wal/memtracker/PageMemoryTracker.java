@@ -265,7 +265,7 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         if (cfg.isCheckPagesOnCheckpoint()) {
             checkpointLsnr = ctx -> {
-                if (!checkPages(false))
+                if (!checkPages(true))
                     throw new IgniteCheckedException("Page memory is inconsistent after applying WAL delta records.");
             };
 
