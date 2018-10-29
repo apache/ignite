@@ -182,7 +182,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private List<ClusterNode> srvNodes;
 
     /** */
-    private ClusterNode crd;
+    private volatile ClusterNode crd;
 
     /** ExchangeFuture id. */
     private final GridDhtPartitionExchangeId exchId;
@@ -4574,12 +4574,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return {@code True} If partition changes triggered by receiving Single/Full messages are not finished yet.
      */
     public boolean partitionChangesInProgress() {
-        boolean isCoordinator = crd.equals(cctx.localNode());
+        ClusterNode crd0 = crd;
 
-        if (isCoordinator)
-            return !partitionsSent;
-        else
-            return !partitionsReceived;
+        if (crd0 == null)
+            return false;
+
+        return crd0.equals(cctx.localNode()) ? !partitionsSent : !partitionsReceived;
     }
 
     /**
@@ -4613,7 +4613,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             });
         }
         else
-            delayedLatestMsg.merge(fullMsg);
+            delayedLatestMsg.merge(fullMsg, cctx.discovery());
 
         return true;
     }
