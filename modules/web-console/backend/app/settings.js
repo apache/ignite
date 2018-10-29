@@ -58,9 +58,6 @@ module.exports = {
                 dists: nconf.get('agent:dists') || dfltAgentDists
             },
             packaged,
-            application: {
-                disableSelfRegistration: nconf.get('server:disable:signup') || false
-            },
             server: {
                 host: nconf.get('server:host') || dfltHost,
                 port: _normalizePort(nconf.get('server:port') || dfltPort),
@@ -71,7 +68,8 @@ module.exports = {
                     key: fs.readFileSync(nconf.get('server:key')),
                     cert: fs.readFileSync(nconf.get('server:cert')),
                     passphrase: nconf.get('server:keyPassphrase')
-                }
+                },
+                disableSignup: nconf.get('server:disable:signup') || false
             },
             mail,
             mongoUrl: nconf.get('mongodb:url') || 'mongodb://127.0.0.1/console',
