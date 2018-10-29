@@ -141,6 +141,9 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testEntryProcessorNodeLeave() throws Exception {
+        if(FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-7388");
+
         startGrid(GRID_CNT);
 
         // TODO: IGNITE-1525 (test fails with one-phase commit).

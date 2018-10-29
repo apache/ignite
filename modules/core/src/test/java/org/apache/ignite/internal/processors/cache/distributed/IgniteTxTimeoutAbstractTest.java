@@ -56,6 +56,9 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Override protected void beforeTestsStarted() throws Exception {
+        if(FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-7388");
+
         for (int i = 0; i < GRID_COUNT; i++)
             IGNITEs.add(startGrid(i));
     }
@@ -124,9 +127,6 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
      */
     private void checkTransactionTimeout(TransactionConcurrency concurrency,
         TransactionIsolation isolation) throws Exception {
-        if(FORCE_MVCC && (concurrency != PESSIMISTIC || isolation != REPEATABLE_READ))
-            fail("Mvcc tx mode is not supported.");
-
         int idx = RAND.nextInt(GRID_COUNT);
 
         IgniteCache<Integer, String> cache = jcache(idx);

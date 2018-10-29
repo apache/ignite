@@ -88,6 +88,8 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
     protected void checkRollbackMultithreaded(final TransactionConcurrency concurrency,
         final TransactionIsolation isolation) throws Exception {
         final ConcurrentMap<Integer, String> map = new ConcurrentHashMap<>();
+        if(FORCE_MVCC && (concurrency != PESSIMISTIC || isolation != REPEATABLE_READ))
+            fail("Mvcc tx mode is not supported.");
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
@@ -221,6 +223,9 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
      * @throws Exception If failed.
      */
     public void testOptimisticSerializableConsistency() throws Exception {
+        if(FORCE_MVCC)
+            fail("Mvcc tx mode is not supported.");
+
         final IgniteCache<Integer, Long> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         final int THREADS = 3;
