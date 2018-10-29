@@ -4550,6 +4550,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return {@code True} If partition changes triggered by receiving Single/Full messages are not finished yet.
      */
     public boolean partitionChangesInProgress() {
+        if (crd == null)
+            return false;
+
         boolean isCoordinator = crd.equals(cctx.localNode());
 
         if (isCoordinator)
@@ -4589,7 +4592,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             });
         }
         else
-            delayedLatestMsg.merge(fullMsg);
+            delayedLatestMsg.merge(fullMsg, cctx.discovery());
 
         return true;
     }
