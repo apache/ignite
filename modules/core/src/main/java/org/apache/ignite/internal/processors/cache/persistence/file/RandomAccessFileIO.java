@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import org.apache.ignite.internal.processors.compress.FileSystemUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -50,8 +49,7 @@ public class RandomAccessFileIO extends AbstractFileIO {
      * @param modes Open modes.
      */
     public RandomAccessFileIO(File file, OpenOption... modes) throws IOException {
-        Path filePath = file.toPath();
-        ch = FileChannel.open(filePath, modes);
+        ch = FileChannel.open(file.toPath(), modes);
         fd = getNativeFileDescriptor(ch);
         fsBlockSize = FileSystemUtils.getFileSystemBlockSize(fd);
     }

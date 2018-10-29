@@ -76,8 +76,7 @@ public interface PageStore {
      * @param calculateCrc if {@code False} crc calculation will be forcibly skipped.
      * @throws IgniteCheckedException If page writing failed (IO error occurred).
      */
-    public void write(long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc)
-        throws IgniteCheckedException;
+    public void write(long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException;
 
     /**
      * Gets page offset within the store file.

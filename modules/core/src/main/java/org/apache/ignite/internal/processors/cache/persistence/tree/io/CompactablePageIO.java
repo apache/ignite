@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 public interface CompactablePageIO {
     /**
      * Compacts page contents to the output buffer.
-     * Implementation must not change position and limit of the original page buffer.
+     * Implementation must not change contents, position and limit of the original page buffer.
      *
      * @param page Page buffer.
      * @param out Output buffer.
