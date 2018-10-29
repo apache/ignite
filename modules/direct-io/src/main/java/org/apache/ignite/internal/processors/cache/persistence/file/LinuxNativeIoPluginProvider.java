@@ -192,9 +192,6 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
         if (!factory.isDirectIoAvailable())
             return null;
 
-        if (pageStore.setPageStoreFileIOFactories(factory, backupIoFactory))
-            return null; // Was not able to override user defined settings.
-
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)cacheCtx.database();
 
         db.setThreadBuf(new ThreadLocal<ByteBuffer>() {
@@ -202,6 +199,8 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
                 return factory.createManagedBuffer(pageStore.pageSize());
             }
         });
+
+        pageStore.setPageStoreFileIOFactories(factory, backupIoFactory);
 
         return factory.managedAlignedBuffers();
     }
