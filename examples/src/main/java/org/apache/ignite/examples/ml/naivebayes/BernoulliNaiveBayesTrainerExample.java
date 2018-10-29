@@ -28,7 +28,6 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
 import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.naivebayes.bernoulli.BernoulliNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.bernoulli.BernoulliNaiveBayesTrainer;
 
@@ -51,7 +50,7 @@ public class BernoulliNaiveBayesTrainerExample {
     /** Run example. */
     public static void main(String[] args) throws FileNotFoundException {
         System.out.println();
-        System.out.println(">>> Naive Bayes classification model over partitioned dataset usage example started.");
+        System.out.println(">>> Bernoulli naive Bayes classification model over partitioned dataset usage example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");

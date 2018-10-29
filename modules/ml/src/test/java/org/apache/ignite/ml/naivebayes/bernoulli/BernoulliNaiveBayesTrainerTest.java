@@ -56,6 +56,7 @@ public class BernoulliNaiveBayesTrainerTest extends TrainerTest {
         data.put(12, new double[] {1, 0, 1, 0, 0, LABEL_2});
     }
 
+    /** */
     private BernoulliNaiveBayesTrainer trainer;
 
     /** Initialization {@code BernoulliNaiveBayesTrainer}. */

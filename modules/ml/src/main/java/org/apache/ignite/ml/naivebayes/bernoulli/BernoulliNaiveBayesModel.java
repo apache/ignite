@@ -38,13 +38,16 @@ public class BernoulliNaiveBayesModel implements Model<Vector, Double>, Exportab
     private final double[] classProbabilities;
     /** Labels. */
     private final double[] labels;
+    /** The threshold to convert a feature to a binary value.*/
     private final double binarizeThreshold;
-    private double alpha;
+    /** Amount values which are abouve the threshold per label. */
     private final BernoulliNaiveBayesSumsHolder sumsHolder;
 
     /**
-     * @param probabilities Means of features for all classes.
-     * @param classProbabilities Probabilities for all classes.
+     * @param probabilities Probabilities of features for classes.
+     * @param classProbabilities Prior probabilities for classes.
+     * @param binarizeThreshold The threshold to convert a feature to a binary value.
+     * @param sumsHolder Amount values which are abouve the threshold per label.
      * @param labels Labels.
      */
     public BernoulliNaiveBayesModel(double[][] probabilities, double[] classProbabilities, double[] labels,
@@ -96,11 +99,6 @@ public class BernoulliNaiveBayesModel implements Model<Vector, Double>, Exportab
     /** */
     public double getBinarizeThreshold() {
         return binarizeThreshold;
-    }
-
-    /** */
-    public double getAlpha() {
-        return alpha;
     }
 
     /** */

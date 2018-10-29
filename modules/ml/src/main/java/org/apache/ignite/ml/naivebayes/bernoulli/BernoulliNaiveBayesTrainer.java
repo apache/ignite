@@ -29,7 +29,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
- * Trainer for the Bernoully naive Bayes classification model. The trainer calculates prior probabilities from the input
+ * Trainer for the Bernoulli naive Bayes classification model. The trainer calculates prior probabilities from the input
  * binary dataset. Prior probabilities can be also set by {@code setPriorProbabilities} or {@code
  * withEquiprobableClasses}. If {@code equiprobableClasses} is set, the probalilities of all classes will be {@code
  * 1/k}, where {@code k} is classes count.
