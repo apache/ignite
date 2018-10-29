@@ -18,14 +18,13 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.concurrent.Callable;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  *
  */
-public class SqlTransactionsComandsSelfTest extends AbstractSchemaSelfTest {
+public class SqlTransactionCommandsWithMvccDisabledSelfTest extends AbstractSchemaSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -47,37 +46,29 @@ public class SqlTransactionsComandsSelfTest extends AbstractSchemaSelfTest {
     /**
      * @throws Exception if failed.
      */
-    public void testBeginWithMvccDisabledThrows() throws Exception {
-        checkMvccDisabledBehavior("BEGIN");
+    public void testBeginWithMvccDisabled() throws Exception {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                execute(grid(0), "BEGIN");
+
+                return null;
+            }
+        }, IgniteSQLException.class, "MVCC must be enabled in order to start transaction.");
     }
 
     /**
      * @throws Exception if failed.
      */
-    public void testCommitWithMvccDisabledThrows() throws Exception {
-        checkMvccDisabledBehavior("COMMIT");
+    public void testCommitWithMvccDisabled() throws Exception {
+        execute(grid(0), "COMMIT");
+        // assert no exception
     }
 
     /**
      * @throws Exception if failed.
      */
-    public void testRollbackWithMvccDisabledThrows() throws Exception {
-        checkMvccDisabledBehavior("rollback");
-    }
-
-    /**
-     * @param sql Operation to test.
-     * @throws Exception if failed.
-     */
-    private void checkMvccDisabledBehavior(String sql) throws Exception {
-        try (IgniteEx node = startGrid(commonConfiguration(1))) {
-            GridTestUtils.assertThrows(null, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    execute(node, sql);
-
-                    return null;
-                }
-            }, IgniteSQLException.class, "MVCC must be enabled in order to invoke transactional operation: " + sql);
-        }
+    public void testRollbackWithMvccDisabled() throws Exception {
+        execute(grid(0), "ROLLBACK");
+        // assert no exception
     }
 }

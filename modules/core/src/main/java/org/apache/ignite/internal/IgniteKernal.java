@@ -1051,6 +1051,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 fillNodeAttributes(clusterProc.updateNotifierEnabled());
 
                 ctx.cache().context().database().notifyMetaStorageSubscribersOnReadyForRead();
+
+                ctx.cache().context().database().startMemoryRestore(ctx);
             }
             catch (Throwable e) {
                 U.error(
