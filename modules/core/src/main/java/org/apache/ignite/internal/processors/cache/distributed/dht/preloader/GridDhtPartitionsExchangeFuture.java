@@ -1301,8 +1301,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             finally {
                 cctx.exchange().exchangerBlockingSectionEnd();
             }
-
-            return;
         }
         else {
             if (centralizedAff) { // Last server node failed.
@@ -1316,15 +1314,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
             else
                 onAllServersLeft();
-        }
 
-        cctx.exchange().exchangerBlockingSectionBegin();
+            cctx.exchange().exchangerBlockingSectionBegin();
 
-        try {
-            onDone(initialVersion());
-        }
-        finally {
-            cctx.exchange().exchangerBlockingSectionEnd();
+            try {
+                onDone(initialVersion());
+            }
+            finally {
+                cctx.exchange().exchangerBlockingSectionEnd();
+            }
         }
     }
 
