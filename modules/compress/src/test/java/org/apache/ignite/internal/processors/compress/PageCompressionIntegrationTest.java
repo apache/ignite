@@ -510,9 +510,11 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
      */
-    static class PunchFileIOFactory implements FileIOFactory {
+    static class PunchFileIOFactory implements FileIOFactory, Serializable {
+        /** */
+        static final long serialVersionUID = 42L;
+
         /** */
         final FileIOFactory delegate;
 
