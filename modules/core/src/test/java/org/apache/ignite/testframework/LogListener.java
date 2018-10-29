@@ -28,7 +28,6 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * The basic listener for custom log contents checking in {@link ListeningTestLogger}.<br><br>
@@ -300,10 +299,7 @@ public abstract class LogListener implements Consumer<String> {
          * @param exp Expected occurrences.
          * @param func Function of counting matches in the message.
          */
-        private LogMessageListener(
-            @NotNull Function<String, Integer> func,
-            @NotNull ValueRange exp
-        ) {
+        private LogMessageListener(@NotNull Function<String, Integer> func, @NotNull ValueRange exp) {
             this.func = func;
             this.exp = exp;
         }
