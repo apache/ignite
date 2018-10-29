@@ -2135,7 +2135,8 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
                             cacheContexts.get(cacheInfo),
                             cacheInfo.getCacheDescriptor().schema() != null
                                 ? cacheInfo.getCacheDescriptor().schema()
-                                : new QuerySchema()
+                                : new QuerySchema(),
+                            cacheInfo.getCacheDescriptor().sql()
                         );
 
                         context().exchange().exchangerUpdateHeartbeat();
@@ -2178,7 +2179,7 @@ public class GridCacheProcessor extends GridProcessorAdapter implements Metastor
     ) throws IgniteCheckedException {
         GridCacheContext cacheCtx = prepareCacheContext(startCfg, desc, reqNearCfg, exchTopVer, disabledAfterStart);
 
-        ctx.query().onCacheStart(cacheCtx, desc.schema() != null ? desc.schema() : new QuerySchema());
+        ctx.query().onCacheStart(cacheCtx, desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
 
         onCacheStarted(cacheCtx);
     }
