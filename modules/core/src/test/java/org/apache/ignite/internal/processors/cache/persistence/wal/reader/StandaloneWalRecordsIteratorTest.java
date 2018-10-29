@@ -164,6 +164,8 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
 
         assertNotNull(highBound);
 
+        createWalIterator(dir, lowBound, highBound, true);
+
         final FileWALPointer lBound = lowBound;
         final FileWALPointer hBound = highBound;
 
