@@ -2192,8 +2192,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 res.addAll(doRunPrepared(schemaName, prepared, newQry, twoStepQry, meta, keepBinary, startTx, tracker,
                     cancel));
 
+                // We cannot cache two-step query for multiple statements query except the last statement
                 if (parseRes.twoStepQuery() != null && parseRes.twoStepQueryKey() != null &&
-                    !parseRes.twoStepQuery().explain())
+                    !parseRes.twoStepQuery().explain() && remainingSql == null)
                     twoStepCache.putIfAbsent(parseRes.twoStepQueryKey(), new H2TwoStepCachedQuery(meta,
                         twoStepQry.copy()));
             }
