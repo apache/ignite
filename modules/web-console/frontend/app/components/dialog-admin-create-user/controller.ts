@@ -64,7 +64,7 @@ export class DialogAdminCreateUser {
 
         this.loading.start('createUser');
 
-        this.Auth.signnup(this.data, false)
+        this.Auth.signup(this.data, false)
             .then(() => {
                 this.IgniteMessages.showInfo(`User ${this.data.email} created`);
                 this.close({});

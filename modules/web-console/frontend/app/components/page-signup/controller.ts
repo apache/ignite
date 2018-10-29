@@ -58,7 +58,7 @@ export default class PageSignup {
         if (!this.canSubmitForm(this.form))
             return;
 
-        return this.Auth.signnup(this.data).catch((res) => {
+        return this.Auth.signup(this.data).catch((res) => {
             this.IgniteMessages.showError(null, res.data);
             this.setServerError(res.data);
         });
