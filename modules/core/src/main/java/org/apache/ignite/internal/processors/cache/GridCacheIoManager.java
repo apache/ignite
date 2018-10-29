@@ -309,7 +309,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 if (lastTopFut.exchangeId().topologyVersion().equals(cacheMsg.topologyVersion())) {
                     GridCacheIdMessage cacheIdMsg = (GridCacheIdMessage)cacheMsg;
-
+/*
                     ExchangeActions exchangeActions = lastTopFut.exchangeActions();
 
                     if (exchangeActions != null) {
@@ -330,7 +330,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                             }
                         }
                     }
-
+*/
                     if (log.isDebugEnabled()) {
                         StringBuilder msg0 = new StringBuilder("Skip waiting for topology future on message [");
 

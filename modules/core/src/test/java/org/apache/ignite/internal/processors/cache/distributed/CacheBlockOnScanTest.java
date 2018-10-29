@@ -99,28 +99,4 @@ public class CacheBlockOnScanTest extends CacheBlockOnReadAbstractTest {
     @Override public void testStopClientTransactionalReplicated() {
         fail("https://issues.apache.org/jira/browse/IGNITE-9987");
     }
-
-    /** {@inheritDoc} */
-    @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
-    @Override public void testStartClientAtomicPartitioned() throws Exception {
-        super.testStartClientTransactionalReplicated();
-    }
-
-    /** {@inheritDoc} */
-    @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
-    @Override public void testStartClientTransactionalPartitioned() throws Exception {
-        super.testStartClientTransactionalReplicated();
-    }
-
-    /** {@inheritDoc} */
-    @Params(atomicityMode = ATOMIC, cacheMode = PARTITIONED)
-    @Override public void testStopClientAtomicPartitioned() throws Exception {
-        super.testStopClientTransactionalReplicated();
-    }
-
-    /** {@inheritDoc} */
-    @Params(atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
-    @Override public void testStopClientTransactionalPartitioned() throws Exception {
-        super.testStopClientTransactionalReplicated();
-    }
 }
