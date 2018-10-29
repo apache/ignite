@@ -1888,7 +1888,7 @@ public class IgniteTxHandler {
                     invokeArgs = invokeVal.invokeArgs();
                 }
 
-                assert entryProc != null || !op.isInvoke();
+                assert entries != null || entryProc != null || !op.isInvoke();
 
                 GridDhtCacheEntry entry = dht.entryExx(key, tx.topologyVersion());
 
