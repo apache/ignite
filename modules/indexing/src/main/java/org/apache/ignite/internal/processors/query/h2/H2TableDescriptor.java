@@ -295,7 +295,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         if (isSql) {
             keyCols = new ArrayList<>(type.fields().size() + 1);
 
-            //Check if key is simple type
+            // Check if key is simple type.
             if(QueryUtils.isSqlType(type.keyClass()))
                 keyCols.add(keyCol);
             else {
@@ -308,6 +308,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
                         keyCols.add(tbl.indexColumn(col.getColumnId(), SortOrder.ASCENDING));
                     }
                 }
+
                 // If key is object but the user has not specified any particular columns,
                 // we have to fall back to whole-key index.
                 if (keyCols.isEmpty())
