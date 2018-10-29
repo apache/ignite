@@ -300,7 +300,7 @@ public abstract class AbstractWalRecordsIterator
      * @param desc File descriptor.
      * @param start Optional start pointer. Null means read from the beginning.
      * @param fileIO fileIO associated with file descriptor
-     * @param segmentHeader read segment header from fileIO
+     * @param segmentHdr read segment header from fileIO
      * @return Initialized file read header.
      * @throws IgniteCheckedException If initialized failed due to another unexpected error.
      */
@@ -308,10 +308,10 @@ public abstract class AbstractWalRecordsIterator
         @NotNull final AbstractFileDescriptor desc,
         @Nullable final FileWALPointer start,
         @NotNull final SegmentIO fileIO,
-        @NotNull final SegmentHeader segmentHeader
+        @NotNull final SegmentHeader segmentHdr
     ) throws IgniteCheckedException {
         try {
-            boolean isCompacted = segmentHeader.isCompacted();
+            boolean isCompacted = segmentHdr.isCompacted();
 
             if (isCompacted)
                 serializerFactory.skipPositionCheck(true);
@@ -331,7 +331,7 @@ public abstract class AbstractWalRecordsIterator
                 }
             }
 
-            int serVer = segmentHeader.getSerializerVersion();
+            int serVer = segmentHdr.getSerializerVersion();
 
             return createReadFileHandle(fileIO, serializerFactory.createSerializer(serVer), in);
         }
@@ -355,6 +355,9 @@ public abstract class AbstractWalRecordsIterator
 
             throw new IgniteCheckedException(
                 "Failed to initialize WAL segment after reading segment header: " + desc.file().getAbsolutePath(), e);
+        }
+        finally {
+            serializerFactory.clearSegmentLocalState();
         }
     }
 
