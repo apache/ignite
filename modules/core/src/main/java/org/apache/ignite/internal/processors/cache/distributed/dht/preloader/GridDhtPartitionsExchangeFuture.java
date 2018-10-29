@@ -133,6 +133,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverJoinEvent;
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverLeftEvent;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
+import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 
 /**
  * Future for exchanging partition maps.
@@ -889,16 +890,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @throws IgniteCheckedException If failed.
      */
     private IgniteInternalFuture<?> initCachesOnLocalJoin() throws IgniteCheckedException {
-        if (isLocalNodeNotInBaseline()) {
+        boolean baselineNode = isLocalNodeInBaseline();
+
+        if (!baselineNode) {
             cctx.exchange().exchangerBlockingSectionBegin();
 
             try {
                 cctx.cache().cleanupCachesDirectories();
-
-                cctx.database().cleanupCheckpointDirectory();
-
-                if (cctx.wal() != null)
-                    cctx.wal().cleanupWalDirectories();
             }
             finally {
                 cctx.exchange().exchangerBlockingSectionEnd();
@@ -934,7 +932,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             cctx.exchange().exchangerBlockingSectionBegin();
 
             try {
-                cctx.database().readCheckpointAndRestoreMemory(startDescs);
+                cctx.database().readCheckpointAndRestoreMemory(startDescs, !baselineNode);
             }
             finally {
                 cctx.exchange().exchangerBlockingSectionEnd();
@@ -968,12 +966,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @return {@code true} if local node is not in baseline and {@code false} otherwise.
+     * @return {@code true} if local node is in baseline and {@code false} otherwise.
      */
-    private boolean isLocalNodeNotInBaseline() {
+    private boolean isLocalNodeInBaseline() {
         BaselineTopology topology = cctx.discovery().discoCache().state().baselineTopology();
 
-        return topology!= null && !topology.consistentIds().contains(cctx.localNode().consistentId());
+        return topology != null && topology.consistentIds().contains(cctx.localNode().consistentId());
     }
 
     /**
@@ -1116,7 +1114,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         cctx.exchange().exchangerBlockingSectionBegin();
 
                         try {
-                            cctx.database().readCheckpointAndRestoreMemory(startDescs);
+                            cctx.database().readCheckpointAndRestoreMemory(startDescs, false);
                         }
                         finally {
                             cctx.exchange().exchangerBlockingSectionEnd();
@@ -4012,39 +4010,50 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         long time = System.currentTimeMillis();
 
-        for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
-            Integer grpId = entry.getKey();
+        int parallelismLvl = cctx.kernalContext().config().getSystemThreadPoolSize();
 
-            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+        // Reserve at least 2 threads for system operations.
+        parallelismLvl = Math.max(1, parallelismLvl - 2);
 
-            if (grp != null) {
-                CachePartitionFullCountersMap cntrMap = msg.partitionUpdateCounters(grpId,
-                    grp.topology().partitions());
+        try {
+            doInParallel(
+                parallelismLvl,
+                cctx.kernalContext().getSystemExecutorService(),
+                msg.partitions().keySet(), grpId -> {
+                    CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-                grp.topology().update(resTopVer,
-                    entry.getValue(),
-                    cntrMap,
-                    msg.partsToReload(cctx.localNodeId(), grpId),
-                    msg.partitionSizes(grpId),
-                    null);
-            }
-            else {
-                ClusterNode oldest = cctx.discovery().oldestAliveServerNode(AffinityTopologyVersion.NONE);
+                    if (grp != null) {
+                        CachePartitionFullCountersMap cntrMap = msg.partitionUpdateCounters(grpId,
+                            grp.topology().partitions());
 
-                if (oldest != null && oldest.isLocal()) {
-                    GridDhtPartitionTopology top = cctx.exchange().clientTopology(grpId, events().discoveryCache());
+                        grp.topology().update(resTopVer,
+                            msg.partitions().get(grpId),
+                            cntrMap,
+                            msg.partsToReload(cctx.localNodeId(), grpId),
+                            msg.partitionSizes(grpId),
+                            null);
+                    }
+                    else {
+                        ClusterNode oldest = cctx.discovery().oldestAliveServerNode(AffinityTopologyVersion.NONE);
 
-                    CachePartitionFullCountersMap cntrMap = msg.partitionUpdateCounters(grpId,
-                        top.partitions());
+                        if (oldest != null && oldest.isLocal()) {
+                            GridDhtPartitionTopology top = cctx.exchange().clientTopology(grpId, events().discoveryCache());
 
-                    top.update(resTopVer,
-                        entry.getValue(),
-                        cntrMap,
-                        Collections.emptySet(),
-                        null,
-                        null);
-                }
-            }
+                            CachePartitionFullCountersMap cntrMap = msg.partitionUpdateCounters(grpId,
+                                top.partitions());
+
+                            top.update(resTopVer,
+                                msg.partitions().get(grpId),
+                                cntrMap,
+                                Collections.emptySet(),
+                                null,
+                                null);
+                        }
+                    }
+                });
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
 
         partitionsReceived = true;

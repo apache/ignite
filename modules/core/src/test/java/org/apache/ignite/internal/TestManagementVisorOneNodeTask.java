@@ -15,58 +15,52 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.service;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.IgniteServices;
-import org.apache.ignite.internal.processors.task.GridInternal;
+import java.util.List;
+import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Task for cancel services with specified name.
+ *
  */
-@GridInternal
 @GridVisorManagementTask
-public class VisorCancelServiceTask extends VisorOneNodeTask<VisorCancelServiceTaskArg, Void> {
+public class TestManagementVisorOneNodeTask extends VisorOneNodeTask<VisorTaskArgument, Object> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCancelServiceJob job(VisorCancelServiceTaskArg arg) {
-        return new VisorCancelServiceJob(arg, debug);
+    @Override protected VisorValidOneNodeJob job(VisorTaskArgument arg) {
+        return new VisorValidOneNodeJob(arg, debug);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override protected Object reduce0(List<ComputeJobResult> results) {
+        return null;
     }
 
     /**
-     * Job for cancel services with specified name.
+     * Valid Management one node visor job.
      */
-    private static class VisorCancelServiceJob extends VisorJob<VisorCancelServiceTaskArg, Void> {
+    private static class VisorValidOneNodeJob extends VisorJob<VisorTaskArgument, Object> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
-         * Create job with specified argument.
-         *
-         * @param arg Job argument.
+         * @param arg Argument.
          * @param debug Debug flag.
          */
-        protected VisorCancelServiceJob(VisorCancelServiceTaskArg arg, boolean debug) {
+        protected VisorValidOneNodeJob(VisorTaskArgument arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(final VisorCancelServiceTaskArg arg) {
-            IgniteServices services = ignite.services();
-
-            services.cancel(arg.getName());
-
+        @Override protected Object run(VisorTaskArgument arg) {
             return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(VisorCancelServiceJob.class, this);
         }
     }
 }

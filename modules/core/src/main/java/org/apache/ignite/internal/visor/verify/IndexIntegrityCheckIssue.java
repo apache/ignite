@@ -15,67 +15,60 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.cache;
+package org.apache.ignite.internal.visor.verify;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.List;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- * Argument for {@link VisorCacheLostPartitionsTask}.
+ *
  */
-public class VisorCacheLostPartitionsTaskArg extends VisorDataTransferObject {
+public class IndexIntegrityCheckIssue extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** List of cache names. */
-    private List<String> cacheNames;
+    /** Cache group name. */
+    private String grpName;
 
-    /** Created for toString method because Collection can't be printed. */
-    private String modifiedCaches;
+    /** T. */
+    @GridToStringExclude
+    private Throwable t;
 
     /**
-     * Default constructor.
+     *
      */
-    public VisorCacheLostPartitionsTaskArg() {
-        // No-op.
+    public IndexIntegrityCheckIssue() {
+        // Default constructor required for Externalizable.
     }
 
     /**
-     * @param cacheNames List of cache names.
+     * @param grpName Group name.
+     * @param t Data integrity check error.
      */
-    public VisorCacheLostPartitionsTaskArg(List<String> cacheNames) {
-        this.cacheNames = cacheNames;
-
-        if (cacheNames != null)
-            modifiedCaches = cacheNames.toString();
-    }
-
-    /**
-     * @return List of cache names.
-     */
-    public List<String> getCacheNames() {
-        return cacheNames;
+    public IndexIntegrityCheckIssue(String grpName, Throwable t) {
+        this.grpName = grpName;
+        this.t = t;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, cacheNames);
-        U.writeString(out, modifiedCaches);
+        U.writeString(out, this.grpName);
+        out.writeObject(t);
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException   {
-        cacheNames = U.readList(in);
-        modifiedCaches = U.readString(in);
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        this.grpName = U.readString(in);
+        this.t = (Throwable)in.readObject();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorCacheLostPartitionsTaskArg.class, this);
+        return S.toString(IndexIntegrityCheckIssue.class, this) + ", " + t.getClass() + ": " + t.getMessage();
     }
 }

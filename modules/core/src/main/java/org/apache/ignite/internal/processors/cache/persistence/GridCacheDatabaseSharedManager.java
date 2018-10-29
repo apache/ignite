@@ -646,7 +646,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             checkpointReadLock();
 
             try {
-                restoreMemory(status, true, storePageMem);
+                restoreMemory(status, true, storePageMem, false);
 
                 metaStorage = new MetaStorage(cctx, regCfg, memMetrics, true);
 
@@ -791,7 +791,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void readCheckpointAndRestoreMemory(
-        List<DynamicCacheDescriptor> cachesToStart
+            List<DynamicCacheDescriptor> cachesToStart,
+            boolean restoreMetastorageOnly
     ) throws IgniteCheckedException {
         assert !cctx.localNode().isClient();
 
@@ -820,7 +821,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME)
             );
 
-            WALPointer restore = restoreMemory(status);
+            WALPointer restore = restoreMemory(status, restoreMetastorageOnly, (PageMemoryEx) metaStorage.pageMemory(), true);
 
             if (restore == null && !status.endPtr.equals(CheckpointStatus.NULL_PTR)) {
                 throw new StorageException("Restore wal pointer = " + restore + ", while status.endPtr = " +
@@ -1951,24 +1952,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /**
      * @param status Checkpoint status.
-     * @throws IgniteCheckedException If failed.
-     * @throws StorageException In case I/O error occurred during operations with storage.
-     */
-    @Nullable private WALPointer restoreMemory(CheckpointStatus status) throws IgniteCheckedException {
-        return restoreMemory(status, false, (PageMemoryEx)metaStorage.pageMemory());
-    }
-
-    /**
-     * @param status Checkpoint status.
      * @param metastoreOnly If {@code True} restores Metastorage only.
      * @param storePageMem Metastore page memory.
+     * @param finalizeCp If {@code True}, finalizes checkpoint on recovery.
      * @throws IgniteCheckedException If failed.
      * @throws StorageException In case I/O error occurred during operations with storage.
      */
     @Nullable private WALPointer restoreMemory(
         CheckpointStatus status,
         boolean metastoreOnly,
-        PageMemoryEx storePageMem
+        PageMemoryEx storePageMem,
+        boolean finalizeCp
     ) throws IgniteCheckedException {
         assert !metastoreOnly || storePageMem != null;
 
@@ -2128,7 +2122,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         }
 
-        if (metastoreOnly)
+        if (!finalizeCp)
             return null;
 
         WALPointer lastReadPtr = restoreBinaryState.lastReadRecordPointer();

@@ -15,25 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query.continuous;
+package org.apache.ignite.internal.processors.task;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
+ * Indicates that annotated task is a visor task that was invoked by user. They can be handled by event listeners.
  *
+ * This annotation intended for internal use only.
  */
-public class CacheContinuousQueryFailoverTxSelfTest extends CacheContinuousQueryFailoverAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return TRANSACTIONAL;
-    }
+@Documented
+@Inherited
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE})
+public @interface GridVisorManagementTask {
+    // No-op.
 }
