@@ -54,11 +54,7 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                     user.registered = new Date();
                     user.token = utilsService.randomString(settings.tokenLength);
 
-                    const signupDisabled = _.get(settings, 'server.disable.signup', false);
-
-                    console.log('signupDisabled: ' + signupDisabled);
-
-                    if (signupDisabled && !user.admin && !createdByAdmin)
+                    if (settings.server.disableSignup && !user.admin && !createdByAdmin)
                         throw new errors.ServerErrorException('Sign-up is not allowed. Ask your Web Console administrator to create account for you.');
 
                     return new mongo.Account(user);
