@@ -120,8 +120,6 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
             .setMaxSize(100L * 1024 * 1024)
             .setPersistenceEnabled(true));
 
-        dbCfg.setAlwaysWriteFullPages(true);
-
         if (checkpointFreq != null)
             dbCfg.setCheckpointFrequency(checkpointFreq);
 

@@ -551,7 +551,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (region.pageMemory() instanceof PageMemoryEx) {
                 PageMemoryEx memEx = (PageMemoryEx)region.pageMemory();
 
-                for (int partId = -1; partId < partitions; partId++)
+                for (int partId = 0; partId < partitions; partId++)
                     memEx.invalidate(grpDesc.groupId(), partId);
 
                 memEx.invalidate(grpDesc.groupId(), PageIdAllocator.INDEX_PARTITION);
@@ -1382,9 +1382,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     if (cacheGroup.isLocal())
                         return;
 
-                    cacheGroup.restorePartitionStates(Collections.emptyMap());
+                    cctx.database().checkpointReadLock();
 
-                    cacheGroup.topology().afterStateRestored(fut.initialVersion());
+                    try {
+                        cacheGroup.restorePartitionStates(Collections.emptyMap());
+
+                        cacheGroup.topology().afterStateRestored(fut.initialVersion());
+                    }
+                    finally {
+                        cctx.database().checkpointReadUnlock();
+                    }
                 }
             );
         }
@@ -2432,7 +2439,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                             DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptor(cacheId);
 
-                            assert cacheDesc != null;
+                            // Can empty in case recovery node on blt changed.
+                            if (cacheDesc == null)
+                                continue;
 
                             GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
@@ -4702,6 +4711,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 // Filter data entries by group id.
                                 List<DataEntry> filteredEntries = dataRecord.writeEntries().stream()
                                         .filter(entry -> {
+                                            if (entry == null)
+                                                return false;
+
                                             int cacheId = entry.cacheId();
 
                                             return cctx != null && cctx.cacheContext(cacheId) != null && cacheGroupPredicate.test(cctx.cacheContext(cacheId).groupId());

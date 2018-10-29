@@ -1737,8 +1737,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     notifyAll();
                 }
 
-                e.printStackTrace();
-
                 cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
 
                 return;
@@ -1814,8 +1812,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
             catch (Throwable t) {
                 err = t;
-
-                err.printStackTrace();
             }
             finally {
                 if (err == null && !isCancelled())
