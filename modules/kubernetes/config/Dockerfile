@@ -22,7 +22,7 @@ FROM java:8
 ENV IGNITE_VERSION 2.0.0-SNAPSHOT
 
 # Set IGNITE_HOME variable.
-ENV IGNITE_HOME /opt/ignite/apache-ignite-fabric-lgpl-${IGNITE_VERSION}-bin
+ENV IGNITE_HOME /opt/ignite/apache-ignite-lgpl-${IGNITE_VERSION}-bin
 
 # Setting a path to an Apache Ignite configuration file. Used by run.sh script below.
 ENV CONFIG_URI ${IGNITE_HOME}/config/example-kube.xml
@@ -40,11 +40,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends unzip
 WORKDIR /opt/ignite
 
 # Copying local Apache Ignite build to the docker image.
-COPY ./apache-ignite-fabric-lgpl-${IGNITE_VERSION}-bin.zip apache-ignite-fabric-lgpl-${IGNITE_VERSION}-bin.zip
+COPY ./apache-ignite-lgpl-${IGNITE_VERSION}-bin.zip apache-ignite-lgpl-${IGNITE_VERSION}-bin.zip
 
 # Unpacking the build.
-RUN unzip apache-ignite-fabric-lgpl-${IGNITE_VERSION}-bin.zip
-RUN rm apache-ignite-fabric-lgpl-${IGNITE_VERSION}-bin.zip
+RUN unzip apache-ignite-lgpl-${IGNITE_VERSION}-bin.zip
+RUN rm apache-ignite-lgpl-${IGNITE_VERSION}-bin.zip
 
 # Copying the executable file and setting permissions.
 COPY ./run.sh $IGNITE_HOME/

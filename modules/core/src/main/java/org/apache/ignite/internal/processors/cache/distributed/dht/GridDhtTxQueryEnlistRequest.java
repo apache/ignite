@@ -24,13 +24,13 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -68,9 +68,6 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
     @GridDirectCollection(Message.class)
     private List<Message> vals;
 
-    /** */
-    private GridLongList updCntrs;
-
     /**
      *
      */
@@ -86,7 +83,6 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
      * @param mvccOpCnt Mvcc operation counter.
      * @param keys Keys.
      * @param vals Values.
-     * @param updCntrs Update counters.
      */
     GridDhtTxQueryEnlistRequest(int cacheId,
         IgniteUuid dhtFutId,
@@ -95,8 +91,7 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
         int batchId,
         int mvccOpCnt,
         List<KeyCacheObject> keys,
-        List<Message> vals,
-        GridLongList updCntrs) {
+        List<Message> vals) {
         this.cacheId = cacheId;
         this.dhtFutId = dhtFutId;
         this.lockVer = lockVer;
@@ -105,7 +100,6 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
         this.mvccOpCnt = mvccOpCnt;
         this.keys = keys;
         this.vals = vals;
-        this.updCntrs = updCntrs;
     }
 
     /**
@@ -160,13 +154,6 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
     }
 
     /**
-     * @return Update counters.
-     */
-    public GridLongList updateCounters() {
-        return updCntrs;
-    }
-
-    /**
      * @return Batch id.
      */
     public int batchId() {
@@ -187,7 +174,8 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        CacheObjectContext objCtx = ctx.cacheContext(cacheId).cacheObjectContext();
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+        CacheObjectContext objCtx = cctx.cacheObjectContext();
 
         if (keys != null) {
             for (int i = 0; i < keys.size(); i++) {
@@ -207,6 +195,8 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
                                 entryVal.prepareMarshal(objCtx);
                         }
                     }
+                    else if (val instanceof GridInvokeValue)
+                        ((GridInvokeValue)val).prepareMarshal(cctx);
                 }
             }
         }
@@ -235,6 +225,8 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
                                 entryVal.finishUnmarshal(objCtx, ldr);
                         }
                     }
+                    else if (val instanceof GridInvokeValue)
+                        ((GridInvokeValue)val).finishUnmarshal(ctx, ldr);
                 }
             }
         }
@@ -292,12 +284,6 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeMessage("updCntrs", updCntrs))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
                 if (!writer.writeCollection("vals", vals, MessageCollectionItemType.MSG))
                     return false;
 
@@ -372,14 +358,6 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
                 reader.incrementState();
 
             case 9:
-                updCntrs = reader.readMessage("updCntrs");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
                 vals = reader.readCollection("vals", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -394,7 +372,7 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 10;
     }
 
     /** {@inheritDoc} */

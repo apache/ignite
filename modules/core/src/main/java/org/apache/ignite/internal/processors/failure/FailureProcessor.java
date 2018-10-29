@@ -17,19 +17,21 @@
 
 package org.apache.ignite.internal.processors.failure;
 
+import java.util.Collections;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_BLOCKED;
 
 /**
  * General failure processing API
@@ -78,12 +80,23 @@ public class FailureProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @return @{code True} if a node will be stopped by current handler in near time.
+     */
+    public boolean nodeStopping() {
+        return failureCtx != null && !(hnd instanceof NoOpFailureHandler);
+    }
+
+    /**
      * This method is used to initialize local failure handler if {@link IgniteConfiguration} don't contain configured one.
      *
      * @return Default {@link FailureHandler} implementation.
      */
     protected FailureHandler getDefaultFailureHandler() {
-        return new StopNodeOrHaltFailureHandler();
+        FailureHandler hnd = new StopNodeOrHaltFailureHandler();
+
+        hnd.setIgnoredFailureTypes(Collections.singleton(SYSTEM_WORKER_BLOCKED));
+
+        return hnd;
     }
 
     /**
@@ -97,9 +110,10 @@ public class FailureProcessor extends GridProcessorAdapter {
      * Processes failure accordingly to configured {@link FailureHandler}.
      *
      * @param failureCtx Failure context.
+     * @return {@code True} If this very call led to Ignite node invalidation.
      */
-    public void process(FailureContext failureCtx) {
-        process(failureCtx, hnd);
+    public boolean process(FailureContext failureCtx) {
+        return process(failureCtx, hnd);
     }
 
     /**
@@ -107,16 +121,17 @@ public class FailureProcessor extends GridProcessorAdapter {
      *
      * @param failureCtx Failure context.
      * @param hnd Failure handler.
+     * @return {@code True} If this very call led to Ignite node invalidation.
      */
-    public synchronized void process(FailureContext failureCtx, FailureHandler hnd) {
+    public synchronized boolean process(FailureContext failureCtx, FailureHandler hnd) {
         assert failureCtx != null;
         assert hnd != null;
 
         if (this.failureCtx != null) // Node already terminating, no reason to process more errors.
-            return;
+            return false;
 
         U.error(ignite.log(), "Critical system error detected. Will be handled accordingly to configured handler " +
-            "[hnd=" + hnd.getClass() + ", failureCtx=" + failureCtx + ']', failureCtx.error());
+            "[hnd=" + hnd + ", failureCtx=" + failureCtx + ']', failureCtx.error());
 
         if (reserveBuf != null && X.hasCause(failureCtx.error(), OutOfMemoryError.class))
             reserveBuf = null;
@@ -131,5 +146,7 @@ public class FailureProcessor extends GridProcessorAdapter {
 
             log.error("Ignite node is in invalid state due to a critical failure.");
         }
+
+        return invalidated;
     }
 }

@@ -38,6 +38,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -161,6 +162,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private GridIndexingManager indexingMgr;
+
+    /** */
+    @GridToStringExclude
+    private GridEncryptionManager encryptionMgr;
 
     /*
      * Processors.
@@ -372,6 +377,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private WorkersRegistry workersRegistry;
 
     /** */
+    private Thread.UncaughtExceptionHandler hnd;
+
+    /** */
     private IgniteEx grid;
 
     /** */
@@ -438,6 +446,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param customExecSvcs Custom named executors.
      * @param plugins Plugin providers.
      * @param workerRegistry Worker registry.
+     * @param hnd Default uncaught exception handler used by thread pools.
      */
     @SuppressWarnings("TypeMayBeWeakened")
     protected GridKernalContextImpl(
@@ -463,7 +472,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         @Nullable Map<String, ? extends ExecutorService> customExecSvcs,
         List<PluginProvider> plugins,
         IgnitePredicate<String> clsFilter,
-        WorkersRegistry workerRegistry
+        WorkersRegistry workerRegistry,
+        Thread.UncaughtExceptionHandler hnd
     ) {
         assert grid != null;
         assert cfg != null;
@@ -489,6 +499,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.schemaExecSvc = schemaExecSvc;
         this.customExecSvcs = customExecSvcs;
         this.workersRegistry = workerRegistry;
+        this.hnd = hnd;
 
         marshCtx = new MarshallerContextImpl(plugins, clsFilter);
 
@@ -551,6 +562,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             loadMgr = (GridLoadBalancerManager)comp;
         else if (comp instanceof GridIndexingManager)
             indexingMgr = (GridIndexingManager)comp;
+        else if (comp instanceof GridEncryptionManager)
+            encryptionMgr = (GridEncryptionManager)comp;
 
         /*
          * Processors.
@@ -793,6 +806,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridIndexingManager indexing() {
         return indexingMgr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridEncryptionManager encryption() {
+        return encryptionMgr;
     }
 
     /** {@inheritDoc} */
@@ -1155,6 +1173,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public FailureProcessor failure() {
         return failureProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Thread.UncaughtExceptionHandler uncaughtExceptionHandler() {
+        return hnd;
     }
 
     /** {@inheritDoc} */

@@ -44,7 +44,7 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
 
     /** */
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         feature2Meta.setMinVal(-5);
         feature2Meta.setBucketSize(1);
     }
@@ -129,12 +129,13 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
 
         NodeSplit catSplit = catFeatureSmpl1.findBestSplit().get();
         NodeSplit contSplit = contFeatureSmpl1.findBestSplit().get();
-        assertEquals(1.0, catSplit.getValue(), 0.01);
-        assertEquals(-0.5, contSplit.getValue(), 0.01);
+        assertEquals(1.0, catSplit.getVal(), 0.01);
+        assertEquals(-0.5, contSplit.getVal(), 0.01);
         assertFalse(emptyHist.findBestSplit().isPresent());
         assertFalse(catFeatureSmpl2.findBestSplit().isPresent());
     }
 
+    /** */
     @Test
     public void testOfSums() {
         int sampleId = 0;
@@ -148,22 +149,22 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
 
         List<GiniHistogram> partitions1 = new ArrayList<>();
         List<GiniHistogram> partitions2 = new ArrayList<>();
-        int countOfPartitions = rnd.nextInt(1000);
-        for(int i = 0; i < countOfPartitions; i++) {
+        int cntOfPartitions = rnd.nextInt(1000);
+        for (int i = 0; i < cntOfPartitions; i++) {
             partitions1.add(new GiniHistogram(sampleId,lblMapping, bucketMeta1));
             partitions2.add(new GiniHistogram(sampleId,lblMapping, bucketMeta2));
         }
 
         int datasetSize = rnd.nextInt(10000);
         for(int i = 0; i < datasetSize; i++) {
-            BootstrappedVector vec = randomVector(2, 1, true);
+            BootstrappedVector vec = randomVector(true);
             vec.features().set(1, (vec.features().get(1) * 100) % 100);
 
             forAllHist1.addElement(vec);
             forAllHist2.addElement(vec);
-            int partitionId = rnd.nextInt(countOfPartitions);
-            partitions1.get(partitionId).addElement(vec);
-            partitions2.get(partitionId).addElement(vec);
+            int partId = rnd.nextInt(cntOfPartitions);
+            partitions1.get(partId).addElement(vec);
+            partitions2.get(partId).addElement(vec);
         }
 
         checkSums(forAllHist1, partitions1);

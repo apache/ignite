@@ -94,6 +94,7 @@ import org.apache.ignite.internal.util.lang.gridfunc.TransformFilteringIterator;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformMapView;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformMapView2;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
@@ -298,13 +299,13 @@ public class GridFunc {
      * @param delim Delimiter (optional).
      * @return Concatenated string.
      */
-    public static String concat(Iterable<String> c, @Nullable String delim) {
+    public static String concat(Iterable<?> c, @Nullable String delim) {
         A.notNull(c, "c");
 
         IgniteReducer<? super String, String> f = new StringConcatReducer(delim);
 
-        for (String x : c)
-            if (!f.collect(x))
+        for (Object x : c)
+            if (!f.collect(x == null ? null : x.toString()))
                 break;
 
         return f.reduce();
@@ -2172,6 +2173,7 @@ public class GridFunc {
      * @param t2 Second object in pair.
      * @param <T> Type of objects in pair.
      * @return Pair of objects.
+     * @deprecated Use {@link T2} instead.
      */
     @Deprecated
     public static <T> IgnitePair<T> pair(@Nullable T t1, @Nullable T t2) {

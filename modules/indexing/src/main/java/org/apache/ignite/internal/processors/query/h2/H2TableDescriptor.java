@@ -220,6 +220,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
             PK_IDX_NAME,
             tbl,
             true,
+            false,
             keyCols,
             -1
         );
@@ -266,7 +267,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
             // Add explicit affinity key index if nothing alike was found.
             if (!affIdxFound) {
-                idxs.add(idx.createSortedIndex(AFFINITY_KEY_IDX_NAME, tbl, false,
+                idxs.add(idx.createSortedIndex(AFFINITY_KEY_IDX_NAME, tbl, false, true,
                     H2Utils.treeIndexColumns(tbl.rowDescriptor(), new ArrayList<>(2), affCol, keyCol), -1));
             }
         }
@@ -366,7 +367,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         if (idxDesc.type() == QueryIndexType.SORTED) {
             cols = H2Utils.treeIndexColumns(desc, cols, keyCol, affCol);
 
-            return idx.createSortedIndex(idxDesc.name(), tbl, false, cols, idxDesc.inlineSize());
+            return idx.createSortedIndex(idxDesc.name(), tbl, false, false, cols, idxDesc.inlineSize());
         }
         else if (idxDesc.type() == QueryIndexType.GEOSPATIAL)
             return H2Utils.createSpatialIndex(tbl, idxDesc.name(), cols.toArray(new IndexColumn[cols.size()]));

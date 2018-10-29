@@ -50,7 +50,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
     private double lambda = 0.4;
 
     /** The seed number. */
-    private long seed;
+    private long seed = 1234L;
 
     /**
      * Trains model based on the specified data.

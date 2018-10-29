@@ -30,6 +30,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.jetbrains.annotations.Nullable;
@@ -95,14 +96,7 @@ public final class GridTestProperties {
     /** */
     static {
         // Initialize IGNITE_HOME system property.
-        String igniteHome = System.getProperty("IGNITE_HOME");
-
-        if (igniteHome == null || igniteHome.isEmpty()) {
-            igniteHome = System.getenv("IGNITE_HOME");
-
-            if (igniteHome != null && !igniteHome.isEmpty())
-                System.setProperty("IGNITE_HOME", igniteHome);
-        }
+        U.getIgniteHome();
 
         // Load default properties.
         File cfgFile = getTestConfigurationFile(null, TESTS_PROP_FILE);

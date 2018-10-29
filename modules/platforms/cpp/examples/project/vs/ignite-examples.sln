@@ -11,6 +11,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "put-get-example", "..\..\pu
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "compute-example", "..\..\compute-example\project\vs\compute-example.vcxproj", "{18BB0A18-8213-472A-81A0-9D9753697135}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "thin-client-put-get-example", "..\..\thin-client-put-get-example\project\vs\thin-client-put-get-example.vcxproj", "{8F045A49-A1C8-45B5-B9E4-FFB323AD1060}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Release|x64 = Release|x64
@@ -37,6 +39,10 @@ Global
 		{18BB0A18-8213-472A-81A0-9D9753697135}.Release|x64.Build.0 = Release|x64
 		{18BB0A18-8213-472A-81A0-9D9753697135}.Release|x86.ActiveCfg = Release|Win32
 		{18BB0A18-8213-472A-81A0-9D9753697135}.Release|x86.Build.0 = Release|Win32
+		{8F045A49-A1C8-45B5-B9E4-FFB323AD1060}.Release|x64.ActiveCfg = Release|x64
+		{8F045A49-A1C8-45B5-B9E4-FFB323AD1060}.Release|x64.Build.0 = Release|x64
+		{8F045A49-A1C8-45B5-B9E4-FFB323AD1060}.Release|x86.ActiveCfg = Release|Win32
+		{8F045A49-A1C8-45B5-B9E4-FFB323AD1060}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

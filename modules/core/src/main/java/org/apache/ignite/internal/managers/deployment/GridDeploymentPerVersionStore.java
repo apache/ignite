@@ -1290,6 +1290,12 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
                 ctx.cache().onUndeployed(ldr);
 
+               // Clear static class cache.
+                U.clearClassFromClassCache(ctx.cache().context().deploy().globalLoader(), sampleClassName());
+
+                for (String alias : deployedClassMap().keySet())
+                    U.clearClassFromClassCache(ctx.cache().context().deploy().globalLoader(), alias);
+
                 // Clear optimized marshaller's cache.
                 if (ctx.config().getMarshaller() instanceof AbstractMarshaller)
                     ((AbstractMarshaller)ctx.config().getMarshaller()).onUndeploy(ldr);

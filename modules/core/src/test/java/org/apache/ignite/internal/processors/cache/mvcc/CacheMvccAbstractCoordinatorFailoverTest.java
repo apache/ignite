@@ -20,10 +20,8 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.GET;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SCAN;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.PUT;
-import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
-import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Mvcc cache API coordinator failover test.
@@ -108,27 +106,6 @@ public abstract class CacheMvccAbstractCoordinatorFailoverTest extends CacheMvcc
      */
     public void testCoordinatorFailureSimplePessimisticTxPutGet() throws Exception {
         coordinatorFailureSimple(PESSIMISTIC, REPEATABLE_READ, GET, PUT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCoordinatorFailureSimpleSerializableTxPutGet() throws Exception {
-        coordinatorFailureSimple(OPTIMISTIC, SERIALIZABLE, GET, PUT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCoordinatorFailureSimpleOptimisticTxPutGet() throws Exception {
-        coordinatorFailureSimple(OPTIMISTIC, REPEATABLE_READ, GET, PUT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxInProgressCoordinatorChangeSimple_ReadonlyPutGet() throws Exception {
-        txInProgressCoordinatorChangeSimple(OPTIMISTIC, SERIALIZABLE, null, GET, PUT);
     }
 
     /**

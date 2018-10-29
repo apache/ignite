@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -46,7 +46,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -279,30 +278,33 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
      */
     @SuppressWarnings("unchecked")
     private void preparePessimistic() {
+        assert !tx.implicitSingle() || tx.queryEnlisted(); // Non-mvcc implicit-single tx goes fast commit way.
+
         Map<UUID, GridDistributedTxMapping> mappings = new HashMap<>();
 
         AffinityTopologyVersion topVer = tx.topologyVersion();
-
-        GridDhtTxMapping txMapping = new GridDhtTxMapping();
-
-        boolean queryMapped = false;
-
-        for (GridDistributedTxMapping m : F.view(tx.mappings().mappings(), CU.FILTER_QUERY_MAPPING)) {
-            GridDistributedTxMapping nodeMapping = mappings.get(m.primary().id());
-
-            if(nodeMapping == null)
-                mappings.put(m.primary().id(), m);
-
-            txMapping.addMapping(F.asList(m.primary()));
-
-            queryMapped = true;
-        }
 
         MvccCoordinator mvccCrd = null;
 
         boolean hasNearCache = false;
 
-        if (!queryMapped) {
+        Map<UUID, Collection<UUID>> txNodes;
+
+        if (tx.txState().mvccEnabled()) {
+            Collection<GridDistributedTxMapping> mvccMappings = tx.implicitSingle()
+                ? Collections.singleton(tx.mappings().singleMapping()) : tx.mappings().mappings();
+
+            txNodes = new HashMap<>(mvccMappings.size());
+
+            for (GridDistributedTxMapping m : mvccMappings) {
+                mappings.put(m.primary().id(), m);
+
+                txNodes.put(m.primary().id(), m.backups());
+            }
+        }
+        else {
+            GridDhtTxMapping txMapping = new GridDhtTxMapping();
+
             for (IgniteTxEntry txEntry : tx.allEntries()) {
                 txEntry.clearEntryReadVersion();
 
@@ -352,14 +354,16 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
                 txMapping.addMapping(nodes);
             }
+
+            txNodes = txMapping.transactionNodes();
         }
 
-        assert !tx.txState().mvccEnabled(cctx) || tx.mvccSnapshot() != null || mvccCrd != null;
+        assert !tx.txState().mvccEnabled() || tx.mvccSnapshot() != null || mvccCrd != null;
 
-        tx.transactionNodes(txMapping.transactionNodes());
+        tx.transactionNodes(txNodes);
 
         if (!hasNearCache)
-            checkOnePhase(txMapping);
+            checkOnePhase(txNodes);
 
         long timeout = tx.remainingTime();
 
@@ -370,8 +374,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         }
 
         int miniId = 0;
-
-        Map<UUID, Collection<UUID>> txNodes = txMapping.transactionNodes();
 
         for (final GridDistributedTxMapping m : mappings.values()) {
             final ClusterNode primary = m.primary();
@@ -388,7 +390,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
             if (primary.isLocal()) {
                 if (m.hasNearCacheEntries() && m.hasColocatedCacheEntries()) {
-                    GridNearTxPrepareRequest nearReq = createRequest(txMapping.transactionNodes(),
+                    GridNearTxPrepareRequest nearReq = createRequest(txNodes,
                         m,
                         timeout,
                         m.nearEntriesReads(),

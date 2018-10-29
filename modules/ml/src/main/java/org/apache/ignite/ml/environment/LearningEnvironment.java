@@ -41,9 +41,9 @@ public interface LearningEnvironment {
     /**
      * Returns an instance of logger for specific class.
      *
-     * @param forClass Logging class context.
+     * @param forCls Logging class context.
      */
-    public <T> MLLogger logger(Class<T> forClass);
+    public <T> MLLogger logger(Class<T> forCls);
 
     /**
      * Creates an instance of LearningEnvironmentBuilder.

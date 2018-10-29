@@ -49,9 +49,9 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
  * Future verifying that all remote transactions related to transaction were prepared or committed.
  */
 public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<Boolean> {
-    /** */         
+    /** */
     private static final long serialVersionUID = 0L;
-    
+
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -146,17 +146,6 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
      */
     @SuppressWarnings("ConstantConditions")
     public void prepare() {
-        if (tx.txState().mvccEnabled(cctx)) { // TODO IGNITE-7313
-            U.error(log, "Cannot commit MVCC enabled transaction by recovery procedure. " +
-                "Operation is usupported at the moment [tx=" + CU.txString(tx) + ']');
-
-            onDone(false);
-
-            markInitialized();
-
-            return;
-        }
-
         if (nearTxCheck) {
             UUID nearNodeId = tx.eventNodeId();
 

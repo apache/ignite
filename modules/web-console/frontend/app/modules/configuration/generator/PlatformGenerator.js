@@ -20,7 +20,12 @@ import _ from 'lodash';
 import {nonEmpty} from 'app/utils/lodashMixins';
 import { EmptyBean, Bean } from './Beans';
 
-export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatformDefaults', function(JavaTypes, clusterDflts, cacheDflts) {
+/**
+ * @param {import('app/services/JavaTypes.service').default} JavaTypes
+ * @param {import('./defaults/Cluster.service').default} clusterDflts
+ * @param {import('./defaults/Cache.service').default} cacheDflts
+ */
+export default function service(JavaTypes, clusterDflts, cacheDflts) {
     class PlatformGenerator {
         static igniteConfigurationBean(cluster) {
             return new Bean('Apache.Ignite.Core.IgniteConfiguration', 'cfg', cluster, clusterDflts);
@@ -521,4 +526,6 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
     }
 
     return PlatformGenerator;
-}];
+}
+
+service.$inject = ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatformDefaults'];

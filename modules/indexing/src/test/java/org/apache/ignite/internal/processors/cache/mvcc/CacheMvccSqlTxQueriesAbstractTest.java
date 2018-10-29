@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -232,6 +233,53 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
         persistence = true;
 
         testAccountsTxDmlSql_ClientServer_Backups2();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testParsingErrorHasNoSideEffect() throws Exception {
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 0, 4)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        IgniteEx node = startGrid(0);
+
+        IgniteCache<Object, Object> cache = node.cache(DEFAULT_CACHE_NAME);
+
+        try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            tx.timeout(TX_TIMEOUT);
+
+            SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1),(2,2),(3,3)");
+
+            try {
+                try (FieldsQueryCursor<List<?>> cur = cache.query(qry)) {
+                    fail("We should not get there.");
+                }
+            }
+            catch (CacheException ex){
+                IgniteSQLException cause = X.cause(ex, IgniteSQLException.class);
+
+                assertNotNull(cause);
+                assertEquals(IgniteQueryErrorCode.PARSING, cause.statusCode());
+
+                assertFalse(tx.isRollbackOnly());
+            }
+
+            qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (4,4),(5,5),(6,6)");
+
+            try (FieldsQueryCursor<List<?>> cur = cache.query(qry)) {
+                assertEquals(3L, cur.iterator().next().get(0));
+            }
+
+            tx.commit();
+        }
+
+        assertNull(cache.get(1));
+        assertNull(cache.get(2));
+        assertNull(cache.get(3));
+        assertEquals(4, cache.get(4));
+        assertEquals(5, cache.get(5));
+        assertEquals(6, cache.get(6));
     }
 
     /**
@@ -649,7 +697,27 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testQueryDeadlock() throws Exception {
+    public void testQueryDeadlockWithTxTimeout() throws Exception {
+        checkQueryDeadlock(TimeoutMode.TX);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryDeadlockWithStmtTimeout() throws Exception {
+        checkQueryDeadlock(TimeoutMode.STMT);
+    }
+
+    /** */
+    private enum TimeoutMode {
+        /** */
+        TX,
+        /** */
+        STMT
+    }
+
+    /** */
+    private void checkQueryDeadlock(TimeoutMode timeoutMode) throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
@@ -671,7 +739,8 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
 
                 try {
                     try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        tx.timeout(TX_TIMEOUT);
+                        if (timeoutMode == TimeoutMode.TX)
+                            tx.timeout(TX_TIMEOUT);
 
                         IgniteCache<Object, Object> cache0 = node.cache(DEFAULT_CACHE_NAME);
 
@@ -680,6 +749,9 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
 
                         SqlFieldsQuery qry = new SqlFieldsQuery((id % 2) == 0 ? qry1 : qry2);
 
+                        if (timeoutMode == TimeoutMode.STMT)
+                            qry.setTimeout(TX_TIMEOUT, TimeUnit.MILLISECONDS);
+
                         try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
                             cur.getAll();
                         }
@@ -687,6 +759,9 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
                         barrier.await();
 
                         qry = new SqlFieldsQuery((id % 2) == 0 ? qry2 : qry1);
+
+                        if (timeoutMode == TimeoutMode.STMT)
+                            qry.setTimeout(TX_TIMEOUT, TimeUnit.MILLISECONDS);
 
                         try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
                             cur.getAll();
@@ -1093,6 +1168,8 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
      * @throws Exception If failed.
      */
     public void testQueryInsertUpdateMultithread() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
+
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
@@ -1169,13 +1246,16 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
             }
         }, 1));
 
-        fut.markInitialized();
-
         try {
+            fut.markInitialized();
+
             fut.get(TX_TIMEOUT);
         }
         catch (IgniteCheckedException e) {
             onException(ex, e);
+        }
+        finally {
+            phaser.forceTermination();
         }
 
         Exception ex0 = ex.get();
@@ -1221,7 +1301,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
                     try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         tx.timeout(TX_TIMEOUT);
 
-                        barrier.await();
+                        barrier.await(TX_TIMEOUT, TimeUnit.MILLISECONDS);
 
                         IgniteCache<Object, Object> cache0 = node.cache(DEFAULT_CACHE_NAME);
 
@@ -1235,7 +1315,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
                             }
                         }
 
-                        barrier.await();
+                        barrier.await(TX_TIMEOUT, TimeUnit.MILLISECONDS);
 
                         qry = new SqlFieldsQuery("UPDATE Integer SET _val = (_key * 10)");
 
@@ -1255,7 +1335,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
         IgniteSQLException ex0 = X.cause(ex.get(), IgniteSQLException.class);
 
         assertNotNull("Exception has not been thrown.", ex0);
-        assertEquals("Mvcc version mismatch.", ex0.getMessage());
+        assertTrue(ex0.getMessage().startsWith("Cannot serialize transaction due to write conflict"));
     }
 
     /**
@@ -1620,6 +1700,30 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    public void testFastInsertUpdateConcurrent() throws Exception {
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        Ignite ignite = startGridsMultiThreaded(4);
+
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < 1000; i++) {
+            int key = i;
+            CompletableFuture.allOf(
+                CompletableFuture.runAsync(() -> {
+                    cache.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, ?)").setArgs(key, key));
+                }),
+                CompletableFuture.runAsync(() -> {
+                    cache.query(new SqlFieldsQuery("update Integer set _val = ? where _key = ?").setArgs(key, key));
+                })
+            ).join();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testIterator() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -1793,7 +1897,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
         do {
             p = phaser.arriveAndAwaitAdvance();
         }
-        while (p < phase);
+        while (p < phase && p >= 0 /* check termination */ );
     }
 
     /**

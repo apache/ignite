@@ -40,6 +40,8 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalR
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRecoveryWithCompactionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalPathsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRecoveryTxLogicalRecordsTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRolloverRecordLoggingFsyncTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRolloverRecordLoggingLogOnlyTest;
 
 /**
  * Test suite for tests that cover core PDS features and depend on indexing module.
@@ -59,6 +61,8 @@ public class IgnitePdsWithIndexingCoreTestSuite extends TestSuite {
         suite.addTestSuite(PersistenceDirectoryWarningLoggingTest.class);
         suite.addTestSuite(WalPathsTest.class);
         suite.addTestSuite(WalRecoveryTxLogicalRecordsTest.class);
+        suite.addTestSuite(WalRolloverRecordLoggingFsyncTest.class);
+        suite.addTestSuite(WalRolloverRecordLoggingLogOnlyTest.class);
 
         suite.addTestSuite(IgniteWalRecoveryTest.class);
         suite.addTestSuite(IgniteWalRecoveryWithCompactionTest.class);

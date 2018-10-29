@@ -17,7 +17,10 @@
 
 import templateUrl from './dialog.tpl.pug';
 
-export default ['IgniteDialog', ['$modal', function($modal) {
+/**
+ * @param {mgcrea.ngStrap.modal.IModalService} $modal
+ */
+export default function factory($modal) {
     const defaults = {
         templateUrl,
         show: false
@@ -28,4 +31,6 @@ export default ['IgniteDialog', ['$modal', function($modal) {
 
         return $modal(options);
     };
-}]];
+}
+
+factory.$inject = ['$modal'];

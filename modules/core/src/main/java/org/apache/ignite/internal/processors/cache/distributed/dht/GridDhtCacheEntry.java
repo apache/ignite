@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -99,11 +100,6 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         boolean primary,
         @Nullable Long primaryCntr) {
         return locPart.nextUpdateCounter(cctx.cacheId(), topVer, primary, primaryCntr);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected long nextMvccPartitionCounter() {
-        return locPart.nextMvccUpdateCounter();
     }
 
     /** {@inheritDoc} */
