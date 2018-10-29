@@ -261,10 +261,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     /** {@inheritDoc} */
     @Override public void preProcessCacheConfiguration(CacheConfiguration ccfg) {
-        if(FORCE_MVCC) {
-            if(ccfg.getAtomicityMode() == ATOMIC)
-                throw new IgniteException("ATOMIC cache mode is not allowed.");
-
+        if (FORCE_MVCC && ccfg.getAtomicityMode() != ATOMIC) {
             ccfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
             ccfg.setNearConfiguration(null);
         }
