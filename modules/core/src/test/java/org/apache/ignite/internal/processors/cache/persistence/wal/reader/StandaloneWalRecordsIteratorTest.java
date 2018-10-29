@@ -219,7 +219,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
     private List<FileDescriptor> listWalFiles(String walDir) throws IgniteCheckedException {
         IteratorParametersBuilder params = new IteratorParametersBuilder();
 
-        params.ioFactory(new CountedFileIOFactory());
+        params.ioFactory(new RandomAccessFileIOFactory());
 
         return new IgniteWalIteratorFactory(log).resolveWalFiles(params.filesOrDirs(walDir));
     }
