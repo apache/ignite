@@ -2470,7 +2470,7 @@ public class GridSqlQuerySplitter {
 
         GridH2Table tbl = (GridH2Table)leftCol.getTable();
 
-        if (!isAffinityKey(column, tbl))
+        if (!isAffinityKey(leftCol.getColumnId(), tbl))
             return null;
 
         GridH2RowDescriptor desc = tbl.rowDescriptor();
@@ -2508,14 +2508,12 @@ public class GridSqlQuerySplitter {
 
     /**
      *
-     * @param col Column to check
+     * @param colId Column ID to check
      * @param tbl H2 Table
      * @return is affinity key or not
      */
-    private static boolean isAffinityKey(GridSqlColumn col, GridH2Table tbl) {
+    private static boolean isAffinityKey(int colId, GridH2Table tbl) {
         GridH2RowDescriptor desc = tbl.rowDescriptor();
-
-        int colId = col.column().getColumnId();
 
         if (desc.isKeyColumn(colId))
             return true;
