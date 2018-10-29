@@ -43,6 +43,9 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
     /** */
     private IgniteLogger log;
 
+    /** Flag shows if current memory provider have been already initialized. */
+    private boolean isInit;
+
     /** */
     private int used = 0;
 
@@ -55,9 +58,14 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
 
     /** {@inheritDoc} */
     @Override public void initialize(long[] sizes) {
+        if (isInit)
+            throw new IgniteException("Second initialization does not allowed for current provider");
+
         this.sizes = sizes;
 
         regions = new ArrayList<>();
+
+        isInit = true;
     }
 
     /** {@inheritDoc} */

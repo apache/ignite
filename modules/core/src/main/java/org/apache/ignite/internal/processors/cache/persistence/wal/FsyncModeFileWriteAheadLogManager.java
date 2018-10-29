@@ -28,10 +28,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -87,8 +85,8 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
-import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
@@ -109,7 +107,6 @@ import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -508,6 +505,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
         assert currentHnd == null;
         assert lastPtr == null || lastPtr instanceof FileWALPointer;
+        assert (isArchiverEnabled() && archiver != null) || (!isArchiverEnabled() && archiver == null) :
+            "Trying to restore FileWriteHandle on deactivated write ahead log manager";
 
         FileWALPointer filePtr = (FileWALPointer)lastPtr;
 
@@ -927,29 +926,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         return cctx.walState().isDisabled(grpId);
     }
 
-    /** {@inheritDoc} */
-    @Override public void cleanupWalDirectories() throws IgniteCheckedException {
-        try {
-            try (DirectoryStream<Path> files = Files.newDirectoryStream(walWorkDir.toPath())) {
-                for (Path path : files)
-                    Files.delete(path);
-            }
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Failed to cleanup wal work directory: " + walWorkDir, e);
-        }
-
-        try {
-            try (DirectoryStream<Path> files = Files.newDirectoryStream(walArchiveDir.toPath())) {
-                for (Path path : files)
-                    Files.delete(path);
-            }
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Failed to cleanup wal archive directory: " + walArchiveDir, e);
-        }
-    }
-
     /**
      * Lists files in archive directory and returns the index of last archived file.
      *
@@ -1349,7 +1325,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      * Monitor of current object is used for notify on:
      * <ul>
      * <li>exception occurred ({@link FileArchiver#cleanException}!=null)</li>
-     * <li>stopping thread ({@link FileArchiver#stopped}==true)</li>
+     * <li>stopping thread ({@link FileArchiver#isCancelled}==true)</li>
      * <li>current file index changed ({@link FileArchiver#curAbsWalIdx})</li>
      * <li>last archived file index was changed ({@link FileArchiver#lastAbsArchivedIdx})</li>
      * <li>some WAL index was removed from {@link FileArchiver#locked} map</li>
@@ -1367,9 +1343,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         /** Last archived file index (absolute, 0-based). Guarded by <code>this</code>. */
         private volatile long lastAbsArchivedIdx = -1;
-
-        /** current thread stopping advice */
-        private volatile boolean stopped;
 
         /** */
         private NavigableMap<Long, Integer> reserved = new TreeMap<>();
@@ -1405,7 +1378,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
          */
         private void shutdown() throws IgniteInterruptedCheckedException {
             synchronized (this) {
-                stopped = true;
+                isCancelled = true;
 
                 notifyAll();
             }
@@ -1482,7 +1455,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
             try {
                 synchronized (this) {
-                    while (curAbsWalIdx == -1 && !stopped)
+                    while (curAbsWalIdx == -1 && !isCancelled())
                         wait();
 
                     // If the archive directory is empty, we can be sure that there were no WAL segments archived.
@@ -1490,26 +1463,26 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     // once it was archived.
                 }
 
-                while (!Thread.currentThread().isInterrupted() && !stopped) {
+                while (!Thread.currentThread().isInterrupted() && !isCancelled()) {
                     long toArchive;
 
                     synchronized (this) {
                         assert lastAbsArchivedIdx <= curAbsWalIdx : "lastArchived=" + lastAbsArchivedIdx +
                             ", current=" + curAbsWalIdx;
 
-                        while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !stopped)
+                        while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !isCancelled())
                             wait();
 
                         toArchive = lastAbsArchivedIdx + 1;
                     }
 
-                    if (stopped)
+                    if (isCancelled())
                         break;
 
                     final SegmentArchiveResult res = archiveSegment(toArchive);
 
                     synchronized (this) {
-                        while (locked.containsKey(toArchive) && !stopped)
+                        while (locked.containsKey(toArchive) && !isCancelled())
                             wait();
 
                         changeLastArchivedIndexAndWakeupCompressor(toArchive);
@@ -1526,14 +1499,14 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             catch (InterruptedException t) {
                 Thread.currentThread().interrupt();
 
-                if (!stopped)
+                if (!isCancelled())
                     err = t;
             }
             catch (Throwable t) {
                 err = t;
             }
             finally {
-                if (err == null && !stopped)
+                if (err == null && !isCancelled())
                     err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly");
 
                 if (err instanceof OutOfMemoryError)
@@ -1708,7 +1681,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
          *
          */
         private boolean checkStop() {
-            return stopped;
+            return isCancelled();
         }
 
         /**
@@ -2175,7 +2148,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             buf.position(0);
 
             // This call will move buffer position to the end of the record again.
-            int crcVal = PureJavaCrc32.calcCrc32(buf, curPos);
+            int crcVal = FastCrc.calcCrc(buf, curPos);
 
             buf.putInt(crcVal);
         }

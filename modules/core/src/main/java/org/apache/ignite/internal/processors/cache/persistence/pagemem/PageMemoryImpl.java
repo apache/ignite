@@ -841,11 +841,15 @@ public class PageMemoryImpl implements PageMemoryEx {
         if (rmv)
             seg.loadedPages.remove(grpId, PageIdUtils.effectivePageId(pageId));
 
-        if (seg.segCheckpointPages != null)
-            seg.segCheckpointPages.remove(new FullPageId(pageId, grpId));
+        Collection<FullPageId> cpPages = seg.segCheckpointPages;
 
-        if (seg.dirtyPages != null)
-            seg.dirtyPages.remove(new FullPageId(pageId, grpId));
+        if (cpPages != null)
+            cpPages.remove(new FullPageId(pageId, grpId));
+
+        Collection<FullPageId> dirtyPages = seg.dirtyPages;
+
+        if (dirtyPages != null)
+            dirtyPages.remove(new FullPageId(pageId, grpId));
 
         return relPtr;
     }
@@ -1857,7 +1861,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         private static final int ACQUIRED_PAGES_PADDING = 4;
 
         /** Page ID to relative pointer map. */
-        private LoadedPagesMap loadedPages;
+        private final LoadedPagesMap loadedPages;
 
         /** Pointer to acquired pages integer counter. */
         private long acquiredPagesPtr;
@@ -1869,7 +1873,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         private long memPerTbl;
 
         /** Pages marked as dirty since the last checkpoint. */
-        private Collection<FullPageId> dirtyPages = new GridConcurrentHashSet<>();
+        private volatile Collection<FullPageId> dirtyPages = new GridConcurrentHashSet<>();
 
         /** */
         private volatile Collection<FullPageId> segCheckpointPages;

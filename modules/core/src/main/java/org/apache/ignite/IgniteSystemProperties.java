@@ -879,7 +879,6 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP = "IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP";
 
-
     /**
      * Count of WAL compressor worker threads. Default value is 4.
      */
@@ -907,13 +906,6 @@ public final class IgniteSystemProperties {
      * Default is {@code 64kb}.
      */
     public static final String IGNITE_FAILURE_HANDLER_RESERVE_BUFFER_SIZE = "IGNITE_FAILURE_HANDLER_RESERVE_BUFFER_SIZE";
-
-    /**
-     * The threshold of uneven distribution above which partition distribution will be logged.
-     *
-     * The default is '50', that means: warn about nodes with 50+% difference.
-     */
-    public static final String IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD = "IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD";
 
     /**
      * When set to {@code true}, WAL will be automatically disabled during rebalancing if there is no partition in
@@ -946,7 +938,7 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_DUMP_THREADS_ON_FAILURE = "IGNITE_DUMP_THREADS_ON_FAILURE";
 
-    /**
+   /**
      * Throttling timeout in millis which avoid excessive PendingTree access on unwind if there is nothing to clean yet.
      *
      * Default is 500 ms.
@@ -967,6 +959,24 @@ public final class IgniteSystemProperties {
      * Try reuse memory on deactivation. Useful in case of huge page memory region size.
      */
     public static final String IGNITE_REUSE_MEMORY_ON_DEACTIVATE = "IGNITE_REUSE_MEMORY_ON_DEACTIVATE";
+
+    /**
+     * Timeout for waiting schema update if schema was not found for last accepted version.
+     */
+    public static final String IGNITE_WAIT_SCHEMA_UPDATE = "IGNITE_WAIT_SCHEMA_UPDATE";
+
+    /**
+     * System property to override {@link CacheConfiguration#rebalanceThrottle} configuration property for all caches.
+     * {@code 0} by default, which means that override is disabled.
+     */
+    public static final String IGNITE_REBALANCE_THROTTLE_OVERRIDE = "IGNITE_REBALANCE_THROTTLE_OVERRIDE";
+
+    /**
+     * Enables start caches in parallel.
+     *
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_ALLOW_START_CACHES_IN_PARALLEL = "IGNITE_ALLOW_START_CACHES_IN_PARALLEL";
 
     /**
      * Enforces singleton.

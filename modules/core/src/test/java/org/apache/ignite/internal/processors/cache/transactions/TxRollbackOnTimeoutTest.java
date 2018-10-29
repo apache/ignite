@@ -609,7 +609,12 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             tx.commit();
         }
         catch (Throwable t) {
-            assertTrue(X.hasCause(t, TransactionTimeoutException.class));
+            boolean timedOut = X.hasCause(t, TransactionTimeoutException.class);
+
+            if (!timedOut)
+                log.error("Got unexpected exception", t);
+
+            assertTrue(timedOut);
         }
 
         assertEquals(0, client.cache(CACHE_NAME).size());

@@ -172,6 +172,9 @@ public class GridCacheSharedContext<K, V> {
     /** */
     private final List<IgniteChangeGlobalStateSupport> stateAwareMgrs;
 
+    /** Cluster is in read-only mode. */
+    private volatile boolean readOnlyMode;
+
     /**
      * @param kernalCtx  Context.
      * @param txMgr Transaction manager.
@@ -1102,4 +1105,27 @@ public class GridCacheSharedContext<K, V> {
     private int dhtAtomicUpdateIndex(GridCacheVersion ver) {
         return U.safeAbs(ver.hashCode()) % dhtAtomicUpdCnt.length();
     }
+
+    /**
+     * @return {@code true} if cluster is in read-only mode.
+     */
+    public boolean readOnlyMode() {
+        return readOnlyMode;
+    }
+
+    /**
+     * @param readOnlyMode Read-only flag.
+     */
+    public void readOnlyMode(boolean readOnlyMode) {
+        this.readOnlyMode = readOnlyMode;
+    }
+
+    /**
+     * For test purposes.
+     * @param txMgr Tx manager.
+     */
+    public void setTxManager(IgniteTxManager txMgr) {
+        this.txMgr = txMgr;
+    }
+
 }

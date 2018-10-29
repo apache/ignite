@@ -260,7 +260,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
             cfg.setIndexedTypes(idxTypes);
 
         if (cacheMode() == PARTITIONED)
-            cfg.setBackups(1);
+            cfg.setBackups(backups());
 
         return cfg;
     }
@@ -363,6 +363,13 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     protected IgniteTransactions transactions() {
         return grid(0).transactions();
+    }
+
+    /**
+     * @return Backups.
+     */
+    protected int backups() {
+        return 1;
     }
 
     /**

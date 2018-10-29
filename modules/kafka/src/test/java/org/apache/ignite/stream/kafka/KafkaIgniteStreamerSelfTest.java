@@ -32,9 +32,13 @@ import kafka.message.MessageAndMetadata;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.stream.StreamMultipleTupleExtractor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -203,8 +207,23 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
             final CountDownLatch latch = new CountDownLatch(CNT);
 
             IgniteBiPredicate<UUID, CacheEvent> locLsnr = new IgniteBiPredicate<UUID, CacheEvent>() {
+                @IgniteInstanceResource
+                private Ignite ig;
+
+                @LoggerResource
+                private IgniteLogger log;
+
+                /** {@inheritDoc} */
                 @Override public boolean apply(UUID uuid, CacheEvent evt) {
                     latch.countDown();
+
+                    if (log.isInfoEnabled()) {
+                        IgniteEx igEx = (IgniteEx)ig;
+
+                        UUID nodeId = igEx.localNode().id();
+
+                        log.info("Recive event=" + evt + ", nodeId=" + nodeId);
+                    }
 
                     return true;
                 }
@@ -213,7 +232,8 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
             ignite.events(ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME)).remoteListen(locLsnr, null, EVT_CACHE_OBJECT_PUT);
 
             // Checks all events successfully processed in 10 seconds.
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertTrue("Failed to wait latch completion, still wait " + latch.getCount() + " events",
+                latch.await(10, TimeUnit.SECONDS));
 
             for (Map.Entry<String, String> entry : keyValMap.entrySet())
                 assertEquals(entry.getValue(), cache.get(entry.getKey()));

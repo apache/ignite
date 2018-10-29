@@ -509,6 +509,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             WALPointer ptr = null;
 
+            IgniteCheckedException err = null;
+
             cctx.database().checkpointReadLock();
 
             try {
@@ -526,369 +528,344 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                     UUID nodeId = txEntry.nodeId() == null ? this.nodeId : txEntry.nodeId();
 
-                    try {
-                        while (true) {
-                            try {
-                                GridCacheEntryEx cached = txEntry.cached();
+                    while (true) {
+                        try {
+                            GridCacheEntryEx cached = txEntry.cached();
 
-                                // Must try to evict near entries before committing from
-                                // transaction manager to make sure locks are held.
-                                if (!evictNearEntry(txEntry, false)) {
-                                    if (cacheCtx.isNear() && cacheCtx.dr().receiveEnabled()) {
-                                        cached.markObsolete(xidVer);
+                            // Must try to evict near entries before committing from
+                            // transaction manager to make sure locks are held.
+                            if (!evictNearEntry(txEntry, false)) {
+                                if (cacheCtx.isNear() && cacheCtx.dr().receiveEnabled()) {
+                                    cached.markObsolete(xidVer);
 
-                                        break;
-                                    }
+                                    break;
+                                }
 
-                                    if (cached.detached())
-                                        break;
+                                if (cached.detached())
+                                    break;
 
-                                    boolean updateNearCache = updateNearCache(cacheCtx, txEntry.key(), topVer);
+                                boolean updateNearCache = updateNearCache(cacheCtx, txEntry.key(), topVer);
 
-                                    boolean metrics = true;
+                                boolean metrics = true;
 
-                                    if (!updateNearCache && cacheCtx.isNear() && txEntry.locallyMapped())
-                                        metrics = false;
+                                if (!updateNearCache && cacheCtx.isNear() && txEntry.locallyMapped())
+                                    metrics = false;
 
-                                    boolean evt = !isNearLocallyMapped(txEntry, false);
+                                boolean evt = !isNearLocallyMapped(txEntry, false);
 
-                                    if (!F.isEmpty(txEntry.entryProcessors()) || !F.isEmpty(txEntry.filters()))
-                                        txEntry.cached().unswap(false);
+                                if (!F.isEmpty(txEntry.entryProcessors()) || !F.isEmpty(txEntry.filters()))
+                                    txEntry.cached().unswap(false);
 
-                                    IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(txEntry,
-                                        true, null);
+                                IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(txEntry,
+                                    true, null);
 
-                                    GridCacheVersion dhtVer = null;
+                                GridCacheVersion dhtVer = null;
 
-                                    // For near local transactions we must record DHT version
-                                    // in order to keep near entries on backup nodes until
-                                    // backup remote transaction completes.
-                                    if (cacheCtx.isNear()) {
-                                        if (txEntry.op() == CREATE || txEntry.op() == UPDATE ||
-                                            txEntry.op() == DELETE || txEntry.op() == TRANSFORM)
-                                            dhtVer = txEntry.dhtVersion();
+                                // For near local transactions we must record DHT version
+                                // in order to keep near entries on backup nodes until
+                                // backup remote transaction completes.
+                                if (cacheCtx.isNear()) {
+                                    if (txEntry.op() == CREATE || txEntry.op() == UPDATE ||
+                                        txEntry.op() == DELETE || txEntry.op() == TRANSFORM)
+                                        dhtVer = txEntry.dhtVersion();
 
-                                        if ((txEntry.op() == CREATE || txEntry.op() == UPDATE) &&
-                                            txEntry.conflictExpireTime() == CU.EXPIRE_TIME_CALCULATE) {
-                                            ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
-
-                                            if (expiry != null) {
-                                                txEntry.cached().unswap(false);
-
-                                                Duration duration = cached.hasValue() ?
-                                                    expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
-
-                                                txEntry.ttl(CU.toTtl(duration));
-                                            }
-                                        }
-                                    }
-
-                                    GridCacheOperation op = res.get1();
-                                    CacheObject val = res.get2();
-
-                                    // Deal with conflicts.
-                                    GridCacheVersion explicitVer = txEntry.conflictVersion() != null ?
-                                        txEntry.conflictVersion() : writeVersion();
-
-                                    if ((op == CREATE || op == UPDATE) &&
+                                    if ((txEntry.op() == CREATE || txEntry.op() == UPDATE) &&
                                         txEntry.conflictExpireTime() == CU.EXPIRE_TIME_CALCULATE) {
                                         ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
 
                                         if (expiry != null) {
+                                            txEntry.cached().unswap(false);
+
                                             Duration duration = cached.hasValue() ?
                                                 expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
 
-                                            long ttl = CU.toTtl(duration);
-
-                                            txEntry.ttl(ttl);
-
-                                            if (ttl == CU.TTL_ZERO)
-                                                op = DELETE;
+                                            txEntry.ttl(CU.toTtl(duration));
                                         }
-                                    }
-
-                                    boolean conflictNeedResolve = cacheCtx.conflictNeedResolve();
-
-                                    GridCacheVersionConflictContext<?, ?> conflictCtx = null;
-
-                                    if (conflictNeedResolve) {
-                                        IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext> conflictRes =
-                                            conflictResolve(op, txEntry, val, explicitVer, cached);
-
-                                        assert conflictRes != null;
-
-                                        conflictCtx = conflictRes.get2();
-
-                                        if (conflictCtx.isUseOld())
-                                            op = NOOP;
-                                        else if (conflictCtx.isUseNew()) {
-                                            txEntry.ttl(conflictCtx.ttl());
-                                            txEntry.conflictExpireTime(conflictCtx.expireTime());
-                                        }
-                                        else {
-                                            assert conflictCtx.isMerge();
-
-                                            op = conflictRes.get1();
-                                            val = txEntry.context().toCacheObject(conflictCtx.mergeValue());
-                                            explicitVer = writeVersion();
-
-                                            txEntry.ttl(conflictCtx.ttl());
-                                            txEntry.conflictExpireTime(conflictCtx.expireTime());
-                                        }
-                                    }
-                                    else
-                                        // Nullify explicit version so that innerSet/innerRemove will work as usual.
-                                        explicitVer = null;
-
-                                    if (sndTransformedVals || conflictNeedResolve) {
-                                        assert sndTransformedVals && cacheCtx.isReplicated() || conflictNeedResolve;
-
-                                        txEntry.value(val, true, false);
-                                        txEntry.op(op);
-                                        txEntry.entryProcessors(null);
-                                        txEntry.conflictVersion(explicitVer);
-                                    }
-
-                                    if (dhtVer == null)
-                                        dhtVer = explicitVer != null ? explicitVer : writeVersion();
-
-                                    if (op == CREATE || op == UPDATE) {
-                                        assert val != null : txEntry;
-
-                                        GridCacheUpdateTxResult updRes = cached.innerSet(
-                                            this,
-                                            eventNodeId(),
-                                            txEntry.nodeId(),
-                                            val,
-                                            false,
-                                            false,
-                                            txEntry.ttl(),
-                                            evt,
-                                            metrics,
-                                            txEntry.keepBinary(),
-                                            txEntry.hasOldValue(),
-                                            txEntry.oldValue(),
-                                            topVer,
-                                            null,
-                                            cached.detached() ? DR_NONE : drType,
-                                            txEntry.conflictExpireTime(),
-                                            cached.isNear() ? null : explicitVer,
-                                            CU.subjectId(this, cctx),
-                                            resolveTaskName(),
-                                            dhtVer,
-                                            null);
-
-                                        if (updRes.success())
-                                            txEntry.updateCounter(updRes.updatePartitionCounter());
-
-                                        if (updRes.loggedPointer() != null)
-                                            ptr = updRes.loggedPointer();
-
-                                        if (updRes.success() && updateNearCache) {
-                                            final CacheObject val0 = val;
-                                            final boolean metrics0 = metrics;
-                                            final GridCacheVersion dhtVer0 = dhtVer;
-
-                                            updateNearEntrySafely(cacheCtx, txEntry.key(), entry -> entry.innerSet(
-                                                    null,
-                                                    eventNodeId(),
-                                                    nodeId,
-                                                    val0,
-                                                    false,
-                                                    false,
-                                                    txEntry.ttl(),
-                                                    false,
-                                                    metrics0,
-                                                    txEntry.keepBinary(),
-                                                    txEntry.hasOldValue(),
-                                                    txEntry.oldValue(),
-                                                    topVer,
-                                                    CU.empty0(),
-                                                    DR_NONE,
-                                                    txEntry.conflictExpireTime(),
-                                                    null,
-                                                    CU.subjectId(this, cctx),
-                                                    resolveTaskName(),
-                                                    dhtVer0,
-                                                    null)
-                                            );
-                                        }
-                                    }
-                                    else if (op == DELETE) {
-                                        GridCacheUpdateTxResult updRes = cached.innerRemove(
-                                            this,
-                                            eventNodeId(),
-                                            txEntry.nodeId(),
-                                            false,
-                                            evt,
-                                            metrics,
-                                            txEntry.keepBinary(),
-                                            txEntry.hasOldValue(),
-                                            txEntry.oldValue(),
-                                            topVer,
-                                            null,
-                                            cached.detached()  ? DR_NONE : drType,
-                                            cached.isNear() ? null : explicitVer,
-                                            CU.subjectId(this, cctx),
-                                            resolveTaskName(),
-                                            dhtVer,
-                                            null);
-
-                                        if (updRes.success())
-                                            txEntry.updateCounter(updRes.updatePartitionCounter());
-
-                                        if (updRes.loggedPointer() != null)
-                                            ptr = updRes.loggedPointer();
-
-                                        if (updRes.success() && updateNearCache) {
-                                            final boolean metrics0 = metrics;
-                                            final GridCacheVersion dhtVer0 = dhtVer;
-
-                                            updateNearEntrySafely(cacheCtx, txEntry.key(), entry -> entry.innerRemove(
-                                                    null,
-                                                    eventNodeId(),
-                                                    nodeId,
-                                                    false,
-                                                    false,
-                                                    metrics0,
-                                                    txEntry.keepBinary(),
-                                                    txEntry.hasOldValue(),
-                                                    txEntry.oldValue(),
-                                                    topVer,
-                                                    CU.empty0(),
-                                                    DR_NONE,
-                                                    null,
-                                                    CU.subjectId(this, cctx),
-                                                    resolveTaskName(),
-                                                    dhtVer0,
-                                                    null)
-                                            );
-                                        }
-                                    }
-                                    else if (op == RELOAD) {
-                                        cached.innerReload();
-
-                                        if (updateNearCache)
-                                            updateNearEntrySafely(cacheCtx, txEntry.key(), entry -> entry.innerReload());
-                                    }
-                                    else if (op == READ) {
-                                        CacheGroupContext grp = cacheCtx.group();
-
-                                        if (grp.persistenceEnabled() && grp.walEnabled() &&
-                                            cctx.snapshot().needTxReadLogging()) {
-                                            ptr = cctx.wal().log(new DataRecord(new DataEntry(
-                                                cacheCtx.cacheId(),
-                                                txEntry.key(),
-                                                val,
-                                                op,
-                                                nearXidVersion(),
-                                                writeVersion(),
-                                                0,
-                                                txEntry.key().partition(),
-                                                txEntry.updateCounter())));
-                                        }
-
-                                        ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
-
-                                        if (expiry != null) {
-                                            Duration duration = expiry.getExpiryForAccess();
-
-                                            if (duration != null)
-                                                cached.updateTtl(null, CU.toTtl(duration));
-                                        }
-
-                                        if (log.isDebugEnabled())
-                                            log.debug("Ignoring READ entry when committing: " + txEntry);
-                                    }
-                                    else {
-                                        assert ownsLock(txEntry.cached()):
-                                            "Transaction does not own lock for group lock entry during  commit [tx=" +
-                                                this + ", txEntry=" + txEntry + ']';
-
-                                        if (conflictCtx == null || !conflictCtx.isUseOld()) {
-                                            if (txEntry.ttl() != CU.TTL_NOT_CHANGED)
-                                                cached.updateTtl(null, txEntry.ttl());
-                                        }
-
-                                        if (log.isDebugEnabled())
-                                            log.debug("Ignoring NOOP entry when committing: " + txEntry);
                                     }
                                 }
 
-                                // Check commit locks after set, to make sure that
-                                // we are not changing obsolete entries.
-                                // (innerSet and innerRemove will throw an exception
-                                // if an entry is obsolete).
-                                if (txEntry.op() != READ)
-                                    checkCommitLocks(cached);
+                                GridCacheOperation op = res.get1();
+                                CacheObject val = res.get2();
 
-                                // Break out of while loop.
-                                break;
-                            }
-                            // If entry cached within transaction got removed.
-                            catch (GridCacheEntryRemovedException ignored) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Got removed entry during transaction commit (will retry): " + txEntry);
+                                // Deal with conflicts.
+                                GridCacheVersion explicitVer = txEntry.conflictVersion() != null ?
+                                    txEntry.conflictVersion() : writeVersion();
 
-                                txEntry.cached(entryEx(cacheCtx, txEntry.txKey(), topologyVersion()));
+                                if ((op == CREATE || op == UPDATE) &&
+                                    txEntry.conflictExpireTime() == CU.EXPIRE_TIME_CALCULATE) {
+                                    ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
+
+                                    if (expiry != null) {
+                                        Duration duration = cached.hasValue() ?
+                                            expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
+
+                                        long ttl = CU.toTtl(duration);
+
+                                        txEntry.ttl(ttl);
+
+                                        if (ttl == CU.TTL_ZERO)
+                                            op = DELETE;
+                                    }
+                                }
+
+                                boolean conflictNeedResolve = cacheCtx.conflictNeedResolve();
+
+                                GridCacheVersionConflictContext<?, ?> conflictCtx = null;
+
+                                if (conflictNeedResolve) {
+                                    IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext> conflictRes =
+                                        conflictResolve(op, txEntry, val, explicitVer, cached);
+
+                                    assert conflictRes != null;
+
+                                    conflictCtx = conflictRes.get2();
+
+                                    if (conflictCtx.isUseOld())
+                                        op = NOOP;
+                                    else if (conflictCtx.isUseNew()) {
+                                        txEntry.ttl(conflictCtx.ttl());
+                                        txEntry.conflictExpireTime(conflictCtx.expireTime());
+                                    }
+                                    else {
+                                        assert conflictCtx.isMerge();
+
+                                        op = conflictRes.get1();
+                                        val = txEntry.context().toCacheObject(conflictCtx.mergeValue());
+                                        explicitVer = writeVersion();
+
+                                        txEntry.ttl(conflictCtx.ttl());
+                                        txEntry.conflictExpireTime(conflictCtx.expireTime());
+                                    }
+                                }
+                                else
+                                    // Nullify explicit version so that innerSet/innerRemove will work as usual.
+                                    explicitVer = null;
+
+                                if (sndTransformedVals || conflictNeedResolve) {
+                                    assert sndTransformedVals && cacheCtx.isReplicated() || conflictNeedResolve;
+
+                                    txEntry.value(val, true, false);
+                                    txEntry.op(op);
+                                    txEntry.entryProcessors(null);
+                                    txEntry.conflictVersion(explicitVer);
+                                }
+
+                                if (dhtVer == null)
+                                    dhtVer = explicitVer != null ? explicitVer : writeVersion();
+
+                                if (op == CREATE || op == UPDATE) {
+                                    assert val != null : txEntry;
+
+                                    GridCacheUpdateTxResult updRes = cached.innerSet(
+                                        this,
+                                        eventNodeId(),
+                                        txEntry.nodeId(),
+                                        val,
+                                        false,
+                                        false,
+                                        txEntry.ttl(),
+                                        evt,
+                                        metrics,
+                                        txEntry.keepBinary(),
+                                        txEntry.hasOldValue(),
+                                        txEntry.oldValue(),
+                                        topVer,
+                                        null,
+                                        cached.detached() ? DR_NONE : drType,
+                                        txEntry.conflictExpireTime(),
+                                        cached.isNear() ? null : explicitVer,
+                                        CU.subjectId(this, cctx),
+                                        resolveTaskName(),
+                                        dhtVer,
+                                        null);
+
+                                    if (updRes.success())
+                                        txEntry.updateCounter(updRes.updatePartitionCounter());
+
+                                    if (updRes.loggedPointer() != null)
+                                        ptr = updRes.loggedPointer();
+
+                                    if (updRes.success() && updateNearCache) {
+                                        final CacheObject val0 = val;
+                                        final boolean metrics0 = metrics;
+                                        final GridCacheVersion dhtVer0 = dhtVer;
+
+                                        updateNearEntrySafely(cacheCtx, txEntry.key(), entry -> entry.innerSet(
+                                                null,
+                                                eventNodeId(),
+                                                nodeId,
+                                                val0,
+                                                false,
+                                                false,
+                                                txEntry.ttl(),
+                                                false,
+                                                metrics0,
+                                                txEntry.keepBinary(),
+                                                txEntry.hasOldValue(),
+                                                txEntry.oldValue(),
+                                                topVer,
+                                                CU.empty0(),
+                                                DR_NONE,
+                                                txEntry.conflictExpireTime(),
+                                                null,
+                                                CU.subjectId(this, cctx),
+                                                resolveTaskName(),
+                                                dhtVer0,
+                                                null)
+                                        );
+                                    }
+                                }
+                                else if (op == DELETE) {
+                                    GridCacheUpdateTxResult updRes = cached.innerRemove(
+                                        this,
+                                        eventNodeId(),
+                                        txEntry.nodeId(),
+                                        false,
+                                        evt,
+                                        metrics,
+                                        txEntry.keepBinary(),
+                                        txEntry.hasOldValue(),
+                                        txEntry.oldValue(),
+                                        topVer,
+                                        null,
+                                        cached.detached() ? DR_NONE : drType,
+                                        cached.isNear() ? null : explicitVer,
+                                        CU.subjectId(this, cctx),
+                                        resolveTaskName(),
+                                        dhtVer,
+                                        null);
+
+                                    if (updRes.success())
+                                        txEntry.updateCounter(updRes.updatePartitionCounter());
+
+                                    if (updRes.loggedPointer() != null)
+                                        ptr = updRes.loggedPointer();
+
+                                    if (updRes.success() && updateNearCache) {
+                                        final boolean metrics0 = metrics;
+                                        final GridCacheVersion dhtVer0 = dhtVer;
+
+                                        updateNearEntrySafely(cacheCtx, txEntry.key(), entry -> entry.innerRemove(
+                                                null,
+                                                eventNodeId(),
+                                                nodeId,
+                                                false,
+                                                false,
+                                                metrics0,
+                                                txEntry.keepBinary(),
+                                                txEntry.hasOldValue(),
+                                                txEntry.oldValue(),
+                                                topVer,
+                                                CU.empty0(),
+                                                DR_NONE,
+                                                null,
+                                                CU.subjectId(this, cctx),
+                                                resolveTaskName(),
+                                                dhtVer0,
+                                                null)
+                                        );
+                                    }
+                                }
+                                else if (op == RELOAD) {
+                                    cached.innerReload();
+
+                                    if (updateNearCache)
+                                        updateNearEntrySafely(cacheCtx, txEntry.key(), entry -> entry.innerReload());
+                                }
+                                else if (op == READ) {
+                                    CacheGroupContext grp = cacheCtx.group();
+
+                                    if (grp.persistenceEnabled() && grp.walEnabled() &&
+                                        cctx.snapshot().needTxReadLogging()) {
+                                        ptr = cctx.wal().log(new DataRecord(new DataEntry(
+                                            cacheCtx.cacheId(),
+                                            txEntry.key(),
+                                            val,
+                                            op,
+                                            nearXidVersion(),
+                                            writeVersion(),
+                                            0,
+                                            txEntry.key().partition(),
+                                            txEntry.updateCounter())));
+                                    }
+
+                                    ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
+
+                                    if (expiry != null) {
+                                        Duration duration = expiry.getExpiryForAccess();
+
+                                        if (duration != null)
+                                            cached.updateTtl(null, CU.toTtl(duration));
+                                    }
+
+                                    if (log.isDebugEnabled())
+                                        log.debug("Ignoring READ entry when committing: " + txEntry);
+                                }
+                                else {
+                                    assert ownsLock(txEntry.cached()) :
+                                        "Transaction does not own lock for group lock entry during  commit [tx=" +
+                                            this + ", txEntry=" + txEntry + ']';
+
+                                    if (conflictCtx == null || !conflictCtx.isUseOld()) {
+                                        if (txEntry.ttl() != CU.TTL_NOT_CHANGED)
+                                            cached.updateTtl(null, txEntry.ttl());
+                                    }
+
+                                    if (log.isDebugEnabled())
+                                        log.debug("Ignoring NOOP entry when committing: " + txEntry);
+                                }
                             }
+
+                            // Check commit locks after set, to make sure that
+                            // we are not changing obsolete entries.
+                            // (innerSet and innerRemove will throw an exception
+                            // if an entry is obsolete).
+                            if (txEntry.op() != READ)
+                                checkCommitLocks(cached);
+
+                            // Break out of while loop.
+                            break;
+                        }
+                        // If entry cached within transaction got removed.
+                        catch (GridCacheEntryRemovedException ignored) {
+                            if (log.isDebugEnabled())
+                                log.debug("Got removed entry during transaction commit (will retry): " + txEntry);
+
+                            txEntry.cached(entryEx(cacheCtx, txEntry.txKey(), topologyVersion()));
                         }
                     }
-                    catch (Throwable ex) {
-                        // We are about to initiate transaction rollback when tx has started to committing.
-                        // Need to remove version from committed list.
-                        cctx.tm().removeCommittedTx(this);
 
-                        boolean isNodeStopping = X.hasCause(ex, NodeStoppingException.class);
-                        boolean hasInvalidEnvironmentIssue = X.hasCause(ex, InvalidEnvironmentException.class);
-
-                        IgniteCheckedException err = new IgniteTxHeuristicCheckedException("Failed to locally write to cache " +
-                            "(all transaction entries will be invalidated, however there was a window when " +
-                            "entries for this transaction were visible to others): " + this, ex);
-
-                        if (isNodeStopping) {
-                            U.warn(log, "Failed to commit transaction, node is stopping [tx=" + this +
-                                ", err=" + ex + ']');
-                        }
-                        else if (hasInvalidEnvironmentIssue) {
-                            U.warn(log, "Failed to commit transaction, node is in invalid state and will be stopped [tx=" + this +
-                                ", err=" + ex + ']');
-                        }
-                        else
-                            U.error(log, "Commit failed.", err);
-
-                        COMMIT_ERR_UPD.compareAndSet(this, null, err);
-
-                        state(UNKNOWN);
-
-                        if (hasInvalidEnvironmentIssue)
-                            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
-                        else if (!isNodeStopping) { // Skip fair uncommit in case of node stopping or invalidation.
-                            try {
-                                // Courtesy to minimize damage.
-                                uncommit();
-                            }
-                            catch (Throwable ex1) {
-                                U.error(log, "Failed to uncommit transaction: " + this, ex1);
-
-                                if (ex1 instanceof Error)
-                                    throw ex1;
-                            }
-                        }
-
-                        if (ex instanceof Error)
-                            throw ex;
-
-                        throw err;
-                    }
                 }
 
                 if (ptr != null && !cctx.tm().logTxRecords())
                     cctx.wal().flush(ptr, false);
             }
-            catch (StorageException e) {
-                throw new IgniteCheckedException("Failed to log transaction record " +
-                    "(transaction will be rolled back): " + this, e);
+            catch (Throwable ex) {
+                // We are about to initiate transaction rollback when tx has started to committing.
+                // Need to remove version from committed list.
+                cctx.tm().removeCommittedTx(this);
+
+                if (X.hasCause(ex, NodeStoppingException.class)) {
+                    U.warn(log, "Failed to commit transaction, node is stopping [tx=" + CU.txString(this) +
+                        ", err=" + ex + ']');
+
+                    return;
+                }
+
+                err = heuristicException(ex);
+
+                COMMIT_ERR_UPD.compareAndSet(this, null, err);
+
+                state(UNKNOWN);
+
+                try {
+                    uncommit();
+                }
+                catch (Throwable e) {
+                    err.addSuppressed(e);
+                }
+
+                throw err;
             }
             finally {
                 cctx.database().checkpointReadUnlock();
