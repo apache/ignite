@@ -152,7 +152,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
         long timeout,
         IgniteBiInClosure<IgniteCheckedException, Boolean> clo) {
         if (timeout == -1) {
-            clo.apply(null, false);
+            clo.apply(null, true);
 
             return;
         }
