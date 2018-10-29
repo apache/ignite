@@ -643,11 +643,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             segmentAware.interrupt();
 
-            if (archiver != null) {
+            if (archiver != null)
                 archiver.shutdown();
-
-                archiver = null;
-            }
 
             if (compressor != null) {
                 compressor.shutdown();

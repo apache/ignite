@@ -49,15 +49,14 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerPluginProvider;
@@ -133,7 +132,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
         cfg.setBinaryConfiguration(binCfg);
 
-        //cfg.setPluginConfigurations(new PageMemoryTrackerConfiguration().setEnabled(true).setCheckPagesOnCheckpoint(false));
+        cfg.setPluginConfigurations(new PageMemoryTrackerConfiguration().setEnabled(true).setCheckPagesOnCheckpoint(false));
 
         return cfg;
     }
@@ -595,8 +594,6 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
      */
     public void testRecoveryNoPageLost3() throws Exception {
         try {
-            log.warning("Metastorage cache id = " + MetaStorage.METASTORAGE_CACHE_ID);
-
             pageSize = 1024;
             checkpointFreq = 100L;
             extraCcfg = new CacheConfiguration(CACHE2_NAME);
@@ -690,7 +687,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
                 pages = allocatedPages(ignite, CACHE2_NAME);
 
-                //assertTrue(PageMemoryTrackerPluginProvider.tracker(ignite).checkPages(true));
+                assertTrue(PageMemoryTrackerPluginProvider.tracker(ignite).checkPages(true));
 
                 stopGrid(0, true);
             }

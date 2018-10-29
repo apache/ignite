@@ -494,11 +494,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             if (currHnd != null)
                 currHnd.close(false);
 
-            if (archiver != null) {
+            if (archiver != null)
                 archiver.shutdown();
-
-                archiver = null;
-            }
 
             if (compressor != null) {
                 compressor.shutdown();

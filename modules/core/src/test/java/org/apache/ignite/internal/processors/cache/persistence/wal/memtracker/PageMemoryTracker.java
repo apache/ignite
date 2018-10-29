@@ -637,7 +637,7 @@ public class PageMemoryTracker implements IgnitePlugin {
             byte b2 = buf2.get(buf2.position() + i);
 
             if (b1 != b2)
-                log.error(String.format("        0x%04X: %02X %02X", i, b1, b2));
+                log.error(String.format("        %d: %02X %02X", i, b1, b2));
         }
 
         if (buf1.remaining() < buf2.remaining()) {
