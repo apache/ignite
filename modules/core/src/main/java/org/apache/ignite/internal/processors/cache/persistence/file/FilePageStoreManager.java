@@ -150,6 +150,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** */
     private final Set<Integer> grpsWithoutIdx = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
 
+    /** Registred cache groups. */
+    private Map<Integer, CacheGroupDescriptor> registeredCacheGroups = new HashMap<>();
+
     /**
      * @param ctx Kernal context.
      */
@@ -329,13 +332,21 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         int grpId = grpDesc.groupId();
 
-        idxCacheStores.computeIfAbsent(grpId, (k) -> {
-            try {
-                return initForCache(grpDesc, cacheData.config());
-            } catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-        });
+        try {
+            idxCacheStores.computeIfAbsent(grpId, (k) -> {
+                try {
+                    return initForCache(grpDesc, cacheData.config());
+                } catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            });
+        } catch (IgniteException ex) {
+            if (X.hasCause(ex, IgniteCheckedException.class))
+                throw ex.getCause(IgniteCheckedException.class);
+            else
+                throw ex;
+        }
+
     }
 
     /** {@inheritDoc} */
@@ -1025,16 +1036,16 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param grpId Cache group ID.
      * @return Cache store holder.
      */
-    private CacheStoreHolder getHolder(int grpId) {
-        return idxCacheStores.computeIfAbsent((grpId), (key) -> {
-            CacheGroupDescriptor gDesc = cctx.cache().cacheGroupDescriptors().get(grpId);
+    private CacheStoreHolder getHolder(int grpId) throws IgniteCheckedException {
+        try {
+            return idxCacheStores.computeIfAbsent((grpId), (key) -> {
+                CacheGroupDescriptor gDesc = registeredCacheGroups.get(grpId);
 
-            CacheStoreHolder holder0 = null;
+                CacheStoreHolder holder0 = null;
 
-            if (gDesc != null) {
-                Integer cacheId = F.firstValue(gDesc.caches());
+                if (gDesc != null) {
+                    Integer cacheId = F.firstValue(gDesc.caches());
 
-                if (cacheId != null) {
                     DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptor(cacheId);
 
                     if (CU.isPersistentCache(cacheDesc.cacheConfiguration(), cctx.gridConfig().getDataStorageConfiguration())) {
@@ -1045,10 +1056,15 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                         }
                     }
                 }
-            }
 
-            return holder0;
-        });
+                return holder0;
+            });
+        } catch (IgniteException ex) {
+            if (X.hasCause(ex, IgniteCheckedException.class))
+                throw ex.getCause(IgniteCheckedException.class);
+            else
+                throw ex;
+        }
     }
 
     /**
@@ -1086,6 +1102,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         if (grpDesc.persistenceEnabled()) {
             boolean localEnabled = cctx.database().walEnabled(grpDesc.groupId(), true);
             boolean globalEnabled = cctx.database().walEnabled(grpDesc.groupId(), false);
+
+            registeredCacheGroups.put(grpDesc.groupId(), grpDesc);
 
             if (!localEnabled || !globalEnabled) {
                 File dir = cacheWorkDir(grpDesc.config());
