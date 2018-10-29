@@ -247,10 +247,7 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPageCompression_AsyncFileIO_SkipGarbage() throws Exception {
-        if (!U.isLinux())
-            return;
-
-        fileIOFactory = new RandomAccessFileIOFactory();
+        fileIOFactory = new AsyncFileIOFactory();
         compression = SKIP_GARBAGE;
 
         doTestPageCompression();
