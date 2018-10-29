@@ -251,16 +251,16 @@ class Paragraph {
 
 // Controller for SQL notebook screen.
 export class NotebookCtrl {
-    static $inject = ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', CSV.name, 'IgniteErrorParser'];
+    static $inject = ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', 'CSV', 'IgniteErrorParser', 'DemoInfo'];
 
     /**
      * @param {CSV} CSV
      */
-    constructor($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV, errorParser) {
+    constructor($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV, errorParser, DemoInfo) {
         const $ctrl = this;
 
         this.CSV = CSV;
-        Object.assign(this, { $root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, errorParser });
+        Object.assign(this, { $root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, errorParser, DemoInfo });
 
         // Define template urls.
         $ctrl.paragraphRateTemplateUrl = paragraphRateTemplateUrl;
@@ -283,7 +283,15 @@ export class NotebookCtrl {
 
         $scope.caches = [];
 
-        $scope.pageSizes = [50, 100, 200, 400, 800, 1000];
+        $scope.pageSizesOptions = [
+            {value: 50, label: '50'},
+            {value: 100, label: '100'},
+            {value: 200, label: '200'},
+            {value: 400, label: '400'},
+            {value: 800, label: '800'},
+            {value: 1000, label: '1000'}
+        ];
+
         $scope.maxPages = [
             {label: 'Unlimited', value: 0},
             {label: '1', value: 1},
@@ -980,7 +988,14 @@ export class NotebookCtrl {
                 else
                     $scope.rebuildScrollParagraphs();
             })
-            .then(() => _startWatch())
+            .then(() => {
+                if ($root.IgniteDemoMode && sessionStorage.showDemoInfo !== 'true') {
+                    sessionStorage.showDemoInfo = 'true';
+
+                    this.DemoInfo.show().then(_startWatch);
+                } else
+                    _startWatch();
+            })
             .catch(() => {
                 $scope.notebookLoadFailed = true;
 
@@ -1048,7 +1063,7 @@ export class NotebookCtrl {
             const paragraph = _newParagraph({
                 name: 'Query' + (sz === 0 ? '' : sz),
                 query: '',
-                pageSize: $scope.pageSizes[1],
+                pageSize: $scope.pageSizesOptions[1].value,
                 timeLineSpan: $scope.timeLineSpans[0],
                 result: 'none',
                 rate: {
@@ -1077,7 +1092,7 @@ export class NotebookCtrl {
             const paragraph = _newParagraph({
                 name: 'Scan' + (sz === 0 ? '' : sz),
                 query: '',
-                pageSize: $scope.pageSizes[1],
+                pageSize: $scope.pageSizesOptions[1].value,
                 timeLineSpan: $scope.timeLineSpans[0],
                 result: 'none',
                 rate: {
@@ -1556,8 +1571,8 @@ export class NotebookCtrl {
             if (!$scope.queryAvailable(paragraph))
                 return;
 
-            Notebook.save($scope.notebook)
-                .catch(Messages.showError);
+            if (!paragraph.partialQuery)
+                Notebook.save($scope.notebook).catch(Messages.showError);
 
             _cancelRefresh(paragraph);
 
@@ -1569,7 +1584,7 @@ export class NotebookCtrl {
                     const args = paragraph.queryArgs = {
                         type: 'EXPLAIN',
                         cacheName: $scope.cacheNameForSql(paragraph),
-                        query: 'EXPLAIN ' + paragraph.query,
+                        query: 'EXPLAIN ' + (paragraph.partialQuery || paragraph.query),
                         pageSize: paragraph.pageSize
                     };
 
@@ -1956,11 +1971,8 @@ export class NotebookCtrl {
         };
     }
 
-    $onInit() {
-
-    }
-
     $onDestroy() {
-        this.refresh$.unsubscribe();
+        if (this.refresh$)
+            this.refresh$.unsubscribe();
     }
 }

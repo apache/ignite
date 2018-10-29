@@ -14,9 +14,9 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin form-field__checkbox({ label, model, name, disabled, required, tip })
+mixin form-field__checkbox({ label, model, name, disabled, required, tip, tipOpts })
     .form-field.form-field__checkbox(id=`{{ ${name} }}Field`)
-        +form-field__label({ label, name, required })
+        +form-field__label({ label, name, required, disabled })
             +form-field__tooltip({ title: tip, options: tipOpts })
 
         .form-field__control

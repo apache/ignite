@@ -19,10 +19,10 @@ import {Selector, t} from 'testcafe';
 import {AngularJSSelector} from 'testcafe-angular-selectors';
 
 export class FormField {
-    static ROOT_SELECTOR = '.ignite-form-field';
-    static LABEL_SELECTOR = '.ignite-form-field__label';
+    static ROOT_SELECTOR = '.form-field';
+    static LABEL_SELECTOR = '.form-field__label';
     static CONTROL_SELECTOR = '[ng-model]';
-    static ERRORS_SELECTOR = '.ignite-form-field__errors';
+    static ERRORS_SELECTOR = '.form-field__errors';
 
     /** @type {ReturnType<Selector>} */
     _selector;

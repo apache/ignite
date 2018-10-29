@@ -16,6 +16,7 @@
 
 mixin form-field__error({ error, message })
     .form-field__error(ng-message=error)
+        div #{ message }
         div(
             bs-tooltip=''
             data-title=message

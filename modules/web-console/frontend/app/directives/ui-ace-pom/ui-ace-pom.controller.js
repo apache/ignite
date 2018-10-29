@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'IgniteVersion', 'IgniteMavenGenerator', function($scope, Version, maven) {
+export default function controller($scope, Version, maven) {
     const ctrl = this;
 
     this.$onInit = () => {
@@ -36,4 +36,6 @@ export default ['$scope', 'IgniteVersion', 'IgniteMavenGenerator', function($sco
 
         $scope.$watch('cluster', clusterWatcher);
     };
-}];
+}
+
+controller.$inject = ['$scope', 'IgniteVersion', 'IgniteMavenGenerator'];

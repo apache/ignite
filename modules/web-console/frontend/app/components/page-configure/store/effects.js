@@ -85,18 +85,19 @@ export const ofType = (type) => (s) => s.filter((a) => a.type === type);
 
 export default class ConfigEffects {
     static $inject = [
-        ConfigureState.name,
-        Caches.name,
-        IGFSs.name,
-        Models.name,
-        ConfigSelectors.name,
-        Clusters.name,
+        'ConfigureState',
+        'Caches',
+        'IGFSs',
+        'Models',
+        'ConfigSelectors',
+        'Clusters',
         '$state',
         'IgniteMessages',
         'IgniteConfirm',
-        Confirm.name,
-        ConfigurationDownload.name
+        'Confirm',
+        'ConfigurationDownload'
     ];
+
     /**
      * @param {ConfigureState} ConfigureState
      * @param {Caches} Caches

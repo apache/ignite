@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+
+import './style.scss';
+
 import './vendor';
 import '../public/stylesheets/style.scss';
 import '../app/primitives';
@@ -49,19 +53,19 @@ import servicesModule from './services';
 import i18n from './data/i18n';
 
 // Directives.
-import igniteAutoFocus from './directives/auto-focus.directive.js';
+import igniteAutoFocus from './directives/auto-focus.directive';
 import igniteBsAffixUpdate from './directives/bs-affix-update.directive';
-import igniteCentered from './directives/centered/centered.directive.js';
-import igniteCopyToClipboard from './directives/copy-to-clipboard.directive.js';
+import igniteCentered from './directives/centered/centered.directive';
+import igniteCopyToClipboard from './directives/copy-to-clipboard.directive';
 import igniteHideOnStateChange from './directives/hide-on-state-change/hide-on-state-change.directive';
 import igniteInformation from './directives/information/information.directive';
-import igniteMatch from './directives/match.directive.js';
-import igniteOnClickFocus from './directives/on-click-focus.directive.js';
-import igniteOnEnter from './directives/on-enter.directive.js';
-import igniteOnEnterFocusMove from './directives/on-enter-focus-move.directive.js';
-import igniteOnEscape from './directives/on-escape.directive.js';
-import igniteOnFocusOut from './directives/on-focus-out.directive.js';
-import igniteRestoreInputFocus from './directives/restore-input-focus.directive.js';
+import igniteMatch from './directives/match.directive';
+import igniteOnClickFocus from './directives/on-click-focus.directive';
+import igniteOnEnter from './directives/on-enter.directive';
+import igniteOnEnterFocusMove from './directives/on-enter-focus-move.directive';
+import igniteOnEscape from './directives/on-escape.directive';
+import igniteOnFocusOut from './directives/on-focus-out.directive';
+import igniteRestoreInputFocus from './directives/restore-input-focus.directive';
 import igniteUiAceCSharp from './directives/ui-ace-sharp/ui-ace-sharp.directive';
 import igniteUiAcePojos from './directives/ui-ace-pojos/ui-ace-pojos.directive';
 import igniteUiAcePom from './directives/ui-ace-pom/ui-ace-pom.directive';
@@ -69,12 +73,11 @@ import igniteUiAceDocker from './directives/ui-ace-docker/ui-ace-docker.directiv
 import igniteUiAceTabs from './directives/ui-ace-tabs.directive';
 import igniteRetainSelection from './directives/retain-selection.directive';
 import btnIgniteLink from './directives/btn-ignite-link';
-import exposeInput from './components/expose-ignite-form-field-control';
 
 // Services.
 import ChartColors from './services/ChartColors.service';
-import {default as IgniteConfirm, Confirm} from './services/Confirm.service.js';
-import ConfirmBatch from './services/ConfirmBatch.service.js';
+import {default as IgniteConfirm, Confirm} from './services/Confirm.service';
+import ConfirmBatch from './services/ConfirmBatch.service';
 import CopyToClipboard from './services/CopyToClipboard.service';
 import Countries from './services/Countries.service';
 import ErrorPopover from './services/ErrorPopover.service';
@@ -87,11 +90,10 @@ import LegacyTable from './services/LegacyTable.service';
 import LegacyUtils from './services/LegacyUtils.service';
 import Messages from './services/Messages.service';
 import ErrorParser from './services/ErrorParser.service';
-import ModelNormalizer from './services/ModelNormalizer.service.js';
-import UnsavedChangesGuard from './services/UnsavedChangesGuard.service';
+import ModelNormalizer from './services/ModelNormalizer.service';
 import Caches from './services/Caches';
 import {CSV} from './services/CSV';
-import {$exceptionHandler} from './services/exceptionHandler.js';
+import {$exceptionHandler} from './services/exceptionHandler';
 import IGFSs from './services/IGFSs';
 import Models from './services/Models';
 
@@ -100,6 +102,7 @@ import AngularStrapSelect from './services/AngularStrapSelect.decorator';
 
 // Filters.
 import byName from './filters/byName.filter';
+import bytes from './filters/bytes.filter';
 import defaultName from './filters/default-name.filter';
 import domainsValidation from './filters/domainsValidation.filter';
 import duration from './filters/duration.filter';
@@ -126,8 +129,10 @@ import gridColumnSelector from './components/grid-column-selector';
 import gridItemSelected from './components/grid-item-selected';
 import gridNoData from './components/grid-no-data';
 import gridExport from './components/grid-export';
+import gridShowingRows from './components/grid-showing-rows';
 import bsSelectMenu from './components/bs-select-menu';
 import protectFromBsSelectRender from './components/protect-from-bs-select-render';
+import uiGrid from './components/ui-grid';
 import uiGridHovering from './components/ui-grid-hovering';
 import uiGridFilters from './components/ui-grid-filters';
 import uiGridColumnResizer from './components/ui-grid-column-resizer';
@@ -141,6 +146,9 @@ import pageLanding from './components/page-landing';
 import passwordVisibility from './components/password-visibility';
 import progressLine from './components/progress-line';
 import formField from './components/form-field';
+import igniteChart from './components/ignite-chart';
+import igniteChartSelector from './components/ignite-chart-series-selector';
+import igniteStatus from './components/ignite-status';
 
 import pageProfile from './components/page-profile';
 import pagePasswordChanged from './components/page-password-changed';
@@ -221,7 +229,9 @@ export default angular.module('ignite-console', [
     gridItemSelected.name,
     gridNoData.name,
     gridExport.name,
+    gridShowingRows.name,
     bsSelectMenu.name,
+    uiGrid.name,
     uiGridHovering.name,
     uiGridFilters.name,
     uiGridColumnResizer.name,
@@ -236,7 +246,6 @@ export default angular.module('ignite-console', [
     connectedClustersDialog.name,
     igniteListOfRegisteredUsers.name,
     pageProfile.name,
-    exposeInput.name,
     pageLanding.name,
     pagePasswordChanged.name,
     pagePasswordReset.name,
@@ -247,28 +256,31 @@ export default angular.module('ignite-console', [
     uiAceSpring.name,
     breadcrumbs.name,
     passwordVisibility.name,
+    igniteChart.name,
+    igniteChartSelector.name,
+    igniteStatus.name,
     progressLine.name,
     formField.name
 ])
-.service($exceptionHandler.name, $exceptionHandler)
+.service('$exceptionHandler', $exceptionHandler)
 // Directives.
-.directive(...igniteAutoFocus)
-.directive(...igniteBsAffixUpdate)
-.directive(...igniteCentered)
-.directive(...igniteCopyToClipboard)
-.directive(...igniteHideOnStateChange)
-.directive(...igniteInformation)
+.directive('igniteAutoFocus', igniteAutoFocus)
+.directive('igniteBsAffixUpdate', igniteBsAffixUpdate)
+.directive('centered', igniteCentered)
+.directive('igniteCopyToClipboard', igniteCopyToClipboard)
+.directive('hideOnStateChange', igniteHideOnStateChange)
+.directive('igniteInformation', igniteInformation)
 .directive('igniteMatch', igniteMatch)
-.directive(...igniteOnClickFocus)
-.directive(...igniteOnEnter)
-.directive(...igniteOnEnterFocusMove)
-.directive(...igniteOnEscape)
-.directive(...igniteUiAceCSharp)
-.directive(...igniteUiAcePojos)
-.directive(...igniteUiAcePom)
-.directive(...igniteUiAceDocker)
-.directive(...igniteUiAceTabs)
-.directive(...igniteRetainSelection)
+.directive('igniteOnClickFocus', igniteOnClickFocus)
+.directive('igniteOnEnter', igniteOnEnter)
+.directive('igniteOnEnterFocusMove', igniteOnEnterFocusMove)
+.directive('igniteOnEscape', igniteOnEscape)
+.directive('igniteUiAceSharp', igniteUiAceCSharp)
+.directive('igniteUiAcePojos', igniteUiAcePojos)
+.directive('igniteUiAcePom', igniteUiAcePom)
+.directive('igniteUiAceDocker', igniteUiAceDocker)
+.directive('igniteUiAceTabs', igniteUiAceTabs)
+.directive('igniteRetainSelection', igniteRetainSelection)
 .directive('igniteOnFocusOut', igniteOnFocusOut)
 .directive('igniteRestoreInputFocus', igniteRestoreInputFocus)
 .directive('btnIgniteLinkDashedSuccess', btnIgniteLink)
@@ -277,83 +289,113 @@ export default angular.module('ignite-console', [
 .service('IgniteErrorPopover', ErrorPopover)
 .service('JavaTypes', JavaTypes)
 .service('SqlTypes', SqlTypes)
-.service(...ChartColors)
-.service(...IgniteConfirm)
-.service(Confirm.name, Confirm)
+.service('IgniteChartColors', ChartColors)
+.service('IgniteConfirm', IgniteConfirm)
+.service('Confirm', Confirm)
 .service('IgniteConfirmBatch', ConfirmBatch)
-.service(...CopyToClipboard)
-.service(...Countries)
-.service(...Focus)
-.service(...InetAddress)
-.service(...Messages)
+.service('IgniteCopyToClipboard', CopyToClipboard)
+.service('IgniteCountries', Countries)
+.service('IgniteFocus', Focus)
+.service('IgniteInetAddress', InetAddress)
+.service('IgniteMessages', Messages)
 .service('IgniteErrorParser', ErrorParser)
-.service(...ModelNormalizer)
-.service(...LegacyTable)
-.service(...FormUtils)
-.service(...LegacyUtils)
-.service(...UnsavedChangesGuard)
+.service('IgniteModelNormalizer', ModelNormalizer)
+.service('IgniteLegacyTable', LegacyTable)
+.service('IgniteFormUtils', FormUtils)
+.service('IgniteLegacyUtils', LegacyUtils)
 .service('IgniteActivitiesUserDialog', IgniteActivitiesUserDialog)
 .service('Caches', Caches)
-.service(CSV.name, CSV)
+.service('CSV', CSV)
 .service('IGFSs', IGFSs)
 .service('Models', Models)
 // Filters.
 .filter('byName', byName)
+.filter('bytes', bytes)
 .filter('defaultName', defaultName)
 .filter('domainsValidation', domainsValidation)
 .filter('duration', duration)
 .filter('hasPojo', hasPojo)
 .filter('uiGridSubcategories', uiGridSubcategories)
 .filter('id8', id8)
-.config(['$translateProvider', '$stateProvider', '$locationProvider', '$urlRouterProvider', ($translateProvider, $stateProvider, $locationProvider, $urlRouterProvider) => {
-    $translateProvider.translations('en', i18n);
-    $translateProvider.preferredLanguage('en');
+.config(['$translateProvider', '$stateProvider', '$locationProvider', '$urlRouterProvider',
+    /**
+     * @param {angular.translate.ITranslateProvider} $translateProvider
+     * @param {import('@uirouter/angularjs').StateProvider} $stateProvider
+     * @param {ng.ILocationProvider} $locationProvider
+     * @param {import('@uirouter/angularjs').UrlRouterProvider} $urlRouterProvider
+     */
+    ($translateProvider, $stateProvider, $locationProvider, $urlRouterProvider) => {
+        $translateProvider.translations('en', i18n);
+        $translateProvider.preferredLanguage('en');
 
-    // Set up the states.
-    $stateProvider
+        // Set up the states.
+        $stateProvider
         .state('base', {
             url: '',
             abstract: true,
             template: baseTemplate
         });
 
-    $urlRouterProvider.otherwise('/404');
-    $locationProvider.html5Mode(true);
-}])
-.run(['$rootScope', '$state', 'gettingStarted', ($root, $state, gettingStarted) => {
-    $root._ = _;
-    $root.$state = $state;
-    $root.gettingStarted = gettingStarted;
-}])
-.run(['$rootScope', 'AgentManager', ($root, agentMgr) => {
-    let lastUser;
+        $urlRouterProvider.otherwise('/404');
+        $locationProvider.html5Mode(true);
+    }])
+.run(['$rootScope', '$state', 'gettingStarted',
+    /**
+     * @param {ng.IRootScopeService} $root
+     * @param {import('@uirouter/angularjs').StateService} $state
+     * @param {ReturnType<typeof import('./modules/getting-started/GettingStarted.provider').service>} gettingStarted
+     */
+    ($root, $state, gettingStarted) => {
+        $root._ = _;
+        $root.$state = $state;
+        $root.gettingStarted = gettingStarted;
+    }
+])
+.run(['$rootScope', 'AgentManager',
+    /**
+     * @param {ng.IRootScopeService} $root
+     * @param {import('./modules/agent/AgentManager.service').default} agentMgr
+     */
+    ($root, agentMgr) => {
+        let lastUser;
 
-    $root.$on('user', (e, user) => {
-        if (lastUser)
-            return;
+        $root.$on('user', (e, user) => {
+            if (lastUser)
+                return;
 
-        lastUser = user;
+            lastUser = user;
 
-        agentMgr.connect();
-    });
-}])
-.run(['$transitions', ($transitions) => {
-    $transitions.onSuccess({ }, (trans) => {
-        try {
-            const {name, unsaved} = trans.$to();
-            const params = trans.params();
+            agentMgr.connect();
+        });
+    }
+])
+.run(['$transitions',
+    /**
+     * @param {import('@uirouter/angularjs').TransitionService} $transitions
+     */
+    ($transitions) => {
+        $transitions.onSuccess({ }, (trans) => {
+            try {
+                const {name, unsaved} = trans.$to();
+                const params = trans.params();
 
-            if (unsaved)
-                localStorage.removeItem('lastStateChangeSuccess');
-            else
-                localStorage.setItem('lastStateChangeSuccess', JSON.stringify({name, params}));
-        }
-        catch (ignored) {
+                if (unsaved)
+                    localStorage.removeItem('lastStateChangeSuccess');
+                else
+                    localStorage.setItem('lastStateChangeSuccess', JSON.stringify({name, params}));
+            }
+            catch (ignored) {
             // No-op.
-        }
-    });
-}])
+            }
+        });
+    }
+])
 .run(['$rootScope', '$http', '$state', 'IgniteMessages', 'User', 'IgniteNotebookData',
+    /**
+     * @param {ng.IRootScopeService} $root
+     * @param {ng.IHttpService} $http
+     * @param {ReturnType<typeof import('./services/Messages.service').default>} Messages
+     */
     ($root, $http, $state, Messages, User, Notebook) => { // eslint-disable-line no-shadow
         $root.revertIdentity = () => {
             $http.get('/api/v1/admin/revert/identity')
@@ -364,4 +406,9 @@ export default angular.module('ignite-console', [
         };
     }
 ])
-.run(['IgniteIcon', (IgniteIcon) => IgniteIcon.registerIcons(icons)]);
+.run(['IgniteIcon',
+    /**
+     * @param {import('./components/ignite-icon/service').default} IgniteIcon
+     */
+    (IgniteIcon) => IgniteIcon.registerIcons(icons)
+]);

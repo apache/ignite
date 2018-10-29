@@ -1698,7 +1698,7 @@ export default class IgniteConfigurationGenerator {
                 .emptyBeanProperty('service')
                 .intProperty('maxPerNodeCount')
                 .intProperty('totalCount')
-                .stringProperty('cache', 'cacheName', (_id) => _id ? _.find(caches, {_id}).name : null)
+                .stringProperty('cache', 'cacheName', (_id) => _id ? _.get(_.find(caches, {_id}), 'name', null) : null)
                 .stringProperty('affinityKey');
 
             srvBeans.push(bean);
