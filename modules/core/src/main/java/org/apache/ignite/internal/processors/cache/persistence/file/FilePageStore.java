@@ -127,6 +127,11 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
+    @Override public long blocks() {
+        return -1;
+    }
+
+    /** {@inheritDoc} */
     @Override public void punchHole(long pageId, int usefulBytes) {
         throw new UnsupportedOperationException();
     }

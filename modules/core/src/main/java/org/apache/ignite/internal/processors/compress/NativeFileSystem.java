@@ -41,4 +41,10 @@ public interface NativeFileSystem {
      * @param len Length of the hole.
      */
     void punchHole(int fd, long off, long len);
+
+    /**
+     * @param fd Native file descriptor.
+     * @return Number of file blocks in the file.
+     */
+    long getFileBlocks(int fd);
 }

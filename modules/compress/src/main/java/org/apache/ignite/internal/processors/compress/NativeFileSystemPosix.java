@@ -42,6 +42,16 @@ public class NativeFileSystemPosix implements NativeFileSystem {
     }
 
     /** {@inheritDoc} */
+    @Override public long getFileBlocks(int fd) {
+        FileStat stat = posix.fstat(fd);
+
+        long blockSize = stat.blockSize();
+        long blocks512 = stat.blocks();
+
+        return blocks512 * 512 / blockSize;
+    }
+
+    /** {@inheritDoc} */
     @Override public void punchHole(int fd, long off, long len) {
         throw new UnsupportedOperationException();
     }

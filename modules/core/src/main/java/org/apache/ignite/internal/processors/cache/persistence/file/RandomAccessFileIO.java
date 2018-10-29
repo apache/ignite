@@ -71,6 +71,11 @@ public class RandomAccessFileIO extends AbstractFileIO {
     }
 
     /** {@inheritDoc} */
+    @Override public long blocks() {
+        return FileSystemUtils.getFileBlocks(fd);
+    }
+
+    /** {@inheritDoc} */
     @Override public int punchHole(long position, int len) {
         return (int)FileSystemUtils.punchHole(fd, position, len, fsBlockSize);
     }

@@ -576,6 +576,11 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         }
 
         /** {@inheritDoc} */
+        @Override public long blocks() {
+            return delegate.blocks();
+        }
+
+        /** {@inheritDoc} */
         @Override public int punchHole(long position, int len) {
             return delegate.punchHole(position, len);
         }

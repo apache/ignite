@@ -17,13 +17,8 @@
 
 package org.apache.ignite.internal.processors.compress;
 
-import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
-import java.nio.file.OpenOption;
-import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -32,8 +27,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PageCompression;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -48,8 +41,6 @@ import static org.apache.ignite.internal.processors.compress.CompressionProcesso
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.LZ4_MIN_LEVEL;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.ZSTD_MAX_LEVEL;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.ZSTD_MIN_LEVEL;
-import static org.apache.ignite.internal.processors.compress.PageCompressionIntegrationTest.PunchFileIO.assertPunched;
-import static org.apache.ignite.internal.processors.compress.PageCompressionIntegrationTest.PunchFileIO.resetPunchCount;
 
 /**
  *
@@ -80,7 +71,6 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
         compression = null;
         compressionLevel = null;
         cleanPersistenceDir();
-        resetPunchCount();
     }
 
     /** {@inheritDoc} */
@@ -99,7 +89,7 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
             .setPageSize(pageSize)
             .setCheckpointFrequency(750)
             .setDefaultDataRegionConfiguration(drCfg)
-            .setFileIOFactory(new PunchFileIOFactory(getFileIOFactory()));
+            .setFileIOFactory(getFileIOFactory());
 
         return super.getConfiguration(igniteName).setDataStorageConfiguration(dsCfg);
     }
@@ -181,8 +171,7 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     void doTestPageCompression() throws Exception {
-        String igniteName = getTestIgniteInstanceName();
-        IgniteEx ignite = startGrid(igniteName);
+        IgniteEx ignite = startGrid(0);
 
         ignite.cluster().active(true);
 
@@ -203,31 +192,6 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
             assertEquals(new TestVal(i), cache.getAndRemove(i));
 
         U.sleep(1000);
-
-        assertPunched(true);
-
-//        stopGrid(igniteName, false, true);
-//
-//        ignite = startGrid(0);
-//
-//        resetPunchCount();
-//
-//        cache = ignite.getOrCreateCache(ccfg);
-//
-//        for (int i = 0; i < cnt; i++) {
-//            if (i % 2 == 0)
-//                assertNull(cache.get(i));
-//            else
-//                assertEquals(new TestVal(i), cache.get(i));
-//        }
-//
-//        assertPunched(false);
-//
-//        cache.put(-1, new TestVal(-1));
-//
-//        U.sleep(1000);
-//
-//        assertPunched(true);
     }
 
     /**
@@ -278,84 +242,6 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
             result = 31 * result + (int)(x ^ (x >>> 32));
             result = 31 * result + (id != null ? id.hashCode() : 0);
             return result;
-        }
-    }
-
-    /**
-     */
-    static class PunchFileIO extends FileIODecorator {
-        /** */
-        static final AtomicLong punchedBytes = new AtomicLong();
-
-        /**
-         * @param delegate File I/O delegate
-         */
-        public PunchFileIO(FileIO delegate) {
-            super(Objects.requireNonNull(delegate));
-        }
-
-        /**
-         */
-        static void assertPunched(boolean punched) {
-            assertEquals(punched, punchedBytes.getAndSet(0) > 0L);
-        }
-
-        /**
-         */
-        static void resetPunchCount() {
-            punchedBytes.set(0L);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getFileSystemBlockSize() {
-            if (U.isLinux())
-                return delegate.getFileSystemBlockSize();
-
-            return 4 * 1024;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int punchHole(long pos, int len) {
-            if (U.isLinux())
-                len = delegate.punchHole(pos, len);
-            else {
-                int blockSize = getFileSystemBlockSize();
-                len = len / blockSize * blockSize;
-            }
-
-            assertTrue(len >= 0);
-
-            if (len != 0)
-                punchedBytes.addAndGet(len);
-
-            return len;
-        }
-    }
-
-    /**
-     */
-    static class PunchFileIOFactory implements FileIOFactory, Serializable {
-        /** */
-        static final long serialVersionUID = 42L;
-
-        /** */
-        final FileIOFactory delegate;
-
-        /**
-         * @param delegate Delegate.
-         */
-        PunchFileIOFactory(FileIOFactory delegate) {
-            this.delegate = Objects.requireNonNull(delegate);
-        }
-
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            return new PunchFileIO(delegate.create(file));
-        }
-
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-            return new PunchFileIO(delegate.create(file, modes));
         }
     }
 }

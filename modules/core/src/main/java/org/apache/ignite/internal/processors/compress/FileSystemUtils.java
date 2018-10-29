@@ -71,6 +71,14 @@ public final class FileSystemUtils {
 
     /**
      * @param fd Native file descriptor.
+     * @return Number of file blocks in the file or negative value if unsupported.
+     */
+    public static long getFileBlocks(int fd) {
+        return fs == null ? -1 : fs.getFileBlocks(fd);
+    }
+
+    /**
+     * @param fd Native file descriptor.
      * @param off Offset of the hole.
      * @param len Length of the hole.
      * @param fsBlockSize File system block size.

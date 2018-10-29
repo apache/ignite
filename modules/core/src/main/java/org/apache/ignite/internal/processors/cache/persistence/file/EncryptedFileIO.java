@@ -104,6 +104,11 @@ public class EncryptedFileIO implements FileIO {
     }
 
     /** {@inheritDoc} */
+    @Override public long blocks() {
+        return -1;
+    }
+
+    /** {@inheritDoc} */
     @Override public int punchHole(long position, int len) {
         throw new UnsupportedOperationException();
     }

@@ -58,6 +58,11 @@ public class UnzipFileIO extends AbstractFileIO {
         return -1;
     }
 
+
+    @Override public long blocks() {
+        return 0;
+    }
+
     /** {@inheritDoc} */
     @Override public int punchHole(long position, int len) {
         throw new UnsupportedOperationException();

@@ -60,6 +60,11 @@ public class IgniteFileIOTest extends TestCase {
         }
 
         /** {@inheritDoc} */
+        @Override public long blocks() {
+            return -1;
+        }
+
+        /** {@inheritDoc} */
         @Override public int punchHole(long position, int len) {
             throw new UnsupportedOperationException();
         }

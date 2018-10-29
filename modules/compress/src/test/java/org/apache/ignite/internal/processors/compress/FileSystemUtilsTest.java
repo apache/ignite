@@ -18,14 +18,11 @@
 package org.apache.ignite.internal.processors.compress;
 
 import java.io.FileDescriptor;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import jnr.posix.POSIX;
-import jnr.posix.POSIXFactory;
 import junit.framework.TestCase;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -35,43 +32,13 @@ import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorImpl.allocateDirectBuffer;
+import static org.apache.ignite.internal.processors.compress.FileSystemUtils.getFileBlocks;
 import static org.apache.ignite.internal.processors.compress.FileSystemUtils.getFileSystemBlockSize;
 import static org.apache.ignite.internal.processors.compress.FileSystemUtils.punchHole;
 
 /**
  */
 public class FileSystemUtilsTest extends TestCase {
-    /** */
-    private static POSIX posix = POSIXFactory.getPOSIX();
-
-    /**
-     * On XFS it is known to produce wrong results while the file is open.
-     *
-     * @param file File path.
-     * @return Sparse size.
-     */
-    private static long getSparseFileSize(int fd, Path file) {
-        long blocks0 = posix.fstat(fd).blocks();
-
-        if (U.isLinux()) {
-            try {
-                new ProcessBuilder("stat", file.toRealPath().toString())
-                    .inheritIO()
-                    .start()
-                    .waitFor();
-            }
-            catch (IOException | InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        long blocks1 = posix.stat(file.toString()).blocks();
-
-        assertEquals(blocks0, blocks1);
-
-        return blocks1 * 512;
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -100,6 +67,17 @@ public class FileSystemUtilsTest extends TestCase {
 
     private static int getFD(FileChannel ch) throws IgniteCheckedException {
         return U.<Integer>field(U.<FileDescriptor>field(ch, "fd"), "fd");
+    }
+
+    /**
+     * @param fd Native file descriptor.
+     * @return Size.
+     */
+    private long getSparseFileSize(int fd) {
+        int blockSize = getFileSystemBlockSize(fd);
+        long blocks = getFileBlocks(fd);
+
+        return blocks * blockSize;
     }
 
     /**
@@ -149,7 +127,7 @@ public class FileSystemUtilsTest extends TestCase {
             }
 
             assertEquals(fileSize, ch.size());
-            assertEquals(fileSize, getSparseFileSize(fd, file));
+            assertEquals(fileSize, getSparseFileSize(fd));
 
             int off = fsBlockSize * 3 - (fsBlockSize >>> 2);
             int len = fsBlockSize;
@@ -160,7 +138,7 @@ public class FileSystemUtilsTest extends TestCase {
                 ch = FileChannel.open(file, READ, WRITE);
                 fd = getFD(ch);
             }
-            assertEquals(fileSize, getSparseFileSize(fd, file));
+            assertEquals(fileSize, getSparseFileSize(fd));
 
             off = 2 * fsBlockSize - 3;
             len = 2 * fsBlockSize + 3;
@@ -171,7 +149,7 @@ public class FileSystemUtilsTest extends TestCase {
                 ch = FileChannel.open(file, READ, WRITE);
                 fd = getFD(ch);
             }
-            assertEquals(sparseSize -= 2 * fsBlockSize, getSparseFileSize(fd, file));
+            assertEquals(sparseSize -= 2 * fsBlockSize, getSparseFileSize(fd));
 
             off = 10 * fsBlockSize;
             len = 3 * fsBlockSize + 5;
@@ -182,7 +160,7 @@ public class FileSystemUtilsTest extends TestCase {
                 ch = FileChannel.open(file, READ, WRITE);
                 fd = getFD(ch);
             }
-            assertEquals(sparseSize -= 3 * fsBlockSize, getSparseFileSize(fd, file));
+            assertEquals(sparseSize -= 3 * fsBlockSize, getSparseFileSize(fd));
 
             off = 15 * fsBlockSize + 1;
             len = fsBlockSize;
@@ -205,7 +183,7 @@ public class FileSystemUtilsTest extends TestCase {
                 ch = FileChannel.open(file, READ, WRITE);
                 fd = getFD(ch);
             }
-            assertEquals(sparseSize -= fsBlockSize, getSparseFileSize(fd, file));
+            assertEquals(sparseSize -= fsBlockSize, getSparseFileSize(fd));
 
             for (int i = 0; i < blocks - 1; i++)
                 punchHole(fd, fsBlockSize * i, fsBlockSize, fsBlockSize);
@@ -217,7 +195,7 @@ public class FileSystemUtilsTest extends TestCase {
                 fd = getFD(ch);
             }
 
-            assertEquals(fsBlockSize, getSparseFileSize(fd, file));
+            assertEquals(fsBlockSize, getSparseFileSize(fd));
         }
         finally {
             ch.close();
