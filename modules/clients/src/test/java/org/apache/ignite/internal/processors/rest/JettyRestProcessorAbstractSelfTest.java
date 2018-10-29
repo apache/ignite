@@ -1508,9 +1508,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         info("Topology command result: " + ret);
 
+        res = jsonResponse(ret);
+
         assertTrue(res.get("attributes").isNull());
         assertTrue(res.get("metrics").isNull());
-        assertTrue(res.get("metrics").isNull());
+        assertTrue(res.get("caches").isNull());
     }
 
     /**
