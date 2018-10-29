@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.sql;
 
 import java.util.List;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
