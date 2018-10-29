@@ -65,6 +65,8 @@ import org.jetbrains.annotations.Nullable;
 public abstract class LogListener implements Consumer<String> {
     /**
      * Checks that all conditions are met.
+     *
+     * @return {@code true} if all conditions are met.
      */
     public abstract boolean check();
 
