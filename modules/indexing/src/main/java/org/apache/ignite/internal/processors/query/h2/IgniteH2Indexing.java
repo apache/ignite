@@ -1909,8 +1909,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private List<FieldsQueryCursor<List<?>>> tryQueryDistributedSqlFieldsNative(String schemaName, SqlFieldsQuery qry,
         @Nullable SqlClientContext cliCtx) {
         // Heuristic check for fast return.
-        if (!INTERNAL_CMD_RE.matcher(qry.getSql().trim()).find())
+        if (!INTERNAL_CMD_RE.matcher(qry.getSql().trim()).find()) {
+            if (!ctx.state().publicApiActiveState(true)) {
+                throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
+                    "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
+                    "join the cluster. To activate the cluster call Ignite.active(true).");
+            }
+
             return null;
+        }
 
         // Parse.
         SqlCommand cmd;
@@ -1919,6 +1926,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             SqlParser parser = new SqlParser(schemaName, qry.getSql());
 
             cmd = parser.nextCommand();
+
+            if (!(cmd instanceof SqlCommitTransactionCommand || cmd instanceof SqlRollbackTransactionCommand) && !ctx.state().publicApiActiveState(true)) {
+                throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
+                    "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
+                    "join the cluster. To activate the cluster call Ignite.active(true).");
+            }
+            // t0d0 multiple commands?
 
             // No support for multiple commands for now.
             if (parser.nextCommand() != null)
