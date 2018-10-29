@@ -73,14 +73,6 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     private static Collection<CacheEventListener> lsnrs = new ArrayList<>();
 
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
-        if (FORCE_MVCC)
-            fail("https://issues.apache.org/jira/browse/IGNITE-9321");
-
-        super.setUp();
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 

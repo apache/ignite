@@ -25,7 +25,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheAbstractJobExecutionTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Tests cache access from within jobs.
@@ -38,7 +37,7 @@ public class GridCacheNearJobExecutionSelfTest extends GridCacheAbstractJobExecu
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(CacheMode.PARTITIONED);
-        cc.setWriteSynchronizationMode(FULL_SYNC);
+        cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setNearConfiguration(new NearCacheConfiguration());
 

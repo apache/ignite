@@ -29,6 +29,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionSta
 import org.apache.ignite.internal.IgniteReflectionFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.CacheComparatorTest;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationLeakTest;
+import org.apache.ignite.internal.processors.cache.CacheExchangeMessageDuplicatedStateTest;
 import org.apache.ignite.internal.processors.cache.CacheGroupLocalConfigurationSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheOptimisticTransactionsWithFilterSingleServerTest;
 import org.apache.ignite.internal.processors.cache.CacheOptimisticTransactionsWithFilterTest;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAtomicMessageCountSe
 import org.apache.ignite.internal.processors.cache.GridCachePartitionedProjectionAffinitySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteAtomicCacheEntryProcessorNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.IgniteCachePartitionMapUpdateTest;
+import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheAndNodeStop;
 import org.apache.ignite.internal.processors.cache.MemoryPolicyConfigValidationTest;
 import org.apache.ignite.internal.processors.cache.distributed.CachePartitionStateTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheClientNodePartitionsExchangeTest;
@@ -57,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCa
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicBasicStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicGetAndTransformStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicyInitializationTest;
+import org.apache.ignite.internal.processors.continuous.IgniteNoCustomEventsOnNodeStart;
 
 /**
  * Test suite.
@@ -105,6 +108,10 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
         ignoredTests.add(IgniteCachePartitionMapUpdateTest.class);
         ignoredTests.add(IgniteCacheClientNodePartitionsExchangeTest.class);
         ignoredTests.add(IgniteCacheServerNodeConcurrentStart.class);
+
+        ignoredTests.add(IgniteNoCustomEventsOnNodeStart.class);
+        ignoredTests.add(CacheExchangeMessageDuplicatedStateTest.class);
+        ignoredTests.add(IgniteDynamicCacheAndNodeStop.class);
 
         ignoredTests.add(GridCacheReplicatedJobExecutionTest.class);
         ignoredTests.add(GridCacheNearJobExecutionSelfTest.class);

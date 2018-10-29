@@ -57,6 +57,14 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
     private int backupCnt;
 
     /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        if (FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-9321");
+
+        super.setUp();
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 

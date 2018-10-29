@@ -52,6 +52,14 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
     /** */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        if (FORCE_MVCC)
+            fail("https://issues.apache.org/jira/browse/IGNITE-7388");
+
+        super.setUp();
+    }
+
     /** Constructs test. */
     public GridCacheVariableTopologySelfTest() {
         super(/* don't start grid */ false);
