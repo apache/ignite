@@ -66,7 +66,7 @@ public abstract class LogListener implements Consumer<String> {
     /**
      * Checks that all conditions are met.
      *
-     * @return {@code true} if all conditions are met.
+     * @return {@code True} if all conditions are met.
      */
     public abstract boolean check();
 
@@ -122,7 +122,7 @@ public abstract class LogListener implements Consumer<String> {
          * @return current builder instance.
          */
         public Builder andMatches(String substr) {
-            addLast(new Node(substr, msg -> {
+            addLast(new Node(msg -> {
                 if (substr.isEmpty())
                     return msg.isEmpty() ? 1 : 0;
 
@@ -144,7 +144,7 @@ public abstract class LogListener implements Consumer<String> {
          * @return current builder instance.
          */
         public Builder andMatches(Pattern regexp) {
-            addLast(new Node(regexp.toString(), msg -> {
+            addLast(new Node(msg -> {
                 int cnt = 0;
 
                 Matcher matcher = regexp.matcher(msg);
@@ -165,7 +165,7 @@ public abstract class LogListener implements Consumer<String> {
          * @return current builder instance.
          */
         public Builder andMatches(Predicate<String> pred) {
-            addLast(new Node(null, msg -> pred.test(msg) ? 1 : 0));
+            addLast(new Node(msg -> pred.test(msg) ? 1 : 0));
 
             return this;
         }
@@ -250,9 +250,6 @@ public abstract class LogListener implements Consumer<String> {
          */
         static final class Node {
             /** */
-            final String subj;
-
-            /** */
             final Function<String, Integer> func;
 
             /** */
@@ -265,8 +262,7 @@ public abstract class LogListener implements Consumer<String> {
             Integer cnt;
 
             /** */
-            Node(String subj, Function<String, Integer> func) {
-                this.subj = subj;
+            Node(Function<String, Integer> func) {
                 this.func = func;
             }
 
@@ -281,7 +277,7 @@ public abstract class LogListener implements Consumer<String> {
                 else
                     range = ValueRange.of(min == null ? 0 : min, max == null ? Integer.MAX_VALUE : max);
 
-                return new LogMessageListener(func, range, subj);
+                return new LogMessageListener(func, range);
             }
         }
     }
@@ -300,22 +296,16 @@ public abstract class LogListener implements Consumer<String> {
         /** */
         private final ValueRange exp;
 
-        /** */
-        private final String subj;
-
         /**
-         * @param subj Search subject.
          * @param exp Expected occurrences.
          * @param func Function of counting matches in the message.
          */
         private LogMessageListener(
             @NotNull Function<String, Integer> func,
-            @NotNull ValueRange exp,
-            @Nullable String subj
+            @NotNull ValueRange exp
         ) {
             this.func = func;
             this.exp = exp;
-            this.subj = subj == null ? func.toString() : subj;
         }
 
         /** {@inheritDoc} */
