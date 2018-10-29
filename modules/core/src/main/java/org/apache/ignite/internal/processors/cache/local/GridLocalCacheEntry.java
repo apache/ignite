@@ -258,15 +258,6 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
     }
 
     /**
-     * Unlocks lock if it is currently owned.
-     *
-     * @param tx Transaction to unlock.
-     */
-    @Override public void txUnlock(IgniteInternalTx tx) throws GridCacheEntryRemovedException {
-        removeLock(tx.xidVersion());
-    }
-
-    /**
      * Releases local lock.
      */
     void releaseLocal() {
@@ -327,6 +318,8 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
 
         GridCacheMvccCandidate doomed;
 
+        GridCacheVersion deferredDelVer;
+
         lockEntry();
 
         try {
@@ -351,9 +344,20 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
             }
 
             val = this.val;
+
+            deferredDelVer = writeVer;
         }
         finally {
             unlockEntry();
+        }
+
+        if (val == null) {
+            boolean deferred = cctx.deferredDelete() && !detached() && !isInternal();
+
+            if (deferred) {
+                if (deferredDelVer != null)
+                    cctx.onDeferredDelete(this, deferredDelVer);
+            }
         }
 
         if (doomed != null)
