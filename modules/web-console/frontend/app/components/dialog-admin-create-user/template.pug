@@ -14,26 +14,24 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-include /app/helpers/jade/mixins
+.modal-dialog(ng-click='$event.stopPropagation()' )
+    form.modal-content(
+        name='$ctrl.form' novalidate
+        ignite-loading='createUser'
+        ignite-loading-text='Creating user…'
+    )
+        .modal-header
+            h4.modal-title Create User
 
-web-console-header
-    web-console-header-left
-        ignite-header-title
-
-.container--responsive.body-container
-    section
-        h3 Don't Have An Account?
-        form(name='$ctrl.form' novalidate ng-submit='$ctrl.signup()')
+            button.close(type='button' aria-label='Close' ng-click='$ctrl.close()')
+                svg(ignite-icon="cross")
+        .modal-body
             form-signup(
                 outer-form='$ctrl.form'
                 ng-model='$ctrl.data'
                 server-error='$ctrl.serverError'
             )
-            footer.full-width.form-footer
-                button.btn-ignite.btn-ignite--primary(
-                    type='submit'
-                ) Sign Up
-        footer.page-signup__has-account-message
-            | Already have an account? #[a(ui-sref='signin') Sign in here]
-
-web-console-footer
+        .modal-footer
+            div
+                button.btn-ignite.btn-ignite--link-success(ng-click='$ctrl.close()') Cancel
+                button.btn-ignite.btn-ignite--success(ng-click='$ctrl.createUser()') Create user

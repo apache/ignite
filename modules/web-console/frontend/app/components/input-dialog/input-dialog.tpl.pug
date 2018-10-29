@@ -39,6 +39,7 @@ include /app/helpers/jade/mixins
                             ignite-form-field-input-autofocus='true'
                             ignite-on-enter='form.$valid && ctrl.confirm()'
                         )
+
                 .row(ng-switch-when='number')
                     .col-100
                         +form-field__number({
@@ -52,6 +53,19 @@ include /app/helpers/jade/mixins
                             postfix: '{{ ctrl.options.postfix }}',
                             required: true
                         })
+
+                .row(ng-switch-when='email')
+                    .col-100
+                        +form-field__email({
+                            label: '{{ ctrl.options.label }}',
+                            model: 'ctrl.options.value',
+                            name: '"email"',
+                            required: true,
+                            placeholder: 'Input email'
+                        })(
+                            ignite-form-field-input-autofocus='true'
+                            ignite-on-enter='form.$valid && ctrl.confirm()'
+                        )
 
             .modal-footer
                 div
