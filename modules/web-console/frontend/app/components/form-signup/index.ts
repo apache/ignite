@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+import {component} from './component';
+
+export default angular.module('ignite-console.form-signup', [])
+    .component('formSignup', component);
+
 export interface ISignupData {
     email: string,
     password: string,

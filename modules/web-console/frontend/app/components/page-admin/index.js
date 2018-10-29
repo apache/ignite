@@ -17,23 +17,12 @@
 
 import './style.scss';
 
+import controller from './controller';
 import templateUrl from './template.tpl.pug';
-
-class PageAdminCtrl {
-    static $inject = ['UserNotifications'];
-
-    constructor(UserNotifications) {
-        this.UserNotifications = UserNotifications;
-    }
-
-    changeUserNotifications() {
-        this.UserNotifications.editor();
-    }
-}
 
 export default angular
     .module('ignite-console.page-admin', [])
     .component('pageAdmin', {
-        templateUrl,
-        controller: PageAdminCtrl
+        controller,
+        templateUrl
     });

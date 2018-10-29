@@ -25,34 +25,11 @@ const MODEL_HEADER_TEMPLATE = `<div class='ui-grid-cell-contents' bs-tooltip dat
 const CACHE_HEADER_TEMPLATE = `<div class='ui-grid-cell-contents' bs-tooltip data-title='{{ col.headerTooltip(col) }}' data-placement='top'><i class='fa fa-database'></i>${ICON_SORT}</div>`;
 const IGFS_HEADER_TEMPLATE = `<div class='ui-grid-cell-contents' bs-tooltip data-title='{{ col.headerTooltip(col) }}' data-placement='top'><i class='fa fa-folder-o'></i>${ICON_SORT}</div>`;
 
-const ACTIONS_TEMPLATE = `
-<div class='text-center ui-grid-cell-actions'>
-    <a class='btn btn-default dropdown-toggle' bs-dropdown='' data-placement='bottom-right' data-container='.panel'>
-        <i class='fa fa-gear'></i>&nbsp;
-        <span class='caret'></span>
-    </a>
-    <ul class='dropdown-menu' role='menu'>
-        <li ng-show='row.entity._id != $root.user._id'>
-            <a ng-click='grid.api.becomeUser(row.entity)'>Become this user</a>
-        </li>
-        <li ng-show='row.entity._id != $root.user._id'>
-            <a ng-click='grid.api.toggleAdmin(row.entity)' ng-if='row.entity.admin && row.entity._id !== $root.user._id'>Revoke admin</a>
-            <a ng-click='grid.api.toggleAdmin(row.entity)' ng-if='!row.entity.admin && row.entity._id !== $root.user._id'>Grant admin</a>
-        </li>
-        <li ng-show='row.entity._id != $root.user._id'>
-            <a ng-click='grid.api.removeUser(row.entity)'>Remove user</a>
-        </li>
-        <li>
-            <a ng-click='grid.api.showActivities(row.entity)'>Activity detail</a>
-        </li>
-</div>`;
-
 const EMAIL_TEMPLATE = '<div class="ui-grid-cell-contents"><a bs-tooltip data-title="{{ COL_FIELD }}" ng-href="mailto:{{ COL_FIELD }}">{{ COL_FIELD }}</a></div>';
 const DATE_WITH_TITLE = '<div class="ui-grid-cell-contents"><label bs-tooltip data-title="{{ COL_FIELD | date:\'M/d/yy HH:mm\' }}">{{ COL_FIELD | date:"M/d/yy HH:mm" }}</label></div>';
 const VALUE_WITH_TITLE = '<div class="ui-grid-cell-contents"><label bs-tooltip data-title="{{ COL_FIELD }}">{{ COL_FIELD }}</label></div>';
 
 export default [
-    {name: 'actions', enableHiding: false, displayName: 'Actions', categoryDisplayName: 'Actions', cellTemplate: ACTIONS_TEMPLATE, field: 'actions', minWidth: 70, width: 70, enableFiltering: false, enableSorting: false, visible: false},
     {name: 'user', enableHiding: false, displayName: 'User', categoryDisplayName: 'User', field: 'userName', cellTemplate: USER_TEMPLATE, minWidth: 160, enableFiltering: true, pinnedLeft: true, filter: { placeholder: 'Filter by name...' }},
     {name: 'email', displayName: 'Email', categoryDisplayName: 'Email', field: 'email', cellTemplate: EMAIL_TEMPLATE, minWidth: 160, width: 220, enableFiltering: true, filter: { placeholder: 'Filter by email...' }},
     {name: 'company', displayName: 'Company', categoryDisplayName: 'Company', field: 'company', cellTemplate: VALUE_WITH_TITLE, minWidth: 180, enableFiltering: true, filter: { placeholder: 'Filter by company...' }},
