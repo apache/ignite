@@ -151,22 +151,23 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * @throws IgniteCheckedException if failed
      */
     private void strictCheck(List<FileDescriptor> walFiles, FileWALPointer lowBound, FileWALPointer highBound) throws IgniteCheckedException {
-        int idx;
-        long curWalSegmIdx = 0;
+        int idx = 0;
 
-        for (idx = 0; idx < walFiles.size(); idx++) {
-            FileDescriptor desc = walFiles.get(idx);
+        if (lowBound.index() > Long.MIN_VALUE) {
+            for (; idx < walFiles.size(); idx++) {
+                FileDescriptor desc = walFiles.get(idx);
 
-            assert desc != null;
+                assert desc != null;
 
-            curWalSegmIdx = desc.idx();
-
-            if (curWalSegmIdx == lowBound.index())
-                break;
+                if (desc.idx() == lowBound.index())
+                    break;
+            }
         }
 
         if (idx == walFiles.size())
             throw new IgniteCheckedException("Wal segments not in bounds.");
+
+        long curWalSegmIdx = walFiles.get(idx).idx();
 
         for (; idx < walFiles.size() && curWalSegmIdx <= highBound.index(); idx++, curWalSegmIdx++) {
             FileDescriptor desc = walFiles.get(idx);
@@ -177,7 +178,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
                 throw new IgniteCheckedException("Wal segment " + curWalSegmIdx + " not found.");
         }
 
-        if (curWalSegmIdx <= highBound.index())
+        if (highBound.index() < Long.MAX_VALUE && curWalSegmIdx <= highBound.index())
             throw new IgniteCheckedException("Wal segments not in bounds.");
     }
 
