@@ -32,7 +32,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PageCompression;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -57,16 +56,13 @@ import static org.apache.ignite.internal.processors.compress.PageCompressionInte
  */
 public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
     /** */
-    PageCompression compression;
+    protected PageCompression compression;
 
     /** */
-    Integer compressionLevel;
+    protected Integer compressionLevel;
 
     /** */
-    FileIOFactory fileIOFactory;
-
-    /** */
-    int pageSize = 16 * 1024;
+    protected int pageSize = 16 * 1024;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -83,7 +79,6 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         compression = null;
         compressionLevel = null;
-        fileIOFactory = null;
         cleanPersistenceDir();
         resetPunchCount();
     }
@@ -104,16 +99,22 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
             .setPageSize(pageSize)
             .setCheckpointFrequency(750)
             .setDefaultDataRegionConfiguration(drCfg)
-            .setFileIOFactory(new PunchFileIOFactory(fileIOFactory));
+            .setFileIOFactory(new PunchFileIOFactory(getFileIOFactory()));
 
         return super.getConfiguration(igniteName).setDataStorageConfiguration(dsCfg);
     }
 
     /**
+     * @return File IO factory.
+     */
+    protected FileIOFactory getFileIOFactory() {
+        return new RandomAccessFileIOFactory();
+    }
+
+    /**
      * @throws Exception If failed.
      */
-    public void testPageCompression_RandomAccessFileIO_Zstd_Max() throws Exception {
-        fileIOFactory = new RandomAccessFileIOFactory();
+    public void testPageCompression_Zstd_Max() throws Exception {
         compression = ZSTD;
         compressionLevel = ZSTD_MAX_LEVEL;
 
@@ -123,8 +124,7 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPageCompression_RandomAccessFileIO_Zstd_Default() throws Exception {
-        fileIOFactory = new RandomAccessFileIOFactory();
+    public void testPageCompression_Zstd_Default() throws Exception {
         compression = ZSTD;
         compressionLevel = null;
 
@@ -134,8 +134,7 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPageCompression_RandomAccessFileIO_Zstd_Min() throws Exception {
-        fileIOFactory = new RandomAccessFileIOFactory();
+    public void testPageCompression_Zstd_Min() throws Exception {
         compression = ZSTD;
         compressionLevel = ZSTD_MIN_LEVEL;
 
@@ -145,8 +144,7 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPageCompression_RandomAccessFileIO_Lz4_Max() throws Exception {
-        fileIOFactory = new RandomAccessFileIOFactory();
+    public void testPageCompression_Lz4_Max() throws Exception {
         compression = LZ4;
         compressionLevel = LZ4_MAX_LEVEL;
 
@@ -156,8 +154,7 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPageCompression_RandomAccessFileIO_Lz4_Default() throws Exception {
-        fileIOFactory = new RandomAccessFileIOFactory();
+    public void testPageCompression_Lz4_Default() throws Exception {
         compression = LZ4;
         compressionLevel = null;
 
@@ -167,87 +164,14 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPageCompression_RandomAccessFileIO_Lz4_Min() throws Exception {
+    public void testPageCompression_Lz4_Min() throws Exception {
         assertEquals(LZ4_MIN_LEVEL, LZ4_DEFAULT_LEVEL);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testPageCompression_RandomAccessFileIO_SkipGarbage() throws Exception {
-        fileIOFactory = new RandomAccessFileIOFactory();
-        compression = SKIP_GARBAGE;
-
-        doTestPageCompression();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPageCompression_AsyncFileIO_Zstd_Max() throws Exception {
-        fileIOFactory = new AsyncFileIOFactory();
-        compression = ZSTD;
-        compressionLevel = ZSTD_MAX_LEVEL;
-
-        doTestPageCompression();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPageCompression_AsyncFileIO_Zstd_Default() throws Exception {
-        fileIOFactory = new AsyncFileIOFactory();
-        compression = ZSTD;
-        compressionLevel = null;
-
-        doTestPageCompression();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPageCompression_AsyncFileIO_Zstd_Min() throws Exception {
-        fileIOFactory = new AsyncFileIOFactory();
-        compression = ZSTD;
-        compressionLevel = ZSTD_MIN_LEVEL;
-
-        doTestPageCompression();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPageCompression_AsyncFileIO_Lz4_Max() throws Exception {
-        fileIOFactory = new AsyncFileIOFactory();
-        compression = LZ4;
-        compressionLevel = LZ4_MAX_LEVEL;
-
-        doTestPageCompression();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPageCompression_AsyncFileIO_Lz4_Default() throws Exception {
-        fileIOFactory = new AsyncFileIOFactory();
-        compression = LZ4;
-        compressionLevel = null;
-
-        doTestPageCompression();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPageCompression_AsyncFileIO_Lz4_Min() throws Exception {
-        assertEquals(LZ4_MIN_LEVEL, LZ4_DEFAULT_LEVEL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPageCompression_AsyncFileIO_SkipGarbage() throws Exception {
-        fileIOFactory = new AsyncFileIOFactory();
+    public void testPageCompression_SkipGarbage() throws Exception {
         compression = SKIP_GARBAGE;
 
         doTestPageCompression();
