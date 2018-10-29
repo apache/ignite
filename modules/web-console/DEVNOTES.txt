@@ -148,3 +148,11 @@ Web Console backend could be configured with custom parameters.
 See "backend/config/settings.json.sample" for list of parameters with example value.
 
 If you need custom parameters, you will need create "backend/config/settings.json" and adjust values.
+
+Web Console settings for Docker
+===============================
+Web Console backend could be configured with custom parameters.
+
+You may pass custom parameters with help of "-e" option.
+
+For example: docker run -e "server_disable_signup=true" -p 9090:80 $IMAGE_ID
