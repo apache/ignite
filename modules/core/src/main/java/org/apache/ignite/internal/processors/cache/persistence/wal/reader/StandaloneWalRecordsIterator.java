@@ -116,7 +116,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         FileWALPointer lowBound,
         FileWALPointer highBound,
         boolean keepBinary,
-        int initialReadBufferSize
+        int initialReadBufferSize,
+        boolean strictBoundsCheck
     ) throws IgniteCheckedException {
         super(
             log,
@@ -126,6 +127,9 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             initialReadBufferSize,
             FILE_INPUT_FACTORY
         );
+
+        if (strictBoundsCheck)
+            strictCheck(walFiles, lowBound, highBound);
 
         this.lowBound = lowBound;
         this.highBound = highBound;
@@ -137,6 +141,44 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         init(walFiles);
 
         advance();
+    }
+
+    /**
+     * @param walFiles Wal files.
+     * @param lowBound Low bound.
+     * @param highBound High bound.
+     *
+     * @throws IgniteCheckedException if failed
+     */
+    private void strictCheck(List<FileDescriptor> walFiles, FileWALPointer lowBound, FileWALPointer highBound) throws IgniteCheckedException {
+        int idx;
+        long curWalSegmIdx = 0;
+
+        for (idx = 0; idx < walFiles.size(); idx++) {
+            FileDescriptor desc = walFiles.get(idx);
+
+            assert desc != null;
+
+            curWalSegmIdx = desc.idx();
+
+            if (curWalSegmIdx == lowBound.index())
+                break;
+        }
+
+        if (idx == walFiles.size())
+            throw new IgniteCheckedException("Wal segments not in bounds.");
+
+        for (; idx < walFiles.size() && curWalSegmIdx <= highBound.index(); idx++, curWalSegmIdx++) {
+            FileDescriptor desc = walFiles.get(idx);
+
+            assert desc != null;
+
+            if (curWalSegmIdx != desc.idx())
+                throw new IgniteCheckedException("Wal segment " + curWalSegmIdx + " not found.");
+        }
+
+        if (curWalSegmIdx <= highBound.index())
+            throw new IgniteCheckedException("Wal segments not in bounds.");
     }
 
     /**

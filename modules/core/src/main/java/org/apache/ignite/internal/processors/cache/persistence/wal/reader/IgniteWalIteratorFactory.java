@@ -181,7 +181,8 @@ public class IgniteWalIteratorFactory {
             iteratorParametersBuilder.lowBound,
             iteratorParametersBuilder.highBound,
             iteratorParametersBuilder.keepBinary,
-            iteratorParametersBuilder.bufferSize
+            iteratorParametersBuilder.bufferSize,
+            iteratorParametersBuilder.strictBoundsCheck
         );
     }
 
@@ -418,6 +419,9 @@ public class IgniteWalIteratorFactory {
         /** */
         private FileWALPointer highBound = DFLT_HIGH_BOUND;
 
+        /** */
+        private boolean strictBoundsCheck;
+
         /**
          * @param filesOrDirs Paths to files or directories.
          * @return IteratorParametersBuilder Self reference.
@@ -530,6 +534,16 @@ public class IgniteWalIteratorFactory {
          */
         public IteratorParametersBuilder to(FileWALPointer highBound) {
             this.highBound = highBound;
+
+            return this;
+        }
+
+        /**
+         * @param flag Use strict check.
+         * @return IteratorParametersBuilder Self reference.
+         */
+        public IteratorParametersBuilder strictBoundsCheck(boolean flag) {
+            this.strictBoundsCheck = flag;
 
             return this;
         }
