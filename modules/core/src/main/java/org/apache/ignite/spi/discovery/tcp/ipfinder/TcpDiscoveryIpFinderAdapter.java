@@ -57,8 +57,7 @@ public abstract class TcpDiscoveryIpFinderAdapter implements TcpDiscoveryIpFinde
 
     /** {@inheritDoc} */
     @Override public void initializeLocalAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
-        if (!discoveryClientMode())
-            registerAddresses(addrs);
+        registerAddresses(addrs);
     }
 
     /** {@inheritDoc} */
