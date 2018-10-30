@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.PageCompression;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
@@ -44,12 +44,12 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        DataRegionConfiguration cfg = cctx.dataRegion().config();
+        CacheConfiguration cfg = cctx.config();
 
         pageCompression = cfg.getPageCompression();
 
         if (pageCompression != null) {
-            if (!cfg.isPersistenceEnabled())
+            if (!cctx.dataRegion().config().isPersistenceEnabled())
                 throw new IgniteCheckedException("Page compression makes sense only with enabled persistence.");
 
             Integer lvl = cfg.getPageCompressionLevel();

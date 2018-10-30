@@ -133,12 +133,6 @@ public final class DataRegionConfiguration implements Serializable {
     /** Temporary buffer size for checkpoints in bytes. */
     private long checkpointPageBufSize;
 
-    /** */
-    private PageCompression pageCompression;
-
-    /** */
-    private Integer pageCompressionLevel;
-
     /**
      * Gets data region name.
      *
@@ -435,52 +429,6 @@ public final class DataRegionConfiguration implements Serializable {
      */
     public DataRegionConfiguration setCheckpointPageBufferSize(long checkpointPageBufSize) {
         this.checkpointPageBufSize = checkpointPageBufSize;
-
-        return this;
-    }
-
-    /**
-     * Gets page compression algorithm. Makes sense only with enabled persistence.
-     *
-     * @return Page compression algorithm.
-     * @see #getPageCompressionLevel
-     */
-    public PageCompression getPageCompression() {
-        return pageCompression;
-    }
-
-    /**
-     * Sets page compression algorithm. Makes sense only with enabled persistence.
-     *
-     * @param pageCompression Page compression algorithm.
-     * @return {@code this} for chaining.
-     * @see #setPageCompressionLevel
-     */
-    public DataRegionConfiguration setPageCompression(PageCompression pageCompression) {
-        this.pageCompression = pageCompression;
-
-        return this;
-    }
-
-    /**
-     * Gets {@link #getPageCompression algorithm} specific page compression level.
-     *
-     * @return Page compression level or {@code null} for default.
-     */
-    public Integer getPageCompressionLevel() {
-        return pageCompressionLevel;
-    }
-
-    /**
-     * Sets {@link #setPageCompression algorithm} specific page compression level.
-     *
-     * @param pageCompressionLevel Page compression level or {@code null} to use default.
-     *                             {@link PageCompression#ZSTD Zstd}: from {@code -131072} to {@code 22} (default {@code 3}).
-     *                             {@link PageCompression#LZ4 LZ4}: from {@code 0} to {@code 17} (default {@code 0}).
-     * @return {@code this} for chaining.
-     */
-    public DataRegionConfiguration setPageCompressionLevel(Integer pageCompressionLevel) {
-        this.pageCompressionLevel = pageCompressionLevel;
 
         return this;
     }

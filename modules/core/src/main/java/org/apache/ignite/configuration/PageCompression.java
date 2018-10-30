@@ -20,8 +20,8 @@ package org.apache.ignite.configuration;
 /**
  * Page compression options.
  *
- * @see DataRegionConfiguration#setPageCompression
- * @see DataRegionConfiguration#setPageCompressionLevel
+ * @see CacheConfiguration#setPageCompression
+ * @see CacheConfiguration#setPageCompressionLevel
  */
 public enum PageCompression {
     /** Retain only useful data from half-filled pages, but do not apply any compression. */

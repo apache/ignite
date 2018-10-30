@@ -97,9 +97,7 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteName) throws Exception {
         DataRegionConfiguration drCfg = new DataRegionConfiguration()
-            .setPersistenceEnabled(true)
-            .setPageCompression(compression)
-            .setPageCompressionLevel(compressionLevel);
+            .setPersistenceEnabled(true);
 
         factory = getFileIOFactory();
 
@@ -199,7 +197,9 @@ public class PageCompressionIntegrationTest extends GridCommonAbstractTest {
             .setName(cacheName)
             .setBackups(0)
             .setAtomicityMode(ATOMIC)
-            .setIndexedTypes(Integer.class, TestVal.class);
+            .setIndexedTypes(Integer.class, TestVal.class)
+            .setPageCompression(compression)
+            .setPageCompressionLevel(compressionLevel);
 
         IgniteCache<Integer,TestVal> cache = ignite.getOrCreateCache(ccfg);
 
