@@ -2537,29 +2537,29 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
 
-            for (int i = 0; i < grp.affinity().partitions(); i++) {
-                T2<Integer, Long> restore = partStates.get(new T2<>(grpId, i));
+            checkpointReadLock();
 
-                if (storeMgr.exists(grpId, i)) {
-                    storeMgr.ensure(grpId, i);
+            try {
+                for (int i = 0; i < grp.affinity().partitions(); i++) {
+                    T2<Integer, Long> restore = partStates.get(new T2<>(grpId, i));
 
-                    if (storeMgr.pages(grpId, i) <= 1)
-                        continue;
+                    if (storeMgr.exists(grpId, i)) {
+                        storeMgr.ensure(grpId, i);
 
-                    if (log.isDebugEnabled())
-                        log.debug("Creating partition on recovery (exists in page store) " +
-                            "[grp=" + grp.cacheOrGroupName() + ", p=" + i + "]");
+                        if (storeMgr.pages(grpId, i) <= 1)
+                            continue;
 
-                    GridDhtLocalPartition part = grp.topology().forceCreatePartition(i);
+                        if (log.isDebugEnabled())
+                            log.debug("Creating partition on recovery (exists in page store) " +
+                                "[grp=" + grp.cacheOrGroupName() + ", p=" + i + "]");
 
-                    assert part != null;
+                        GridDhtLocalPartition part = grp.topology().forceCreatePartition(i);
 
-                    // TODO: https://issues.apache.org/jira/browse/IGNITE-6097
-                    grp.offheap().onPartitionInitialCounterUpdated(i, 0);
+                        assert part != null;
 
-                    checkpointReadLock();
+                        // TODO: https://issues.apache.org/jira/browse/IGNITE-6097
+                        grp.offheap().onPartitionInitialCounterUpdated(i, 0);
 
-                    try {
                         long partMetaId = pageMem.partitionMetaPageId(grpId, i);
                         long partMetaPage = pageMem.acquirePage(grpId, partMetaId);
 
@@ -2592,7 +2592,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                             "updCntr=" + part.initialUpdateCounter() + "]");
                                 }
                                 else {
-                                    changed = updateState(part, (int) io.getPartitionState(pageAddr));
+                                    changed = updateState(part, (int)io.getPartitionState(pageAddr));
 
                                     if (log.isDebugEnabled())
                                         log.debug("Restored partition state (from page memory) " +
@@ -2608,31 +2608,38 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             pageMem.releasePage(grpId, partMetaId, partMetaPage);
                         }
                     }
-                    finally {
-                        checkpointReadUnlock();
+                    else if (restore != null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Creating partition on recovery (exists in WAL) " +
+                                "[grp=" + grp.cacheOrGroupName() + ", p=" + i + "]");
+
+                        GridDhtLocalPartition part = grp.topology().forceCreatePartition(i);
+
+                        assert part != null;
+
+                        // TODO: https://issues.apache.org/jira/browse/IGNITE-6097
+                        grp.offheap().onPartitionInitialCounterUpdated(i, 0);
+
+                        updateState(part, restore.get1());
+
+                        if (log.isDebugEnabled())
+                            log.debug("Restored partition state (from WAL) " +
+                                "[grp=" + grp.cacheOrGroupName() + ", p=" + i + ", state=" + part.state() +
+                                "updCntr=" + part.initialUpdateCounter() + "]");
                     }
-                }
-                else if (restore != null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Creating partition on recovery (exists in WAL) " +
-                            "[grp=" + grp.cacheOrGroupName() + ", p=" + i + "]");
 
-                    GridDhtLocalPartition part = grp.topology().forceCreatePartition(i);
-
-                    assert part != null;
-
-                    // TODO: https://issues.apache.org/jira/browse/IGNITE-6097
-                    grp.offheap().onPartitionInitialCounterUpdated(i, 0);
-
-                    updateState(part, restore.get1());
-
-                    if (log.isDebugEnabled())
-                        log.debug("Restored partition state (from WAL) " +
-                            "[grp=" + grp.cacheOrGroupName() + ", p=" + i + ", state=" + part.state() +
-                            "updCntr=" + part.initialUpdateCounter() + "]");
+                    cntParts++;
                 }
 
-                cntParts++;
+                if (grp.offheap() instanceof GridCacheOffheapManager) {
+                    GridCacheOffheapManager offheap = (GridCacheOffheapManager)grp.offheap();
+
+                    if (offheap.needToRegister())
+                        addCheckpointListener(offheap);
+                }
+            }
+            finally {
+                checkpointReadUnlock();
             }
 
             // After partition states are restored, it is necessary to update internal data structures in topology.
