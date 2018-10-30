@@ -42,7 +42,7 @@ public class CacheBlockOnGetAllTest extends CacheBlockOnReadAbstractTest {
             @Override public void doRead() {
                 Set<Integer> keys = new HashSet<>();
 
-                for (int i = 0; i < 500; i++)
+                for (int i = 0; i < 200; i++)
                     keys.add(random.nextInt(entriesCount()));
 
                 cache().getAll(keys);
