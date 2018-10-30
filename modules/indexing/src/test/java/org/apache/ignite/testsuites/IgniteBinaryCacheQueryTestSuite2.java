@@ -63,7 +63,7 @@ import org.apache.ignite.testframework.IgniteTestSuite;
 /**
  * Test suite for cache queries.
  */
-public class IgniteCacheQuerySelfTestSuite2 extends TestSuite {
+public class IgniteBinaryCacheQueryTestSuite2 extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception If failed.
