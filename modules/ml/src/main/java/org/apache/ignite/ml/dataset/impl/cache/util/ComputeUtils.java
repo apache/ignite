@@ -27,17 +27,16 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.ml.dataset.*;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.dataset.PartitionContextBuilder;
+import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.dataset.UpstreamTransformerChain;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.util.Utils;
 
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.locks.LockSupport;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -226,7 +225,8 @@ public class ComputeUtils {
         String datasetCacheName,
         PartitionContextBuilder<K, V, C> ctxBuilder,
         int retries,
-        int interval) {
+        int interval,
+        Long seed) {
         affinityCallWithRetries(ignite, Arrays.asList(datasetCacheName, upstreamCacheName), part -> {
             Ignite locIgnite = Ignition.localIgnite();
 
@@ -238,7 +238,7 @@ public class ComputeUtils {
             qry.setFilter(filter);
 
             C ctx;
-            long upstreamTransformationsSeed = new Random().nextLong();
+            long upstreamTransformationsSeed = seed == null ? new Random().nextLong() : seed + part * 951091;
             long cnt = computeCount(locUpstreamCache, qry, transformersChain, upstreamTransformationsSeed);
 
             try (QueryCursor<UpstreamEntry<K, V>> cursor = locUpstreamCache.query(qry,
@@ -286,8 +286,9 @@ public class ComputeUtils {
         UpstreamTransformerChain<K, V> transformersChain,
         String datasetCacheName,
         PartitionContextBuilder<K, V, C> ctxBuilder,
-        int retries) {
-        initContext(ignite, upstreamCacheName, filter, transformersChain, datasetCacheName, ctxBuilder, retries, 0);
+        int retries,
+        Long seed) {
+        initContext(ignite, upstreamCacheName, filter, transformersChain, datasetCacheName, ctxBuilder, retries, 0, seed);
     }
 
     /**

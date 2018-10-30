@@ -45,6 +45,8 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
 
     private UpstreamTransformerChain<K, V> upstreamTransformers;
 
+    private Long upstreamTransformationSeed;
+
     /**
      * Constructs a new instance of local dataset builder that makes {@link LocalDataset} with default predicate that
      * passes all upstream entries to dataset.
@@ -86,38 +88,52 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
             .filter(en -> filter.apply(en.getKey(), en.getValue()))
             .map(en -> new UpstreamEntry<>(en.getKey(), en.getValue()));
 
-        upstreamTransformers.transform(new Random().nextLong(), filteredStream).forEach(entriesList::add);;
 
         int partSize = Math.max(1, entriesList.size() / partitions);
 
         Iterator<UpstreamEntry<K, V>> firstKeysIter = entriesList.iterator();
         Iterator<UpstreamEntry<K, V>> secondKeysIter = entriesList.iterator();
+        Iterator<UpstreamEntry<K, V>> thirdKeysIter = entriesList.iterator();
 
         int ptr = 0;
 
         for (int part = 0; part < partitions; part++) {
-            int cnt = part == partitions - 1 ? entriesList.size() - ptr : Math.min(partSize, entriesList.size() - ptr);
+            //upstreamTransformers.transform(upstreamTransformationSeed == null ? new Random().nextLong() : upstreamTransformationSeed + , filteredStream).forEach(entriesList::add);;
+            int initialCnt = part == partitions - 1 ? entriesList.size() - ptr : Math.min(partSize, entriesList.size() - ptr);
+            int transformedCnt = initialCnt;
+
+            if (!upstreamTransformers.isEmpty()) {
+                long seed = upstreamTransformationSeed == null ?
+                    new Random().nextLong() :
+                    upstreamTransformationSeed + 951091 * part;
+
+                transformedCnt = (int) upstreamTransformers.transform(
+                    seed,
+                    Utils.asStream(new IteratorWindow<>(thirdKeysIter, k -> k, initialCnt))).count();
+                firstKeysIter = upstreamTransformers.transform(
+                    seed,
+                    Utils.asStream(new IteratorWindow<>(firstKeysIter, k -> k, transformedCnt))).iterator();
+                secondKeysIter = upstreamTransformers.transform(
+                    seed,
+                    Utils.asStream(new IteratorWindow<>(secondKeysIter, k -> k, transformedCnt))).iterator();
+
+            }
 
             IteratorWindow<UpstreamEntry<K, V>, UpstreamEntry<K, V>> iter = new IteratorWindow<>(
-                    firstKeysIter, k -> k, cnt);
-            C ctx = cnt > 0 ? partCtxBuilder.build(
-                    Utils.asStream(iter),
-                cnt
-            ) : null;
+                    firstKeysIter, k -> k, initialCnt);
+            C ctx = initialCnt > 0 ? partCtxBuilder.build(iter, transformedCnt) : null;
 
-            Iterator<UpstreamEntry<K, V>> iter1 = new IteratorWindow<>(
-                    secondKeysIter, k -> k, cnt);
-            Stream<UpstreamEntry<K, V>> tStream = Utils.asStream(iter1);
-            D data = cnt > 0 ? partDataBuilder.build(
-                    tStream,
-                cnt,
+            Iterator<UpstreamEntry<K, V>> iter1 = new IteratorWindow<>(secondKeysIter, k -> k, initialCnt);
+            D data = initialCnt > 0 ? partDataBuilder.build(
+                    iter1,
+                transformedCnt,
                 ctx
             ) : null;
 
             ctxList.add(ctx);
             dataList.add(data);
 
-            ptr += cnt;
+            ptr += initialCnt;
         }
 
         return new LocalDataset<>(ctxList, dataList);
@@ -126,6 +142,12 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     @Override public <T> DatasetBuilder<K, V> addStreamTransformer(UpstreamTransformer<K, V, T> upstreamTransformer) {
         upstreamTransformers.addUpstreamTransformer(upstreamTransformer);
 
+        return this;
+    }
+
+    @Override
+    public DatasetBuilder<K, V> withTransformationSeed(Long seed) {
+        upstreamTransformationSeed = seed;
         return this;
     }
 

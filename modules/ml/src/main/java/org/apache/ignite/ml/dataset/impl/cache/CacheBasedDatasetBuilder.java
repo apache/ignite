@@ -17,16 +17,6 @@
 
 package org.apache.ignite.ml.dataset.impl.cache;
 
-import java.io.Serializable;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.UUID;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -35,10 +25,9 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.dataset.*;
 import org.apache.ignite.ml.dataset.impl.cache.util.ComputeUtils;
 import org.apache.ignite.ml.dataset.impl.cache.util.DatasetAffinityFunctionWrapper;
-import org.apache.ignite.ml.math.functions.Functions;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.functions.IgniteSupplier;
+
+import java.io.Serializable;
+import java.util.UUID;
 
 /**
  * A dataset builder that makes {@link CacheBasedDataset}. Encapsulate logic of building cache based dataset such as
@@ -82,6 +71,11 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
      * Chain of upstream transformers.
      */
     private UpstreamTransformerChain<K, V> transformersChain;
+
+    /**
+     * Seed used by RNG in upstream transformations.
+     */
+    private Long transformationSeed;
 
     /**
      * Constructs a new instance of cache based dataset builder that makes {@link CacheBasedDataset} with default
@@ -137,7 +131,8 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
             datasetCache.getName(),
             partCtxBuilder,
             RETRIES,
-            RETRY_INTERVAL
+            RETRY_INTERVAL,
+            transformationSeed
         );
 
         return new CacheBasedDataset<>(ignite, upstreamCache, filter, transformersChain, datasetCache, partDataBuilder, datasetId);
@@ -147,6 +142,13 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     @Override
     public <T> DatasetBuilder<K, V> addStreamTransformer(UpstreamTransformer<K, V, T> transformer) {
         transformersChain.addUpstreamTransformer(transformer);
+
+        return this;
+    }
+
+    @Override
+    public DatasetBuilder<K, V> withTransformationSeed(Long seed) {
+        transformationSeed = seed;
 
         return this;
     }

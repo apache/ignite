@@ -20,7 +20,6 @@ package org.apache.ignite.ml.trainers;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
-import org.apache.ignite.ml.composition.BaggingModelTrainer;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
@@ -35,8 +34,6 @@ import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpda
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
-import org.apache.ignite.ml.selection.cv.CrossValidation;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
@@ -45,41 +42,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class BaggingTest extends TrainerTest {
-
-    /**
-     * Test that count of entries during training is equal to initial dataset size * subsampleRatio.
-     */
-    @Test
-    public void testBaggingTrainerDataCount() {
-        Map<Integer, Double[]> cacheMock = getCacheMock();
-
-        double subsampleSize = 0.3;
-
-        BaggingModelTrainer<Model<Vector, Double>, Integer, Void> trainer =
-            new CounterTrainer(
-                new MeanValuePredictionsAggregator(),
-                10,
-                5,
-                100,
-                0.3);
-
-        ModelsComposition mdl = trainer.fit(
-            cacheMock,
-            parts,
-            (k, v) -> VectorUtils.of(v[0]),
-            (k, v) -> v[1]);
-
-        TestUtils.assertEquals(
-            twoLinearlySeparableClasses.length * subsampleSize,
-            mdl.apply(null),
-            twoLinearlySeparableClasses.length / 10);
-    }
-
     /**
      * Test that count of entries in context is equal to initial dataset size * subsampleRatio.
      */
     @Test
-    public void testNaiveBaggingContextCount() {
+    public void testBaggingContextCount() {
         count((ctxCount, countData, integer) -> ctxCount);
     }
 
@@ -87,7 +54,7 @@ public class BaggingTest extends TrainerTest {
      * Test that count of entries in data is equal to initial dataset size * subsampleRatio.
      */
     @Test
-    public void testNaiveBaggingDataCount() {
+    public void testBaggingDataCount() {
         count((ctxCount, countData, integer) -> countData.cnt);
     }
 
@@ -120,18 +87,6 @@ public class BaggingTest extends TrainerTest {
 
         TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(100, 10)), PRECISION);
         TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(10, 100)), PRECISION);
-
-//        double[] score = new CrossValidation<ModelsComposition, Double, Integer, Double[]>().score(
-//            baggedTrainer,
-//            new Accuracy<>(),
-//            getCacheMock(),
-//            parts,
-//            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-//            (k, v) -> v[0],
-//            3
-//        );
-//
-//        Arrays.stream(score).forEach(System.out::println);
     }
 
     protected void count(IgniteTriFunction<Long, CountData, Integer, Long> counter) {

@@ -25,13 +25,28 @@ import org.apache.ignite.ml.dataset.UpstreamTransformer;
 import java.util.Random;
 import java.util.stream.Stream;
 
+/**
+ * This class encapsulates the logic needed to do bagging (bootstrap aggregating) by features.
+ * The action of this class on a given upstream is to replicate each entry in accordance to
+ * Poisson distribution.
+ *
+ * @param <K> Type of upstream keys.
+ * @param <V> Type of upstream values.
+ */
 public class BaggingUpstreamTransformer<K, V> extends UpstreamTransformer<K, V, PoissonDistribution> {
+    /** Ratio of subsample to entire upstream size */
     private double subsampleRatio;
 
+    /**
+     * Construct instance of this transformer with a given subsample ratio.
+     *
+     * @param subsampleRatio Subsample ratio.
+     */
     public BaggingUpstreamTransformer(double subsampleRatio) {
         this.subsampleRatio = subsampleRatio;
     }
 
+    /** {@inheritDoc} */
     @Override public PoissonDistribution createData(Random rnd) {
         return new PoissonDistribution(
             new Well19937c(rnd.nextLong()),
@@ -40,6 +55,7 @@ public class BaggingUpstreamTransformer<K, V> extends UpstreamTransformer<K, V, 
             PoissonDistribution.DEFAULT_MAX_ITERATIONS);
     }
 
+    /** {@inheritDoc} */
     @Override protected Stream<UpstreamEntry<K, V>> transform(PoissonDistribution poisson, Stream<UpstreamEntry<K, V>> upstream) {
         // Sequentiality of stream here is needed because we use instance of
         // RNG as data, to make it deterministic we should fix order.

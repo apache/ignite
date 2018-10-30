@@ -65,6 +65,15 @@ public interface DatasetBuilder<K, V> {
     public <T> DatasetBuilder<K, V> addStreamTransformer(UpstreamTransformer<K, V, T> transformer);
 
     /**
+     * Seed used by RNG in upstream transformations.
+     * If null value is provided, will be pseudo-randomly generated.
+     *
+     * @param seed seed.
+     * @return This object.
+     */
+    public DatasetBuilder<K, V> withTransformationSeed(Long seed);
+
+    /**
      * Returns new instance of DatasetBuilder using conjunction of internal filter and {@code filterToAdd}.
      * @param filterToAdd Additional filter.
      */

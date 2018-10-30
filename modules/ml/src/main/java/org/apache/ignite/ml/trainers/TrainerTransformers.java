@@ -57,7 +57,7 @@ public class TrainerTransformers {
         int ensembleSize,
         double subsampleRatio,
         PredictionsAggregator aggregator) {
-        return makeBagged(trainer, ensembleSize, subsampleRatio, -1, -1, aggregator);
+        return makeBagged(trainer, ensembleSize, subsampleRatio, -1, -1, aggregator, null);
     }
 
     /**
@@ -76,7 +76,8 @@ public class TrainerTransformers {
         double subsampleRatio,
         int featureVectorSize,
         int maxFeaturesCntPerMdl,
-        PredictionsAggregator aggregator) {
+        PredictionsAggregator aggregator,
+        Long transformationSeed) {
         return new DatasetTrainer<ModelsComposition, L>() {
             @Override
             public <K, V> ModelsComposition fit(
@@ -84,7 +85,7 @@ public class TrainerTransformers {
                 IgniteBiFunction<K, V, Vector> featureExtractor,
                 IgniteBiFunction<K, V, L> lbExtractor) {
                 return runOnEnsemble(
-                    (db, i, fe) -> (() -> trainer.fit(db, fe, lbExtractor)),
+                    (db, i, fe) -> (() -> trainer.fit(db.withTransformationSeed(transformationSeed + i * 953851), fe, lbExtractor)),
                     datasetBuilder,
                     ensembleSize,
                     subsampleRatio,
