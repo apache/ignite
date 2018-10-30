@@ -1964,7 +1964,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param cliCtx Client context, or {@code null} if not applicable.
      * @return Result cursors.
      */
-    @SuppressWarnings({"ConstantConditions", "StatementWithEmptyBody"})
     private List<FieldsQueryCursor<List<?>>> queryDistributedSqlFieldsNative(SqlFieldsQuery qry, SqlCommand cmd,
         @Nullable SqlClientContext cliCtx) {
         // Execute.
