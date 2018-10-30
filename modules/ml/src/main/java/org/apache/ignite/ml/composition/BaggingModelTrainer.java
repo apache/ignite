@@ -30,7 +30,7 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.trainers.transformers.TrainerTransformers;
+import org.apache.ignite.ml.trainers.TrainerTransformers;
 
 import java.util.*;
 import java.util.stream.Collectors;

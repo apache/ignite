@@ -31,7 +31,7 @@ import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDT
 import org.apache.ignite.ml.selection.cv.CrossValidation;
 import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.trainers.transformers.TrainerTransformers;
+import org.apache.ignite.ml.trainers.TrainerTransformers;
 
 import java.util.Arrays;
 
