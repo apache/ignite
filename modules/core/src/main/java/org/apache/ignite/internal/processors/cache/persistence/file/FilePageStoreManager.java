@@ -148,9 +148,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** */
     private final Set<Integer> grpsWithoutIdx = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
 
-    /** Registred cache groups. */
-    private final Map<Integer, CacheGroupDescriptor> registeredCacheGroups = new ConcurrentHashMap<>();
-
     /**
      * @param ctx Kernal context.
      */
@@ -1025,7 +1022,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private CacheStoreHolder getHolder(int grpId) throws IgniteCheckedException {
         try {
             return idxCacheStores.computeIfAbsent((grpId), (key) -> {
-                CacheGroupDescriptor gDesc = registeredCacheGroups.get(grpId);
+                CacheGroupDescriptor gDesc = cctx.cache().cacheGroupDescriptors().get(grpId);
 
                 CacheStoreHolder holder0 = null;
 
@@ -1084,8 +1081,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         if (grpDesc.persistenceEnabled()) {
             boolean localEnabled = cctx.database().walEnabled(grpDesc.groupId(), true);
             boolean globalEnabled = cctx.database().walEnabled(grpDesc.groupId(), false);
-
-            registeredCacheGroups.put(grpDesc.groupId(), grpDesc);
 
             if (!localEnabled || !globalEnabled) {
                 File dir = cacheWorkDir(grpDesc.config());
