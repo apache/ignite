@@ -670,7 +670,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                             if (readyVer.topologyVersion() > 0 && c.context().started()) {
                                 // Must map on updated version of topology.
-                                Collection<ClusterNode> affNodes =
+                                List<ClusterNode> affNodes =
                                     dht.context().affinity().assignment(readyVer).idealAssignment().get(p);
 
                                 int affNodesCnt = affNodes.size();
@@ -684,8 +684,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                                 GridDhtLocalPartition loc = top.localPartition(p, readyVer, false);
 
+                                boolean notPrimary = !affNodes.isEmpty() &&
+                                    !exchMgr.rebalanceTopologyVersion().equals(AffinityTopologyVersion.NONE) &&
+                                    !affNodes.get(0).equals(dht.context().affinity().primaryByPartition(p, readyVer));
+
                                 if (affNodesCnt != ownerNodesCnt || !affNodes.containsAll(owners) ||
-                                    (waitEvicts && loc != null && loc.state() != GridDhtPartitionState.OWNING)) {
+                                    (waitEvicts && loc != null && loc.state() != GridDhtPartitionState.OWNING) ||
+                                    notPrimary) {
                                     if (i % 50 == 0)
                                         LT.warn(log(), "Waiting for topology map update [" +
                                             "igniteInstanceName=" + g.name() +
