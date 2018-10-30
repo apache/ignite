@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
  * Tests various cache operations with indexing enabled.

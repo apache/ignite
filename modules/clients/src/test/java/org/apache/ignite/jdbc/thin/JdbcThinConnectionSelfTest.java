@@ -66,6 +66,7 @@ import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.sql.Statement.NO_GENERATED_KEYS;
 import static java.sql.Statement.RETURN_GENERATED_KEYS;
 import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
+import static org.apache.ignite.internal.processors.odbc.SqlStateCode.TRANSACTION_STATE_EXCEPTION;
 
 /**
  * Connection test.
@@ -230,36 +231,36 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testSqlHints() throws Exception {
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
-            assertHints(conn, false, false, false, false, true, false);
-        }
-
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?distributedJoins=true")) {
-            assertHints(conn, true, false, false, false, true, false);
-        }
-
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?enforceJoinOrder=true")) {
-            assertHints(conn, false, true, false, false, true, false);
-        }
-
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?collocated=true")) {
-            assertHints(conn, false, false, true, false, true, false);
-        }
-
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?replicatedOnly=true")) {
-            assertHints(conn, false, false, false, true, true, false);
-        }
-
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?lazy=false")) {
             assertHints(conn, false, false, false, false, false, false);
         }
 
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?distributedJoins=true")) {
+            assertHints(conn, true, false, false, false, false, false);
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?enforceJoinOrder=true")) {
+            assertHints(conn, false, true, false, false, false, false);
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?collocated=true")) {
+            assertHints(conn, false, false, true, false, false, false);
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?replicatedOnly=true")) {
+            assertHints(conn, false, false, false, true, false, false);
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?lazy=true")) {
+            assertHints(conn, false, false, false, false, true, false);
+        }
+
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?skipReducerOnUpdate=true")) {
-            assertHints(conn, false, false, false, false, true, true);
+            assertHints(conn, false, false, false, false, false, true);
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?distributedJoins=true&" +
-            "enforceJoinOrder=true&collocated=true&replicatedOnly=true&lazy=false&skipReducerOnUpdate=true")) {
-            assertHints(conn, true, true, true, true, false, true);
+            "enforceJoinOrder=true&collocated=true&replicatedOnly=true&lazy=true&skipReducerOnUpdate=true")) {
+            assertHints(conn, true, true, true, true, true, true);
         }
     }
 
@@ -270,32 +271,32 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testSqlHintsSemicolon() throws Exception {
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;distributedJoins=true")) {
-            assertHints(conn, true, false, false, false, true, false);
+            assertHints(conn, true, false, false, false, false, false);
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;enforceJoinOrder=true")) {
-            assertHints(conn, false, true, false, false, true, false);
+            assertHints(conn, false, true, false, false, false, false);
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;collocated=true")) {
-            assertHints(conn, false, false, true, false, true, false);
+            assertHints(conn, false, false, true, false, false, false);
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;replicatedOnly=true")) {
-            assertHints(conn, false, false, false, true, true, false);
+            assertHints(conn, false, false, false, true, false, false);
         }
 
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;lazy=false")) {
-            assertHints(conn, false, false, false, false, false, false);
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;lazy=true")) {
+            assertHints(conn, false, false, false, false, true, false);
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;skipReducerOnUpdate=true")) {
-            assertHints(conn, false, false, false, false, true, true);
+            assertHints(conn, false, false, false, false, false, true);
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;distributedJoins=true;" +
-            "enforceJoinOrder=true;collocated=true;replicatedOnly=true;lazy=false;skipReducerOnUpdate=true")) {
-            assertHints(conn, true, true, true, true, false, true);
+            "enforceJoinOrder=true;collocated=true;replicatedOnly=true;lazy=true;skipReducerOnUpdate=true")) {
+            assertHints(conn, true, true, true, true, true, true);
         }
     }
 
@@ -978,29 +979,20 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testGetSetAutoCommit() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            assertTrue(conn.getAutoCommit());
+            boolean ac0 = conn.getAutoCommit();
 
-            // Cannot disable autocommit when MVCC is disabled.
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.setAutoCommit(false);
+            conn.setAutoCommit(!ac0);
+            // assert no exception
 
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "MVCC must be enabled in order to invoke transactional operation: COMMIT"
-            );
-
-            assertTrue(conn.getAutoCommit());
+            conn.setAutoCommit(ac0);
+            // assert no exception
 
             conn.close();
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
                 @Override public void run() throws Exception {
-                    conn.setAutoCommit(true);
+                    conn.setAutoCommit(ac0);
                 }
             });
         }
@@ -1022,19 +1014,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 },
                 SQLException.class,
                 "Transaction cannot be committed explicitly in auto-commit mode"
-            );
-
-            // Cannot disable autocommit when MVCC is disabled.
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.setAutoCommit(false);
-
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "MVCC must be enabled in order to invoke transactional operation: COMMIT"
             );
 
             assertTrue(conn.getAutoCommit());
@@ -1081,21 +1060,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 "Transaction cannot be rolled back explicitly in auto-commit mode."
             );
 
-            // Cannot disable autocommit when MVCC is disabled.
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.setAutoCommit(false);
-
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "MVCC must be enabled in order to invoke transactional operation: COMMIT"
-            );
-
-            assertTrue(conn.getAutoCommit());
-
             conn.close();
 
             // Exception when called on closed connection
@@ -1105,6 +1069,47 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 }
             });
         }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testBeginFailsWhenMvccIsDisabled() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.createStatement().execute("BEGIN");
+
+            fail("Exception is expected");
+        }
+        catch (SQLException e) {
+            assertEquals(TRANSACTION_STATE_EXCEPTION, e.getSQLState());
+        }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testCommitIgnoredWhenMvccIsDisabled() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.setAutoCommit(false);
+            conn.createStatement().execute("COMMIT");
+
+            conn.commit();
+        }
+        // assert no exception
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testRollbackIgnoredWhenMvccIsDisabled() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.setAutoCommit(false);
+
+            conn.createStatement().execute("ROLLBACK");
+
+            conn.rollback();
+        }
+        // assert no exception
     }
 
     /**
@@ -1392,21 +1397,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 "Savepoint cannot be set in auto-commit mode"
             );
 
-            // Cannot disable autocommit when MVCC is disabled.
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.setAutoCommit(false);
-
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "MVCC must be enabled in order to invoke transactional operation: COMMIT"
-            );
-
-            assertTrue(conn.getAutoCommit());
-
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
@@ -1452,21 +1442,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 "Savepoint cannot be set in auto-commit mode"
             );
 
-            // Cannot disable autocommit when MVCC is disabled.
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.setAutoCommit(false);
-
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "MVCC must be enabled in order to invoke transactional operation: COMMIT"
-            );
-
-            assertTrue(conn.getAutoCommit());
-
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
@@ -1511,21 +1486,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 SQLException.class,
                 "Auto-commit mode"
             );
-
-            // Cannot disable autocommit when MVCC is disabled.
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.setAutoCommit(false);
-
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "MVCC must be enabled in order to invoke transactional operation: COMMIT"
-            );
-
-            assertTrue(conn.getAutoCommit());
 
             conn.close();
 
