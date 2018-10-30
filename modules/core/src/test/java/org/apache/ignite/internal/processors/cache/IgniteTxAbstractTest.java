@@ -262,9 +262,6 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
      */
     protected void checkRollback(TransactionConcurrency concurrency, TransactionIsolation isolation)
         throws Exception {
-        if(FORCE_MVCC && (concurrency != PESSIMISTIC || isolation != REPEATABLE_READ))
-            fail("Mvcc tx mode is not supported.");
-
         checkRollback(new ConcurrentHashMap<Integer, String>(), concurrency, isolation);
     }
 
@@ -276,6 +273,9 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
      */
     protected void checkRollback(ConcurrentMap<Integer, String> map, TransactionConcurrency concurrency,
         TransactionIsolation isolation) throws Exception {
+        if(FORCE_MVCC && (concurrency != PESSIMISTIC || isolation != REPEATABLE_READ))
+            fail("Mvcc tx mode is not supported.");
+
         int gridIdx = RAND.nextInt(gridCount());
 
         Ignite ignite = grid(gridIdx);

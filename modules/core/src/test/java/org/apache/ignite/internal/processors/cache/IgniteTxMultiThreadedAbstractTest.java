@@ -115,6 +115,9 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
      * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticReadCommittedCommitMultithreaded() throws Exception {
+        if (FORCE_MVCC)
+            return;
+
         checkCommitMultithreaded(PESSIMISTIC, READ_COMMITTED);
 
         finalChecks();
@@ -133,6 +136,9 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
      * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticSerializableCommitMultithreaded() throws Exception {
+        if (FORCE_MVCC)
+            return;
+
         checkCommitMultithreaded(PESSIMISTIC, SERIALIZABLE);
 
         finalChecks();
@@ -142,6 +148,9 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
      * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticReadCommittedCommitMultithreaded() throws Exception {
+        if (FORCE_MVCC)
+            return;
+
         checkCommitMultithreaded(OPTIMISTIC, READ_COMMITTED);
 
         finalChecks();
@@ -151,6 +160,9 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
      * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticRepeatableReadCommitMultithreaded() throws Exception {
+        if (FORCE_MVCC)
+            return;
+
         checkCommitMultithreaded(OPTIMISTIC, REPEATABLE_READ);
 
         finalChecks();
@@ -160,6 +172,9 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
      * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticSerializableCommitMultithreaded() throws Exception {
+        if (FORCE_MVCC)
+            return;
+
         checkCommitMultithreaded(OPTIMISTIC, SERIALIZABLE);
 
         finalChecks();
@@ -169,6 +184,9 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
      * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticReadCommittedRollbackMultithreaded() throws Exception {
+        if (FORCE_MVCC)
+            return;
+
         checkRollbackMultithreaded(PESSIMISTIC, READ_COMMITTED);
 
         finalChecks();
@@ -187,6 +205,9 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
      * @throws IgniteCheckedException If test failed.
      */
     public void testPessimisticSerializableRollbackMultithreaded() throws Exception {
+        if (FORCE_MVCC)
+            return;
+
         checkRollbackMultithreaded(PESSIMISTIC, SERIALIZABLE);
 
         finalChecks();
@@ -196,6 +217,9 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
      * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticReadCommittedRollbackMultithreaded() throws Exception {
+        if (FORCE_MVCC)
+            return;
+
         checkRollbackMultithreaded(OPTIMISTIC, READ_COMMITTED);
 
         finalChecks();
@@ -205,6 +229,9 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
      * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticRepeatableReadRollbackMultithreaded() throws Exception {
+        if (FORCE_MVCC)
+            return;
+
         checkRollbackMultithreaded(OPTIMISTIC, REPEATABLE_READ);
 
         finalChecks();
@@ -214,6 +241,9 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
      * @throws IgniteCheckedException If test failed.
      */
     public void testOptimisticSerializableRollbackMultithreaded() throws Exception {
+        if (FORCE_MVCC)
+            return;
+
         checkRollbackMultithreaded(OPTIMISTIC, SERIALIZABLE);
 
         finalChecks();
@@ -223,8 +253,8 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
      * @throws Exception If failed.
      */
     public void testOptimisticSerializableConsistency() throws Exception {
-        if(FORCE_MVCC)
-            fail("Mvcc tx mode is not supported.");
+        if (FORCE_MVCC)
+            return;
 
         final IgniteCache<Integer, Long> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
