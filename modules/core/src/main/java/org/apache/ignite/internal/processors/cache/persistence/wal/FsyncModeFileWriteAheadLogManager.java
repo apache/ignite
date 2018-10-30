@@ -76,9 +76,11 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
+import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
@@ -443,6 +445,20 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /**
+     *
+     */
+    private void startArchiverAndCompressor() {
+        if (isArchiverEnabled()) {
+            assert archiver != null;
+
+            new IgniteThread(archiver).start();
+        }
+
+        if (compressor != null)
+            compressor.start();
+    }
+
+    /**
      * @throws IgniteCheckedException if WAL store path is configured and archive path isn't (or vice versa)
      */
     private void checkWalConfiguration() throws IgniteCheckedException {
@@ -481,11 +497,17 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             if (archiver != null)
                 archiver.shutdown();
 
-            if (compressor != null)
+            if (compressor != null) {
                 compressor.shutdown();
 
-            if (decompressor != null)
+                compressor = null;
+            }
+
+            if (decompressor != null) {
                 decompressor.shutdown();
+
+                decompressor = null;
+            }
         }
         catch (Exception e) {
             U.error(log, "Failed to gracefully close WAL segment: " + currentHnd.fileIO, e);
@@ -499,17 +521,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
 
         start0();
-
-        if (!cctx.kernalContext().clientNode()) {
-            if (isArchiverEnabled()) {
-                assert archiver != null;
-
-                new IgniteThread(archiver).start();
-            }
-
-            if (compressor != null)
-                compressor.start();
-        }
     }
 
     /** {@inheritDoc} */
@@ -537,6 +548,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
         assert currentHnd == null;
         assert lastPtr == null || lastPtr instanceof FileWALPointer;
+
+        startArchiverAndCompressor();
+
         assert (isArchiverEnabled() && archiver != null) || (!isArchiverEnabled() && archiver == null) :
             "Trying to restore FileWriteHandle on deactivated write ahead log manager";
 
@@ -699,6 +713,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     /** {@inheritDoc} */
     @Override public WALPointer log(WALRecord record, RolloverType rolloverType) throws IgniteCheckedException {
         if (serializer == null || mode == WALMode.NONE)
+            return null;
+
+        if (!(record instanceof PageDeltaRecord || record instanceof PageSnapshot) && cctx.kernalContext().recoveryMode())
             return null;
 
         FileWriteHandle currWrHandle = currentHandle();
@@ -1649,7 +1666,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                         notifyAll();
                     }
 
-                    if (evt.isRecordable(EventType.EVT_WAL_SEGMENT_ARCHIVED)) {
+                    if (evt.isRecordable(EventType.EVT_WAL_SEGMENT_ARCHIVED) && !cctx.kernalContext().recoveryMode()) {
                         evt.record(new WalSegmentArchivedEvent(cctx.discovery().localNode(),
                             res.getAbsIdx(), res.getDstArchiveFile()));
                     }
@@ -2015,7 +2032,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                             f0.force();
                         }
 
-                        if (evt.isRecordable(EVT_WAL_SEGMENT_COMPACTED)) {
+                        if (evt.isRecordable(EVT_WAL_SEGMENT_COMPACTED) && !cctx.kernalContext().recoveryMode()) {
                             evt.record(new WalSegmentCompactedEvent(
                                 cctx.discovery().localNode(),
                                 currReservedSegment,
