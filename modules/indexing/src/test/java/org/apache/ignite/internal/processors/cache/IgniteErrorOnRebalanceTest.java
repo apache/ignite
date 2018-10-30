@@ -130,6 +130,10 @@ public class IgniteErrorOnRebalanceTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
+        srv1.cluster().setBaselineTopology(srv1.cluster().topologyVersion());
+
+        awaitPartitionMapExchange();
+
         IgniteCache<Object, Object> cache0 = srv0.cache(DEFAULT_CACHE_NAME);
         IgniteCache<Object, Object> cache1 = srv1.cache(DEFAULT_CACHE_NAME);
 
