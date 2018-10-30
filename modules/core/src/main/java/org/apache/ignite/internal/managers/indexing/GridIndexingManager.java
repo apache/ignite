@@ -25,6 +25,7 @@ import org.apache.ignite.internal.SkipDaemon;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
@@ -100,6 +101,9 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
 
             getSpi().store(cacheName, key, val, expirationTime);
         }
+        catch (Exception e) {
+            U.warn(log, "Failed to write to index", e);
+        }
         finally {
             busyLock.leaveBusy();
         }
@@ -120,6 +124,9 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
 
         try {
             getSpi().remove(cacheName, key);
+        }
+        catch (Exception e) {
+            U.warn(log, "Failed to remove from index", e);
         }
         finally {
             busyLock.leaveBusy();
