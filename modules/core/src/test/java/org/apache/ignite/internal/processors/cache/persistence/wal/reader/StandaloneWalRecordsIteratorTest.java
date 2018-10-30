@@ -19,9 +19,11 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -32,6 +34,8 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -44,12 +48,14 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
@@ -105,6 +111,121 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+    }
+
+    /**
+     *
+     */
+    public void testBlinkingTemporaryFile() throws Exception {
+        walCompactionEnabled = true;
+
+        IgniteEx ig = (IgniteEx)startGrid();
+
+        String archiveWalDir = getArchiveWalDirPath(ig);
+
+        ig.cluster().active(true);
+
+        IgniteCache<Object, Object> cache = ig.getOrCreateCache(
+            new CacheConfiguration<>().setName("c-n").setAffinity(new RendezvousAffinityFunction(false, 32)));
+
+        IgniteCacheDatabaseSharedManager sharedMgr = ig.context().cache().context().database();
+
+        IgniteWriteAheadLogManager walMgr = ig.context().cache().context().wal();
+
+        WALPointer fromPtr = null;
+
+        int recordsCnt = WAL_SEGMENT_SIZE / 8 /* record size */ * 5;
+
+        AtomicBoolean stopBlinking = new AtomicBoolean(false);
+        AtomicInteger blinkIterations = new AtomicInteger(0);
+
+        IgniteInternalFuture blinkFut = GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    while (walMgr.lastCompactedSegment() < 2)
+                        U.sleep(10);
+
+                    File walArchive = new File(archiveWalDir);
+                    File consIdFolder = new File(walArchive, "node00-" + ig.cluster().localNode().consistentId().toString());
+                    File compressedWalSegment = new File(consIdFolder, FileDescriptor.fileName(1) + ".zip");
+                    File compressedTmpWalSegment = new File(consIdFolder, FileDescriptor.fileName(1) + ".zip.tmp");
+
+                    while (!stopBlinking.get()) {
+                        Files.copy(compressedWalSegment.toPath(), compressedTmpWalSegment.toPath());
+
+                        U.sleep(10);
+
+                        U.delete(compressedTmpWalSegment);
+
+                        blinkIterations.incrementAndGet();
+                    }
+                }
+                catch (IgniteInterruptedCheckedException | IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }, "blinky");
+
+        for (int i = 0; i < recordsCnt; i++) {
+            WALPointer ptr = walMgr.log(new PartitionDestroyRecord(i, i));
+
+            if (i == 100)
+                fromPtr = ptr;
+        }
+
+        assertNotNull(fromPtr);
+
+        cache.put(1, 1);
+
+        forceCheckpoint();
+
+        // Generate WAL segments for filling WAL archive folder.
+        for (int i = 0; i < 2 * ig.configuration().getDataStorageConfiguration().getWalSegments(); i++) {
+            sharedMgr.checkpointReadLock();
+
+            try {
+                walMgr.log(new SnapshotRecord(i, false), RolloverType.NEXT_SEGMENT);
+            }
+            finally {
+                sharedMgr.checkpointReadUnlock();
+            }
+        }
+
+        cache.put(2, 2);
+
+        forceCheckpoint();
+
+        System.out.println("@@@ " + blinkIterations.get() + " blink iterations already completed");
+
+        U.sleep(5000);
+
+        stopGrid();
+
+        for (int i = 0; i < 20; i++) {
+            WALIterator it = new IgniteWalIteratorFactory(log)
+                .iterator(new IteratorParametersBuilder().from((FileWALPointer)fromPtr).filesOrDirs(archiveWalDir));
+
+            TreeSet<Integer> foundCounters = new TreeSet<>();
+
+            it.forEach(x -> {
+                WALRecord rec = x.get2();
+
+                if (rec instanceof PartitionDestroyRecord)
+                    foundCounters.add(((WalRecordCacheGroupAware)rec).groupId());
+            });
+
+            assertEquals(new Integer(100), foundCounters.first());
+            assertEquals(new Integer(recordsCnt - 1), foundCounters.last());
+            assertEquals(recordsCnt - 100, foundCounters.size());
+
+            System.out.println("@@@ " + blinkIterations.get() + " blink iterations already completed");
+        }
+
+        stopBlinking.set(true);
+
+        System.out.println("@@@ " + blinkIterations.get() + " blink iterations finally completed");
+
+        blinkFut.get();
     }
 
     /**
