@@ -2691,9 +2691,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     part.finalizeUpdateCounters(new IgniteInClosure<Long>() {
                         @Override public void apply(Long cntr) {
-                            for (GridCacheContext ctx0 : grp.caches()) {
+                            for (GridCacheContext ctx0 : grp.caches())
                                 ctx0.continuousQueries().skipUpdateCounter(null, part.id(), cntr, topVer, false);
-                            }
                         }
                     });
                 }
