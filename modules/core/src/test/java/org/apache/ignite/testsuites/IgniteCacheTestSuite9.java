@@ -51,9 +51,9 @@ public class IgniteCacheTestSuite9 extends TestSuite {
 
         suite.addTestSuite(CacheAtomicPrimarySyncBackPressureTest.class);
 
-        suite.addTestSuite(TxDataConsistencyOnCommitFailureTest.class);
-
         suite.addTestSuite(IgniteTxConcurrentRemoveObjectsTest.class);
+
+        suite.addTestSuite(TxDataConsistencyOnCommitFailureTest.class);
 
         return suite;
     }
