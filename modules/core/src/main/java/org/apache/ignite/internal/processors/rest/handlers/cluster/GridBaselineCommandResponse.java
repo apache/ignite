@@ -51,7 +51,7 @@ public class GridBaselineCommandResponse implements Externalizable {
      * @param nodes Nodes to process.
      * @return Collection of consistentIds.
      */
-    private static Collection<String> mapper(Collection<? extends BaselineNode> nodes) {
+    private static Collection<String> consistentIds(Collection<? extends BaselineNode> nodes) {
         return nodes.stream().map(n -> String.valueOf(n.consistentId())).collect(toList());
     }
 
@@ -77,8 +77,8 @@ public class GridBaselineCommandResponse implements Externalizable {
         Collection<? extends BaselineNode> srvs) {
         this.active = active;
         this.topVer = topVer;
-        this.baseline = mapper(baseline);
-        this.srvs = mapper(srvs);
+        this.baseline = consistentIds(baseline);
+        this.srvs = consistentIds(srvs);
     }
 
     /**

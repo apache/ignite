@@ -114,7 +114,9 @@ public class GridBaselineCommandHandler extends GridRestCommandHandlerAdapter {
      * @param consistentIds Collection of consistent IDs to set.
      */
     private void set(Set<BaselineNode> baselineTop, List<Object> consistentIds) {
-        Map<Object, BaselineNode> srvrs = ctx.grid().cluster().forServers().nodes().stream()
+        IgniteClusterEx cluster = ctx.grid().cluster();
+        
+        Map<Object, BaselineNode> srvrs = cluster.forServers().nodes().stream()
             .collect(toMap(n -> String.valueOf(n.consistentId()), identity()));
 
         for (Object consistentId : consistentIds) {
@@ -126,7 +128,7 @@ public class GridBaselineCommandHandler extends GridRestCommandHandlerAdapter {
             baselineTop.add(node);
         }
 
-        ctx.grid().cluster().setBaselineTopology(baselineTop);
+        cluster.setBaselineTopology(baselineTop);
     }
 
     /** {@inheritDoc} */

@@ -89,6 +89,8 @@ public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommon
 
     /**
      * @param content Content to check.
+     * @param baselineSz Expected baseline size.
+     * @param srvsSz Expected server nodes count.
      */
     private void assertBaseline(String content, int baselineSz, int srvsSz) throws IOException {
         assertNotNull(content);
@@ -119,13 +121,17 @@ public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommon
      * @throws Exception If failed.
      */
     public void testBaseline() throws Exception {
-        assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), gridCount(), gridCount());
+        int sz = gridCount();
+        
+        assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), sz, sz);
 
-        stopGrid(gridCount() - 1);
-        assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), gridCount(), gridCount() - 1);
+        // Stop one node. It will stay in baseline.
+        stopGrid(sz - 1);
+        assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), sz, sz - 1);
 
-        startGrid(gridCount() - 1);
-        assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), gridCount(), gridCount());
+        // Start one node. Server node will be added, but baseline will not change.
+        startGrid(sz - 1);
+        assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), sz, sz);
     }
 
     /**
