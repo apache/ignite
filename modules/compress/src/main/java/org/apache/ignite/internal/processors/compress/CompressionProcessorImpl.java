@@ -112,7 +112,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
         // If no need to compress further or configured just to skip garbage.
         if (compactSize < blockSize || compression == SKIP_GARBAGE)
-            return createCompactPageResult(compactPage, compactSize, pageSize);
+            return createCompactPageResult(compactPage, compactSize);
 
         ByteBuffer compressedPage = compressPage(compression, compactPage, compactSize, compressLevel, pageSize);
 
@@ -126,40 +126,24 @@ public class CompressionProcessorImpl extends CompressionProcessor {
                 return (ByteBuffer)page.clear(); // No blocks will be released.
 
             compactPage.flip();
-            return createCompactPageResult(compactPage, compactSize, pageSize);
+            return createCompactPageResult(compactPage, compactSize);
         }
 
         setCompressionInfo(compressedPage, compression, compressedSize, compactSize);
 
-        // Need to return correctly sized buffer.
-        return compressedPage.capacity() == pageSize ? (ByteBuffer)compressedPage.clear() :
-            copyToPageSizedBuffer(compressedPage, pageSize);
-    }
-
-    /**
-     * @param b Buffer.
-     * @param pageSize Page size.
-     * @return New direct buffer.
-     */
-    private static ByteBuffer copyToPageSizedBuffer(ByteBuffer b, int pageSize) {
-        assert b.position() == 0;
-        assert b.limit() <= pageSize;
-        assert b.capacity() != pageSize;
-
-        return (ByteBuffer)allocateDirectBuffer(pageSize).put(b).clear();
+        return compressedPage;
     }
 
     /**
      * @param compactPage Compacted page.
-     * @param compactSize Compacted page size.
      * @return New buffer.
      */
-    private static ByteBuffer createCompactPageResult(ByteBuffer compactPage, int compactSize, int pageSize) {
+    private static ByteBuffer createCompactPageResult(ByteBuffer compactPage, int compactSize) {
         setCompressionInfo(compactPage, SKIP_GARBAGE, compactSize, compactSize);
 
         // Can not return thread local buffer, because the actual write may be async.
         // Also we have to always return buffer of correct page size.
-        return copyToPageSizedBuffer(compactPage, pageSize);
+        return (ByteBuffer)allocateDirectBuffer(compactSize).put(compactPage).clear();
     }
 
     /**
@@ -206,7 +190,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
     private ByteBuffer compressPageLz4(ByteBuffer compactPage, int compactSize, int compressLevel, int pageSize) {
         LZ4Compressor compressor = Lz4.getCompressor(compressLevel);
 
-        ByteBuffer compressedPage = getBufferForCompression(pageSize, PageIO.COMMON_HEADER_END +
+        ByteBuffer compressedPage = allocateDirectBuffer(PageIO.COMMON_HEADER_END +
             compressor.maxCompressedLength(compactSize - PageIO.COMMON_HEADER_END));
 
         copyPageHeader(compactPage, compressedPage, compactSize);
@@ -223,7 +207,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @return Compressed page.
      */
     private ByteBuffer compressPageZstd(ByteBuffer compactPage, int compactSize, int compressLevel, int pageSize) {
-        ByteBuffer compressedPage = getBufferForCompression(pageSize, (int)(PageIO.COMMON_HEADER_END +
+        ByteBuffer compressedPage = allocateDirectBuffer((int)(PageIO.COMMON_HEADER_END +
             Zstd.compressBound(compactSize - PageIO.COMMON_HEADER_END)));
 
         copyPageHeader(compactPage, compressedPage, compactSize);
@@ -231,18 +215,6 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
         compressedPage.flip();
         return compressedPage;
-    }
-
-    /**
-     * @param pageSize Page size.
-     * @param compressionBoundSize Max possible size after the compression.
-     * @return Buffer.
-     */
-    private ByteBuffer getBufferForCompression(int pageSize, int compressionBoundSize) {
-        if (compressionBoundSize <= pageSize)
-            return allocateDirectBuffer(pageSize); // We will be able to return it right away.
-
-        return extraTmp.get();
     }
 
     /**

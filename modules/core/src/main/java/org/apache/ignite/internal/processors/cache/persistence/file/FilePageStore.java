@@ -43,7 +43,6 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
-import static org.apache.ignite.internal.processors.compress.CompressionProcessor.checkAllZeroTail;
 
 /**
  * File page store.
@@ -389,8 +388,6 @@ public class FilePageStore implements PageStore {
 
             pageBuf.position(0);
 
-            assert checkAllZeroTail(pageBuf);
-
             if (!skipCrc) {
                 int curCrc32 = FastCrc.calcCrc(pageBuf, getCrcSize(pageBuf));
 
@@ -577,7 +574,6 @@ public class FilePageStore implements PageStore {
                     assert (off >= 0 && off <= allocated.get()) || recover :
                         "off=" + U.hexLong(off) + ", allocated=" + U.hexLong(allocated.get()) + ", pageId=" + U.hexLong(pageId);
 
-                    assert pageBuf.capacity() == pageSize;
                     assert pageBuf.position() == 0;
                     assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
                         + " should be same with " + ByteOrder.nativeOrder();

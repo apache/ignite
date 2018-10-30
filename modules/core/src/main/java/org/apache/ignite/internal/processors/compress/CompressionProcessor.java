@@ -124,30 +124,6 @@ public class CompressionProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param page Page.
-     * @return {@code true} If it is either an uncompressed page or a valid compressed page with zeroed tail.
-     */
-    public static boolean checkAllZeroTail(ByteBuffer page) {
-        if (PageIO.getCompressionType(page) == UNCOMPRESSED_PAGE)
-            return true;
-
-        int compressedSize = PageIO.getCompressedSize(page);
-
-        page.limit(page.capacity()).position(compressedSize);
-
-        try {
-            for (int i = compressedSize; i < page.capacity(); i++) {
-                if (page.get(i) != 0)
-                    return false;
-            }
-            return true;
-        }
-        finally {
-            page.clear();
-        }
-    }
-
-    /**
      * @throws IgniteCheckedException Always.
      */
     private static <T> T fail() throws IgniteCheckedException {

@@ -41,13 +41,13 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.configuration.PageCompression.SKIP_GARBAGE;
 import static org.apache.ignite.configuration.PageCompression.LZ4;
+import static org.apache.ignite.configuration.PageCompression.SKIP_GARBAGE;
 import static org.apache.ignite.configuration.PageCompression.ZSTD;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.LZ4_MAX_LEVEL;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.LZ4_MIN_LEVEL;
+import static org.apache.ignite.internal.processors.compress.CompressionProcessor.UNCOMPRESSED_PAGE;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.ZSTD_MAX_LEVEL;
-import static org.apache.ignite.internal.processors.compress.CompressionProcessor.checkAllZeroTail;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorImpl.allocateDirectBuffer;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorTest.TestInnerIO.INNER_IO;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorTest.TestLeafIO.LEAF_IO;
@@ -759,12 +759,13 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
 
         int compressedSize = PageIO.getCompressedSize(compressed);
 
-        // For consistent CRC compressed buffer must of the page size but filled with 0 after the compressed part.
-        assertTrue(checkAllZeroTail(compressed));
-        assertEquals(pageSize, compressed.capacity());
-        assertEquals(0, compressed.position());
-        assertEquals(pageSize, compressed.limit());
+        assertTrue(compressedSize > 0);
+        assertTrue(compressedSize <= pageSize);
 
+        if (!fullPage && PageIO.getCompressionType(compressed) == UNCOMPRESSED_PAGE)
+            assertTrue(pageSize > compressedSize);
+
+        assertEquals(0, compressed.position());
 
         checkIo(io, compressed);
         assertNotSame(page, compressed);
