@@ -35,7 +35,6 @@ import static org.apache.ignite.internal.util.GridUnsafe.NATIVE_BYTE_ORDER;
 /**
  * Compression processor.
  */
-@SuppressWarnings("unused")
 public class CompressionProcessorImpl extends CompressionProcessor {
     /** */
     static boolean testMode = false;
@@ -45,9 +44,6 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
     /** */
     private final ThreadLocalByteBuffer tmp = new ThreadLocalByteBuffer(THREAD_LOCAL_BUF_SIZE);
-
-    /** */
-    private final ThreadLocalByteBuffer extraTmp = new ThreadLocalByteBuffer(THREAD_LOCAL_BUF_SIZE);
 
     /**
      * @param ctx Kernal context.
@@ -114,7 +110,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         if (compactSize < blockSize || compression == SKIP_GARBAGE)
             return createCompactPageResult(compactPage, compactSize);
 
-        ByteBuffer compressedPage = compressPage(compression, compactPage, compactSize, compressLevel, pageSize);
+        ByteBuffer compressedPage = compressPage(compression, compactPage, compactSize, compressLevel);
 
         int compressedSize = compressedPage.limit();
 
@@ -166,16 +162,15 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @param compactPage Compacted page.
      * @param compactSize Compacted page size.
      * @param compressLevel Compression level.
-     * @param pageSize Page size.
      * @return Compressed page.
      */
-    private ByteBuffer compressPage(PageCompression compression, ByteBuffer compactPage, int compactSize, int compressLevel, int pageSize) {
+    private ByteBuffer compressPage(PageCompression compression, ByteBuffer compactPage, int compactSize, int compressLevel) {
         switch (compression) {
             case ZSTD:
-                return compressPageZstd(compactPage, compactSize, compressLevel, pageSize);
+                return compressPageZstd(compactPage, compactSize, compressLevel);
 
             case LZ4:
-                return compressPageLz4(compactPage, compactSize, compressLevel, pageSize);
+                return compressPageLz4(compactPage, compactSize, compressLevel);
         }
         throw new IllegalStateException("Unsupported compression: " + compression);
     }
@@ -184,10 +179,9 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @param compactPage Compacted page.
      * @param compactSize Compacted page size.
      * @param compressLevel Compression level.
-     * @param pageSize Page size.
      * @return Compressed page.
      */
-    private ByteBuffer compressPageLz4(ByteBuffer compactPage, int compactSize, int compressLevel, int pageSize) {
+    private ByteBuffer compressPageLz4(ByteBuffer compactPage, int compactSize, int compressLevel) {
         LZ4Compressor compressor = Lz4.getCompressor(compressLevel);
 
         ByteBuffer compressedPage = allocateDirectBuffer(PageIO.COMMON_HEADER_END +
@@ -206,7 +200,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @param compressLevel Compression level.
      * @return Compressed page.
      */
-    private ByteBuffer compressPageZstd(ByteBuffer compactPage, int compactSize, int compressLevel, int pageSize) {
+    private ByteBuffer compressPageZstd(ByteBuffer compactPage, int compactSize, int compressLevel) {
         ByteBuffer compressedPage = allocateDirectBuffer((int)(PageIO.COMMON_HEADER_END +
             Zstd.compressBound(compactSize - PageIO.COMMON_HEADER_END)));
 
