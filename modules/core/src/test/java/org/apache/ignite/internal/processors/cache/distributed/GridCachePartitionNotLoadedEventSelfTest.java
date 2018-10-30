@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.sql.SQLSyntaxErrorException;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.Callable;

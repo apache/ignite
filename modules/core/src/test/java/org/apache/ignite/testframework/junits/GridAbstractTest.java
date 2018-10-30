@@ -418,8 +418,9 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Runs given code in multiple threads and synchronously waits for all threads to complete. If any thread failed,
-     * exception will be thrown out of this method.
+     * Runs given code in multiple threads and synchronously waits for all
+     * threads to complete. If any thread failed, exception will be thrown
+     * out of this method.
      *
      * @param r Runnable.
      * @param threadNum Thread number.
@@ -431,36 +432,37 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Runs given code in multiple threads. Returns future that ends upon threads completion. If any thread failed,
-     * exception will be thrown out of this method.
+     * Runs given code in multiple threads. Returns future that ends upon
+     * threads completion. If any thread failed, exception will be thrown
+     * out of this method.
      *
      * @param r Runnable.
      * @param threadNum Thread number.
-     * @return Future.
      * @throws Exception If failed.
+     * @return Future.
      */
     protected IgniteInternalFuture<?> multithreadedAsync(Runnable r, int threadNum) throws Exception {
         return multithreadedAsync(r, threadNum, getTestIgniteInstanceName());
     }
 
     /**
-     * Runs given code in multiple threads. Returns future that ends upon threads completion. If any thread failed,
-     * exception will be thrown out of this method.
+     * Runs given code in multiple threads. Returns future that ends upon
+     * threads completion. If any thread failed, exception will be thrown
+     * out of this method.
      *
      * @param r Runnable.
      * @param threadNum Thread number.
      * @param threadName Thread name.
-     * @return Future.
      * @throws Exception If failed.
+     * @return Future.
      */
-    protected IgniteInternalFuture<?> multithreadedAsync(Runnable r, int threadNum,
-        String threadName) throws Exception {
+    protected IgniteInternalFuture<?> multithreadedAsync(Runnable r, int threadNum, String threadName) throws Exception {
         return GridTestUtils.runMultiThreadedAsync(r, threadNum, threadName);
     }
 
     /**
-     * Runs given code in multiple threads and synchronously waits for all threads to complete. If any thread failed,
-     * exception will be thrown out of this method.
+     * Runs given code in multiple threads and synchronously waits for all threads to complete.
+     * If any thread failed, exception will be thrown out of this method.
      *
      * @param c Callable.
      * @param threadNum Thread number.
@@ -471,8 +473,8 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Runs given code in multiple threads and synchronously waits for all threads to complete. If any thread failed,
-     * exception will be thrown out of this method.
+     * Runs given code in multiple threads and synchronously waits for all threads to complete.
+     * If any thread failed, exception will be thrown out of this method.
      *
      * @param c Callable.
      * @param threadNum Thread number.
@@ -484,27 +486,27 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Runs given code in multiple threads and asynchronously waits for all threads to complete. If any thread failed,
-     * exception will be thrown out of this method.
+     * Runs given code in multiple threads and asynchronously waits for all threads to complete.
+     * If any thread failed, exception will be thrown out of this method.
      *
      * @param c Callable.
      * @param threadNum Thread number.
-     * @return Future.
      * @throws Exception If failed.
+     * @return Future.
      */
     protected IgniteInternalFuture<?> multithreadedAsync(Callable<?> c, int threadNum) throws Exception {
         return multithreadedAsync(c, threadNum, getTestIgniteInstanceName());
     }
 
     /**
-     * Runs given code in multiple threads and asynchronously waits for all threads to complete. If any thread failed,
-     * exception will be thrown out of this method.
+     * Runs given code in multiple threads and asynchronously waits for all threads to complete.
+     * If any thread failed, exception will be thrown out of this method.
      *
      * @param c Callable.
      * @param threadNum Thread number.
      * @param threadName Thread name.
-     * @return Future.
      * @throws Exception If failed.
+     * @return Future.
      */
     protected IgniteInternalFuture<?> multithreadedAsync(Callable<?> c, int threadNum,
         String threadName) throws Exception {
@@ -567,8 +569,8 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Called after execution of all test methods in class or if {@link #beforeTestsStarted()} failed without execution
-     * of any test methods.
+     * Called after execution of all test methods in class or
+     * if {@link #beforeTestsStarted()} failed without execution of any test methods.
      *
      * @throws Exception If failed.
      */
@@ -1569,8 +1571,8 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Create instance of {@link BinaryMarshaller} suitable for use without starting a grid upon an empty {@link
-     * IgniteConfiguration}.
+     * Create instance of {@link BinaryMarshaller} suitable for use
+     * without starting a grid upon an empty {@link IgniteConfiguration}.
      *
      * @return Binary marshaller.
      * @throws IgniteCheckedException if failed.
@@ -1580,8 +1582,8 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Create instance of {@link BinaryMarshaller} suitable for use without starting a grid upon given {@link
-     * IgniteConfiguration}.
+     * Create instance of {@link BinaryMarshaller} suitable for use
+     * without starting a grid upon given {@link IgniteConfiguration}.
      *
      * @return Binary marshaller.
      * @throws IgniteCheckedException if failed.
@@ -1672,8 +1674,8 @@ public abstract class GridAbstractTest extends TestCase {
      *
      * @param igniteInstanceName Ignite instance name.
      * @param rsrcs Resources.
-     * @return Grid configuration used for starting of grid.
      * @throws Exception If failed.
+     * @return Grid configuration used for starting of grid.
      */
     @SuppressWarnings("deprecation")
     protected IgniteConfiguration getConfiguration(String igniteInstanceName, IgniteTestResources rsrcs)
@@ -1925,8 +1927,8 @@ public abstract class GridAbstractTest extends TestCase {
 
     /**
      * By default, test would started only if there is no alive Ignite instances and after {@link #afterTestsStopped()}
-     * all started Ignite instances would be stopped. Should return <code>false</code> if alive Ingite instances after
-     * test execution is correct behavior.
+     * all started Ignite instances would be stopped. Should return <code>false</code> if alive Ingite instances
+     * after test execution is correct behavior.
      *
      * @return <code>True</code> by default.
      * @see VariationsTestsConfig#isStopNodes() Example of why instances should not be stopped.
