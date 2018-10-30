@@ -29,14 +29,10 @@ import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.trainers.TrainerTransformers;
-import org.apache.ignite.ml.util.Utils;
-import org.apache.lucene.document.IntRange;
+import org.apache.ignite.ml.trainers.transformers.TrainerTransformers;
 
 import java.util.*;
-import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 

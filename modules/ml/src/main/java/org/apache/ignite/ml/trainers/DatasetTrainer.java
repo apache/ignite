@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.trainers;
 
-import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -28,9 +27,10 @@ import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Map;
 
 /**
  * Interface for trainers. Trainer is just a function which produces model from the data.
@@ -295,10 +295,6 @@ public abstract class DatasetTrainer<M extends Model, L> {
      */
     public void setEnvironment(LearningEnvironment environment) {
         this.environment = environment;
-    }
-
-    public <M1 extends Model> DatasetTrainer<M1, L> transform(IgniteFunction<DatasetTrainer<M, L>, DatasetTrainer<M1, L>> transformer) {
-        return transformer.apply(this);
     }
 
     /**

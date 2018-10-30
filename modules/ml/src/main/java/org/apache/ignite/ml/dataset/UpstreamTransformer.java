@@ -23,17 +23,20 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import java.util.Random;
 import java.util.stream.Stream;
 
-public class UpstreamTransformer<K, V, T> {
-    private IgniteFunction<Random, T> dataCreator;
-    private IgniteBiFunction<Stream<UpstreamEntry<K, V>>, T, Stream<UpstreamEntry<K, V>>> transformer;
+// TODO: place comment in the right place.
+//The same {@link Stream} of upstream entries
+//    * should be passed to both {@code context} builder and partition {@code data} builder. But in transformer
+//    * pseudo-random logic can present.
+//    * To fix outcome of such a logic for each act of dataset building, for each transformer
+//    * we pass supplier of data making transformer deterministic.
+public abstract class UpstreamTransformer<K, V, T> {
     private UpstreamTransformer<K, V, ?> next;
 
-    public UpstreamTransformer(
-        IgniteFunction<Random, T> dataCreator,
-        IgniteBiFunction<Stream<UpstreamEntry<K, V>>, T, Stream<UpstreamEntry<K, V>>> transformer,
-        UpstreamTransformer<K, V, ?> next) {
-        this.dataCreator = dataCreator;
-        this.transformer = transformer;
+    public UpstreamTransformer() {
+        this(null);
+    }
+
+    public UpstreamTransformer(UpstreamTransformer<K, V, ?> next) {
         this.next = next;
     }
 
@@ -42,7 +45,7 @@ public class UpstreamTransformer<K, V, T> {
     }
 
     public Stream<UpstreamEntry<K, V>> transform(Random rnd, Stream<UpstreamEntry<K, V>> stream) {
-        Stream<UpstreamEntry<K, V>> res = transformer.apply(stream, dataCreator.apply(rnd));
+        Stream<UpstreamEntry<K, V>> res = transform(createData(rnd), stream);
 
         if (next != null) {
             res = next.transform(rnd, res);
@@ -50,4 +53,7 @@ public class UpstreamTransformer<K, V, T> {
 
         return res;
     }
+
+    public abstract T createData(Random rnd);
+    public abstract Stream<UpstreamEntry<K, V>> transform(T data, Stream<UpstreamEntry<K, V>> upstream);
 }

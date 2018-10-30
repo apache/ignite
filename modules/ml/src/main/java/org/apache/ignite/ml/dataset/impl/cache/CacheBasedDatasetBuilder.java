@@ -32,10 +32,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.PartitionContextBuilder;
-import org.apache.ignite.ml.dataset.PartitionDataBuilder;
-import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.dataset.*;
 import org.apache.ignite.ml.dataset.impl.cache.util.ComputeUtils;
 import org.apache.ignite.ml.dataset.impl.cache.util.DatasetAffinityFunctionWrapper;
 import org.apache.ignite.ml.math.functions.Functions;
@@ -81,9 +78,10 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
      */
     private final IgniteBiPredicate<K, V> filter;
 
-    private List<IgniteBiFunction<Stream<UpstreamEntry<K, V>>, ?, Stream<UpstreamEntry<K, V>>>> transformers;
-
-    private List<IgniteSupplier<?>> transformerDataSuppliers;
+    /**
+     * Chain of upstream transformers.
+     */
+    private UpstreamTransformerChain<K, V> transformersChain;
 
     /**
      * Constructs a new instance of cache based dataset builder that makes {@link CacheBasedDataset} with default
@@ -107,8 +105,7 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         this.ignite = ignite;
         this.upstreamCache = upstreamCache;
         this.filter = filter;
-        this.transformers = new LinkedList<>();
-        this.transformerDataSuppliers = new LinkedList<>();
+        transformersChain = new UpstreamTransformerChain<>();
     }
 
     /**
@@ -136,33 +133,22 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
             ignite,
             upstreamCache.getName(),
             filter,
-            transformers,
-            transformerDataSuppliers,
+            transformersChain,
             datasetCache.getName(),
             partCtxBuilder,
             RETRIES,
             RETRY_INTERVAL
         );
 
-        return new CacheBasedDataset<>(ignite, upstreamCache, filter, transformers, transformerDataSuppliers, datasetCache, partDataBuilder, datasetId);
+        return new CacheBasedDataset<>(ignite, upstreamCache, filter, transformersChain, datasetCache, partDataBuilder, datasetId);
     }
 
     /** {@inheritDoc} */
     @Override
-    public <T> DatasetBuilder<K, V> addStreamTransformer(
-        IgniteBiFunction<Stream<UpstreamEntry<K, V>>, T, Stream<UpstreamEntry<K, V>>> transformer,
-        IgniteSupplier<T> transformerDataSupplier) {
-        transformers.add(transformer);
-        transformerDataSuppliers.add(transformerDataSupplier);
+    public <T> DatasetBuilder<K, V> addStreamTransformer(UpstreamTransformer<K, V, T> transformer) {
+        transformersChain.addUpstreamTransformer(transformer);
 
         return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public <T> DatasetBuilder<K, V> addStreamTransformer(
-        IgniteBiFunction<Stream<UpstreamEntry<K, V>>, T, Stream<UpstreamEntry<K, V>>> transformer) {
-        return addStreamTransformer(transformer, () -> null);
     }
 
     /**

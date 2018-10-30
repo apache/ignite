@@ -15,14 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.trainers;
+package org.apache.ignite.ml.trainers.transformers;
 
-import org.apache.commons.math3.distribution.PoissonDistribution;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.environment.parallelism.Promise;
@@ -32,14 +30,12 @@ import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.util.Utils;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
-import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 /**
  * Class containing various trainer transformers.
@@ -159,12 +155,7 @@ public class TrainerTransformers {
 
         Long startTs = System.currentTimeMillis();
 
-        DatasetBuilder<K, V> bootstrappedBuilder = datasetBuilder.addStreamTransformer(
-            // Sequentiality of stream here is needed because we use instance of
-            // RNG as data, to make it deterministic we should fix order.
-            (s, rnd) -> s.sequential().flatMap(en -> repeatEntry(en, rnd)),
-            () -> new PoissonDistribution(subsampleRatio)
-        );
+        DatasetBuilder<K, V> bootstrappedBuilder = datasetBuilder.addStreamTransformer(new BaggingUpstreamTransformer<>(subsampleRatio));
 
         List<IgniteSupplier<M>> tasks = new ArrayList<>();
         List<IgniteBiFunction<K, V, Vector>> extractors = null;
@@ -199,30 +190,12 @@ public class TrainerTransformers {
         return new ModelsComposition(models, aggregator);
     }
 
-    @NotNull
     public static Map<Integer, Integer> getMapping(int featuresVectorSize, int maximumFeaturesCntPerMdl) {
         int[] featureIdxs = Utils.selectKDistinct(featuresVectorSize, maximumFeaturesCntPerMdl, new Random());
         Map<Integer, Integer> featureMapping = new HashMap<>();
         IntStream.range(0, maximumFeaturesCntPerMdl)
             .forEach(localId -> featureMapping.put(localId, featureIdxs[localId]));
         return featureMapping;
-    }
-
-    /**
-     * Repeats each entry count of times distributed according given Poisson distribution.
-     *
-     * @param en                  Upstream entry.
-     * @param poissonDistribution Poisson distribution.
-     * @param <K>                 Type of keys of upstream data.
-     * @param <V>                 Type of values of upstream data.
-     * @return Stream containing repeating upstream entry.
-     */
-    private static <K, V> Stream<UpstreamEntry<K, V>> repeatEntry(
-        UpstreamEntry<K, V> en,
-        PoissonDistribution poissonDistribution) {
-        int count = poissonDistribution.sample();
-
-        return IntStream.range(0, count).mapToObj(i -> en);
     }
 
     public static IgniteFunction<Vector, Vector> getProjector(Map<Integer, Integer> mapping) {

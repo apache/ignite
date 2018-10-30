@@ -57,29 +57,12 @@ public interface DatasetBuilder<K, V> {
     /**
      * Data from upstream is passed to partition {@code context} builder and partition {@code data} builder as
      * a {@link Stream} of {@link UpstreamEntry}. This stream can be transformed with this method.
-     * Can be useful for example for bootstrapping dataset builder. The same {@link Stream} of upstream entries
-     * should be passed to both {@code context} builder and partition {@code data} builder. But in transformer
-     * pseudo-random logic can present.
-     * To fix outcome of such a logic for each act of dataset building, for each transformer
-     * we pass supplier of data making transformer deterministic.
-     *
-     * @param transformer Transformer.
-     * @param transformerDataSupplier Transformer data supplier.
-     * @return This object.
-     */
-    public <T> DatasetBuilder<K, V> addStreamTransformer(
-            IgniteBiFunction<Stream<UpstreamEntry<K, V>>, T, Stream<UpstreamEntry<K, V>>> transformer,
-            IgniteSupplier<T> transformerDataSupplier);
-
-    /**
-     * Data from upstream is passed to partition {@code context} builder and partition {@code data} builder as
-     * a {@link Stream} of {@link UpstreamEntry}. This stream can be transformed with this method.
+     * Can be useful for example for bootstrapping dataset builder.
      *
      * @param transformer Transformer.
      * @return This object.
      */
-    public <T> DatasetBuilder<K, V> addStreamTransformer(
-        IgniteBiFunction<Stream<UpstreamEntry<K, V>>, T, Stream<UpstreamEntry<K, V>>> transformer);
+    public <T> DatasetBuilder<K, V> addStreamTransformer(UpstreamTransformer<K, V, T> transformer);
 
     /**
      * Returns new instance of DatasetBuilder using conjunction of internal filter and {@code filterToAdd}.

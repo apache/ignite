@@ -17,22 +17,14 @@
 
 package org.apache.ignite.ml.dataset.impl.local;
 
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.ml.dataset.*;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.util.Utils;
+
 import java.io.Serializable;
 import java.util.*;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.PartitionContextBuilder;
-import org.apache.ignite.ml.dataset.PartitionDataBuilder;
-import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.functions.IgniteSupplier;
-import org.apache.ignite.ml.util.Utils;
 
 /**
  * A dataset builder that makes {@link LocalDataset}. Encapsulate logic of building local dataset such as allocation
@@ -51,9 +43,7 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     /** Filter for {@code upstream} data. */
     private final IgniteBiPredicate<K, V> filter;
 
-    private List<IgniteBiFunction<Stream<UpstreamEntry<K, V>>, ?, Stream<UpstreamEntry<K, V>>>> transformers;
-
-    private List<IgniteSupplier<?>> transformerDataSuppliers;
+    private UpstreamTransformerChain<K, V> upstreamTransformers;
 
     /**
      * Constructs a new instance of local dataset builder that makes {@link LocalDataset} with default predicate that
@@ -77,8 +67,7 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         this.upstreamMap = upstreamMap;
         this.filter = filter;
         this.partitions = partitions;
-        this.transformers = new LinkedList<>();
-        this.transformerDataSuppliers = new LinkedList<>();
+        this.upstreamTransformers = new UpstreamTransformerChain<>();
     }
 
     /** {@inheritDoc} */
@@ -97,10 +86,7 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
             .filter(en -> filter.apply(en.getKey(), en.getValue()))
             .map(en -> new UpstreamEntry<>(en.getKey(), en.getValue()));
 
-        List<?> suppliersData = transformerDataSuppliers.stream().map(Supplier::get).collect(Collectors.toList());
-
-        transformStream(filteredStream, suppliersData)
-            .forEach(entriesList::add);
+        upstreamTransformers.transform(new Random().nextLong(), filteredStream).forEach(entriesList::add);;
 
         int partSize = Math.max(1, entriesList.size() / partitions);
 
@@ -137,41 +123,16 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         return new LocalDataset<>(ctxList, dataList);
     }
 
-    @Override
-    public <T> DatasetBuilder<K, V> addStreamTransformer(
-        IgniteBiFunction<Stream<UpstreamEntry<K, V>>, T, Stream<UpstreamEntry<K, V>>> transformer,
-        IgniteSupplier<T> transformerDataSupplier) {
-        transformers.add(transformer);
-        transformerDataSuppliers.add(transformerDataSupplier);
+    @Override public <T> DatasetBuilder<K, V> addStreamTransformer(UpstreamTransformer<K, V, T> upstreamTransformer) {
+        upstreamTransformers.addUpstreamTransformer(upstreamTransformer);
 
         return this;
-    }
-
-    /**  */
-    @Override
-    public <T> DatasetBuilder<K, V> addStreamTransformer(IgniteBiFunction<Stream<UpstreamEntry<K, V>>, T, Stream<UpstreamEntry<K, V>>> transformer) {
-        return addStreamTransformer(transformer, () -> null);
     }
 
     /** {@inheritDoc} */
     @Override public DatasetBuilder<K, V> withFilter(IgniteBiPredicate<K, V> filterToAdd) {
         return new LocalDatasetBuilder<>(upstreamMap,
             (e1, e2) -> filter.apply(e1, e2) && filterToAdd.apply(e1, e2), partitions);
-    }
-
-    private Stream<UpstreamEntry<K, V>> transformStream(Stream<UpstreamEntry<K, V>> upstream, List<?> data) {
-        assert transformers.size() == data.size();
-
-        Iterator<?> dataSuppliersIter = data.iterator();
-
-        Stream<UpstreamEntry<K, V>> res = upstream;
-
-        for (IgniteBiFunction transformer : transformers) {
-            Object d = dataSuppliersIter.next();
-            res = (Stream<UpstreamEntry<K, V>>) transformer.apply(res, d);
-        }
-
-        return res;
     }
 
     /**

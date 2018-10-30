@@ -17,9 +17,6 @@
 
 package org.apache.ignite.ml.dataset;
 
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
-
 import java.util.Random;
 import java.util.stream.Stream;
 
@@ -27,16 +24,16 @@ public class UpstreamTransformerChain<K, V> {
     private UpstreamTransformer<K, V, ?> head;
     private UpstreamTransformer<K, V, ?> tail;
 
+    public UpstreamTransformerChain() {
+        this(null);
+    }
+
     public UpstreamTransformerChain(UpstreamTransformer<K, V, ?> head) {
         this.head = head;
         this.tail = head;
     }
 
-    public <T> UpstreamTransformerChain<K, V> addUpstreamTransformer(
-        IgniteBiFunction<Stream<UpstreamEntry<K, V>>, T, Stream<UpstreamEntry<K, V>>> trans,
-        IgniteFunction<Random, T> dataCreator
-    ) {
-        UpstreamTransformer<K, V, T> next = new UpstreamTransformer<>(dataCreator, trans, null);
+    public <T> UpstreamTransformerChain<K, V> addUpstreamTransformer(UpstreamTransformer<K, V, T> next) {
         tail.setNext(next);
         tail = next;
 
@@ -49,5 +46,9 @@ public class UpstreamTransformerChain<K, V> {
         }
 
         return head.transform(new Random(seed), stream);
+    }
+
+    public boolean isEmpty() {
+        return head == null;
     }
 }
