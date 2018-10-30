@@ -4935,7 +4935,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public final void txUnlock(IgniteInternalTx tx) throws GridCacheEntryRemovedException {
+    @Override public void txUnlock(IgniteInternalTx tx) throws GridCacheEntryRemovedException {
         removeLock(tx.xidVersion());
     }
 
