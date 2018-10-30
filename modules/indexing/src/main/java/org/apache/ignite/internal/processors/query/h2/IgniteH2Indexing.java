@@ -1898,44 +1898,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * Try executing query using native facilities.
+     * Determines if a passed query can be executed natively.
      *
      * @param schemaName Schema name.
      * @param qry Query.
-     * @param cliCtx Client context, or {@code null} if not applicable.
-     * @return Result or {@code null} if cannot parse/process this query.
+     * @return Command or {@code null} if cannot parse this query.
      */
-    @SuppressWarnings({"ConstantConditions", "StatementWithEmptyBody"})
-    private List<FieldsQueryCursor<List<?>>> tryQueryDistributedSqlFieldsNative(String schemaName, SqlFieldsQuery qry,
-        @Nullable SqlClientContext cliCtx) {
+     @Nullable private SqlCommand parseQueryNative(String schemaName, SqlFieldsQuery qry) {
         // Heuristic check for fast return.
-        if (!INTERNAL_CMD_RE.matcher(qry.getSql().trim()).find()) {
-            if (!ctx.state().publicApiActiveState(true)) {
-                throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
-                    "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
-                    "join the cluster. To activate the cluster call Ignite.active(true).");
-            }
-
+        if (!INTERNAL_CMD_RE.matcher(qry.getSql().trim()).find())
             return null;
-        }
-
-        // Parse.
-        SqlCommand cmd;
 
         try {
             SqlParser parser = new SqlParser(schemaName, qry.getSql());
 
-            cmd = parser.nextCommand();
+            SqlCommand cmd = parser.nextCommand();
 
-            if (!(cmd instanceof SqlCommitTransactionCommand || cmd instanceof SqlRollbackTransactionCommand) && !ctx.state().publicApiActiveState(true)) {
-//            if (!ctx.state().publicApiActiveState(true)) {
-                throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
-                    "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
-                    "join the cluster. To activate the cluster call Ignite.active(true).");
-            }
             // t0d0 multiple commands?
-            // t0d0 permit queries when transaction is already opened?
-            // t0d0 check how exception is wrapped during propagation from current method
 
             // No support for multiple commands for now.
             if (parser.nextCommand() != null)
@@ -1953,6 +1932,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 || cmd instanceof SqlAlterUserCommand
                 || cmd instanceof SqlDropUserCommand))
                 return null;
+
+            return cmd;
         }
         catch (SqlStrictParseException e) {
             throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.PARSING, e);
@@ -1973,7 +1954,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteSQLException("Failed to parse DDL statement: " + qry.getSql() + ": " + e.getMessage(),
                 code, e);
         }
+    }
 
+    /**
+     * Executes a query natively.
+     *
+     * @param qry Query.
+     * @param cmd Parsed command corresponding to query.
+     * @param cliCtx Client context, or {@code null} if not applicable.
+     * @return Result cursors.
+     */
+    @SuppressWarnings({"ConstantConditions", "StatementWithEmptyBody"})
+    private List<FieldsQueryCursor<List<?>>> queryDistributedSqlFieldsNative(SqlFieldsQuery qry, SqlCommand cmd,
+        @Nullable SqlClientContext cliCtx) {
         // Execute.
         try {
             if (cmd instanceof SqlCreateIndexCommand
@@ -2136,10 +2129,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean mvccEnabled = mvccEnabled(ctx), startTx = autoStartTx(qry);
 
         try {
-            List<FieldsQueryCursor<List<?>>> res = tryQueryDistributedSqlFieldsNative(schemaName, qry, cliCtx);
+            SqlCommand nativeCmd = parseQueryNative(schemaName, qry);
 
-            if (res != null)
-                return res;
+            if (!(nativeCmd instanceof SqlCommitTransactionCommand || nativeCmd instanceof SqlRollbackTransactionCommand)
+                && !ctx.state().publicApiActiveState(true)) {
+                throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
+                    "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
+                    "join the cluster. To activate the cluster call Ignite.active(true).");
+            }
+
+            if (nativeCmd != null)
+                return queryDistributedSqlFieldsNative(qry, nativeCmd, cliCtx);
+
+            List<FieldsQueryCursor<List<?>>> res;
 
             {
                 // First, let's check if we already have a two-step query for this statement...

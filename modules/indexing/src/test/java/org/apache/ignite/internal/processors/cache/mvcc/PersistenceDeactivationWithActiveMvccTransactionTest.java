@@ -55,7 +55,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /** */
 public class PersistenceDeactivationWithActiveMvccTransactionTest extends GridCommonAbstractTest {
-    // t0d0 different commit modes sql
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         cleanPersistenceDir();
