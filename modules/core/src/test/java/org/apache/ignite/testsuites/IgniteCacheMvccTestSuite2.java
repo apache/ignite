@@ -39,6 +39,9 @@ import org.apache.ignite.internal.processors.cache.IgniteAtomicCacheEntryProcess
 import org.apache.ignite.internal.processors.cache.IgniteCachePartitionMapUpdateTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheAndNodeStop;
 import org.apache.ignite.internal.processors.cache.MemoryPolicyConfigValidationTest;
+import org.apache.ignite.internal.processors.cache.NonAffinityCoordinatorDynamicStartStopTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheLoadingConcurrentGridStartSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheLoadingConcurrentGridStartSelfTestAllowOverwrite;
 import org.apache.ignite.internal.processors.cache.distributed.CachePartitionStateTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheClientNodePartitionsExchangeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheServerNodeConcurrentStart;
@@ -91,7 +94,8 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
         ignoredTests.add(IgniteAtomicCacheEntryProcessorNodeJoinTest.class);
         ignoredTests.add(GridCacheDhtAtomicEvictionNearReadersSelfTest.class);
         ignoredTests.add(GridCacheNearClientHitTest.class);
-        ignoredTests.add(IgniteCacheServerNodeConcurrentStart.class);
+        ignoredTests.add(CacheLoadingConcurrentGridStartSelfTest.class);
+        ignoredTests.add(CacheLoadingConcurrentGridStartSelfTestAllowOverwrite.class);
 
         // Other non-tx tests.
         ignoredTests.add(RendezvousAffinityFunctionSelfTest.class);
@@ -103,6 +107,7 @@ public class IgniteCacheMvccTestSuite2 extends TestSuite {
         ignoredTests.add(GridCachePartitionedProjectionAffinitySelfTest.class);
         ignoredTests.add(RendezvousAffinityFunctionBackupFilterSelfTest.class);
         ignoredTests.add(ClusterNodeAttributeAffinityBackupFilterSelfTest.class);
+        ignoredTests.add(NonAffinityCoordinatorDynamicStartStopTest.class);
 
         ignoredTests.add(NoneRebalanceModeSelfTest.class);
         ignoredTests.add(IgniteCachePartitionMapUpdateTest.class);
