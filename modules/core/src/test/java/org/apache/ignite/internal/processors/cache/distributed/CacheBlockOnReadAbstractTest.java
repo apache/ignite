@@ -89,8 +89,11 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  *
  */
 public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTest {
+    /** Default partitions count. */
+    protected static final int DFLT_PARTITIONS_COUNT = 16;
+
     /** Default cache entries count. */
-    private static final int DFLT_CACHE_ENTRIES_CNT = 2 * 1024;
+    protected static final int DFLT_CACHE_ENTRIES_CNT = 16 * DFLT_PARTITIONS_COUNT;
 
     /** Ip finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -242,12 +245,12 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         /**
          * Number of milliseconds to warmup reading process. Used to lower fluctuations in run time. Might be 0.
          */
-        long warmup() default 2000L;
+        long warmup() default 3000L;
 
         /**
          * Number of milliseconds to wait on the potentially blocking operation.
          */
-        long timeout() default 3000L;
+        long timeout() default 2000L;
 
         /**
          * Cache atomicity mode.
@@ -396,7 +399,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(timeout = 5000L, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Params(timeout = 4000L, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
     public void testDestroyCacheAtomicPartitioned() throws Exception {
         doTestDestroyCache();
     }
@@ -404,7 +407,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(timeout = 5000L, atomicityMode = ATOMIC, cacheMode = REPLICATED)
+    @Params(timeout = 4000L, atomicityMode = ATOMIC, cacheMode = REPLICATED)
     public void testDestroyCacheAtomicReplicated() throws Exception {
         doTestDestroyCache();
     }
@@ -412,7 +415,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(timeout = 5000L, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Params(timeout = 4000L, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
     public void testDestroyCacheTransactionalPartitioned() throws Exception {
         doTestDestroyCache();
     }
@@ -420,7 +423,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(timeout = 5000L, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
+    @Params(timeout = 4000L, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
     public void testDestroyCacheTransactionalReplicated() throws Exception {
         doTestDestroyCache();
     }
@@ -586,7 +589,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(timeout = 5000L, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Params(timeout = 4000L, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
     public void testUpdateBaselineTopologyAtomicPartitioned() throws Exception {
         doTestUpdateBaselineTopology();
     }
@@ -594,7 +597,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(timeout = 5000L, atomicityMode = ATOMIC, cacheMode = REPLICATED)
+    @Params(timeout = 4000L, atomicityMode = ATOMIC, cacheMode = REPLICATED)
     public void testUpdateBaselineTopologyAtomicReplicated() throws Exception {
         doTestUpdateBaselineTopology();
     }
@@ -602,7 +605,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(timeout = 5000L, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Params(timeout = 4000L, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
     public void testUpdateBaselineTopologyTransactionalPartitioned() throws Exception {
         doTestUpdateBaselineTopology();
     }
@@ -610,7 +613,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Params(timeout = 5000L, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
+    @Params(timeout = 4000L, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
     public void testUpdateBaselineTopologyTransactionalReplicated() throws Exception {
         doTestUpdateBaselineTopology();
     }
@@ -970,7 +973,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
         // Read while potentially blocking operation is executing.
         try (AutoCloseable block = backgroundOperation.start()) {
-            cntFinishedReadOperations.await(5 * timeout(), TimeUnit.MILLISECONDS);
+            cntFinishedReadOperations.await(10 * timeout(), TimeUnit.MILLISECONDS);
 
             // Possible if test itself is wrong.
             assertEquals("Messages weren't blocked in time", 0, cntFinishedReadOperations.getCount());
@@ -1426,7 +1429,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
                 .setBackups(backupsCount())
                 .setAffinity(
                     new RendezvousAffinityFunction()
-                        .setPartitions(32)
+                        .setPartitions(DFLT_PARTITIONS_COUNT)
                 );
         }
 

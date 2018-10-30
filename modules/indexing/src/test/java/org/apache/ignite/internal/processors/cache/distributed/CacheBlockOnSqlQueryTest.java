@@ -59,7 +59,7 @@ public class CacheBlockOnSqlQueryTest extends CacheBlockOnReadAbstractTest {
 
                 cache().query(
                     new SqlQuery<>(TestingEntity.class, "val >= ? and val < ?")
-                        .setArgs(idx, idx + 200)
+                        .setArgs(idx, idx + 32)
                 ).getAll();
             }
         };

@@ -38,7 +38,7 @@ public class CacheBlockOnSingleGetTest extends CacheBlockOnReadAbstractTest {
 
             /** {@inheritDoc} */
             @Override public void doRead() {
-                for (int i = 0; i < 200; i++)
+                for (int i = 0; i < DFLT_PARTITIONS_COUNT * 4; i++)
                     cache().get(random.nextInt(entriesCount()));
             }
         };

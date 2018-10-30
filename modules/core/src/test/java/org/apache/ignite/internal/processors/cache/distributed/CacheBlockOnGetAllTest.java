@@ -42,7 +42,7 @@ public class CacheBlockOnGetAllTest extends CacheBlockOnReadAbstractTest {
             @Override public void doRead() {
                 Set<Integer> keys = new HashSet<>();
 
-                for (int i = 0; i < 200; i++)
+                for (int i = 0; i < DFLT_PARTITIONS_COUNT * 4; i++)
                     keys.add(random.nextInt(entriesCount()));
 
                 cache().getAll(keys);
