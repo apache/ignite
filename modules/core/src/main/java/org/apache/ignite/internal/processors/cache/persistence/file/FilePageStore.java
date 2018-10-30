@@ -350,6 +350,16 @@ public class FilePageStore implements PageStore {
         }
     }
 
+    /**
+     * @param pageBuf Page buffer.
+     * @return Number of bytes to calculate CRC on.
+     */
+    private int getCrcSize(ByteBuffer pageBuf) {
+        int compressedSize = PageIO.getCompressedSize(pageBuf);
+        assert compressedSize >= 0 && compressedSize < pageSize: compressedSize;
+        return compressedSize == 0 ? pageSize : compressedSize;
+    }
+
     /** {@inheritDoc} */
     @Override public void read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
         init();
@@ -382,7 +392,7 @@ public class FilePageStore implements PageStore {
             assert checkAllZeroTail(pageBuf);
 
             if (!skipCrc) {
-                int curCrc32 = FastCrc.calcCrc(pageBuf, pageSize);
+                int curCrc32 = FastCrc.calcCrc(pageBuf, getCrcSize(pageBuf));
 
                 if ((savedCrc32 ^ curCrc32) != 0)
                     throw new IgniteDataIntegrityViolationException("Failed to read page (CRC validation failed) " +
@@ -577,7 +587,7 @@ public class FilePageStore implements PageStore {
                     if (calculateCrc && !skipCrc) {
                         assert PageIO.getCrc(pageBuf) == 0 : U.hexLong(pageId);
 
-                        PageIO.setCrc(pageBuf, calcCrc32(pageBuf, pageSize));
+                        PageIO.setCrc(pageBuf, calcCrc32(pageBuf, getCrcSize(pageBuf)));
                     }
 
                     // Check whether crc was calculated somewhere above the stack if it is forcibly skipped.
