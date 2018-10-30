@@ -92,9 +92,6 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientStartCoordinatorFailsAtomic() throws Exception {
-        if (FORCE_MVCC)
-            return;
-
         clientStartCoordinatorFails(ATOMIC);
     }
 
@@ -110,6 +107,9 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void clientStartCoordinatorFails(CacheAtomicityMode atomicityMode) throws Exception {
+        if (FORCE_MVCC)
+            return;
+
         Ignite srv0 = startGrids(3);
 
         final int KEYS = 500;
@@ -171,6 +171,9 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void clientStartLastServerFails(CacheAtomicityMode atomicityMode) throws Exception {
+        if (FORCE_MVCC)
+            return;
+
         startGrids(3);
 
         CacheConfiguration<Object, Object> cfg = cacheConfiguration(DEFAULT_CACHE_NAME, atomicityMode, 1);
@@ -530,14 +533,16 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
         for (int i = 0; i < keys; i++)
             map.put(i, i);
 
-        for (int i = 0; i < 3; i++) {
-            CacheConfiguration<Object, Object> ccfg = cacheConfiguration("atomic-" + i, ATOMIC, i);
+        if (!FORCE_MVCC) {
+            for (int i = 0; i < 3; i++) {
+                CacheConfiguration<Object, Object> ccfg = cacheConfiguration("atomic-" + i, ATOMIC, i);
 
-            IgniteCache<Object, Object> cache = node.createCache(ccfg);
+                IgniteCache<Object, Object> cache = node.createCache(ccfg);
 
-            cacheNames.add(ccfg.getName());
+                cacheNames.add(ccfg.getName());
 
-            cache.putAll(map);
+                cache.putAll(map);
+            }
         }
 
         for (int i = 0; i < 3; i++) {
