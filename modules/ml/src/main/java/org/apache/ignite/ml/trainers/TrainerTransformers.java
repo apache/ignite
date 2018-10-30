@@ -156,7 +156,8 @@ public class TrainerTransformers {
 
         Long startTs = System.currentTimeMillis();
 
-        DatasetBuilder<K, V> bootstrappedBuilder = datasetBuilder.addStreamTransformer(new BaggingUpstreamTransformer<>(subsampleRatio));
+        DatasetBuilder<K, V> bootstrappedBuilder = datasetBuilder
+            .addStreamTransformer(new BaggingUpstreamTransformer<>(subsampleRatio));
 
         List<IgniteSupplier<M>> tasks = new ArrayList<>();
         List<IgniteBiFunction<K, V, Vector>> extractors = null;

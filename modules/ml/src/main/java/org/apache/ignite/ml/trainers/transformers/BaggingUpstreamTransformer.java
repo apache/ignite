@@ -40,7 +40,7 @@ public class BaggingUpstreamTransformer<K, V> extends UpstreamTransformer<K, V, 
             PoissonDistribution.DEFAULT_MAX_ITERATIONS);
     }
 
-    @Override public Stream<UpstreamEntry<K, V>> transform(PoissonDistribution poisson, Stream<UpstreamEntry<K, V>> upstream) {
+    @Override protected Stream<UpstreamEntry<K, V>> transform(PoissonDistribution poisson, Stream<UpstreamEntry<K, V>> upstream) {
         // Sequentiality of stream here is needed because we use instance of
         // RNG as data, to make it deterministic we should fix order.
         // TODO: Maybe more efficient way to make stream transformation deterministic would be to

@@ -67,7 +67,7 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         this.upstreamMap = upstreamMap;
         this.filter = filter;
         this.partitions = partitions;
-        this.upstreamTransformers = new UpstreamTransformerChain<>();
+        this.upstreamTransformers = UpstreamTransformerChain.empty();
     }
 
     /** {@inheritDoc} */

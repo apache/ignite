@@ -35,6 +35,8 @@ import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpda
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
+import org.apache.ignite.ml.selection.cv.CrossValidation;
+import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
@@ -132,19 +134,12 @@ public class BaggingTest extends TrainerTest {
 //        Arrays.stream(score).forEach(System.out::println);
     }
 
-    @Test
-    public void t() {
-
-    }
-
     protected void count(IgniteTriFunction<Long, CountData, Integer, Long> counter) {
         Map<Integer, Double[]> cacheMock = getCacheMock();
 
         CountTrainer countTrainer = new CountTrainer(counter);
 
         double subsampleRatio = 0.3;
-
-
 
         ModelsComposition model = TrainerTransformers.makeBagged(countTrainer, 100, subsampleRatio, new MeanValuePredictionsAggregator())
             .fit(cacheMock, parts, null, null);

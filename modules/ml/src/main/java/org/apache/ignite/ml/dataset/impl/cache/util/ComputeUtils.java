@@ -238,15 +238,15 @@ public class ComputeUtils {
             qry.setFilter(filter);
 
             C ctx;
-            long seed = new Random().nextLong();
-            long cnt = computeCount(locUpstreamCache, qry, transformersChain, seed);
+            long upstreamTransformationsSeed = new Random().nextLong();
+            long cnt = computeCount(locUpstreamCache, qry, transformersChain, upstreamTransformationsSeed);
 
             try (QueryCursor<UpstreamEntry<K, V>> cursor = locUpstreamCache.query(qry,
                 e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
 
                 Iterator<UpstreamEntry<K, V>> it = cursor.iterator();
                 if (!transformersChain.isEmpty()) {
-                    Stream<UpstreamEntry<K, V>> transformedStream = transformersChain.transform(seed, Utils.asStream(it));
+                    Stream<UpstreamEntry<K, V>> transformedStream = transformersChain.transform(upstreamTransformationsSeed, Utils.asStream(it));
                     it = transformedStream.iterator();
                 }
                 Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(

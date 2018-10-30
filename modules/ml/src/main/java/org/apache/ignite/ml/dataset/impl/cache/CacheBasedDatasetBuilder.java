@@ -105,7 +105,7 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         this.ignite = ignite;
         this.upstreamCache = upstreamCache;
         this.filter = filter;
-        transformersChain = new UpstreamTransformerChain<>();
+        transformersChain = UpstreamTransformerChain.empty();
     }
 
     /**

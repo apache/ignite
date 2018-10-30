@@ -17,43 +17,42 @@
 
 package org.apache.ignite.ml.dataset;
 
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
-
 import java.util.Random;
 import java.util.stream.Stream;
 
-// TODO: place comment in the right place.
-//The same {@link Stream} of upstream entries
-//    * should be passed to both {@code context} builder and partition {@code data} builder. But in transformer
-//    * pseudo-random logic can present.
-//    * To fix outcome of such a logic for each act of dataset building, for each transformer
-//    * we pass supplier of data making transformer deterministic.
+/**
+ * Class encapsulating transformer of upstream.
+ *
+ * @param <K> Type of keys in the upstream.
+ * @param <V> Type of values in the upstream.
+ * @param <T> Data needed for this transformer.
+ */
 public abstract class UpstreamTransformer<K, V, T> {
-    private UpstreamTransformer<K, V, ?> next;
-
-    public UpstreamTransformer() {
-        this(null);
+    /**
+     * Performs transformation.
+     *
+     * @param rnd RNG.
+     * @param upstream Upstream.
+     * @return Transformed upstream.
+     */
+    public final Stream<UpstreamEntry<K, V>> transform(Random rnd, Stream<UpstreamEntry<K, V>> upstream) {
+        return transform(createData(rnd), upstream);
     }
 
-    public UpstreamTransformer(UpstreamTransformer<K, V, ?> next) {
-        this.next = next;
-    }
+    /**
+     * Creates data needed for this transformer based (if needed) on given RNG.
+     *
+     * @param rnd RNG.
+     * @return Data needed for this transformer based (if needed) on given RNG.
+     */
+    protected abstract T createData(Random rnd);
 
-    public void setNext(UpstreamTransformer<K, V, ?> next) {
-        this.next = next;
-    }
-
-    public Stream<UpstreamEntry<K, V>> transform(Random rnd, Stream<UpstreamEntry<K, V>> stream) {
-        Stream<UpstreamEntry<K, V>> res = transform(createData(rnd), stream);
-
-        if (next != null) {
-            res = next.transform(rnd, res);
-        }
-
-        return res;
-    }
-
-    public abstract T createData(Random rnd);
-    public abstract Stream<UpstreamEntry<K, V>> transform(T data, Stream<UpstreamEntry<K, V>> upstream);
+    /**
+     * Perform transformation of upstream.
+     *
+     * @param data Data needed for transformation.
+     * @param upstream Upstream.
+     * @return Transformed upstream.
+     */
+    protected abstract Stream<UpstreamEntry<K, V>> transform(T data, Stream<UpstreamEntry<K, V>> upstream);
 }

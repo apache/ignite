@@ -179,7 +179,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
                     ignite,
                     upstreamCacheName,
                     (k, v) -> true,
-                    new UpstreamTransformerChain<>(),
+                    UpstreamTransformerChain.empty(),
                     datasetCacheName,
                     datasetId,
                     0,
@@ -229,7 +229,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
             ignite,
             upstreamCacheName,
             (k, v) -> true,
-            new UpstreamTransformerChain<>(),
+            UpstreamTransformerChain.empty(),
             datasetCacheName,
             (upstream, upstreamSize) -> {
 
