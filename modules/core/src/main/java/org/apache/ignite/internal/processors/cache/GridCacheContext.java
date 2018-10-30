@@ -226,7 +226,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private CacheWeakQueryIteratorsHolder<Map.Entry<K, V>> itHolder;
 
     /** Affinity node. */
-    private boolean affNode;
+    private volatile boolean affNode;
 
     /** Conflict resolver. */
     private CacheVersionConflictResolver conflictRslvr;
@@ -414,8 +414,10 @@ public class GridCacheContext<K, V> implements Externalizable {
      * Called when cache was restored during recovery and node has joined to topology.
      *
      * @param topVer Cache topology join version.
+     * @param statisticsEnabled Flag indicates is statistics enabled or not for that cache.
+     *                          Value may be changed after node joined to topology.
      */
-    public void finishRecovery(AffinityTopologyVersion topVer) {
+    public void finishRecovery(AffinityTopologyVersion topVer, boolean statisticsEnabled) {
         assert recoveryMode : this;
 
         recoveryMode = false;
@@ -423,6 +425,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         locStartTopVer = topVer;
 
         locMacs = localNode().attribute(ATTR_MACS);
+
+        this.statisticsEnabled = statisticsEnabled;
 
         assert locMacs != null;
     }

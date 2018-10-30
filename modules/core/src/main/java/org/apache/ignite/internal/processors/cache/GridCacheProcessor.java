@@ -2290,12 +2290,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void finishRecovery(AffinityTopologyVersion cacheStartVer, GridCacheContext<?, ?> cacheContext) throws IgniteCheckedException {
         CacheGroupContext groupContext = cacheContext.group();
 
-        groupContext.finishRecovery(cacheStartVer, cacheDescriptor(cacheContext.cacheId()).receivedFrom());
+        // Take cluster-wide cache descriptor and try to update local cache and cache group parameters.
+        DynamicCacheDescriptor updatedDescriptor = cacheDescriptor(cacheContext.cacheId());
 
-        cacheContext.finishRecovery(cacheStartVer);
+        groupContext.finishRecovery(
+            cacheStartVer,
+            updatedDescriptor.receivedFrom(),
+            isLocalAffinity(updatedDescriptor.cacheConfiguration())
+        );
 
-        // Statistics mode may globally changed after node restart.
-        cacheContext.statisticsEnabled(cacheDescriptor(cacheContext.cacheId()).cacheConfiguration().isStatisticsEnabled());
+        cacheContext.finishRecovery(cacheStartVer, updatedDescriptor.cacheConfiguration().isStatisticsEnabled());
 
         onKernalStart(cacheContext.cache());
 

@@ -780,10 +780,17 @@ public class CacheGroupContext {
      * @param startVer Cache group start version.
      * @param originalReceivedFrom UUID of node that was first who initiated cache group creating.
      *                             This is needed to decide should node calculate affinity locally or fetch from other nodes.
+     * @param affinityNode Flag indicates, is local node affinity node or not. This may be calculated only after node joined to topology.
      * @throws IgniteCheckedException If failed.
      */
-    public void finishRecovery(AffinityTopologyVersion startVer, UUID originalReceivedFrom) throws IgniteCheckedException {
+    public void finishRecovery(
+        AffinityTopologyVersion startVer,
+        UUID originalReceivedFrom,
+        boolean affinityNode
+    ) throws IgniteCheckedException {
         if (recoveryMode.compareAndSet(true, false)) {
+            affNode = affinityNode;
+
             rcvdFrom = originalReceivedFrom;
 
             locStartVer = startVer;
