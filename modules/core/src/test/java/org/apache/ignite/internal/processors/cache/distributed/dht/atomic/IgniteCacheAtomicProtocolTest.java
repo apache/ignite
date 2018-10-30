@@ -879,14 +879,36 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testNearEntryUpdateRace() throws Exception {
+    public void testNearEntryUpdateRace_Put() throws Exception {
+        nearEntryUpdateRace("put");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNearEntryUpdateRace_PutIfAbsent() throws Exception {
+        nearEntryUpdateRace("putIfAbsent");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNearEntryUpdateRace_Invoke() throws Exception {
+        nearEntryUpdateRace("invoke");
+    }
+
+    /**
+     * @param cacheOp Cache operation.
+     * @throws Exception If failed.
+     */
+    private void nearEntryUpdateRace(String cacheOp) throws Exception {
         ccfg = cacheConfiguration(1, FULL_SYNC);
 
         client = false;
 
         Ignite srv0 = startGrid(0);
 
-        IgniteCache<Object, Object> srvCache = srv0.cache(TEST_CACHE);
+        IgniteCache<Integer, Integer> srvCache = srv0.cache(TEST_CACHE);
 
         int key = 0;
 
@@ -896,13 +918,28 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
 
         Ignite client1 = startGrid(1);
 
-        IgniteCache<Object, Object> nearCache = client1.createNearCache(TEST_CACHE, new NearCacheConfiguration<>());
+        IgniteCache<Integer, Integer> nearCache = client1.createNearCache(TEST_CACHE, new NearCacheConfiguration<>());
 
         testSpi(srv0).blockMessages(GridNearAtomicUpdateResponse.class, client1.name());
 
         IgniteInternalFuture<?> nearPutFut = GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
-                nearCache.put(key, 1);
+                switch (cacheOp) {
+                    case "put":
+                        nearCache.put(key, 1);
+                        break;
+
+                    case "putIfAbsent":
+                        assertTrue(nearCache.putIfAbsent(key, 1));
+                        break;
+
+                    case "invoke":
+                        nearCache.invoke(key, new SetValueEntryProcessor(1));
+                        break;
+
+                    default:
+                        fail("Invalid operation: " + cacheOp);
+                }
             }
         });
 
@@ -916,7 +953,61 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
 
         nearPutFut.get();
 
-        assertEquals(2, nearCache.get(key));
+        assertEquals((Integer)2, nearCache.get(key));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNearEntryUpdateRace_PutAll() throws Exception {
+        ccfg = cacheConfiguration(1, FULL_SYNC);
+
+        client = false;
+
+        Ignite srv0 = startGrid(0);
+
+        IgniteCache<Integer, Integer> srvCache = srv0.cache(TEST_CACHE);
+
+        final int keys = 100;
+
+        ccfg = null;
+
+        client = true;
+
+        Ignite client1 = startGrid(1);
+
+        IgniteCache<Integer, Integer> nearCache = client1.createNearCache(TEST_CACHE, new NearCacheConfiguration<>());
+
+        testSpi(srv0).blockMessages(GridNearAtomicUpdateResponse.class, client1.name());
+
+        IgniteInternalFuture<?> nearPutFut = GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                Map<Integer, Integer> map = new HashMap<>();
+
+                for (int i = 0; i < keys; i++)
+                    map.put(i, i);
+
+                nearCache.putAll(map);
+            }
+        });
+
+        testSpi(srv0).waitForBlocked();
+
+        Map<Integer, Integer> map = new HashMap<>();
+
+        for (int i = 0; i < keys; i++)
+            map.put(i, i + 10_000);
+
+        srvCache.putAll(map);
+
+        assertFalse(nearPutFut.isDone());
+
+        testSpi(srv0).stopBlock();
+
+        nearPutFut.get();
+
+        for (int i = 0; i < keys; i++)
+            assertEquals((Integer)(i + 10_000), nearCache.get(i));
     }
 
     /**
