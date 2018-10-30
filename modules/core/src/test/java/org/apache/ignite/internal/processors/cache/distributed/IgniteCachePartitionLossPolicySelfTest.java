@@ -189,8 +189,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      * @throws Exception if failed.
      */
     public void testReadOnlyAllWithPersistence() throws Exception {
-        // TODO READ_ONLY_ALL doesn't work with BLT.
-        fail();
+        fail("https://issues.apache.org/jira/browse/IGNITE-10041");
 
         partLossPlc = PartitionLossPolicy.READ_ONLY_ALL;
 
@@ -232,8 +231,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      * @throws Exception if failed.
      */
     public void testReadWriteAllWithPersistence() throws Exception {
-        // TODO READ_WRITE_ALL doesn't work with BLT.
-        fail();
+        fail("https://issues.apache.org/jira/browse/IGNITE-10041");
 
         partLossPlc = PartitionLossPolicy.READ_WRITE_ALL;
 
@@ -394,8 +392,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     public void testIgnoreWithPersistence() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-5078");
 
-        // TODO IGNORE doesn't work with BLT.
-        fail();
+        fail("https://issues.apache.org/jira/browse/IGNITE-10041");
 
         partLossPlc = PartitionLossPolicy.IGNORE;
 
@@ -412,7 +409,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
         // TODO aliveNodes should include node 4, but it fails due to https://issues.apache.org/jira/browse/IGNITE-5078.
         // TODO need to add 4 to the aliveNodes after IGNITE-5078 is fixed.
-        // TopologyChanger onlyCrdIsAlive = new TopologyChanger(false, Arrays.asList(1, 2, 3), Arrays.asList(0, 4),0);
+        // TopologyChanger onlyCrdIsAlive = new TopologyChanger(false, Arrays.asList(1, 2, 3), Arrays.asList(0, 4), 0);
         TopologyChanger onlyCrdIsAlive = new TopologyChanger(false, Arrays.asList(1, 2, 3), Collections.singletonList(0), 0);
 
         checkIgnore(onlyCrdIsAlive);
@@ -422,15 +419,15 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      * @throws Exception if failed.
      */
     public void testIgnoreKillThreeNodesWithPersistence() throws Exception {
-        // TODO IGNORE doesn't work with BLT.
-        fail();
+        fail("https://issues.apache.org/jira/browse/IGNITE-10041");
 
         partLossPlc = PartitionLossPolicy.IGNORE;
 
         isPersistenceEnabled = true;
 
         // TODO aliveNodes should include node 4, but it fails due to https://issues.apache.org/jira/browse/IGNITE-5078.
-        // TopologyChanger onlyCrdIsAlive = new TopologyChanger(false, Arrays.asList(1, 2, 3), Arrays.asList(0, 4),0);
+        // TODO need to add 4 to the aliveNodes after IGNITE-5078 is fixed.
+        // TopologyChanger onlyCrdIsAlive = new TopologyChanger(false, Arrays.asList(1, 2, 3), Arrays.asList(0, 4), 0);
         TopologyChanger onlyCrdIsAlive = new TopologyChanger(false, Arrays.asList(1, 2, 3), Collections.singletonList(0), 0);
 
         checkIgnore(onlyCrdIsAlive);
@@ -500,7 +497,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
             validateQuery(safe, ig);
 
-            // TODO withPartitionRecover doesn't work with BLT.
+            // TODO withPartitionRecover doesn't work with BLT - https://issues.apache.org/jira/browse/IGNITE-10041.
             if (!isPersistenceEnabled) {
                 // Check we can read and write to lost partition in recovery mode.
                 IgniteCache<Integer, Integer> recoverCache = cache.withPartitionRecover();
@@ -526,12 +523,14 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
             info("Newly started node: " + grd.cluster().localNode().id());
 
             // Check that partition state does not change after we start each node.
-            // TODO With persistence enabled LOST partitions become OWNING after a node joins back.
+            // TODO With persistence enabled LOST partitions become OWNING after a node joins back - https://issues.apache.org/jira/browse/IGNITE-10044.
             if (!isPersistenceEnabled) {
                 for (Ignite ig : G.allGrids()) {
                     verifyCacheOps(canWrite, safe, ig);
 
-                    // TODO Query against lost partition breaks something, and after resetLostPartition there is another OWNING copy in the cluster.
+                    // TODO Query effectively waits for rebalance due to https://issues.apache.org/jira/browse/IGNITE-10057
+                    // TODO and after resetLostPartition there is another OWNING copy in the cluster due to https://issues.apache.org/jira/browse/IGNITE-10058.
+                    // TODO Uncomment after https://issues.apache.org/jira/browse/IGNITE-10058 is fixed.
 //                    validateQuery(safe, ig);
                 }
             }
