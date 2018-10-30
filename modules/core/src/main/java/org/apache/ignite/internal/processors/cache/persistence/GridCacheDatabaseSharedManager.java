@@ -2749,7 +2749,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         cctx.pageStore().finishRecover();
 
         if (log.isInfoEnabled())
-            log.info(String.format("The END checkpoint flushed on the binary memory recovery " +
+            log.info(String.format("The END checkpoint complete on the binary memory recovery " +
                     "[cpId=%s, pages=%d, markPos=%s, pagesWrite=%dms, fsync=%dms, total=%dms]",
                 cpId,
                 cpPagesCnt,
