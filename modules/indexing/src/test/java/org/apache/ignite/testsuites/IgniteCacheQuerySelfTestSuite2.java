@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.cache.CacheScanPartitionQueryFallba
 import org.apache.ignite.internal.processors.cache.IgniteCacheCrossCacheJoinRandomTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheObjectKeyIndexingSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCachePartitionedQueryMultiThreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheQueriesLoadTest1;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryEvictsMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheSqlQueryMultiThreadedSelfTest;
@@ -124,6 +125,8 @@ public class IgniteCacheQuerySelfTestSuite2 extends TestSuite {
         suite.addTestSuite(DisappearedCacheWasNotFoundMessageSelfTest.class);
 
         suite.addTestSuite(TableViewSubquerySelfTest.class);
+
+        suite.addTestSuite(IgniteCacheQueriesLoadTest1.class);
 
         return suite;
     }
