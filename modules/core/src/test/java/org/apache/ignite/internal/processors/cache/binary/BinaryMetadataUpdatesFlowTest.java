@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Phaser;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -72,7 +71,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
     private static final int UPDATES_COUNT = 1_000;
 
     /** */
-    private static final int RESTART_DELAY = 500;
+    private static final int RESTART_DELAY = 1_000;
 
     /** */
     private static final int GRID_CNT = 5;
@@ -171,7 +170,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
      * @param restartIdx The index of the node to be restarted.
      * @param workersCntr The current number of computation threads.
      */
-    private void startComputation(int idx, AtomicInteger restartIdx, Phaser workersCntr) {
+    private void startComputation(int idx, AtomicInteger restartIdx, AtomicInteger workersCntr) {
         Ignite ignite = grid(idx);
 
         ClusterGroup cg = ignite.cluster().forLocal();
@@ -274,11 +273,9 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void doTestFlowNoConflicts() throws Exception {
-        final AtomicInteger restartIdx = new AtomicInteger(-1);
-
-        final Phaser workersCntr = new Phaser(1);
-
         final AtomicBoolean stopFlag = new AtomicBoolean();
+        final AtomicInteger restartIdx = new AtomicInteger(-1);
+        final AtomicInteger workersCntr = new AtomicInteger(0);
 
         try {
             for (int i = 0; i < GRID_CNT; i++)
@@ -291,7 +288,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
             fut.get();
 
-            workersCntr.arriveAndAwaitAdvance();
+            GridTestUtils.waitForCondition(() -> workersCntr.get() == 0, 5_000);
         } finally {
             stopFlag.set(true);
         }
@@ -442,7 +439,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
         private final AtomicInteger restartIdx;
 
         /** */
-        private final Phaser workersCntr;
+        private final AtomicInteger workersCntr;
 
         /** */
         @IgniteInstanceResource
@@ -460,7 +457,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
             int idx,
             Queue<BinaryUpdateDescription> updatesQueue,
             AtomicInteger restartIdx,
-            Phaser workersCntr
+            AtomicInteger workersCntr
         ) {
             this.startLatch = startLatch;
             this.idx = idx;
@@ -475,7 +472,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
             IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME).withKeepBinary();
 
-            workersCntr.register();
+            workersCntr.incrementAndGet();
 
             try {
                 while (!updatesQueue.isEmpty()) {
@@ -494,7 +491,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
                         break;
                 }
             } finally {
-                workersCntr.arriveAndDeregister();
+                workersCntr.decrementAndGet();
 
                 if (restartIdx.get() == idx)
                     restartIdx.set(-1);
@@ -515,14 +512,14 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
         private final AtomicInteger restartIdx;
 
         /** The current number of computation threads. */
-        private final Phaser workersCntr;
+        private final AtomicInteger workersCntr;
 
         /**
          * @param stopFlag Stop thread flag.
          * @param restartIdx The index of the node to be restarted.
          * @param workersCntr The current number of computation threads.
          */
-        NodeRestarter(AtomicBoolean stopFlag, AtomicInteger restartIdx, Phaser workersCntr) {
+        NodeRestarter(AtomicBoolean stopFlag, AtomicInteger restartIdx, AtomicInteger workersCntr) {
             this.stopFlag = stopFlag;
             this.restartIdx = restartIdx;
             this.workersCntr = workersCntr;
