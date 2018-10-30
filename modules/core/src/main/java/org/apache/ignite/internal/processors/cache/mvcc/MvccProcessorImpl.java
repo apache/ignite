@@ -108,7 +108,7 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -261,7 +261,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     /** {@inheritDoc} */
     @Override public void preProcessCacheConfiguration(CacheConfiguration ccfg) {
-        if (FORCE_MVCC && ccfg.getAtomicityMode() != ATOMIC) {
+        if (FORCE_MVCC && ccfg.getAtomicityMode() != TRANSACTIONAL) {
             ccfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
             ccfg.setNearConfiguration(null);
         }
