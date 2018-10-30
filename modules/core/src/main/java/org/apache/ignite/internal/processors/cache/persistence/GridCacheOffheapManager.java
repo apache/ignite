@@ -143,8 +143,15 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             metastoreRoot.pageId().pageId(),
             metastoreRoot.isAllocated(),
             ctx.kernalContext().failure());
+    }
 
-        ((GridCacheDatabaseSharedManager)ctx.database()).addCheckpointListener(this);
+    private final AtomicBoolean listenerRegistered = new AtomicBoolean();
+
+    /**
+     *
+     */
+    public boolean needToRegister() {
+        return !listenerRegistered.getAndSet(true);
     }
 
     /**
