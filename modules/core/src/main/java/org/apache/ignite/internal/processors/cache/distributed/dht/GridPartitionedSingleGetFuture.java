@@ -764,6 +764,16 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     private void remap(final AffinityTopologyVersion topVer) {
         cctx.closures().runLocalSafe(new Runnable() {
             @Override public void run() {
+                GridDhtTopologyFuture topFut = cctx.shared().exchange().lastFinishedFuture();
+
+                Throwable err = topFut != null ? topFut.validateCache(cctx, recovery, true, key, null) : null;
+
+                if (err != null) {
+                    onDone(err);
+
+                    return;
+                }
+
                 map(topVer);
             }
         });
