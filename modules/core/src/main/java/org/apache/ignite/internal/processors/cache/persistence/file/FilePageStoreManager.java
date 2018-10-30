@@ -55,7 +55,6 @@ import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
-import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
@@ -65,7 +64,6 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolde
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -151,7 +149,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private final Set<Integer> grpsWithoutIdx = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
 
     /** Registred cache groups. */
-    private Map<Integer, CacheGroupDescriptor> registeredCacheGroups = new HashMap<>();
+    private final Map<Integer, CacheGroupDescriptor> registeredCacheGroups = new ConcurrentHashMap<>();
 
     /**
      * @param ctx Kernal context.
@@ -332,21 +330,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         int grpId = grpDesc.groupId();
 
-        try {
-            idxCacheStores.computeIfAbsent(grpId, (k) -> {
-                try {
-                    return initForCache(grpDesc, cacheData.config());
-                } catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            });
-        } catch (IgniteException ex) {
-            if (X.hasCause(ex, IgniteCheckedException.class))
-                throw ex.getCause(IgniteCheckedException.class);
-            else
-                throw ex;
-        }
+        if (!idxCacheStores.containsKey(grpId)) {
+            CacheStoreHolder holder = initForCache(grpDesc, cacheData.config());
 
+            CacheStoreHolder old = idxCacheStores.put(grpId, holder);
+
+            assert old == null : "Non-null old store holder for cache: " + cacheData.config().getName();
+        }
     }
 
     /** {@inheritDoc} */
@@ -491,7 +481,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void write(int grpId, long pageId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException {
-        writeInternal(grpId, pageId, pageBuf, tag, true, false);
+        writeInternal(grpId, pageId, pageBuf, tag, true);
     }
 
     /** {@inheritDoc} */
@@ -507,17 +497,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param pageBuf Page buffer.
      * @param tag Partition tag (growing 1-based partition file version). Used to validate page is not outdated
      * @param calculateCrc if {@code False} crc calculation will be forcibly skipped.
-     * @param recoverMode Recover mode.
      * @return PageStore to which the page has been written.
      * @throws IgniteCheckedException If IO error occurred.
      */
-    public PageStore writeInternal(int cacheId, long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc, boolean recoverMode) throws IgniteCheckedException {
+    public PageStore writeInternal(int cacheId, long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException {
         int partId = PageIdUtils.partId(pageId);
 
         PageStore store = getStore(cacheId, partId);
-
-        if (recoverMode)
-            store.beginRecover();
 
         try {
             store.write(pageId, pageBuf, tag, calculateCrc);
@@ -558,12 +544,12 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         AllocatedPageTracker allocatedTracker = regionMetrics.getOrAllocateGroupPageAllocationTracker(grpId);
 
         return initDir(
-                    cacheWorkDir,
-                    grpDesc.groupId(),
-                    grpDesc.config().getAffinity().partitions(),
-                    allocatedTracker,
-                    ccfg.isEncryptionEnabled()
-                );
+            cacheWorkDir,
+            grpDesc.groupId(),
+            grpDesc.config().getAffinity().partitions(),
+            allocatedTracker,
+            ccfg.isEncryptionEnabled()
+        );
     }
 
     /**
@@ -1044,13 +1030,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 CacheStoreHolder holder0 = null;
 
                 if (gDesc != null) {
-                    Integer cacheId = F.firstValue(gDesc.caches());
-
-                    DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptor(cacheId);
-
-                    if (CU.isPersistentCache(cacheDesc.cacheConfiguration(), cctx.gridConfig().getDataStorageConfiguration())) {
+                    if (CU.isPersistentCache(gDesc.config(), cctx.gridConfig().getDataStorageConfiguration())) {
                         try {
-                            holder0 = initForCache(cacheDesc.groupDescriptor(), cacheDesc.cacheConfiguration());
+                            holder0 = initForCache(gDesc, gDesc.config());
                         } catch (IgniteCheckedException e) {
                             throw new IgniteException(e);
                         }
