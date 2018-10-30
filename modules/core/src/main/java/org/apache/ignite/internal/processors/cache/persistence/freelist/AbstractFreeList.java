@@ -66,6 +66,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     /**
      * Step between buckets in free list, measured in powers of two.
      * For example, for page size 4096 and 256 buckets, shift is 4 and step is 16 bytes.
+     *
+     * shift = log2(pageSize / BUCKETS)
+     * step = pageSize / BUCKETS
      */
     private final int shift;
 
@@ -291,7 +294,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             int newFreeSpace = io.getFreeSpace(pageAddr);
 
             if (newFreeSpace > MIN_PAGE_FREE_SPACE) {
-                int newBucket = bucket(newFreeSpace, false);
+                int newBucket = io.isEmpty(pageAddr) ? REUSE_BUCKET : bucket(newFreeSpace, false);
 
                 boolean putIsNeeded = oldFreeSpace <= MIN_PAGE_FREE_SPACE;
 
