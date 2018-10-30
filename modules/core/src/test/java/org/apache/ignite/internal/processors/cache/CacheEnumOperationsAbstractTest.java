@@ -87,6 +87,9 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testAtomic() throws Exception {
+        if (FORCE_MVCC)
+            return;
+
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, ATOMIC);
 
         enumOperations(ccfg);
