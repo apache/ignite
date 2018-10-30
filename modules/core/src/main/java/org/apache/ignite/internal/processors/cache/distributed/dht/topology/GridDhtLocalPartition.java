@@ -1373,8 +1373,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * Flushes pending update counters closing all possible gaps.
      */
-    public void finalizeUpdateCountres() {
-        store.finalizeUpdateCountres();
+    public void finalizeUpdateCounters() {
+        store.finalizeUpdateCounters();
     }
 
     /**

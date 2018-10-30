@@ -2644,6 +2644,27 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
     }
 
+    /**
+     * Pre-processes partition update counters before exchange.
+     */
+    @Override public void finalizeUpdateCounters() {
+        if (grp.mvccEnabled()) {
+            lock.readLock().lock();
+
+            try {
+                for (int i = 0; i < locParts.length(); i++) {
+                    GridDhtLocalPartition part = locParts.get(i);
+
+                    if (part != null && part.state().active())
+                        part.finalizeUpdateCounters();
+                }
+            }
+            finally {
+                lock.readLock().unlock();
+            }
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public CachePartitionFullCountersMap fullUpdateCounters() {
         lock.readLock().lock();
@@ -2657,8 +2678,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros,
-        boolean finalizeCntrsBeforeCollecting) {
+    @Override public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros) {
         lock.readLock().lock();
 
         try {
@@ -2678,9 +2698,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 if (part == null)
                     continue;
-
-                if (finalizeCntrsBeforeCollecting)
-                    part.finalizeUpdateCountres();
 
                 long updCntr = part.updateCounter();
                 long initCntr = part.initialUpdateCounter();

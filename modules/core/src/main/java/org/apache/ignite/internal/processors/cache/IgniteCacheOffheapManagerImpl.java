@@ -1419,7 +1419,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         private final CacheDataTree dataTree;
 
         /** Update counter. */
-        protected final PartitionUpdateCounter pCntr = new PartitionUpdateCounter(log);
+        protected final PartitionUpdateCounter pCntr;
 
         /** Partition size. */
         private final AtomicLong storageSize = new AtomicLong();
@@ -1452,6 +1452,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             this.name = name;
             this.rowStore = rowStore;
             this.dataTree = dataTree;
+
+            pCntr = new PartitionUpdateCounter(log);
         }
 
         /**
@@ -1556,8 +1558,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void finalizeUpdateCountres() {
-            pCntr.finalizeUpdateCountres();
+        @Override public void finalizeUpdateCounters() {
+            pCntr.finalizeUpdateCounters();
         }
 
         /** {@inheritDoc} */

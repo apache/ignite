@@ -1073,6 +1073,6 @@ public interface IgniteCacheOffheapManager {
         /**
          * Flushes pending update counters closing all possible gaps.
          */
-        void finalizeUpdateCountres();
+        void finalizeUpdateCounters();
     }
 }

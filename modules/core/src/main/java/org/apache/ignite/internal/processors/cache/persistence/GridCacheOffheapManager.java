@@ -1681,12 +1681,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public void finalizeUpdateCountres() {
+        @Override public void finalizeUpdateCounters() {
             try {
                 CacheDataStore delegate0 = init0(true);
 
                 if (delegate0 != null)
-                    delegate0.finalizeUpdateCountres();
+                    delegate0.finalizeUpdateCounters();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
