@@ -295,8 +295,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      * @throws Exception if failed.
      */
     public void testReadWriteSafeWithBackupsAfterKillThreeNodesWithPersistence() throws Exception {
-        // TODO Lost partitions are reset when only one server has left.
-        fail();
+        fail("https://issues.apache.org/jira/browse/IGNITE-10043");
 
         partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
 
@@ -751,7 +750,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         if (parts != null && parts.length > 1)
             return;
 
-        // TODO: Local scan queries fail in non-safe modes.
+        // TODO Local scan queries fail in non-safe modes - https://issues.apache.org/jira/browse/IGNITE-10059.
         if (loc)
             return;
 
@@ -774,7 +773,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
      * @param parts Partitions.
      */
     protected void checkQueryFails(Ignite node, boolean loc, int... parts) {
-        // TODO: Scan queries never fail due to partition loss - https://issues.apache.org/jira/browse/IGNITE-9902.
+        // TODO Scan queries never fail due to partition loss - https://issues.apache.org/jira/browse/IGNITE-9902.
+        // TODO Need to add an actual check after https://issues.apache.org/jira/browse/IGNITE-9902 is fixed.
         // No-op.
     }
 
