@@ -15,22 +15,24 @@
  * limitations under the License.
  */
 
-export interface ISignupData {
-    email: string,
-    password: string,
-    firstName: string,
-    lastName: string,
-    phone?: string,
-    company: string,
-    country: string
-}
+package org.apache.ignite.internal.processors.task;
 
-export interface ISignupFormController extends ng.IFormController {
-    email: ng.INgModelController,
-    password: ng.INgModelController,
-    firstName: ng.INgModelController,
-    lastName: ng.INgModelController,
-    phone: ng.INgModelController,
-    company: ng.INgModelController,
-    country: ng.INgModelController
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+/**
+ * Indicates that annotated task is a visor task that was invoked by user. They can be handled by event listeners.
+ *
+ * This annotation intended for internal use only.
+ */
+@Documented
+@Inherited
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE})
+public @interface GridVisorManagementTask {
+    // No-op.
 }
