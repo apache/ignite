@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteOrder;
 import java.nio.file.FileVisitResult;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -272,11 +273,17 @@ public class IgniteWalIteratorFactory {
             if (file.isDirectory()) {
                 try {
                     walkFileTree(file.toPath(), new SimpleFileVisitor<Path>() {
-                        @Override
-                        public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
+                        @Override public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
                             addFileDescriptor(path.toFile(), ioFactory, descriptors);
 
                             return FileVisitResult.CONTINUE;
+                        }
+
+                        @Override public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                            if (exc instanceof NoSuchFileException)
+                                return FileVisitResult.CONTINUE;
+
+                            return super.visitFileFailed(file, exc);
                         }
                     });
                 }
