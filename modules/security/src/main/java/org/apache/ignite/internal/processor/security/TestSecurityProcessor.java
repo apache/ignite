@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processor.security;
 
+import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -27,51 +29,34 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
-/**
- * Security processor for tests.
- */
-public class TestSecurityProcessor extends GridProcessorAdapter implements GridSecurityProcessor {
-    /** Consumer for {@link #authorize(String, SecurityPermission, SecurityContext)} method. */
-    private TriConsumer<String, SecurityPermission, SecurityContext> authorize;
+import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_NODE;
 
-    /**
-     * @param ctx Grid kernal context.
-     */
+public class TestSecurityProcessor extends GridProcessorAdapter implements GridSecurityProcessor {
+
+    public static final String USER_SECURITY_TOKEN = "USER_SECURITY_TOKEN";
+
     public TestSecurityProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 
-    /**
-     * Setup consumer for {@link #authorize(String, SecurityPermission, SecurityContext)} method.
-     * @param authorize Authorize.
-     */
-    public void authorizeConsumer(TriConsumer<String, SecurityPermission, SecurityContext> authorize){
-        this.authorize = authorize;
-    }
-
-    /**
-     * Remove all consumers.
-     */
-    public void clear() {
-        authorize = null;
-    }
-
     /** {@inheritDoc} */
-    @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
+    @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred)
+        throws IgniteCheckedException {
+
         return new TestSecurityContext(
-            new TestSecuritySubject(
-                node.id(),
-                node.consistentId(),
-                null,
-                SecurityPermissionSetBuilder.create().build()
-            )
+            new TestSecuritySubject()
+                .setType(REMOTE_NODE)
+                .setId(node.id())
+                .setAddr(new InetSocketAddress(F.first(node.addresses()), 0))
+                .setLogin(cred.getUserObject())
+                .setPerms(SecurityPermissionProvider.permission(cred.getUserObject()))
         );
     }
 
@@ -81,25 +66,30 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext authenticate(AuthenticationContext ctx) {
+    @Override public SecurityContext authenticate(AuthenticationContext ctx) throws IgniteCheckedException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<SecuritySubject> authenticatedSubjects() {
+    @Override public Collection<SecuritySubject> authenticatedSubjects() throws IgniteCheckedException {
         return Collections.emptyList();
     }
 
     /** {@inheritDoc} */
-    @Override public SecuritySubject authenticatedSubject(UUID subjId) {
+    @Override public SecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException {
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public void authorize(String name, SecurityPermission perm, SecurityContext securityCtx)
         throws SecurityException {
-        if(authorize != null)
-            authorize.accept(name, perm, securityCtx);
+
+        assert securityCtx instanceof TestSecurityContext;
+
+        if(!((TestSecurityContext)securityCtx).operationAllowed(name, perm))
+            throw new SecurityException("Authorization failed [perm=" + perm +
+                ", name=" + name +
+                ", subject=" + securityCtx.subject() + ']');
     }
 
     /** {@inheritDoc} */
@@ -116,6 +106,20 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
-        ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, new SecurityCredentials());
+        SecurityCredentials cred = new SecurityCredentials(null, null, securityToken());
+
+        ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, cred);
+    }
+
+    /**
+     * Getting security token.
+     */
+    private Object securityToken() {
+        Map<String, ?> attrs = ctx.config().getUserAttributes();
+
+        assert attrs != null;
+
+        return attrs.get(USER_SECURITY_TOKEN);
+
     }
 }

@@ -38,6 +38,10 @@ public class TestSecurityContext implements SecurityContext, Serializable {
         this.subject = subject;
     }
 
+    /**
+     * @param opName Op name.
+     * @param perm Permission.
+     */
     public boolean operationAllowed(String opName, SecurityPermission perm) {
         switch (perm) {
             case CACHE_PUT:
@@ -78,7 +82,7 @@ public class TestSecurityContext implements SecurityContext, Serializable {
 
     /** {@inheritDoc} */
     @Override public boolean taskOperationAllowed(String taskClsName, SecurityPermission perm) {
-        return true;
+        return hasPermission(subject.permissions().taskPermissions().get(taskClsName), perm);
     }
 
     /** {@inheritDoc} */
@@ -93,7 +97,23 @@ public class TestSecurityContext implements SecurityContext, Serializable {
 
     /** {@inheritDoc} */
     @Override public boolean systemOperationAllowed(SecurityPermission perm) {
-        return hasPermission(subject.permissions().systemPermissions(), perm);
+        Collection<SecurityPermission> perms = subject.permissions().systemPermissions();
+
+        if (F.isEmpty(perms))
+            return subject.permissions().defaultAllowAll();
+
+        return perms.stream().anyMatch(p -> perm == p);
+    }
+
+    /**
+     * @param perms Permissions.
+     * @param perm Permission.
+     */
+    private boolean hasPermission(Collection<SecurityPermission> perms, SecurityPermission perm) {
+        if (perms == null)
+            return subject.permissions().defaultAllowAll();
+
+        return perms.stream().anyMatch(p -> perm == p);
     }
 
     /** {@inheritDoc} */
@@ -102,12 +122,4 @@ public class TestSecurityContext implements SecurityContext, Serializable {
             "subject=" + subject +
             '}';
     }
-
-    private boolean hasPermission(Collection<SecurityPermission> perms, SecurityPermission perm) {
-        if (F.isEmpty(perms))
-            return subject.permissions().defaultAllowAll();
-
-        return perms.stream().anyMatch(p -> perm == p);
-    }
-
 }

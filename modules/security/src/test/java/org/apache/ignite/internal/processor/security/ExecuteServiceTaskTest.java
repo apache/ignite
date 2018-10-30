@@ -21,6 +21,7 @@ import java.util.concurrent.ExecutionException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.hamcrest.CoreMatchers.is;

@@ -8,6 +8,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 

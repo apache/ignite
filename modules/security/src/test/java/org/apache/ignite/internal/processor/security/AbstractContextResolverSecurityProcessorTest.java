@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processor.security;
 
-import com.google.common.collect.Sets;
-import java.util.Set;
-import java.util.UUID;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -29,13 +27,12 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.security.GridSecurityProcessorWrapper;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
@@ -48,9 +45,6 @@ public class AbstractContextResolverSecurityProcessorTest extends GridCommonAbst
 
     /** Cache name for tests. */
     protected static final String SEC_CACHE_NAME = "SECOND_TEST_CACHE";
-
-    /** Security error message. */
-    protected static final String SEC_ERR_MSG = "Test security exception.";
 
     /** Values. */
     protected AtomicInteger values = new AtomicInteger(0);
@@ -71,6 +65,8 @@ public class AbstractContextResolverSecurityProcessorTest extends GridCommonAbst
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
+        setupSecurityPermissions();
+
         System.setProperty(
             TestSecurityProcessorProvider.TEST_SECURITY_PROCESSOR_CLS,
             "org.apache.ignite.internal.processor.security.TestSecurityProcessor"
@@ -84,27 +80,6 @@ public class AbstractContextResolverSecurityProcessorTest extends GridCommonAbst
 
         failClnt = startGrid(getConfiguration("fail_client").setClientMode(true));
 
-        final Set<UUID> failUUIDs = Sets.newHashSet(
-            failSrv.localNode().id(), failClnt.localNode().id()
-        );
-
-        for (Ignite ignite : G.allGrids()) {
-            processor((IgniteEx)ignite).authorizeConsumer(
-                (name, perm, secCtx) -> {
-                    if (secCtx != null) {
-                        if (CACHE_NAME.equals(name) && SecurityPermission.CACHE_PUT == perm &&
-                            failUUIDs.contains(secCtx.subject().id())) {
-
-                            log.info("Failed authorize. [name=" + name + ", perm=" + perm
-                                + ", secCtx=" + secCtx + "]");
-
-                            throw new SecurityException(SEC_ERR_MSG);
-                        }
-                    }
-                }
-            );
-        }
-
         grid("success_server").cluster().active(true);
     }
 
@@ -116,11 +91,17 @@ public class AbstractContextResolverSecurityProcessorTest extends GridCommonAbst
 
         stopAllGrids();
 
+        SecurityPermissionProvider.clear();
+
         cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        Map<String, Object> attrs = new HashMap<>();
+
+        attrs.put(TestSecurityProcessor.USER_SECURITY_TOKEN, igniteInstanceName);
+
         return super.getConfiguration(igniteInstanceName)
             .setDataStorageConfiguration(
                 new DataStorageConfiguration()
@@ -129,7 +110,25 @@ public class AbstractContextResolverSecurityProcessorTest extends GridCommonAbst
                     )
             )
             .setAuthenticationEnabled(true)
+            .setUserAttributes(attrs)
             .setCacheConfiguration(getCacheConfigurations());
+    }
+
+    /**
+     *
+     */
+    private void setupSecurityPermissions(){
+        SecurityPermissionProvider.add(
+            SecurityPermissionSetBuilder.create()
+                .defaultAllowAll(true)
+                .build(), "success_server", "success_client"
+        );
+        SecurityPermissionProvider.add(
+            SecurityPermissionSetBuilder.create()
+                .defaultAllowAll(true)
+                .appendCachePermissions(CACHE_NAME, SecurityPermission.CACHE_READ)
+                .build(), "fail_server", "fail_client"
+        );
     }
 
     /**
@@ -146,21 +145,6 @@ public class AbstractContextResolverSecurityProcessorTest extends GridCommonAbst
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setReadFromBackup(false)
         };
-    }
-
-    /**
-     * Getting of {@link TestSecurityProcessor} for the passed ignite instanse.
-     *
-     * @param ignite Ignite.
-     */
-    protected TestSecurityProcessor processor(IgniteEx ignite) {
-        if (ignite.context().security() instanceof GridSecurityProcessorWrapper) {
-            GridSecurityProcessorWrapper wrp = (GridSecurityProcessorWrapper)ignite.context().security();
-
-            return (TestSecurityProcessor)wrp.original();
-        }
-
-        return (TestSecurityProcessor)ignite.context().security();
     }
 
     /**
@@ -189,9 +173,6 @@ public class AbstractContextResolverSecurityProcessorTest extends GridCommonAbst
      * @param throwable Throwable.
      */
     protected void assertCauseMessage(Throwable throwable) {
-        SecurityException cause = X.cause(throwable, SecurityException.class);
-
-        assertThat(cause, notNullValue());
-        assertThat(cause.getMessage(), is(SEC_ERR_MSG));
+        assertThat(X.cause(throwable, SecurityException.class), notNullValue());
     }
 }

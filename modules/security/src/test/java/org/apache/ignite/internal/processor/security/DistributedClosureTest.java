@@ -4,6 +4,7 @@ import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.hamcrest.CoreMatchers.is;

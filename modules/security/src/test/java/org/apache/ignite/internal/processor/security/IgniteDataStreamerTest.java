@@ -8,6 +8,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.stream.StreamVisitor;
 import org.apache.ignite.testframework.GridTestUtils;
 
