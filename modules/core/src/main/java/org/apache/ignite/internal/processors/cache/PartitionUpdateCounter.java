@@ -191,8 +191,8 @@ public class PartitionUpdateCounter {
             long cur = cntr.get();
 
             // Call closure for each counter between current value and next range start.
-            for (long cntr0 = cur; cntr0 < item.start; cntr0++)
-                onGapClose.apply(cntr0 + 1);
+            for (long cntr0 = cur + 1; cntr0 <= item.start; cntr0++)
+                onGapClose.apply(cntr0);
 
             // Close pending ranges.
             update(item.start + item.delta);

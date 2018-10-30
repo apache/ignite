@@ -284,6 +284,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** */
     @SuppressWarnings("unused")
+    @GridToStringExclude
     private volatile TxCounters txCounters;
 
     /**
