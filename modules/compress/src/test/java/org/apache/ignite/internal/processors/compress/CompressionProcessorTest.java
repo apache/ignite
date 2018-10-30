@@ -759,16 +759,18 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
 
         int compressedSize = PageIO.getCompressedSize(compressed);
 
+        assertNotSame(page, compressed); // This is generally possible but not interesting in this test.
+
         assertTrue(compressedSize > 0);
         assertTrue(compressedSize <= pageSize);
+        assertEquals(compressedSize, compressed.limit());
 
-        if (!fullPage && PageIO.getCompressionType(compressed) == UNCOMPRESSED_PAGE)
+        if (!fullPage || compression != SKIP_GARBAGE)
             assertTrue(pageSize > compressedSize);
 
         assertEquals(0, compressed.position());
 
         checkIo(io, compressed);
-        assertNotSame(page, compressed);
         assertEquals(0, page.position());
         assertEquals(pageSize, page.limit());
 
@@ -780,8 +782,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         assertEquals(pageId, PageIO.getPageId(compressed));
 
         ByteBuffer decompress = allocateDirectBuffer(pageSize);
-        decompress.put(compressed);
-        decompress.flip();
+        decompress.put(compressed).clear();
 
         p.decompressPage(decompress, pageSize);
 
@@ -789,6 +790,9 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         assertEquals(pageSize, decompress.limit());
 
         checkIo(io, decompress);
+        assertEquals(UNCOMPRESSED_PAGE, PageIO.getCompressionType(page));
+        assertEquals(0, PageIO.getCompressedSize(page));
+        assertEquals(0, PageIO.getCompactedSize(page));
 
         if (getPageContents != null)
             assertEquals(getPageContents.apply(page), getPageContents.apply(decompress));

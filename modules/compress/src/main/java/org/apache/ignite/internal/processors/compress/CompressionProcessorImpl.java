@@ -108,7 +108,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
         // If no need to compress further or configured just to skip garbage.
         if (compactSize < blockSize || compression == SKIP_GARBAGE)
-            return createCompactPageResult(compactPage, compactSize);
+            return setCompactionInfo(compactPage, compactSize);
 
         ByteBuffer compressedPage = compressPage(compression, compactPage, compactSize, compressLevel);
 
@@ -122,24 +122,19 @@ public class CompressionProcessorImpl extends CompressionProcessor {
                 return (ByteBuffer)page.clear(); // No blocks will be released.
 
             compactPage.flip();
-            return createCompactPageResult(compactPage, compactSize);
+            return setCompactionInfo(compactPage, compactSize);
         }
 
-        setCompressionInfo(compressedPage, compression, compressedSize, compactSize);
-
-        return compressedPage;
+        return setCompressionInfo(compressedPage, compression, compressedSize, compactSize);
     }
 
     /**
-     * @param compactPage Compacted page.
-     * @return New buffer.
+     * @param page Page.
+     * @param compactSize Compacted page size.
+     * @return The given page.
      */
-    private static ByteBuffer createCompactPageResult(ByteBuffer compactPage, int compactSize) {
-        setCompressionInfo(compactPage, SKIP_GARBAGE, compactSize, compactSize);
-
-        // Can not return thread local buffer, because the actual write may be async.
-        // Also we have to always return buffer of correct page size.
-        return (ByteBuffer)allocateDirectBuffer(compactSize).put(compactPage).clear();
+    private static ByteBuffer setCompactionInfo(ByteBuffer page, int compactSize) {
+        return setCompressionInfo(page, SKIP_GARBAGE, compactSize, compactSize);
     }
 
     /**
@@ -147,14 +142,17 @@ public class CompressionProcessorImpl extends CompressionProcessor {
      * @param compression Compression algorithm.
      * @param compressedSize Compressed size.
      * @param compactedSize Compact size.
+     * @return The given page.
      */
-    private static void setCompressionInfo(ByteBuffer page, PageCompression compression, int compressedSize, int compactedSize) {
+    private static ByteBuffer setCompressionInfo(ByteBuffer page, PageCompression compression, int compressedSize, int compactedSize) {
         assert compressedSize >= 0 && compressedSize <= Short.MAX_VALUE: compressedSize;
         assert compactedSize >= 0 && compactedSize <= Short.MAX_VALUE: compactedSize;
 
         PageIO.setCompressionType(page, getCompressionType(compression));
         PageIO.setCompressedSize(page, (short)compressedSize);
         PageIO.setCompactedSize(page, (short)compactedSize);
+
+        return page;
     }
 
     /**
