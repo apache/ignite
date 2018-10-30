@@ -2133,8 +2133,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         if (locPart != null && locPart.state() == LOST) {
                             boolean marked = locPart.own();
 
-                            if (marked)
+                            if (marked) {
                                 updateLocal(locPart.id(), locPart.state(), updSeq, resTopVer);
+
+                                long updateCntr = locPart.updateCounter();
+
+                                //Set update counters to 0, for full rebalance.
+                                locPart.updateCounter(updateCntr, -updateCntr);
+                                locPart.initialUpdateCounter(0);
+                            }
                         }
                     }
                 }
@@ -2679,6 +2686,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (part == null)
                     continue;
 
+                long counter = part.updateCounter();
+
                 if (finalizeCntrsBeforeCollecting)
                     part.finalizeUpdateCountres();
 
@@ -2687,6 +2696,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 if (skipZeros && initCntr == 0L && updCntr == 0L)
                     continue;
+
+                GridDhtPartitionState state = part.state();
 
                 res.add(part.id(), initCntr, updCntr);
             }

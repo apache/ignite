@@ -1,0 +1,233 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.cache;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+
+/**
+ *
+ */
+public class ResetLostPartitionTest extends GridCommonAbstractTest {
+    /** Ip finder. */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+    /** Cache name. */
+    private static final String CACHE_NAME = "cacheOne";
+    /** Cache size */
+    public static final int CACHE_SIZE = 100000;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        cleanPersistenceDir();
+
+        super.afterTest();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setPeerClassLoadingEnabled(true);
+
+        cfg.setConsistentId(igniteInstanceName);
+
+        DataStorageConfiguration storageCfg = new DataStorageConfiguration();
+
+        storageCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
+
+        cfg.setDataStorageConfiguration(storageCfg);
+
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(CACHE_NAME)
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            .setBackups(1)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
+            .setIndexedTypes(String.class, String.class);
+
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
+
+        cfg.setCacheConfiguration(ccfg);
+
+        return cfg;
+    }
+
+    /** Client configuration */
+    private IgniteConfiguration getClientConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setPeerClassLoadingEnabled(true);
+        cfg.setClientMode(true);
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
+
+        return cfg;
+    }
+
+    /**
+     * Test to restore lost partitions after grid reactivation.
+     *
+     * @throws Exception if fail.
+     */
+    public void testReactivateGridBeforeResetLostPartitions() throws Exception {
+        doRebalanceAfterPartitionsWereLost(true);
+    }
+
+    /**
+     * Test to restore lost partitions on working grid.
+     *
+     * @throws Exception if fail.
+     */
+    public void testResetLostPartitions() throws Exception {
+        doRebalanceAfterPartitionsWereLost(false);
+    }
+
+    /**
+     * @param reactivateGridBeforeResetPart Reactive grid before try to reset lost partitions.
+     * @throws Exception if fail.
+     */
+    private void doRebalanceAfterPartitionsWereLost(boolean reactivateGridBeforeResetPart) throws Exception {
+        startGrids(3);
+
+        grid(0).cluster().active(true);
+
+        Ignite igniteClient = startGrid(getClientConfiguration("client"));
+
+        IgniteCache<String, String> cache = igniteClient.cache(CACHE_NAME);
+
+        for (int j = 0; j < CACHE_SIZE; j++)
+            cache.put("Key" + "_" + j, "Value" + j);
+
+        stopGrid("client");
+
+        String dn2DirName = grid(1).name().replace(".", "_");
+
+        stopGrid(1);
+
+        //Clean up the pds and WAL for second data node.
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/" + dn2DirName, true));
+
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/wal/" + dn2DirName, true));
+
+        //Here we have two from three data nodes and cache with 1 backup. So there is no data loss expected.
+        assertEquals(CACHE_SIZE, averageSizeAroundAllNodes());
+
+        //Start node 2 with empty PDS. Rebalance will be started.
+        startGrid(1);
+
+        //During rebalance stop node 3. Rebalance will be stopped.
+        stopGrid(2);
+
+        //Start node 3.
+        startGrid(2);
+
+        //Loss data expected because rebalance to node 1 have not finished and node 2 was stopped.
+        assertTrue(CACHE_SIZE > averageSizeAroundAllNodes());
+
+        //Node 1 will have only OWNING partitions.
+        assertTrue(getPartitionsStates(0, CACHE_NAME).stream().allMatch(state -> state == OWNING));
+
+        //Node 2 will have OWNING and LOST partitions.
+        assertTrue(getPartitionsStates(1, CACHE_NAME).stream().anyMatch(state -> state == LOST));
+
+        //Node 3 will have only OWNING partitions.
+        assertTrue(getPartitionsStates(2, CACHE_NAME).stream().allMatch(state -> state == OWNING));
+
+        if (reactivateGridBeforeResetPart) {
+            grid(0).cluster().active(false);
+            grid(0).cluster().active(true);
+        }
+
+        //Try to reset lost partitions.
+        grid(2).resetLostPartitions(Arrays.asList(CACHE_NAME));
+
+        awaitPartitionMapExchange();
+
+        //Node 2 will have only OWNING partitions.
+        assertTrue(getPartitionsStates(1, CACHE_NAME).stream().allMatch(state -> state == OWNING));
+
+        //All data was back.
+        assertEquals(CACHE_SIZE, averageSizeAroundAllNodes());
+
+        //Stop node 2 for checking rebalance correctness from this node.
+        stopGrid(2);
+
+        //Rebalance should be successfully finished.
+        assertEquals(CACHE_SIZE, averageSizeAroundAllNodes());
+    }
+
+    /**
+     * @param gridNumber Grid number.
+     * @param cacheName Cache name.
+     * @return Partitions states for given cache name.
+     */
+    private List<GridDhtPartitionState> getPartitionsStates(int gridNumber, String cacheName) {
+        int hash = grid(gridNumber).cachex(cacheName).name().hashCode();
+
+        CacheGroupContext cgCtx = grid(gridNumber).context().cache().cacheGroup(hash);
+
+        GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl)cgCtx.topology();
+
+        return top.localPartitions().stream()
+            .map(GridDhtLocalPartition::state)
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Checks that all nodes see the correct size.
+     */
+    private int averageSizeAroundAllNodes() {
+        int totalSize = 0;
+
+        for (Ignite ignite : IgnitionEx.allGrids()) {
+            totalSize += ignite.cache(CACHE_NAME).size();
+        }
+
+        return totalSize / IgnitionEx.allGrids().size();
+    }
+}
