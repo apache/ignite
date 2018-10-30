@@ -73,8 +73,10 @@ public class TestSecuritySubject implements SecuritySubject {
     /**
      * @param id Id.
      */
-    public void setId(UUID id) {
+    public TestSecuritySubject setId(UUID id) {
         this.id = id;
+
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -85,8 +87,10 @@ public class TestSecuritySubject implements SecuritySubject {
     /**
      * @param type Type.
      */
-    public void setType(SecuritySubjectType type) {
+    public TestSecuritySubject setType(SecuritySubjectType type) {
         this.type = type;
+
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -97,8 +101,10 @@ public class TestSecuritySubject implements SecuritySubject {
     /**
      * @param login Login.
      */
-    public void setLogin(Object login) {
+    public TestSecuritySubject setLogin(Object login) {
         this.login = login;
+
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -109,8 +115,10 @@ public class TestSecuritySubject implements SecuritySubject {
     /**
      * @param addr Address.
      */
-    public void setAddr(InetSocketAddress addr) {
+    public TestSecuritySubject setAddr(InetSocketAddress addr) {
         this.addr = addr;
+
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -121,8 +129,10 @@ public class TestSecuritySubject implements SecuritySubject {
     /**
      * @param perms Permissions.
      */
-    public void setPerms(SecurityPermissionSet perms) {
+    public TestSecuritySubject setPerms(SecurityPermissionSet perms) {
         this.perms = perms;
+
+        return this;
     }
 
     /** {@inheritDoc} */
