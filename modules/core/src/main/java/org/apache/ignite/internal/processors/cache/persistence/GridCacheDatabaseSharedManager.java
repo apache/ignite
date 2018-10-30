@@ -2082,17 +2082,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             log.info("Checking memory state [lastValidPos=" + status.endPtr + ", lastMarked="
                 + status.startPtr + ", lastCheckpointId=" + status.cpStartId + ']');
 
-        boolean apply = status.needRestoreMemory();
-
-        if (apply) {
-            U.quietAndWarn(log, "Ignite node stopped in the middle of checkpoint. Will restore memory state and " +
-                "finish checkpoint on node start.");
-
-            cctx.pageStore().beginRecover();
-        }
-        else
-            cctx.wal().notchLastCheckpointPtr(status.startPtr);
-
         long start = U.currentTimeMillis();
 
         long lastArchivedSegment = cctx.wal().lastArchivedSegment();
@@ -2107,6 +2096,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 .filter(g -> !initiallyGlobalWalDisabledGrps.contains(g) && !initiallyLocalWalDisabledGrps.contains(g))
                 .collect(Collectors.toSet()));
         }
+
+        if (status.needRestoreMemory()) {
+            U.quietAndWarn(log, "Perform restore the binary memory on the node start " +
+                "[metastoreOnly=" + metastoreOnly + ", totalGrps=" + restoreGrps.size() + ']');
+
+            cctx.pageStore().beginRecover();
+        }
+        else
+            cctx.wal().notchLastCheckpointPtr(status.startPtr);
 
         int applied = 0;
 
@@ -2239,8 +2237,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     "on disk, but checkpoint record is missed in WAL) " +
                     "[cpStatus=" + status + ", lastRead=" + lastReadPtr + "]");
 
-            log.info("Finished applying memory changes [changesApplied=" + applied +
-                ", time=" + (U.currentTimeMillis() - start) + "ms]");
+            log.info("Finished applying binary memory changes [changesApplied=" + applied +
+                ", time=" + (U.currentTimeMillis() - start) + " ms]");
 
             if (applied > 0)
                 finalizeCheckpointOnRecovery(status.cpStartTs, status.cpStartId, status.startPtr);
@@ -2788,8 +2786,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         cctx.pageStore().finishRecover();
 
         if (log.isInfoEnabled())
-            log.info(String.format("Checkpoint finished [cpId=%s, pages=%d, markPos=%s, " +
-                    "pagesWrite=%dms, fsync=%dms, total=%dms]",
+            log.info(String.format("The END checkpoint flushed on the binary memory recovery " +
+                    "[cpId=%s, pages=%d, markPos=%s, pagesWrite=%dms, fsync=%dms, total=%dms]",
                 cpId,
                 cpPagesCnt,
                 walPtr,
