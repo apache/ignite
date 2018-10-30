@@ -20,7 +20,7 @@ import controller from './input-dialog.controller';
 import templateUrl from './input-dialog.tpl.pug';
 import {CancellationError} from 'app/errors/CancellationError';
 
-type InputModes = 'text' | 'number' | 'date' | 'time' | 'date-and-time';
+type InputModes = 'text' | 'number' | 'email' | 'date' | 'time' | 'date-and-time';
 
 interface ValidationFunction<T> {
     (value: T): boolean
@@ -128,6 +128,16 @@ export default class InputDialog {
      */
     number(options: InputOptions<number>) {
         return this.dialogFabric({mode: 'number', ...options});
+    }
+
+    /**
+     * Open input dialog to configure custom e-mail.
+     *
+     * @param options Object with settings for rendering e-mail input.
+     * @return User input.
+     */
+    email(options: InputOptions<string>) {
+        return this.dialogFabric({mode: 'email', ...options});
     }
 
     /**

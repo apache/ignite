@@ -542,7 +542,7 @@ export default class AgentManager {
      * @returns {Promise}
      */
     topology(attr = false, mtr = false) {
-        return this._executeOnCluster('node:rest', {cmd: 'top', attr, mtr});
+        return this._executeOnCluster('node:rest', {cmd: 'top', attr, mtr, caches: false});
     }
 
     /**
