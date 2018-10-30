@@ -962,10 +962,10 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public int realPageSize(int grpId) {
-        if (ctx.kernalContext().encryption().groupKey(grpId) == null)
+        //if (ctx.kernalContext().encryption().groupKey(grpId) == null)
             return pageSize();
 
-        return encPageSize;
+        //return encPageSize;
     }
 
     /** {@inheritDoc} */
