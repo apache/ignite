@@ -172,7 +172,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         GridCacheQueryDetailMetricsAdapter>
         QRY_DETAIL_METRICS_MERGE_FX = GridCacheQueryDetailMetricsAdapter::aggregate;
 
-    /** Default is @{code true} */
+    /** */
     private final boolean isIndexingSpiAllowsBinary = !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI);
 
     /** */
