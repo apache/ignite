@@ -1914,7 +1914,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             SqlCommand cmd = parser.nextCommand();
 
-            // t0d0 multiple commands?
+            // TODO support transansaction commands in multistatements
+            // https://issues.apache.org/jira/browse/IGNITE-10063
 
             // No support for multiple commands for now.
             if (parser.nextCommand() != null)
