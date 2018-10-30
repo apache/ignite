@@ -53,6 +53,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.prepareSerializerVersionBuffer;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory.LATEST_SERIALIZER_VERSION;
 
 /**
@@ -213,9 +214,7 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
         ByteBuffer buf = ByteBuffer.allocate(RecordV1Serializer.HEADER_RECORD_SIZE);
         buf.order(ByteOrder.nativeOrder());
 
-        ByteBuffer buffer = FileWriteAheadLogManager.prepareSerializerVersionBuffer(idx, version, false, buf);
-
-        io.writeFully(buffer);
+        io.writeFully(prepareSerializerVersionBuffer(idx, version, false, buf));
 
         // Flush
         if (mode == WALMode.FSYNC)

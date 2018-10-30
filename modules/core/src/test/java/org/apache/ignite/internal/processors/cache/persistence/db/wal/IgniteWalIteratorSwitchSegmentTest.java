@@ -258,9 +258,8 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
         // Add more record for rollover to the next segment.
         recordsToWrite += 100;
 
-        for (int i = 0; i < recordsToWrite; i++) {
+        for (int i = 0; i < recordsToWrite; i++)
             walMgr.log(new MetastoreDataRecord(rec.key(), rec.value()));
-        }
 
         walMgr.flush(null, true);
 
@@ -356,7 +355,6 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
                 // Check that switch segment works as expected and all record is reachable.
                 try (WALIterator it = walMgr.replay(null)) {
                     Object handle = getFieldValueHierarchy(it, "currWalSegment");
-
                     FileInput in = getFieldValueHierarchy(handle, "in");
                     Object delegate = getFieldValueHierarchy(in.io(), "delegate");
                     Channel ch = getFieldValueHierarchy(delegate, "ch");

@@ -55,7 +55,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.sleep;
  * Manager for {@link FileWriteHandleImpl}.
  */
 public class FileHandleManagerImpl implements FileHandleManager {
-    /** Dfault wal segment sync timeout. */
+    /** Default wal segment sync timeout. */
     private static final long DFLT_WAL_SEGMENT_SYNC_TIMEOUT = 500L;
 
     /** WAL writer worker. */
@@ -146,10 +146,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
     }
 
     /** {@inheritDoc} */
-    @Override public FileWriteHandle nextHandle(
-        SegmentIO fileIO,
-        RecordSerializer serializer
-    ) throws IOException {
+    @Override public FileWriteHandle nextHandle(SegmentIO fileIO, RecordSerializer serializer) throws IOException {
         SegmentedRingByteBuffer rbuf;
 
         if (mmap) {
