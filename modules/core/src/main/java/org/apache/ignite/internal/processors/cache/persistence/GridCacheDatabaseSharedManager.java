@@ -1374,7 +1374,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** {@inheritDoc} */
     @Override public void beforeExchange(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
         // Try to restore partition states.
-        if (fut.localJoinExchange() || fut.activateCluster()) {
+        if (fut.localJoinExchange() || fut.activateCluster() || !F.isEmpty(fut.exchangeActions().cacheGroupsToStart())) {
             U.doInParallel(
                 cctx.kernalContext().getSystemExecutorService(),
                 cctx.cache().cacheGroups(),
