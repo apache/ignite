@@ -83,7 +83,7 @@ public class IgniteNoParrallelClusterIsAllowedTest extends IgniteChangeGlobalSta
             while (true) {
                 String message = e.getMessage();
 
-                if (message.contains("Failed to acquire file lock during"))
+                if (message.contains("Failed to acquire file lock ["))
                     break;
 
                 if (e.getCause() != null)
