@@ -121,14 +121,14 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testDiagnosticMessages1() throws Exception {
+    public void testDiagnosticMessages1() throws Exception {
         checkBasicDiagnosticInfo();
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testDiagnosticMessages2() throws Exception {
+    public void testDiagnosticMessages2() throws Exception {
         connectionsPerNode = 5;
 
         checkBasicDiagnosticInfo();
@@ -137,7 +137,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testLongRunning() throws Exception {
+    public void testLongRunning() throws Exception {
         System.setProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, "3500");
 
         try {
@@ -198,7 +198,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testSeveralLongRunningTxs() throws Exception {
+    public void testSeveralLongRunningTxs() throws Exception {
         int timeout = 3500;
 
         System.setProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, String.valueOf(timeout));
@@ -403,7 +403,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testRemoteTx() throws Exception {
+    public void testRemoteTx() throws Exception {
         int timeout = 3500;
 
         System.setProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, String.valueOf(timeout));
