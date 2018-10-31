@@ -323,8 +323,6 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
             fut.get();
 
             checkCaches();
-
-            stopAllGrids();
         }
     }
 
@@ -419,7 +417,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void concurrentStart(final boolean withClients) throws Exception {
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 3; i++) {
             log.info("Iteration: " + i);
 
             startGrid(0);
@@ -599,7 +597,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
 
         for (Ignite node : nodes) {
             List<GridDhtPartitionsExchangeFuture> exchFuts =
-                    ((IgniteEx)node).context().cache().context().exchange().exchangeFutures();
+                ((IgniteEx)node).context().cache().context().exchange().exchangeFutures();
 
             assertTrue("Unexpected size: " + exchFuts.size(), !exchFuts.isEmpty() && exchFuts.size() <= histSize);
         }
@@ -1340,14 +1338,14 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                     assertNotNull("No cache [node=" + node.name() +
-                            ", client=" + node.configuration().isClientMode() +
-                            ", order=" + node.cluster().localNode().order() +
-                            ", cache=" + cacheName + ']', cache);
+                        ", client=" + node.configuration().isClientMode() +
+                        ", order=" + node.cluster().localNode().order() +
+                        ", cache=" + cacheName + ']', cache);
 
                     String err = "Invalid value [node=" + node.name() +
-                            ", client=" + node.configuration().isClientMode() +
-                            ", order=" + node.cluster().localNode().order() +
-                            ", cache=" + cacheName + ']';
+                        ", client=" + node.configuration().isClientMode() +
+                        ", order=" + node.cluster().localNode().order() +
+                        ", cache=" + cacheName + ']';
 
                     for (int i = 0; i < 5; i++) {
                         Integer key = rnd.nextInt(20_000);
