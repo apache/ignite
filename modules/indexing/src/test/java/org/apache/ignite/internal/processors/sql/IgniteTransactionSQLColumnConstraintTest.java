@@ -55,14 +55,14 @@ public class IgniteTransactionSQLColumnConstraintTest extends IgniteSQLColumnCon
     /**
      * That test is ignored due to drop column(s) operation is unsupported for the MVCC tables.
      */
-    public void testCharDropColumnWithConstraint() {
+    @Override public void testCharDropColumnWithConstraint() {
         // No-op.
     }
 
     /**
      * That test is ignored due to drop column(s) operation is unsupported for the MVCC tables.
      */
-    public void testDecimalDropColumnWithConstraint() {
+    @Override public void testDecimalDropColumnWithConstraint() {
         // No-op.
     }
 

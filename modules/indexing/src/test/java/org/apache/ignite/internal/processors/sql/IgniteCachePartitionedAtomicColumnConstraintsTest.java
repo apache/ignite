@@ -40,6 +40,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
@@ -693,8 +694,10 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
         cache.setAtomicityMode(atomicityMode());
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
-
         cache.setQueryEntities(Collections.singletonList(qryEntity));
+
+        if (TRANSACTIONAL_SNAPSHOT.equals(atomicityMode()))
+            cache.setNearConfiguration(null);
 
         return cache;
     }
