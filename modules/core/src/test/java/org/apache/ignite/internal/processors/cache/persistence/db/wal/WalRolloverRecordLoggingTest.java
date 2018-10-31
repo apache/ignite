@@ -23,12 +23,14 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
+import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -36,13 +38,11 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
-import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
+import org.jetbrains.annotations.NotNull;
 /**
  *
  */
-public class WalRolloverRecordLoggingTest extends GridCommonAbstractTest {
+public abstract class WalRolloverRecordLoggingTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -51,11 +51,6 @@ public class WalRolloverRecordLoggingTest extends GridCommonAbstractTest {
         /** */
         private RolloverRecord() {
             super(null);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean rollOver() {
-            return true;
         }
     }
 
@@ -69,14 +64,19 @@ public class WalRolloverRecordLoggingTest extends GridCommonAbstractTest {
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(true)
                 .setMaxSize(40 * 1024 * 1024))
-            .setWalMode(LOG_ONLY)
+            .setWalMode(walMode())
             .setWalSegmentSize(4 * 1024 * 1024)
-            .setWalArchivePath(DFLT_WAL_PATH));
+        );
 
         cfg.setFailureHandler(new StopNodeOrHaltFailureHandler(false, 0));
 
         return cfg;
     }
+
+    /**
+     * @return Wal mode.
+     */
+    @NotNull public abstract WALMode walMode();
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -138,7 +138,7 @@ public class WalRolloverRecordLoggingTest extends GridCommonAbstractTest {
                 dbMgr.checkpointReadLock();
 
                 try {
-                    walMgr.log(rec);
+                    walMgr.log(rec, RolloverType.NEXT_SEGMENT);
                 }
                 finally {
                     dbMgr.checkpointReadUnlock();

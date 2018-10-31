@@ -689,6 +689,9 @@ public class GridJettyRestHandler extends AbstractHandler {
                 restReq0.includeMetrics(Boolean.parseBoolean((String)params.get("mtr")));
                 restReq0.includeAttributes(Boolean.parseBoolean((String)params.get("attr")));
 
+                String caches = (String)params.get("caches");
+                restReq0.includeCaches(caches == null || Boolean.parseBoolean(caches));
+
                 restReq0.nodeIp((String)params.get("ip"));
 
                 restReq0.nodeId(uuidValue("id", params));

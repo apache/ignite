@@ -276,7 +276,9 @@ public abstract class PagesList extends DataStructure {
                     int tailIdx = 0;
 
                     while (tailIdx < tails.length) {
-                        int written = curPage != 0L ? curIo.addTails(pageMem.pageSize(), curAddr, bucket, tails, tailIdx) : 0;
+                        int written = curPage != 0L ?
+                            curIo.addTails(pageMem.realPageSize(grpId), curAddr, bucket, tails, tailIdx) :
+                            0;
 
                         if (written == 0) {
                             if (nextPageId == 0L) {

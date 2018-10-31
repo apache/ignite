@@ -305,6 +305,11 @@ class ClientImpl extends TcpDiscoveryImpl {
             }
         }.start();
 
+        timer.schedule(
+            new MetricsSender(),
+            spi.metricsUpdateFreq,
+            spi.metricsUpdateFreq);
+
         try {
             joinLatch.await();
 
@@ -316,11 +321,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         catch (InterruptedException e) {
             throw new IgniteSpiException("Thread has been interrupted.", e);
         }
-
-        timer.schedule(
-            new MetricsSender(),
-            spi.metricsUpdateFreq,
-            spi.metricsUpdateFreq);
 
         spi.printStartInfo();
     }
@@ -1883,6 +1883,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                                 err = spi.duplicateIdError((TcpDiscoveryDuplicateIdMessage)msg);
                             else if (discoMsg instanceof TcpDiscoveryAuthFailedMessage)
                                 err = spi.authenticationFailedError((TcpDiscoveryAuthFailedMessage)msg);
+                            //TODO: https://issues.apache.org/jira/browse/IGNITE-9829
                             else if (discoMsg instanceof TcpDiscoveryCheckFailedMessage)
                                 err = spi.checkFailedError((TcpDiscoveryCheckFailedMessage)msg);
 
@@ -1897,6 +1898,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                                 else
                                     joinError(err);
 
+                                cancel();
+                                
                                 break;
                             }
                         }

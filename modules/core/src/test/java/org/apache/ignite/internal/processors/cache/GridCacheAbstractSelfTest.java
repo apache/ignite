@@ -256,7 +256,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
             cfg.setIndexedTypes(idxTypes);
 
         if (cacheMode() == PARTITIONED)
-            cfg.setBackups(1);
+            cfg.setBackups(backups());
 
         return cfg;
     }
@@ -359,6 +359,13 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     protected IgniteTransactions transactions() {
         return grid(0).transactions();
+    }
+
+    /**
+     * @return Backups.
+     */
+    protected int backups() {
+        return 1;
     }
 
     /**
@@ -631,7 +638,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    protected static abstract class ResourceInjectionEntryProcessorBase<K, V>
+    protected abstract static class ResourceInjectionEntryProcessorBase<K, V>
         implements EntryProcessor<K, V, Integer>, Serializable {
         /** */
         protected transient ResourceInfoSet infoSet;

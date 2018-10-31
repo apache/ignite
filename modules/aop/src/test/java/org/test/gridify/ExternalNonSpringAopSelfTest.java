@@ -23,7 +23,6 @@ import org.apache.ignite.gridify.TestGridifyException;
 import org.apache.ignite.gridify.TestGridifyTask;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 

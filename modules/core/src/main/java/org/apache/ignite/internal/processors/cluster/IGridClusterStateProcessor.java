@@ -29,6 +29,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
+import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -39,6 +40,11 @@ public interface IGridClusterStateProcessor extends GridProcessor {
      * @return Cluster state to be used on public API.
      */
     boolean publicApiActiveState(boolean waitForTransition);
+
+    /**
+     * @return Cluster state to be used on public API.
+     */
+    IgniteFuture<Boolean> publicApiActiveStateAsync(boolean waitForTransition);
 
     /**
      * @param discoCache Discovery data cache.

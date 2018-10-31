@@ -55,11 +55,11 @@ public class JdbcThinTransactionsWithMvccEnabledSelfTest extends JdbcThinAbstrac
     private GridStringLogger log;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "unchecked"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME));
+        cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME).setNearConfiguration(null));
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -77,9 +77,8 @@ public class JdbcThinTransactionsWithMvccEnabledSelfTest extends JdbcThinAbstrac
     /**
      * @param name Cache name.
      * @return Cache configuration.
-     * @throws Exception In case of error.
      */
-    private CacheConfiguration cacheConfiguration(@NotNull String name) throws Exception {
+    private CacheConfiguration cacheConfiguration(@NotNull String name) {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setName(name);
@@ -186,6 +185,7 @@ public class JdbcThinTransactionsWithMvccEnabledSelfTest extends JdbcThinAbstrac
     /**
      *
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testIgnoreNestedTxAutocommitOff() throws SQLException {
         try (Connection c = c(false, NestedTxMode.IGNORE)) {
             doNestedTxStart(c, false);
@@ -197,6 +197,7 @@ public class JdbcThinTransactionsWithMvccEnabledSelfTest extends JdbcThinAbstrac
     /**
      *
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCommitNestedTxAutocommitOff() throws SQLException {
         try (Connection c = c(false, NestedTxMode.COMMIT)) {
             doNestedTxStart(c, false);
@@ -208,7 +209,8 @@ public class JdbcThinTransactionsWithMvccEnabledSelfTest extends JdbcThinAbstrac
     /**
      *
      */
-    public void testErrorNestedTxAutocommitOff() throws SQLException {
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testErrorNestedTxAutocommitOff() {
         GridTestUtils.assertThrows(null, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 try (Connection c = c(false, NestedTxMode.ERROR)) {
@@ -223,6 +225,7 @@ public class JdbcThinTransactionsWithMvccEnabledSelfTest extends JdbcThinAbstrac
     /**
      *
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testIgnoreNestedTxAutocommitOn() throws SQLException {
         try (Connection c = c(true, NestedTxMode.IGNORE)) {
             doNestedTxStart(c, false);
@@ -234,6 +237,7 @@ public class JdbcThinTransactionsWithMvccEnabledSelfTest extends JdbcThinAbstrac
     /**
      *
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCommitNestedTxAutocommitOn() throws SQLException {
         try (Connection c = c(true, NestedTxMode.COMMIT)) {
             doNestedTxStart(c, false);
@@ -245,7 +249,8 @@ public class JdbcThinTransactionsWithMvccEnabledSelfTest extends JdbcThinAbstrac
     /**
      *
      */
-    public void testErrorNestedTxAutocommitOn() throws SQLException {
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testErrorNestedTxAutocommitOn() {
         GridTestUtils.assertThrows(null, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 try (Connection c = c(true, NestedTxMode.ERROR)) {
@@ -260,6 +265,7 @@ public class JdbcThinTransactionsWithMvccEnabledSelfTest extends JdbcThinAbstrac
     /**
      *
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testIgnoreNestedTxAutocommitOffBatched() throws SQLException {
         try (Connection c = c(false, NestedTxMode.IGNORE)) {
             doNestedTxStart(c, true);
@@ -271,6 +277,7 @@ public class JdbcThinTransactionsWithMvccEnabledSelfTest extends JdbcThinAbstrac
     /**
      *
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCommitNestedTxAutocommitOffBatched() throws SQLException {
         try (Connection c = c(false, NestedTxMode.COMMIT)) {
             doNestedTxStart(c, true);
@@ -282,7 +289,8 @@ public class JdbcThinTransactionsWithMvccEnabledSelfTest extends JdbcThinAbstrac
     /**
      *
      */
-    public void testErrorNestedTxAutocommitOffBatched() throws SQLException {
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testErrorNestedTxAutocommitOffBatched() {
         GridTestUtils.assertThrows(null, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 try (Connection c = c(false, NestedTxMode.ERROR)) {
@@ -297,6 +305,7 @@ public class JdbcThinTransactionsWithMvccEnabledSelfTest extends JdbcThinAbstrac
     /**
      *
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testIgnoreNestedTxAutocommitOnBatched() throws SQLException {
         try (Connection c = c(true, NestedTxMode.IGNORE)) {
             doNestedTxStart(c, true);
@@ -308,6 +317,7 @@ public class JdbcThinTransactionsWithMvccEnabledSelfTest extends JdbcThinAbstrac
     /**
      *
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCommitNestedTxAutocommitOnBatched() throws SQLException {
         try (Connection c = c(true, NestedTxMode.COMMIT)) {
             doNestedTxStart(c, true);
@@ -319,7 +329,8 @@ public class JdbcThinTransactionsWithMvccEnabledSelfTest extends JdbcThinAbstrac
     /**
      *
      */
-    public void testErrorNestedTxAutocommitOnBatched() throws SQLException {
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testErrorNestedTxAutocommitOnBatched() {
         GridTestUtils.assertThrows(null, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 try (Connection c = c(true, NestedTxMode.ERROR)) {
@@ -410,6 +421,7 @@ public class JdbcThinTransactionsWithMvccEnabledSelfTest extends JdbcThinAbstrac
      * Test that exception in one of the statements does not kill connection worker altogether.
      * @throws SQLException if failed.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testExceptionHandling() throws SQLException {
         try (Connection c = c(true, NestedTxMode.ERROR)) {
             try (Statement s = c.createStatement()) {

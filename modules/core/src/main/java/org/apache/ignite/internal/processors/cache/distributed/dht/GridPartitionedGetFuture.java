@@ -460,7 +460,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             return false;
         }
 
-        boolean fastLocGet = (!forcePrimary || affNodes.get(0).isLocal()) &&
+        // Local get cannot be used with MVCC as local node can contain some visible version which is not latest.
+        boolean fastLocGet = !cctx.mvccEnabled() && (!forcePrimary || affNodes.get(0).isLocal()) &&
             cctx.reserveForFastLocalGet(part, topVer);
 
         if (fastLocGet) {
@@ -800,7 +801,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 AffinityTopologyVersion updTopVer =
                     new AffinityTopologyVersion(Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
 
-                cctx.affinity().affinityReadyFuture(updTopVer).listen(
+                cctx.shared().exchange().affinityReadyFuture(updTopVer).listen(
                     new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                             try {
@@ -865,7 +866,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 }
 
                 // Need to wait for next topology version to remap.
-                IgniteInternalFuture<AffinityTopologyVersion> topFut = cctx.affinity().affinityReadyFuture(rmtTopVer);
+                IgniteInternalFuture<AffinityTopologyVersion> topFut = cctx.shared().exchange().affinityReadyFuture(rmtTopVer);
 
                 topFut.listen(new CIX1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                     @Override public void applyx(

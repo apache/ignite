@@ -37,16 +37,16 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlStatementSelfTest {
     /** */
-    private final static String CREATE_INDEX = "create index idx on Person (id desc)";
+    private static final String CREATE_INDEX = "create index idx on Person (id desc)";
 
     /** */
-    private final static String DROP_INDEX = "drop index idx";
+    private static final String DROP_INDEX = "drop index idx";
 
     /** */
-    private final static String CREATE_INDEX_IF_NOT_EXISTS = "create index if not exists idx on Person (id desc)";
+    private static final String CREATE_INDEX_IF_NOT_EXISTS = "create index if not exists idx on Person (id desc)";
 
     /** */
-    private final static String DROP_INDEX_IF_EXISTS = "drop index idx if exists";
+    private static final String DROP_INDEX_IF_EXISTS = "drop index idx if exists";
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

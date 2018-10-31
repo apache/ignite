@@ -41,6 +41,7 @@ import org.apache.kafka.connect.runtime.ConnectorConfig;
 import org.apache.kafka.connect.runtime.Herder;
 import org.apache.kafka.connect.runtime.Worker;
 import org.apache.kafka.connect.runtime.WorkerConfig;
+import org.apache.kafka.connect.runtime.isolation.Plugins;
 import org.apache.kafka.connect.runtime.rest.entities.ConnectorInfo;
 import org.apache.kafka.connect.runtime.standalone.StandaloneConfig;
 import org.apache.kafka.connect.runtime.standalone.StandaloneHerder;
@@ -48,6 +49,7 @@ import org.apache.kafka.connect.sink.SinkConnector;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.storage.OffsetBackingStore;
 import org.apache.kafka.connect.util.Callback;
+import org.apache.kafka.connect.util.ConnectUtils;
 import org.apache.kafka.connect.util.FutureCallback;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
@@ -94,15 +96,16 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         for (String topic : TOPICS)
             kafkaBroker.createTopic(topic, PARTITIONS, REPLICATION_FACTOR);
 
-        WorkerConfig workerCfg = new StandaloneConfig(makeWorkerProps());
+        Map<String, String> props = makeWorkerProps();
+        WorkerConfig workerCfg = new StandaloneConfig(props);
 
         OffsetBackingStore offBackingStore = mock(OffsetBackingStore.class);
         offBackingStore.configure(workerCfg);
 
-        worker = new Worker(WORKER_ID, new SystemTime(), workerCfg, offBackingStore);
+        worker = new Worker(WORKER_ID, new SystemTime(), new Plugins(props), workerCfg, offBackingStore);
         worker.start();
 
-        herder = new StandaloneHerder(worker);
+        herder = new StandaloneHerder(worker, ConnectUtils.lookupKafkaClusterId(workerCfg));
         herder.start();
     }
 
@@ -132,7 +135,12 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         grid = startGrid("igniteServerNode", cfg);
     }
 
+    /**
+     * @throws Exception if failed.
+     */
     public void testSinkPutsWithoutTransformation() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9872");
+
         Map<String, String> sinkProps = makeSinkProps(Utils.join(TOPICS, ","));
 
         sinkProps.remove(IgniteSinkConstants.SINGLE_TUPLE_EXTRACTOR_CLASS);
@@ -140,6 +148,9 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         testSinkPuts(sinkProps, false);
     }
 
+    /**
+     * @throws Exception if failed.
+     */
     public void testSinkPutsWithTransformation() throws Exception {
         testSinkPuts(makeSinkProps(Utils.join(TOPICS, ",")), true);
     }
@@ -286,7 +297,6 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
      * Test transformer.
      */
     static class TestExtractor implements StreamSingleTupleExtractor<SinkRecord, String, String> {
-
         /** {@inheritDoc} */
         @Override public Map.Entry<String, String> extract(SinkRecord msg) {
             String[] parts = ((String)msg.value()).split("_");

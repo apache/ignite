@@ -43,17 +43,17 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     /**
      * Index of coordinator node.
      */
-    final static int SRV_CRD_IDX = 0;
+    static final int SRV_CRD_IDX = 0;
 
     /**
      * Index of non coordinator server node.
      */
-    final static int SRV_IDX = 1;
+    static final int SRV_IDX = 1;
 
     /**
      * Index of client.
      */
-    final static int CLI_IDX = 2;
+    static final int CLI_IDX = 2;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -784,7 +784,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     }
 
     /** City class. */
-    private final static class City {
+    private static final class City {
         /** City id. */
         @QuerySqlField
         private int id;
@@ -841,7 +841,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     }
 
     /**  */
-    private final static class GuidTest {
+    private static final class GuidTest {
         /** */
         @QuerySqlField
         private int id;

@@ -43,8 +43,7 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxEnlistRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxEnlistResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinishedMessage;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -170,7 +169,7 @@ public class MessageCodeGenerator {
 
 //        gen.generateAll(true);
 
-        gen.generateAndWrite(GridNearTxEnlistResponse.class);
+        gen.generateAndWrite(MvccRecoveryFinishedMessage.class);
 
 //        gen.generateAndWrite(GridNearAtomicUpdateRequest.class);
 
@@ -239,6 +238,8 @@ public class MessageCodeGenerator {
 //        gen.generateAndWrite(GridH2DmlResponse.class);
 //        gen.generateAndWrite(GridNearTxEnlistRequest.class);
 //        gen.generateAndWrite(GridNearTxEnlistResponse.class);
+//        gen.generateAndWrite(GenerateEncryptionKeyRequest.class);
+//        gen.generateAndWrite(GenerateEncryptionKeyResponse.class);
     }
 
     /**

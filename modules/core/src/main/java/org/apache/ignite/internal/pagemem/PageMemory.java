@@ -19,7 +19,6 @@ package org.apache.ignite.internal.pagemem;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.lifecycle.LifecycleAware;
 
 /**
  */
@@ -41,6 +40,12 @@ public interface PageMemory extends PageIdAllocator, PageSupport {
      * @return Page size in bytes.
      */
     public int pageSize();
+
+    /**
+     * @param grpId Group id.
+     * @return Page size without encryption overhead.
+     */
+    public int realPageSize(int grpId);
 
     /**
      * @return Page size with system overhead, in bytes.

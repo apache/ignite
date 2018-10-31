@@ -108,6 +108,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessa
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryEnsureDelivery;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.TestOnly;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -417,6 +418,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** */
     private IgniteDiscoverySpiInternalListener internalLsnr;
+
+    /** For test purposes. */
+    private boolean skipAddrsRandomization = false;
 
     /**
      * Gets current SPI state.
@@ -1604,6 +1608,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /**
      * @param msg Message.
      */
+    @TestOnly
     protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
         // No-op, intended for usage in tests.
     }
@@ -1876,7 +1881,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             }
         }
 
-        if (!res.isEmpty())
+        if (!res.isEmpty() && !skipAddrsRandomization)
             Collections.shuffle(res);
 
         return res;

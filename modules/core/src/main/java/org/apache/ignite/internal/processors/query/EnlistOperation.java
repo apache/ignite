@@ -46,7 +46,11 @@ public enum EnlistOperation {
      * This operation locks existing entry protecting it from updates by other transactions
      * or does notrhing if entry does not exist.
      */
-    LOCK(null);
+    LOCK(null),
+    /**
+     * This operation applies entry transformer.
+     */
+    TRANSFORM(GridCacheOperation.UPDATE);
 
     /** */
     private final GridCacheOperation cacheOp;
@@ -66,6 +70,11 @@ public enum EnlistOperation {
     /** */
     public boolean isDeleteOrLock() {
         return this == DELETE || this == LOCK;
+    }
+
+    /** */
+    public boolean isInvoke() {
+        return this == TRANSFORM;
     }
 
     /**

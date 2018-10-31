@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheE
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridInvokeValue;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
@@ -90,6 +91,7 @@ import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.CX1;
+import org.apache.ignite.internal.util.typedef.CX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -99,6 +101,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -185,7 +188,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     private TransactionProxyImpl rollbackOnlyProxy;
 
     /** Tx label. */
-    private @Nullable String lb;
+    @Nullable private String lb;
 
     /** */
     private MvccQueryTracker mvccTracker;
@@ -734,15 +737,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         try {
             validateTxMode(cacheCtx);
 
-            // TODO: IGNITE-9540: Fix invoke/invokeAll.
-            if(invokeMap != null)
-                MvccUtils.verifyMvccOperationSupport(cacheCtx, "invoke/invokeAll");
-
-            if (mvccSnapshot == null) {
-                MvccUtils.mvccTracker(cacheCtx, this);
-
-                assert mvccSnapshot != null;
-            }
+            MvccUtils.requestSnapshot(cacheCtx, this);
 
             beforePut(cacheCtx, retval, true);
         }
@@ -750,16 +745,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             return new GridFinishedFuture(e);
         }
 
-        // Cached entry may be passed only from entry wrapper.
-        final Map<?, ?> map0 = map;
-        final Map<?, EntryProcessor<K, V, Object>> invokeMap0 = (Map<K, EntryProcessor<K, V, Object>>)invokeMap;
-
         if (log.isDebugEnabled())
-            log.debug("Called putAllAsync(...) [tx=" + this + ", map=" + map0 + ", retval=" + retval + "]");
+            log.debug("Called putAllAsync(...) [tx=" + this + ", map=" + map + ", retval=" + retval + "]");
 
-        assert map0 != null || invokeMap0 != null;
+        assert map != null || invokeMap != null;
 
-        if (F.isEmpty(map0) && F.isEmpty(invokeMap0)) {
+        if (F.isEmpty(map) && F.isEmpty(invokeMap)) {
             if (implicit())
                 try {
                     commit();
@@ -771,14 +762,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             return new GridFinishedFuture<>(new GridCacheReturn(true, false));
         }
 
+        // Set transform flag for operation.
+        boolean transform = invokeMap != null;
+
         try {
-            // Set transform flag for transaction.
-            if (invokeMap != null)
-                transform = true;
+            Set<?> keys = map != null ? map.keySet() : invokeMap.keySet();
 
-            Set<?> keys = map0 != null ? map0.keySet() : invokeMap0.keySet();
-
-            final Map<KeyCacheObject, CacheObject> enlisted = new HashMap<>(keys.size());
+            final Map<KeyCacheObject, Message> enlisted = new LinkedHashMap<>(keys.size());
 
             for (Object key : keys) {
                 if (isRollbackOnly())
@@ -790,7 +780,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     throw new NullPointerException("Null key.");
                 }
 
-                Object val = map0 == null ? null : map0.get(key);
+                Object val = map == null ? null : map.get(key);
                 EntryProcessor entryProcessor = transform ? invokeMap.get(key) : null;
 
                 if (val == null && entryProcessor == null) {
@@ -800,25 +790,27 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 }
 
                 KeyCacheObject cacheKey = cacheCtx.toCacheKeyObject(key);
-                CacheObject cacheVal = cacheCtx.toCacheObject(val);
 
-                enlisted.put(cacheKey, cacheVal);
+                if (transform)
+                    enlisted.put(cacheKey, new GridInvokeValue(entryProcessor, invokeArgs));
+                else
+                    enlisted.put(cacheKey, cacheCtx.toCacheObject(val));
             }
 
-            return updateAsync(cacheCtx, new UpdateSourceIterator<IgniteBiTuple<KeyCacheObject, CacheObject>>() {
+            return updateAsync(cacheCtx, new UpdateSourceIterator<IgniteBiTuple<KeyCacheObject, Message>>() {
 
-                private Iterator<Map.Entry<KeyCacheObject, CacheObject>> it = enlisted.entrySet().iterator();
+                private Iterator<Map.Entry<KeyCacheObject, Message>> it = enlisted.entrySet().iterator();
 
                 @Override public EnlistOperation operation() {
-                    return EnlistOperation.UPSERT;
+                    return transform ? EnlistOperation.TRANSFORM : EnlistOperation.UPSERT;
                 }
 
                 @Override public boolean hasNextX() throws IgniteCheckedException {
                     return it.hasNext();
                 }
 
-                @Override public IgniteBiTuple<KeyCacheObject, CacheObject> nextX() throws IgniteCheckedException {
-                    Map.Entry<KeyCacheObject, CacheObject> next = it.next();
+                @Override public IgniteBiTuple<KeyCacheObject, Message> nextX() throws IgniteCheckedException {
+                    Map.Entry<KeyCacheObject, Message> next = it.next();
 
                     return new IgniteBiTuple<>(next.getKey(), next.getValue());
                 }
@@ -2118,7 +2110,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                     mvccSnapshot.incrementOperationCounter();
 
-                    return new GridCacheReturn(cacheCtx, true, keepBinary, futRes.value(), futRes.success());
+                    Object val = futRes.value();
+
+                    if (futRes.invokeResult()) {
+                        assert val instanceof Map;
+
+                        val = cacheCtx.unwrapInvokeResult((Map)val, keepBinary);
+                    }
+
+                    return new GridCacheReturn(cacheCtx, true, keepBinary, val, futRes.success());
                 }
             }));
         }
@@ -2420,16 +2420,16 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     try {
                         IgniteInternalFuture<Map<K, V>> fut1 = plc2.apply(fut.get(), null);
 
-                        return fut1.isDone() ?
+                        return nonInterruptable(fut1.isDone() ?
                             new GridFinishedFuture<>(finClos.apply(fut1.get(), null)) :
-                            new GridEmbeddedFuture<>(finClos, fut1);
+                            new GridEmbeddedFuture<>(finClos, fut1));
                     }
                     catch (GridClosureException e) {
                         return new GridFinishedFuture<>(e.unwrap());
                     }
                     catch (IgniteCheckedException e) {
                         try {
-                            return plc2.apply(false, e);
+                            return nonInterruptable(plc2.apply(false, e));
                         }
                         catch (Exception e1) {
                             return new GridFinishedFuture<>(e1);
@@ -2437,10 +2437,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     }
                 }
                 else {
-                    return new GridEmbeddedFuture<>(
+                    return nonInterruptable(new GridEmbeddedFuture<>(
                         fut,
                         plc2,
-                        finClos);
+                        finClos));
                 }
             }
             else {
@@ -3909,7 +3909,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         NearTxFinishFuture fut = fast ? new GridNearTxFastFinishFuture(this, commit) :
             new GridNearTxFinishFuture<>(cctx, this, commit);
 
-        if (mvccQueryTracker() != null || mvccSnapshot != null || txState.mvccEnabled(cctx)) {
+        if (mvccQueryTracker() != null || mvccSnapshot != null || txState.mvccEnabled()) {
             if (commit)
                 fut = new GridNearTxFinishAndAckFuture(fut);
             else
@@ -3951,7 +3951,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                                 assert rollbackFut.isDone() : rollbackFut;
                             }
-                            else
+                            else // First finish attempt was unsuccessful. Try again.
                                 rollbackFut.finish(false, clearThreadMap, onTimeout);
                         }
                         else {
@@ -4072,10 +4072,26 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         // Do not create finish future if there are no remote nodes.
         if (F.isEmpty(dhtMap) && F.isEmpty(nearMap)) {
-            if (prep != null)
-                return (IgniteInternalFuture<IgniteInternalTx>)prep;
+            if (prep != null) {
+                return new GridEmbeddedFuture<>(new CX2<IgniteInternalTx, Exception, IgniteInternalTx>() {
+                    @Override public IgniteInternalTx applyx(IgniteInternalTx o, Exception e) throws IgniteCheckedException {
+                        cctx.tm().mvccFinish(GridNearTxLocal.this, e == null);
 
-            return new GridFinishedFuture<IgniteInternalTx>(this);
+                        return o;
+                    }
+                }, (IgniteInternalFuture<IgniteInternalTx>)prep);
+            }
+
+            try {
+                cctx.tm().mvccFinish(this, true);
+
+                return new GridFinishedFuture<>(this);
+            }
+            catch (IgniteCheckedException e) {
+                commitError(e);
+
+                return new GridFinishedFuture<>(e);
+            }
         }
 
         final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, true);
@@ -4718,7 +4734,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param fut Future.
      * @return Future ignoring interrupts on {@code get()}.
      */
-    private <T> IgniteInternalFuture<T> nonInterruptable(IgniteInternalFuture<T> fut) {
+    private static <T> IgniteInternalFuture<T> nonInterruptable(IgniteInternalFuture<T> fut) {
         // Safety.
         if (fut instanceof GridFutureAdapter)
             ((GridFutureAdapter)fut).ignoreInterrupts();

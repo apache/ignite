@@ -61,6 +61,11 @@ public class HadoopNoopHelper implements HadoopHelper {
         throw unsupported();
     }
 
+    /** {@inheritDoc} */
+    @Override public void close() {
+        // No-op.
+    }
+
     /**
      * @return Exception.
      */

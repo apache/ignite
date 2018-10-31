@@ -382,7 +382,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             return;
         }
 
-        assert !tx.txState().mvccEnabled(cctx) || mvccCrd != null || F.isEmpty(writes);
+        assert !tx.txState().mvccEnabled() || mvccCrd != null || F.isEmpty(writes);
 
         tx.addEntryMapping(mappings.values());
 

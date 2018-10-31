@@ -30,7 +30,7 @@ web-console-header {
     position: relative;
 
     &:after {
-        // Shows header shadow over absoluteley positioned child content,
+        // Shows header shadow over absolutely positioned child content,
         // otherwise z ordering issues happen.
         display: block;
         width: 100%;
@@ -106,6 +106,7 @@ web-console-header {
         &:focus, :focus,
         &.active, .active {
             color: $color-active;
+            text-decoration: none;
         }
 
         &[disabled] {
