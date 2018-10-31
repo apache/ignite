@@ -34,13 +34,19 @@ import java.util.stream.Stream;
  * @param <V> Type of a value in {@code upstream} data.
  */
 public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
-    /** {@code Map} with upstream data. */
+    /**
+     * {@code Map} with upstream data.
+     */
     private final Map<K, V> upstreamMap;
 
-    /** Number of partitions. */
+    /**
+     * Number of partitions.
+     */
     private final int partitions;
 
-    /** Filter for {@code upstream} data. */
+    /**
+     * Filter for {@code upstream} data.
+     */
     private final IgniteBiPredicate<K, V> filter;
 
     private UpstreamTransformerChain<K, V> upstreamTransformers;
@@ -72,7 +78,9 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         this.upstreamTransformers = UpstreamTransformerChain.empty();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @SuppressWarnings("unchecked")
     @Override public <C extends Serializable, D extends AutoCloseable> LocalDataset<C, D> build(
         PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder) {
@@ -82,12 +90,12 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         // TODO: Do we have any constraint telling us that in upstream data key is unique?
         List<UpstreamEntry<K, V>> entriesList = new LinkedList<>();
 
-        Stream<UpstreamEntry<K, V>> filteredStream = upstreamMap
+        upstreamMap
             .entrySet()
             .stream()
             .filter(en -> filter.apply(en.getKey(), en.getValue()))
-            .map(en -> new UpstreamEntry<>(en.getKey(), en.getValue()));
-
+            .map(en -> new UpstreamEntry<>(en.getKey(), en.getValue()))
+            .forEach(entriesList::add);
 
         int partSize = Math.max(1, entriesList.size() / partitions);
 
@@ -98,42 +106,50 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         int ptr = 0;
 
         for (int part = 0; part < partitions; part++) {
-            //upstreamTransformers.transform(upstreamTransformationSeed == null ? new Random().nextLong() : upstreamTransformationSeed + , filteredStream).forEach(entriesList::add);;
-            int initialCnt = part == partitions - 1 ? entriesList.size() - ptr : Math.min(partSize, entriesList.size() - ptr);
-            int transformedCnt = initialCnt;
+            int cnt = part == partitions - 1 ? entriesList.size() - ptr : Math.min(partSize, entriesList.size() - ptr);
+
+            long seed = upstreamTransformationSeed == null ?
+                new Random().nextLong() :
+                upstreamTransformationSeed + 951091 * part;
 
             if (!upstreamTransformers.isEmpty()) {
-                long seed = upstreamTransformationSeed == null ?
-                    new Random().nextLong() :
-                    upstreamTransformationSeed + 951091 * part;
-
-                transformedCnt = (int) upstreamTransformers.transform(
+                cnt = (int)upstreamTransformers.transform(
                     seed,
-                    Utils.asStream(new IteratorWindow<>(thirdKeysIter, k -> k, initialCnt))).count();
-                firstKeysIter = upstreamTransformers.transform(
-                    seed,
-                    Utils.asStream(new IteratorWindow<>(firstKeysIter, k -> k, transformedCnt))).iterator();
-                secondKeysIter = upstreamTransformers.transform(
-                    seed,
-                    Utils.asStream(new IteratorWindow<>(secondKeysIter, k -> k, transformedCnt))).iterator();
-
+                    Utils.asStream(new IteratorWindow<>(thirdKeysIter, k -> k, cnt))).count();
             }
 
-            IteratorWindow<UpstreamEntry<K, V>, UpstreamEntry<K, V>> iter = new IteratorWindow<>(
-                    firstKeysIter, k -> k, initialCnt);
-            C ctx = initialCnt > 0 ? partCtxBuilder.build(iter, transformedCnt) : null;
+            Iterator<UpstreamEntry<K, V>> iter;
+            if (upstreamTransformers.isEmpty()) {
+                iter = new IteratorWindow<>(
+                    firstKeysIter, k -> k, cnt);
+            }
+            else {
+                iter = upstreamTransformers.transform(
+                    seed,
+                    Utils.asStream(new IteratorWindow<>(firstKeysIter, k -> k, cnt))).iterator();
+            }
+            C ctx = cnt > 0 ? partCtxBuilder.build(iter, cnt) : null;
 
-            Iterator<UpstreamEntry<K, V>> iter1 = new IteratorWindow<>(secondKeysIter, k -> k, initialCnt);
-            D data = initialCnt > 0 ? partDataBuilder.build(
-                    iter1,
-                transformedCnt,
+            Iterator<UpstreamEntry<K, V>> iter1;
+            if (upstreamTransformers.isEmpty()) {
+                iter1 = upstreamTransformers.transform(
+                    seed,
+                    Utils.asStream(new IteratorWindow<>(secondKeysIter, k -> k, cnt))).iterator();
+            }
+            else {
+                iter1 = new IteratorWindow<>(secondKeysIter, k -> k, cnt);
+            }
+
+            D data = cnt > 0 ? partDataBuilder.build(
+                iter1,
+                cnt,
                 ctx
             ) : null;
 
             ctxList.add(ctx);
             dataList.add(data);
 
-            ptr += initialCnt;
+            ptr += cnt;
         }
 
         return new LocalDataset<>(ctxList, dataList);
@@ -145,13 +161,14 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         return this;
     }
 
-    @Override
-    public DatasetBuilder<K, V> withTransformationSeed(Long seed) {
+    @Override public DatasetBuilder<K, V> withTransformationSeed(Long seed) {
         upstreamTransformationSeed = seed;
         return this;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public DatasetBuilder<K, V> withFilter(IgniteBiPredicate<K, V> filterToAdd) {
         return new LocalDatasetBuilder<>(upstreamMap,
             (e1, e2) -> filter.apply(e1, e2) && filterToAdd.apply(e1, e2), partitions);
@@ -165,16 +182,24 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
      * @param <T> Target type of entries.
      */
     private static class IteratorWindow<K, T> implements Iterator<T> {
-        /** Delegate iterator. */
+        /**
+         * Delegate iterator.
+         */
         private final Iterator<K> delegate;
 
-        /** Transformer that transforms entries from one type to another. */
+        /**
+         * Transformer that transforms entries from one type to another.
+         */
         private final IgniteFunction<K, T> map;
 
-        /** Count of entries to produce. */
+        /**
+         * Count of entries to produce.
+         */
         private final int cnt;
 
-        /** Number of already produced entries. */
+        /**
+         * Number of already produced entries.
+         */
         private int ptr;
 
         /**
@@ -190,12 +215,16 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
             this.cnt = cnt;
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public boolean hasNext() {
             return delegate.hasNext() && ptr < cnt;
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public T next() {
             ++ptr;
 

@@ -57,7 +57,7 @@ public class TrainerTransformers {
         int ensembleSize,
         double subsampleRatio,
         PredictionsAggregator aggregator) {
-        return makeBagged(trainer, ensembleSize, subsampleRatio, -1, -1, aggregator, null);
+        return makeBagged(trainer, ensembleSize, subsampleRatio, -1, -1, aggregator, new Random().nextLong());
     }
 
     /**

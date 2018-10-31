@@ -75,7 +75,7 @@ public class BaggingTest extends TrainerTest {
             TrainerTransformers.makeBagged(
                 trainer,
                 10,
-                0.6,
+                0.7,
                 new OnMajorityPredictionsAggregator());
 
         ModelsComposition mdl = baggedTrainer.fit(

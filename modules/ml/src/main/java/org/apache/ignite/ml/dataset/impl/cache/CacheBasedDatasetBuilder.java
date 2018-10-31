@@ -139,15 +139,13 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public <T> DatasetBuilder<K, V> addStreamTransformer(UpstreamTransformer<K, V, T> transformer) {
+    @Override public <T> DatasetBuilder<K, V> addStreamTransformer(UpstreamTransformer<K, V, T> transformer) {
         transformersChain.addUpstreamTransformer(transformer);
 
         return this;
     }
 
-    @Override
-    public DatasetBuilder<K, V> withTransformationSeed(Long seed) {
+    @Override public DatasetBuilder<K, V> withTransformationSeed(Long seed) {
         transformationSeed = seed;
 
         return this;
@@ -156,8 +154,7 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     /**
      * {@inheritDoc}
      */
-    @Override
-    public DatasetBuilder<K, V> withFilter(IgniteBiPredicate<K, V> filterToAdd) {
+    @Override public DatasetBuilder<K, V> withFilter(IgniteBiPredicate<K, V> filterToAdd) {
         return new CacheBasedDatasetBuilder<>(ignite, upstreamCache,
             (e1, e2) -> filter.apply(e1, e2) && filterToAdd.apply(e1, e2));
     }
