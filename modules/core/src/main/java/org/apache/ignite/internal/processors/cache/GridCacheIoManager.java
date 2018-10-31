@@ -33,7 +33,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -85,7 +84,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAwa
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -241,8 +239,17 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                         log.debug(msg0.toString());
                     }
 
-                    if (shouldWaitForAffinityReadyFuture(cacheMsg, nodeId))
+                    if (shouldWaitForAffinityReadyFuture(cacheMsg))
                         fut = cctx.exchange().affinityReadyFuture(rmtAffVer);
+                    else {
+                        if (log.isDebugEnabled()) {
+                            StringBuilder msg0 = new StringBuilder("Skip waiting for topology future on message [");
+
+                            appendMessageInfo(cacheMsg, nodeId, msg0).append(']');
+
+                            log.debug(msg0.toString());
+                        }
+                    }
                 }
             }
 
@@ -300,47 +307,14 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         /**
          * @param cacheMsg Cache message.
-         * @param nodeId Node id.
          * @return Whether one should wait for the requested affinity version to handle given message.
          */
-        private boolean shouldWaitForAffinityReadyFuture(GridCacheMessage cacheMsg, UUID nodeId) {
+        private boolean shouldWaitForAffinityReadyFuture(GridCacheMessage cacheMsg) {
             if (cacheMsg instanceof GridNearSingleGetRequest || cacheMsg instanceof GridNearGetRequest) {
                 GridDhtPartitionsExchangeFuture lastTopFut = cctx.exchange().lastTopologyFuture();
 
-                if (lastTopFut.exchangeId().topologyVersion().equals(cacheMsg.topologyVersion())) {
-                    GridCacheIdMessage cacheIdMsg = (GridCacheIdMessage)cacheMsg;
-/*
-                    ExchangeActions exchangeActions = lastTopFut.exchangeActions();
-
-                    if (exchangeActions != null) {
-                        boolean shouldWait = exchangeActions.cacheStarted(cacheIdMsg.cacheId)
-                            || exchangeActions.cacheStopped(cacheIdMsg.cacheId);
-
-                        if (shouldWait)
-                            return true;
-
-                        LocalJoinCachesContext joinCtx = exchangeActions.localJoinContext();
-
-                        if (joinCtx != null) {
-                            for (T2<DynamicCacheDescriptor, NearCacheConfiguration> t2 : joinCtx.caches()) {
-                                DynamicCacheDescriptor cacheDesc = t2.get1();
-
-                                if (cacheDesc.cacheId() == cacheIdMsg.cacheId)
-                                    return true;
-                            }
-                        }
-                    }
-*/
-//                    if (log.isDebugEnabled()) {
-                        StringBuilder msg0 = new StringBuilder("Skip waiting for topology future on message [");
-
-                        appendMessageInfo(cacheMsg, nodeId, msg0).append(']');
-
-                        log.info(msg0.toString());
-//                    }
-
+                if (lastTopFut.exchangeId().topologyVersion().equals(cacheMsg.topologyVersion()))
                     return false;
-                }
             }
 
             return true;
