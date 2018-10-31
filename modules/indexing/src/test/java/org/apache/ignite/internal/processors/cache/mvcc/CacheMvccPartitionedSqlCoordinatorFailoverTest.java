@@ -22,7 +22,6 @@ import org.apache.ignite.cache.CacheMode;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SCAN;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.DML;
-import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.PUT;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -64,14 +63,6 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
     /**
      * @throws Exception If failed.
      */
-    public void testPutAllGetAll_ClientServer_Backups1_Restart_Scan() throws Exception {
-        // TODO add tests with RESTART_RND_SRV https://issues.apache.org/jira/browse/IGNITE-9928
-        putAllGetAll(RestartMode.RESTART_RND_SRV, 4, 2, 2, 64, /*new InitIndexing(Integer.class, Integer.class)*/ null, SCAN, PUT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testPutAllGetAll_ClientServer_Backups1_RestartCoordinator_ScanDml_Persistence() throws Exception {
         persistence = true;
 
@@ -102,6 +93,38 @@ public class CacheMvccPartitionedSqlCoordinatorFailoverTest extends CacheMvccAbs
      */
     public void testPutAllGetAll_ClientServer_Backups1_RestartRandomSrv_SqlDml() throws Exception {
         putAllGetAll(RestartMode.RESTART_RND_SRV, 3, 1, 1, DFLT_PARTITION_COUNT,
+            new InitIndexing(Integer.class, Integer.class), SQL, DML);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllGetAll_ClientServer_Backups2_RestartRandomSrv_SqlDml() throws Exception {
+        putAllGetAll(RestartMode.RESTART_RND_SRV, 4, 1, 2, DFLT_PARTITION_COUNT,
+            new InitIndexing(Integer.class, Integer.class), SQL, DML);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllGetAll_Server_Backups2_RestartRandomSrv_SqlDml() throws Exception {
+        putAllGetAll(RestartMode.RESTART_RND_SRV, 4, 0, 2, DFLT_PARTITION_COUNT,
+            new InitIndexing(Integer.class, Integer.class), SQL, DML);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllGetAll_Server_Backups1_SinglePartition_RestartRandomSrv_SqlDml() throws Exception {
+        putAllGetAll(RestartMode.RESTART_RND_SRV, 4, 0, 1, 1,
+            new InitIndexing(Integer.class, Integer.class), SQL, DML);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllGetAll_ClientServer_Backups1_SinglePartition_RestartRandomSrv_SqlDml() throws Exception {
+        putAllGetAll(RestartMode.RESTART_RND_SRV, 3, 1, 1, 1,
             new InitIndexing(Integer.class, Integer.class), SQL, DML);
     }
 

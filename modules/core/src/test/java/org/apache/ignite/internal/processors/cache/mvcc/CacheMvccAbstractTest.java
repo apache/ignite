@@ -1413,8 +1413,12 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
                             log.info("Start new node: " + idx);
 
+                            Ignite srv = startGrid(idx);
+
+                            cache0 = new TestCache(srv.cache(DEFAULT_CACHE_NAME));
+
                             synchronized (caches) {
-                                caches.set(idx, new TestCache(startGrid(idx).cache(DEFAULT_CACHE_NAME)));
+                                caches.set(idx, cache0);
                             }
 
                             awaitPartitionMapExchange();
