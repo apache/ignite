@@ -79,11 +79,6 @@ RUN chmod +x docker-entrypoint.sh \
 # Copy nginx configuration
 COPY nginx/* /etc/nginx/
 
-# Mount required volumes
-VOLUME ["/etc/nginx"]
-VOLUME ["/data/db"]
-VOLUME ["/opt/web-console/serve/agent_dists"]
-
 EXPOSE 80
 
 ENTRYPOINT ["/opt/web-console/docker-entrypoint.sh"]
