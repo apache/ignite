@@ -147,19 +147,25 @@ public class FunctionalQueryTest {
                 )).setSchema("PUBLIC")
             ).getAll();
 
-            int key = 1;
-            Person val = new Person(key, "Person 1");
+            for (int i = 0; i < 1000; ++i) {
+                int key = i;
+                Person val = new Person(key, "Person " + i);
 
-            client.query(new SqlFieldsQuery(
-                "INSERT INTO Person(id, name) VALUES(?, ?)"
-            ).setArgs(val.getId(), val.getName()).setSchema("PUBLIC"))
-                .getAll();
+                client.query(new SqlFieldsQuery(
+                    "INSERT INTO Person(id, name) VALUES(?, ?)"
+                ).setArgs(val.getId(), val.getName()).setSchema("PUBLIC"))
+                    .getAll();
+            }
 
             Object cachedName = client.query(
-                new SqlFieldsQuery("SELECT name from Person WHERE id=?").setArgs(key).setSchema("PUBLIC")
+                new SqlFieldsQuery("SELECT name from Person WHERE id=?").setArgs(1).setSchema("PUBLIC")
             ).getAll().iterator().next().iterator().next();
 
-            assertEquals(val.getName(), cachedName);
+            assertEquals("Person 1", cachedName);
+
+            List<List<?>> rows = client.query(
+                new SqlFieldsQuery("SELECT * from Person WHERE id=?").setArgs(1).setSchema("PUBLIC").setPageSize(2)
+            ).getAll();
         }
     }
 
