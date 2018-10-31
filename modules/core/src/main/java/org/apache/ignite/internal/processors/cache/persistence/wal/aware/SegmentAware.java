@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.logger.NullLogger;
 
 import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentArchivedStorage.buildArchivedStorage;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentCompressStorage.buildCompressStorage;
@@ -46,7 +48,17 @@ public class SegmentAware {
      */
     public SegmentAware(int walSegmentsCnt, boolean compactionEnabled) {
         segmentCurrStateStorage = buildCurrentStateStorage(walSegmentsCnt, segmentArchivedStorage);
-        segmentCompressStorage = buildCompressStorage(segmentArchivedStorage, compactionEnabled);
+        segmentCompressStorage = buildCompressStorage(segmentArchivedStorage, compactionEnabled, new NullLogger());
+    }
+
+    /**
+     * @param walSegmentsCnt Total WAL segments count.
+     * @param compactionEnabled Is wal compaction enabled.
+     * @param log Logger.
+     */
+    public SegmentAware(int walSegmentsCnt, boolean compactionEnabled, IgniteLogger log) {
+        segmentCurrStateStorage = buildCurrentStateStorage(walSegmentsCnt, segmentArchivedStorage);
+        segmentCompressStorage = buildCompressStorage(segmentArchivedStorage, compactionEnabled, log);
     }
 
     /**
@@ -110,12 +122,30 @@ public class SegmentAware {
     }
 
     /**
+     * Sets the largest index of previously compressed segment.
+     *
+     * @param idx Segment index.
+     */
+    public void lastSegmentCompressed(long idx) {
+        segmentCompressStorage.lastSegmentCompressed(idx);
+    }
+
+    /**
      * Callback after segment compression finish.
      *
      * @param compressedIdx Index of compressed segment.
      */
     public void onSegmentCompressed(long compressedIdx) {
         segmentCompressStorage.onSegmentCompressed(compressedIdx);
+    }
+
+    /**
+     * Removes given segment index from the list of segment indices being compressed.
+     *
+     * @param idx Segment index to remove.
+     */
+    public void removeFromCurrentlyCompressedList(long idx) {
+        segmentCompressStorage.removeFromCurrentlyCompressedList(idx);
     }
 
     /**

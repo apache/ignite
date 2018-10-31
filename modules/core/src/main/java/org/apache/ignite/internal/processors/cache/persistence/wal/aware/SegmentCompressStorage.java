@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 
 /**
  * Storage of actual information about current index of compressed segments.
@@ -54,29 +56,50 @@ public class SegmentCompressStorage {
     /** Min uncompressed index to keep. */
     private volatile long minUncompressedIdxToKeep = -1L;
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     /**
      * @param segmentArchivedStorage Storage of last archived segment.
      * @param compactionEnabled If WAL compaction enabled.
+     * @param log Logger.
      */
-    private SegmentCompressStorage(SegmentArchivedStorage segmentArchivedStorage, boolean compactionEnabled) {
+    private SegmentCompressStorage(
+        SegmentArchivedStorage segmentArchivedStorage,
+        boolean compactionEnabled,
+        IgniteLogger log) {
         this.segmentArchivedStorage = segmentArchivedStorage;
 
         this.compactionEnabled = compactionEnabled;
 
         this.segmentArchivedStorage.addObserver(this::onSegmentArchived);
+
+        this.log = log;
     }
 
     /**
      * @param segmentArchivedStorage Storage of last archived segment.
      * @param compactionEnabled If WAL compaction enabled.
+     * @param log Logger.
      */
-    static SegmentCompressStorage buildCompressStorage(SegmentArchivedStorage segmentArchivedStorage,
-                                                       boolean compactionEnabled) {
-        SegmentCompressStorage storage = new SegmentCompressStorage(segmentArchivedStorage, compactionEnabled);
+    static SegmentCompressStorage buildCompressStorage(
+        SegmentArchivedStorage segmentArchivedStorage,
+        boolean compactionEnabled,
+        IgniteLogger log) {
+        SegmentCompressStorage storage = new SegmentCompressStorage(segmentArchivedStorage, compactionEnabled, log);
 
         segmentArchivedStorage.addObserver(storage::onSegmentArchived);
 
         return storage;
+    }
+
+    /**
+     * Sets the largest index of previously compressed segment.
+     *
+     * @param idx Segment index.
+     */
+    synchronized void lastSegmentCompressed(long idx) {
+        onSegmentCompressed(lastEnqueuedToCompressIdx = idx);
     }
 
     /**
@@ -90,10 +113,34 @@ public class SegmentCompressStorage {
 
         compressingSegments.remove(compressedIdx);
 
-        if (!compressingSegments.isEmpty())
-            this.lastCompressedIdx = Math.min(lastMaxCompressedIdx, compressingSegments.get(0) - 1);
-        else
-            this.lastCompressedIdx = lastMaxCompressedIdx;
+        Iterator<Long> iter = compressingSegments.iterator();
+
+        while (iter.hasNext()) {
+            long idx = iter.next();
+
+            if (idx <= lastCompressedIdx) {
+                log.warning("Segment with suspiciously low index is being compressed, dropping [idx=" + idx +
+                    ", lastCompressedIdx=" + lastCompressedIdx + ']');
+
+                iter.remove();
+            }
+            else {
+                lastCompressedIdx = idx - 1;
+
+                return;
+            }
+        }
+
+        lastCompressedIdx = lastMaxCompressedIdx;
+    }
+
+    /**
+     * Removes given segment index from the list of segment indices being compressed.
+     *
+     * @param idx Segment index to remove.
+     */
+    synchronized void removeFromCurrentlyCompressedList(long idx) {
+        compressingSegments.remove(idx);
     }
 
     /**
