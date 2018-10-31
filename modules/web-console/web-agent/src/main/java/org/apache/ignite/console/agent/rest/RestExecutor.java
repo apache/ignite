@@ -94,7 +94,8 @@ public class RestExecutor implements AutoCloseable {
                 builder.sslSocketFactory(ctx.getSocketFactory(), trustManager());
 
                 builder.hostnameVerifier((hostname, session) -> true);
-            } catch (Exception ignored) {
+            }
+            catch (Throwable ignored) {
                 LT.warn(log, "Failed to initialize the Trust Manager for \"-Dtrust.all\" option to skip certificate validation.");
             }
         }
@@ -136,7 +137,7 @@ public class RestExecutor implements AutoCloseable {
         if (res.code() == 404)
             return RestResult.fail(STATUS_FAILED, "Failed connect to cluster.");
 
-        return RestResult.fail(STATUS_FAILED, "Failed to execute REST command: " + res.message());
+        return RestResult.fail(STATUS_FAILED, "Failed to execute REST command: " + res);
     }
 
     /** */

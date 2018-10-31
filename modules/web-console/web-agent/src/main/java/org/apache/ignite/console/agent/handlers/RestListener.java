@@ -84,7 +84,7 @@ public class RestListener extends AbstractListener {
 
             return restExecutor.sendRequest(this.cfg.nodeURIs(), params, headers);
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             U.error(log, "Failed to execute REST command with parameters: " + params, e);
 
             return RestResult.fail(404, e.getMessage());

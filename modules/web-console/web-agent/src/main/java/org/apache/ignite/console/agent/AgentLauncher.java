@@ -330,7 +330,7 @@ public class AgentLauncher {
             // Create an SSLContext that uses our TrustManager
             ctx.init(null, new TrustManager[] {trustManager()}, null);
 
-            opts.sslContext = ctx;
+            // TODO IGNITE-5617 Check SSL for socket-io 1.0.0 opts.sslContext = ctx;
         }
 
         final Socket client = IO.socket(uri, opts);

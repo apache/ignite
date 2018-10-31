@@ -22,7 +22,6 @@ import 'angular-animate';
 import 'angular-sanitize';
 import 'angular-strap';
 import 'angular-strap/dist/angular-strap.tpl';
-import 'angular-socket-io';
 
 import 'angular-messages';
 import '@uirouter/angularjs';

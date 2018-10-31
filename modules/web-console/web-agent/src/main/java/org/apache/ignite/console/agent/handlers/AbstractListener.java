@@ -95,12 +95,17 @@ abstract class AbstractListener implements Emitter.Listener {
                     }
 
                     cb.call(null, toJSON(res));
-                } catch (Exception e) {
+                }
+                catch (Throwable e) {
+                    log.error("Failed to process event in pool", e);
+
                     cb.call(e, null);
                 }
             });
         }
-        catch (Exception e) {
+        catch (Throwable e) {
+            log.error("Failed to process event", e);
+
             cb.call(e, null);
         }
     }
