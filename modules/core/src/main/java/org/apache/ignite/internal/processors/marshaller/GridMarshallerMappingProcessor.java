@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.jetbrains.annotations.Nullable;
@@ -341,6 +342,47 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
         List<Map<Integer, MappedName>> mappings = (List<Map<Integer, MappedName>>)data.commonData();
 
         processIncomingMappings(mappings);
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode rmtNode,
+        DiscoveryDataBag.JoiningNodeDiscoveryData discoData
+    ) {
+        try {
+            validateMappings((List<Map<Integer, MappedName>>)discoData.joiningNodeData());
+        }
+        catch (Exception e) {
+            String locMsg = "Exception was thrown when merging marshaller mappings from node %s: %s";
+
+            String rmtMsg = "Exception was thrown on coordinator when merging marshaller mappings from this node: %s";
+
+            return new IgniteNodeValidationResult(rmtNode.id(),
+                String.format(locMsg, rmtNode.id(), e.getMessage()),
+                String.format(rmtMsg, e.getMessage()));
+        }
+
+        return null;
+    }
+
+    /**
+     * @param mappings Marshaller mappings, received from remote node.
+     * @throws IgniteCheckedException In case if received mappings are incompatible with local ones.
+     */
+    private void validateMappings(List<Map<Integer, MappedName>> mappings) throws IgniteCheckedException {
+        if (mappings != null) {
+            for (byte i = 0; i < mappings.size(); i++) {
+                Map<Integer, MappedName> map;
+
+                if ((map = mappings.get(i)) != null) {
+                    for (Map.Entry<Integer, MappedName> e : map.entrySet()) {
+                        Integer typeId = e.getKey();
+                        String clsName = e.getValue().className();
+
+                        marshallerCtx.validateNewMapping(i, typeId, clsName);
+                    }
+                }
+            }
+        }
     }
 
     /**

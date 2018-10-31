@@ -203,6 +203,16 @@ public class MarshallerContextImpl implements MarshallerContext {
     }
 
     /**
+     * @param platformId Platform id.
+     * @param typeId Type id.
+     * @param typeName Type name.
+     * @throws IgniteCheckedException In case if the mapping is incompatible with existing ones.
+     */
+    public void validateNewMapping(byte platformId, int typeId, String typeName) throws IgniteCheckedException {
+        fileStore.validateNewMapping(platformId, typeId, typeName);
+    }
+
+    /**
      * @param clsName Class name.
      * @param ldr Class loader used to get properties file.
      * @param fileName File name.

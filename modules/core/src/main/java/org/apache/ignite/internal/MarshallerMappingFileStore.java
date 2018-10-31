@@ -212,14 +212,38 @@ final class MarshallerMappingFileStore {
         String existingTypeName = readMapping(platformId, typeId);
 
         if (existingTypeName != null) {
-            if (!existingTypeName.equals(typeName))
-                throw new IgniteCheckedException("Failed to merge new and existing marshaller mappings." +
-                    " For [platformId=" + platformId + ", typeId=" + typeId + "]" +
-                    " new typeName=" + typeName + ", existing typeName=" + existingTypeName + "." +
-                    " Consider cleaning up persisted mappings from <workDir>/marshaller directory.");
-        }
-        else
+            if (!typeName.equals(existingTypeName))
+                reportIncompatibleMappings(platformId, typeId, existingTypeName, typeName);
+        } else
             writeMapping(platformId, typeId, typeName);
+    }
+
+    /**
+     * @param platformId Platform id.
+     * @param typeId Type id.
+     * @param typeName Type name.
+     * @throws IgniteCheckedException In case if the mapping is incompatible with existing ones.
+     */
+    void validateNewMapping(byte platformId, int typeId, String typeName) throws IgniteCheckedException {
+        String existingTypeName = readMapping(platformId, typeId);
+
+        if (!typeName.equals(existingTypeName))
+            reportIncompatibleMappings(platformId, typeId, existingTypeName, typeName);
+    }
+
+    /**
+     * @param platformId Platform id.
+     * @param typeId Type id.
+     * @param oldName Stored class name.
+     * @param newName New class name.
+     * @throws IgniteCheckedException Exception, signaling, that marshaller mappings are incompatible.
+     */
+    private void reportIncompatibleMappings(byte platformId, int typeId, String oldName, String newName)
+        throws IgniteCheckedException {
+        throw new IgniteCheckedException("Failed to merge new and existing marshaller mappings." +
+            " For [platformId=" + platformId + ", typeId=" + typeId + "]" +
+            " new typeName=" + newName + ", existing typeName=" + oldName + "." +
+            " Consider cleaning up persisted mappings from <workDir>/marshaller directory.");
     }
 
     /**
