@@ -1087,7 +1087,10 @@ public abstract class GridUnsafe {
      * @return address.
      */
     public static long allocateMemory(long size) {
-        return UNSAFE.allocateMemory(size);
+        long basePtr = UNSAFE.allocateMemory(size);
+        for (long offset = basePtr; offset < basePtr + size; offset++)
+            UNSAFE.putByte(offset, (byte)0);
+        return basePtr;
     }
 
     /**
