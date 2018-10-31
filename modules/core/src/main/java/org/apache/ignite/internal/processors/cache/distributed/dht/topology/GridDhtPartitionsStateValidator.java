@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
+import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -33,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Cac
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
@@ -78,14 +78,16 @@ public class GridDhtPartitionsStateValidator {
         final Set<UUID> ignoringNodes = new HashSet<>();
 
         // Ignore just joined nodes.
-        for (DiscoveryEvent evt : fut.events().events())
+        for (DiscoveryEvent evt : fut.events().events()) {
             if (evt.type() == EVT_NODE_JOINED)
                 ignoringNodes.add(evt.eventNode().id());
+        }
 
         AffinityTopologyVersion topVer = fut.context().events().topologyVersion();
 
         // Validate update counters.
         Map<Integer, Map<UUID, Long>> result = validatePartitionsUpdateCounters(top, messages, ignoringNodes);
+
         if (!result.isEmpty())
             throw new IgniteCheckedException("Partitions update counters are inconsistent for " + fold(topVer, result));
 
@@ -110,13 +112,16 @@ public class GridDhtPartitionsStateValidator {
      *
      * @param top Topology to validate.
      * @param nodeId Node which sent single message.
-     * @param singleMsg Single message.
+     * @param countersMap Counters map.
+     * @param sizesMap Sizes map.
      * @return Set of partition ids should be excluded from validation.
      */
-    @Nullable private Set<Integer> shouldIgnore(GridDhtPartitionTopology top, UUID nodeId, GridDhtPartitionsSingleMessage singleMsg) {
-        CachePartitionPartialCountersMap countersMap = singleMsg.partitionUpdateCounters(top.groupId(), top.partitions());
-        Map<Integer, Long> sizesMap = singleMsg.partitionSizes(top.groupId());
-
+    @Nullable private Set<Integer> shouldIgnore(
+        GridDhtPartitionTopology top,
+        UUID nodeId,
+        CachePartitionPartialCountersMap countersMap,
+        Map<Integer, Long> sizesMap
+    ) {
         Set<Integer> ignore = null;
 
         for (int i = 0; i < countersMap.size(); i++) {
@@ -155,14 +160,14 @@ public class GridDhtPartitionsStateValidator {
      * @return Invalid partitions map with following structure: (partId, (nodeId, updateCounter)).
      * If map is empty validation is successful.
      */
-     public Map<Integer, Map<UUID, Long>> validatePartitionsUpdateCounters(
-            GridDhtPartitionTopology top,
-            Map<UUID, GridDhtPartitionsSingleMessage> messages,
-            Set<UUID> ignoringNodes
-     ) {
+    public Map<Integer, Map<UUID, Long>> validatePartitionsUpdateCounters(
+        GridDhtPartitionTopology top,
+        Map<UUID, GridDhtPartitionsSingleMessage> messages,
+        Set<UUID> ignoringNodes
+    ) {
         Map<Integer, Map<UUID, Long>> invalidPartitions = new HashMap<>();
 
-        Map<Integer, T2<UUID, Long>> updateCountersAndNodesByPartitions = new HashMap<>();
+        Map<Integer, AbstractMap.Entry<UUID, Long>> updateCountersAndNodesByPartitions = new HashMap<>();
 
         // Populate counters statistics from local node partitions.
         for (GridDhtLocalPartition part : top.currentLocalPartitions()) {
@@ -172,7 +177,7 @@ public class GridDhtPartitionsStateValidator {
             if (part.updateCounter() == 0 && part.fullSize() == 0)
                 continue;
 
-            updateCountersAndNodesByPartitions.put(part.id(), new T2<>(cctx.localNodeId(), part.updateCounter()));
+            updateCountersAndNodesByPartitions.put(part.id(), new AbstractMap.SimpleEntry<>(cctx.localNodeId(), part.updateCounter()));
         }
 
         int partitions = top.partitions();
@@ -183,9 +188,13 @@ public class GridDhtPartitionsStateValidator {
             if (ignoringNodes.contains(nodeId))
                 continue;
 
-            CachePartitionPartialCountersMap countersMap = e.getValue().partitionUpdateCounters(top.groupId(), partitions);
+            final GridDhtPartitionsSingleMessage message = e.getValue();
 
-            Set<Integer> ignorePartitions = shouldIgnore(top, nodeId, e.getValue());
+            CachePartitionPartialCountersMap countersMap = message.partitionUpdateCountersUnsorted(top.groupId(), partitions);
+
+            Map<Integer, Long> sizesMap = message.partitionSizes(top.groupId());
+
+            Set<Integer> ignorePartitions = shouldIgnore(top, nodeId, countersMap, sizesMap);
 
             for (int i = 0; i < countersMap.size(); i++) {
                 int p = countersMap.partitionAt(i);
@@ -211,14 +220,14 @@ public class GridDhtPartitionsStateValidator {
      * @return Invalid partitions map with following structure: (partId, (nodeId, cacheSize)).
      * If map is empty validation is successful.
      */
-     public Map<Integer, Map<UUID, Long>> validatePartitionsSizes(
-            GridDhtPartitionTopology top,
-            Map<UUID, GridDhtPartitionsSingleMessage> messages,
-            Set<UUID> ignoringNodes
-     ) {
+    public Map<Integer, Map<UUID, Long>> validatePartitionsSizes(
+        GridDhtPartitionTopology top,
+        Map<UUID, GridDhtPartitionsSingleMessage> messages,
+        Set<UUID> ignoringNodes
+    ) {
         Map<Integer, Map<UUID, Long>> invalidPartitions = new HashMap<>();
 
-        Map<Integer, T2<UUID, Long>> sizesAndNodesByPartitions = new HashMap<>();
+        Map<Integer, AbstractMap.Entry<UUID, Long>> sizesAndNodesByPartitions = new HashMap<>();
 
         // Populate sizes statistics from local node partitions.
         for (GridDhtLocalPartition part : top.currentLocalPartitions()) {
@@ -228,7 +237,7 @@ public class GridDhtPartitionsStateValidator {
             if (part.updateCounter() == 0 && part.fullSize() == 0)
                 continue;
 
-            sizesAndNodesByPartitions.put(part.id(), new T2<>(cctx.localNodeId(), part.fullSize()));
+            sizesAndNodesByPartitions.put(part.id(), new AbstractMap.SimpleEntry<>(cctx.localNodeId(), part.fullSize()));
         }
 
         int partitions = top.partitions();
@@ -239,10 +248,13 @@ public class GridDhtPartitionsStateValidator {
             if (ignoringNodes.contains(nodeId))
                 continue;
 
-            CachePartitionPartialCountersMap countersMap = e.getValue().partitionUpdateCounters(top.groupId(), partitions);
-            Map<Integer, Long> sizesMap = e.getValue().partitionSizes(top.groupId());
+            final GridDhtPartitionsSingleMessage message = e.getValue();
 
-            Set<Integer> ignorePartitions = shouldIgnore(top, nodeId, e.getValue());
+            CachePartitionPartialCountersMap countersMap = message.partitionUpdateCountersUnsorted(top.groupId(), partitions);
+
+            Map<Integer, Long> sizesMap = message.partitionSizes(top.groupId());
+
+            Set<Integer> ignorePartitions = shouldIgnore(top, nodeId, countersMap, sizesMap);
 
             for (int i = 0; i < countersMap.size(); i++) {
                 int p = countersMap.partitionAt(i);
@@ -269,20 +281,22 @@ public class GridDhtPartitionsStateValidator {
      * @param node Node id.
      * @param counter Counter value reported by {@code node}.
      */
-    private void process(Map<Integer, Map<UUID, Long>> invalidPartitions,
-                         Map<Integer, T2<UUID, Long>> countersAndNodes,
-                         int part,
-                         UUID node,
-                         long counter) {
-        T2<UUID, Long> existingData = countersAndNodes.get(part);
+    private void process(
+        Map<Integer, Map<UUID, Long>> invalidPartitions,
+        Map<Integer, AbstractMap.Entry<UUID, Long>> countersAndNodes,
+        int part,
+        UUID node,
+        long counter
+    ) {
+        AbstractMap.Entry<UUID, Long> existingData = countersAndNodes.get(part);
 
         if (existingData == null)
-            countersAndNodes.put(part, new T2<>(node, counter));
+            countersAndNodes.put(part, new AbstractMap.SimpleEntry<>(node, counter));
 
-        if (existingData != null && counter != existingData.get2()) {
+        if (existingData != null && counter != existingData.getValue()) {
             if (!invalidPartitions.containsKey(part)) {
                 Map<UUID, Long> map = new HashMap<>();
-                map.put(existingData.get1(), existingData.get2());
+                map.put(existingData.getKey(), existingData.getValue());
                 invalidPartitions.put(part, map);
             }
 

@@ -18,7 +18,7 @@
 import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import {BehaviorSubject} from 'rxjs/BehaviorSubject';
 import 'rxjs/add/operator/first';
 import 'rxjs/add/operator/partition';
 import 'rxjs/add/operator/takeUntil';
@@ -44,8 +44,7 @@ const IGNITE_2_0 = '2.0.0';
 const LAZY_QUERY_SINCE = [['2.1.4-p1', '2.2.0'], '2.2.1'];
 const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], ['2.5.1-p13', '2.6.0'], '2.7.0'];
 
-// Error codes from o.a.i.internal.processors.restGridRestResponse.java
-
+/** Error codes from o.a.i.internal.processors.restGridRestResponse.java */
 const SuccessStatus = {
     /** Command succeeded. */
     STATUS_SUCCESS: 0,
@@ -239,7 +238,8 @@ export default class AgentManager {
     saveToStorage(cluster = this.connectionSbj.getValue().cluster) {
         try {
             localStorage.cluster = JSON.stringify(cluster);
-        } catch (ignore) {
+        }
+        catch (ignore) {
             // No-op.
         }
     }
@@ -542,7 +542,7 @@ export default class AgentManager {
      * @returns {Promise}
      */
     topology(attr = false, mtr = false) {
-        return this._executeOnCluster('node:rest', {cmd: 'top', attr, mtr});
+        return this._executeOnCluster('node:rest', {cmd: 'top', attr, mtr, caches: false});
     }
 
     /**

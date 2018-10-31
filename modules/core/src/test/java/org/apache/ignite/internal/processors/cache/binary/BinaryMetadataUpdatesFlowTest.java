@@ -310,6 +310,9 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
         killer.interrupt();
         resurrection.interrupt();
+
+        killer.join();
+        resurrection.join();
     }
 
     /**
@@ -351,6 +354,9 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
         killer.interrupt();
         resurrection.interrupt();
+
+        killer.join();
+        resurrection.join();
     }
 
     /**

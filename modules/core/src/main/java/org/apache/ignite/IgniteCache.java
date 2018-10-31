@@ -1516,7 +1516,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     /**
      * Gets a collection of lost partition IDs.
      *
-     * @return Lost paritions.
+     * @return Lost partitions.
      */
     public Collection<Integer> lostPartitions();
 
@@ -1531,4 +1531,51 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Clear cluster statistics for this cache.
      */
     public void clearStatistics();
+
+    /**
+     * Efficiently preloads cache primary partition into page memory.
+     * <p>
+     * This is useful for fast iteration over cache partition data if persistence is enabled and the data is "cold".
+     * <p>
+     * Preload will reduce available amount of page memory for subsequent operations and may lead to earlier page
+     * replacement.
+     * <p>
+     * This method is irrelevant for in-memory caches. Calling this method on an in-memory cache will result in
+     * exception.
+     *
+     * @param partition Partition.
+     */
+    public void preloadPartition(int partition);
+
+    /**
+     * Efficiently preloads cache partition into page memory.
+     * <p>
+     * This is useful for fast iteration over cache partition data if persistence is enabled and the data is "cold".
+     * <p>
+     * Preload will reduce available amount of page memory for subsequent operations and may lead to earlier page
+     * replacement.
+     * <p>
+     * This method is irrelevant for in-memory caches. Calling this method on an in-memory cache will result in
+     * exception.
+     *
+     * @param partition Partition.
+     * @return A future representing pending completion of the partition preloading.
+     */
+    public IgniteFuture<Void> preloadPartitionAsync(int partition);
+
+    /**
+     * Efficiently preloads cache partition into page memory if it exists on the local node.
+     * <p>
+     * This is useful for fast iteration over cache partition data if persistence is enabled and the data is "cold".
+     * <p>
+     * Preload will reduce available amount of page memory for subsequent operations and may lead to earlier page
+     * replacement.
+     * <p>
+     * This method is irrelevant for in-memory caches. Calling this method on an in-memory cache will result in
+     * exception.
+     *
+     * @param partition Partition.
+     * @return {@code True} if partition was preloaded, {@code false} if it doesn't belong to local node.
+     */
+    public boolean localPreloadPartition(int partition);
 }

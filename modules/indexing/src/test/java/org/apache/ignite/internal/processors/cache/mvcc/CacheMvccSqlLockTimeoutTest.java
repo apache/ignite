@@ -343,7 +343,7 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
             }
             catch (Exception e) {
                 assertTrue(msgContains(e, "Failed to acquire lock within provided timeout for transaction")
-                    || msgContains(e, "Mvcc version mismatch"));
+                    || msgContains(e, "Cannot serialize transaction due to write conflict"));
             }
             finally {
                 ignite.context().cache().context().tm().resetContext();

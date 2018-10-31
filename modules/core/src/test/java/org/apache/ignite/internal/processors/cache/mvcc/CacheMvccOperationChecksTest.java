@@ -42,7 +42,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /** Empty Class[]. */
-    private final static Class[] E = new Class[]{};
+    private static final Class[] E = new Class[]{};
 
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
@@ -193,7 +193,7 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /**
      *
      */
-    private final static IgniteBiPredicate<Object, Object> P = new IgniteBiPredicate<Object, Object>() {
+    private static final IgniteBiPredicate<Object, Object> P = new IgniteBiPredicate<Object, Object>() {
         @Override public boolean apply(Object o, Object o2) {
             return false;
         }

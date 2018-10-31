@@ -341,6 +341,40 @@ BOOST_AUTO_TEST_CASE(TestDdlTablesMeta)
     BOOST_REQUIRE_EQUAL(ret, SQL_NO_DATA);
 }
 
+BOOST_AUTO_TEST_CASE(TestDdlTablesMetaTableTypeList)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=PUBLIC");
+
+    SQLCHAR createTable[] = "create table TestTable(id int primary key, testColumn varchar)";
+    SQLRETURN ret = SQLExecDirect(stmt, createTable, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    SQLCHAR empty[] = "";
+    SQLCHAR table[] = "TestTable";
+    SQLCHAR typeList[] = "TABLE,VIEW";
+
+    ret = SQLTables(stmt, empty, SQL_NTS, empty, SQL_NTS, table, SQL_NTS, typeList, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFetch(stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    CheckStringColumn(stmt, 1, "");
+    CheckStringColumn(stmt, 2, "\"PUBLIC\"");
+    CheckStringColumn(stmt, 3, "TESTTABLE");
+    CheckStringColumn(stmt, 4, "TABLE");
+
+    ret = SQLFetch(stmt);
+
+    BOOST_REQUIRE_EQUAL(ret, SQL_NO_DATA);
+}
+
 BOOST_AUTO_TEST_CASE(TestDdlColumnsMeta)
 {
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=PUBLIC");
