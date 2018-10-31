@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -62,6 +63,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.NotNull;
 
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 
@@ -301,11 +303,11 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
     /** */
     private void checkRootsPageIdFlag(long treeRoot, long reuseListRoot) throws StorageException {
-        if (PageIdUtils.flag(treeRoot) != PageMemory.FLAG_DATA)
+        if (PageIdUtils.flag(treeRoot) != FLAG_DATA)
             throw new StorageException("Wrong tree root page id flag: treeRoot="
                 + U.hexLong(treeRoot) + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID);
 
-        if (PageIdUtils.flag(reuseListRoot) != PageMemory.FLAG_DATA)
+        if (PageIdUtils.flag(reuseListRoot) != FLAG_DATA)
             throw new StorageException("Wrong reuse list root page id flag: reuseListRoot="
                 + U.hexLong(reuseListRoot) + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID);
     }
@@ -359,11 +361,11 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                         //MetaStorage never encrypted so realPageSize == pageSize.
                         io.initNewPage(pageAddr, partMetaId, pageMem.pageSize());
 
-                        treeRoot = pageMem.allocatePage(METASTORAGE_CACHE_ID, partId, PageMemory.FLAG_DATA);
-                        reuseListRoot = pageMem.allocatePage(METASTORAGE_CACHE_ID, partId, PageMemory.FLAG_DATA);
+                        treeRoot = pageMem.allocatePage(METASTORAGE_CACHE_ID, partId, FLAG_DATA);
+                        reuseListRoot = pageMem.allocatePage(METASTORAGE_CACHE_ID, partId, FLAG_DATA);
 
-                        assert PageIdUtils.flag(treeRoot) == PageMemory.FLAG_DATA;
-                        assert PageIdUtils.flag(reuseListRoot) == PageMemory.FLAG_DATA;
+                        assert PageIdUtils.flag(treeRoot) == FLAG_DATA;
+                        assert PageIdUtils.flag(reuseListRoot) == FLAG_DATA;
 
                         io.setTreeRoot(pageAddr, treeRoot);
                         io.setReuseListRoot(pageAddr, reuseListRoot);
@@ -505,6 +507,11 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         /** {@inheritDoc} */
         @Override public IOVersions<? extends AbstractDataPageIO<MetastorageDataRow>> ioVersions() {
             return SimpleDataPageIO.VERSIONS;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+            return pageMem.allocatePage(grpId, PageIdAllocator.METASTORE_PARTITION, FLAG_DATA);
         }
 
         /**
