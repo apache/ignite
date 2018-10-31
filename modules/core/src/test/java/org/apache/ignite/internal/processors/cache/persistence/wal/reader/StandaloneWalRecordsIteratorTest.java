@@ -187,7 +187,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
 
         assertNotNull(walFiles);
 
-        assertTrue(walFiles.size() > 0);
+        assertTrue(!walFiles.isEmpty());
 
         assertTrue(walFiles.get(new Random().nextInt(walFiles.size())).file().delete());
 
