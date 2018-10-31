@@ -53,25 +53,25 @@ public class CacheBlockOnScanTest extends CacheBlockOnReadAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Params(baseline = 9, atomicityMode = ATOMIC, cacheMode = PARTITIONED, allowException = true)
+    @Params(baseline = 9, timeout = 4000L, atomicityMode = ATOMIC, cacheMode = PARTITIONED, allowException = true)
     @Override public void testStopBaselineAtomicPartitioned() throws Exception {
         super.testStopBaselineAtomicPartitioned();
     }
 
     /** {@inheritDoc} */
-    @Params(baseline = 9, atomicityMode = ATOMIC, cacheMode = REPLICATED, allowException = true)
+    @Params(baseline = 9, timeout = 4000L, atomicityMode = ATOMIC, cacheMode = REPLICATED, allowException = true)
     @Override public void testStopBaselineAtomicReplicated() throws Exception {
         super.testStopBaselineAtomicReplicated();
     }
 
     /** {@inheritDoc} */
-    @Params(baseline = 9, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED, allowException = true)
+    @Params(baseline = 9, timeout = 4000L, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED, allowException = true)
     @Override public void testStopBaselineTransactionalPartitioned() throws Exception {
         super.testStopBaselineTransactionalPartitioned();
     }
 
     /** {@inheritDoc} */
-    @Params(baseline = 9, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED, allowException = true)
+    @Params(baseline = 9, timeout = 4000L, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED, allowException = true)
     @Override public void testStopBaselineTransactionalReplicated() throws Exception {
         super.testStopBaselineTransactionalReplicated();
     }
