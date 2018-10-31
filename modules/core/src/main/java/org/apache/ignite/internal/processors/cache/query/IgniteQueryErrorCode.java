@@ -110,7 +110,7 @@ public final class IgniteQueryErrorCode {
     public final static int VALUE_SCALE_OUT_OF_RANGE = 4009;
 
     /** Attempt to INSERT, UPDATE or MERGE value which scale exceed maximum DECIMAL column scale. */
-    public final static int KEY_SCALE_OUT_OF_RANGE = 40010;
+    public final static int KEY_SCALE_OUT_OF_RANGE = 4010;
 
     /* 5xxx - transactions related runtime errors. */
 
