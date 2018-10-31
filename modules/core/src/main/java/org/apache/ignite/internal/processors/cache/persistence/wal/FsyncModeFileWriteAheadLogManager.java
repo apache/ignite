@@ -76,6 +76,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
@@ -715,7 +716,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         if (serializer == null || mode == WALMode.NONE)
             return null;
 
-        if (!(record instanceof PageDeltaRecord || record instanceof PageSnapshot) && cctx.kernalContext().recoveryMode())
+        // Only delta-records, page snapshots and memory recovery are allowed to write in recovery mode.
+        if (cctx.kernalContext().recoveryMode() &&
+            !(record instanceof PageDeltaRecord || record instanceof PageSnapshot || record instanceof MemoryRecoveryRecord))
             return null;
 
         FileWriteHandle currWrHandle = currentHandle();
