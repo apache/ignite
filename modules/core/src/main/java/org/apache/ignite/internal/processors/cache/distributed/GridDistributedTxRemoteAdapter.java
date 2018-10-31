@@ -26,10 +26,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Exchanger;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.Latches;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -772,6 +776,28 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         cctx.mvccCaching().onTxFinished(this, true);
 
                         if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null) {
+                            T2<CountDownLatch, Exchanger<Long>> newVal = new T2<>(new CountDownLatch(2), new Exchanger<Long>());
+                            T2<CountDownLatch, Exchanger<Long>> val = Latches.latches.putIfAbsent(cctx.localNodeId(), newVal);
+
+                            if (val == null)
+                                val = newVal;
+
+                            val.get1().countDown();
+                            val.get1().await();
+
+                            long cntr = dataEntries.get(0).get2().updateCounter();
+
+                            Long otherCntr = val.get2().exchange(cntr);
+
+                            assert cntr != otherCntr;
+
+                            // Fail node with lowest counter
+                            if (cntr < otherCntr) {
+                                U.sleep(5000); // Give time to commit.
+
+                                throw new RuntimeException("Fail node");
+                            }
+
                             // Set new update counters for data entries received from persisted tx entries.
                             List<DataEntry> entriesWithCounters = dataEntries.stream()
                                 .map(tuple -> tuple.get1().partitionCounter(tuple.get2().updateCounter()))
