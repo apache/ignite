@@ -150,7 +150,7 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
         else if (timeout > 0)
             timeoutObj = new LockTimeoutObject();
 
-        while(true) {
+        while (true) {
             IgniteInternalFuture<?> fut = tx.lockFuture();
 
             if (fut == GridDhtTxLocalAdapter.ROLLBACK_FUT) {
@@ -345,7 +345,7 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
             }
         }
         finally {
-            if(cctx.topology().holdsLock())
+            if (cctx.topology().holdsLock())
                 cctx.topology().readUnlock();
         }
     }
