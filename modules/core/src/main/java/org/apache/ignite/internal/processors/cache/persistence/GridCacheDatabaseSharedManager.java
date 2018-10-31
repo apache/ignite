@@ -103,6 +103,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
+import org.apache.ignite.internal.pagemem.wal.record.StartBuildIndexRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -1432,48 +1433,73 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override public void rebuildIndexesIfNeeded(GridDhtPartitionsExchangeFuture fut) {
         if (cctx.kernalContext().query().moduleEnabled()) {
             for (final GridCacheContext cacheCtx : (Collection<GridCacheContext>)cctx.cacheContexts()) {
-                if (cacheCtx.startTopologyVersion().equals(fut.initialVersion())) {
-                    final int cacheId = cacheCtx.cacheId();
-                    final GridFutureAdapter<Void> usrFut = idxRebuildFuts.get(cacheId);
+                if (cacheCtx.startTopologyVersion().equals(fut.initialVersion()))
+                    rebuildIndexesIfNeeded(cacheCtx, true);
 
-                    if (!cctx.pageStore().hasIndexStore(cacheCtx.groupId()) && cacheCtx.affinityNode()
-                        && cacheCtx.group().persistenceEnabled()) {
-                        IgniteInternalFuture<?> rebuildFut = cctx.kernalContext().query()
-                            .rebuildIndexesFromHash(Collections.singleton(cacheCtx.cacheId()));
+            }
+        }
+    }
 
-                        assert usrFut != null : "Missing user future for cache: " + cacheCtx.name();
+    /**
+     * Rebuilds index for cache associated with given cache context.
+     *
+     * @param cacheCtx Cache context.
+     * @param checkIdxPresent If {@code True}, then will be checked, that index store for given cache was existed before
+     * node started. If index store was presented before node start, then index will not rebuilded.
+     * <p>
+     * If {@code False}, the check described above will be skipped.
+     */
+    private void rebuildIndexesIfNeeded(GridCacheContext cacheCtx, boolean checkIdxPresent) {
+        final GridFutureAdapter<Void> usrFut = idxRebuildFuts.get(cacheCtx.cacheId());
 
-                        rebuildFut.listen(new CI1<IgniteInternalFuture>() {
-                            @Override public void apply(IgniteInternalFuture fut) {
-                                idxRebuildFuts.remove(cacheId, usrFut);
+        boolean hasIdxStore = checkIdxPresent && cctx.pageStore().hasIndexStore(cacheCtx.groupId());
 
-                                Throwable err = fut.error();
+        if (!hasIdxStore && cacheCtx.affinityNode() && cacheCtx.group().persistenceEnabled()) {
+            WALRecord rec = new StartBuildIndexRecord(cacheCtx.cacheId(), cacheCtx.groupId());
 
-                                usrFut.onDone(err);
+            try {
+                cctx.wal().log(rec);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Can't write to WAL record: " + rec, e);
 
-                                CacheConfiguration ccfg = cacheCtx.config();
+                throw new IgniteException(e);
+            }
 
-                                if (ccfg != null) {
-                                    if (err == null)
-                                        log().info("Finished indexes rebuilding for cache [name=" + ccfg.getName()
-                                            + ", grpName=" + ccfg.getGroupName() + ']');
-                                    else {
-                                        if (!(err instanceof NodeStoppingException))
-                                            log().error("Failed to rebuild indexes for cache  [name=" + ccfg.getName()
-                                                + ", grpName=" + ccfg.getGroupName() + ']', err);
-                                    }
-                                }
-                            }
-                        });
-                    }
-                    else {
-                        if (usrFut != null) {
-                            idxRebuildFuts.remove(cacheId, usrFut);
+            IgniteInternalFuture<?> rebuildFut = cctx.kernalContext().query()
+                .rebuildIndexesFromHash(Collections.singleton(cacheCtx.cacheId()));
 
-                            usrFut.onDone();
+            assert usrFut != null : "Missing user future for cache: " + cacheCtx.name();
+
+            rebuildFut.listen(new CI1<IgniteInternalFuture>() {
+                @Override public void apply(IgniteInternalFuture fut) {
+                    idxRebuildFuts.remove(cacheCtx.cacheId(), usrFut);
+
+                    Throwable err = fut.error();
+
+                    usrFut.onDone(err);
+
+                    CacheConfiguration ccfg = cacheCtx.config();
+
+                    if (ccfg != null) {
+                        if (err == null) {
+                            log().info("Finished indexes rebuilding for cache [name=" + ccfg.getName()
+                                + ", grpName=" + ccfg.getGroupName() + ']');
+                        }
+                        else {
+                            if (!(err instanceof NodeStoppingException))
+                                log().error("Failed to rebuild indexes for cache  [name=" + ccfg.getName()
+                                    + ", grpName=" + ccfg.getGroupName() + ']', err);
                         }
                     }
                 }
+            });
+        }
+        else {
+            if (usrFut != null) {
+                idxRebuildFuts.remove(cacheCtx.cacheId(), usrFut);
+
+                usrFut.onDone();
             }
         }
     }
@@ -2377,6 +2403,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         long start = U.currentTimeMillis();
         int applied = 0;
 
+        Map<Integer, StartBuildIndexRecord> cache2StartBuildIndex = new HashMap<>();
+
         Collection<Integer> ignoreGrps = metastoreOnly ? Collections.emptySet() :
             F.concat(false, initiallyGlobalWalDisabledGrps, initiallyLocalWalDisabledGrps);
 
@@ -2464,6 +2492,22 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         break;
 
+                    case START_BUILD_INDEX_RECORD:
+                        if (metastoreOnly)
+                            continue;
+
+                        StartBuildIndexRecord startRec = (StartBuildIndexRecord)rec;
+
+                        if (!cache2StartBuildIndex.containsKey(startRec.cacheId()))
+                            cache2StartBuildIndex.put(startRec.cacheId(), startRec);
+                        else {
+                            StartBuildIndexRecord prevRec = cache2StartBuildIndex.put(startRec.cacheId(), startRec);
+
+                            assert prevRec.timestamp() < startRec.timestamp() : "prev: " + prevRec + " cur: " + startRec;
+                        }
+
+                        break;
+
                     default:
                         // Skip other records.
                 }
@@ -2482,6 +2526,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     log.info("Finished restoring partition state for local groups [cntProcessed=" + proc +
                         ", cntPartStateWal=" + partStates.size() +
                         ", time=" + (U.currentTimeMillis() - startRestorePart) + "ms]");
+
+                for (Integer cacheId : cache2StartBuildIndex.keySet()) {
+                    prepareIndexRebuildFuture(cacheId);
+
+                    rebuildIndexesIfNeeded(cctx.cacheContext(cacheId), false);
+                }
             }
         }
         finally {

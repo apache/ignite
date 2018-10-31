@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.wal.record.StartBuildIndexRecord;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
@@ -111,6 +112,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.START_BUILD_INDEX_RECORD;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.REC_TYPE_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.putRecordType;
@@ -501,6 +503,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case TX_RECORD:
                 return txRecordSerializer.size((TxRecord)record);
+
+            case START_BUILD_INDEX_RECORD:
+                return /*cacheId*/ 4 + /*groupId*/ 4;
 
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
@@ -1121,6 +1126,13 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
+            case START_BUILD_INDEX_RECORD:
+                cacheId = in.readInt();
+
+                res = new StartBuildIndexRecord(cacheId, in.readInt());
+
+                break;
+
             default:
                 throw new UnsupportedOperationException("Type: " + type);
         }
@@ -1692,6 +1704,14 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case SWITCH_SEGMENT_RECORD:
+                break;
+
+            case START_BUILD_INDEX_RECORD:
+                StartBuildIndexRecord buildRec = (StartBuildIndexRecord) rec;
+
+                buf.putInt(buildRec.cacheId());
+                buf.putInt(buildRec.groupId());
+
                 break;
 
             default:

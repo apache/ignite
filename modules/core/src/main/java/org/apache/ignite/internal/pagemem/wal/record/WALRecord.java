@@ -199,7 +199,10 @@ public abstract class WALRecord {
         ENCRYPTED_RECORD,
 
         /** Ecnrypted data record */
-        ENCRYPTED_DATA_RECORD;
+        ENCRYPTED_DATA_RECORD,
+
+        /** Start build index record. */
+        START_BUILD_INDEX_RECORD;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();
