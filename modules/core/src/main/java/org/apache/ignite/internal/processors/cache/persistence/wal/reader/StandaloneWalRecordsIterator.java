@@ -30,6 +30,8 @@ import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.MvccDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
@@ -37,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
@@ -300,7 +303,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         GridKernalContext kernalCtx = sharedCtx.kernalContext();
         IgniteCacheObjectProcessor processor = kernalCtx.cacheObjects();
 
-        if (processor != null && rec.type() == RecordType.DATA_RECORD) {
+        if (processor != null && (rec.type() == RecordType.DATA_RECORD || rec.type() == RecordType.MVCC_DATA_RECORD)) {
             try {
                 return postProcessDataRecord((DataRecord)rec, kernalCtx, processor);
             }
@@ -355,7 +358,9 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             postProcessedEntries.add(postProcessedEntry);
         }
 
-        DataRecord res = new DataRecord(postProcessedEntries, dataRec.timestamp());
+        DataRecord res = dataRec instanceof MvccDataRecord ?
+            new MvccDataRecord(postProcessedEntries, dataRec.timestamp()) :
+            new DataRecord(postProcessedEntries, dataRec.timestamp());
 
         res.size(dataRec.size());
         res.position(dataRec.position());
@@ -403,6 +408,11 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             val = dataEntry.value();
         }
 
+        MvccVersion mvccVer = null;
+
+        if(dataEntry instanceof MvccDataEntry)
+            mvccVer = ((MvccDataEntry)dataEntry).mvccVer();
+
         return new UnwrapDataEntry(
             dataEntry.cacheId(),
             key,
@@ -413,6 +423,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             dataEntry.expireTime(),
             dataEntry.partitionId(),
             dataEntry.partitionCounter(),
+            mvccVer,
             fakeCacheObjCtx,
             keepBinary || marshallerMappingFileStoreDir == null);
     }

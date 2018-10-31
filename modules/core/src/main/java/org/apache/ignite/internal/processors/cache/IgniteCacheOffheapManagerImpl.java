@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Ign
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -624,6 +625,24 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         assert entry.lockedByCurrentThread();
 
         return dataStore(entry.localPartition()).mvccLock(entry.context(), entry.key(), mvccSnapshot);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void mvccApplyUpdate(
+        GridCacheContext cctx,
+        KeyCacheObject key,
+        CacheObject val,
+        GridCacheVersion ver,
+        long expireTime,
+        GridDhtLocalPartition part,
+        MvccVersion mvccVer) throws IgniteCheckedException {
+
+        dataStore(part).mvccApplyUpdate(cctx,
+            key,
+            val,
+            ver,
+            expireTime,
+            mvccVer);
     }
 
     /** {@inheritDoc} */
@@ -2511,6 +2530,19 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             finally {
                 busyLock.leaveBusy();
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void mvccApplyUpdate(GridCacheContext cctx,
+            KeyCacheObject key,
+            CacheObject val,
+            GridCacheVersion ver,
+            long expireTime,
+            MvccVersion mvccVer
+        ) throws IgniteCheckedException {
+            mvccUpdateNative(cctx, false, key, val, ver, expireTime,
+                new MvccSnapshotWithoutTxs(mvccVer.coordinatorVersion(), mvccVer.counter(), mvccVer.operationCounter(),
+                    MVCC_OP_COUNTER_NA));
         }
 
         /**

@@ -29,6 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
@@ -355,6 +358,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case PARTITION_DESTROY:
                 return /*cacheId*/4 + /*partId*/4;
 
+            case MVCC_DATA_RECORD:
             case DATA_RECORD:
                 DataRecord dataRec = (DataRecord)record;
 
@@ -1741,6 +1745,17 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param entry Data entry.
      */
     void putPlainDataEntry(ByteBuffer buf, DataEntry entry) throws IgniteCheckedException {
+        if (entry instanceof MvccDataEntry)
+            putMvccDataEntry(buf, (MvccDataEntry)entry);
+        else
+            putDataEntry(buf, entry);
+    }
+
+    /**
+     * @param buf Buffer to write to.
+     * @param entry Data entry.
+     */
+    void putDataEntry(ByteBuffer buf, DataEntry entry) throws IgniteCheckedException {
         buf.putInt(entry.cacheId());
 
         if (!entry.key().putValue(buf))
@@ -1759,6 +1774,31 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         buf.putInt(entry.partitionId());
         buf.putLong(entry.partitionCounter());
         buf.putLong(entry.expireTime());
+    }
+
+    /**
+     * @param buf Buffer to write to.
+     * @param entry Data entry.
+     */
+    void putMvccDataEntry(ByteBuffer buf, MvccDataEntry entry) throws IgniteCheckedException {
+        putDataEntry(buf, entry);
+
+        putMvccVersion(buf, entry.mvccVer());
+    }
+
+    /**
+     * Writes Mvcc version.
+     *
+     * @param buf Buffer to write.
+     * @param mvccVer Mvcc version.
+     */
+    private void putMvccVersion(ByteBuffer buf, MvccVersion mvccVer) {
+        assert mvccVer != null;
+
+        buf.putLong(mvccVer.coordinatorVersion());
+        buf.putLong(mvccVer.counter());
+
+        buf.putInt(mvccVer.operationCounter());
     }
 
     /**
@@ -1902,7 +1942,86 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     writeVer,
                     expireTime,
                     partId,
-                    partCntr);
+                    partCntr,
+                    null);
+    }
+
+    /**
+     * @param in Input to read from.
+     * @return Read entry.
+     */
+    MvccDataEntry readMvccDataEntry(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
+        int cacheId = in.readInt();
+
+        int keySize = in.readInt();
+        byte keyType = in.readByte();
+        byte[] keyBytes = new byte[keySize];
+        in.readFully(keyBytes);
+
+        int valSize = in.readInt();
+
+        byte valType = 0;
+        byte[] valBytes = null;
+
+        if (valSize >= 0) {
+            valType = in.readByte();
+            valBytes = new byte[valSize];
+            in.readFully(valBytes);
+        }
+
+        byte ord = in.readByte();
+
+        GridCacheOperation op = GridCacheOperation.fromOrdinal(ord & 0xFF);
+
+        GridCacheVersion nearXidVer = readVersion(in, true);
+        GridCacheVersion writeVer = readVersion(in, false);
+
+        int partId = in.readInt();
+        long partCntr = in.readLong();
+        long expireTime = in.readLong();
+
+        MvccVersion mvccVer = readMvccVersion(in);
+
+        GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+
+        if (cacheCtx != null) {
+            CacheObjectContext coCtx = cacheCtx.cacheObjectContext();
+
+            KeyCacheObject key = co.toKeyCacheObject(coCtx, keyType, keyBytes);
+
+            if (key.partition() == -1)
+                key.partition(partId);
+
+            CacheObject val = valBytes != null ? co.toCacheObject(coCtx, valType, valBytes) : null;
+
+            return new MvccDataEntry(
+                cacheId,
+                key,
+                val,
+                op,
+                nearXidVer,
+                writeVer,
+                expireTime,
+                partId,
+                partCntr,
+                mvccVer
+            );
+        }
+        else
+            return new LazyDataEntry(
+                cctx,
+                cacheId,
+                keyType,
+                keyBytes,
+                valType,
+                valBytes,
+                op,
+                nearXidVer,
+                writeVer,
+                expireTime,
+                partId,
+                partCntr,
+                mvccVer);
     }
 
     /**
@@ -1989,6 +2108,22 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     }
 
     /**
+     * Reads mvcc version.
+     *
+     * @param in Data input to read from.
+     * @return Mvcc version.
+     */
+    private MvccVersion readMvccVersion(ByteBufferBackedDataInput in) throws IOException {
+        in.ensure(8 + 8 + 4);
+
+        long coordVer = in.readLong();
+        long cntr = in.readLong();
+        int opCntr = in.readInt();
+
+        return new MvccVersionImpl(coordVer, cntr, opCntr);
+    }
+
+    /**
      * @param dataRec Data record to serialize.
      * @return Full data record size.
      * @throws IgniteCheckedException If failed to obtain the length of one of the entries.
@@ -2032,7 +2167,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             /*write ver*/CacheVersionIO.size(entry.writeVersion(), false) +
             /*part ID*/4 +
             /*expire Time*/8 +
-            /*part cnt*/8;
+            /*part cnt*/8 +
+            /*mvcc version*/ ((entry instanceof MvccDataEntry) ? (8 + 8 + 4) : 0);
     }
 
     /**
@@ -2059,7 +2195,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         return size;
     }
 
+    /**
+     * Represents encrypted Data Entry ({@link #key}, {@link #val value}) pair.
+     */
     public static class EncryptedDataEntry extends DataEntry {
+        /** Constructor. */
         EncryptedDataEntry() {
             super(0, null, null, READ, null, null, 0, 0, 0);
         }

@@ -32,6 +32,7 @@ import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MvccDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -80,6 +81,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer implements Re
 
                 return 18 + cacheStatesSize + (walPtr == null ? 0 : 16);
 
+            case MVCC_DATA_RECORD:
             case DATA_RECORD:
                 return super.plainSize(rec) + 8/*timestamp*/;
 
@@ -134,6 +136,17 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer implements Re
                     entries.add(readPlainDataEntry(in));
 
                 return new DataRecord(entries, timeStamp);
+
+            case MVCC_DATA_RECORD:
+                entryCnt = in.readInt();
+                timeStamp = in.readLong();
+
+                entries = new ArrayList<>(entryCnt);
+
+                for (int i = 0; i < entryCnt; i++)
+                    entries.add(readMvccDataEntry(in));
+
+                return new MvccDataRecord(entries, timeStamp);
 
             case ENCRYPTED_DATA_RECORD:
                 entryCnt = in.readInt();
@@ -199,6 +212,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer implements Re
 
                 break;
 
+            case MVCC_DATA_RECORD:
             case DATA_RECORD:
                 DataRecord dataRec = (DataRecord)rec;
 

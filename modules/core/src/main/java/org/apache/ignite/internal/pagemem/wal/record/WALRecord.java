@@ -198,8 +198,11 @@ public abstract class WALRecord {
         /** Encrypted WAL-record. */
         ENCRYPTED_RECORD,
 
-        /** Ecnrypted data record */
-        ENCRYPTED_DATA_RECORD;
+        /** Ecnrypted data record. */
+        ENCRYPTED_DATA_RECORD,
+
+        /** Mvcc data record. */
+        MVCC_DATA_RECORD;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();
