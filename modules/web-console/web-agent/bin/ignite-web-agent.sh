@@ -28,22 +28,7 @@ checkJava
 #
 # Set IGNITE_HOME.
 #
-export IGNITE_HOME="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
-
-DIR="$( dirname "$SOURCE" )"
-
-while [ -h "$SOURCE" ]
-    do
-        SOURCE="$(readlink "$SOURCE")"
-
-        [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
-
-        DIR="$( cd -P "$( dirname "$SOURCE"  )" && pwd )"
-    done
-
-DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-
-cd $DIR
+export IGNITE_HOME="$SOURCE";
 
 #
 # JVM options. See http://java.sun.com/javase/technologies/hotspot/vmoptions.jsp for more details.
@@ -94,4 +79,4 @@ elif [ $version -eq 11 ] ; then
         ${JVM_OPTS}"
 fi
 
-"$JAVA" ${JVM_OPTS} -cp "*" org.apache.ignite.console.agent.AgentLauncher "$@"
+"$JAVA" ${JVM_OPTS} -cp "${SOURCE}/*" org.apache.ignite.console.agent.AgentLauncher "$@"
