@@ -45,11 +45,13 @@ public class StatisticsHelper {
      * @param qryStat Statistics which will be merged to current query statistics.
      */
     public static void mergeQueryStatistics(StatisticsHolderQuery qryStat) {
+        assert qryStat != null;
+
         StatisticsHolderQuery currQryStatisticsHolder = CURRENT_QUERY_STATISTICS.get();
 
         assert currQryStatisticsHolder != null;
 
-        currQryStatisticsHolder.merge(qryStat);
+        currQryStatisticsHolder.merge(qryStat.logicalReads(), qryStat.physicalReads());
     }
 
     /**

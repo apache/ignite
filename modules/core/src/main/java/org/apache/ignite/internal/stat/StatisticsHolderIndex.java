@@ -92,6 +92,7 @@ public class StatisticsHolderIndex implements StatisticsHolder {
         switch (idxPageType) {
             case INNER:
                 logicalReadInnerCntr.increment();
+
                 physicalReadInnerCntr.increment();
 
                 StatisticsHelper.trackPhysicalAndLogicalReadQuery(pageAddr);
@@ -99,6 +100,7 @@ public class StatisticsHolderIndex implements StatisticsHolder {
                 break;
             case LEAF:
                 logicalReadLeafCntr.increment();
+
                 physicalReadLeafCntr.increment();
 
                 StatisticsHelper.trackPhysicalAndLogicalReadQuery(pageAddr);
@@ -122,6 +124,7 @@ public class StatisticsHolderIndex implements StatisticsHolder {
         Map<String, Long> res = new HashMap<>(3);
 
         res.put(LOGICAL_READS_LEAF, logicalReadLeafCntr.longValue());
+
         res.put(LOGICAL_READS_INNER, logicalReadInnerCntr.longValue());
 
         return res;
@@ -132,6 +135,7 @@ public class StatisticsHolderIndex implements StatisticsHolder {
         Map<String, Long> res = new HashMap<>(3);
 
         res.put(PHYSICAL_READS_LEAF, physicalReadLeafCntr.longValue());
+
         res.put(PHYSICAL_READS_INNER, physicalReadInnerCntr.longValue());
 
         return res;

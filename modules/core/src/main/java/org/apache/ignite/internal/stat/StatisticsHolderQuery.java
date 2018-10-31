@@ -25,6 +25,8 @@ import java.util.concurrent.atomic.LongAdder;
 /**
  * Query Statistics holder to gather statistics related to concrete query.
  * Used in {@code org.apache.ignite.internal.stat.StatisticsHolderIndex} and {@code org.apache.ignite.internal.stat.StatisticsHolderCache}.
+ * Query Statistics holder to gather statistics related to concrete query. Used in {@code
+ * org.apache.ignite.internal.stat.StatisticsHolderIndex} and {@code org.apache.ignite.internal.stat.StatisticsHolderCache}.
  */
 public class StatisticsHolderQuery implements StatisticsHolder {
     /** */
@@ -102,13 +104,15 @@ public class StatisticsHolderQuery implements StatisticsHolder {
     }
 
     /**
-     * Merge given statistics into this.
+     * Add given given statistics into this.
+     * Merge query statistics.
      *
-     * @param mergeStat Statistics to merge.
+     * @param logicalReads Logical reads which will be added to current query statistics.
+     * @param physicalReads Physical reads which will be added to current query statistics,
      */
-    public void merge(StatisticsHolderQuery mergeStat) {
-        logicalReadCntr.add(mergeStat.logicalReads());
+    public void merge(long logicalReads, long physicalReads) {
+        logicalReadCntr.add(logicalReads);
 
-        physicalReadCntr.add(mergeStat.physicalReads());
+        physicalReadCntr.add(physicalReads);
     }
 }

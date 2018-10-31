@@ -29,7 +29,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
@@ -57,7 +56,7 @@ public class IoStatCacheTest extends GridCommonAbstractTest {
     protected final static String CACHE_GROUP_NAME = "CACHE_GROUP_NAME";
 
     /** */
-    protected final static Set<String> ALL_CACHE_GROUP_NAMES = Sets.newHashSet(GridCacheUtils.UTILITY_CACHE_NAME,
+    protected final static Set<String> ALL_CACHE_GROUP_NAMES = Sets.newHashSet(
         ATOMIC_CACHE_NAME, MVCC_CACHE_NAME, TRANSACTIONAL_CACHE_NAME, CACHE_GROUP_NAME);
 
     /** */

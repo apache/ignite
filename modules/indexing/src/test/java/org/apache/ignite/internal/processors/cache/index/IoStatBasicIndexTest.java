@@ -43,9 +43,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
-import static org.apache.ignite.internal.stat.GridIoStatManager.HASH_PK_INDEX_NAME;
-
 /**
  * A set of basic tests for caches with indexes.
  */
@@ -57,8 +54,7 @@ public class IoStatBasicIndexTest extends GridCommonAbstractTest {
     private static final int NUMBER_OF_PK_SORTED_INDEXES = 1;
 
     /** */
-    private static final Set<String> PK_HASH_INDEXES = Sets.newHashSet(UTILITY_CACHE_NAME +
-        "." + HASH_PK_INDEX_NAME, DEFAULT_CACHE_NAME + "." + HASH_PK_INDEX_NAME);
+    private static final Set<String> PK_HASH_INDEXES = Sets.newHashSet(DEFAULT_CACHE_NAME);
 
     /** */
     private Collection<QueryIndex> indexes;
@@ -174,18 +170,16 @@ public class IoStatBasicIndexTest extends GridCommonAbstractTest {
 
         Assert.assertEquals(PK_HASH_INDEXES, hashIndexes);
 
-        Set<String> sortedIndexes = ioStat.deriveStatNames(StatType.SORTED_INDEX);
+        Set<String> sortedIndexCaches = ioStat.deriveStatNames(StatType.SORTED_INDEX);
 
-        Assert.assertEquals(sortedIndexes.toString(), indexes.size() + NUMBER_OF_PK_SORTED_INDEXES, sortedIndexes.size());
+        Assert.assertEquals(1, sortedIndexCaches.size());
 
-        String dfltCacheIdxStart = DEFAULT_CACHE_NAME + ".";
+        Set<String> sortedIdxNames = ioStat.deriveStatSubNames(StatType.SORTED_INDEX,
+            sortedIndexCaches.toArray()[0].toString());
 
-        for (String index : sortedIndexes) {
-            if (!index.startsWith(dfltCacheIdxStart))
-                break;
+        Assert.assertEquals(sortedIndexCaches.toString(), indexes.size() + NUMBER_OF_PK_SORTED_INDEXES, sortedIdxNames.size());
 
-            String idxName = index.substring(dfltCacheIdxStart.length());
-
+        for (String idxName : sortedIdxNames) {
             Long logicalReads = ioStat.logicalReads(StatType.SORTED_INDEX, DEFAULT_CACHE_NAME, idxName);
 
             Assert.assertNotNull(idxName, logicalReads);

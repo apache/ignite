@@ -69,6 +69,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
 import static org.apache.ignite.internal.stat.GridIoStatManager.HASH_PK_INDEX_NAME;
+import static org.apache.ignite.internal.stat.GridIoStatManager.NO_OP_STATISTIC_HOLDER;
 
 /**
  *
@@ -235,11 +236,18 @@ public class CacheGroupContext {
 
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
 
-        statisticsHolderIdx = ctx.kernalContext().ioStats().createAndRegisterStatHolder(StatType.HASH_INDEX,
-            cacheOrGroupName(), HASH_PK_INDEX_NAME);
+        if (systemCache()) {
+            statisticsHolderIdx = NO_OP_STATISTIC_HOLDER;
 
-        statisticsHolderData = ctx.kernalContext().ioStats().createAndRegisterStatHolder(StatType.CACHE_GROUP,
-            cacheOrGroupName());
+            statisticsHolderData = NO_OP_STATISTIC_HOLDER;
+        }
+        else {
+            statisticsHolderIdx = ctx.kernalContext().ioStats().createAndRegisterStatHolder(StatType.HASH_INDEX,
+                cacheOrGroupName(), HASH_PK_INDEX_NAME);
+
+            statisticsHolderData = ctx.kernalContext().ioStats().createAndRegisterStatHolder(StatType.CACHE_GROUP,
+                cacheOrGroupName());
+        }
     }
 
     /**

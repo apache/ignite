@@ -95,11 +95,9 @@ public class GridIoStatManager {
                 throw new IgniteException("Gathering IO statistics for " + type + "doesn't support");
         }
 
-        StatisticsHolder old = statisticsHolders.get(type).putIfAbsent(statisticsHolderKey, statHolder);
+        StatisticsHolder existedStatisitcHolder = statisticsHolders.get(type).putIfAbsent(statisticsHolderKey, statHolder);
 
-        assert old == null : old;
-
-        return statHolder;
+        return (existedStatisitcHolder != null) ? existedStatisitcHolder : statHolder;
     }
 
     /**
@@ -137,7 +135,7 @@ public class GridIoStatManager {
         assert statType != null;
 
         return statisticsHolders.get(statType).keySet().stream()
-            .map(StatisticsHolderKey::toString).collect(Collectors.toSet());
+            .map(v -> v.key1).collect(Collectors.toSet());
     }
 
     /**
@@ -151,7 +149,7 @@ public class GridIoStatManager {
         assert statType != null;
 
         return statisticsHolders.get(statType).keySet().stream()
-            .filter(k -> k.key1.equalsIgnoreCase(name)).map(k -> k.key2).collect(Collectors.toSet());
+            .filter(k -> k.key1.equalsIgnoreCase(name) && k.key2 != null).map(k -> k.key2).collect(Collectors.toSet());
     }
 
     /**

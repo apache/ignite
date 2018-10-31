@@ -132,7 +132,7 @@ public class IoStatMetricsLocalMXBeanImplTest extends GridCommonAbstractTest {
 
         Set<String> cacheNames = bean.getStatCachesNames();
 
-        Assert.assertEquals(2, cacheNames.size());
+        Assert.assertEquals(1, cacheNames.size());
 
         Assert.assertTrue(cacheNames.contains(DEFAULT_CACHE_NAME));
 
