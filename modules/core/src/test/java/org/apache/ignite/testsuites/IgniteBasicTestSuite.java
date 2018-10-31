@@ -115,7 +115,7 @@ public class IgniteBasicTestSuite extends TestSuite {
 
         TestSuite suite = new TestSuite("Ignite Basic Test Suite");
 
-        suite.addTest(IgniteMarshallerSelfTestSuite.suite(ignoredTests));
+   /*     suite.addTest(IgniteMarshallerSelfTestSuite.suite(ignoredTests));
         suite.addTest(IgniteLangSelfTestSuite.suite());
         suite.addTest(IgniteUtilSelfTestSuite.suite(ignoredTests));
 
@@ -198,10 +198,11 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(IgniteMarshallerCacheFSRestoreTest.class);
         suite.addTestSuite(IgniteMarshallerCacheClassNameConflictTest.class);
         suite.addTestSuite(IgniteMarshallerCacheClientRequestsMappingOnMissTest.class);
-
+*/
+        for (int i = 0; i < 200; i++)
         suite.addTestSuite(IgniteDiagnosticMessagesTest.class);
 
-        suite.addTestSuite(IgniteRejectConnectOnNodeStopTest.class);
+       /* suite.addTestSuite(IgniteRejectConnectOnNodeStopTest.class);
 
         suite.addTestSuite(GridCleanerTest.class);
 
@@ -219,7 +220,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(CacheRebalanceConfigValidationTest.class);
 
         suite.addTestSuite(ListeningTestLoggerTest.class);
-
+*/
         return suite;
     }
 }
