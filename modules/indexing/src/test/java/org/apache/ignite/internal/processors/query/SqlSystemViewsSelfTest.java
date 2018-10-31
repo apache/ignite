@@ -45,6 +45,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.util.lang.GridNodePredicate;
@@ -518,13 +519,14 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
     /**
      * Test caches system views.
      */
+    @SuppressWarnings("ConstantConditions")
     public void testCachesViews() throws Exception {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setName("def").setPersistenceEnabled(true))
             .setDataRegionConfigurations(new DataRegionConfiguration().setName("dr1"),
                 new DataRegionConfiguration().setName("dr2"));
 
-        Ignite ignite0 = startGrid(getConfiguration().setDataStorageConfiguration(dsCfg));
+        IgniteEx ignite0 = startGrid(getConfiguration().setDataStorageConfiguration(dsCfg));
 
         Ignite ignite1 = startGrid(getConfiguration().setDataStorageConfiguration(dsCfg).setIgniteInstanceName("node1"));
 
@@ -539,7 +541,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
             .setName("cache_atomic_part")
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setCacheMode(CacheMode.PARTITIONED)
-            .setGroupName("part_grp")
+            .setGroupName("cache_grp")
             .setNodeFilter(new TestNodeFilter(ignite0.cluster().localNode()))
         );
 
@@ -555,7 +557,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
             .setName("cache_tx_part")
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setCacheMode(CacheMode.PARTITIONED)
-            .setGroupName("part_grp")
+            .setGroupName("cache_grp")
             .setNodeFilter(new TestNodeFilter(ignite0.cluster().localNode()))
         );
 
@@ -617,7 +619,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
         assertEquals("cache_atomic_repl", execSql("SELECT NAME FROM IGNITE.CACHES WHERE " +
             "CACHE_MODE = 'REPLICATED' AND ATOMICITY_MODE = 'ATOMIC' AND NAME like 'cache%'").get(0).get(0));
 
-        assertEquals(2L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE GROUP_NAME = 'part_grp'")
+        assertEquals(2L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE GROUP_NAME = 'cache_grp'")
             .get(0).get(0));
 
         assertEquals("cache_atomic_repl", execSql("SELECT NAME FROM IGNITE.CACHES " +
@@ -649,6 +651,10 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
         assertEquals("TestTopologyValidator", execSql("SELECT TOPOLOGY_VALIDATOR FROM IGNITE.CACHES " +
             "WHERE NAME = 'cache_atomic_repl'").get(0).get(0));
 
+        // Check quick count.
+        assertEquals(execSql("SELECT COUNT(*) FROM IGNITE.CACHES").get(0).get(0),
+            execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE CACHE_ID <> CACHE_ID + 1").get(0).get(0));
+
         // Check that caches are the same on BLT, BLT filtered by node filter, non BLT and client nodes.
         assertEquals(5L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE NAME like 'cache%'").get(0)
             .get(0));
@@ -661,6 +667,71 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(5L, execSql(ignite3, "SELECT COUNT(*) FROM IGNITE.CACHES WHERE NAME like 'cache%'")
             .get(0).get(0));
+
+        // Check cache groups.
+        resAll = execSql("SELECT ID, GROUP_NAME, IS_SHARED, CACHE_COUNT, " +
+            "CACHE_MODE, ATOMICITY_MODE, AFFINITY, PARTITIONS_COUNT, " +
+            "NODE_FILTER, DATA_REGION_NAME, TOPOLOGY_VALIDATOR, PARTITION_LOSS_POLICY, " +
+            "REBALANCE_MODE, REBALANCE_DELAY, REBALANCE_ORDER, BACKUPS " +
+            "FROM IGNITE.CACHE_GROUPS");
+
+        assertColumnTypes(resAll.get(0),
+            Integer.class, String.class, Boolean.class, Integer.class,
+            String.class, String.class, String.class, Integer.class,
+            String.class, String.class, String.class, String.class,
+            String.class, Long.class, Integer.class, Integer.class);
+
+        assertEquals(2, execSql("SELECT CACHE_COUNT FROM IGNITE.CACHE_GROUPS " +
+            "WHERE GROUP_NAME = 'cache_grp'").get(0).get(0));
+
+        assertEquals("cache_grp", execSql("SELECT GROUP_NAME FROM IGNITE.CACHE_GROUPS " +
+            "WHERE IS_SHARED = true AND GROUP_NAME like 'cache%'").get(0).get(0));
+
+        // Check index on ID column.
+        assertEquals("cache_tx_repl", execSql("SELECT GROUP_NAME FROM IGNITE.CACHE_GROUPS " +
+            "WHERE ID = ?", ignite0.cachex("cache_tx_repl").context().groupId()).get(0).get(0));
+
+        assertEquals(0, execSql("SELECT ID FROM IGNITE.CACHE_GROUPS WHERE ID = 0").size());
+
+        // Check join by indexed column.
+        assertEquals("cache_tx_repl", execSql("SELECT CG.GROUP_NAME FROM IGNITE.CACHES C JOIN " +
+            "IGNITE.CACHE_GROUPS CG ON C.GROUP_ID = CG.ID WHERE C.NAME = 'cache_tx_repl'").get(0).get(0));
+
+        // Check join by non-indexed column.
+        assertEquals("cache_grp", execSql("SELECT CG.GROUP_NAME FROM IGNITE.CACHES C JOIN " +
+            "IGNITE.CACHE_GROUPS CG ON C.GROUP_NAME = CG.GROUP_NAME WHERE C.NAME = 'cache_tx_part'").get(0).get(0));
+
+        // Check configuration equality for cache and cache group views.
+        assertEquals(3L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES C JOIN IGNITE.CACHE_GROUPS CG " +
+            "ON C.NAME = CG.GROUP_NAME WHERE C.NAME like 'cache%' " +
+            "AND C.CACHE_MODE = CG.CACHE_MODE " +
+            "AND C.ATOMICITY_MODE = CG.ATOMICITY_MODE " +
+            "AND COALESCE(C.AFFINITY, '-') = COALESCE(CG.AFFINITY, '-') " +
+            "AND COALESCE(C.NODE_FILTER, '-') = COALESCE(CG.NODE_FILTER, '-') " +
+            "AND COALESCE(C.DATA_REGION_NAME, '-') = COALESCE(CG.DATA_REGION_NAME, '-') " +
+            "AND COALESCE(C.TOPOLOGY_VALIDATOR, '-') = COALESCE(CG.TOPOLOGY_VALIDATOR, '-') " +
+            "AND C.PARTITION_LOSS_POLICY = CG.PARTITION_LOSS_POLICY " +
+            "AND C.REBALANCE_MODE = CG.REBALANCE_MODE " +
+            "AND C.REBALANCE_DELAY = CG.REBALANCE_DELAY " +
+            "AND C.REBALANCE_ORDER = CG.REBALANCE_ORDER " +
+            "AND C.BACKUPS = CG.BACKUPS").get(0).get(0));
+
+        // Check quick count.
+        assertEquals(execSql("SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS").get(0).get(0),
+            execSql("SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS WHERE ID <> ID + 1").get(0).get(0));
+
+        // Check that cache groups are the same on different nodes.
+        assertEquals(4L, execSql("SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
+            "WHERE GROUP_NAME like 'cache%'").get(0).get(0));
+
+        assertEquals(4L, execSql(ignite1, "SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
+            "WHERE GROUP_NAME like 'cache%'").get(0).get(0));
+
+        assertEquals(4L, execSql(ignite2, "SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
+            "WHERE GROUP_NAME like 'cache%'").get(0).get(0));
+
+        assertEquals(4L, execSql(ignite3, "SELECT COUNT(*) FROM IGNITE.CACHE_GROUPS " +
+            "WHERE GROUP_NAME like 'cache%'").get(0).get(0));
     }
 
     /**

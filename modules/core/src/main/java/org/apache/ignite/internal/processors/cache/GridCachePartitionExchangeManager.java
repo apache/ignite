@@ -109,6 +109,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -779,6 +780,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         for (AffinityReadyFuture f : readyFuts.values())
             f.onDone(stopErr);
+
+        GridDhtPartitionsExchangeFuture lastFut = lastInitializedFut;
+
+        if (lastFut != null)
+            lastFut.onDone(stopErr);
 
         if (!cctx.kernalContext().clientNode()) {
             for (int cnt = 0; cnt < cctx.gridConfig().getRebalanceThreadPoolSize(); cnt++)
@@ -2622,7 +2628,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     err = e;
             }
             catch (Throwable e) {
-                err = e;
+                if (!(stop && X.hasCause(e, IgniteInterruptedCheckedException.class)))
+                    err = e;
             }
             finally {
                 if (err == null && !stop && !reconnectNeeded)

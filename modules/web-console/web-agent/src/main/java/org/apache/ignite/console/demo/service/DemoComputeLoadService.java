@@ -17,7 +17,6 @@
 
 package org.apache.ignite.console.demo.service;
 
-import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
