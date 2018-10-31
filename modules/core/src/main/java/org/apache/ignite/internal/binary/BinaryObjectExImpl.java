@@ -32,6 +32,7 @@ import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -201,11 +202,16 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
 
         BinaryType meta;
 
+        IgniteThread.onEntryProcessorEntered(true);
+
         try {
             meta = rawType();
         }
         catch (BinaryObjectException ignore) {
             meta = null;
+        }
+        finally {
+            IgniteThread.onEntryProcessorLeft();
         }
 
         if (meta == null || !S.INCLUDE_SENSITIVE)
