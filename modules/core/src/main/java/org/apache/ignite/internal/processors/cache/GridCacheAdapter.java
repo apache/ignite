@@ -287,12 +287,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** Whether this cache is IGFS data cache. */
     private boolean igfsDataCache;
 
-    /** Whether this cache is Mongo data cache. */
-    private boolean mongoDataCache;
-
-    /** Whether this cache is Mongo meta cache. */
-    private boolean mongoMetaCache;
-
     /** Current IGFS data cache size. */
     private LongAdder igfsDataCacheSize;
 

@@ -805,7 +805,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /** */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     private class GenerateEncryptionKeyFuture extends GridFutureAdapter<Collection<byte[]>> {
         /** */
         private IgniteUuid id;
