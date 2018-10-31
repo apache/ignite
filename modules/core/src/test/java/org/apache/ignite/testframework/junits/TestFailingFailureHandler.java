@@ -17,23 +17,25 @@
 
 package org.apache.ignite.testframework.junits;
 
-import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.failure.AbstractFailureHandler;
 import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static org.apache.ignite.testframework.junits.GridAbstractTest.testRunner;
 
 /**
  * Stops node and fails test.
  */
-public class TestFailingFailureHandler extends StopNodeFailureHandler {
+public class TestFailingFailureHandler extends AbstractFailureHandler {
     /** {@inheritDoc} */
     @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
-        boolean nodeStopped = super.handle(ignite, failureCtx);
+        U.error(ignite.log(), "Critical failure happened [failureCtx=" + failureCtx + ']');
 
-        TestCase.fail(failureCtx.toString());
+        U.interrupt(testRunner);
 
-        return nodeStopped;
+        return true;
     }
 
     /** {@inheritDoc} */

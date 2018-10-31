@@ -62,7 +62,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -234,6 +233,9 @@ public abstract class GridAbstractTest extends TestCase {
 
     /** */
     private static final ConcurrentMap<UUID, Object> serializedObj = new ConcurrentHashMap<>();
+
+    /** Test runner. */
+    public static volatile Thread testRunner;
 
     /** */
     protected GridAbstractTest() throws IgniteCheckedException {
@@ -2116,6 +2118,8 @@ public abstract class GridAbstractTest extends TestCase {
     /** {@inheritDoc} */
     @SuppressWarnings({"ProhibitedExceptionDeclared"})
     @Override protected void runTest() throws Throwable {
+        testRunner = Thread.currentThread();
+
         final AtomicReference<Throwable> ex = new AtomicReference<>();
 
         Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
@@ -2133,7 +2137,18 @@ public abstract class GridAbstractTest extends TestCase {
 
         runner.start();
 
-        runner.join(isDebug() ? 0 : getTestTimeout());
+        try {
+            runner.join(isDebug() ? 0 : getTestTimeout());
+        }
+        catch (InterruptedException e) {
+            ex.set(e);
+
+            U.error(log,
+                "Test runner has been interrupted during test run [" +
+                    "test=" + getName() + ", err=" + e.getMessage() + ']');
+        }
+
+        testRunner = null;
 
         if (runner.isAlive()) {
             U.error(log,
