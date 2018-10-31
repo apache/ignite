@@ -777,6 +777,21 @@ public abstract class PageIO {
     protected abstract void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException;
 
     /**
+     * @param page Page.
+     * @param out Output buffer.
+     * @param pageSize Page size.
+     */
+    protected final void copyPage(ByteBuffer page, ByteBuffer out, int pageSize) {
+        assert out.position() == 0;
+        assert pageSize <= out.remaining();
+        assert pageSize == page.remaining();
+
+        page.mark();
+        out.put(page).flip();
+        page.reset();
+    }
+
+    /**
      * @param addr Address.
      */
     public static String printPage(long addr, int pageSize) throws IgniteCheckedException {

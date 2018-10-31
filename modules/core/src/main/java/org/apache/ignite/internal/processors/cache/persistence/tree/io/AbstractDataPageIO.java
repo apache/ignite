@@ -1110,16 +1110,9 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
     }
 
     /** {@inheritDoc} */
-    @Override public void compactPage(ByteBuffer page, ByteBuffer out) {
-        assert out.isDirect();
-
+    @Override public void compactPage(ByteBuffer page, ByteBuffer out, int pageSize) {
         // TODO May we compactDataEntries in-place and then copy compacted data to out?
-
-        int pageSize = page.remaining();
-
-        page.mark();
-        out.put(page).flip();
-        page.reset();
+        copyPage(page, out, pageSize);
 
         long pageAddr = bufferAddress(out);
 

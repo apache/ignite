@@ -100,7 +100,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         ByteBuffer compactPage = tmp.get();
 
         // Drop the garbage from the page.
-        ((CompactablePageIO)io).compactPage(page, compactPage);
+        ((CompactablePageIO)io).compactPage(page, compactPage, pageSize);
 
         int compactSize = compactPage.limit();
 

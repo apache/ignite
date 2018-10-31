@@ -425,10 +425,8 @@ public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void compactPage(ByteBuffer page, ByteBuffer out) {
-        page.mark();
-        out.put(page).flip();
-        page.reset();
+    @Override public void compactPage(ByteBuffer page, ByteBuffer out, int pageSize) {
+        copyPage(page, out, pageSize);
 
         long pageAddr = GridUnsafe.bufferAddress(out);
 

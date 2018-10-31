@@ -29,8 +29,9 @@ public interface CompactablePageIO {
      *
      * @param page Page buffer.
      * @param out Output buffer.
+     * @param pageSize Page size.
      */
-    void compactPage(ByteBuffer page, ByteBuffer out);
+    void compactPage(ByteBuffer page, ByteBuffer out, int pageSize);
 
     /**
      * Restores the original page in place.
