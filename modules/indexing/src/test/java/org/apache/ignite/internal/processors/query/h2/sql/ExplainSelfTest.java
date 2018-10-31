@@ -34,7 +34,7 @@ public class ExplainSelfTest extends GridCommonAbstractTest {
     private static IgniteEx ignite;
 
     /** Handle to underlying cache of the TEST table. */
-    private static IgniteCache<?,?> cache;
+    private static IgniteCache<?, ?> cache;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -42,9 +42,9 @@ public class ExplainSelfTest extends GridCommonAbstractTest {
 
         ignite = startGrid(1);
 
-        execute("CREATE TABLE TEST (ID LONG PRIMARY KEY, VAL LONG);");
+        cache = ignite.getOrCreateCache("testTableCache");
 
-        cache = ignite.cache("SQL_PUBLIC_TEST");
+        execute("CREATE TABLE PUBLIC.TEST (ID LONG PRIMARY KEY, VAL LONG) WITH \"template=replicated\";");
     }
 
     /** {@inheritDoc} */
@@ -61,17 +61,24 @@ public class ExplainSelfTest extends GridCommonAbstractTest {
      * Negative check that verifies EXPLAINs of update operations are not supported and cause correct exceptions.
      */
     public void testExplainUpdateOperation() {
-        assertNotSupported("EXPLAIN INSERT INTO TEST VALUES (1, 2);");
-        assertNotSupported("EXPLAIN UPDATE TEST SET VAL = VAL + 1;");
-        assertNotSupported("EXPLAIN MERGE INTO TEST (ID, VAL) VALUES (1, 2);");
-        assertNotSupported("EXPLAIN DELETE FROM TEST;");
+        assertNotSupported("EXPLAIN INSERT INTO PUBLIC.TEST VALUES (1, 2);", false);
+        assertNotSupported("EXPLAIN UPDATE PUBLIC.TEST SET VAL = VAL + 1;", false);
+        assertNotSupported("EXPLAIN MERGE INTO PUBLIC.TEST (ID, VAL) VALUES (1, 2);", false);
+        assertNotSupported("EXPLAIN DELETE FROM PUBLIC.TEST;", false);
+
+        assertNotSupported("EXPLAIN INSERT INTO PUBLIC.TEST VALUES (1, 2);", true);
+        assertNotSupported("EXPLAIN UPDATE PUBLIC.TEST SET VAL = VAL + 1;", true);
+        assertNotSupported("EXPLAIN MERGE INTO PUBLIC.TEST (ID, VAL) VALUES (1, 2);", true);
+        assertNotSupported("EXPLAIN DELETE FROM PUBLIC.TEST;", true);
     }
 
     /**
      * Check that EXPLAIN SELECT queries doesn't cause errors.
      */
     public void testExplainSelect() {
-        execute("EXPLAIN SELECT * FROM TEST;");
+        execute("EXPLAIN SELECT * FROM PUBLIC.TEST;");
+
+        cache.query(new SqlFieldsQuery("EXPLAIN SELECT * FROM PUBLIC.TEST;").setLocal(true)).getAll();
     }
 
     /**
@@ -88,10 +95,14 @@ public class ExplainSelfTest extends GridCommonAbstractTest {
      * Assert that specified explain slq query is not supported due to it explains update (update, delete, insert,
      * etc.). operation.
      *
-     * @param explainSql explain query of update operation.
+     * @param explainQry explain query of update operation.
+     * @param local whether or not query to be executed should be local.
      */
-    private void assertNotSupported(String explainSql) {
-        Throwable exc = GridTestUtils.assertThrows(ignite.log(), () -> execute(explainSql), IgniteSQLException.class,
+    private void assertNotSupported(String explainQry, boolean local) {
+        Throwable exc = GridTestUtils.assertThrows(
+            ignite.log(),
+            () -> cache.query(new SqlFieldsQuery(explainQry).setLocal(local)).getAll(),
+            IgniteSQLException.class,
             "Explains of update queries are not supported.");
 
         IgniteSQLException sqlExc = ((IgniteSQLException)exc);
