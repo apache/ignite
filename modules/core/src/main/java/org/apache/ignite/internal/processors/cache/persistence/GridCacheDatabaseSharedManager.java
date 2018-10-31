@@ -1388,7 +1388,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     try {
                         cacheGroup.restorePartitionStates(Collections.emptyMap());
 
-                        cacheGroup.topology().afterStateRestored(fut.initialVersion());
+                        if (cacheGroup.localStartVersion().equals(fut.initialVersion()))
+                            cacheGroup.topology().afterStateRestored(fut.initialVersion());
                     }
                     finally {
                         cctx.database().checkpointReadUnlock();
