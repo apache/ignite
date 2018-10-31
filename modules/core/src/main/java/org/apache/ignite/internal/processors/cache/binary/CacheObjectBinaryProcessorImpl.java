@@ -558,7 +558,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     @Nullable public BinaryMetadata metadata0(final int typeId) {
         BinaryMetadataHolder holder = metadataLocCache.get(typeId);
 
-        if (holder == null) {
+        if (holder == null && !IgniteThread.current().holdsTopLock()) {
             if (ctx.clientNode()) {
                 try {
                     transport.requestUpToDateMetadata(typeId).get();
