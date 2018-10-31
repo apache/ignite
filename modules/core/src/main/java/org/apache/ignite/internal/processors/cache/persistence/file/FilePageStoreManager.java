@@ -402,16 +402,15 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         CacheStoreHolder old = idxCacheStores.remove(grp.groupId());
 
-        assert old != null : "Missing cache store holder [cache=" + grp.cacheOrGroupName() +
-            ", locNodeId=" + cctx.localNodeId() + ", gridName=" + cctx.igniteInstanceName() + ']';
+        if (old != null) {
+            IgniteCheckedException ex = shutdown(old, /*clean files if destroy*/destroy, null);
 
-        IgniteCheckedException ex = shutdown(old, /*clean files if destroy*/destroy, null);
+            if (destroy)
+                removeCacheGroupConfigurationData(grp);
 
-        if (destroy)
-            removeCacheGroupConfigurationData(grp);
-
-        if (ex != null)
-            throw ex;
+            if (ex != null)
+                throw ex;
+        }
     }
 
     /** {@inheritDoc} */
@@ -1021,7 +1020,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      */
     private CacheStoreHolder getHolder(int grpId) throws IgniteCheckedException {
         try {
-            return idxCacheStores.computeIfAbsent((grpId), (key) -> {
+            return idxCacheStores.computeIfAbsent(grpId, (key) -> {
                 CacheGroupDescriptor gDesc = cctx.cache().cacheGroupDescriptors().get(grpId);
 
                 CacheStoreHolder holder0 = null;
