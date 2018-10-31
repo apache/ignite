@@ -147,7 +147,9 @@ public class FunctionalQueryTest {
                 )).setSchema("PUBLIC")
             ).getAll();
 
-            for (int i = 0; i < 1000; ++i) {
+            final int KEY_COUNT = 1000;
+
+            for (int i = 0; i < KEY_COUNT; ++i) {
                 int key = i;
                 Person val = new Person(key, "Person " + i);
 
@@ -164,8 +166,14 @@ public class FunctionalQueryTest {
             assertEquals("Person 1", cachedName);
 
             List<List<?>> rows = client.query(
-                new SqlFieldsQuery("SELECT * from Person WHERE id=?").setArgs(1).setSchema("PUBLIC").setPageSize(2)
+                new SqlFieldsQuery("SELECT * from Person WHERE id >= ?")
+                    .setSchema("PUBLIC")
+                    .setArgs(0)
+                    .setPageSize(2)
+                    .setLazy(true)
             ).getAll();
+
+            assertEquals(KEY_COUNT, rows.size());
         }
     }
 
