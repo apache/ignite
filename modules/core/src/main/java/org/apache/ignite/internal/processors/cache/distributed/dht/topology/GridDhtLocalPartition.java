@@ -407,7 +407,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             while (item != null && item.expireTime() < U.currentTimeMillis()) {
                 item = rmvQueue.pollFirst();
 
-                if (item == null || item.expireTime() >= U.currentTimeMillis())
+                if (item == null)
                     break;
 
                 removeVersionedEntry(item.cacheId(), item.key(), item.version());
