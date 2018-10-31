@@ -25,6 +25,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinTransactionsClientNoAutoCommitComplex
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsServerAutoCommitComplexSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsServerNoAutoCommitComplexSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsWithMvccEnabledSelfTest;
+import org.apache.ignite.jdbc.thin.MvccJdbcTransactionFinishOnDeactivatedClusterSelfTest;
 
 /** */
 public class IgniteJdbcDriverMvccTestSuite extends TestSuite {
@@ -43,6 +44,7 @@ public class IgniteJdbcDriverMvccTestSuite extends TestSuite {
         suite.addTestSuite(JdbcThinTransactionsServerAutoCommitComplexSelfTest.class);
         suite.addTestSuite(JdbcThinTransactionsClientNoAutoCommitComplexSelfTest.class);
         suite.addTestSuite(JdbcThinTransactionsServerNoAutoCommitComplexSelfTest.class);
+        suite.addTestSuite(MvccJdbcTransactionFinishOnDeactivatedClusterSelfTest.class);
 
         return suite;
     }
