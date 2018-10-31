@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.commandline;
 
 import java.io.Console;
+import java.io.IOException;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -65,6 +67,7 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -589,7 +592,7 @@ public class CommandHandler {
      * @return Task result.
      * @throws GridClientException If failed to execute task.
      */
-    private <R> R executeTaskByNameOnNode(GridClient client, String taskClsName, Object taskArgs, UUID nodeId
+    @SuppressWarnings("unchecked") private <R> R executeTaskByNameOnNode(GridClient client, String taskClsName, Object taskArgs, UUID nodeId
     ) throws GridClientException {
         GridClientCompute compute = client.compute();
 
@@ -609,12 +612,28 @@ public class CommandHandler {
         GridClientNode node = null;
 
         if (nodeId == null) {
-            Collection<GridClientNode> nodes = compute.nodes(GridClientNode::connectable);
-
             // Prefer node from connect string.
             String origAddr = clientCfg.getServers().iterator().next();
 
-            for (GridClientNode clientNode : nodes) {
+            String[] parts = origAddr.split(":");
+
+            if (DFLT_HOST.equals(parts[0])) {
+                InetAddress addr;
+
+                try {
+                    addr = IgniteUtils.getLocalHost();
+                }
+                catch (IOException e) {
+                    throw new GridClientException("Can't get localhost name.", e);
+                }
+
+                if (addr.isLoopbackAddress())
+                    throw new GridClientException("Can't find localhost name.");
+
+                origAddr = addr.getHostName() + ":" + parts[1];
+            }
+
+            for (GridClientNode clientNode : compute.nodes(GridClientNode::connectable)) {
                 Iterator<String> it = F.concat(clientNode.tcpAddresses().iterator(), clientNode.tcpHostNames().iterator());
 
                 while (it.hasNext()) {
