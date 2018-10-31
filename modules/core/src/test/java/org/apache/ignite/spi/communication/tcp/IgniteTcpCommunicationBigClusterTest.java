@@ -88,9 +88,7 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void testHandshakeNoHangOnNodeJoining() throws Exception {
-        String errMsg = "Handshake timeout has happened.";
-
-        LogListener lsnr = LogListener.matches("Handshake timedout").times(0).orError(errMsg).build();
+        LogListener lsnr = LogListener.matches("Handshake timedout").times(0).build();
 
         testLog.registerListener(lsnr);
 
@@ -122,7 +120,7 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
 
         fut.get();
 
-        lsnr.check();
+        assertTrue("Handshake timeout has happened.", lsnr.check());
     }
 
     /** */
