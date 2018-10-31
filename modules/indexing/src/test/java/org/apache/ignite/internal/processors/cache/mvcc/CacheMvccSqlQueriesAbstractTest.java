@@ -633,8 +633,6 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
      * @throws Exception If failed.
      */
     public void testDistributedJoinSimple() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9446");
-
         startGridsMultiThreaded(4);
 
         Ignite srv0 = ignite(0);

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.visor.query;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -27,6 +28,7 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * Reset compute grid query metrics.
  */
 @GridInternal
+@GridVisorManagementTask
 public class VisorQueryResetMetricsTask extends VisorOneNodeTask<VisorQueryResetMetricsTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;

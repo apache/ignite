@@ -64,25 +64,25 @@ import org.jetbrains.annotations.Nullable;
  */
 public class BaseSqlTest extends GridCommonAbstractTest {
     /** Number of all employees. */
-    public final static long EMP_CNT = 1000L;
+    public static final long EMP_CNT = 1000L;
 
     /** Number of all departments. */
-    public final static long DEP_CNT = 50L;
+    public static final long DEP_CNT = 50L;
 
     /** Number of all addresses. */
-    public final static long ADDR_CNT = 500L;
+    public static final long ADDR_CNT = 500L;
 
     /** Number of employees that aren't associated with any department. */
-    public final static long FREE_EMP_CNT = 50;
+    public static final long FREE_EMP_CNT = 50;
 
     /** Number of departments that don't have employees and addresses. */
-    public final static long FREE_DEP_CNT = 5;
+    public static final long FREE_DEP_CNT = 5;
 
     /** Number of adderesses that are not associated with any departments. */
-    public final static long FREE_ADDR_CNT = 30;
+    public static final long FREE_ADDR_CNT = 30;
 
     /** Number of possible age values (width of ages values range). */
-    public final static int AGES_CNT = 50;
+    public static final int AGES_CNT = 50;
 
     /** Name of client node. */
     public static final String CLIENT_NODE_NAME = "clientNode";

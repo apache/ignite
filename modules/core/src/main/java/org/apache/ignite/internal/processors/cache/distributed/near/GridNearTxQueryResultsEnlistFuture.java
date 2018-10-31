@@ -45,7 +45,6 @@ import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -149,6 +148,10 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
                 return;
 
             boolean first = (nodeId != null);
+
+            // Need to unlock topology to avoid deadlock with binary descriptors registration.
+            if(!topLocked && cctx.topology().holdsLock())
+                cctx.topology().readUnlock();
 
             for (Batch batch : next) {
                 ClusterNode node = batch.node();
@@ -360,7 +363,8 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
                 }
             }
 
-            dhtTx.mvccEnlistBatch(cctx, it.operation(), keys, vals, mvccSnapshot.withoutActiveTransactions());
+            cctx.tm().txHandler().mvccEnlistBatch(dhtTx, cctx, it.operation(), keys, vals,
+                mvccSnapshot.withoutActiveTransactions(), null, -1);
         }
         catch (IgniteCheckedException e) {
             onDone(e);
@@ -547,9 +551,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
         if (err == null && res.error() != null)
             err = res.error();
 
-        if (X.hasCause(err, ClusterTopologyCheckedException.class))
-            tx.removeMapping(nodeId);
-        else if (res != null)
+        if (res != null)
             tx.mappings().get(nodeId).addBackups(res.newDhtNodes());
 
         if (err != null)

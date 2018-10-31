@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#if !NETCOREAPP2_0
+#if !NETCOREAPP2_0 && !NETCOREAPP2_1
 namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 {
     using System;
@@ -65,12 +65,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             {
                 throw new IgniteException("Failed to get default AppDomain. Cannot create meta host: " + hr);
             }
-            
+
             var host = (ICLRMetaHost) objHost;
             var vers = Environment.Version;
             var versString = string.Format("v{0}.{1}.{2}", vers.Major, vers.Minor, vers.Build);
             var runtime = (ICLRRuntimeInfo) host.GetRuntime(versString, ref IID_CLRRuntimeInfo);
-            
+
             bool started;
             uint flags;
             runtime.IsStarted(out started, out flags);
