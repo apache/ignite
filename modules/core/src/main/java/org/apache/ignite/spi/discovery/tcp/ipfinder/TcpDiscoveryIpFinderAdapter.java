@@ -27,8 +27,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
 /**
  * IP finder interface implementation adapter.
@@ -89,28 +87,6 @@ public abstract class TcpDiscoveryIpFinderAdapter implements TcpDiscoveryIpFinde
     /** {@inheritDoc} */
     @Override public void close() {
         // No-op.
-    }
-
-    /**
-     * @return {@code True} if TCP discovery works in client mode.
-     */
-    protected boolean discoveryClientMode() {
-        boolean clientMode;
-
-        Ignite ignite0 = ignite;
-
-        if (ignite0 != null) { // Can be null if used in tests without starting Ignite.
-            DiscoverySpi discoSpi = ignite0.configuration().getDiscoverySpi();
-
-            if (!(discoSpi instanceof TcpDiscoverySpi))
-                throw new IgniteSpiException("TcpDiscoveryIpFinder should be used with TcpDiscoverySpi: " + discoSpi);
-
-            clientMode = ignite0.configuration().isClientMode() && !((TcpDiscoverySpi)discoSpi).isForceServerMode();
-        }
-        else
-            clientMode = false;
-
-        return clientMode;
     }
 
     /**

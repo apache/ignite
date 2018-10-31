@@ -336,7 +336,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                 "(it is recommended in production to specify at least one address in " +
                 "TcpDiscoveryMulticastIpFinder.getAddresses() configuration property)");
 
-        boolean clientMode = discoveryClientMode();
+        boolean clientMode = F.isEmpty(addrs);
 
         try {
             mcastAddr = InetAddress.getByName(mcastGrp);
