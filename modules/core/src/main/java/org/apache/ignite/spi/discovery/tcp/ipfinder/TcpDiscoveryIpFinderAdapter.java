@@ -21,6 +21,7 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
@@ -57,7 +58,8 @@ public abstract class TcpDiscoveryIpFinderAdapter implements TcpDiscoveryIpFinde
 
     /** {@inheritDoc} */
     @Override public void initializeLocalAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
-        registerAddresses(addrs);
+        if (!F.isEmpty(addrs))
+            registerAddresses(addrs);
     }
 
     /** {@inheritDoc} */

@@ -334,7 +334,8 @@ abstract class TcpDiscoveryImpl {
         while (true) {
             try {
                 spi.ipFinder.initializeLocalAddresses(
-                    U.resolveAddresses(spi.getAddressResolver(), locNode.socketAddresses()));
+                    U.resolveAddresses(spi.getAddressResolver(),
+                        locNode.isClient() ? Collections.emptyList() : locNode.socketAddresses()));
 
                 // Success.
                 break;
