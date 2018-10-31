@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -190,8 +189,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     /** There are keys belonging to backup partitions on near node. */
     protected boolean hasNearNodeUpdates;
 
-    /** */
-    private boolean hasMovingPartitions;
+    /** Moving partitions. */
+    private Map<Integer, Boolean> movingParts;
 
     /** Map for tracking nodes to which first request was already sent in order to send smaller subsequent requests. */
     private final Set<ClusterNode> firstReqSent = new HashSet<>();
@@ -390,12 +389,20 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
         try {
             while (true) {
+                int curPart = -1;
+                List<ClusterNode> backups = null;
+
                 while (hasNext0()) {
                     Object cur = next0();
 
                     KeyCacheObject key = toKey(op, cur);
 
-                    if (!ensureFreeSlot(key)) {
+                    if (curPart != key.partition())
+                        backups = backupNodes(curPart = key.partition());
+
+                    assert backups != null;
+
+                    if (!ensureFreeSlot(key, backups)) {
                         // Can't advance further at the moment.
                         peek = cur;
 
@@ -446,7 +453,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                                         cctx.localNodeId(),
                                         topVer,
                                         mvccSnapshot,
-                                        cctx.topology().hasMovingPartitions(),
+                                        isMoving(key.partition(), backups),
                                         needOldVal,
                                         filter,
                                         needResult());
@@ -467,7 +474,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                                         topVer,
                                         mvccSnapshot,
                                         op.cacheOperation(),
-                                        hasMovingPartitions,
+                                        isMoving(key.partition(), backups),
                                         op.noCreate(),
                                         needOldVal,
                                         filter,
@@ -506,13 +513,14 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                             res = updateFut.get();
                         else {
                             GridDhtCacheEntry entry0 = entry;
+                            List<ClusterNode> backups0 = backups;
 
                             it.beforeDetach();
 
                             updateFut.listen(new CI1<IgniteInternalFuture<GridCacheUpdateTxResult>>() {
                                 @Override public void apply(IgniteInternalFuture<GridCacheUpdateTxResult> fut) {
                                     try {
-                                        processEntry(entry0, op, fut.get(), val0);
+                                        processEntry(entry0, op, fut.get(), val0, backups0);
 
                                         continueLoop(true);
                                     }
@@ -527,7 +535,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                         }
                     }
 
-                    processEntry(entry, op, res, val0);
+                    processEntry(entry, op, res, val0, backups);
                 }
 
                 if (!hasNext0()) {
@@ -631,10 +639,11 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      * @param op Operation.
      * @param updRes Update result.
      * @param val New value.
+     * @param backups Backup nodes
      * @throws IgniteCheckedException If failed.
      */
     private void processEntry(GridDhtCacheEntry entry, EnlistOperation op,
-        GridCacheUpdateTxResult updRes, Message val) throws IgniteCheckedException {
+        GridCacheUpdateTxResult updRes, Message val, List<ClusterNode> backups) throws IgniteCheckedException {
         checkCompleted();
 
         assert updRes != null && updRes.updateFuture() == null;
@@ -653,7 +662,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             cctx.shared().mvccCaching().addEnlisted(entry.key(), updRes.newValue(), 0, 0, lockVer,
                 updRes.oldValue(), tx.local(), tx.topologyVersion(), mvccSnapshot, cctx.cacheId(), tx, null, -1);
 
-        addToBatch(entry.key(), val, updRes.mvccHistory(), entry.context().cacheId());
+        addToBatch(entry.key(), val, updRes.mvccHistory(), entry.context().cacheId(), backups);
     }
 
     /**
@@ -663,14 +672,13 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      * @param val Value.
      * @param hist History rows.
      * @param cacheId Cache Id.
+     * @param backups Backup nodes
      */
     private void addToBatch(KeyCacheObject key, Message val, List<MvccLinkAwareSearchRow> hist,
-        int cacheId) throws IgniteCheckedException {
+        int cacheId, List<ClusterNode> backups) throws IgniteCheckedException {
         int part = key.partition();
 
         tx.touchPartition(cacheId, part);
-
-        Collection<ClusterNode> backups = backupNodes(part);
 
         if (F.isEmpty(backups))
             return;
@@ -791,17 +799,18 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      * Checks if there free space in batches or free slot in in-flight batches is available for the given key.
      *
      * @param key Key.
+     * @param backups Backup nodes.
      * @return {@code True} if there is possible to add this key to batch or send ready batch.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private boolean ensureFreeSlot(KeyCacheObject key) {
+    private boolean ensureFreeSlot(KeyCacheObject key, List<ClusterNode> backups) {
         if (F.isEmpty(batches) || F.isEmpty(pending))
             return true;
 
         int part = key.partition();
 
         // Check possibility of adding to batch and sending.
-        for (ClusterNode node : backupNodes(part)) {
+        for (ClusterNode node : backups) {
             if (skipNearLocalUpdate(node, isMoving(node, part)))
                 continue;
 
@@ -916,8 +925,12 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      * @param part Partition.
      * @return Backup nodes for the given partition.
      */
-    @NotNull private Collection<ClusterNode> backupNodes(int part) {
-        return F.view(cctx.topology().nodes(part, tx.topologyVersion()), F.remoteNodes(cctx.localNodeId()));
+    @NotNull private List<ClusterNode> backupNodes(int part) {
+        List<ClusterNode> nodes = cctx.topology().nodes(part, tx.topologyVersion());
+
+        assert nodes.size() > 0 && nodes.get(0).isLocal();
+
+        return nodes.subList(1, nodes.size());
     }
 
     /**
@@ -941,8 +954,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         try {
             top.readLock();
 
-            hasMovingPartitions = top.hasMovingPartitions();
-
             for (int i = 0; i < parts.length; i++) {
                 GridDhtLocalPartition p = top.localPartition(parts[i]);
 
@@ -955,6 +966,37 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         finally {
             top.readUnlock();
         }
+    }
+
+    /**
+     * @param part Partition.
+     * @param backups Backup nodes.
+     * @return {@code true} if the given partition is rebalancing to any backup node.
+     */
+    private boolean isMoving(int part, List<ClusterNode> backups) {
+        Boolean res;
+
+        if (movingParts == null)
+            movingParts = new HashMap<>();
+
+        if ((res = movingParts.get(part)) == null)
+            movingParts.put(part, res = isMoving0(part, backups));
+
+        return res == Boolean.TRUE;
+    }
+
+    /**
+     * @param part Partition.
+     * @param backups Backup nodes.
+     * @return {@code true} if the given partition is rebalancing to any backup node.
+     */
+    private Boolean isMoving0(int part, List<ClusterNode> backups) {
+        for (ClusterNode node : backups) {
+            if (isMoving(node, part))
+                return Boolean.TRUE;
+        }
+
+        return Boolean.FALSE;
     }
 
     /**
