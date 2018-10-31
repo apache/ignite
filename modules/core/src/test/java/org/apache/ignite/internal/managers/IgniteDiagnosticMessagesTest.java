@@ -387,16 +387,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
             assertFalse(fut.isDone());
 
-            boolean wait = waitForCondition(() -> {
-                try {
-                    lsnr.check();
-
-                    return true;
-                }
-                catch (AssertionError ignored) {
-                    return false;
-                }
-            }, longOpDumpTimeout * 2);
+            boolean wait = waitForCondition(lsnr::check, longOpDumpTimeout * 2);
 
             l2.countDown();
 
