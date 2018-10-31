@@ -573,7 +573,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 try {
                     hnd = U.unmarshal(marsh, routineInfo.hnd, U.resolveClassLoader(ctx.config()));
 
-                    if (ctx.config().isPeerClassLoadingEnabled())
+                    if (ctx.config().isPeerClassLoadingEnabled() && !routineInfo.autoUnsubscribe)
                         hnd.p2pUnmarshal(routineInfo.srcNodeId, ctx);
                 }
                 catch (IgniteCheckedException e) {
@@ -921,7 +921,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         String clsName = null;
         GridDeploymentInfoBean dep = null;
 
-        if (ctx.config().isPeerClassLoadingEnabled()) {
+        if (ctx.config().isPeerClassLoadingEnabled() && !autoUnsubscribe) {
             // Handle peer deployment for projection predicate.
             if (nodeFilter != null && !U.isGrid(nodeFilter.getClass())) {
                 Class cls = U.detectClass(nodeFilter);
@@ -1344,7 +1344,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         IgniteCheckedException err = null;
 
         try {
-            if (ctx.config().isPeerClassLoadingEnabled()) {
+            if (ctx.config().isPeerClassLoadingEnabled() && !data.autoUnsubscribe()) {
                 String clsName = data.className();
 
                 if (clsName != null) {
@@ -1535,7 +1535,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                             reqData.handlerBytes(),
                             U.resolveClassLoader(ctx.config()));
 
-                        if (ctx.config().isPeerClassLoadingEnabled())
+                        if (ctx.config().isPeerClassLoadingEnabled() && !reqData.autoUnsubscribe())
                             hnd.p2pUnmarshal(snd.id(), ctx);
 
                         if (msg.keepBinary()) {
