@@ -286,7 +286,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 else
                     processEventInactive(evt, cache);
 
-                notifyNodeFail(evt);
+                notifyNodeFail(evt, cache);
             }
             finally {
                 leaveBusy();
@@ -297,14 +297,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * @param evt Event.
      */
-    private void notifyNodeFail(DiscoveryEvent evt) {
+    private void notifyNodeFail(DiscoveryEvent evt, DiscoCache cache) {
         if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
             final ClusterNode n = evt.eventNode();
 
             assert cctx.discovery().node(n.id()) == null;
 
             for (GridDhtPartitionsExchangeFuture f : exchFuts.values())
-                f.onNodeLeft(n);
+                f.onNodeLeft(n, cache);
         }
     }
 
@@ -582,7 +582,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 log.debug("Do not start exchange for discovery event: " + evt);
         }
 
-        notifyNodeFail(evt);
+        notifyNodeFail(evt, cache);
 
         // Notify indexing engine about node leave so that we can re-map coordinator accordingly.
         if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
@@ -2231,14 +2231,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     }
 
                     ClusterNode node = evt.eventNode();
-
-                    if ((evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT) &&
-                        node.equals(cctx.coordinators().currentCoordinator())) {
-                        if (log.isInfoEnabled())
-                            log.info("Stop merge, need exchange for mvcc coordinator failure: " + node);
-
-                        break;
-                    }
 
                     if (!curFut.context().supportsMergeExchanges(node)) {
                         if (log.isInfoEnabled())

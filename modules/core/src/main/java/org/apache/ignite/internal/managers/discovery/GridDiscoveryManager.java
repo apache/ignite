@@ -657,8 +657,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     updateClientNodes(node.id());
                 }
 
-                ctx.coordinators().onDiscoveryEvent(type, topSnapshot, topVer, customMsg);
-
                 boolean locJoinEvt = type == EVT_NODE_JOINED && node.id().equals(locNode.id());
 
                 ChangeGlobalStateFinishMessage stateFinishMsg = null;
@@ -745,14 +743,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             nextTopVer,
                             ctx.state().clusterState(),
                             locNode,
-                            topSnapshot);
+                            topSnapshot,
+                            type);
                     }
                     else if (customMsg instanceof ChangeGlobalStateMessage) {
                         discoCache = createDiscoCache(
                             nextTopVer,
                             ctx.state().pendingState((ChangeGlobalStateMessage)customMsg),
                             locNode,
-                            topSnapshot);
+                            topSnapshot,
+                            type);
                     }
                     else
                         discoCache = customMsg.createDiscoCache(GridDiscoveryManager.this, nextTopVer, snapshot.discoCache);
@@ -836,7 +836,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     topSnap.set(new Snapshot(AffinityTopologyVersion.ZERO,
                         createDiscoCache(AffinityTopologyVersion.ZERO, ctx.state().clusterState(), locNode,
-                            Collections.singleton(locNode))
+                            Collections.singleton(locNode), type)
                     ));
                 }
                 else if (type == EVT_CLIENT_NODE_RECONNECTED) {
@@ -2329,16 +2329,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param state Current state.
      * @param loc Local node.
      * @param topSnapshot Topology snapshot.
+     * @param evtType Event type.
      * @return Newly created discovery cache.
      */
     @NotNull private DiscoCache createDiscoCache(
         AffinityTopologyVersion topVer,
         DiscoveryDataClusterState state,
         ClusterNode loc,
-        Collection<ClusterNode> topSnapshot) {
+        Collection<ClusterNode> topSnapshot,
+        int evtType) {
         assert topSnapshot.contains(loc);
 
-        MvccCoordinator mvccCrd = ctx.coordinators().assignedCoordinator();
+        MvccCoordinator mvccCrd = ctx.coordinators().pickMvccCoordinator(evtType, topSnapshot, topVer.topologyVersion());
 
         HashSet<UUID> alives = U.newHashSet(topSnapshot.size());
         HashMap<UUID, ClusterNode> nodeMap = U.newHashMap(topSnapshot.size());
@@ -2613,7 +2615,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                                 AffinityTopologyVersion.NONE,
                                 ctx.state().clusterState(),
                                 node,
-                                locNodeOnlyTop
+                                locNodeOnlyTop,
+                                EVT_NODE_SEGMENTED
                             ), locNodeOnlyTop,
                             null);
 

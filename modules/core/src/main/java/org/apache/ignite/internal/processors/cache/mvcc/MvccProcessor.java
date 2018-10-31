@@ -28,9 +28,7 @@ import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.GridProcessor;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -42,22 +40,12 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface MvccProcessor extends GridProcessor {
     /**
-     * @param evtType Event type.
-     * @param nodes Current nodes.
-     * @param topVer Topology version.
-     * @param customMsg Message
-     */
-    void onDiscoveryEvent(int evtType, Collection<ClusterNode> nodes, long topVer,
-        @Nullable DiscoveryCustomMessage customMsg);
-
-    /**
      * Exchange start callback.
      *
-     * @param mvccCrd Mvcc coordinator.
      * @param exchCtx Exchange context.
      * @param exchCrd Exchange coordinator.
      */
-    void onExchangeStart(MvccCoordinator mvccCrd, ExchangeContext exchCtx, ClusterNode exchCrd);
+    void onExchangeStart(ExchangeContext exchCtx, ClusterNode exchCrd);
 
     /**
      * Exchange done callback.
@@ -69,27 +57,23 @@ public interface MvccProcessor extends GridProcessor {
     void onExchangeDone(boolean newCoord, DiscoCache discoCache, Map<UUID, GridLongList> activeQueries);
 
     /**
+     * Node left during exchange callback.
+     *
+     * @param node Node.
+     * @param cache Disco cache.
+     */
+    void onNodeLeft(ClusterNode node, DiscoCache cache);
+
+    /**
      * @param nodeId Node ID
      * @param activeQueries Active queries.
      */
     void processClientActiveQueries(UUID nodeId, @Nullable GridLongList activeQueries);
 
     /**
-     * @return Mvcc coordinator received from discovery event.
-     */
-    @Nullable MvccCoordinator assignedCoordinator();
-
-    /**
      * @return Coordinator.
      */
     @Nullable MvccCoordinator currentCoordinator();
-
-    /**
-     * Check that the given topology is greater or equals to coordinator's one and returns current coordinator.
-     * @param topVer Topology version.
-     * @return Mvcc coordinator.
-     */
-    @Nullable MvccCoordinator currentCoordinator(AffinityTopologyVersion topVer);
 
     /**
      * @return Current coordinator node ID.
@@ -98,8 +82,10 @@ public interface MvccProcessor extends GridProcessor {
 
     /**
      * @param curCrd Coordinator.
+     * @return {@code Null} if coordinator has not been changed and the given coordinator is not actual anymore.
+     * If coordinator has been updated this method returns {@link GridLongList} with active query trackers ids.
      */
-    void updateCoordinator(MvccCoordinator curCrd);
+    GridLongList updateCoordinator(MvccCoordinator curCrd);
 
     /**
      * @param crdVer Mvcc coordinator version.
@@ -272,4 +258,14 @@ public interface MvccProcessor extends GridProcessor {
      * @throws IgniteCheckedException If failed to initialize.
      */
     void ensureStarted() throws IgniteCheckedException;
+
+    /**
+     * Picks mvcc coordinator from the given list of nodes.
+     *
+     * @param evtType Event type.
+     * @param nodes List of nodes.
+     * @param topVer Topology version.
+     * @return Chosen mvcc coordinator.
+     */
+    MvccCoordinator pickMvccCoordinator(int evtType, Collection<ClusterNode> nodes, long topVer);
 }

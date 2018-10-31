@@ -55,20 +55,14 @@ public class ExchangeContext {
     /** */
     private final boolean compatibilityNode = getBoolean(IGNITE_EXCHANGE_COMPATIBILITY_VER_1, false);
 
-    /** */
-    private final boolean newMvccCrd;
-
     /** Currently running mvcc queries, initialized when mvcc coordinator is changed. */
     private Map<UUID, GridLongList> activeQueries;
 
     /**
      * @param crd Coordinator flag.
-     * @param newMvccCrd {@code True} if new coordinator assigned during this exchange.
      * @param fut Exchange future.
      */
-    public ExchangeContext(boolean crd, boolean newMvccCrd, GridDhtPartitionsExchangeFuture fut) {
-        this.newMvccCrd = newMvccCrd;
-
+    public ExchangeContext(boolean crd, GridDhtPartitionsExchangeFuture fut) {
         int protocolVer = exchangeProtocolVersion(fut.firstEventCache().minimumNodeVersion());
 
         if (compatibilityNode || (crd && fut.localJoinExchange())) {
@@ -135,13 +129,6 @@ public class ExchangeContext {
      */
     public boolean mergeExchanges() {
         return merge;
-    }
-
-    /**
-     * @return {@code True} if new node assigned as mvcc coordinator node during this exchange.
-     */
-    public boolean newMvccCoordinator() {
-        return newMvccCrd;
     }
 
     /**

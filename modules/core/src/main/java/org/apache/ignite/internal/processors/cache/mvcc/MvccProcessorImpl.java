@@ -48,8 +48,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -98,6 +98,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -107,13 +108,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
-import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
-import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker.MVCC_TRACKER_ID_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
@@ -162,9 +159,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     /** */
     private volatile MvccCoordinator curCrd;
-
-    /** */
-    private volatile MvccCoordinator assignedCrd;
 
     /** */
     private TxLog txLog;
@@ -245,6 +239,13 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             EVT_NODE_FAILED, EVT_NODE_LEFT);
 
         ctx.io().addMessageListener(TOPIC_CACHE_COORDINATOR, new CoordinatorMessageListener());
+
+        ctx.discovery().setCustomEventListener(DynamicCacheChangeBatch.class,
+            new CustomEventListener<DynamicCacheChangeBatch>() {
+                @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, DynamicCacheChangeBatch msg) {
+                    checkMvccCacheStarted(msg);
+                }
+            });
     }
 
     /** {@inheritDoc} */
@@ -341,26 +342,22 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public void onDiscoveryEvent(int evtType, Collection<ClusterNode> nodes, long topVer,
-        @Nullable DiscoveryCustomMessage customMsg) {
-        if (evtType == EVT_NODE_METRICS_UPDATED)
+    @Override public void onExchangeStart(ExchangeContext exchCtx, ClusterNode exchCrd) {
+        assert exchCtx != null;
+
+        MvccCoordinator mvccCrd = exchCtx.events().mvccCoordinator();
+
+        if (mvccCrd == null || !exchCtx.events().newMvccCoordinator())
             return;
 
-        if (evtType == EVT_DISCOVERY_CUSTOM_EVT)
-            checkMvccCacheStarted(customMsg);
-        else
-            assignMvccCoordinator(evtType, nodes, topVer);
-    }
+        GridLongList activeQryTrackers = updateCoordinator(mvccCrd);
 
-    /** {@inheritDoc} */
-    @Override public void onExchangeStart(MvccCoordinator mvccCrd, ExchangeContext exchCtx, ClusterNode exchCrd) {
-        if (!exchCtx.newMvccCoordinator())
+        if (activeQryTrackers == null)
             return;
-
-        GridLongList activeQryTrackers = collectActiveQueryTrackers();
 
         exchCtx.addActiveQueries(ctx.localNodeId(), activeQryTrackers);
 
+        // Send active queries directly to the new coordinator if it is not the same node as cluster coordinator.
         if (exchCrd == null || !mvccCrd.nodeId().equals(exchCrd.id())) {
             try {
                 sendMessage(mvccCrd.nodeId(), new MvccActiveQueriesMessage(activeQryTrackers));
@@ -368,6 +365,29 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to send active queries to mvcc coordinator: " + e);
             }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onNodeLeft(ClusterNode node, DiscoCache cache) {
+        MvccCoordinator newMvccCrd = cache.mvccCoordinator();
+
+        if (newMvccCrd == null || newMvccCrd.nodeId().equals(curCrd.nodeId()))
+            return;
+
+        GridLongList activeQryTrackers = updateCoordinator(newMvccCrd);
+
+        if (activeQryTrackers == null) {
+            assert !ctx.discovery().alive(newMvccCrd.nodeId());
+
+            return;
+        }
+
+        try {
+            sendMessage(newMvccCrd.nodeId(), new MvccActiveQueriesMessage(activeQryTrackers));
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to send active queries to mvcc coordinator: " + e);
         }
     }
 
@@ -439,24 +459,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     /** {@inheritDoc} */
     @Override @Nullable public MvccCoordinator currentCoordinator() {
-        return currentCoordinator(AffinityTopologyVersion.NONE);
-    }
-
-    /** {@inheritDoc} */
-    @Override @Nullable public MvccCoordinator currentCoordinator(AffinityTopologyVersion topVer) {
-        MvccCoordinator crd = curCrd;
-
-        // Assert coordinator did not already change.
-        assert crd == null
-            || topVer == AffinityTopologyVersion.NONE
-            || crd.topologyVersion().compareTo(topVer) <= 0 : "Invalid coordinator [crd=" + crd + ", topVer=" + topVer + ']';
-
-        return crd;
-    }
-
-    /** {@inheritDoc} */
-    @Override @Nullable public MvccCoordinator assignedCoordinator() {
-        return assignedCrd;
+        return curCrd;
     }
 
     /** {@inheritDoc} */
@@ -467,8 +470,26 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public void updateCoordinator(MvccCoordinator curCrd) {
-        this.curCrd = curCrd;
+    @Override public GridLongList updateCoordinator(MvccCoordinator newCrd) {
+        assert newCrd != null;
+
+        synchronized (activeTrackers) {
+            if (curCrd != null && newCrd.topologyVersion().compareTo(curCrd.topologyVersion()) < 0)
+                return null;
+
+            GridLongList activeQryTrackers = new GridLongList();
+
+            for (MvccQueryTracker tracker : activeTrackers.values()) {
+                long trackerId = tracker.onMvccCoordinatorChange(newCrd);
+
+                if (trackerId != MVCC_TRACKER_ID_NA)
+                    activeQryTrackers.add(trackerId);
+            }
+
+            curCrd = newCrd;
+
+            return activeQryTrackers;
+        }
     }
 
     /** {@inheritDoc} */
@@ -826,49 +847,50 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         return ctx.config().getDataStorageConfiguration();
     }
 
-    /** */
-    private void assignMvccCoordinator(int evtType, Collection<ClusterNode> nodes, long topVer) {
+    /** {@inheritDoc} */
+    @Override public MvccCoordinator pickMvccCoordinator(int evtType, Collection<ClusterNode> nodes, long topVer) {
         checkMvccSupported(nodes);
 
-        MvccCoordinator crd;
+        MvccCoordinator crd = curCrd;
 
-        if (evtType == EVT_NODE_SEGMENTED || evtType == EVT_CLIENT_NODE_DISCONNECTED)
-            crd = null;
-        else {
-            crd = assignedCrd;
+        if (crd == null ||
+            ((evtType == EVT_NODE_FAILED || evtType == EVT_NODE_LEFT) && !F.nodeIds(nodes).contains(crd.nodeId()))) {
+            ClusterNode crdNode = null;
 
-            if (crd == null ||
-                ((evtType == EVT_NODE_FAILED || evtType == EVT_NODE_LEFT) && !F.nodeIds(nodes).contains(crd.nodeId()))) {
-                ClusterNode crdNode = null;
+            if (crdC != null) {
+                crdNode = crdC.apply(nodes);
 
-                if (crdC != null) {
-                    crdNode = crdC.apply(nodes);
+                if (crdNode != null && log.isInfoEnabled())
+                    log.info("Assigned coordinator using test closure: " + crdNode.id());
+            }
+            else {
+                // Expect nodes are sorted by order.
+                for (ClusterNode node : nodes) {
+                    if (!node.isClient() && supportsMvcc(node)) {
+                        crdNode = node;
 
-                    if (log.isInfoEnabled())
-                        log.info("Assigned coordinator using test closure: " + crd);
-                }
-                else {
-                    // Expect nodes are sorted by order.
-                    for (ClusterNode node : nodes) {
-                        if (!node.isClient() && supportsMvcc(node)) {
-                            crdNode = node;
-
-                            break;
-                        }
+                        break;
                     }
                 }
-
-                crd = crdNode != null ? new MvccCoordinator(crdNode.id(), coordinatorVersion(crdNode),
-                    new AffinityTopologyVersion(topVer, 0)) : null;
-
-                if (log.isInfoEnabled() && crd != null)
-                    log.info("Assigned mvcc coordinator [crd=" + crd + ", crdNode=" + crdNode + ']');
-                else if (crd == null)
-                    U.warn(log, "New mvcc coordinator was not assigned [topVer=" + topVer + ']');
             }
+
+            crd = crdNode != null ? new MvccCoordinator(crdNode.id(), coordinatorVersion(crdNode),
+                new AffinityTopologyVersion(topVer, 0)) : null;
+
+            if (log.isInfoEnabled() && crd != null)
+                log.info("Assigned mvcc coordinator [crd=" + crd + ", crdNode=" + crdNode + ']');
+            else if (crd == null)
+                U.warn(log, "New mvcc coordinator was not assigned [topVer=" + topVer + ']');
         }
 
-        assignedCrd = crd;
+        return crd;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+        synchronized (activeTrackers) {
+            curCrd = null;
+        }
     }
 
     /**
@@ -907,11 +929,9 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** */
-    private void checkMvccCacheStarted(@Nullable DiscoveryCustomMessage customMsg) {
-        assert customMsg != null;
-
-        if (!mvccEnabled && customMsg instanceof DynamicCacheChangeBatch) {
-            for (DynamicCacheChangeRequest req : ((DynamicCacheChangeBatch)customMsg).requests()) {
+    private void checkMvccCacheStarted(DynamicCacheChangeBatch cacheMsg) {
+        if (!mvccEnabled) {
+            for (DynamicCacheChangeRequest req : cacheMsg.requests()) {
                 CacheConfiguration ccfg = req.startCacheConfiguration();
 
                 if (ccfg == null)
@@ -924,24 +944,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
                 }
             }
         }
-    }
-
-    /**
-     * @return Active queries list.
-     */
-    private GridLongList collectActiveQueryTrackers() {
-        assert curCrd != null;
-
-        GridLongList activeQryTrackers = new GridLongList();
-
-        for (MvccQueryTracker tracker : activeTrackers.values()) {
-            long trackerId = tracker.onMvccCoordinatorChange(curCrd);
-
-            if (trackerId != MVCC_TRACKER_ID_NA)
-                activeQryTrackers.add(trackerId);
-        }
-
-        return activeQryTrackers;
     }
 
     /** */

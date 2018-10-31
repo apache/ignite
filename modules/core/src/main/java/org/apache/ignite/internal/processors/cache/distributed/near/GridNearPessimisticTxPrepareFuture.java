@@ -34,8 +34,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotResponseListener;
@@ -323,7 +323,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                     nodes = cacheCtx.affinity().nodesByKey(txEntry.key(), topVer);
 
                 if (tx.mvccSnapshot() == null && mvccCrd == null && cacheCtx.mvccEnabled()) {
-                    mvccCrd = cacheCtx.affinity().mvccCoordinator(topVer);
+                    mvccCrd = cacheCtx.shared().coordinators().currentCoordinator();
 
                     if (mvccCrd == null) {
                         onDone(noCoordinatorError(topVer));

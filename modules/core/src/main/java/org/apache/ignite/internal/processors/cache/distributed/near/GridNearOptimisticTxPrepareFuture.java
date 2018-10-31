@@ -381,7 +381,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         }
 
         if (write.context().mvccEnabled()) {
-            MvccCoordinator mvccCrd = write.context().affinity().mvccCoordinator(topVer);
+            MvccCoordinator mvccCrd = write.context().shared().coordinators().currentCoordinator();
 
             if (mvccCrd == null) {
                 onDone(noCoordinatorError(topVer));
@@ -448,7 +448,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 break;
 
             if (write.context().mvccEnabled() && mvccCrd == null) {
-                mvccCrd = write.context().affinity().mvccCoordinator(topVer);
+                mvccCrd = write.context().shared().coordinators().currentCoordinator();
 
                 if (mvccCrd == null) {
                     onDone(noCoordinatorError(topVer));

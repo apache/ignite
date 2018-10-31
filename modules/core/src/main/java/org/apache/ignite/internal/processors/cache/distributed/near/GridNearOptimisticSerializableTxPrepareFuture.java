@@ -359,7 +359,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                 hasNearCache = true;
 
             if (cctx.mvccEnabled() && mvccCrd == null) {
-                mvccCrd = cctx.affinity().mvccCoordinator(topVer);
+                mvccCrd = cctx.shared().coordinators().currentCoordinator();
 
                 if (mvccCrd == null) {
                     onDone(noCoordinatorError(topVer));
