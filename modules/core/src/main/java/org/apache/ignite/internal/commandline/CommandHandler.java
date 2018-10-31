@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.io.Console;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -95,6 +96,7 @@ import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTask;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
+import org.apache.ignite.internal.visor.verify.IndexIntegrityCheckIssue;
 import org.apache.ignite.internal.visor.verify.IndexValidationIssue;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesPartitionResult;
 import org.apache.ignite.internal.visor.verify.VisorContentionTask;
@@ -116,6 +118,7 @@ import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskResult;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
+import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
@@ -780,9 +783,20 @@ public class CommandHandler {
             }
         }
 
-        boolean errors = false;
-
         for (Map.Entry<UUID, VisorValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {
+            boolean errors = false;
+
+            log("validate_indexes result on node " + nodeEntry.getKey() + ":");
+
+            Collection<IndexIntegrityCheckIssue> integrityCheckFailures = nodeEntry.getValue().integrityCheckFailures();
+
+            if (!integrityCheckFailures.isEmpty()) {
+                errors = true;
+
+                for (IndexIntegrityCheckIssue is : integrityCheckFailures)
+                    log("\t" + is.toString());
+            }
+
             Map<PartitionKey, ValidateIndexesPartitionResult> partRes = nodeEntry.getValue().partitionResult();
 
             for (Map.Entry<PartitionKey, ValidateIndexesPartitionResult> e : partRes.entrySet()) {
@@ -791,10 +805,10 @@ public class CommandHandler {
                 if (!res.issues().isEmpty()) {
                     errors = true;
 
-                    log(e.getKey().toString() + " " + e.getValue().toString());
+                    log("\t" + e.getKey().toString() + " " + e.getValue().toString());
 
                     for (IndexValidationIssue is : res.issues())
-                        log(is.toString());
+                        log("\t\t" + is.toString());
                 }
             }
 
@@ -806,18 +820,18 @@ public class CommandHandler {
                 if (!res.issues().isEmpty()) {
                     errors = true;
 
-                    log("SQL Index " + e.getKey() + " " + e.getValue().toString());
+                    log("\tSQL Index " + e.getKey() + " " + e.getValue().toString());
 
                     for (IndexValidationIssue is : res.issues())
-                        log(is.toString());
+                        log("\t\t" + is.toString());
                 }
             }
-        }
 
-        if (!errors)
-            log("validate_indexes has finished, no issues found.");
-        else
-            log("validate_indexes has finished with errors (listed above).");
+            if (!errors)
+                log("no issues found.\n");
+            else
+                log("issues found (listed above).\n");
+        }
     }
 
     /**
@@ -1843,12 +1857,6 @@ public class CommandHandler {
 
         Command cmd = commands.get(0);
 
-        boolean hasUsr = F.isEmpty(user);
-        boolean hasPwd = F.isEmpty(pwd);
-
-        if (hasUsr != hasPwd)
-            throw new IllegalArgumentException("Both user and password should be specified");
-
         return new Arguments(cmd, host, port, user, pwd, baselineAct, baselineArgs, txArgs, cacheArgs, walAct, walArgs,
             pingTimeout, pingInterval, autoConfirmation);
     }
@@ -2409,50 +2417,100 @@ public class CommandHandler {
 
             clientCfg.setServers(Collections.singletonList(args.host() + ":" + args.port()));
 
-            if (!F.isEmpty(args.user())) {
-                clientCfg.setSecurityCredentialsProvider(
-                    new SecurityCredentialsBasicProvider(new SecurityCredentials(args.user(), args.password())));
-            }
+            boolean tryConnectAgain = true;
 
-            try (GridClient client = GridClientFactory.start(clientCfg)) {
-                switch (args.command()) {
-                    case ACTIVATE:
-                        activate(client);
+            int tryConnectMaxCount=3;
 
-                        break;
+            while (tryConnectAgain) {
+                tryConnectAgain = false;
 
-                    case DEACTIVATE:
-                        deactivate(client);
+                if (!F.isEmpty(args.getUserName())) {
+                    SecurityCredentialsProvider securityCredential = clientCfg.getSecurityCredentialsProvider();
 
-                        break;
+                    if (securityCredential == null) {
+                        securityCredential = new SecurityCredentialsBasicProvider(
+                            new SecurityCredentials(args.getUserName(), args.getPassword())
+                        );
 
-                    case STATE:
-                        state(client);
+                        clientCfg.setSecurityCredentialsProvider(securityCredential);
+                    }
+                    final SecurityCredentials credential = securityCredential.credentials();
+                    credential.setLogin(args.getUserName());
+                    credential.setPassword(args.getPassword());
+                }
 
-                        break;
+                try (GridClient client = GridClientFactory.start(clientCfg)) {
+                    switch (args.command()) {
+                        case ACTIVATE:
+                            activate(client);
 
-                    case BASELINE:
-                        baseline(client, args.baselineAction(), args.baselineArguments());
+                            break;
 
-                        break;
+                        case DEACTIVATE:
+                            deactivate(client);
 
-                    case TX:
-                        transactions(client, args.transactionArguments());
+                            break;
 
-                        break;
+                        case STATE:
+                            state(client);
 
-                    case CACHE:
-                        cache(client, args.cacheArgs());
+                            break;
 
-                        break;
+                        case BASELINE:
+                            baseline(client, args.baselineAction(), args.baselineArguments());
 
-                    case WAL:
-                        wal(client, args.walAction(), args.walArguments());
+                            break;
 
-                        break;
+                        case TX:
+                            transactions(client, args.transactionArguments());
+
+                            break;
+
+                        case CACHE:
+                            cache(client, args.cacheArgs());
+
+                            break;
+
+                        case WAL:
+                            wal(client, args.walAction(), args.walArguments());
+
+                            break;
+                    }
+                }
+                catch (Throwable e) {
+                    if (tryConnectMaxCount > 0 && isAuthError(e)) {
+                        System.out.println("Authentication error, try connection again.");
+
+                        final Console console = System.console();
+
+                        if (console != null) {
+                            if (F.isEmpty(args.getUserName()))
+                                args.setUserName(console.readLine("user: "));
+
+                            args.setPassword(new String(console.readPassword("password: ")));
+                        }
+                        else {
+                            Scanner scanner = new Scanner(System.in);
+
+                            if (F.isEmpty(args.getUserName())){
+                                System.out.println("user: ");
+
+                                args.setUserName(scanner.next());
+                            }
+
+                            System.out.println("password: ");
+
+                            args.setPassword(scanner.next());
+                        }
+
+                        tryConnectAgain = true;
+
+                        tryConnectMaxCount--;
+                    }
+                    else
+                        throw e;
                 }
             }
-
             return EXIT_CODE_OK;
         }
         catch (IllegalArgumentException e) {
