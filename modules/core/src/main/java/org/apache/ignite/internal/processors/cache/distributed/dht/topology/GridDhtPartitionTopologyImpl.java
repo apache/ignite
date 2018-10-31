@@ -2686,8 +2686,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (part == null)
                     continue;
 
-                long counter = part.updateCounter();
-
                 if (finalizeCntrsBeforeCollecting)
                     part.finalizeUpdateCountres();
 
@@ -2696,8 +2694,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 if (skipZeros && initCntr == 0L && updCntr == 0L)
                     continue;
-
-                GridDhtPartitionState state = part.state();
 
                 res.add(part.id(), initCntr, updCntr);
             }
