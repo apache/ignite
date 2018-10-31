@@ -128,4 +128,28 @@ public class CacheBlockOnSqlQueryTest extends CacheBlockOnReadAbstractTest {
     @Override public void testStopBaselineTransactionalPartitioned() {
         fail("https://issues.apache.org/jira/browse/IGNITE-9916");
     }
+
+    /** {@inheritDoc} */
+    @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Override public void testStartClientAtomicPartitioned() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9916");
+    }
+
+    /** {@inheritDoc} */
+    @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Override public void testStartClientTransactionalPartitioned() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9916");
+    }
+
+    /** {@inheritDoc} */
+    @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
+    @Override public void testStopClientAtomicPartitioned() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9916");
+    }
+
+    /** {@inheritDoc} */
+    @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
+    @Override public void testStopClientTransactionalPartitioned() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9916");
+    }
 }

@@ -30,6 +30,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.X;
@@ -57,7 +58,7 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
 
         disableScheduledVacuum = getName().equals("testSelectForUpdateAfterAbortedTx");
 
-        startGrids(3);
+        IgniteEx grid = startGrid(0);
 
         CacheConfiguration seg = new CacheConfiguration("segmented*");
 
@@ -66,11 +67,9 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
         if (seg.getCacheMode() == PARTITIONED)
             seg.setQueryParallelism(4);
 
-        grid(0).addCacheConfiguration(seg);
+        grid.addCacheConfiguration(seg);
 
-        Thread.sleep(1000L);
-
-        try (Connection c = connect(grid(0))) {
+        try (Connection c = connect(grid)) {
             execute(c, "create table person (id int primary key, firstName varchar, lastName varchar) " +
                 "with \"atomicity=transactional_snapshot,cache_name=Person\"");
 
@@ -90,6 +89,8 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
                 tx.commit();
             }
         }
+
+        startGridsMultiThreaded(1, 2);
     }
 
     /**

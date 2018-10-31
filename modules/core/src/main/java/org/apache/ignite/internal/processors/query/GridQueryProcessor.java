@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import javax.cache.Cache;
-import javax.cache.CacheException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -36,6 +34,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.Cache;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -62,20 +62,16 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
-import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFilter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
@@ -261,8 +257,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     ctxs.queries().evictDetailMetrics();
             }
         }, QRY_DETAIL_METRICS_EVICTION_FREQ, QRY_DETAIL_METRICS_EVICTION_FREQ);
-
-        registerMetadataForRegisteredCaches();
     }
 
     /** {@inheritDoc} */
@@ -907,73 +901,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public void skipFieldLookup(boolean skipFieldLookup) {
         this.skipFieldLookup = skipFieldLookup;
-    }
-
-    /**
-     * Register metadata locally for already registered caches.
-     */
-    private void registerMetadataForRegisteredCaches() {
-        for (DynamicCacheDescriptor cacheDescriptor : ctx.cache().cacheDescriptors().values()) {
-            registerBinaryMetadata(cacheDescriptor.cacheConfiguration(), cacheDescriptor.schema());
-        }
-    }
-
-    /**
-     * Handle of cache change request.
-     *
-     * @param batch Dynamic cache change batch request.
-     */
-    public void onCacheChangeRequested(DynamicCacheChangeBatch batch) {
-        for (DynamicCacheChangeRequest req : batch.requests()) {
-            if (!req.start())
-                continue;
-
-            registerBinaryMetadata(req.startCacheConfiguration(), req.schema());
-        }
-    }
-
-    /**
-     * Register binary metadata locally.
-     *
-     * @param ccfg Cache configuration.
-     * @param schema Schema for which register metadata is required.
-     */
-    private void registerBinaryMetadata(CacheConfiguration ccfg, QuerySchema schema) {
-        if (schema != null) {
-            Collection<QueryEntity> qryEntities = schema.entities();
-
-            if (!F.isEmpty(qryEntities)) {
-                boolean binaryEnabled = ctx.cacheObjects().isBinaryEnabled(ccfg);
-
-                if (binaryEnabled) {
-                    for (QueryEntity qryEntity : qryEntities) {
-                        Class<?> keyCls = U.box(U.classForName(qryEntity.findKeyType(), null, true));
-                        Class<?> valCls = U.box(U.classForName(qryEntity.findValueType(), null, true));
-
-                        if (keyCls != null)
-                            registerDescriptorLocallyIfNeeded(keyCls);
-
-                        if (valCls != null)
-                            registerDescriptorLocallyIfNeeded(valCls);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Register class metadata locally if it didn't do it earlier.
-     *
-     * @param cls Class for which the metadata should be registered.
-     */
-    private void registerDescriptorLocallyIfNeeded(Class<?> cls) {
-        IgniteCacheObjectProcessor cacheObjProc = ctx.cacheObjects();
-
-        if (cacheObjProc instanceof CacheObjectBinaryProcessorImpl) {
-            ((CacheObjectBinaryProcessorImpl)cacheObjProc)
-                .binaryContext()
-                .descriptorForClass(cls, false, false, true);
-        }
     }
 
     /**
@@ -2188,12 +2115,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         validateSqlFieldsQuery(qry, ctx, cctx);
 
-        if (!ctx.state().publicApiActiveState(true)) {
-            throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
-                "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
-                "join the cluster. To activate the cluster call Ignite.active(true).");
-        }
-
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
@@ -2599,15 +2520,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         for (QueryField col : cols) {
             try {
                 props.add(new QueryBinaryProperty(
-                    ctx, 
+                    ctx,
                     col.name(),
-                    null, 
-                    Class.forName(col.typeName()), 
-                    false, 
-                    null, 
-                    !col.isNullable(), 
-                    null, 
-                    col.precision(), 
+                    null,
+                    Class.forName(col.typeName()),
+                    false,
+                    null,
+                    !col.isNullable(),
+                    null,
+                    col.precision(),
                     col.scale()));
             }
             catch (ClassNotFoundException e) {

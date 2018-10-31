@@ -1187,7 +1187,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    public Thread.UncaughtExceptionHandler uncaughtExceptionHandler() {
+    @Override public Thread.UncaughtExceptionHandler uncaughtExceptionHandler() {
         return hnd;
     }
 
