@@ -44,7 +44,7 @@ public class ExplainSelfTest extends GridCommonAbstractTest {
 
         cache = ignite.getOrCreateCache("testTableCache");
 
-        execute("CREATE TABLE PUBLIC.TEST (ID LONG PRIMARY KEY, VAL LONG) WITH \"template=replicated\";");
+        execute("CREATE TABLE PUBLIC.TEST (ID LONG PRIMARY KEY, VAL LONG) WITH \"template=replicated\";", false);
     }
 
     /** {@inheritDoc} */
@@ -58,9 +58,10 @@ public class ExplainSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Negative check that verifies EXPLAINs of update operations are not supported and cause correct exceptions.
+     * Complex negative check that verifies EXPLAINs of update operations are not supported and cause correct
+     * exceptions. Used local and non local queries
      */
-    public void testExplainUpdateOperation() {
+    public void testComplex() {
         assertNotSupported("EXPLAIN INSERT INTO PUBLIC.TEST VALUES (1, 2);", false);
         assertNotSupported("EXPLAIN UPDATE PUBLIC.TEST SET VAL = VAL + 1;", false);
         assertNotSupported("EXPLAIN MERGE INTO PUBLIC.TEST (ID, VAL) VALUES (1, 2);", false);
@@ -72,23 +73,59 @@ public class ExplainSelfTest extends GridCommonAbstractTest {
         assertNotSupported("EXPLAIN DELETE FROM PUBLIC.TEST;", true);
     }
 
+    /*
+     In tests below, values to insert affect whether or not statement will be cached.
+     */
+
+    /**
+     * Check that explain updates are not supported. Perform the same sql query as non-local and then as local query.
+     */
+    public void test2InsertsLocalLast() {
+        assertNotSupported("EXPLAIN INSERT INTO PUBLIC.TEST VALUES (1, 2);", false);
+        assertNotSupported("EXPLAIN INSERT INTO PUBLIC.TEST VALUES (1, 2);", true);
+    }
+
+    /**
+     * Check that explain updates are not supported. Perform the same sql query as local and then as non-local query.
+     */
+    public void test2InsertsLocalFirst() {
+        assertNotSupported("EXPLAIN INSERT INTO PUBLIC.TEST VALUES (3, 4);", true);
+        assertNotSupported("EXPLAIN INSERT INTO PUBLIC.TEST VALUES (3, 4);", false);
+    }
+
+    /**
+     * Check that explain updates are not supported. Perform the same sql query as local 2 times in a row.
+     */
+    public void test2LocalInserts() {
+        assertNotSupported("EXPLAIN INSERT INTO PUBLIC.TEST VALUES (5, 6);", true);
+        assertNotSupported("EXPLAIN INSERT INTO PUBLIC.TEST VALUES (5, 6);", true);
+    }
+
+    /**
+     * Check that explain updates are not supported. Perform the same sql query as non-local 2 times in a row.
+     */
+    public void test2NonLocalInserts() {
+        assertNotSupported("EXPLAIN INSERT INTO PUBLIC.TEST VALUES (7, 8);", false);
+        assertNotSupported("EXPLAIN INSERT INTO PUBLIC.TEST VALUES (7, 8);", false);
+    }
+
     /**
      * Check that EXPLAIN SELECT queries doesn't cause errors.
      */
     public void testExplainSelect() {
-        execute("EXPLAIN SELECT * FROM PUBLIC.TEST;");
-
-        cache.query(new SqlFieldsQuery("EXPLAIN SELECT * FROM PUBLIC.TEST;").setLocal(true)).getAll();
+        execute("EXPLAIN SELECT * FROM PUBLIC.TEST;", false);
+        execute("EXPLAIN SELECT * FROM PUBLIC.TEST;", true);
     }
 
     /**
      * Executes sql query using native sql api.
      *
      * @param sql sql query.
+     * @param local perform local or non-local query.
      * @return fully fetched result of query.
      */
-    private List<List<?>> execute(String sql) {
-        return cache.query(new SqlFieldsQuery(sql)).getAll();
+    private List<List<?>> execute(String sql, boolean local) {
+        return cache.query(new SqlFieldsQuery(sql).setLocal(local)).getAll();
     }
 
     /**

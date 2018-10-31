@@ -2157,9 +2157,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     Prepared prepared = GridSqlQueryParser.prepared(cachedStmt);
 
                     // We may use this cached statement only for local queries and non queries.
-                    if (qry.isLocal() || !prepared.isQuery())
+                    if (qry.isLocal() || !prepared.isQuery()) {
+                        if (GridSqlQueryParser.isExplainUpdate(prepared))
+                            throw new IgniteSQLException("Explains of update queries are not supported.",
+                                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
                         return (List<FieldsQueryCursor<List<?>>>)doRunPrepared(schemaName, prepared, qry, null, null,
                             keepBinary, startTx, tracker, cancel);
+                    }
                 }
             }
 
