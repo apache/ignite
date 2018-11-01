@@ -194,8 +194,10 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
 
                     break;
                 }
-                catch (IgniteException ignored) {
+                catch (IgniteException e) {
                     // Can fail on not yet activated cluster. Retry until success.
+                    assertTrue(e.getMessage()
+                        .contains("Can not perform the operation because the cluster is inactive"));
                 }
             }
         });
