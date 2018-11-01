@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -47,9 +48,9 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
     /** Ip finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
     /** Cache name. */
-    private static final String CACHE_NAME = "cacheOne";
+    private static final String[] CACHE_NAMES = {"cacheOne", "cacheTwo", "cacheThree"};
     /** Cache size */
-    public static final int CACHE_SIZE = 100000;
+    public static final int CACHE_SIZE = 100000 / CACHE_NAMES.length;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -83,13 +84,34 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(storageCfg);
 
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(CACHE_NAME)
-            .setCacheMode(CacheMode.PARTITIONED)
-            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-            .setBackups(1)
-            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-            .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
-            .setIndexedTypes(String.class, String.class);
+        CacheConfiguration[] ccfg = new CacheConfiguration[] {
+            new CacheConfiguration<>(CACHE_NAMES[0])
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+                .setBackups(1)
+                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+                .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
+                .setAffinity(new RendezvousAffinityFunction(false, 1024))
+
+                .setIndexedTypes(String.class, String.class),
+            new CacheConfiguration<>(CACHE_NAMES[1])
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+                .setBackups(1)
+                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+                .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
+                .setAffinity(new RendezvousAffinityFunction(false, 1024))
+                .setIndexedTypes(String.class, String.class),
+//
+            new CacheConfiguration<>(CACHE_NAMES[2])
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                .setBackups(1)
+                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+                .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
+                .setAffinity(new RendezvousAffinityFunction(false, 1024))
+                .setIndexedTypes(String.class, String.class)
+        };
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
@@ -138,10 +160,12 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
         Ignite igniteClient = startGrid(getClientConfiguration("client"));
 
-        IgniteCache<String, String> cache = igniteClient.cache(CACHE_NAME);
+        for (String cacheName : CACHE_NAMES) {
+            IgniteCache<String, String> cache = igniteClient.cache(cacheName);
 
-        for (int j = 0; j < CACHE_SIZE; j++)
-            cache.put("Key" + "_" + j, "Value" + j);
+            for (int j = 0; j < CACHE_SIZE; j++)
+                cache.put("Key" + "_" + j, "Value" + j);
+        }
 
         stopGrid("client");
 
@@ -155,7 +179,7 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/wal/" + dn2DirName, true));
 
         //Here we have two from three data nodes and cache with 1 backup. So there is no data loss expected.
-        assertEquals(CACHE_SIZE, averageSizeAroundAllNodes());
+        assertEquals(CACHE_NAMES.length * CACHE_SIZE, averageSizeAroundAllNodes());
 
         //Start node 2 with empty PDS. Rebalance will be started.
         startGrid(1);
@@ -167,16 +191,23 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
         startGrid(2);
 
         //Loss data expected because rebalance to node 1 have not finished and node 2 was stopped.
-        assertTrue(CACHE_SIZE > averageSizeAroundAllNodes());
+        assertTrue(CACHE_NAMES.length * CACHE_SIZE > averageSizeAroundAllNodes());
 
-        //Node 1 will have only OWNING partitions.
-        assertTrue(getPartitionsStates(0, CACHE_NAME).stream().allMatch(state -> state == OWNING));
+        for (String cacheName : CACHE_NAMES) {
+            //Node 1 will have only OWNING partitions.
+            assertTrue(getPartitionsStates(0, cacheName).stream().allMatch(state -> state == OWNING));
 
-        //Node 2 will have OWNING and LOST partitions.
-        assertTrue(getPartitionsStates(1, CACHE_NAME).stream().anyMatch(state -> state == LOST));
+            //Node 3 will have only OWNING partitions.
+            assertTrue(getPartitionsStates(2, cacheName).stream().allMatch(state -> state == OWNING));
+        }
 
-        //Node 3 will have only OWNING partitions.
-        assertTrue(getPartitionsStates(2, CACHE_NAME).stream().allMatch(state -> state == OWNING));
+        boolean hasLost = false;
+        for (String cacheName : CACHE_NAMES) {
+            //Node 2 will have OWNING and LOST partitions.
+            hasLost |= getPartitionsStates(1, cacheName).stream().anyMatch(state -> state == LOST);
+        }
+
+        assertTrue(hasLost);
 
         if (reactivateGridBeforeResetPart) {
             grid(0).cluster().active(false);
@@ -184,21 +215,23 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
         }
 
         //Try to reset lost partitions.
-        grid(2).resetLostPartitions(Arrays.asList(CACHE_NAME));
+        grid(2).resetLostPartitions(Arrays.asList(CACHE_NAMES));
 
         awaitPartitionMapExchange();
 
-        //Node 2 will have only OWNING partitions.
-        assertTrue(getPartitionsStates(1, CACHE_NAME).stream().allMatch(state -> state == OWNING));
+        for (String cacheName : CACHE_NAMES) {
+            //Node 2 will have only OWNING partitions.
+            assertTrue(getPartitionsStates(1, cacheName).stream().allMatch(state -> state == OWNING));
+        }
 
         //All data was back.
-        assertEquals(CACHE_SIZE, averageSizeAroundAllNodes());
+        assertEquals(CACHE_NAMES.length * CACHE_SIZE, averageSizeAroundAllNodes());
 
         //Stop node 2 for checking rebalance correctness from this node.
         stopGrid(2);
 
         //Rebalance should be successfully finished.
-        assertEquals(CACHE_SIZE, averageSizeAroundAllNodes());
+        assertEquals(CACHE_NAMES.length * CACHE_SIZE, averageSizeAroundAllNodes());
     }
 
     /**
@@ -225,7 +258,9 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
         int totalSize = 0;
 
         for (Ignite ignite : IgnitionEx.allGrids()) {
-            totalSize += ignite.cache(CACHE_NAME).size();
+            for (String cacheName : CACHE_NAMES) {
+                totalSize += ignite.cache(cacheName).size();
+            }
         }
 
         return totalSize / IgnitionEx.allGrids().size();
