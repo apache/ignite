@@ -896,8 +896,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             locParts.set(p, part);
 
-            ctx.pageStore().onPartitionCreated(grp.groupId(), p);
-
             return part;
         }
         finally {

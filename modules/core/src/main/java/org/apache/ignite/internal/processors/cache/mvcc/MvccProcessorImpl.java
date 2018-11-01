@@ -321,18 +321,13 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     }
 
     /** {@inheritDoc} */
-    @Override public void afterInitialise(IgniteCacheDatabaseSharedManager mgr) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void beforeBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
+    @Override public void beforeResumeWalLogging(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
+        // In case of blt changed we should re-init TX_LOG cache.
         txLogPageStoreInit(mgr);
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeResumeWalLogging(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
-        // In case of blt changed we should re-init TX_LOG cache.
+    @Override public void beforeBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
         txLogPageStoreInit(mgr);
     }
 
@@ -354,11 +349,6 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
             mvccEnabled = true;
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void afterMemoryRestore(IgniteCacheDatabaseSharedManager mgr) {
-        // No-op.
     }
 
     /** {@inheritDoc} */

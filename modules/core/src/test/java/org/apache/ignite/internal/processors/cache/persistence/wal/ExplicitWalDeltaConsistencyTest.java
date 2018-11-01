@@ -72,6 +72,8 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
         for (int i = 0; i < 3_000; i++)
             cache.put(i, "Cache value " + i);
 
+        forceCheckpoint();
+
         stopGrid(0);
 
         ignite = startGrid(0);

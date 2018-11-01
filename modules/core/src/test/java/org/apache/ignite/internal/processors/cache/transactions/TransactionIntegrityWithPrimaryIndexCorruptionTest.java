@@ -164,9 +164,7 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
                     return hnd;
 
                 if (treeCorruptionPredicate.apply(hnd, tree)) {
-                    log.info("Created corrupted tree handler for -> " + hnd + " " + tree);
-
-                    PageHandler<Object, BPlusTree.Result> delegate = (PageHandler<Object, BPlusTree.Result>) hnd;
+                    PageHandler<Object, BPlusTree.Result> delegate = (PageHandler<Object, BPlusTree.Result>)hnd;
 
                     return new PageHandler<BPlusTree.Get, BPlusTree.Result>() {
                         @Override public BPlusTree.Result run(int cacheId, long pageId, long page, long pageAddr, PageIO io, Boolean walPlc, BPlusTree.Get arg, int lvl) throws IgniteCheckedException {

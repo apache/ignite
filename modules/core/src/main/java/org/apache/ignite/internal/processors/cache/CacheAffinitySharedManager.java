@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import javax.cache.CacheException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -363,11 +362,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     void onCacheGroupCreated(CacheGroupContext grp) {
         if (!grpHolders.containsKey(grp.groupId())) {
             cctx.io().addCacheGroupHandler(grp.groupId(), GridDhtAffinityAssignmentResponse.class,
-                new IgniteBiInClosure<UUID, GridDhtAffinityAssignmentResponse>() {
-                    @Override public void apply(UUID nodeId, GridDhtAffinityAssignmentResponse res) {
-                        processAffinityAssignmentResponse(nodeId, res);
-                    }
-                });
+                (IgniteBiInClosure<UUID, GridDhtAffinityAssignmentResponse>) this::processAffinityAssignmentResponse);
         }
     }
 
@@ -1282,6 +1277,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         else {
             affinityCaches = cctx.kernalContext().cache().cacheGroups().stream()
                 .filter(grp -> !grp.isLocal())
+                .filter(grp -> !grp.isRecoveryMode())
                 .map(CacheGroupContext::affinity)
                 .collect(Collectors.toList());
         }

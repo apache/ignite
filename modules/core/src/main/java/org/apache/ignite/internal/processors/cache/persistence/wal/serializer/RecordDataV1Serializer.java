@@ -1948,7 +1948,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             return false;
 
         for (DataEntry e : rec.writeEntries()) {
-            if(needEncryption(cctx.cacheContext(e.cacheId()).groupId()))
+            if (cctx.cacheContext(e.cacheId()) != null && needEncryption(cctx.cacheContext(e.cacheId()).groupId()))
                 return true;
         }
 

@@ -90,6 +90,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             AffinityTopologyVersion.ZERO,
             true,
             true,
+            false,
             new GridCacheEventManager(),
             new CacheOsStoreManager(null, new CacheConfiguration()),
             new GridCacheEvictionManager(),
