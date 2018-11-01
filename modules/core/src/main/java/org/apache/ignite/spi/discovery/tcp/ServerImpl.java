@@ -2696,7 +2696,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /** */
-        protected void body() throws InterruptedException {
+        @Override protected void body() throws InterruptedException {
             Throwable err = null;
 
             try {
