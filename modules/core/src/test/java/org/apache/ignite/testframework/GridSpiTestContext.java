@@ -673,9 +673,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings({
-                "ConstantConditions"
-        })
+        @SuppressWarnings("ConstantConditions")
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             GridIoUserMessage ioMsg = (GridIoUserMessage)msg;
 

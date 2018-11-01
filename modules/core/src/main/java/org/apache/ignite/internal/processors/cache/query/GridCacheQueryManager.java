@@ -1575,9 +1575,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Fields query result.
      * @throws IgniteCheckedException In case of error.
      */
-    @SuppressWarnings({
-        "SynchronizationOnLocalVariableOrMethodParameter"
-    })
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     private FieldsResult fieldsQueryResult(Map<Long, GridFutureAdapter<FieldsResult>> resMap,
         GridCacheQueryInfo qryInfo, String taskName) throws IgniteCheckedException {
         assert resMap != null;
