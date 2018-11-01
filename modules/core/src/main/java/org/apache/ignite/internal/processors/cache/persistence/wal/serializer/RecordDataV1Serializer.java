@@ -31,7 +31,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
@@ -1783,22 +1782,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     void putMvccDataEntry(ByteBuffer buf, MvccDataEntry entry) throws IgniteCheckedException {
         putDataEntry(buf, entry);
 
-        putMvccVersion(buf, entry.mvccVer());
-    }
-
-    /**
-     * Writes Mvcc version.
-     *
-     * @param buf Buffer to write.
-     * @param mvccVer Mvcc version.
-     */
-    private void putMvccVersion(ByteBuffer buf, MvccVersion mvccVer) {
-        assert mvccVer != null;
-
-        buf.putLong(mvccVer.coordinatorVersion());
-        buf.putLong(mvccVer.counter());
-
-        buf.putInt(mvccVer.operationCounter());
+        RecordV1Serializer.putMvccVersion(buf, entry.mvccVer());
     }
 
     /**
@@ -1980,7 +1964,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         long partCntr = in.readLong();
         long expireTime = in.readLong();
 
-        MvccVersion mvccVer = readMvccVersion(in);
+        MvccVersion mvccVer = RecordV1Serializer.readMvccVersion(in);
 
         GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
@@ -2105,22 +2089,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         catch (IgniteCheckedException e) {
             throw new IOException(e);
         }
-    }
-
-    /**
-     * Reads mvcc version.
-     *
-     * @param in Data input to read from.
-     * @return Mvcc version.
-     */
-    private MvccVersion readMvccVersion(ByteBufferBackedDataInput in) throws IOException {
-        in.ensure(8 + 8 + 4);
-
-        long coordVer = in.readLong();
-        long cntr = in.readLong();
-        int opCntr = in.readInt();
-
-        return new MvccVersionImpl(coordVer, cntr, opCntr);
     }
 
     /**

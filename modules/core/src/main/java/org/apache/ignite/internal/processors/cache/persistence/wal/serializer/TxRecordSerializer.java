@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -45,6 +46,7 @@ public class TxRecordSerializer {
         buf.put((byte)rec.state().ordinal());
         RecordV1Serializer.putVersion(buf, rec.nearXidVersion(), true);
         RecordV1Serializer.putVersion(buf, rec.writeVersion(), true);
+        RecordV1Serializer.putMvccVersion(buf, rec.mvccVersion());
 
         Map<Short, Collection<Short>> participatingNodes = rec.participatingNodes();
 
@@ -82,6 +84,7 @@ public class TxRecordSerializer {
 
         GridCacheVersion nearXidVer = RecordV1Serializer.readVersion(in, true);
         GridCacheVersion writeVer = RecordV1Serializer.readVersion(in, true);
+        MvccVersion mvccVer = RecordV1Serializer.readMvccVersion(in);
 
         int participatingNodesSize = in.readInt();
 
@@ -105,7 +108,7 @@ public class TxRecordSerializer {
 
         long ts = in.readLong();
 
-        return new TxRecord(state, nearXidVer, writeVer, participatingNodes, ts);
+        return new TxRecord(state, nearXidVer, writeVer, mvccVer, participatingNodes, ts);
     }
 
     /**

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.pagemem.wal.record;
 
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -32,14 +33,17 @@ import org.jetbrains.annotations.Nullable;
 public class TxRecord extends TimeStampRecord {
     /** Transaction state. */
     @GridToStringInclude
-    private TransactionState state;
+    private final TransactionState state;
 
     /** Global transaction identifier within cluster, assigned by transaction coordinator. */
     @GridToStringInclude
-    private GridCacheVersion nearXidVer;
+    private final GridCacheVersion nearXidVer;
 
     /** Transaction entries write topology version. */
-    private GridCacheVersion writeVer;
+    private final GridCacheVersion writeVer;
+
+    /** Transaction mvcc snapshot version. */
+    private final MvccVersion mvccVer;
 
     /**
      * Transaction participating nodes.
@@ -50,21 +54,23 @@ public class TxRecord extends TimeStampRecord {
     @Nullable private Map<Short, Collection<Short>> participatingNodes;
 
     /**
-     *
-     * @param state Transaction state.
+     *  @param state Transaction state.
      * @param nearXidVer Transaction id.
      * @param writeVer Transaction entries write topology version.
+     * @param mvccVer Transaction snapshot version.
      * @param participatingNodes Primary -> Backup nodes compact IDs participating in transaction.
      */
     public TxRecord(
         TransactionState state,
         GridCacheVersion nearXidVer,
         GridCacheVersion writeVer,
+        MvccVersion mvccVer,
         @Nullable Map<Short, Collection<Short>> participatingNodes
     ) {
         this.state = state;
         this.nearXidVer = nearXidVer;
         this.writeVer = writeVer;
+        this.mvccVer = mvccVer;
         this.participatingNodes = participatingNodes;
     }
 
@@ -72,6 +78,7 @@ public class TxRecord extends TimeStampRecord {
      * @param state Transaction state.
      * @param nearXidVer Transaction id.
      * @param writeVer Transaction entries write topology version.
+     * @param mvccVer Transaction snapshot version.
      * @param participatingNodes Primary -> Backup nodes participating in transaction.
      * @param ts TimeStamp.
      */
@@ -79,6 +86,7 @@ public class TxRecord extends TimeStampRecord {
         TransactionState state,
         GridCacheVersion nearXidVer,
         GridCacheVersion writeVer,
+        MvccVersion mvccVer,
         @Nullable Map<Short, Collection<Short>> participatingNodes,
         long ts
     ) {
@@ -87,6 +95,7 @@ public class TxRecord extends TimeStampRecord {
         this.state = state;
         this.nearXidVer = nearXidVer;
         this.writeVer = writeVer;
+        this.mvccVer = mvccVer;
         this.participatingNodes = participatingNodes;
     }
 
@@ -103,13 +112,6 @@ public class TxRecord extends TimeStampRecord {
     }
 
     /**
-     * @param nearXidVer Near xid version.
-     */
-    public void nearXidVersion(GridCacheVersion nearXidVer) {
-        this.nearXidVer = nearXidVer;
-    }
-
-    /**
      * @return DHT version.
      */
     public GridCacheVersion writeVersion() {
@@ -117,10 +119,11 @@ public class TxRecord extends TimeStampRecord {
     }
 
     /**
-     * @param writeVer DHT version.
+     *
+     * @return Mvcc version.
      */
-    public void dhtVersion(GridCacheVersion writeVer) {
-        this.writeVer = writeVer;
+    public MvccVersion mvccVersion() {
+        return mvccVer;
     }
 
     /**
@@ -131,24 +134,10 @@ public class TxRecord extends TimeStampRecord {
     }
 
     /**
-     * @param state Transaction state.
-     */
-    public void state(TransactionState state) {
-        this.state = state;
-    }
-
-    /**
      * @return Primary -> backup participating nodes compact IDs.
      */
     public Map<Short, Collection<Short>> participatingNodes() {
         return participatingNodes;
-    }
-
-    /**
-     * @param participatingNodeIds Primary -> backup participating nodes compact IDs.
-     */
-    public void participatingNodes(Map<Short, Collection<Short>> participatingNodeIds) {
-        this.participatingNodes = participatingNodeIds;
     }
 
     /** {@inheritDoc} */

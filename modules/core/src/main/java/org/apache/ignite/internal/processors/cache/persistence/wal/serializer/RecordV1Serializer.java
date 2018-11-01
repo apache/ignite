@@ -30,6 +30,8 @@ import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
@@ -205,6 +207,37 @@ public class RecordV1Serializer implements RecordSerializer {
         this.recordFilter = recordFilter;
         this.skipPositionCheck = skipPositionCheck;
         this.marshalledMode = marshalledMode;
+    }
+
+    /**
+     * Reads mvcc version.
+     *
+     * @param in Data input to read from.
+     * @return Mvcc version.
+     */
+    static MvccVersion readMvccVersion(ByteBufferBackedDataInput in) throws IOException {
+        in.ensure(8 + 8 + 4);
+
+        long coordVer = in.readLong();
+        long cntr = in.readLong();
+        int opCntr = in.readInt();
+
+        return new MvccVersionImpl(coordVer, cntr, opCntr);
+    }
+
+    /**
+     * Writes Mvcc version.
+     *
+     * @param buf Buffer to write.
+     * @param mvccVer Mvcc version.
+     */
+    static void putMvccVersion(ByteBuffer buf, MvccVersion mvccVer) {
+        assert mvccVer != null;
+
+        buf.putLong(mvccVer.coordinatorVersion());
+        buf.putLong(mvccVer.counter());
+
+        buf.putInt(mvccVer.operationCounter());
     }
 
     /** {@inheritDoc} */

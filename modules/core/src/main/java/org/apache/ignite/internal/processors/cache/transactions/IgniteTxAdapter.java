@@ -1212,6 +1212,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                             state,
                             nearXidVersion(),
                             writeVersion(),
+                            mvccSnapshot,
                             participatingNodes
                         );
 

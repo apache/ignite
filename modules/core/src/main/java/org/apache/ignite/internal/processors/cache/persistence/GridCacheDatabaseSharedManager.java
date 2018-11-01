@@ -99,6 +99,7 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
+import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
@@ -113,7 +114,9 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
@@ -160,6 +163,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
+import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
@@ -2301,6 +2305,40 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                             break;
 
+                        case TX_RECORD:
+                            try {
+                                TxRecord txRecord = (TxRecord)rec;
+
+                                MvccVersion mvccVer = txRecord.mvccVersion();
+
+                                TransactionState state = txRecord.state();
+                                byte txState;
+
+                                switch (state) {
+                                    case PREPARED:
+                                        txState = TxState.PREPARED;
+
+                                        break;
+                                    case COMMITTED:
+                                        txState = TxState.COMMITTED;
+
+                                        break;
+                                    case ROLLED_BACK:
+                                        txState = TxState.ABORTED;
+
+                                        break;
+                                    default:
+                                        throw new IllegalStateException("Unsupported TxState.");
+                                }
+
+                                cctx.coordinators().updateState(mvccVer, txState);
+                            }
+                            catch (IgniteCheckedException e) {
+                                throw new IgniteException(e);
+                            }
+
+                            break;
+
                         default:
                             // Skip other records.
                     }
@@ -2426,6 +2464,40 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         }
                         finally {
                             pageMem.releasePage(rec0.groupId(), rec0.pageId(), page);
+                        }
+
+                        break;
+
+                    case TX_RECORD:
+                        try {
+                            TxRecord txRecord = (TxRecord)rec;
+
+                            MvccVersion mvccVer = txRecord.mvccVersion();
+
+                            TransactionState state = txRecord.state();
+                            byte txState;
+
+                            switch (state) {
+                                case PREPARED:
+                                    txState = TxState.PREPARED;
+
+                                    break;
+                                case COMMITTED:
+                                    txState = TxState.PREPARED;
+
+                                    break;
+                                case ROLLED_BACK:
+                                    txState = TxState.PREPARED;
+
+                                    break;
+                                default:
+                                    throw new IllegalStateException("Unsupported TxState.");
+                            }
+
+                            cctx.coordinators().updateState(mvccVer, txState);
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw new IgniteException(e);
                         }
 
                         break;
