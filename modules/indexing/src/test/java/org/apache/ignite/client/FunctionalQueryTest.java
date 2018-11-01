@@ -126,6 +126,26 @@ public class FunctionalQueryTest {
 
                 assertEquals(exp, act);
             }
+
+
+            // Check lazy = false mode.
+            qry = new SqlFieldsQuery("select id, name from Person where id >= ?")
+                .setArgs(minId)
+                .setPageSize(pageSize)
+                .setLazy(false);
+
+            try (QueryCursor<List<?>> cur = cache.query(qry)) {
+                List<List<?>> res = cur.getAll();
+
+                assertEquals(expSize, res.size());
+
+                Map<Integer, Person> act = res.stream().collect(Collectors.toMap(
+                    r -> Integer.parseInt(r.get(0).toString()),
+                    r -> new Person(Integer.parseInt(r.get(0).toString()), r.get(1).toString())
+                ));
+
+                assertEquals(exp, act);
+            }
         }
     }
 
