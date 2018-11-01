@@ -185,9 +185,6 @@ public abstract class GridAbstractTest extends TestCase {
     /** Timestamp for tests. */
     private static long ts = System.currentTimeMillis();
 
-    /** Starting Ignite instance name. */
-    protected static final ThreadLocal<String> startingIgniteInstanceName = new ThreadLocal<>();
-
     /** Force failure flag. */
     private boolean forceFailure;
 
@@ -892,7 +889,7 @@ public abstract class GridAbstractTest extends TestCase {
         checkConfiguration(cfg);
 
         if (!isRemoteJvm(igniteInstanceName)) {
-            startingIgniteInstanceName.set(igniteInstanceName);
+            IgniteUtils.setCurrentIgniteName(igniteInstanceName);
 
             try {
                 String cfgProcClsName = System.getProperty(IGNITE_CFG_PREPROCESSOR_CLS);
@@ -928,7 +925,7 @@ public abstract class GridAbstractTest extends TestCase {
                 return node;
             }
             finally {
-                startingIgniteInstanceName.set(null);
+                IgniteUtils.setCurrentIgniteName(null);
             }
         }
         else

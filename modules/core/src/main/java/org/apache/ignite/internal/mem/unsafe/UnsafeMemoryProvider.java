@@ -59,7 +59,7 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
     /** {@inheritDoc} */
     @Override public void initialize(long[] sizes) {
         if (isInit)
-            throw new IgniteException("Second initialization does not allowed for current provider");
+            return;
 
         this.sizes = sizes;
 
@@ -106,7 +106,7 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
             String msg = "Failed to allocate next memory chunk: " + U.readableSize(chunkSize, true) +
                 ". Check if chunkSize is too large and 32-bit JVM is used.";
 
-            if (regions.size() == 0)
+            if (regions.isEmpty())
                 throw new IgniteException(msg, e);
 
             U.error(log, msg);

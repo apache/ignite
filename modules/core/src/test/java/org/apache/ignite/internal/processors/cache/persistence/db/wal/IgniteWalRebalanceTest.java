@@ -613,11 +613,6 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            return create(file, CREATE, WRITE, READ);
-        }
-
-        /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             FileIO delegateIO = delegate.create(file, modes);
 
