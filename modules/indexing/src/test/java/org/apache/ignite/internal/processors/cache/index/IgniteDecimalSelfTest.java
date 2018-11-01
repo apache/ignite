@@ -34,7 +34,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.jetbrains.annotations.NotNull;
 
-import static java.math.RoundingMode.HALF_UP;
 import static java.util.Arrays.asList;
 
 /**

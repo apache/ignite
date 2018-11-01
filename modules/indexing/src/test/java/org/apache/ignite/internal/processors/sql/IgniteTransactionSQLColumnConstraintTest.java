@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.sql;
 
-import java.math.BigDecimal;
 import java.util.List;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
 
