@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.authentication;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -25,6 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -34,6 +37,8 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
+    /** */
+    private static final int USERS_COUNT = 1000;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -56,6 +61,20 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        GridTestUtils.setFieldValue(User.class, "bCryptGensaltLog2Rounds", 4);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        GridTestUtils.setFieldValue(User.class, "bCryptGensaltLog2Rounds", 10);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -68,41 +87,51 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
 
         super.afterTest();
     }
+
     /**
      * @throws Exception If failed.
      */
     public void test1kUsersNodeRestartServer() throws Exception {
-        final int USERS_COUNT = 1000;
-
         startGrid(0);
 
         grid(0).cluster().active(true);
 
-        final AuthorizationContext actxDflt = grid(0).context().authentication().authenticate(User.DFAULT_USER_NAME, "ignite");
+        IgniteAuthenticationProcessor authenticationProcessor = grid(0).context().authentication();
 
-        final AtomicInteger usrCnt = new AtomicInteger();
+        AuthorizationContext actxDflt = authenticationProcessor.authenticate(User.DFAULT_USER_NAME, "ignite");
 
         AuthorizationContext.context(actxDflt);
 
-        for (int i = 0; i < USERS_COUNT; ++i)
-            grid(0).context().authentication().addUser("test" + i, "init");
+        IntStream.range(0, USERS_COUNT).parallel().forEach(
+            i -> {
+                AuthorizationContext.context(actxDflt);
 
-        usrCnt.set(0);
+                try {
+                    authenticationProcessor.addUser("test" + i, "init");
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+        );
 
-        for (int i = 0; i < USERS_COUNT; ++i)
-            grid(0).context().authentication().updateUser("test"  + i, "passwd_" + i);
+        IntStream.range(0, USERS_COUNT).parallel().forEach(
+            i -> {
+                AuthorizationContext.context(actxDflt);
 
-        System.out.println("+++ STOP");
-
-        U.sleep(1000);
+                try {
+                    authenticationProcessor.updateUser("test"  + i, "passwd_" + i);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+        );
 
         stopGrid(0);
 
-        U.sleep(1000);
-
-        System.out.println("+++ START");
         startGrid(0);
 
-        AuthorizationContext actx = grid(0).context().authentication().authenticate("ignite", "ignite");
+        authenticationProcessor.authenticate("ignite", "ignite");
     }
 }

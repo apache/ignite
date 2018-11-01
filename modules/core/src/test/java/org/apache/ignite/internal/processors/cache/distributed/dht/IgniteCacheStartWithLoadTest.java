@@ -46,8 +46,8 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
     /** */
     static final String CACHE_NAME = "tx_repl";
 
-    @Override
-    protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setConsistentId(igniteInstanceName);
@@ -125,9 +125,8 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
 
                     boolean hasMoving = false;
 
-                    for (int i = 0; i < 4; i++) {
+                    for (int i = 0; i < 4; i++)
                         hasMoving |= grid(i).cachex(CACHE_NAME).context().topology().hasMovingPartitions();
-                    }
 
                     if (hasMoving) {
                         log.error("Cache restarter has been stopped because rebalance is triggered for stable caches.");
@@ -139,7 +138,7 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
 
                     node.destroyCache(tmpCacheName);
 
-                    U.sleep(10_000);
+                    U.sleep(1_000);
                 }
                 catch (Throwable t) {
                     log.warning("Unexpected exception during caches restart.", t);
@@ -147,7 +146,7 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
             }
         });
 
-        U.sleep(60_000);
+        U.sleep(sf.apply(60_000));
 
         cacheRestartStop.set(true);
         txLoadStop.set(true);
