@@ -345,7 +345,7 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
 
             val = this.val;
 
-            deferredDelVer = writeVer;
+            deferredDelVer = this.ver;
         }
         finally {
             unlockEntry();

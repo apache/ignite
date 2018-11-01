@@ -157,7 +157,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      *         <li>8 : {@link #key}</li>
      *         <li>8 : {@link #val}</li>
      *         <li>8 : {@link #ver}</li>
-     *         <li>8 : {@link #writeVer}</li>
      *         <li>8 : {@link #extras}</li>
      *         <li>8 : {@link #lock}</li>
      *         <li>8 : {@link #listenerLock}</li>
@@ -171,7 +170,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      *         <li>8 : {@link GridCacheEntryExtras#ttl()}</li>
      *         <li>8 : {@link GridCacheEntryExtras#expireTime()}</li>
      *     </ul></li>
-     *     <li>2 versions:<ul>
+     *     <li>Version:<ul>
      *         <li>4 : {@link GridCacheVersion#topVer}</li>
      *         <li>4 : {@link GridCacheVersion#nodeOrderDrId}</li>
      *         <li>8 : {@link GridCacheVersion#order}</li>
@@ -187,8 +186,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      *     </ul></li>
      * </ul>
      */
-    private static final int SIZE_OVERHEAD = 9 * 8 /* references */ + 5 /* primitives */ + 16 /* extras */
-        + 2 * 16 /* 2 versions */ + 20 /* key */ + 16 /* value */;
+    private static final int SIZE_OVERHEAD = 8 * 8 /* references */ + 5 /* primitives */ + 16 /* extras */
+        + 16 /* version */ + 20 /* key */ + 16 /* value */;
 
     /** Static logger to avoid re-creation. Made static for test purpose. */
     protected static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -211,10 +210,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** Version. */
     @GridToStringInclude
     protected GridCacheVersion ver;
-
-    /** Write version. */
-    @GridToStringExclude
-    protected GridCacheVersion writeVer;
 
     /** Key hash code. */
     @GridToStringInclude
@@ -1767,8 +1762,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 removeValue();
 
             update(null, 0, 0, newVer, true);
-
-            writeVer = newVer;
 
             if (cctx.deferredDelete() && !detached() && !isInternal()) {
                 if (!deletedUnlocked()) {
