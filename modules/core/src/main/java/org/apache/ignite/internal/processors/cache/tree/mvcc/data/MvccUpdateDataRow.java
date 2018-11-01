@@ -405,7 +405,11 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
                     unsetFlags(CAN_WRITE); // No need to acquire write locks anymore
                 }
-                else if (txState == TxState.ABORTED) { // save aborted version to fast check new version of next row
+                else if (txState == TxState.ABORTED ||
+                    // Non-finished TX started on old coordinator should be treated as aborted.
+                    (txState == TxState.NA && rowCrd < mvccSnapshot.coordinatorVersion()) ||
+                    (txState == TxState.NA && (!isFlagsSet(PRIMARY)) && compare(mvccSnapshot, rowCrd, rowCntr) > 0) ) {
+                    // save aborted version to fast check new version of next row
                     resCrd = rowCrd;
                     resCntr = rowCntr;
                 }
