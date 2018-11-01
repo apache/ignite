@@ -1313,7 +1313,7 @@ public class GridMapQueryExecutor {
         }
         else {
             // Creates lazy worker if the result contains more than one page.
-            if (qr.lazyWorker() == null) {
+            if (qr.lazy() && qr.lazyWorker() == null) {
                 MapQueryLazyWorker worker = createLazyWorker(node, qr.queryRequestId(), segmentId);
 
                 worker.queryContext(GridH2QueryContext.get());

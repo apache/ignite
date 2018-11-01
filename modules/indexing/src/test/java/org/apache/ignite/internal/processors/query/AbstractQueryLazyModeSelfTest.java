@@ -42,7 +42,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Tests for lazy query execution.
  */
-public class LazyQuerySelfTest extends GridCommonAbstractTest {
+public abstract class AbstractQueryLazyModeSelfTest extends GridCommonAbstractTest {
     /** Keys count. */
     private static final int KEY_CNT = 200;
 
@@ -283,6 +283,8 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
         for (List<?> row : cursor)
             rows.add(row);
 
+        cursor.close();
+
         assertBaseQueryResults(rows);
         assertNoWorkers();
 
@@ -465,9 +467,14 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
      * @return Cursor.
      */
     @SuppressWarnings("unchecked")
-    private static FieldsQueryCursor<List<?>> execute(Ignite node, SqlFieldsQuery qry) {
-        return cache(node).query(qry);
+    private FieldsQueryCursor<List<?>> execute(Ignite node, SqlFieldsQuery qry) {
+        return cache(node).query(qry.setLazy(lazy()));
     }
+
+    /**
+     * @return Lazy mode.
+     */
+    protected abstract boolean lazy();
 
     /**
      * Make sure that are no active lazy workers.
