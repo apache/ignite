@@ -472,6 +472,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @return Group encryption key.
      */
     @Nullable public Serializable groupKey(int grpId) {
+        if (grpEncKeys.isEmpty())
+            return null;
+
         return grpEncKeys.get(grpId);
     }
 

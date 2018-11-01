@@ -327,7 +327,7 @@ public class DdlStatementsProcessor {
                 }
             }
             else if (stmt0 instanceof GridSqlCreateTable) {
-                ctx.security().authorize(null, SecurityPermission.CACHE_CREATE, SecurityContextHolder.get());
+                ctx.security().authorize(null, SecurityPermission.CACHE_CREATE, null);
 
                 GridSqlCreateTable cmd = (GridSqlCreateTable)stmt0;
 
@@ -360,7 +360,7 @@ public class DdlStatementsProcessor {
                 }
             }
             else if (stmt0 instanceof GridSqlDropTable) {
-                ctx.security().authorize(null, SecurityPermission.CACHE_DESTROY, SecurityContextHolder.get());
+                ctx.security().authorize(null, SecurityPermission.CACHE_DESTROY, null);
 
                 GridSqlDropTable cmd = (GridSqlDropTable)stmt0;
 
