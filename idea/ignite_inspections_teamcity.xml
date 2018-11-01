@@ -10,6 +10,7 @@
     <inspection_tool class="MissortedModifiers" enabled="true" level="ERROR" enabled_by_default="true">
         <option name="m_requireAnnotationsFirst" value="false" />
     </inspection_tool>
+    <inspection_tool class="RedundantSuppression" enabled="true" level="WARNING" enabled_by_default="true" />
     <!-- Disabled inspetions -->
     <inspection_tool class="AbsoluteAlignmentInUserInterface" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="AbstractBeanReferencesInspection" enabled="false" level="ERROR" enabled_by_default="false"/>
@@ -951,7 +952,6 @@
     <inspection_tool class="RedundantScopeBinding" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="RedundantSemicolon" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="RedundantStringFormatCall" enabled="false" level="WARNING" enabled_by_default="false"/>
-    <inspection_tool class="RedundantSuppression" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="RedundantThrows" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="RedundantThrowsDeclaration" enabled="false" level="WARNING" enabled_by_default="false"/>
     <inspection_tool class="RedundantToBinding" enabled="false" level="WARNING" enabled_by_default="false"/>
