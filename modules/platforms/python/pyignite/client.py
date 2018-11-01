@@ -332,7 +332,7 @@ class Client(Connection):
         statement_type: int=0, distributed_joins: bool=False,
         local: bool=False, replicated_only: bool=False,
         enforce_join_order: bool=False, collocated: bool=False,
-        lazy: bool=False, include_field_names: bool=False,
+        lazy: bool=True, include_field_names: bool=False,
         max_rows: int=-1, timeout: int=0,
     ):
         """
@@ -360,7 +360,7 @@ class Client(Connection):
          to False,
         :param collocated: (optional) whether your data is co-located or not.
          Defaults to False,
-        :param lazy: (optional) lazy query execution. Defaults to False,
+        :param lazy: (optional) lazy query execution. Defaults to True,
         :param include_field_names: (optional) include field names in result.
          Defaults to False,
         :param max_rows: (optional) query-wide maximum of rows. Defaults to -1
