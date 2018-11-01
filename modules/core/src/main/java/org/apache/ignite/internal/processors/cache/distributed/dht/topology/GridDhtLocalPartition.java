@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntry
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -1373,10 +1374,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * Flushes pending update counters closing all possible gaps.
      *
-     * @param onGapClose Closure to run on gap closing.
+     * @return Even-length array of pairs [start, end] for each gap.
      */
-    public void finalizeUpdateCounters(IgniteInClosure<Long> onGapClose) {
-        store.finalizeUpdateCounters(onGapClose);
+    public GridLongList finalizeUpdateCounters() {
+        return store.finalizeUpdateCounters();
     }
 
     /**

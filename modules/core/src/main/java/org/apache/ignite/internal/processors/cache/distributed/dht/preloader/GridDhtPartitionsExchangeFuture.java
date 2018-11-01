@@ -3564,11 +3564,20 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         long time = System.currentTimeMillis();
 
         try {
-            U.doInParallel(
-                cctx.kernalContext().getSystemExecutorService(),
-                nonLocalCacheGroups(),
-                grp -> grp.topology().finalizeUpdateCounters()
-            );
+            int parallelismLvl = cctx.kernalContext().config().getSystemThreadPoolSize();
+
+            // Reserve at least 2 threads for system operations.
+            parallelismLvl = Math.max(1, parallelismLvl - 2);
+
+            if (parallelismLvl > 1) {
+                U.doInParallel(parallelismLvl,
+                    cctx.kernalContext().getSystemExecutorService(),
+                    nonLocalCacheGroups(),
+                    grp -> grp.topology().finalizeUpdateCounters()
+                );
+            }
+            else
+                nonLocalCacheGroups().forEach(grp -> grp.topology().finalizeUpdateCounters());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to finalize partition counters", e);

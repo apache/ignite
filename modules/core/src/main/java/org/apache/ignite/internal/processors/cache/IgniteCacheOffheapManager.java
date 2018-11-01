@@ -1088,8 +1088,8 @@ public interface IgniteCacheOffheapManager {
         /**
          * Flushes pending update counters closing all possible gaps.
          *
-         * @param onGapClose Closure to run on gap closing.
+         * @return Even-length array of pairs [start, end] for each gap.
          */
-        void finalizeUpdateCounters(IgniteInClosure<Long> onGapClose);
+        GridLongList finalizeUpdateCounters();
     }
 }

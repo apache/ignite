@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import java.util.Map;
-import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -41,9 +40,10 @@ public interface CacheContinuousQueryListener<K, V> {
      * @param primary Primary flag.
      * @param recordIgniteEvt Whether to record event.
      * @param fut Dht atomic future.
+     * @param forceAsyncCb Force using async listener notification (in cases when called from the exchange thread).
      */
     public void onEntryUpdated(CacheContinuousQueryEvent<K, V> evt, boolean primary,
-        boolean recordIgniteEvt, @Nullable GridDhtAtomicAbstractUpdateFuture fut);
+        boolean recordIgniteEvt, @Nullable GridDhtAtomicAbstractUpdateFuture fut, boolean forceAsyncCb);
 
     /**
      * Listener unregistered callback.
@@ -74,8 +74,13 @@ public interface CacheContinuousQueryListener<K, V> {
      * @param evt Event
      * @param topVer Topology version.
      * @param primary Primary
+     * @param forceAsyncCb Force using async listener notification (in cases when called from the exchange thread).
      */
-    public void skipUpdateEvent(CacheContinuousQueryEvent<K, V> evt, AffinityTopologyVersion topVer, boolean primary);
+    public void skipUpdateEvent(
+        CacheContinuousQueryEvent<K, V> evt,
+        AffinityTopologyVersion topVer,
+        boolean primary,
+        boolean forceAsyncCb);
 
     /**
      * For cache updates in shared cache group need notify others caches CQ listeners

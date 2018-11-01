@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridAtomicLong;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -68,7 +69,6 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -2650,7 +2650,13 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * Pre-processes partition update counters before exchange.
      */
     @Override public void finalizeUpdateCounters() {
-        if (grp.mvccEnabled()) {
+        if (!grp.mvccEnabled())
+            return;
+
+        // It is need to acquire checkpoint lock before topology lock acquiring.
+        ctx.database().checkpointReadLock();
+
+        try {
             lock.readLock().lock();
 
             try {
@@ -2665,18 +2671,21 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         // about the skipped events.
                         AffinityTopologyVersion topVer = ctx.exchange().readyAffinityVersion();
 
-                        part.finalizeUpdateCounters(new IgniteInClosure<Long>() {
-                            @Override public void apply(Long cntr) {
-                                for (GridCacheContext ctx0 : grp.caches())
-                                    ctx0.continuousQueries().skipUpdateCounter(null, part.id(), cntr, topVer, false);
-                            }
-                        });
+                        GridLongList gaps = part.finalizeUpdateCounters();
+
+                        if (gaps != null) {
+                            for (GridCacheContext ctx0 : grp.caches())
+                                ctx0.continuousQueries().closeBackupUpdateCountersGaps(ctx0, part.id(), topVer, gaps);
+                        }
                     }
                 }
             }
             finally {
                 lock.readLock().unlock();
             }
+        }
+        finally {
+            ctx.database().checkpointReadUnlock();
         }
     }
 
