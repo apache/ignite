@@ -64,10 +64,8 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
         return ctx;
     }
 
-    /**
-     * @return Security context.
-     */
-    @Nullable public SecurityContext securityContext() {
+    /** {@inheritDoc} */
+    @Nullable @Override public SecurityContext securityContext() {
         return secCtx;
     }
 

@@ -362,30 +362,21 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * or due to {@code IOException} during network operations.
      */
     public void onDisconnect() {
-        if (busyLock.enterBusy())
-        {
-            try
-            {
-                for (JdbcQueryCursor cursor : qryCursors.values())
-                    cursor.close();
+        for (JdbcQueryCursor cursor : qryCursors.values())
+            cursor.close();
 
-                for (JdbcBulkLoadProcessor processor : bulkLoadRequests.values()) {
-                    try {
-                        processor.close();
-                    }
-                    catch (Exception e) {
-                        U.error(null, "Error closing JDBC bulk load processor.", e);
-                    }
-                }
-
-                bulkLoadRequests.clear();
-
-                U.close(cliCtx, log);
+        for (JdbcBulkLoadProcessor processor : bulkLoadRequests.values()) {
+            try {
+                processor.close();
             }
-            finally {
-                busyLock.leaveBusy();
+            catch (Exception e) {
+                U.error(null, "Error closing JDBC bulk load processor.", e);
             }
         }
+
+        bulkLoadRequests.clear();
+
+        U.close(cliCtx, log);
     }
 
     /**
@@ -1013,7 +1004,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         if (e instanceof IgniteSQLException)
             return new JdbcResponse(((IgniteSQLException) e).statusCode(), e.getMessage());
         else
-            return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, e.toString());
+            return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, e.getMessage());
     }
 
     /**
