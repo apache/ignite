@@ -630,6 +630,8 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test checks that the number of pages per each page store are not changing before and after node restart.
+     *
      * @throws Exception If failed.
      */
     public void testRecoveryNoPageLost3() throws Exception {
@@ -725,7 +727,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
                 pages = allocatedPages(ignite, CACHE2_NAME);
 
-                ignite.close();
+                stopGrid(0, true);
             }
         }
         finally {

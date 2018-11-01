@@ -35,6 +35,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -294,7 +295,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     private void checkMetricsConsistency(final IgniteEx node, String cacheName) throws Exception {
         FilePageStoreManager pageStoreManager = (FilePageStoreManager)node.context().cache().context().pageStore();
 
-        long totalPersistanceSize = 0;
+        long totalPersistenceSize = 0;
         File cacheWorkDir = pageStoreManager.cacheWorkDir(
             node.getOrCreateCache(cacheName).getConfiguration(CacheConfiguration.class)
         );
@@ -303,7 +304,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
             cacheWorkDir.toPath(), entry -> entry.toFile().getName().endsWith(".bin"))
         ) {
             for (Path path : files)
-                totalPersistanceSize += path.toFile().length();
+                totalPersistenceSize += path.toFile().length();
         }
 
         long totalAllocatedPagesFromMetrics = node.context().cache().context()
@@ -313,6 +314,22 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
             .memoryMetrics()
             .getTotalAllocatedPages();
 
-        assertEquals(totalPersistanceSize / pageStoreManager.pageSize(), totalAllocatedPagesFromMetrics);
+        assertEquals("Number of allocated pages is different than in metrics for [node=" + node.name() + ", cache=" + cacheName + "]",
+            totalPersistenceSize / pageStoreManager.pageSize(), totalAllocatedPagesFromMetrics);
+    }
+
+    /**
+     * @param partFile Partition file.
+     */
+    private static int partId(File partFile) {
+        String name = partFile.getName();
+
+        if (name.equals(FilePageStoreManager.INDEX_FILE_NAME))
+            return PageIdAllocator.INDEX_PARTITION;
+
+        if (name.startsWith(FilePageStoreManager.PART_FILE_PREFIX))
+            return Integer.parseInt(name.substring(FilePageStoreManager.PART_FILE_PREFIX.length(), name.indexOf('.')));
+
+        throw new IllegalStateException("Illegal partition file name: " + name);
     }
 }

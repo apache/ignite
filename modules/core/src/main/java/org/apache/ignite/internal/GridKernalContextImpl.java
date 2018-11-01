@@ -405,6 +405,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Failure processor. */
     private FailureProcessor failureProc;
 
+    /** Recovery mode flag. Flag is set to {@code false} when discovery manager started. */
+    private boolean recoveryMode = true;
+
     /**
      * No-arg constructor is required by externalization.
      */
@@ -1154,6 +1157,18 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     public Thread.UncaughtExceptionHandler uncaughtExceptionHandler() {
         return hnd;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean recoveryMode() {
+        return recoveryMode;
+    }
+
+    /**
+     * @param recoveryMode Recovery mode.
+     */
+    public void recoveryMode(boolean recoveryMode) {
+        this.recoveryMode = recoveryMode;
     }
 
     /** {@inheritDoc} */
