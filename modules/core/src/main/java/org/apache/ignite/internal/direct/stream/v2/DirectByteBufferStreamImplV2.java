@@ -29,6 +29,7 @@ import java.util.RandomAccess;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -296,6 +297,15 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
 
     /** */
     private long uuidLocId;
+
+    /** */
+    private byte topVerState;
+
+    /** */
+    private long topVerMajor;
+
+    /** */
+    private int topVerMinor;
 
     /** */
     private boolean lastFinished;
@@ -654,6 +664,30 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
                     return;
 
                 uuidState = 0;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeAffinityTopologyVersion(AffinityTopologyVersion val) {
+        if (val == null)
+            val = AffinityTopologyVersion.NONE;
+
+        switch (topVerState) {
+            case 0:
+                writeLong(val.topologyVersion());
+
+                if (!lastFinished)
+                    return;
+
+                topVerState++;
+
+            case 1:
+                writeInt(val.minorTopologyVersion());
+
+                if (!lastFinished)
+                    return;
+
+                topVerState = 0;
         }
     }
 
@@ -1148,6 +1182,34 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
         uuidMost = 0;
         uuidLeast = 0;
         uuidLocId = 0;
+
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public AffinityTopologyVersion readAffinityTopologyVersion() {
+        switch (topVerState) {
+            case 0:
+                topVerMajor = readLong();
+
+                if (!lastFinished)
+                    return null;
+
+                topVerState++;
+
+            case 1:
+                topVerMinor = readInt();
+
+                if (!lastFinished)
+                    return null;
+
+                topVerState = 0;
+        }
+
+        AffinityTopologyVersion val = new AffinityTopologyVersion(topVerMajor, topVerMinor);
+
+        topVerMajor = 0;
+        topVerMinor = 0;
 
         return val;
     }

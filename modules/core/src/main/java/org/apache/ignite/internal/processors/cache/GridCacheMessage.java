@@ -70,7 +70,7 @@ public abstract class GridCacheMessage implements Message {
 
     /** */
     @GridToStringInclude
-    @Nullable private AffinityTopologyVersion lastAffChangedTopVer;
+    private @Nullable AffinityTopologyVersion lastAffChangedTopVer;
 
     /** */
     @GridDirectTransient
@@ -684,7 +684,7 @@ public abstract class GridCacheMessage implements Message {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage("lastAffChangedTopVer", lastAffChangedTopVer))
+                if (!writer.writeAffinityTopologyVersion("lastAffChangedTopVer", lastAffChangedTopVer))
                     return false;
 
                 writer.incrementState();
@@ -717,7 +717,7 @@ public abstract class GridCacheMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                lastAffChangedTopVer = reader.readMessage("lastAffChangedTopVer");
+                lastAffChangedTopVer = reader.readAffinityTopologyVersion("lastAffChangedTopVer");
 
                 if (!reader.isLastRead())
                     return false;

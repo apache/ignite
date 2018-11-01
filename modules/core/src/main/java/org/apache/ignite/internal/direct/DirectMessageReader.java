@@ -27,6 +27,7 @@ import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.direct.stream.v1.DirectByteBufferStreamImplV1;
 import org.apache.ignite.internal.direct.stream.v2.DirectByteBufferStreamImplV2;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteUuid;
@@ -298,6 +299,17 @@ public class DirectMessageReader implements MessageReader {
         DirectByteBufferStream stream = state.item().stream;
 
         IgniteUuid val = stream.readIgniteUuid();
+
+        lastRead = stream.lastFinished();
+
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public AffinityTopologyVersion readAffinityTopologyVersion(String name) {
+        DirectByteBufferStream stream = state.item().stream;
+
+        AffinityTopologyVersion val = stream.readAffinityTopologyVersion();
 
         lastRead = stream.lastFinished();
 
