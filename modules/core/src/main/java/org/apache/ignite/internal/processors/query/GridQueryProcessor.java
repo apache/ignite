@@ -2119,12 +2119,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         validateSqlFieldsQuery(qry, ctx, cctx);
 
-        if (!ctx.state().publicApiActiveState(true)) {
-            throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
-                "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
-                "join the cluster. To activate the cluster call Ignite.active(true).");
-        }
-
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 

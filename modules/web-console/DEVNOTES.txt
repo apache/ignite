@@ -51,19 +51,6 @@ To build docker images from sources run following command in Ignite project root
 Prepared image can be listed with `docker images` command.
 
 
-Ignite Web Console Standalone Docker Image Build Manual Instructions
-====================================================================
-Install Docker (version >=17.05) using instructions from https://www.docker.com/community-edition.
-
-1. Build Apache Ignite Web Agent archive as described in `modules/web-console/web-agent/README.txt`.
-2. Goto Web Console's module directory: `cd modules/web-console`
-3. Build docker image:
-
-"docker build . -t apacheignite/web-console-standalone[:<version>] -f docker/standalone/Dockerfile"
-
-Prepared image can be listed in `docker images` command output.
-
-
 Ignite Web Console Backend Docker Image Build Manual Instructions
 ====================================================================
 Install Docker (version >=17.05) using instructions from https://www.docker.com/community-edition.
