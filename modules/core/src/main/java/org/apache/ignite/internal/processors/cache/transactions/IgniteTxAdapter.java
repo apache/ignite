@@ -1201,8 +1201,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     }
 
                     // Log tx state change to WAL.
-                    if (cctx.wal() != null && cctx.tm().logTxRecords() && txNodes != null) {
-
+                    if (cctx.wal() != null && (cctx.tm().logTxRecords() || mvccSnapshot != null)) {
                         BaselineTopology baselineTop = cctx.kernalContext().state().clusterState().baselineTopology();
 
                         Map<Short, Collection<Short>> participatingNodes = consistentIdMapper

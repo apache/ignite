@@ -216,7 +216,7 @@ public class RecordV1Serializer implements RecordSerializer {
      * @return Mvcc version.
      */
     static MvccVersion readMvccVersion(ByteBufferBackedDataInput in) throws IOException {
-        in.ensure(8 + 8 + 4);
+        in.ensure(mvccVersionSize());
 
         long coordVer = in.readLong();
         long cntr = in.readLong();
@@ -224,6 +224,16 @@ public class RecordV1Serializer implements RecordSerializer {
 
         return new MvccVersionImpl(coordVer, cntr, opCntr);
     }
+
+    /**
+     * Mvcc version size.
+     *
+     * @return Mvcc version size.
+     */
+    static int mvccVersionSize() {
+        return 8 + 8 + 4;
+    }
+
 
     /**
      * Writes Mvcc version.
