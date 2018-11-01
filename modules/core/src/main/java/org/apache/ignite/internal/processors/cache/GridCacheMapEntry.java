@@ -3402,17 +3402,32 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     updateCntr = nextPartitionCounter(topVer, true, null);
 
                 if (walEnabled) {
-                    cctx.shared().wal().log(new DataRecord(new DataEntry(
-                        cctx.cacheId(),
-                        key,
-                        val,
-                        val == null ? GridCacheOperation.DELETE : GridCacheOperation.CREATE,
-                        null,
-                        ver,
-                        expireTime,
-                        partition(),
-                        updateCntr
-                    )));
+                    if (cctx.mvccEnabled()) {
+                        cctx.shared().wal().log(new MvccDataRecord(new MvccDataEntry(
+                            cctx.cacheId(),
+                            key,
+                            val,
+                            val == null ? GridCacheOperation.DELETE : GridCacheOperation.CREATE,
+                            null,
+                            ver,
+                            expireTime,
+                            partition(),
+                            updateCntr,
+                            mvccVer
+                        )));
+                    } else {
+                        cctx.shared().wal().log(new DataRecord(new DataEntry(
+                            cctx.cacheId(),
+                            key,
+                            val,
+                            val == null ? GridCacheOperation.DELETE : GridCacheOperation.CREATE,
+                            null,
+                            ver,
+                            expireTime,
+                            partition(),
+                            updateCntr
+                        )));
+                    }
                 }
 
                 drReplicate(drType, val, ver, topVer);

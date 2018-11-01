@@ -2540,9 +2540,39 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             long expireTime,
             MvccVersion mvccVer
         ) throws IgniteCheckedException {
-            mvccUpdateNative(cctx, false, key, val, ver, expireTime,
-                new MvccSnapshotWithoutTxs(mvccVer.coordinatorVersion(), mvccVer.counter(), mvccVer.operationCounter(),
-                    MVCC_OP_COUNTER_NA));
+            if (!busyLock.enterBusy())
+                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+
+            try {
+                int cacheId = grp.storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
+
+                if (key.partition() == -1)
+                    key.partition(partId);
+
+                MvccDataRow dataRow = new MvccDataRow(key, val, ver, partId, expireTime, cacheId, mvccVer, null);
+
+                CacheObjectContext coCtx = cctx.cacheObjectContext();
+
+                // Make sure value bytes initialized.
+                key.valueBytes(coCtx);
+                val.valueBytes(coCtx);
+
+                assert cctx.shared().database().checkpointLockIsHeldByThread();
+
+                rowStore.addRow(dataRow);
+
+                assert dataRow.link() != 0 : dataRow;
+
+                if (grp.sharedGroup() && dataRow.cacheId() == CU.UNDEFINED_CACHE_ID)
+                    dataRow.cacheId(cctx.cacheId());
+
+                CacheDataRow old = dataTree.put(dataRow);
+
+                finishUpdate(cctx, dataRow, old);
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
         }
 
         /**

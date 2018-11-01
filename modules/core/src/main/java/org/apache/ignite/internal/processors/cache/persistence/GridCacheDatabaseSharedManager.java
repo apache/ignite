@@ -2331,7 +2331,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                         throw new IllegalStateException("Unsupported TxState.");
                                 }
 
-                                cctx.coordinators().updateState(mvccVer, txState);
+                                cctx.coordinators().updateState(mvccVer, txState, false);
                             }
                             catch (IgniteCheckedException e) {
                                 throw new IgniteException(e);
@@ -2470,6 +2470,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     case TX_RECORD:
                         try {
+                            if (metastoreOnly)
+                                continue;
+
                             TxRecord txRecord = (TxRecord)rec;
 
                             MvccVersion mvccVer = txRecord.mvccVersion();

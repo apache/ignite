@@ -124,6 +124,7 @@ public class TxRecordSerializer {
         size += /* transaction state. */ 1;
         size += CacheVersionIO.size(rec.nearXidVersion(), true);
         size += CacheVersionIO.size(rec.writeVersion(), true);
+        size += RecordV1Serializer.mvccVersionSize();
 
         size += /* primary nodes count. */ 4;
 
