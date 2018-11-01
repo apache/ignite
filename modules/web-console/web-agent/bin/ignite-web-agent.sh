@@ -16,19 +16,30 @@
 # limitations under the License.
 #
 
-SOURCE=$(dirname "$0")
+SOURCE="${BASH_SOURCE[0]}"
 
-source "${SOURCE}"/include/functions.sh
+# Resolve $SOURCE until the file is no longer a symlink.
+while [ -h "$SOURCE" ]
+    do
+        IGNITE_HOME="$(cd -P "$( dirname "$SOURCE"  )" && pwd)"
+
+        SOURCE="$(readlink "$SOURCE")"
+
+        # If $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located.
+        [[ $SOURCE != /* ]] && SOURCE="$IGNITE_HOME/$SOURCE"
+    done
+
+#
+# Set IGNITE_HOME.
+#
+export IGNITE_HOME="$(cd -P "$( dirname "$SOURCE" )" && pwd)"
+
+source "${IGNITE_HOME}"/include/functions.sh
 
 #
 # Discover path to Java executable and check it's version.
 #
 checkJava
-
-#
-# Set IGNITE_HOME.
-#
-export IGNITE_HOME="$SOURCE";
 
 #
 # JVM options. See http://java.sun.com/javase/technologies/hotspot/vmoptions.jsp for more details.
@@ -79,4 +90,4 @@ elif [ $version -eq 11 ] ; then
         ${JVM_OPTS}"
 fi
 
-"$JAVA" ${JVM_OPTS} -cp "${SOURCE}/*" org.apache.ignite.console.agent.AgentLauncher "$@"
+"$JAVA" ${JVM_OPTS} -cp "${IGNITE_HOME}/*" org.apache.ignite.console.agent.AgentLauncher "$@"
