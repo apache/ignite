@@ -5451,6 +5451,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         @Override public void afterBinaryMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
             for (DynamicCacheDescriptor cacheDescriptor : persistentCaches()) {
                 // Skip MVCC caches.
+                // TODO: https://issues.apache.org/jira/browse/IGNITE-10052
                 if (cacheDescriptor.cacheConfiguration().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
                     continue;
 

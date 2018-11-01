@@ -226,18 +226,39 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
      *
      */
     public void testRecoveryOnDynamicallyStartedCaches() throws Exception {
-        IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
-
-        crd.cluster().active(true);
-
-        IgniteEx node = grid(2);
-
         List<CacheConfiguration> dynamicCaches = Lists.newArrayList(
             cacheConfiguration(DYNAMIC_CACHE_PREFIX + 0, CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL),
             cacheConfiguration(DYNAMIC_CACHE_PREFIX + 1, CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL),
             cacheConfiguration(DYNAMIC_CACHE_PREFIX + 2, CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC),
             cacheConfiguration(DYNAMIC_CACHE_PREFIX + 3, CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC)
         );
+
+        doTestWithDynamicCaches(dynamicCaches);
+    }
+
+    /**
+     *
+     */
+    public void testRecoveryWithMvccCaches() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-10052");
+
+        List<CacheConfiguration> dynamicCaches = Lists.newArrayList(
+            cacheConfiguration(DYNAMIC_CACHE_PREFIX + 0, CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT),
+            cacheConfiguration(DYNAMIC_CACHE_PREFIX + 1, CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
+        );
+
+        doTestWithDynamicCaches(dynamicCaches);
+    }
+
+    /**
+     * @param dynamicCaches Dynamic caches.
+     */
+    private void doTestWithDynamicCaches(List<CacheConfiguration> dynamicCaches) throws Exception {
+        IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
+
+        crd.cluster().active(true);
+
+        IgniteEx node = grid(2);
 
         node.getOrCreateCaches(dynamicCaches);
 
