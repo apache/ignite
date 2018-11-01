@@ -43,6 +43,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
@@ -222,6 +223,9 @@ public class PageMemoryImpl implements PageMemoryEx {
     private IgniteWriteAheadLogManager walMgr;
 
     /** */
+    private GridEncryptionManager encMgr;
+
+    /** */
     private final IgniteLogger log;
 
     /** Direct memory allocator. */
@@ -314,9 +318,11 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         storeMgr = ctx.pageStore();
         walMgr = ctx.wal();
+        encMgr = ctx.kernalContext().encryption();
 
         assert storeMgr != null;
         assert walMgr != null;
+        assert encMgr != null;
 
         sysPageSize = pageSize + PAGE_OVERHEAD;
 
@@ -851,11 +857,15 @@ public class PageMemoryImpl implements PageMemoryEx {
         if (rmv)
             seg.loadedPages.remove(grpId, PageIdUtils.effectivePageId(pageId));
 
-        if (seg.segCheckpointPages != null)
-            seg.segCheckpointPages.remove(new FullPageId(pageId, grpId));
+        Collection<FullPageId> cpPages = seg.segCheckpointPages;
 
-        if (seg.dirtyPages != null)
-            seg.dirtyPages.remove(new FullPageId(pageId, grpId));
+        if (cpPages != null)
+            cpPages.remove(new FullPageId(pageId, grpId));
+
+        Collection<FullPageId> dirtyPages = seg.dirtyPages;
+
+        if (dirtyPages != null)
+            dirtyPages.remove(new FullPageId(pageId, grpId));
 
         return relPtr;
     }
@@ -958,7 +968,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public int realPageSize(int grpId) {
-        if (ctx.kernalContext().encryption().groupKey(grpId) == null)
+        if (encMgr.groupKey(grpId) == null)
             return pageSize();
 
         return encPageSize;
@@ -1875,7 +1885,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         private static final int ACQUIRED_PAGES_PADDING = 4;
 
         /** Page ID to relative pointer map. */
-        private LoadedPagesMap loadedPages;
+        private final LoadedPagesMap loadedPages;
 
         /** Pointer to acquired pages integer counter. */
         private long acquiredPagesPtr;
@@ -1887,7 +1897,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         private long memPerTbl;
 
         /** Pages marked as dirty since the last checkpoint. */
-        private Collection<FullPageId> dirtyPages = new GridConcurrentHashSet<>();
+        private volatile Collection<FullPageId> dirtyPages = new GridConcurrentHashSet<>();
 
         /** */
         private volatile Collection<FullPageId> segCheckpointPages;

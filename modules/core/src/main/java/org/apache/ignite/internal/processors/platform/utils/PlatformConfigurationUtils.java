@@ -251,9 +251,8 @@ public class PlatformConfigurationUtils {
         if (keyCnt > 0) {
             CacheKeyConfiguration[] keys = new CacheKeyConfiguration[keyCnt];
 
-            for (int i = 0; i < keyCnt; i++) {
+            for (int i = 0; i < keyCnt; i++)
                 keys[i] = new CacheKeyConfiguration(in.readString(), in.readString());
-            }
 
             ccfg.setKeyConfiguration(keys);
         }
@@ -662,6 +661,8 @@ public class PlatformConfigurationUtils {
             cfg.setMvccVacuumFrequency(in.readLong());
         if (in.readBoolean())
             cfg.setMvccVacuumThreadCount(in.readInt());
+        if (in.readBoolean())
+            cfg.setSystemWorkerBlockedTimeout(in.readLong());
 
         int sqlSchemasCnt = in.readInt();
 
@@ -1239,6 +1240,12 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getMvccVacuumFrequency());
         w.writeBoolean(true);
         w.writeInt(cfg.getMvccVacuumThreadCount());
+        if (cfg.getSystemWorkerBlockedTimeout() != null) {
+            w.writeBoolean(true);
+            w.writeLong(cfg.getSystemWorkerBlockedTimeout());
+        } else {
+            w.writeBoolean(false);
+        }
 
         if (cfg.getSqlSchemas() == null)
             w.writeInt(-1);
@@ -1894,21 +1901,22 @@ public class PlatformConfigurationUtils {
                 .setConcurrencyLevel(in.readInt())
                 .setWalAutoArchiveAfterInactivity(in.readLong());
 
+        if (in.readBoolean())
+            res.setCheckpointReadLockTimeout(in.readLong());
+
         int cnt = in.readInt();
 
         if (cnt > 0) {
             DataRegionConfiguration[] regs = new DataRegionConfiguration[cnt];
 
-            for (int i = 0; i < cnt; i++) {
+            for (int i = 0; i < cnt; i++)
                 regs[i] = readDataRegionConfiguration(in);
-            }
 
             res.setDataRegionConfigurations(regs);
         }
 
-        if (in.readBoolean()) {
+        if (in.readBoolean())
             res.setDefaultDataRegionConfiguration(readDataRegionConfiguration(in));
-        }
 
         return res;
     }
@@ -2022,25 +2030,31 @@ public class PlatformConfigurationUtils {
             w.writeInt(cfg.getConcurrencyLevel());
             w.writeLong(cfg.getWalAutoArchiveAfterInactivity());
 
+            if (cfg.getCheckpointReadLockTimeout() != null) {
+                w.writeBoolean(true);
+                w.writeLong(cfg.getCheckpointReadLockTimeout());
+            }
+            else
+                w.writeBoolean(false);
+
             if (cfg.getDataRegionConfigurations() != null) {
                 w.writeInt(cfg.getDataRegionConfigurations().length);
 
-                for (DataRegionConfiguration d : cfg.getDataRegionConfigurations()) {
+                for (DataRegionConfiguration d : cfg.getDataRegionConfigurations())
                     writeDataRegionConfiguration(w, d);
-                }
-            } else {
-                w.writeInt(0);
             }
+            else
+                w.writeInt(0);
 
             if (cfg.getDefaultDataRegionConfiguration() != null) {
                 w.writeBoolean(true);
                 writeDataRegionConfiguration(w, cfg.getDefaultDataRegionConfiguration());
-            } else {
-                w.writeBoolean(false);
             }
-        } else {
-            w.writeBoolean(false);
+            else
+                w.writeBoolean(false);
         }
+        else
+            w.writeBoolean(false);
     }
 
     /**
