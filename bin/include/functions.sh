@@ -40,7 +40,7 @@ javaMajorVersion() {
     if [ ${version} -eq 1 ]; then
         # Version seems starts from 1, we need second number.
         javaVersion "$1"
-        version=$(echo ${version} | awk -F[\"\.] -v OFS=. 'NR==1{print $2}')
+        version=$(echo ${version} | awk -F[\"\.] '{print $2}')
     fi
 }
 
