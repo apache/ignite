@@ -137,7 +137,7 @@ public class FunctionalQueryTest {
      */
     @Test
     public void testSql() throws Exception {
-        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+        try (Ignite ignored = Ignition.start(Config.getServerConfiguration()); Ignite ignored2 = Ignition.start(Config.getServerConfiguration());
              IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
         ) {
             client.query(
@@ -147,7 +147,7 @@ public class FunctionalQueryTest {
                 )).setSchema("PUBLIC")
             ).getAll();
 
-            final int KEY_COUNT = 1000;
+            final int KEY_COUNT = 10;
 
             for (int i = 0; i < KEY_COUNT; ++i) {
                 int key = i;
@@ -169,8 +169,7 @@ public class FunctionalQueryTest {
                 new SqlFieldsQuery("SELECT * from Person WHERE id >= ?")
                     .setSchema("PUBLIC")
                     .setArgs(0)
-                    .setPageSize(2)
-                    .setLazy(true)
+                    .setPageSize(1)
             ).getAll();
 
             assertEquals(KEY_COUNT, rows.size());
