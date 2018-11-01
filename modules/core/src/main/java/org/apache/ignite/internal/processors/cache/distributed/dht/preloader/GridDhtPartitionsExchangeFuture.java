@@ -830,14 +830,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (!isLocalNodeInBaseline()) {
             cctx.database().cleanupRestoredCaches();
 
-            for (DynamicCacheDescriptor desc : cctx.cache().cacheDescriptors().values()) {
-                if (CU.isPersistentCache(desc.cacheConfiguration(),
-                    cctx.gridConfig().getDataStorageConfiguration())) {
-                    // Perform cache init from scratch.
-                    cctx.cache().preparePageStore(desc, true);
-                }
-            }
-
             // Set initial node started marker.
             cctx.database().nodeStart(null);
         }

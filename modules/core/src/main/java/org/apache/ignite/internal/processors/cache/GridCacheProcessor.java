@@ -2081,8 +2081,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         boolean affNode = checkForAffinityNode(desc, reqNearCfg, ccfg);
 
-        preparePageStore(desc, affNode);
-
         CacheGroupContext grp = prepareCacheGroup(desc, exchTopVer, cacheObjCtx, affNode, startCfg.getGroupName());
 
         GridCacheContext cacheCtx = createCache(ccfg,
