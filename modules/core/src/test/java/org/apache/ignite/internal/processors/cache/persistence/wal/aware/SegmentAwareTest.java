@@ -438,18 +438,12 @@ public class SegmentAwareTest extends TestCase {
      * Next segment for compress based on truncated archive idx.
      */
     public void testCorrectCalculateNextCompressSegment() throws IgniteCheckedException, InterruptedException {
-        //given: thread which awaited segment.
         SegmentAware aware = new SegmentAware(10, true);
 
-        aware.onSegmentCompressed(5);
         aware.setLastArchivedAbsoluteIndex(6);
-        aware.lastTruncatedArchiveIdx(7);
 
-        //when:
-        long segmentToCompress = aware.waitNextSegmentToCompress();
-
-        //then: segment to compress greater than truncated archive idx
-        assertEquals(8, segmentToCompress);
+        for (int exp = 0; exp <=6; exp++)
+            assertEquals(exp, aware.waitNextSegmentToCompress());
     }
 
     /**
