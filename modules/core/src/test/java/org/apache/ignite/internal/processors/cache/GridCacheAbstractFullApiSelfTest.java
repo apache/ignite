@@ -6006,6 +6006,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             doTransformResourceInjectionInTx(ignite, cache, true, false);
             doTransformResourceInjectionInTx(ignite, cache, true, true);
         }
+
+        grid(0).services( grid(0).cluster()).cancel(SERVICE_NAME1);
     }
 
     /**
