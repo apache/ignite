@@ -1124,6 +1124,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional " +
                     "cache with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
+            if (this.ctx.security().enabled()) {
+                GridSqlQueryParser parser = new GridSqlQueryParser(false);
+
+                parser.parse(p);
+
+                checkSecurity(parser.cacheIds());
+            }
+
             GridNearTxSelectForUpdateFuture sfuFut = null;
 
             int opTimeout = qryTimeout;
@@ -2314,6 +2322,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 log.debug("Parsed query: `" + sqlQry + "` into two step query: " + twoStepQry);
 
             checkQueryType(qry, true);
+
+            if (ctx.security().enabled())
+                checkSecurity(twoStepQry.cacheIds());
 
             return Collections.singletonList(doRunDistributedQuery(schemaName, qry, twoStepQry, meta, keepBinary,
                 startTx, tracker, cancel));
