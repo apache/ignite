@@ -71,7 +71,7 @@ public class SegmentCompressStorage {
      * @param compactionEnabled If WAL compaction enabled.
      */
     static SegmentCompressStorage buildCompressStorage(SegmentArchivedStorage segmentArchivedStorage,
-        boolean compactionEnabled) {
+                                                       boolean compactionEnabled) {
         SegmentCompressStorage storage = new SegmentCompressStorage(segmentArchivedStorage, compactionEnabled);
 
         segmentArchivedStorage.addObserver(storage::onSegmentArchived);
