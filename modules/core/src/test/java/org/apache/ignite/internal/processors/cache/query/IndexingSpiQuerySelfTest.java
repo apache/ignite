@@ -162,27 +162,32 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     public void testNonBinaryIndexingSpi() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI, "true");
 
-        indexingSpi = new MyIndexingSpi();
+        try {
+            indexingSpi = new MyIndexingSpi();
 
-        Ignite ignite = startGrid(0);
+            Ignite ignite = startGrid(0);
 
-        CacheConfiguration<PersonKey, Person> ccfg = cacheConfiguration(DEFAULT_CACHE_NAME);
+            CacheConfiguration<PersonKey, Person> ccfg = cacheConfiguration(DEFAULT_CACHE_NAME);
 
-        IgniteCache<PersonKey, Person> cache = ignite.createCache(ccfg);
+            IgniteCache<PersonKey, Person> cache = ignite.createCache(ccfg);
 
-        for (int i = 0; i < 10; i++) {
-            PersonKey key = new PersonKey(i);
+            for (int i = 0; i < 10; i++) {
+                PersonKey key = new PersonKey(i);
 
-            cache.put(key, new Person("John Doe " + i));
+                cache.put(key, new Person("John Doe " + i));
+            }
+
+            QueryCursor<Cache.Entry<PersonKey, Person>> cursor = cache.query(
+                new SpiQuery<PersonKey, Person>().setArgs(new PersonKey(2), new PersonKey(5)));
+
+            for (Cache.Entry<PersonKey, Person> entry : cursor)
+                System.out.println(entry);
+
+            cache.remove(new PersonKey(9));
         }
-
-        QueryCursor<Cache.Entry<PersonKey, Person>> cursor = cache.query(
-            new SpiQuery<PersonKey, Person>().setArgs(new PersonKey(2), new PersonKey(5)));
-
-        for (Cache.Entry<PersonKey, Person> entry : cursor)
-            System.out.println(entry);
-
-        cache.remove(new PersonKey(9));
+        finally {
+            System.clearProperty(IgniteSystemProperties.IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI);
+        }
     }
 
     /**
