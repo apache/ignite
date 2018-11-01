@@ -670,7 +670,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     /** {@inheritDoc} */
     @Override public void writeAffinityTopologyVersion(AffinityTopologyVersion val) {
         if (val == null)
-            val = AffinityTopologyVersion.NONE;
+            val = AffinityTopologyVersion.ZERO;
 
         switch (topVerState) {
             case 0:

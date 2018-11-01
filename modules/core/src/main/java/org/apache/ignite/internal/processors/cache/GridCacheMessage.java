@@ -194,7 +194,7 @@ public abstract class GridCacheMessage implements Message {
      * @return Last affinity topology version when affinity was modified.
      */
     public AffinityTopologyVersion lastAffinityChangedTopologyVersion() {
-        if (lastAffChangedTopVer == null)
+        if (lastAffChangedTopVer == null || lastAffChangedTopVer.topologyVersion() <= 0)
             return topologyVersion();
 
         return lastAffChangedTopVer;
