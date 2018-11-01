@@ -480,7 +480,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             IgniteBiTuple<Long, Long> tup = scanMinMaxArchiveIndices();
 
-            segmentAware = new SegmentAware(dsCfg.getWalSegments(), dsCfg.isWalCompactionEnabled(), log);
+            segmentAware = new SegmentAware(dsCfg.getWalSegments(), dsCfg.isWalCompactionEnabled());
 
             segmentAware.lastTruncatedArchiveIdx(tup == null ? -1 : tup.get1() - 1);
 
@@ -2040,7 +2040,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * Waits if there's no segment to archive right now.
          */
         private long tryReserveNextSegmentOrWait() throws IgniteInterruptedCheckedException{
-            long segmentToCompress = segmentAware.waitNextSegmentToCompress();
+            long segmentToCompress;
+
+            while ((segmentToCompress = segmentAware.waitNextSegmentToCompress())
+                <= segmentAware.lastTruncatedArchiveIdx())
+                segmentAware.removeFromCurrentlyCompressedList(segmentToCompress);
 
             boolean reserved = reserve(new FileWALPointer(segmentToCompress, 0, 0));
 
