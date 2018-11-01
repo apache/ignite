@@ -22,6 +22,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -145,12 +146,19 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
     /**
      * @param walFiles Wal files.
+     */
+    private static String printIndexes(List<FileDescriptor> walFiles) {
+        return "[" + String.join(",", walFiles.stream().map(f -> Long.toString(f.idx())).collect(Collectors.toList())) + "]";
+    }
+
+    /**
+     * @param walFiles Wal files.
      * @param lowBound Low bound.
      * @param highBound High bound.
      *
      * @throws IgniteCheckedException if failed
      */
-    private void strictCheck(List<FileDescriptor> walFiles, FileWALPointer lowBound, FileWALPointer highBound) throws IgniteCheckedException {
+    private static void strictCheck(List<FileDescriptor> walFiles, FileWALPointer lowBound, FileWALPointer highBound) throws IgniteCheckedException {
         int idx = 0;
 
         if (lowBound.index() > Long.MIN_VALUE) {
@@ -165,7 +173,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         }
 
         if (idx == walFiles.size())
-            throw new IgniteCheckedException("Wal segments not in bounds.");
+            throw new IgniteCheckedException("Wal segments not in bounds. loBoundIndex=" + lowBound.index() +
+                                                ", indexes=" + printIndexes(walFiles));
 
         long curWalSegmIdx = walFiles.get(idx).idx();
 
@@ -175,11 +184,12 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             assert desc != null;
 
             if (curWalSegmIdx != desc.idx())
-                throw new IgniteCheckedException("Wal segment " + curWalSegmIdx + " not found.");
+                throw new IgniteCheckedException("Wal segment " + curWalSegmIdx + " not found in files " + printIndexes(walFiles));
         }
 
         if (highBound.index() < Long.MAX_VALUE && curWalSegmIdx <= highBound.index())
-            throw new IgniteCheckedException("Wal segments not in bounds.");
+            throw new IgniteCheckedException("Wal segments not in bounds. hiBoundIndex=" + highBound.index() +
+                                                ", indexes=" + printIndexes(walFiles));
     }
 
     /**
