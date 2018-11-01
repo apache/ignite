@@ -33,7 +33,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *     +----------------+---------------+---------+----------+
  * </pre>
  */
-@SuppressWarnings({"WaitWhileNotSynced"})
 public class OffheapReadWriteLock {
     /**
      * TODO benchmark optimal spin count.
